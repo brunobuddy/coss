@@ -50,6 +50,15 @@ export {
 } from "./environments.ts";
 export { TenancyError, type TenancyErrorCode } from "./errors.ts";
 export {
+  getOrganizationLogo,
+  getOrganizationLogoState,
+  hideOrganizationLogo,
+  type OrganizationLogo,
+  type OrganizationLogoState,
+  organizationLogoVersions,
+  refreshOrganizationLogo,
+} from "./logos.ts";
+export {
   getMembership,
   getOrganizationMember,
   getPendingInvitation,
@@ -67,6 +76,7 @@ export {
 export {
   listProductPreferences,
   productActivityByEnvironment,
+  productDailyActivity,
   productFigures,
   setProductPreference,
 } from "./products.ts";

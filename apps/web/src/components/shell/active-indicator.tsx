@@ -13,7 +13,11 @@ const ACTIVE = '[data-sidebar="menu-button"][data-active="true"]';
  * when `key` (the pathname) changes and on resizes; `animate` turns on after the first placement,
  * so the highlight appears in place and only slides when the active button changes.
  */
-export function useActiveIndicator(container: RefObject<HTMLElement | null>, key: string) {
+export function useActiveIndicator(
+  container: RefObject<HTMLElement | null>,
+  key: string,
+  selector: string = ACTIVE,
+) {
   const [rect, setRect] = useState<IndicatorRect | null>(null);
   const [animate, setAnimate] = useState(false);
 
@@ -22,7 +26,7 @@ export function useActiveIndicator(container: RefObject<HTMLElement | null>, key
     const root = container.current;
     if (!root) return setRect(null);
     const measure = () => {
-      const button = root.querySelector<HTMLElement>(ACTIVE);
+      const button = root.querySelector<HTMLElement>(selector);
       if (!button || button.getClientRects().length === 0) return setRect(null);
       const outer = root.getBoundingClientRect();
       const inner = button.getBoundingClientRect();
@@ -41,7 +45,7 @@ export function useActiveIndicator(container: RefObject<HTMLElement | null>, key
       if (child.getAttribute("aria-hidden") !== "true") observer.observe(child);
     }
     return () => observer.disconnect();
-  }, [container, key]);
+  }, [container, key, selector]);
 
   useEffect(() => {
     if (!rect) return setAnimate(false);
@@ -58,14 +62,18 @@ function sameRect(a: IndicatorRect, b: IndicatorRect): boolean {
 }
 
 /** The sliding highlight, drawn behind the buttons of a `relative` container. */
-export function ActiveIndicator(props: ReturnType<typeof useActiveIndicator>) {
+export function ActiveIndicator(
+  props: ReturnType<typeof useActiveIndicator> & { className?: string },
+) {
   if (!props.rect) return null;
   return (
     <span
       aria-hidden
       className={cn(
-        "pointer-events-none absolute top-0 left-0 rounded-lg bg-sidebar-accent motion-reduce:transition-none",
-        props.animate && "transition-[translate,width,height] duration-200 ease-out",
+        "pointer-events-none absolute top-0 left-0 rounded-lg bg-sidebar-accent shadow-[0_1px_2px_--theme(--color-black/6%)] inset-shadow-[0_1px_--theme(--color-white/55%)] motion-reduce:transition-none dark:inset-shadow-[0_1px_--theme(--color-white/6%)]",
+        props.animate &&
+          "transition-[translate,width,height,background-color] duration-200 ease-out",
+        props.className,
       )}
       style={{
         translate: `${props.rect.left}px ${props.rect.top}px`,

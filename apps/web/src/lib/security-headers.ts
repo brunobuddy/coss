@@ -61,3 +61,12 @@ export const RECEIVED_CONTENT_PATHS = [
 ];
 
 export const RECEIVED_CONTENT_CSP = "sandbox; default-src 'none'";
+
+/**
+ * Organization logos: images from the organization's own website (SVG included), served from the
+ * dashboard's origin. Sandboxed with no scripts should one be opened directly; inline styles stay,
+ * since many SVG logos style themselves (light and dark variants).
+ */
+export const LOGO_PATH = "/:orgSlug/settings/logo";
+
+export const LOGO_CSP = "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:";

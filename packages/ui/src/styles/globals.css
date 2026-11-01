@@ -16,3 +16,393 @@
   background-size: 1.5rem 1.5rem;
   background-position: center;
 }
+
+/*
+ * The dashboard's own finish over coss ui, chosen by `data-slot` so the vendored components stay
+ * as the registry ships them. Unlayered: these win over the components' utility classes.
+ */
+
+/* One label voice: small caps-like labels over tables, sidebar groups and figures. */
+@utility label-caps {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1rem;
+  text-transform: uppercase;
+}
+
+[data-slot="table-head"],
+[data-slot="sidebar-group-label"] {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/*
+ * Primary and destructive buttons have a lit top edge; every button gives a little when pressed.
+ * Matched by the button's own classes, not `data-slot`: a button rendered as a dialog or menu
+ * trigger carries the trigger's slot instead.
+ */
+:is(.bg-primary, .bg-destructive)[class*="color-white/16%"]:not(:disabled) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 16%, transparent),
+    transparent 55%
+  );
+}
+
+/* White (outline) buttons read as keycaps: a faint shade toward a slightly heavier bottom edge. */
+[class*="data-loading:select-none"].bg-popover:not(:disabled) {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 40%,
+    color-mix(in srgb, var(--foreground) 3.5%, transparent)
+  );
+  border-bottom-color: color-mix(in srgb, var(--input), var(--foreground) 16%);
+}
+
+.dark [class*="data-loading:select-none"].bg-popover:not(:disabled) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 5%, transparent),
+    transparent 60%
+  );
+  border-bottom-color: var(--input);
+}
+
+[class*="data-loading:select-none"] {
+  transition-property: box-shadow, background-color, border-color, transform;
+  transition-duration: 150ms;
+}
+
+[class*="data-loading:select-none"]:not(:disabled):active {
+  transform: translateY(0.5px) scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="data-loading:select-none"]:not(:disabled):active {
+    transform: none;
+  }
+}
+
+/*
+ * Light from above, everywhere it carries meaning: raised things (the selected tab, keys, switch
+ * thumbs) catch light on top and sit on a heavier bottom edge; wells (inputs, the tab track) are
+ * shaded just inside their top edge. Gradients, not box-shadow, so focus rings stay intact.
+ */
+:is([data-slot="input-control"], [data-slot="textarea-control"], [data-slot="input-group"]),
+[data-slot="tabs-list"].bg-muted {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 3.5%, transparent),
+    transparent 0.5rem
+  );
+}
+
+.dark
+  :is(
+    [data-slot="input-control"],
+    [data-slot="textarea-control"],
+    [data-slot="input-group"],
+    [data-slot="tabs-list"].bg-muted
+  ) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, black 22%, transparent),
+    transparent 0.5rem
+  );
+}
+
+[data-slot="input-group"] :is([data-slot="input-control"], [data-slot="input"]) {
+  background-image: none;
+}
+
+/* A transparent control is part of something else (the ⌘K palette's search), not a well. */
+:is([data-slot="input-control"], [data-slot="input-group"])[class*="bg-transparent"],
+.dark :is([data-slot="input-control"], [data-slot="input-group"])[class*="bg-transparent"] {
+  background-image: none;
+}
+
+[data-slot="tab-indicator"].bg-background,
+[data-slot="switch-thumb"] {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 40%,
+    color-mix(in srgb, var(--foreground) 4%, transparent)
+  );
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 10%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--foreground) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 70%, transparent);
+}
+
+.dark :is([data-slot="tab-indicator"].bg-background, [data-slot="switch-thumb"]) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 6%, transparent),
+    transparent 60%
+  );
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 40%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+}
+
+[data-slot="kbd"] {
+  background-image: linear-gradient(to bottom, var(--background), var(--muted));
+  box-shadow:
+    inset 0 -1px 0 color-mix(in srgb, var(--foreground) 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+/* Popups hang in the same light: a lit top edge over a soft, deep shadow. */
+:is(
+  [data-slot="menu-popup"],
+  [data-slot="select-popup"],
+  [data-slot="popover-popup"],
+  [data-slot="dialog-popup"],
+  [data-slot="alert-dialog-popup"],
+  [data-slot="command-dialog-popup"]
+) {
+  box-shadow:
+    0 16px 40px -12px color-mix(in srgb, black 22%, transparent),
+    0 2px 6px color-mix(in srgb, black 6%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 70%, transparent);
+}
+
+.dark
+  :is(
+    [data-slot="menu-popup"],
+    [data-slot="select-popup"],
+    [data-slot="popover-popup"],
+    [data-slot="dialog-popup"],
+    [data-slot="alert-dialog-popup"],
+    [data-slot="command-dialog-popup"]
+  ) {
+  box-shadow:
+    0 16px 40px -12px color-mix(in srgb, black 70%, transparent),
+    0 2px 6px color-mix(in srgb, black 30%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 7%, transparent);
+}
+
+[data-slot="tooltip-popup"] {
+  box-shadow:
+    0 4px 12px -2px color-mix(in srgb, black 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 60%, transparent);
+}
+
+.dark [data-slot="tooltip-popup"] {
+  box-shadow:
+    0 4px 12px -2px color-mix(in srgb, black 50%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 7%, transparent);
+}
+
+/* The item under the pointer is a raised pill, like the sidebar's highlight. */
+:is(
+  [data-slot="menu-item"],
+  [data-slot="menu-link-item"],
+  [data-slot="menu-checkbox-item"],
+  [data-slot="menu-radio-item"],
+  [data-slot="menu-sub-trigger"],
+  [data-slot="select-item"],
+  [data-slot="command-item"]
+)[data-highlighted] {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 7%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 55%, transparent);
+}
+
+.dark
+  :is(
+    [data-slot="menu-item"],
+    [data-slot="menu-link-item"],
+    [data-slot="menu-checkbox-item"],
+    [data-slot="menu-radio-item"],
+    [data-slot="menu-sub-trigger"],
+    [data-slot="select-item"],
+    [data-slot="command-item"]
+  )[data-highlighted] {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 40%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 6%, transparent);
+}
+
+/* Selects are keycaps like white buttons; checkboxes and radios are wells until checked. */
+:is([data-slot="select-trigger"], [data-slot="select-button"]):not([data-disabled]) {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 40%,
+    color-mix(in srgb, var(--foreground) 3.5%, transparent)
+  );
+  border-bottom-color: color-mix(in srgb, var(--input), var(--foreground) 16%);
+}
+
+.dark :is([data-slot="select-trigger"], [data-slot="select-button"]):not([data-disabled]) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 5%, transparent),
+    transparent 60%
+  );
+  border-bottom-color: var(--input);
+}
+
+:is([data-slot="checkbox"], [data-slot="radio"]):not([data-checked]) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 6%, transparent),
+    transparent 70%
+  );
+}
+
+:is([data-slot="checkbox-indicator"], [data-slot="radio-indicator"])[data-checked] {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 20%, transparent),
+    transparent 60%
+  );
+}
+
+/*
+ * Motion, one vocabulary: things arrive by rising a few pixels out of nothing, quickly, in reading
+ * order; figures count up and lines draw in. All of it is off under `prefers-reduced-motion`.
+ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes grow {
+  from {
+    scale: 1 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A page's sections, one after another (`app/[orgSlug]/template.tsx` wraps every page). */
+  .page-enter > * > * {
+    animation: rise 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .page-enter > * > :nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .page-enter > * > :nth-child(2) {
+    animation-delay: 45ms;
+  }
+  .page-enter > * > :nth-child(3) {
+    animation-delay: 90ms;
+  }
+  .page-enter > * > :nth-child(4) {
+    animation-delay: 135ms;
+  }
+  .page-enter > * > :nth-child(5) {
+    animation-delay: 180ms;
+  }
+  .page-enter > * > :nth-child(6) {
+    animation-delay: 225ms;
+  }
+  .page-enter > * > :nth-child(7) {
+    animation-delay: 270ms;
+  }
+  .page-enter > * > :nth-child(8) {
+    animation-delay: 315ms;
+  }
+
+  .page-enter > * > :nth-child(n + 9) {
+    animation-delay: 360ms;
+  }
+
+  /* The first rows of a table, quickly, top to bottom. */
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"] {
+    animation: fade 260ms ease-out both;
+  }
+
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(1) {
+    animation-delay: 162ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(2) {
+    animation-delay: 184ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(3) {
+    animation-delay: 206ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(4) {
+    animation-delay: 228ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(5) {
+    animation-delay: 250ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(6) {
+    animation-delay: 272ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(7) {
+    animation-delay: 294ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(8) {
+    animation-delay: 316ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(9) {
+    animation-delay: 338ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(10) {
+    animation-delay: 360ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(11) {
+    animation-delay: 382ms;
+  }
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(12) {
+    animation-delay: 404ms;
+  }
+
+  .page-enter [data-slot="table-body"] > [data-slot="table-row"]:nth-child(n + 13) {
+    animation-delay: 420ms;
+  }
+
+  /* Sparklines draw their line; chart bars grow from the baseline. */
+  .sparkline-line {
+    stroke-dasharray: 1;
+    animation: draw 900ms cubic-bezier(0.4, 0, 0.2, 1) 200ms both;
+  }
+
+  .sparkline-area {
+    animation: fade 700ms ease-out 500ms both;
+  }
+
+  .bar-grow {
+    transform-origin: bottom;
+    animation: grow 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(120ms + var(--i, 0) * 28ms);
+  }
+}
+
+/* Badges are pills. */
+[data-slot="badge"] {
+  border-radius: 9999px;
+  padding-inline: 0.5rem;
+  gap: 0.3125rem;
+}
+
+/* A table inside a panel lines its first and last columns up with the panel's title. */
+[data-slot="card-frame"] :is([data-slot="table-head"], [data-slot="table-cell"]):first-child {
+  padding-inline-start: 1.25rem;
+}
+
+[data-slot="card-frame"] :is([data-slot="table-head"], [data-slot="table-cell"]):last-child {
+  padding-inline-end: 1.25rem;
+}

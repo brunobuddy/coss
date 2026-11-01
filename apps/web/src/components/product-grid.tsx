@@ -4,6 +4,7 @@ import { ArrowUpRightIcon } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PRODUCT_ICONS } from "@/lib/navigation";
+import { ProductGlyph } from "./product-glyph";
 
 /**
  * Products as cells of one ruled sheet (like coss.com's catalog): hairlines between them, no gaps
@@ -31,9 +32,11 @@ export function ProductCell(props: {
   return (
     <div className="group/cell relative flex min-h-36 flex-col gap-3 border-e border-b p-5 transition-colors hover:bg-accent/40">
       <div className="flex items-start justify-between gap-3">
-        <span className="flex size-9 items-center justify-center rounded-lg border bg-background shadow-xs/5">
-          <Icon className="size-4.5" strokeWidth={1.75} />
-        </span>
+        <ProductGlyph
+          className="size-10 rounded-xl transition-transform duration-200 ease-out group-hover/cell:-rotate-3 group-hover/cell:scale-105 motion-reduce:transition-none"
+          icon={Icon}
+          tone={props.product.key}
+        />
         <div className="relative z-10 flex items-center gap-1">
           {props.docs ? (
             <a

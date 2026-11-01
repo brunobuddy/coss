@@ -13,7 +13,6 @@ import {
   settingsHref,
   visibleProducts,
 } from "@coss/dashboard-routes";
-import { Avatar, AvatarFallback } from "@coss/ui/components/avatar";
 import {
   Menu,
   MenuGroup,
@@ -40,7 +39,7 @@ import {
 import { cn } from "@coss/ui/lib/utils";
 import {
   BookOpenIcon,
-  CheckIcon,
+  CreditCardIcon,
   EllipsisIcon,
   HouseIcon,
   LayoutGridIcon,
@@ -49,6 +48,8 @@ import {
   PinOffIcon,
   PlusIcon,
   RotateCcwIcon,
+  SettingsIcon,
+  UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
@@ -63,6 +64,14 @@ import {
   useState,
 } from "react";
 import { setProductPreferenceAction } from "@/app/[orgSlug]/actions";
+import { OrganizationAvatar } from "@/components/organization-avatar";
+import {
+  type GlyphTone,
+  PRODUCT_ACTIVE_TEXT,
+  PRODUCT_TEXT,
+  PRODUCT_WASH,
+  ProductGlyph,
+} from "@/components/product-glyph";
 import {
   activeNavItem,
   DEVELOPERS_ICON,
@@ -73,7 +82,7 @@ import {
 import { rememberEnvironment } from "@/lib/remembered-environment";
 import { useActionToast } from "@/lib/toast";
 import { ActiveIndicator, useActiveIndicator } from "./active-indicator";
-import { initials } from "./initials";
+import { RailTooltip, RailTooltipTrigger } from "./rail-tooltip";
 import { SidebarWordmark } from "./sidebar-parts";
 import type { ShellOrganization, ShellProject } from "./types";
 import { type ShellUser, UserNav } from "./user-nav";
@@ -145,6 +154,7 @@ export function ConsoleSidebar(props: ConsoleSidebarProps) {
             pathname={pathname}
             organizations={props.organizations}
             products={railProducts}
+            settingsPaths={props.settingsPaths}
             user={props.user}
           />
           <div className="flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden">
@@ -152,7 +162,10 @@ export function ConsoleSidebar(props: ConsoleSidebarProps) {
               <SidebarWordmark href={envBase ?? `/${orgSlug}`} />
             </SidebarHeader>
             <SidebarContent className="relative" ref={panelRef}>
-              <ActiveIndicator {...panelIndicator} />
+              <ActiveIndicator
+                {...panelIndicator}
+                className={area.kind === "product" ? PRODUCT_WASH[area.product.key] : undefined}
+              />
               <Panel
                 area={area}
                 envBase={envBase}
@@ -193,6 +206,7 @@ function ProductRail(props: {
   organization: ShellOrganization & { role: string };
   organizations: ShellOrganization[];
   products: Product[];
+  settingsPaths: string[];
   user: ShellUser;
 }) {
   const { envBase, area } = props;
@@ -200,146 +214,216 @@ function ProductRail(props: {
   const railRef = useRef<HTMLDivElement>(null);
   const railIndicator = useActiveIndicator(railRef, pathname);
   return (
-    <div
-      className="relative flex w-(--sidebar-width-icon) shrink-0 flex-col items-center gap-2 py-2 max-md:w-14 max-md:border-e max-md:pt-3 group-data-[collapsible=icon]:py-0 border-sidebar-border md:border-e md:pe-px group-data-[collapsible=icon]:md:border-e-0"
-      ref={railRef}
-    >
-      <ActiveIndicator {...railIndicator} />
-      <OrganizationMenu current={props.organization} organizations={props.organizations} />
-      <SidebarMenu className="items-center gap-1">
-        {envBase ? (
+    <RailTooltip>
+      <div
+        className="relative flex w-(--sidebar-width-icon) shrink-0 flex-col items-center gap-2 py-2 max-md:w-14 max-md:border-e max-md:pt-3 group-data-[collapsible=icon]:py-0 border-sidebar-border md:border-e md:pe-px group-data-[collapsible=icon]:md:border-e-0"
+        ref={railRef}
+      >
+        <ActiveIndicator
+          {...railIndicator}
+          className={area.kind === "product" ? PRODUCT_WASH[area.product.key] : undefined}
+        />
+        <OrganizationMenu
+          current={props.organization}
+          organizations={props.organizations}
+          settingsPaths={props.settingsPaths}
+        />
+        <SidebarMenu className="items-center gap-1">
+          {envBase ? (
+            <>
+              <RailLink
+                active={area.kind === "home"}
+                href={envBase}
+                icon={HouseIcon}
+                label="Home"
+              />
+              <RailLink
+                active={area.kind === "catalog"}
+                href={`${envBase}/products`}
+                icon={LayoutGridIcon}
+                label="All products"
+              />
+            </>
+          ) : null}
+        </SidebarMenu>
+        {envBase && props.products.length > 0 ? (
           <>
-            <RailLink active={area.kind === "home"} href={envBase} icon={HouseIcon} label="Home" />
-            <RailLink
-              active={area.kind === "catalog"}
-              href={`${envBase}/products`}
-              icon={LayoutGridIcon}
-              label="All products"
-            />
+            <div aria-hidden className="h-px w-6 bg-sidebar-border" />
+            <SidebarMenu className="items-center gap-1">
+              {props.products.map((product) => (
+                <RailLink
+                  active={area.kind === "product" && area.product === product}
+                  activeClassName={PRODUCT_TEXT[product.key]}
+                  href={envBase + product.path}
+                  icon={PRODUCT_ICONS[product.key]}
+                  key={product.key}
+                  label={product.name}
+                />
+              ))}
+            </SidebarMenu>
           </>
         ) : null}
-      </SidebarMenu>
-      {envBase && props.products.length > 0 ? (
-        <>
-          <div aria-hidden className="h-px w-6 bg-sidebar-border" />
-          <SidebarMenu className="items-center gap-1">
-            {props.products.map((product) => (
-              <RailLink
-                active={area.kind === "product" && area.product === product}
-                href={envBase + product.path}
-                icon={PRODUCT_ICONS[product.key]}
-                key={product.key}
-                label={product.name}
-              />
-            ))}
-          </SidebarMenu>
-        </>
-      ) : null}
-      <SidebarMenu className="mt-auto items-center gap-1">
-        {envBase ? (
+        <SidebarMenu className="mt-auto items-center gap-1">
+          {envBase ? (
+            <RailLink
+              active={area.kind === "developers"}
+              href={envBase + DEVELOPERS.path}
+              icon={DEVELOPERS_ICON}
+              label="Developers"
+            />
+          ) : null}
           <RailLink
-            active={area.kind === "developers"}
-            href={envBase + DEVELOPERS.path}
-            icon={DEVELOPERS_ICON}
-            label="Developers"
+            active={area.kind === "organization"}
+            href={settingsHref(props.organization.slug)}
+            icon={ORGANIZATION_ICON}
+            label="Organization"
           />
-        ) : null}
-        <RailLink
-          active={area.kind === "organization"}
-          href={settingsHref(props.organization.slug)}
-          icon={ORGANIZATION_ICON}
-          label="Organization"
-        />
-        <RailLink icon={BookOpenIcon} label="Documentation" link={<a href="/docs" />} />
-      </SidebarMenu>
-      <UserNav compact user={props.user} />
-    </div>
+          <RailLink icon={BookOpenIcon} label="Documentation" link={<a href="/docs" />} />
+        </SidebarMenu>
+        <UserNav compact user={props.user} />
+      </div>
+    </RailTooltip>
   );
 }
 
 function RailLink(
-  props: { label: string; icon: LucideIcon; active?: boolean } & (
+  props: { label: string; icon: LucideIcon; active?: boolean; activeClassName?: string } & (
     | { href: string }
     /** Another zone of coss.com (the docs): a plain link. */
     | { link: ReactElement }
   ),
 ) {
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { setOpenMobile } = useSidebar();
   const navigate = useContext(Navigate);
   const Icon = props.icon;
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton
-        className="size-8 justify-center p-0 data-[active=true]:bg-transparent"
-        isActive={props.active}
+      <RailTooltipTrigger
+        label={props.label}
         render={
-          "link" in props ? (
-            props.link
-          ) : (
-            <Link
-              href={props.href}
-              onNavigate={() => {
-                setOpenMobile(false);
-                navigate(props.href);
-              }}
-            />
-          )
+          <SidebarMenuButton
+            className="size-8 justify-center p-0 data-[active=true]:bg-transparent"
+            isActive={props.active}
+            render={
+              "link" in props ? (
+                props.link
+              ) : (
+                <Link
+                  href={props.href}
+                  onNavigate={() => {
+                    setOpenMobile(false);
+                    navigate(props.href);
+                  }}
+                />
+              )
+            }
+          />
         }
-        tooltip={{ children: props.label, hidden: isMobile }}
       >
-        <Icon />
+        <Icon
+          className={cn(
+            "transition-[color,scale] duration-200 ease-out group-hover/menu-item:scale-110 group-active/menu-item:scale-95 motion-reduce:transition-none motion-reduce:group-hover/menu-item:scale-100",
+            props.active && props.activeClassName,
+          )}
+        />
         <span className="sr-only">{props.label}</span>
-      </SidebarMenuButton>
+      </RailTooltipTrigger>
     </SidebarMenuItem>
   );
 }
 
-/** The organization's initials at the top of the rail, opening the organization menu. */
+/** The organization at the top of the rail: who you are in it, its pages, and the others you're in. */
 function OrganizationMenu(props: {
   current: ShellOrganization & { role: string };
   organizations: ShellOrganization[];
+  settingsPaths: string[];
 }) {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const { current } = props;
+  const others = props.organizations.filter((org) => org.slug !== current.slug);
+  const settings = settingsHref(current.slug);
+  const shortcuts = [
+    { label: "Settings", path: "", icon: SettingsIcon },
+    { label: "Members", path: "/members", icon: UsersIcon },
+    { label: "Billing", path: "/billing", icon: CreditCardIcon },
+  ].filter((item) => props.settingsPaths.includes(item.path));
+  const close = () => setOpenMobile(false);
   return (
     <SidebarMenu className="items-center">
       <SidebarMenuItem>
         <Menu>
           <MenuTrigger
             render={
-              <SidebarMenuButton
-                className="size-8 justify-center p-0 data-popup-open:bg-sidebar-accent"
-                tooltip={{ children: props.current.name, hidden: isMobile }}
+              <RailTooltipTrigger
+                label={current.name}
+                render={
+                  <SidebarMenuButton className="size-8 justify-center p-0 data-popup-open:bg-sidebar-accent" />
+                }
               />
             }
           >
-            <Avatar className="size-7 rounded-lg bg-primary text-primary-foreground">
-              <AvatarFallback className="rounded-lg bg-transparent font-semibold text-xs">
-                {initials(props.current.name)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="sr-only">{props.current.name}</span>
+            <OrganizationAvatar logo={current.logo} name={current.name} />
+            <span className="sr-only">{current.name}</span>
           </MenuTrigger>
-          <MenuPopup align="start" className="min-w-60" side={isMobile ? "bottom" : "right"}>
-            <MenuGroup>
-              <MenuGroupLabel>Organizations</MenuGroupLabel>
-              {props.organizations.map((org) => (
-                <MenuLinkItem key={org.slug} render={<Link href={`/${org.slug}`} />}>
-                  <CheckIcon className={org.slug === props.current.slug ? "" : "invisible"} />
-                  <span className="min-w-0 flex-1 truncate">{org.name}</span>
-                  {org.slug === props.current.slug ? (
-                    <span className="ms-3 text-muted-foreground text-xs capitalize">
-                      {props.current.role}
-                    </span>
-                  ) : null}
-                </MenuLinkItem>
-              ))}
-            </MenuGroup>
+          <MenuPopup align="start" className="w-72" side={isMobile ? "bottom" : "right"}>
+            <div className="flex items-center gap-3 px-2 pt-1.5 pb-2.5">
+              <OrganizationAvatar
+                className="size-10 shrink-0 rounded-xl text-sm"
+                logo={current.logo}
+                name={current.name}
+              />
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate font-heading font-semibold text-base text-foreground">
+                  {current.name}
+                </span>
+                <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs">
+                  <span className="shrink-0">{roleLabel(current.role)}</span>
+                  <span aria-hidden>·</span>
+                  <span className="truncate font-mono">coss.com/{current.slug}</span>
+                </span>
+              </div>
+            </div>
             <MenuSeparator />
-            <MenuLinkItem render={<Link href={settingsHref(props.current.slug)} />}>
-              <ORGANIZATION_ICON />
-              Organization settings
-            </MenuLinkItem>
-            <MenuLinkItem render={<Link href="/onboarding" />}>
+            {shortcuts.map((item) => (
+              <MenuLinkItem
+                key={item.label}
+                render={<Link href={settings + item.path} onNavigate={close} />}
+              >
+                <item.icon />
+                {item.label}
+              </MenuLinkItem>
+            ))}
+            {others.length > 0 ? (
+              <>
+                <MenuSeparator />
+                <MenuGroup>
+                  <MenuGroupLabel>Switch organization</MenuGroupLabel>
+                  {others.map((org) => (
+                    <MenuLinkItem
+                      key={org.slug}
+                      render={<Link href={`/${org.slug}`} onNavigate={close} />}
+                    >
+                      <OrganizationAvatar
+                        className="size-6 shrink-0 rounded-md text-[0.625rem]"
+                        logo={org.logo}
+                        name={org.name}
+                      />
+                      <span className="min-w-0 flex-1 truncate">{org.name}</span>
+                      {org.role ? (
+                        <span className="ms-3 text-muted-foreground text-xs">
+                          {roleLabel(org.role)}
+                        </span>
+                      ) : null}
+                    </MenuLinkItem>
+                  ))}
+                </MenuGroup>
+              </>
+            ) : null}
+            <MenuSeparator />
+            <MenuLinkItem
+              className="text-muted-foreground"
+              render={<Link href="/onboarding" onNavigate={close} />}
+            >
               <PlusIcon />
               New organization
             </MenuLinkItem>
@@ -348,6 +432,12 @@ function OrganizationMenu(props: {
       </SidebarMenuItem>
     </SidebarMenu>
   );
+}
+
+/** `owner` → "Owner"; a member with several roles is named by the first. */
+function roleLabel(role: string): string {
+  const first = role.split(",")[0]?.trim() ?? "";
+  return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
 function Panel(props: {
@@ -388,6 +478,7 @@ function Panel(props: {
     const section: DashboardSection = area.kind === "product" ? area.product : DEVELOPERS;
     const active = activeNavItem(props.pathname, envBase, section.pages);
     const own = section.pages.filter((page) => !page.shared);
+    const tint = area.kind === "product" ? PRODUCT_ACTIVE_TEXT[area.product.key] : undefined;
     const shared = section.pages.filter((page) => page.shared);
     return (
       <>
@@ -404,10 +495,17 @@ function Panel(props: {
           }
           icon={area.kind === "product" ? PRODUCT_ICONS[area.product.key] : DEVELOPERS_ICON}
           title={section.name}
+          tone={area.kind === "product" ? area.product.key : "neutral"}
         />
-        <PageGroup active={active} base={envBase} pages={own} />
+        <PageGroup activeClassName={tint} active={active} base={envBase} pages={own} />
         {shared.length > 0 ? (
-          <PageGroup active={active} base={envBase} label="Shared across projects" pages={shared} />
+          <PageGroup
+            activeClassName={tint}
+            active={active}
+            base={envBase}
+            label="Shared across projects"
+            pages={shared}
+          />
         ) : null}
       </>
     );
@@ -432,6 +530,7 @@ function Panel(props: {
             <PanelLink
               href={envBase + product.path}
               icon={PRODUCT_ICONS[product.key]}
+              iconClassName={PRODUCT_TEXT[product.key]}
               key={product.key}
               label={product.name}
             />
@@ -450,11 +549,15 @@ function Panel(props: {
   );
 }
 
-function PanelTitle(props: { icon: LucideIcon; title: string; action?: ReactNode }) {
-  const Icon = props.icon;
+function PanelTitle(props: {
+  icon: LucideIcon;
+  title: string;
+  tone?: GlyphTone;
+  action?: ReactNode;
+}) {
   return (
-    <div className="flex h-9 items-center gap-2 px-4 pt-1">
-      <Icon className="size-4 shrink-0 text-muted-foreground" />
+    <div className="flex h-10 items-center gap-2.5 px-3 pt-1">
+      <ProductGlyph icon={props.icon} tone={props.tone ?? "neutral"} />
       <h2 className="min-w-0 flex-1 truncate font-heading font-semibold text-base text-foreground">
         {props.title}
       </h2>
@@ -479,12 +582,15 @@ function PageGroup<T extends DashboardPage>(props: {
   base: string;
   pages: readonly T[];
   active: T | undefined;
+  /** Classes of the open page's link (a product's colour). */
+  activeClassName?: string;
 }) {
   return (
     <PanelGroup label={props.label}>
       {props.pages.map((page) => (
         <PanelLink
           active={page === props.active}
+          className={props.activeClassName}
           href={props.base + page.path}
           key={page.path}
           label={page.label}
@@ -494,14 +600,21 @@ function PageGroup<T extends DashboardPage>(props: {
   );
 }
 
-function PanelLink(props: { href: string; label: string; icon?: LucideIcon; active?: boolean }) {
+function PanelLink(props: {
+  href: string;
+  label: string;
+  icon?: LucideIcon;
+  iconClassName?: string;
+  className?: string;
+  active?: boolean;
+}) {
   const { setOpenMobile } = useSidebar();
   const navigate = useContext(Navigate);
   const Icon = props.icon;
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        className={cn("data-[active=true]:bg-transparent", !Icon && "ps-3")}
+        className={cn("data-[active=true]:bg-transparent", !Icon && "ps-3", props.className)}
         isActive={props.active}
         render={
           <Link
@@ -513,7 +626,7 @@ function PanelLink(props: { href: string; label: string; icon?: LucideIcon; acti
           />
         }
       >
-        {Icon ? <Icon /> : null}
+        {Icon ? <Icon className={props.iconClassName} /> : null}
         <span>{props.label}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>

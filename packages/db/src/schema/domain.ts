@@ -3850,3 +3850,32 @@ export const productPreference = pgTable(
   },
   (t) => [unique("product_preference_member_unique").on(t.organizationId, t.userId, t.product)],
 );
+
+const logoBytes = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+
+export const organizationLogoStatus = pgEnum("organization_logo_status", [
+  "found",
+  "not_found",
+  "hidden",
+]);
+
+// The organization's logo, found on its own website by the worker (`@coss/tenancy/logos`).
+export const organizationLogo = pgTable("organization_logo", {
+  organizationId: text("organization_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  status: organizationLogoStatus("status").notNull(),
+  domain: text("domain"),
+  sourceUrl: text("source_url"),
+  contentType: text("content_type"),
+  image: logoBytes("image"),
+  sha256: text("sha256"),
+  width: integer("width"),
+  height: integer("height"),
+  failures: integer("failures").notNull().default(0),
+  checkedAt: timestamp("checked_at", { withTimezone: true }),
+  // Null: never again (hidden by the organization).
+  nextCheckAt: timestamp("next_check_at", { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});

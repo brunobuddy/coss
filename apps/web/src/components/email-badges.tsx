@@ -20,7 +20,8 @@ export function EmailStatusBadge({ status }: { status: EmailObjectOutput["status
   return <Badge variant={STATUS_VARIANT[status]}>{status}</Badge>;
 }
 
-const STATUS_TONE = {
+/** Each email status's dot colour, shared by badges, tables and the status filter. */
+export const EMAIL_STATUS_TONE = {
   queued: "neutral",
   sent: "success",
   failed: "error",
@@ -39,7 +40,7 @@ const STATUS_LABEL = {
 /** An email's status as a dot and label, for dense lists. */
 export function EmailStatusDot({ status }: { status: EmailObjectOutput["status"] }) {
   return (
-    <StatusDot pulse={status === "queued"} tone={STATUS_TONE[status]}>
+    <StatusDot pulse={status === "queued"} tone={EMAIL_STATUS_TONE[status]}>
       {STATUS_LABEL[status]}
     </StatusDot>
   );

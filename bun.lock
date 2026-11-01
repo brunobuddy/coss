@@ -867,6 +867,7 @@
         "@coss/dashboard-routes": "workspace:*",
         "@coss/db": "workspace:*",
         "@coss/retention": "workspace:*",
+        "@coss/signals": "workspace:*",
         "@coss/versioning": "workspace:*",
         "better-auth": "catalog:",
         "drizzle-orm": "catalog:",

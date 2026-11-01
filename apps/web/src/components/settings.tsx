@@ -65,6 +65,8 @@ export function SettingsSection(props: {
 export function SettingsRow(props: {
   label: ReactNode;
   description?: ReactNode;
+  /** Shown before the label and description (an avatar, a logo). */
+  media?: ReactNode;
   stacked?: boolean;
   children?: ReactNode;
   className?: string;
@@ -91,13 +93,16 @@ export function SettingsRow(props: {
         props.className,
       )}
     >
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <div className="flex items-center gap-2 font-medium text-sm">{props.label}</div>
-        {props.description ? (
-          <div className="max-w-md text-pretty text-muted-foreground text-sm">
-            {props.description}
-          </div>
-        ) : null}
+      <div className="flex min-w-0 items-center gap-4">
+        {props.media}
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex items-center gap-2 font-medium text-sm">{props.label}</div>
+          {props.description ? (
+            <div className="max-w-md text-pretty text-muted-foreground text-sm">
+              {props.description}
+            </div>
+          ) : null}
+        </div>
       </div>
       {props.children ? (
         <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 text-sm">

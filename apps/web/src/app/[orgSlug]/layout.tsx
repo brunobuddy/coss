@@ -1,7 +1,7 @@
 import { listBudgetHolds } from "@coss/billing";
 import { orgLinkHref, type ProductKey, settingsHref } from "@coss/dashboard-routes";
 import { getReputationStanding } from "@coss/reputation";
-import { listUserOrganizations } from "@coss/tenancy";
+import { listUserOrganizations, organizationLogoVersions } from "@coss/tenancy";
 import { Alert, AlertDescription } from "@coss/ui/components/alert";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -42,14 +42,24 @@ export default async function OrganizationLayout({ children, params }: LayoutPro
     productPreferences(organization.id, session.user.id),
     cookies(),
   ]);
+  const logos = await organizationLogoVersions(organizations.map((org) => org.id));
+  const logoOf = (org: { id: string; slug: string }) => {
+    const version = logos.get(org.id);
+    return version ? `/${org.slug}/settings/logo?v=${version}` : null;
+  };
   // The member's own personal keys over their budget (billing readers see every budget on Spend).
   const ownBudgetPaused = budgetHolds.some(
     (hold) => hold.scope === "user" && hold.targetId === session.user.id,
   );
   const base = `/${organization.slug}`;
   const projects = toShellProjects(projectRows);
-  const orgs = organizations.map((org) => ({ name: org.name, slug: org.slug }));
-  const current = { name: organization.name, slug: organization.slug };
+  const orgs = organizations.map((org) => ({
+    name: org.name,
+    slug: org.slug,
+    logo: logoOf(org),
+    role: org.role,
+  }));
+  const current = { name: organization.name, slug: organization.slug, logo: logoOf(organization) };
   const user = {
     name: session.user.name,
     email: session.user.email,
