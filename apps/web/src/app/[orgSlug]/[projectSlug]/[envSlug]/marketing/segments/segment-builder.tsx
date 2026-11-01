@@ -22,8 +22,9 @@ import {
   SelectValue,
 } from "@coss/ui/components/select";
 import { Textarea } from "@coss/ui/components/textarea";
-import { PlusIcon, XIcon } from "lucide-react";
+import { FilterIcon, PlusIcon, XIcon } from "lucide-react";
 import { useActionState, useMemo, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import { deleteSegmentAction, previewSegmentAction, saveSegmentAction } from "./actions";
@@ -493,6 +494,7 @@ export function DeleteSegmentButton(
           <TargetInputs {...props} />
           <input name="segmentId" type="hidden" value={props.segmentId} />
           <AlertDialogHeader>
+            <DialogIcon icon={FilterIcon} tone="danger" />
             <AlertDialogTitle>Delete “{props.name}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Its contacts stay; only the filter goes.

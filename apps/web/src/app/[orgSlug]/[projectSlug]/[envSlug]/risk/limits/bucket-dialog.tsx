@@ -32,7 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { GaugeIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { deleteRiskLimitBucketAction, saveRiskLimitBucketAction } from "../actions";
@@ -102,6 +104,7 @@ function BucketForm(props: Target & { bucket?: RiskLimitBucketOutput; onDone: ()
     <form action={formAction} className="contents">
       <Hidden {...props} bucketId={bucket?.id} />
       <DialogHeader>
+        <DialogIcon icon={GaugeIcon} />
         <DialogTitle>{bucket ? `Edit ${bucket.name}` : "New rate limit bucket"}</DialogTitle>
         <DialogDescription>
           Each key you check against it gets its own bucket of tokens, refilling at the rate.
@@ -214,6 +217,7 @@ export function DeleteBucketButton(props: Target & { bucketId: string; name: str
         <form action={formAction} className="contents">
           <Hidden {...props} />
           <AlertDialogHeader>
+            <DialogIcon icon={GaugeIcon} tone="danger" />
             <AlertDialogTitle>Delete “{props.name}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Checks naming it fail with a 404 until you create it again, which starts every key

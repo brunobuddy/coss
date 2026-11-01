@@ -34,9 +34,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
-import { PlusIcon } from "lucide-react";
+import { KeyRoundIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { createApiKeyAction } from "./actions";
@@ -84,6 +85,7 @@ function CreateApiKeyForm(props: FormProps) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={KeyRoundIcon} />
           <DialogTitle>Save your API key</DialogTitle>
           <DialogDescription>
             Copy “{state.data.name}” now. For security it won't be shown again.
@@ -111,6 +113,7 @@ function CreateApiKeyForm(props: FormProps) {
       <input name="projectSlug" type="hidden" value={props.projectSlug} />
       <input name="envSlug" type="hidden" value={props.envSlug} />
       <DialogHeader>
+        <DialogIcon icon={KeyRoundIcon} />
         <DialogTitle>Create API key</DialogTitle>
         <DialogDescription>
           The key only works in the {props.environmentName} environment.

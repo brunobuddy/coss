@@ -14,7 +14,9 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { CalendarClockIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { rescheduleEmailAction } from "./actions";
@@ -72,6 +74,7 @@ function RescheduleEmailForm(props: Target & { onDone: () => void }) {
       <input name="envSlug" type="hidden" value={props.envSlug} />
       <input name="emailId" type="hidden" value={props.emailId} />
       <DialogHeader>
+        <DialogIcon icon={CalendarClockIcon} />
         <DialogTitle>Reschedule this email</DialogTitle>
         <DialogDescription>
           Choose when to send it instead, at most 30 days from now. The domain and the suppression

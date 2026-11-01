@@ -14,6 +14,8 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { FileUpIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { type ImportSuppressionsResult, importSuppressionsAction } from "./actions";
@@ -41,6 +43,7 @@ function ImportSummary({ result }: { result: ImportSuppressionsResult }) {
   return (
     <>
       <DialogHeader>
+        <DialogIcon icon={FileUpIcon} />
         <DialogTitle>Import finished</DialogTitle>
         <DialogDescription>
           {plural(result.created, "address", "addresses")} added
@@ -89,6 +92,7 @@ function ImportSuppressionsForm(props: Target) {
       <input name="projectSlug" type="hidden" value={props.projectSlug} />
       <input name="envSlug" type="hidden" value={props.envSlug} />
       <DialogHeader>
+        <DialogIcon icon={FileUpIcon} />
         <DialogTitle>Import suppressions</DialogTitle>
         <DialogDescription>
           Upload a CSV with an <code>address</code> (or <code>email</code>) column and an optional{" "}

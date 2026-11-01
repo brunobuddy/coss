@@ -118,6 +118,7 @@ export default async function AdminDeploysPage() {
               seconds={active ? DEPLOY_REFRESH_SECONDS.active : DEPLOY_REFRESH_SECONDS.idle}
             />
             <AdminActionDialog
+              icon="deploy"
               action={deployNowAction}
               description={
                 waiting > 0

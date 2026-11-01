@@ -24,7 +24,9 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { MousePointerClickIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -77,6 +79,7 @@ function AddTrackingDomainForm(props: Target & { domainName: string; onDone: () 
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={MousePointerClickIcon} />
         <DialogTitle>Add a tracking domain</DialogTitle>
         <DialogDescription>
           Open and click tracking links in emails from {props.domainName} will use this hostname
@@ -150,6 +153,7 @@ export function RemoveTrackingDomainButton(props: Target & { hostname: string })
         <form action={formAction} className="contents">
           <TargetInputs {...props} />
           <AlertDialogHeader>
+            <DialogIcon icon={MousePointerClickIcon} tone="danger" />
             <AlertDialogTitle>Remove {props.hostname}?</AlertDialogTitle>
             <AlertDialogDescription>
               New emails will use coss.com&apos;s tracking host. Tracked links and open pixels in

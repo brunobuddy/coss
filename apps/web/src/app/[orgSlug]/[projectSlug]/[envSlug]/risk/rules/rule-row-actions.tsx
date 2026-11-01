@@ -11,6 +11,8 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { ListChecksIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { deleteRiskRuleAction, toggleRiskRuleAction } from "../actions";
@@ -58,6 +60,7 @@ export function DeleteRuleButton(props: Target & { name: string }) {
         <form action={formAction} className="contents">
           <Hidden {...props} />
           <AlertDialogHeader>
+            <DialogIcon icon={ListChecksIcon} tone="danger" />
             <AlertDialogTitle>Delete “{props.name}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Later assessments are no longer decided by this rule.

@@ -18,7 +18,9 @@ import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import { Textarea } from "@coss/ui/components/textarea";
+import { GaugeIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/panel";
 import type { ActionResult } from "@/lib/action-result";
@@ -76,6 +78,7 @@ function NoteForm(props: NoteDialogProps & { onDone: () => void }) {
     <form action={formAction} className="contents">
       <input name="organizationId" type="hidden" value={props.organizationId} />
       <DialogHeader>
+        <DialogIcon icon={GaugeIcon} tone={props.destructive ? "danger" : undefined} />
         <DialogTitle>{props.title}</DialogTitle>
         <DialogDescription>{props.description}</DialogDescription>
       </DialogHeader>

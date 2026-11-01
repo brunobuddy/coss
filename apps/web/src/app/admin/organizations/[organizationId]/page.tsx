@@ -193,6 +193,7 @@ export default async function AdminOrganizationPage({
           <PanelAction className="flex flex-wrap gap-2">
             {suspension ? (
               <AdminActionDialog
+                icon="organization"
                 action={unsuspendOrganizationAction}
                 description="API keys that weren't revoked work again immediately and held webhook deliveries resume. Members banned by a takedown stay banned, and revoked keys stay revoked."
                 fields={fields}
@@ -204,6 +205,7 @@ export default async function AdminOrganizationPage({
               />
             ) : isSystem ? null : (
               <AdminActionDialog
+                icon="organization"
                 action={suspendOrganizationAction}
                 description="Every API key is refused (403 organization_suspended), webhook deliveries are held, and members can only view the dashboard. Nothing is revoked or banned, and nothing is reported: use it while you investigate, or for a legal or billing hold."
                 destructive
@@ -218,6 +220,7 @@ export default async function AdminOrganizationPage({
             )}
             {isSystem || deletion ? null : (
               <AdminActionDialog
+                icon="organization"
                 action={takeDownOrganizationAction}
                 description={
                   <>
@@ -425,6 +428,7 @@ export default async function AdminOrganizationPage({
             <PanelAction className="flex flex-wrap gap-2">
               {sso.requireSso ? (
                 <AdminActionDialog
+                  icon="sso"
                   action={disableOrganizationSsoRequirementAction}
                   description="Members can open the organization with any sign-in method again. SSO keeps working for those who can use it; the organization's owners can require it again."
                   fields={fields}
@@ -438,6 +442,7 @@ export default async function AdminOrganizationPage({
               ) : null}
               {sso.domainVerified ? (
                 <AdminActionDialog
+                  icon="sso"
                   action={disableOrganizationSsoAction}
                   description="Nobody can sign in through this provider, and the SSO requirement is turned off. Its configuration is kept: saving it again in the organization's settings turns it back on."
                   destructive
@@ -473,6 +478,7 @@ export default async function AdminOrganizationPage({
           {scim ? (
             <PanelAction>
               <AdminActionDialog
+                icon="directory"
                 action={disableOrganizationScimAction}
                 description="Every token of the organization's directory stops working and SSO no longer requires an active directory user. Members it provisioned stay. The organization's admins can connect a directory again."
                 destructive
@@ -565,6 +571,7 @@ export default async function AdminOrganizationPage({
                   </TableCell>
                   <TableCell className="text-right">
                     <AdminActionDialog
+                      icon="apiKey"
                       action={revokeApiKeyAction}
                       description="Requests using this key are rejected immediately. This can't be undone; the organization can create a new key."
                       destructive
@@ -670,6 +677,7 @@ export default async function AdminOrganizationPage({
                   <TableCell className="text-right">
                     <span className="inline-flex gap-2">
                       <AdminActionDialog
+                        icon="rateLimit"
                         action={setRateLimitOverrideAction}
                         description={
                           bucket === "email.recipients.second"
@@ -718,6 +726,7 @@ export default async function AdminOrganizationPage({
                       </AdminActionDialog>
                       {override ? (
                         <AdminActionDialog
+                          icon="rateLimit"
                           action={resetRateLimitOverrideAction}
                           description={`Back to ${describeRule(BUCKETS[bucket])}, within a minute.`}
                           fields={{ ...fields, bucket }}
@@ -748,6 +757,7 @@ export default async function AdminOrganizationPage({
             </PanelDescription>
             <PanelAction>
               <AdminActionDialog
+                icon="organization"
                 action={deleteOrganizationAdminAction}
                 description="This can't be undone. Its domains become available to other organizations once they are released."
                 destructive

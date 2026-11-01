@@ -16,8 +16,10 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Label } from "@coss/ui/components/label";
 import { Textarea } from "@coss/ui/components/textarea";
+import { FlagIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AbuseCategoryField } from "@/components/admin/abuse-category-field";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { type ReportAbuseResult, reportAbuseAction } from "./actions";
@@ -93,6 +95,7 @@ function ReportAbuseForm(props: Props & { canTakeDown: boolean; onDone: () => vo
       ) : null}
       {props.user ? <input name="userId" type="hidden" value={props.user.id} /> : null}
       <DialogHeader>
+        <DialogIcon icon={FlagIcon} tone="danger" />
         <DialogTitle>{takeDown ? `Take down ${who}?` : `Report ${who}?`}</DialogTitle>
         <DialogDescription>
           {props.signUpsAssessed

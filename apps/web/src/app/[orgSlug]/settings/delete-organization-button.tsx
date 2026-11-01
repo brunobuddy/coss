@@ -13,7 +13,9 @@ import {
 import { Button } from "@coss/ui/components/button";
 import { Field, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { BuildingIcon } from "lucide-react";
 import { useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { deleteOrganizationAction } from "./actions";
@@ -38,6 +40,7 @@ export function DeleteOrganizationButton(props: { orgSlug: string; orgName: stri
         <form action={formAction} className="contents">
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <AlertDialogHeader>
+            <DialogIcon icon={BuildingIcon} tone="danger" />
             <AlertDialogTitle>Delete {props.orgName}?</AlertDialogTitle>
             <AlertDialogDescription>
               Every member loses access, every API key stops working and scheduled emails are

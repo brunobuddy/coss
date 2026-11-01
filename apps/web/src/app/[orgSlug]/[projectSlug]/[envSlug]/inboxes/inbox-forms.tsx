@@ -34,8 +34,10 @@ import {
   SelectValue,
 } from "@coss/ui/components/select";
 import { Textarea } from "@coss/ui/components/textarea";
+import { BotIcon, MessagesSquareIcon } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useEffect, useRef } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -81,6 +83,7 @@ function CreateInboxForm(props: EnvTarget & { domains: { value: string; label: s
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={BotIcon} />
           <DialogTitle>Inbox created</DialogTitle>
           <DialogDescription>
             Mail to it shows up as threads, and each message sends an inbox.message.received
@@ -106,6 +109,7 @@ function CreateInboxForm(props: EnvTarget & { domains: { value: string; label: s
     <form action={formAction} className="contents">
       <Hidden {...target} />
       <DialogHeader>
+        <DialogIcon icon={BotIcon} />
         <DialogTitle>Create an inbox</DialogTitle>
         <DialogDescription>
           An email address for an agent (or anyone): mail to it is kept as threads, and replies go
@@ -186,6 +190,7 @@ function RenameInboxForm(props: InboxTarget & { displayName: string | null }) {
     <form action={formAction} className="contents">
       <Hidden {...target} />
       <DialogHeader>
+        <DialogIcon icon={BotIcon} />
         <DialogTitle>Rename the inbox</DialogTitle>
         <DialogDescription>
           The name messages are sent with. Its address never changes.
@@ -228,6 +233,7 @@ export function DeleteInboxButton(props: InboxTarget & { address: string }) {
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={BotIcon} tone="danger" />
             <AlertDialogTitle>Delete {address}?</AlertDialogTitle>
             <AlertDialogDescription>
               Its threads are deleted. Their emails stay in the environment until their retention
@@ -261,6 +267,7 @@ export function DeleteThreadButton(props: InboxTarget & { threadId: string }) {
         <form action={formAction} className="contents">
           <Hidden {...props} />
           <AlertDialogHeader>
+            <DialogIcon icon={MessagesSquareIcon} tone="danger" />
             <AlertDialogTitle>Delete this thread?</AlertDialogTitle>
             <AlertDialogDescription>
               The conversation leaves the inbox; a later reply starts a new thread. Its emails stay

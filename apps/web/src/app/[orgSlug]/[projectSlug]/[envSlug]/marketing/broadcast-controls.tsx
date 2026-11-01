@@ -24,7 +24,9 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { MegaphoneIcon, SendIcon } from "lucide-react";
 import { useActionState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import {
@@ -69,6 +71,7 @@ function SendForm(props: Target & { estimate: number | null }) {
     <form action={formAction} className="contents">
       <Hidden {...props} />
       <DialogHeader>
+        <DialogIcon icon={SendIcon} />
         <DialogTitle>Send “{props.name}”</DialogTitle>
         <DialogDescription>
           {props.estimate === null
@@ -117,6 +120,7 @@ function TestForm(props: Target) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={SendIcon} />
           <DialogTitle>Test sent</DialogTitle>
           <DialogDescription>
             {state.data.count === 1 ? "One test email is" : `${state.data.count} test emails are`}{" "}
@@ -133,6 +137,7 @@ function TestForm(props: Target) {
     <form action={formAction} className="contents">
       <Hidden {...props} />
       <DialogHeader>
+        <DialogIcon icon={SendIcon} />
         <DialogTitle>Send a test</DialogTitle>
         <DialogDescription>
           Its content, with “[Test]” before the subject. Test emails count like any send.
@@ -189,6 +194,7 @@ export function CancelBroadcastButton(props: Target) {
           <Hidden {...props} />
           <input name="change" type="hidden" value="cancel" />
           <AlertDialogHeader>
+            <DialogIcon icon={MegaphoneIcon} tone="danger" />
             <AlertDialogTitle>Cancel “{props.name}”?</AlertDialogTitle>
             <AlertDialogDescription>
               It stops for good: emails not yet handed to the provider are dropped. Emails already
@@ -221,6 +227,7 @@ export function DeleteBroadcastButton(props: Target) {
         <form action={formAction} className="contents">
           <Hidden {...props} />
           <AlertDialogHeader>
+            <DialogIcon icon={MegaphoneIcon} tone="danger" />
             <AlertDialogTitle>Delete “{props.name}”?</AlertDialogTitle>
             <AlertDialogDescription>The draft is removed for good.</AlertDialogDescription>
           </AlertDialogHeader>

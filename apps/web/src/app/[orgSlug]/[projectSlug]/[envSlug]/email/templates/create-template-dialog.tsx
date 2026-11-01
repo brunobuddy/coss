@@ -14,7 +14,9 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { LayoutTemplateIcon } from "lucide-react";
 import { useActionState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { createTemplateAction } from "./actions";
 
@@ -40,6 +42,7 @@ function CreateTemplateForm(props: Target) {
       <input name="projectSlug" type="hidden" value={props.projectSlug} />
       <input name="envSlug" type="hidden" value={props.envSlug} />
       <DialogHeader>
+        <DialogIcon icon={LayoutTemplateIcon} />
         <DialogTitle>New template</DialogTitle>
         <DialogDescription>
           It starts with an English draft to edit. Sends use it once you publish it.

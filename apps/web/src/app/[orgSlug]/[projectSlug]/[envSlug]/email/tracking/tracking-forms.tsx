@@ -26,7 +26,9 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
+import { MousePointerClickIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { deleteTrackingRuleAction, saveTrackingRuleAction } from "./actions";
@@ -152,6 +154,7 @@ function CategoryRuleForm(
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={MousePointerClickIcon} />
         <DialogTitle>
           {editing ? `Tracking for “${props.category}”` : "Add a category rule"}
         </DialogTitle>
@@ -208,6 +211,7 @@ export function DeleteTrackingRuleButton(
           <TargetInputs {...props} />
           <input name="ruleId" type="hidden" value={props.ruleId} />
           <AlertDialogHeader>
+            <DialogIcon icon={MousePointerClickIcon} tone="danger" />
             <AlertDialogTitle>
               {isDefault ? "Reset the default?" : `Remove the “${props.category}” rule?`}
             </AlertDialogTitle>

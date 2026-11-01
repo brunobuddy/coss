@@ -27,6 +27,8 @@ import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
 import { Textarea } from "@coss/ui/components/textarea";
+import { LayoutTemplateIcon, SignatureIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -92,6 +94,7 @@ export function CancelRequestButton(props: EnvTarget & { requestId: string; titl
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={SignatureIcon} tone="danger" />
             <AlertDialogTitle>Cancel “{title}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Nobody can sign it after this. Signers who already signed keep nothing new.
@@ -124,6 +127,7 @@ export function DeleteRequestButton(props: EnvTarget & { requestId: string; titl
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={SignatureIcon} tone="danger" />
             <AlertDialogTitle>Delete “{title}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Its signers, audit trail, signatures and signed document are deleted for good.
@@ -155,6 +159,7 @@ export function NewTemplateButton(props: EnvTarget) {
         <form action={formAction} className="contents">
           <Hidden {...props} />
           <DialogHeader>
+            <DialogIcon icon={LayoutTemplateIcon} />
             <DialogTitle>New template</DialogTitle>
             <DialogDescription>
               Then open it in the builder (a new tab) to add PDFs, signers and fields.
@@ -213,6 +218,7 @@ export function DeleteTemplateButton(props: EnvTarget & { templateId: string; na
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={LayoutTemplateIcon} tone="danger" />
             <AlertDialogTitle>Delete “{name}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Requests made from it stay, and so do its documents.

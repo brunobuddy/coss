@@ -36,8 +36,16 @@ import {
   SelectValue,
 } from "@coss/ui/components/select";
 import { Textarea } from "@coss/ui/components/textarea";
-import { ArrowDownIcon, ArrowUpIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ClipboardListIcon,
+  FileTextIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -72,6 +80,7 @@ export function NewFormDialog(props: EnvTarget) {
         <form action={formAction} className="contents">
           <Hidden {...props} />
           <DialogHeader>
+            <DialogIcon icon={ClipboardListIcon} />
             <DialogTitle>New form</DialogTitle>
             <DialogDescription>
               An endpoint your site's forms post to. Add fields and a hosted page next, or post any
@@ -111,6 +120,7 @@ export function DeleteFormButton(props: EnvTarget & { formId: string; name: stri
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={ClipboardListIcon} tone="danger" />
             <AlertDialogTitle>Delete {name}?</AlertDialogTitle>
             <AlertDialogDescription>
               Every submission and uploaded file goes with it, and its endpoint stops accepting
@@ -160,6 +170,7 @@ export function DeleteSubmissionButton(
         <form action={formAction} className="contents">
           <Hidden {...props} />
           <AlertDialogHeader>
+            <DialogIcon icon={FileTextIcon} tone="danger" />
             <AlertDialogTitle>Delete this submission?</AlertDialogTitle>
             <AlertDialogDescription>
               Its data and files are deleted. Webhooks and emails already sent aren't recalled.

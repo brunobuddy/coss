@@ -26,8 +26,10 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import type { LogDrainFormat } from "@coss/webhooks/schemas";
+import { ArrowDownToLineIcon } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -81,6 +83,7 @@ export function ToggleDrainButton(props: Target & { enabled: boolean }) {
           <TargetInputs {...props} />
           <input name="enabled" type="hidden" value="false" />
           <AlertDialogHeader>
+            <DialogIcon icon={ArrowDownToLineIcon} tone="danger" />
             <AlertDialogTitle>Disable this log drain?</AlertDialogTitle>
             <AlertDialogDescription>
               Lines still waiting to be sent are dropped, and nothing is kept for the drain while it
@@ -125,6 +128,7 @@ function EditSourcesForm(props: Target & { sources: LogDrainSource[]; onSaved: (
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={ArrowDownToLineIcon} />
         <DialogTitle>Sources</DialogTitle>
         <DialogDescription>
           The kinds of lines this drain receives. With every source checked, it also receives
@@ -172,6 +176,7 @@ function EditDeliveryForm(props: Target & Delivery & { onSaved: () => void }) {
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={ArrowDownToLineIcon} />
         <DialogTitle>Delivery</DialogTitle>
         <DialogDescription>
           Where batches go and how they are encoded. A batch being retried goes out with the new
@@ -216,6 +221,7 @@ export function DeleteDrainButton(props: Target & { url: string }) {
         <form action={formAction} className="contents">
           <TargetInputs {...props} />
           <AlertDialogHeader>
+            <DialogIcon icon={ArrowDownToLineIcon} tone="danger" />
             <AlertDialogTitle>Delete this log drain?</AlertDialogTitle>
             <AlertDialogDescription>
               {props.url} will stop receiving logs, and lines still waiting for it are dropped. This

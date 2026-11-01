@@ -19,9 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
-import { PlusIcon, XIcon } from "lucide-react";
+import { FolderSyncIcon, KeyIcon, PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { SettingsFooter, SettingsNote, SettingsRow } from "@/components/settings";
 import { useActionToast } from "@/lib/toast";
@@ -174,6 +175,7 @@ export function RevokeScimTokenButton(props: { orgSlug: string; credentialId: st
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <input name="credentialId" type="hidden" value={props.credentialId} />
           <AlertDialogHeader>
+            <DialogIcon icon={KeyIcon} tone="danger" />
             <AlertDialogTitle>Revoke this token?</AlertDialogTitle>
             <AlertDialogDescription>
               Your identity provider stops syncing until it uses another token.
@@ -231,6 +233,7 @@ function DisconnectScimButton(props: { orgSlug: string; resume: boolean }) {
           <form action={formAction} className="contents">
             <input name="orgSlug" type="hidden" value={props.orgSlug} />
             <AlertDialogHeader>
+              <DialogIcon icon={FolderSyncIcon} tone="danger" />
               <AlertDialogTitle>Disconnect the directory?</AlertDialogTitle>
               <AlertDialogDescription>
                 Every token stops working at once. Members the directory added stay, as ordinary

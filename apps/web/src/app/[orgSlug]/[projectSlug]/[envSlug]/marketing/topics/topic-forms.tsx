@@ -31,7 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { TagIcon } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import { deleteTopicAction, saveTopicAction } from "./actions";
@@ -103,6 +105,7 @@ function TopicForm(props: MarketingFormTarget & { topic?: TopicValues; onDone: (
       <TargetInputs {...props} />
       {topic ? <input name="topicId" type="hidden" value={topic.id} /> : null}
       <DialogHeader>
+        <DialogIcon icon={TagIcon} />
         <DialogTitle>{topic ? `Edit “${topic.name}”` : "New topic"}</DialogTitle>
         <DialogDescription>
           Emails sent with <code>category</code> equal to the topic's key are about it: contacts who
@@ -175,6 +178,7 @@ export function DeleteTopicButton(props: MarketingFormTarget & { topicId: string
           <TargetInputs {...props} />
           <input name="topicId" type="hidden" value={props.topicId} />
           <AlertDialogHeader>
+            <DialogIcon icon={TagIcon} tone="danger" />
             <AlertDialogTitle>Delete “{props.name}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Every contact's choice for it is forgotten. Emails with its category are then sent

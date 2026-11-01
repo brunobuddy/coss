@@ -33,7 +33,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { GaugeIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { deleteBudgetAction, setBudgetAction } from "./actions";
@@ -96,6 +98,7 @@ function BudgetForm(props: Parameters<typeof BudgetDialog>[0] & { onDone: () => 
       {props.targetId ? <input name="targetId" type="hidden" value={props.targetId} /> : null}
       <input name="exempt" type="hidden" value={String(exempt)} />
       <DialogHeader>
+        <DialogIcon icon={GaugeIcon} />
         <DialogTitle>{props.title}</DialogTitle>
         <DialogDescription>{props.description}</DialogDescription>
       </DialogHeader>
@@ -181,6 +184,7 @@ export function RemoveBudgetButton(props: {
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <input name="budgetId" type="hidden" value={props.budgetId} />
           <AlertDialogHeader>
+            <DialogIcon icon={GaugeIcon} tone="danger" />
             <AlertDialogTitle>{props.title}</AlertDialogTitle>
             <AlertDialogDescription>{props.description}</AlertDialogDescription>
             {state && !state.ok ? <FormError message={state.error} /> : null}

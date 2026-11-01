@@ -19,7 +19,9 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@coss/ui/components/input-group";
+import { CreditCardIcon } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { SettingsFooter, SettingsRow } from "@/components/settings";
 import { useActionToast } from "@/lib/toast";
@@ -112,6 +114,7 @@ export function RemoveAddOnButton(props: {
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <input name="addOn" type="hidden" value={props.addOn} />
           <AlertDialogHeader>
+            <DialogIcon icon={CreditCardIcon} tone="danger" />
             <AlertDialogTitle>Remove {props.name}?</AlertDialogTitle>
             <AlertDialogDescription>{props.description}</AlertDialogDescription>
             {state?.ok ? (
@@ -183,6 +186,7 @@ function DowngradeForm(props: {
       <input name="orgSlug" type="hidden" value={props.orgSlug} />
       <input name="plan" type="hidden" value={props.plan} />
       <AlertDialogHeader>
+        <DialogIcon icon={CreditCardIcon} tone="danger" />
         <AlertDialogTitle>{props.title}</AlertDialogTitle>
         <AlertDialogDescription>{props.description}</AlertDialogDescription>
         {state && !state.ok ? <FormError message={state.error} /> : null}

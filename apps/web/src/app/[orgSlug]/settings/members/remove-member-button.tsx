@@ -11,6 +11,8 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { UserRoundIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { removeMemberAction } from "./actions";
@@ -37,6 +39,7 @@ export function RemoveMemberButton(props: {
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <input name="memberId" type="hidden" value={props.memberId} />
           <AlertDialogHeader>
+            <DialogIcon icon={UserRoundIcon} tone="danger" />
             <AlertDialogTitle>
               Remove {props.memberName} from {props.orgName}?
             </AlertDialogTitle>

@@ -21,7 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { ListIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { addRiskListEntryAction } from "../actions";
@@ -77,6 +79,7 @@ function AddRiskListEntryForm(props: Target & { onDone: () => void }) {
       <input name="projectSlug" type="hidden" value={props.projectSlug} />
       <input name="envSlug" type="hidden" value={props.envSlug} />
       <DialogHeader>
+        <DialogIcon icon={ListIcon} />
         <DialogTitle>Add a list entry</DialogTitle>
         <DialogDescription>
           An allow-list match makes the decision <code>allow</code> whatever else fired; a

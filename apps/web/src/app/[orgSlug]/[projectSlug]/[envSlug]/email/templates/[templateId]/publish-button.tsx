@@ -12,7 +12,9 @@ import {
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@coss/ui/components/tooltip";
+import { UploadIcon } from "lucide-react";
 import { useActionState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { publishTemplateAction } from "../actions";
 
@@ -40,6 +42,7 @@ export function PublishButton(props: { target: Target; revision: number; blocked
         {state?.ok ? (
           <>
             <AlertDialogHeader>
+              <DialogIcon icon={UploadIcon} />
               <AlertDialogTitle>Published version {state.data.version}</AlertDialogTitle>
               <AlertDialogDescription>
                 Sends use it from now on. Emails already accepted keep their content.
@@ -57,6 +60,7 @@ export function PublishButton(props: { target: Target; revision: number; blocked
             <input name="templateId" type="hidden" value={props.target.templateId} />
             <input name="revision" type="hidden" value={props.revision} />
             <AlertDialogHeader>
+              <DialogIcon icon={UploadIcon} />
               <AlertDialogTitle>Publish the draft?</AlertDialogTitle>
               <AlertDialogDescription>
                 It becomes the template's next version, which every send without a

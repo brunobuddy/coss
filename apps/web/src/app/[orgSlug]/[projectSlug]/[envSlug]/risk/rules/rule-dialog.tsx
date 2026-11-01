@@ -32,7 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { ListChecksIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { saveRiskRuleAction } from "../actions";
@@ -157,6 +159,7 @@ function RuleForm(props: Target & { rule?: RiskRuleOutput; onDone: () => void })
       <input name="ruleId" type="hidden" value={props.rule?.id ?? ""} />
       <input name="rule" type="hidden" value={JSON.stringify(rule)} />
       <DialogHeader>
+        <DialogIcon icon={ListChecksIcon} />
         <DialogTitle>{props.rule ? "Edit rule" : "New rule"}</DialogTitle>
         <DialogDescription>
           After the allow and block lists, the first enabled rule whose conditions match decides. A

@@ -25,7 +25,9 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Textarea } from "@coss/ui/components/textarea";
+import { UsersRoundIcon } from "lucide-react";
 import { useActionState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import {
@@ -53,6 +55,7 @@ function NameForm(props: MarketingFormTarget) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={UsersRoundIcon} />
           <DialogTitle>Audience created</DialogTitle>
           <DialogDescription>Add contacts to it from its page or a CSV import.</DialogDescription>
         </DialogHeader>
@@ -66,6 +69,7 @@ function NameForm(props: MarketingFormTarget) {
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={UsersRoundIcon} />
         <DialogTitle>New audience</DialogTitle>
         <DialogDescription>
           A static list of contacts, e.g. beta testers or customers.
@@ -173,6 +177,7 @@ export function DeleteAudienceButton(
           <TargetInputs {...props} />
           <input name="audienceId" type="hidden" value={props.audienceId} />
           <AlertDialogHeader>
+            <DialogIcon icon={UsersRoundIcon} tone="danger" />
             <AlertDialogTitle>Delete “{props.name}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Its contacts stay; only the list goes. Segments that filter on it must change first.

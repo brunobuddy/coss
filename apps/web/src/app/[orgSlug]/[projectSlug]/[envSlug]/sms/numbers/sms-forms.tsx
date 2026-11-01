@@ -27,9 +27,10 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
-import { ShieldCheckIcon } from "lucide-react";
+import { PhoneIcon, ShieldCheckIcon } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useEffect, useId, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -84,6 +85,7 @@ function BuyNumber(props: {
   return (
     <>
       <DialogHeader>
+        <DialogIcon icon={PhoneIcon} />
         <DialogTitle>Buy a number</DialogTitle>
         <DialogDescription>
           Local numbers send in the US under your A2P 10DLC registration; toll-free numbers need
@@ -200,6 +202,7 @@ function RegisterBoughtNumber(props: { bought: BoughtNumber; registerHref: strin
   return (
     <>
       <DialogHeader>
+        <DialogIcon icon={PhoneIcon} />
         <DialogTitle>Register {props.bought.phoneNumber} to send</DialogTitle>
         <DialogDescription>
           The number is yours, but carriers only deliver messages from registered senders.
@@ -285,6 +288,7 @@ export function ReleaseNumberButton(props: {
           <input name="numberId" type="hidden" value={props.numberId} />
           <input name="phoneNumber" type="hidden" value={props.phoneNumber} />
           <AlertDialogHeader>
+            <DialogIcon icon={PhoneIcon} tone="danger" />
             <AlertDialogTitle>Release {props.phoneNumber}?</AlertDialogTitle>
             <AlertDialogDescription>
               Messages can no longer be sent from it, and it goes back to the carrier: you may not

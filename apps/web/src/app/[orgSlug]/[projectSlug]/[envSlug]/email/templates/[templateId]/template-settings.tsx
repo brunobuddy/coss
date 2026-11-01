@@ -25,7 +25,9 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Textarea } from "@coss/ui/components/textarea";
+import { LayoutTemplateIcon } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { deleteTemplateAction, updateTemplateAction } from "../actions";
 
@@ -65,6 +67,7 @@ function SettingsForm(props: { target: Target; template: Template }) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={LayoutTemplateIcon} />
           <DialogTitle>Template saved</DialogTitle>
           <DialogDescription>
             If you changed the alias, sends must use the new one from now on.
@@ -80,6 +83,7 @@ function SettingsForm(props: { target: Target; template: Template }) {
     <form action={formAction} className="contents">
       <Hidden {...props.target} />
       <DialogHeader>
+        <DialogIcon icon={LayoutTemplateIcon} />
         <DialogTitle>Template settings</DialogTitle>
       </DialogHeader>
       <DialogPanel className="flex flex-col gap-4">
@@ -133,6 +137,7 @@ export function DeleteTemplateButton(props: { target: Target; name: string }) {
         <form action={formAction} className="contents">
           <Hidden {...props.target} />
           <AlertDialogHeader>
+            <DialogIcon icon={LayoutTemplateIcon} tone="danger" />
             <AlertDialogTitle>Delete “{props.name}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Its draft and every version are deleted. Emails already sent keep their content; sends

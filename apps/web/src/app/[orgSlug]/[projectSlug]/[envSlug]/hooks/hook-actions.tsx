@@ -27,9 +27,11 @@ import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
 import { Textarea } from "@coss/ui/components/textarea";
+import { BoxIcon, KeyRoundIcon, RotateCcwIcon, TagsIcon, WebhookIcon } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useActionState, useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { DialogIcon } from "@/components/dialog-icon";
 import { EventTypePicker } from "@/components/event-type-picker";
 import { FormError } from "@/components/form-error";
 import type { ActionResult } from "@/lib/action-result";
@@ -130,6 +132,7 @@ function CreateApplicationForm(props: EnvTarget) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={BoxIcon} />
           <DialogTitle>Application added</DialogTitle>
           <DialogDescription>
             Add its endpoints, or open its portal and let its user add them.
@@ -153,6 +156,7 @@ function CreateApplicationForm(props: EnvTarget) {
     <form action={formAction} className="contents">
       <Hidden {...props} />
       <DialogHeader>
+        <DialogIcon icon={BoxIcon} />
         <DialogTitle>Add an application</DialogTitle>
         <DialogDescription>
           One of your customers (or users): they get their own endpoints and portal.
@@ -213,6 +217,7 @@ export function DeleteApplicationButton(props: AppTarget & { name: string }) {
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={BoxIcon} tone="danger" />
             <AlertDialogTitle>Delete {name}?</AlertDialogTitle>
             <AlertDialogDescription>
               Its endpoints stop receiving messages, including pending retries, and its portal
@@ -251,6 +256,7 @@ function CreateEndpointForm(props: AppTarget & { eventTypes: readonly string[] }
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={WebhookIcon} />
           <DialogTitle>Endpoint added</DialogTitle>
           <DialogDescription>
             Its receiver verifies requests with this secret (Standard Webhooks).
@@ -277,6 +283,7 @@ function CreateEndpointForm(props: AppTarget & { eventTypes: readonly string[] }
     <form action={formAction} className="contents">
       <Hidden {...target} />
       <DialogHeader>
+        <DialogIcon icon={WebhookIcon} />
         <DialogTitle>Add an endpoint</DialogTitle>
         <DialogDescription>
           coss.com sends this application's messages to the URL, signed with the endpoint's own
@@ -346,6 +353,7 @@ export function DeleteEndpointButton(props: EndpointTarget & { url: string }) {
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={WebhookIcon} tone="danger" />
             <AlertDialogTitle>Delete this endpoint?</AlertDialogTitle>
             <AlertDialogDescription>
               {url} stops receiving messages, including pending retries. This can't be undone.
@@ -395,6 +403,7 @@ function RollSecretForm(props: EndpointTarget) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={KeyRoundIcon} />
           <DialogTitle>New signing secret</DialogTitle>
           <DialogDescription>
             Until the previous secret stops signing, every request carries a signature for each.
@@ -413,6 +422,7 @@ function RollSecretForm(props: EndpointTarget) {
     <form action={formAction} className="contents">
       <Hidden {...props} />
       <DialogHeader>
+        <DialogIcon icon={KeyRoundIcon} />
         <DialogTitle>Roll the signing secret?</DialogTitle>
         <DialogDescription>
           A new secret signs every request from now on. Choose how long the current one keeps
@@ -478,6 +488,7 @@ function RecoverForm(props: EndpointTarget & { onDone: () => void }) {
     <form action={formAction} className="contents">
       <Hidden {...target} />
       <DialogHeader>
+        <DialogIcon icon={RotateCcwIcon} />
         <DialogTitle>Recover failed deliveries?</DialogTitle>
         <DialogDescription>
           Deliveries that failed every attempt are sent once more, to the endpoint's current URL and
@@ -575,6 +586,7 @@ function CreateEventTypeForm(props: EnvTarget & { onDone: () => void }) {
     <form action={formAction} className="contents">
       <Hidden {...target} />
       <DialogHeader>
+        <DialogIcon icon={TagsIcon} />
         <DialogTitle>Add an event type</DialogTitle>
         <DialogDescription>
           A kind of message you send. Your applications' users subscribe to the types they want.

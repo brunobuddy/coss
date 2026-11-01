@@ -11,6 +11,8 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { MailIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { cancelEmailAction } from "./actions";
@@ -39,6 +41,7 @@ export function CancelEmailButton(props: {
           <input name="envSlug" type="hidden" value={props.envSlug} />
           <input name="emailId" type="hidden" value={props.emailId} />
           <AlertDialogHeader>
+            <DialogIcon icon={MailIcon} tone="danger" />
             <AlertDialogTitle>Cancel this scheduled email?</AlertDialogTitle>
             <AlertDialogDescription>
               It will not be sent. To send it at another time, reschedule it instead.
