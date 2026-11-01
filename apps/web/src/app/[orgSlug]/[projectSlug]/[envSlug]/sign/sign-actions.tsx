@@ -29,6 +29,9 @@ import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
 import { Textarea } from "@coss/ui/components/textarea";
 import { LayoutTemplateIcon, SignatureIcon } from "lucide-react";
 import { DialogIcon } from "@/components/dialog-icon";
+import { ColorInput } from "@/components/fields/color-input";
+import { ListInput } from "@/components/fields/list-input";
+import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -237,6 +240,8 @@ export function DeleteTemplateButton(props: EnvTarget & { templateId: string; na
   );
 }
 
+const ORIGIN = /^https?:\/\/[^/?#\s]+$/i;
+
 export function SignSettingsForm(
   props: EnvTarget & {
     sandbox: boolean;
@@ -261,16 +266,17 @@ export function SignSettingsForm(
       <Hidden {...target} />
       <Field>
         <FieldLabel>Sites allowed to embed the signing page and builder</FieldLabel>
-        <Textarea
-          className="font-mono text-xs"
-          defaultValue={settings.allowedOrigins.join("\n")}
+        <ListInput
+          check={(value) => ORIGIN.test(value)}
+          defaultValue={settings.allowedOrigins}
+          inputMode="url"
           name="allowedOrigins"
           placeholder="https://app.example.com"
-          rows={4}
+          separator="\n"
         />
         <FieldDescription>
-          One origin per line (https://, no path{sandbox ? "; http://localhost works here" : ""}).
-          Without any, signing links only open as their own page.
+          Origins (https://, no path{sandbox ? "; http://localhost works here" : ""}). Without any,
+          signing links only open as their own page.
         </FieldDescription>
       </Field>
       <Field>
@@ -297,20 +303,21 @@ export function SignSettingsForm(
         </FieldDescription>
       </Field>
       <Field>
-        <FieldLabel>Remind email signers every (days)</FieldLabel>
-        <Input
+        <FieldLabel>Remind email signers every</FieldLabel>
+        <UnitInput
           defaultValue={settings.reminderIntervalDays ?? ""}
+          groupClassName="max-w-48"
           max={30}
           min={1}
           name="reminderIntervalDays"
-          placeholder="No reminders"
-          type="number"
+          placeholder="Off"
+          unit="days"
         />
         <FieldDescription>For new requests, up to three reminders. Empty: none.</FieldDescription>
       </Field>
       <Field>
         <FieldLabel>Accent color</FieldLabel>
-        <Input defaultValue={settings.accentColor ?? ""} name="accentColor" placeholder="#2563eb" />
+        <ColorInput defaultValue={settings.accentColor ?? ""} name="accentColor" />
       </Field>
       <Field>
         <FieldLabel>Theme</FieldLabel>

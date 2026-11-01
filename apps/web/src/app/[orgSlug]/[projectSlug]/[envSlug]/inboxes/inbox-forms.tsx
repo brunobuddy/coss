@@ -25,6 +25,12 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@coss/ui/components/input-group";
 import { Label } from "@coss/ui/components/label";
 import {
   Select,
@@ -118,34 +124,40 @@ function CreateInboxForm(props: EnvTarget & { domains: { value: string; label: s
       </DialogHeader>
       <DialogPanel className="flex flex-col gap-4">
         <Field>
-          <FieldLabel>Username</FieldLabel>
-          <Input
-            autoFocus
-            maxLength={64}
-            name="username"
-            placeholder="Optional, e.g. support-agent"
-          />
+          <FieldLabel>Address</FieldLabel>
+          <div className="flex w-full min-w-0">
+            <InputGroup className="min-w-0 flex-1 rounded-e-none before:rounded-e-none has-[input:focus-visible]:z-10">
+              <InputGroupInput
+                aria-label="Username"
+                autoFocus
+                className="font-mono"
+                maxLength={64}
+                name="username"
+                placeholder="support-agent"
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupText>@</InputGroupText>
+              </InputGroupAddon>
+            </InputGroup>
+            <Select defaultValue={domains[0]?.value ?? ""} items={domains} name="domain">
+              <SelectTrigger
+                aria-label="Domain"
+                className="-ms-px w-auto min-w-0 max-w-[60%] rounded-s-none before:rounded-s-none focus-visible:z-10"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectPopup>
+                {domains.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectPopup>
+            </Select>
+          </div>
           <FieldDescription>
-            The part before the @: lower-case letters, digits, dots, underscores or dashes. Random
-            when empty.
-          </FieldDescription>
-        </Field>
-        <Field>
-          <FieldLabel>Domain</FieldLabel>
-          <Select defaultValue={domains[0]?.value ?? ""} items={domains} name="domain">
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectPopup>
-              {domains.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectPopup>
-          </Select>
-          <FieldDescription>
-            Live environments send only from inboxes at your own verified domains.
+            Before the @: lower-case letters, digits, dots, underscores or dashes; random when
+            empty. Live environments send only from inboxes at your own verified domains.
           </FieldDescription>
         </Field>
         <Field>

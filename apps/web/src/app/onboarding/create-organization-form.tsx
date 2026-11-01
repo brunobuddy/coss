@@ -5,6 +5,12 @@ import { Button } from "@coss/ui/components/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@coss/ui/components/card";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@coss/ui/components/input-group";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { FormError } from "@/components/form-error";
@@ -65,21 +71,24 @@ export function CreateOrganizationForm() {
             />
           </Field>
           <Field>
-            <FieldLabel>URL slug</FieldLabel>
-            <Input
-              maxLength={48}
-              name="slug"
-              onChange={(event) => {
-                setSlugEdited(true);
-                setSlug(event.target.value.toLowerCase());
-              }}
-              placeholder="acme"
-              required
-              value={slug}
-            />
-            <FieldDescription>
-              Lowercase letters, numbers and dashes. Your dashboard lives at /{slug || "acme"}.
-            </FieldDescription>
+            <FieldLabel>URL</FieldLabel>
+            <InputGroup>
+              <InputGroupAddon>
+                <InputGroupText>coss.com/</InputGroupText>
+              </InputGroupAddon>
+              <InputGroupInput
+                maxLength={48}
+                name="slug"
+                onChange={(event) => {
+                  setSlugEdited(true);
+                  setSlug(event.target.value.toLowerCase());
+                }}
+                placeholder="acme"
+                required
+                value={slug}
+              />
+            </InputGroup>
+            <FieldDescription>Lowercase letters, numbers and dashes.</FieldDescription>
           </Field>
           <FormError message={error} />
           <Button loading={pending} type="submit">

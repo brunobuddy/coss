@@ -35,6 +35,8 @@ import {
 import { GaugeIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
+import { Segmented } from "@/components/fields/segmented";
+import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { deleteRiskLimitBucketAction, saveRiskLimitBucketAction } from "../actions";
@@ -131,13 +133,13 @@ function BucketForm(props: Target & { bucket?: RiskLimitBucketOutput; onDone: ()
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel>Rate</FieldLabel>
-            <Input
+            <UnitInput
               defaultValue={bucket?.limit ?? 10}
               max={1_000_000}
               min={1}
               name="limit"
               required
-              type="number"
+              unit="requests"
             />
           </Field>
           <Field>
@@ -162,34 +164,27 @@ function BucketForm(props: Target & { bucket?: RiskLimitBucketOutput; onDone: ()
         </div>
         <Field>
           <FieldLabel>Burst</FieldLabel>
-          <Input
+          <UnitInput
             defaultValue={bucket?.burst}
+            groupClassName="sm:max-w-[calc(50%-0.5rem)]"
             max={1_000_000}
             min={1}
             name="burst"
             placeholder="Same as the rate"
-            type="number"
+            unit="requests"
           />
           <FieldDescription>How many requests a key can make at once.</FieldDescription>
         </Field>
         <Field>
           <FieldLabel>While coss.com can't count</FieldLabel>
-          <Select
-            defaultValue={bucket?.on_failure ?? "allow"}
-            items={FAILURE_MODES}
-            name="onFailure"
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectPopup>
-              {FAILURE_MODES.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectPopup>
-          </Select>
+          <div>
+            <Segmented
+              aria-label="While coss.com can't count"
+              defaultValue={bucket?.on_failure ?? "allow"}
+              name="onFailure"
+              options={FAILURE_MODES}
+            />
+          </div>
         </Field>
         {state && !state.ok ? <FormError message={state.error} /> : null}
       </DialogPanel>

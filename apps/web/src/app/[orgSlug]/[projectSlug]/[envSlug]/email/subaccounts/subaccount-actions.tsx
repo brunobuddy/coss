@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_SUBACCOUNT_QUOTA } from "@coss/email/subaccount-schemas";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -28,6 +29,7 @@ import { UsersRoundIcon } from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
+import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -138,21 +140,40 @@ export function QuotasForm(
       <Hidden {...target} />
       <div className="grid gap-4 sm:grid-cols-3">
         <Field>
-          <FieldLabel>Recipients per day</FieldLabel>
-          <Input defaultValue={perDay ?? ""} inputMode="numeric" name="perDay" placeholder="None" />
+          <FieldLabel>Recipients</FieldLabel>
+          <UnitInput
+            defaultValue={perDay ?? ""}
+            max={MAX_SUBACCOUNT_QUOTA}
+            min={1}
+            name="perDay"
+            placeholder="No limit"
+            step={1}
+            unit="per day"
+          />
         </Field>
         <Field>
-          <FieldLabel>Recipients per second</FieldLabel>
-          <Input
+          <FieldLabel>Rate</FieldLabel>
+          <UnitInput
             defaultValue={perSecond ?? ""}
-            inputMode="numeric"
+            max={MAX_SUBACCOUNT_QUOTA}
+            min={1}
             name="perSecond"
-            placeholder="None"
+            placeholder="No limit"
+            step={1}
+            unit="per second"
           />
         </Field>
         <Field>
           <FieldLabel>Burst</FieldLabel>
-          <Input defaultValue={burst ?? ""} inputMode="numeric" name="burst" placeholder="None" />
+          <UnitInput
+            defaultValue={burst ?? ""}
+            max={MAX_SUBACCOUNT_QUOTA}
+            min={1}
+            name="burst"
+            placeholder="No limit"
+            step={1}
+            unit="recipients"
+          />
         </Field>
       </div>
       <p className="text-muted-foreground text-sm">

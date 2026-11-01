@@ -29,6 +29,7 @@ import {
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@coss/ui/components/tabs";
 import { Textarea } from "@coss/ui/components/textarea";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { Panel, PanelBody } from "@/components/panel";
 import { saveDraftAction } from "../actions";
@@ -581,7 +582,24 @@ export function TemplateEditor(props: {
                       </SelectPopup>
                     </Select>
                   </Field>
-                  {variable.type !== "list" ? (
+                  {variable.type === "boolean" ? (
+                    <Field className="w-auto">
+                      <FieldLabel>Default</FieldLabel>
+                      <Segmented
+                        aria-label="Default"
+                        disabled={readOnly}
+                        onValueChange={(value) =>
+                          updateVariable(index, { default: value === "none" ? null : value })
+                        }
+                        options={[
+                          { value: "none", label: "None" },
+                          { value: "true", label: "True" },
+                          { value: "false", label: "False" },
+                        ]}
+                        value={variable.default ?? "none"}
+                      />
+                    </Field>
+                  ) : variable.type !== "list" ? (
                     <Field className="w-36">
                       <FieldLabel>Default</FieldLabel>
                       <Input
@@ -590,14 +608,10 @@ export function TemplateEditor(props: {
                         onChange={(event) =>
                           updateVariable(index, { default: event.target.value || null })
                         }
-                        placeholder={
-                          variable.default === ""
-                            ? "empty string"
-                            : variable.type === "boolean"
-                              ? "true / false"
-                              : "none"
-                        }
+                        placeholder={variable.default === "" ? "empty string" : "none"}
                         readOnly={readOnly}
+                        step={variable.type === "number" ? "any" : undefined}
+                        type={variable.type === "number" ? "number" : "text"}
                         value={variable.default ?? ""}
                       />
                     </Field>

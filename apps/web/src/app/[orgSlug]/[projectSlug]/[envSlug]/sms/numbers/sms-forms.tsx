@@ -31,6 +31,7 @@ import { PhoneIcon, ShieldCheckIcon } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useEffect, useId, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -103,25 +104,30 @@ function BuyNumber(props: {
           }}
         >
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
-          <Field className="w-36">
+          <Field className="w-auto">
             <FieldLabel>Type</FieldLabel>
-            <select
+            <Segmented
               aria-label="Type"
-              className={SELECT_CLASS}
               name="kind"
-              onChange={(event) => setKind(event.target.value as "local" | "toll_free")}
+              onValueChange={(value) => setKind(value as "local" | "toll_free")}
+              options={[
+                { value: "local", label: "Local" },
+                { value: "toll_free", label: "Toll-free" },
+              ]}
               value={kind}
-            >
-              <option value="local">Local</option>
-              <option value="toll_free">Toll-free</option>
-            </select>
+            />
           </Field>
-          <Field className="w-24">
+          <Field className="w-auto">
             <FieldLabel>Country</FieldLabel>
-            <select aria-label="Country" className={SELECT_CLASS} name="country">
-              <option value="US">US</option>
-              <option value="CA">CA</option>
-            </select>
+            <Segmented
+              aria-label="Country"
+              defaultValue="US"
+              name="country"
+              options={[
+                { value: "US", label: "US" },
+                { value: "CA", label: "CA" },
+              ]}
+            />
           </Field>
           {kind === "local" ? (
             <Field className="w-28">

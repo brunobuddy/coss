@@ -24,16 +24,10 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectTrigger,
-  SelectValue,
-} from "@coss/ui/components/select";
 import { TagIcon } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import { deleteTopicAction, saveTopicAction } from "./actions";
@@ -49,28 +43,33 @@ type TopicValues = {
 };
 
 const DEFAULTS = [
-  { value: "opt_in", label: "Opt-in by default (everyone subscribed gets it)" },
-  { value: "opt_out", label: "Opt-out by default (only those who opt in get it)" },
+  { value: "opt_in", label: "Opted in", hint: "Subscribed contacts get it until they opt out." },
+  { value: "opt_out", label: "Opted out", hint: "Only contacts who opt in get it." },
 ];
 const VISIBILITIES = [
-  { value: "public", label: "Public (shown in the preference center)" },
-  { value: "private", label: "Private (hidden from the preference center)" },
+  { value: "public", label: "Public", hint: "Shown in the preference center." },
+  { value: "private", label: "Private", hint: "Hidden from the preference center." },
 ];
 
-function Choice(props: { name: string; defaultValue: string; items: typeof DEFAULTS }) {
+function Choice(props: {
+  label: string;
+  name: string;
+  defaultValue: string;
+  items: typeof DEFAULTS;
+}) {
+  const [value, setValue] = useState(props.defaultValue);
   return (
-    <Select defaultValue={props.defaultValue} items={props.items} name={props.name}>
-      <SelectTrigger>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectPopup>
-        {props.items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectPopup>
-    </Select>
+    <Field>
+      <FieldLabel>{props.label}</FieldLabel>
+      <Segmented
+        aria-label={props.label}
+        name={props.name}
+        onValueChange={setValue}
+        options={props.items}
+        value={value}
+      />
+      <FieldDescription>{props.items.find((item) => item.value === value)?.hint}</FieldDescription>
+    </Field>
   );
 }
 
@@ -128,29 +127,28 @@ function TopicForm(props: MarketingFormTarget & { topic?: TopicValues; onDone: (
           <FieldLabel>Description</FieldLabel>
           <Input defaultValue={topic?.description ?? ""} maxLength={500} name="description" />
         </Field>
-        <Field>
-          <FieldLabel>Subscription</FieldLabel>
-          <Choice
-            defaultValue={topic?.default_subscription ?? "opt_in"}
-            items={DEFAULTS}
-            name="defaultSubscription"
-          />
-        </Field>
-        <Field>
-          <FieldLabel>Visibility</FieldLabel>
-          <Choice
-            defaultValue={topic?.visibility ?? "public"}
-            items={VISIBILITIES}
-            name="visibility"
-          />
-        </Field>
+        <Choice
+          defaultValue={topic?.default_subscription ?? "opt_in"}
+          items={DEFAULTS}
+          label="Subscription"
+          name="defaultSubscription"
+        />
+        <Choice
+          defaultValue={topic?.visibility ?? "public"}
+          items={VISIBILITIES}
+          label="Visibility"
+          name="visibility"
+        />
         <Field>
           <FieldLabel>Position</FieldLabel>
           <Input
+            className="max-w-32"
             defaultValue={topic ? String(topic.position) : ""}
-            inputMode="numeric"
+            min={0}
             name="position"
             placeholder="0"
+            step={1}
+            type="number"
           />
           <FieldDescription>Order in the preference center (ascending).</FieldDescription>
         </Field>

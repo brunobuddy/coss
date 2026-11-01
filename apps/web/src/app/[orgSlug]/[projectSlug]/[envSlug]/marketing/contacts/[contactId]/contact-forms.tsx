@@ -3,14 +3,9 @@
 import { Button } from "@coss/ui/components/button";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectTrigger,
-  SelectValue,
-} from "@coss/ui/components/select";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { DateField } from "@/components/fields/date-field";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import { contactAudienceAction, setContactTopicAction, updateContactAction } from "../actions";
@@ -21,6 +16,69 @@ const STATUSES = [
   { value: "subscribed", label: "Subscribed" },
   { value: "unsubscribed", label: "Unsubscribed" },
 ];
+
+const UNSET = "unset";
+const MIDNIGHT = /^(\d{4}-\d{2}-\d{2})T00:00:00(?:\.0+)?Z$/;
+
+/** Yes / No / Not set, posted as "true" / "false" / "" (a toggle can't carry an empty value). */
+function BooleanInput(props: {
+  name: string;
+  defaultValue: string;
+  disabled: boolean;
+  label: string;
+}) {
+  const [value, setValue] = useState(
+    props.defaultValue === "true" || props.defaultValue === "false" ? props.defaultValue : UNSET,
+  );
+  return (
+    <div>
+      <input name={props.name} type="hidden" value={value === UNSET ? "" : value} />
+      <Segmented
+        aria-label={props.label}
+        disabled={props.disabled}
+        onValueChange={setValue}
+        options={[
+          { value: "true", label: "Yes" },
+          { value: "false", label: "No" },
+          { value: UNSET, label: "Not set" },
+        ]}
+        value={value}
+      />
+    </div>
+  );
+}
+
+/** One custom property's field, in the control its type calls for. */
+function PropertyInput(props: {
+  definition: Property;
+  value: string | number | boolean | undefined;
+  disabled: boolean;
+}) {
+  const { definition, value, disabled } = props;
+  const name = `property:${definition.key}`;
+  const text = value === undefined ? "" : String(value);
+  if (definition.type === "boolean") {
+    return (
+      <BooleanInput defaultValue={text} disabled={disabled} label={definition.key} name={name} />
+    );
+  }
+  // Dates are stored as full timestamps; only a day's midnight fits the calendar.
+  const day =
+    definition.type === "date" ? (text === "" ? "" : MIDNIGHT.exec(text)?.[1]) : undefined;
+  if (day !== undefined && !disabled) {
+    return <DateField defaultValue={day} name={name} placeholder="Not set" />;
+  }
+  return (
+    <Input
+      defaultValue={text}
+      disabled={disabled}
+      name={name}
+      placeholder={definition.type === "date" ? "2026-10-10" : "Empty"}
+      step={definition.type === "number" ? "any" : undefined}
+      type={definition.type === "number" ? "number" : "text"}
+    />
+  );
+}
 
 /** Names, status and custom properties of a contact (read-only without `contact:update`). */
 export function ContactForm(
@@ -57,18 +115,15 @@ export function ContactForm(
       ) : (
         <Field>
           <FieldLabel>Status</FieldLabel>
-          <Select defaultValue={props.status} disabled={disabled} items={STATUSES} name="status">
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectPopup>
-              {STATUSES.map((status) => (
-                <SelectItem key={status.value} value={status.value}>
-                  {status.label}
-                </SelectItem>
-              ))}
-            </SelectPopup>
-          </Select>
+          <div>
+            <Segmented
+              aria-label="Status"
+              defaultValue={props.status}
+              disabled={disabled}
+              name="status"
+              options={STATUSES}
+            />
+          </div>
           <FieldDescription>
             Unsubscribed contacts get no marketing email. Re-subscribe someone only when they asked
             you to.
@@ -86,19 +141,7 @@ export function ContactForm(
                 <FieldLabel>
                   <code>{definition.key}</code>
                 </FieldLabel>
-                <Input
-                  defaultValue={value === undefined ? "" : String(value)}
-                  disabled={disabled}
-                  inputMode={definition.type === "number" ? "decimal" : undefined}
-                  name={`property:${definition.key}`}
-                  placeholder={
-                    definition.type === "boolean"
-                      ? "true or false"
-                      : definition.type === "date"
-                        ? "2026-10-10"
-                        : "Empty"
-                  }
-                />
+                <PropertyInput definition={definition} disabled={disabled} value={value} />
               </Field>
             );
           })}

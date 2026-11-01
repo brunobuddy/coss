@@ -12,11 +12,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@coss/ui/components/dialog";
-import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
-import { Input } from "@coss/ui/components/input";
+import { Field, FieldLabel } from "@coss/ui/components/field";
 import { CalendarClockIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
+import { UtcDateTimeField } from "@/components/fields/date-field";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { rescheduleEmailAction } from "./actions";
@@ -30,12 +30,10 @@ type Target = {
   scheduledAt: string;
 };
 
-/** `2026-10-12T09:00:00.000Z` → `2026-10-12T09:00`, the `datetime-local` format (in UTC). */
+/** `2026-10-12T09:00:00.000Z` → `2026-10-12T09:00` (in UTC). */
 function utcMinute(iso: string): string {
   return iso.slice(0, 16);
 }
-
-const MAX_AHEAD_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function RescheduleEmailDialog(props: Target) {
   const [open, setOpen] = useState(false);
@@ -64,8 +62,6 @@ function RescheduleEmailForm(props: Target & { onDone: () => void }) {
     if (state?.ok) onDone();
   }, [state, onDone]);
 
-  // Only rendered once the dialog opens (client-side), so reading the clock is safe here.
-  const now = Date.now();
   return (
     // `contents` keeps header/panel/footer as direct flex children of the popup (coss ui pattern).
     <form action={formAction} className="contents">
@@ -83,17 +79,12 @@ function RescheduleEmailForm(props: Target & { onDone: () => void }) {
       </DialogHeader>
       <DialogPanel className="flex flex-col gap-4">
         <Field>
-          <FieldLabel>Send at (UTC)</FieldLabel>
-          <Input
-            autoFocus
+          <FieldLabel>Send at</FieldLabel>
+          <UtcDateTimeField
             defaultValue={utcMinute(props.scheduledAt)}
-            max={utcMinute(new Date(now + MAX_AHEAD_MS).toISOString())}
-            min={utcMinute(new Date(now).toISOString())}
             name="scheduledAt"
             required
-            type="datetime-local"
           />
-          <FieldDescription>Times are in UTC, like the rest of the dashboard.</FieldDescription>
         </Field>
         {state && !state.ok ? <FormError message={state.error} /> : null}
       </DialogPanel>

@@ -11,6 +11,7 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { Checkbox } from "@coss/ui/components/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -24,9 +25,12 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { Label } from "@coss/ui/components/label";
 import { MegaphoneIcon, SendIcon } from "lucide-react";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
+import { UtcDateTimeField } from "@/components/fields/date-field";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import {
@@ -47,9 +51,6 @@ function Hidden(props: Target) {
   );
 }
 
-const MAX_AHEAD_MS = 30 * 24 * 60 * 60 * 1000;
-const utcMinute = (ms: number) => new Date(ms).toISOString().slice(0, 16);
-
 export function SendBroadcastDialog(props: Target & { estimate: number | null }) {
   return (
     <Dialog>
@@ -65,10 +66,19 @@ function SendForm(props: Target & { estimate: number | null }) {
   // On success the page refreshes into the scheduled broadcast, which has no "Send…" button, so
   // the dialog closes by itself.
   const [state, formAction, pending] = useActionState(sendBroadcastAction, null);
-  // Rendered only once the dialog opens (client-side), so reading the clock is safe.
-  const now = Date.now();
+  const [when, setWhen] = useState("now");
+  const [missing, setMissing] = useState(false);
   return (
-    <form action={formAction} className="contents">
+    <form
+      action={formAction}
+      className="contents"
+      onSubmit={(event) => {
+        // An empty time would mean "now" to the action.
+        const blank = when === "later" && !new FormData(event.currentTarget).get("scheduledAt");
+        setMissing(blank);
+        if (blank) event.preventDefault();
+      }}
+    >
       <Hidden {...props} />
       <DialogHeader>
         <DialogIcon icon={SendIcon} />
@@ -80,18 +90,31 @@ function SendForm(props: Target & { estimate: number | null }) {
           Its content can't be changed once it starts.
         </DialogDescription>
       </DialogHeader>
-      <DialogPanel>
+      <DialogPanel className="flex flex-col gap-4">
         <Field>
-          <FieldLabel>Send at (UTC)</FieldLabel>
-          <Input
-            max={utcMinute(now + MAX_AHEAD_MS)}
-            min={utcMinute(now)}
-            name="scheduledAt"
-            type="datetime-local"
+          <FieldLabel>Send</FieldLabel>
+          <Segmented
+            aria-label="When to send"
+            onValueChange={setWhen}
+            options={[
+              { value: "now", label: "Now" },
+              { value: "later", label: "Later" },
+            ]}
+            value={when}
           />
-          <FieldDescription>Leave empty to start now (at most 30 days ahead).</FieldDescription>
         </Field>
-        {state && !state.ok ? <FormError message={state.error} /> : null}
+        {when === "later" ? (
+          <Field>
+            <FieldLabel>Send at</FieldLabel>
+            <UtcDateTimeField name="scheduledAt" required />
+            <FieldDescription>At most 30 days ahead.</FieldDescription>
+          </Field>
+        ) : null}
+        {missing ? (
+          <FormError message="Choose a day to send it on." />
+        ) : state && !state.ok ? (
+          <FormError message={state.error} />
+        ) : null}
       </DialogPanel>
       <DialogFooter>
         <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
@@ -103,7 +126,13 @@ function SendForm(props: Target & { estimate: number | null }) {
   );
 }
 
-export function TestBroadcastDialog(props: Target) {
+type TestProps = Target & {
+  /** Verified members' addresses: the only recipients allowed. */
+  recipients: string[];
+  currentUserEmail: string;
+};
+
+export function TestBroadcastDialog(props: TestProps) {
   return (
     <Dialog>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>Send test</DialogTrigger>
@@ -114,8 +143,11 @@ export function TestBroadcastDialog(props: Target) {
   );
 }
 
-function TestForm(props: Target) {
+function TestForm(props: TestProps) {
   const [state, formAction, pending] = useActionState(testBroadcastAction, null);
+  const [to, setTo] = useState<Set<string>>(
+    new Set(props.recipients.includes(props.currentUserEmail) ? [props.currentUserEmail] : []),
+  );
   if (state?.ok) {
     return (
       <>
@@ -136,6 +168,7 @@ function TestForm(props: Target) {
   return (
     <form action={formAction} className="contents">
       <Hidden {...props} />
+      <input name="to" type="hidden" value={[...to].join(", ")} />
       <DialogHeader>
         <DialogIcon icon={SendIcon} />
         <DialogTitle>Send a test</DialogTitle>
@@ -144,13 +177,30 @@ function TestForm(props: Target) {
         </DialogDescription>
       </DialogHeader>
       <DialogPanel className="flex flex-col gap-4">
-        <Field>
-          <FieldLabel>To</FieldLabel>
-          <Input autoFocus name="to" placeholder="you@example.com, a colleague…" required />
-          <FieldDescription>
-            Up to 5 verified members of this organization, comma-separated.
-          </FieldDescription>
-        </Field>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 font-medium text-sm">To (up to 5 verified members)</legend>
+          {props.recipients.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No member of this organization has a verified address yet.
+            </p>
+          ) : null}
+          {props.recipients.map((address) => (
+            <Label className="gap-2 font-normal" key={address}>
+              <Checkbox
+                checked={to.has(address)}
+                onCheckedChange={(checked) =>
+                  setTo((current) => {
+                    const next = new Set(current);
+                    if (checked) next.add(address);
+                    else next.delete(address);
+                    return next;
+                  })
+                }
+              />
+              {address}
+            </Label>
+          ))}
+        </fieldset>
         <Field>
           <FieldLabel>Fill in as</FieldLabel>
           <Input name="contact" placeholder="A contact's address (default: the fallbacks)" />
@@ -159,7 +209,7 @@ function TestForm(props: Target) {
       </DialogPanel>
       <DialogFooter>
         <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
-        <Button loading={pending} type="submit">
+        <Button disabled={to.size === 0 || to.size > 5} loading={pending} type="submit">
           Send test
         </Button>
       </DialogFooter>

@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@coss/ui/components/select";
 import { Textarea } from "@coss/ui/components/textarea";
+import { cn } from "@coss/ui/lib/utils";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -46,6 +47,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
+import { ListInput } from "@/components/fields/list-input";
+import { PercentInput } from "@/components/fields/percent-input";
+import { Segmented } from "@/components/fields/segmented";
+import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -228,20 +233,107 @@ function Section(props: { title: string; description?: string; children: React.R
   );
 }
 
-function Choice(props: { name: string; value: string; items: { value: string; label: string }[] }) {
+const ORIGIN = /^https?:\/\/[^/?#\s]+$/i;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIME = /^[a-z0-9][a-z0-9!#$&^_.+-]*\/(\*|[a-z0-9][a-z0-9!#$&^_.+-]*)$/i;
+
+const TYPE_PRESETS: { label: string; types: string[] }[] = [
+  { label: "Images", types: ["image/*"] },
+  { label: "PDF", types: ["application/pdf"] },
+  { label: "Text", types: ["text/plain"] },
+  { label: "CSV", types: ["text/csv"] },
+  {
+    label: "Word",
+    types: [
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ],
+  },
+];
+
+/** One of the form's fields by name; free text while the form defines none. */
+function FieldNameChoice(props: {
+  name: string;
+  value: string;
+  names: string[];
+  placeholder?: string;
+  optional?: boolean;
+}) {
+  if (props.names.length === 0) {
+    return (
+      <Input
+        className="font-mono"
+        defaultValue={props.value}
+        name={props.name}
+        placeholder={props.placeholder}
+      />
+    );
+  }
+  // A name the form no longer defines stays selectable, so saving doesn't change it unseen.
+  const names =
+    props.value && !props.names.includes(props.value) ? [props.value, ...props.names] : props.names;
+  const items = [
+    ...(props.optional ? [{ value: "", label: "None" }] : []),
+    ...names.map((name) => ({ value: name, label: name })),
+  ];
   return (
-    <Select defaultValue={props.value} items={props.items} name={props.name}>
-      <SelectTrigger>
+    <Select defaultValue={props.value} items={items} name={props.name}>
+      <SelectTrigger className="font-mono">
         <SelectValue />
       </SelectTrigger>
       <SelectPopup>
-        {props.items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
+        {items.map((item) => (
+          <SelectItem
+            className={item.value ? "font-mono" : undefined}
+            key={item.value}
+            value={item.value}
+          >
             {item.label}
           </SelectItem>
         ))}
       </SelectPopup>
     </Select>
+  );
+}
+
+function AllowedTypes(props: { defaultValue: string[] }) {
+  const [types, setTypes] = useState(props.defaultValue);
+  return (
+    <div className="flex flex-col gap-2">
+      <ListInput
+        check={(value) => MIME.test(value)}
+        name="allowedTypes"
+        normalize={(value) => value.toLowerCase()}
+        onValueChange={setTypes}
+        placeholder="image/*"
+        separator="\n"
+        value={types}
+      />
+      <div className="flex flex-wrap items-center gap-1.5">
+        {TYPE_PRESETS.map((preset) => {
+          const on = preset.types.every((type) => types.includes(type));
+          return (
+            <Button
+              aria-pressed={on}
+              className={cn("rounded-full", !on && "text-muted-foreground")}
+              key={preset.label}
+              onClick={() =>
+                setTypes((current) =>
+                  on
+                    ? current.filter((type) => !preset.types.includes(type))
+                    : [...new Set([...current, ...preset.types])],
+                )
+              }
+              size="xs"
+              type="button"
+              variant={on ? "default" : "outline"}
+            >
+              {preset.label}
+            </Button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -253,12 +345,22 @@ export function FormSettingsForm(
     audiences: { id: string; name: string }[];
     topics: { key: string; name: string }[];
     captchaConfigured: boolean;
+    /** The form's own fields, offered for the email and name fields. */
+    fieldNames?: string[];
   },
 ) {
   const [state, formAction, pending] = useActionToast(saveFormSettingsAction, {
     success: "Form saved",
   });
-  const { values, sandbox, audiences, topics, captchaConfigured, ...target } = props;
+  const {
+    values,
+    sandbox,
+    audiences,
+    topics,
+    captchaConfigured,
+    fieldNames = [],
+    ...target
+  } = props;
   return (
     <form action={formAction} className="flex flex-col gap-6">
       <Hidden {...target} />
@@ -273,16 +375,17 @@ export function FormSettingsForm(
         </Label>
         <Field>
           <FieldLabel>Sites allowed to post</FieldLabel>
-          <Textarea
-            className="font-mono text-xs"
-            defaultValue={values.allowedOrigins.join("\n")}
+          <ListInput
+            check={(value) => ORIGIN.test(value)}
+            defaultValue={values.allowedOrigins}
+            inputMode="url"
             name="allowedOrigins"
             placeholder="https://www.example.com"
-            rows={3}
+            separator="\n"
           />
           <FieldDescription>
-            One origin per line (https://, no path{sandbox ? "; http://localhost works here" : ""}
-            ). Empty: any site. Hosted pages can be framed only by these.
+            Origins (https://, no path{sandbox ? "; http://localhost works here" : ""}). Empty: any
+            site. Hosted pages can be framed only by these.
           </FieldDescription>
         </Field>
         <Field>
@@ -316,14 +419,12 @@ export function FormSettingsForm(
           </Field>
           <Field>
             <FieldLabel>Content threshold</FieldLabel>
-            <Input
+            <PercentInput
               defaultValue={values.contentThreshold ?? ""}
               max={1}
               min={0.5}
               name="contentThreshold"
               placeholder="Off"
-              step={0.01}
-              type="number"
             />
             <FieldDescription>
               Text scoring this high as spam, phishing, malware or fraud is spam. Empty: off.
@@ -331,24 +432,26 @@ export function FormSettingsForm(
           </Field>
           <Field>
             <FieldLabel>When Risk asks for a review</FieldLabel>
-            <Choice
-              items={[
-                { value: "hold", label: "Hold it until someone releases it" },
-                { value: "deliver", label: "Deliver it anyway" },
-              ]}
+            <Segmented
+              aria-label="When Risk asks for a review"
+              defaultValue={values.onReview}
               name="onReview"
-              value={values.onReview}
+              options={[
+                { value: "hold", label: "Hold until released" },
+                { value: "deliver", label: "Deliver anyway" },
+              ]}
             />
           </Field>
           <Field>
             <FieldLabel>Captcha</FieldLabel>
-            <Choice
-              items={[
+            <Segmented
+              aria-label="Captcha"
+              defaultValue={values.captcha}
+              name="captcha"
+              options={[
                 { value: "off", label: "Off" },
                 { value: "required", label: "Required" },
               ]}
-              name="captcha"
-              value={values.captcha}
             />
             <FieldDescription>
               {captchaConfigured
@@ -374,11 +477,13 @@ export function FormSettingsForm(
       >
         <Field>
           <FieldLabel>Email each submission to</FieldLabel>
-          <Textarea
-            defaultValue={values.recipients.join("\n")}
+          <ListInput
+            check={(value) => EMAIL.test(value)}
+            defaultValue={values.recipients}
+            inputMode="email"
             name="recipients"
             placeholder="support@yourdomain.com"
-            rows={2}
+            separator="\n"
           />
           <FieldDescription>
             Up to five: members of this organization, or addresses on its verified domains. Replies
@@ -403,7 +508,7 @@ export function FormSettingsForm(
       <Section title="Submitters">
         <Field>
           <FieldLabel>Email field</FieldLabel>
-          <Input className="font-mono" defaultValue={values.emailField} name="emailField" />
+          <FieldNameChoice name="emailField" names={fieldNames} value={values.emailField} />
           <FieldDescription>The field holding the submitter's address.</FieldDescription>
         </Field>
         <Label className="items-start gap-3">
@@ -501,20 +606,22 @@ export function FormSettingsForm(
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel>First name field</FieldLabel>
-            <Input
-              className="font-mono"
-              defaultValue={values.contacts.firstNameField ?? ""}
+            <FieldNameChoice
               name="firstNameField"
+              names={fieldNames}
+              optional
               placeholder="first_name"
+              value={values.contacts.firstNameField ?? ""}
             />
           </Field>
           <Field>
             <FieldLabel>Last name field</FieldLabel>
-            <Input
-              className="font-mono"
-              defaultValue={values.contacts.lastNameField ?? ""}
+            <FieldNameChoice
               name="lastNameField"
+              names={fieldNames}
+              optional
               placeholder="last_name"
+              value={values.contacts.lastNameField ?? ""}
             />
           </Field>
         </div>
@@ -528,23 +635,26 @@ export function FormSettingsForm(
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel>Files per submission</FieldLabel>
-            <Input
+            <UnitInput
               defaultValue={values.files.maxFiles}
+              groupClassName="max-w-48"
               max={10}
               min={1}
               name="maxFiles"
-              type="number"
+              unit="files"
             />
           </Field>
           <Field>
-            <FieldLabel>Largest file (MB)</FieldLabel>
-            <Input
+            <FieldLabel>Largest file</FieldLabel>
+            <UnitInput
               defaultValue={shownMegabytes(values.files.maxFileBytes)}
+              groupClassName="max-w-48"
+              inputMode="decimal"
               max={10}
               min={0}
               name="maxFileMb"
               step="any"
-              type="number"
+              unit="MB"
             />
             {/* Left as shown, the limit keeps its exact bytes (set through the API, say). */}
             <input
@@ -556,16 +666,10 @@ export function FormSettingsForm(
         </div>
         <Field>
           <FieldLabel>Accepted types</FieldLabel>
-          <Textarea
-            className="font-mono text-xs"
-            defaultValue={values.files.allowedTypes.join("\n")}
-            name="allowedTypes"
-            placeholder="image/*&#10;application/pdf"
-            rows={2}
-          />
+          <AllowedTypes defaultValue={values.files.allowedTypes} />
           <FieldDescription>
-            MIME types, one per line. Empty: images, PDFs, text and Office documents. HTML, SVG and
-            scripts are never accepted.
+            MIME types. Empty: images, PDFs, text and Office documents. HTML, SVG and scripts are
+            never accepted.
           </FieldDescription>
         </Field>
       </Section>
@@ -630,6 +734,13 @@ function slugify(label: string, taken: Set<string>): string {
   return name;
 }
 
+function splitOptions(options: string): string[] {
+  return options
+    .split("\n")
+    .map((option) => option.trim())
+    .filter(Boolean);
+}
+
 /** The fields editor and the hosted page's text, saved together. */
 export function FormBuilder(
   props: EnvTarget & {
@@ -673,12 +784,7 @@ export function FormBuilder(
       ...(field.maxLength !== null ? { max_length: field.maxLength } : {}),
       ...(FORM_CHOICE_FIELD_TYPES.includes(field.type) || field.type === "checkbox"
         ? {
-            options:
-              field.savedOptions ??
-              field.options
-                .split("\n")
-                .map((option) => option.trim())
-                .filter(Boolean),
+            options: field.savedOptions ?? splitOptions(field.options),
           }
         : {}),
     })),
@@ -742,15 +848,16 @@ export function FormBuilder(
             {FORM_CHOICE_FIELD_TYPES.includes(field.type) || field.type === "checkbox" ? (
               <Field>
                 <FieldLabel>Choices</FieldLabel>
-                <Textarea
-                  onChange={(event) =>
-                    update(index, { options: event.currentTarget.value, savedOptions: null })
+                <ListInput
+                  keepSpaces
+                  linesOnly
+                  onValueChange={(options) =>
+                    update(index, { options: options.join("\n"), savedOptions: null })
                   }
                   placeholder={
-                    field.type === "checkbox" ? "None: a single checkbox" : "One per line"
+                    field.type === "checkbox" ? "None: a single checkbox" : "Add a choice"
                   }
-                  rows={3}
-                  value={field.options}
+                  value={field.savedOptions ?? splitOptions(field.options)}
                 />
               </Field>
             ) : field.type !== "hidden" && field.type !== "file" ? (

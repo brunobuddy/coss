@@ -2,17 +2,25 @@
 
 import { SMS_MONTHLY_VOLUMES, SMS_USE_CASE_LABELS, SMS_USE_CASES } from "@coss/sms/schemas";
 import { Button } from "@coss/ui/components/button";
+import { Checkbox } from "@coss/ui/components/checkbox";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { Label } from "@coss/ui/components/label";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "@coss/ui/components/select";
 import { Textarea } from "@coss/ui/components/textarea";
 import { useState } from "react";
+import { countryName, isCountryCode } from "@/components/fields/countries";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/panel";
 import { useActionToast } from "@/lib/toast";
 import { createRegistrationAction } from "../actions";
-
-const SELECT_CLASS =
-  "h-9 w-full rounded-lg border border-input bg-background px-2.5 text-sm shadow-xs/5 outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 function text(form: FormData, name: string): string {
   const value = form.get(name);
@@ -89,6 +97,74 @@ function TextField(props: {
   );
 }
 
+type Item = { value: string; label: string; disabled?: boolean };
+
+function SelectField(props: {
+  name: string;
+  label: string;
+  items: Item[];
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  description?: string;
+}) {
+  return (
+    <Field>
+      <FieldLabel>{props.label}</FieldLabel>
+      <Select
+        defaultValue={props.defaultValue}
+        items={props.items}
+        name={props.name}
+        onValueChange={(value) => props.onValueChange?.(String(value))}
+        value={props.value}
+      >
+        <SelectTrigger aria-label={props.label}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectPopup>
+          {props.items.map((item) => (
+            <SelectItem disabled={item.disabled} key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectPopup>
+      </Select>
+      {props.description ? <FieldDescription>{props.description}</FieldDescription> : null}
+    </Field>
+  );
+}
+
+/** A code typed in capitals ("CA", "US"), with the country it names beside it when `country`. */
+function CodeField(props: {
+  name: string;
+  label: string;
+  placeholder: string;
+  defaults: RegistrationDefaults;
+  country?: boolean;
+}) {
+  const initial = props.defaults[props.name];
+  const [value, setValue] = useState(typeof initial === "string" ? initial.toUpperCase() : "");
+  return (
+    <Field>
+      <FieldLabel>{props.label}</FieldLabel>
+      <div className="flex w-full items-center gap-2">
+        <Input
+          className={props.country ? "w-20 font-mono" : undefined}
+          maxLength={props.country ? 2 : undefined}
+          name={props.name}
+          onChange={(event) => setValue(event.currentTarget.value.toUpperCase())}
+          placeholder={props.placeholder}
+          required
+          value={value}
+        />
+        {props.country && isCountryCode(value) ? (
+          <span className="text-muted-foreground text-sm">{countryName(value)}</span>
+        ) : null}
+      </div>
+    </Field>
+  );
+}
+
 export function RegistrationForm(props: {
   orgSlug: string;
   tollFreeNumbers: { id: string; phoneNumber: string }[];
@@ -128,58 +204,49 @@ export function RegistrationForm(props: {
           <PanelTitle>What to register</PanelTitle>
         </PanelHeader>
         <PanelBody className="grid gap-4 sm:grid-cols-2">
-          <Field>
-            <FieldLabel>Sender</FieldLabel>
-            <select
-              aria-label="Sender"
-              className={SELECT_CLASS}
-              name="kind"
-              onChange={(event) => setKind(event.target.value)}
-              value={kind}
-            >
-              <option disabled={!props.canRegister10dlc} value="us_10dlc">
-                US A2P 10DLC (local numbers)
-              </option>
-              <option disabled={props.tollFreeNumbers.length === 0} value="toll_free">
-                Toll-free verification
-              </option>
-            </select>
-          </Field>
+          <SelectField
+            items={[
+              {
+                value: "us_10dlc",
+                label: "US A2P 10DLC (local numbers)",
+                disabled: !props.canRegister10dlc,
+              },
+              {
+                value: "toll_free",
+                label: "Toll-free verification",
+                disabled: props.tollFreeNumbers.length === 0,
+              },
+            ]}
+            label="Sender"
+            name="kind"
+            onValueChange={setKind}
+            value={kind}
+          />
           {kind === "us_10dlc" ? (
-            <Field>
-              <FieldLabel>Brand</FieldLabel>
-              <select
-                aria-label="Brand"
-                className={SELECT_CLASS}
-                name="brandType"
-                onChange={(event) => setBrandType(event.target.value)}
-                value={brandType}
-              >
-                <option value="low_volume_standard">
-                  Low-volume standard (under 6,000 segments a day)
-                </option>
-                <option value="standard">Standard (secondary vetting, higher throughput)</option>
-              </select>
-              <FieldDescription>
-                Standard brands pay a one-time vetting fee for more throughput.
-              </FieldDescription>
-            </Field>
+            <SelectField
+              description="Standard brands pay a one-time vetting fee for more throughput."
+              items={[
+                {
+                  value: "low_volume_standard",
+                  label: "Low-volume standard (under 6,000 segments a day)",
+                },
+                { value: "standard", label: "Standard (secondary vetting, higher throughput)" },
+              ]}
+              label="Brand"
+              name="brandType"
+              onValueChange={setBrandType}
+              value={brandType}
+            />
           ) : (
-            <Field>
-              <FieldLabel>Toll-free number</FieldLabel>
-              <select
-                aria-label="Toll-free number"
-                className={SELECT_CLASS}
-                defaultValue={props.initialNumberId ?? undefined}
-                name="numberId"
-              >
-                {props.tollFreeNumbers.map((number) => (
-                  <option key={number.id} value={number.id}>
-                    {number.phoneNumber}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <SelectField
+              defaultValue={props.initialNumberId ?? props.tollFreeNumbers[0]?.id}
+              items={props.tollFreeNumbers.map((number) => ({
+                value: number.id,
+                label: number.phoneNumber,
+              }))}
+              label="Toll-free number"
+              name="numberId"
+            />
           )}
         </PanelBody>
       </Panel>
@@ -200,17 +267,17 @@ export function RegistrationForm(props: {
           />
           <Field>
             <FieldLabel>Company type</FieldLabel>
-            <select
+            <Segmented
               aria-label="Company type"
-              className={SELECT_CLASS}
               name="companyType"
-              onChange={(event) => setCompanyType(event.target.value)}
+              onValueChange={setCompanyType}
+              options={[
+                { value: "PRIVATE_PROFIT", label: "Private" },
+                { value: "PUBLIC_PROFIT", label: "Public" },
+                { value: "NON_PROFIT", label: "Non-profit" },
+              ]}
               value={companyType}
-            >
-              <option value="PRIVATE_PROFIT">Private company</option>
-              <option value="PUBLIC_PROFIT">Public company</option>
-              <option value="NON_PROFIT">Non-profit</option>
-            </select>
+            />
           </Field>
           <TextField
             defaults={defaults}
@@ -218,20 +285,17 @@ export function RegistrationForm(props: {
             label="Tax ID"
             name="taxId"
           />
-          <Field>
-            <FieldLabel>Tax ID type</FieldLabel>
-            <select
-              aria-label="Tax ID type"
-              className={SELECT_CLASS}
-              defaultValue={pick("taxIdType", "EIN")}
-              name="taxIdType"
-            >
-              <option value="EIN">EIN (US)</option>
-              <option value="CBN">Business number (Canada)</option>
-              <option value="VAT">VAT</option>
-              <option value="DUNS">DUNS</option>
-            </select>
-          </Field>
+          <SelectField
+            defaultValue={pick("taxIdType", "EIN")}
+            items={[
+              { value: "EIN", label: "EIN (US)" },
+              { value: "CBN", label: "Business number (Canada)" },
+              { value: "VAT", label: "VAT" },
+              { value: "DUNS", label: "DUNS" },
+            ]}
+            label="Tax ID type"
+            name="taxIdType"
+          />
           <TextField
             defaults={defaults}
             label="Industry"
@@ -247,9 +311,9 @@ export function RegistrationForm(props: {
           />
           <TextField defaults={defaults} label="Street" name="street" />
           <TextField defaults={defaults} label="City" name="city" />
-          <TextField defaults={defaults} label="State or region" name="region" placeholder="CA" />
+          <CodeField defaults={defaults} label="State or region" name="region" placeholder="CA" />
           <TextField defaults={defaults} label="Postal code" name="postalCode" />
-          <TextField defaults={defaults} label="Country" name="country" placeholder="US" />
+          <CodeField country defaults={defaults} label="Country" name="country" placeholder="US" />
           {companyType === "PUBLIC_PROFIT" ? (
             <>
               <TextField
@@ -285,23 +349,14 @@ export function RegistrationForm(props: {
             type="tel"
           />
           <TextField defaults={defaults} label="Title" name="title" placeholder="CTO" />
-          <Field>
-            <FieldLabel>Position</FieldLabel>
-            <select
-              aria-label="Position"
-              className={SELECT_CLASS}
-              defaultValue={pick("jobPosition", "Director")}
-              name="jobPosition"
-            >
-              {["Director", "GM", "VP", "CEO", "CFO", "General Counsel", "Other"].map(
-                (position) => (
-                  <option key={position} value={position}>
-                    {position}
-                  </option>
-                ),
-              )}
-            </select>
-          </Field>
+          <SelectField
+            defaultValue={pick("jobPosition", "Director")}
+            items={["Director", "GM", "VP", "CEO", "CFO", "General Counsel", "Other"].map(
+              (position) => ({ value: position, label: position }),
+            )}
+            label="Position"
+            name="jobPosition"
+          />
         </PanelBody>
       </Panel>
 
@@ -314,22 +369,16 @@ export function RegistrationForm(props: {
           </PanelDescription>
         </PanelHeader>
         <PanelBody className="flex flex-col gap-4">
-          <Field>
-            <FieldLabel>Use case</FieldLabel>
-            <select
-              aria-label="Use case"
-              className={SELECT_CLASS}
-              defaultValue={pick("useCase", useCases[0] ?? "LOW_VOLUME")}
-              key={useCases.length}
-              name="useCase"
-            >
-              {useCases.map((useCase) => (
-                <option key={useCase} value={useCase}>
-                  {SMS_USE_CASE_LABELS[useCase]}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <SelectField
+            defaultValue={pick("useCase", useCases[0] ?? "LOW_VOLUME")}
+            items={useCases.map((useCase) => ({
+              value: useCase,
+              label: SMS_USE_CASE_LABELS[useCase],
+            }))}
+            key={useCases.length}
+            label="Use case"
+            name="useCase"
+          />
           <Field>
             <FieldLabel>Description</FieldLabel>
             <Textarea
@@ -370,21 +419,12 @@ export function RegistrationForm(props: {
                 name="optInProofUrl"
                 type="url"
               />
-              <Field>
-                <FieldLabel>Messages a month</FieldLabel>
-                <select
-                  aria-label="Messages a month"
-                  className={SELECT_CLASS}
-                  defaultValue={pick("monthlyVolume", "1,000")}
-                  name="monthlyVolume"
-                >
-                  {SMS_MONTHLY_VOLUMES.map((volume) => (
-                    <option key={volume} value={volume}>
-                      {volume}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              <SelectField
+                defaultValue={pick("monthlyVolume", "1,000")}
+                items={SMS_MONTHLY_VOLUMES.map((volume) => ({ value: volume, label: volume }))}
+                label="Messages a month"
+                name="monthlyVolume"
+              />
               <TextField
                 defaults={defaults}
                 description="Public, and it should say you never share phone numbers or opt-in consent with third parties for marketing."
@@ -403,22 +443,14 @@ export function RegistrationForm(props: {
               />
             </>
           ) : null}
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              defaultChecked={defaults.hasEmbeddedLinks === true}
-              name="hasEmbeddedLinks"
-              type="checkbox"
-            />{" "}
+          <Label className="gap-2">
+            <Checkbox defaultChecked={defaults.hasEmbeddedLinks === true} name="hasEmbeddedLinks" />
             Messages contain links
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              defaultChecked={defaults.hasEmbeddedPhone === true}
-              name="hasEmbeddedPhone"
-              type="checkbox"
-            />{" "}
+          </Label>
+          <Label className="gap-2">
+            <Checkbox defaultChecked={defaults.hasEmbeddedPhone === true} name="hasEmbeddedPhone" />
             Messages contain phone numbers
-          </label>
+          </Label>
         </PanelBody>
       </Panel>
 

@@ -22,6 +22,7 @@ import {
 import { CreditCardIcon } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
+import { ThresholdPicker } from "@/components/fields/threshold-picker";
 import { FormError } from "@/components/form-error";
 import { SettingsFooter, SettingsRow } from "@/components/settings";
 import { useActionToast } from "@/lib/toast";
@@ -290,20 +291,11 @@ export function SpendControlsForm(props: {
       </SettingsRow>
       <SettingsRow
         description="Percentages of your monthly credit or allowance."
-        label={<label htmlFor="billing-alerts">Usage alerts</label>}
+        label="Usage alerts"
       >
-        <InputGroup className="sm:w-72">
-          <InputGroupInput
-            defaultValue={props.alertThresholds}
-            disabled={props.disabled}
-            id="billing-alerts"
-            name="alertThresholds"
-            placeholder="80, 100"
-          />
-          <InputGroupAddon align="inline-end">
-            <InputGroupText>%</InputGroupText>
-          </InputGroupAddon>
-        </InputGroup>
+        <fieldset className="sm:w-80" disabled={props.disabled}>
+          <ThresholdPicker defaultValue={props.alertThresholds} name="alertThresholds" />
+        </fieldset>
       </SettingsRow>
       <SettingsRow
         description="Invoices, payment reminders and usage alerts go here."

@@ -33,6 +33,8 @@ import { type ReactNode, useActionState, useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { DialogIcon } from "@/components/dialog-icon";
 import { EventTypePicker } from "@/components/event-type-picker";
+import { ColorInput } from "@/components/fields/color-input";
+import { ListInput } from "@/components/fields/list-input";
 import { FormError } from "@/components/form-error";
 import type { ActionResult } from "@/lib/action-result";
 import { useActionToast } from "@/lib/toast";
@@ -638,6 +640,8 @@ export function ArchiveEventTypeButton(props: EnvTarget & { name: string; archiv
   );
 }
 
+const ORIGIN = /^https?:\/\/[^/?#\s]+$/i;
+
 export function PortalSettingsForm(
   props: EnvTarget & {
     sandbox: boolean;
@@ -658,16 +662,17 @@ export function PortalSettingsForm(
       <Hidden {...target} />
       <Field>
         <FieldLabel>Sites allowed to embed the portal</FieldLabel>
-        <Textarea
-          className="font-mono text-xs"
-          defaultValue={settings.allowedOrigins.join("\n")}
+        <ListInput
+          check={(value) => ORIGIN.test(value)}
+          defaultValue={settings.allowedOrigins}
+          inputMode="url"
           name="allowedOrigins"
           placeholder="https://app.example.com"
-          rows={4}
+          separator="\n"
         />
         <FieldDescription>
-          One origin per line (https://, no path{sandbox ? "; http://localhost works here" : ""}).
-          Without any, the portal only opens as its own page.
+          Origins (https://, no path{sandbox ? "; http://localhost works here" : ""}). Without any,
+          the portal only opens as its own page.
         </FieldDescription>
       </Field>
       <Field>
@@ -681,7 +686,7 @@ export function PortalSettingsForm(
       </Field>
       <Field>
         <FieldLabel>Accent color</FieldLabel>
-        <Input defaultValue={settings.accentColor ?? ""} name="accentColor" placeholder="#2563eb" />
+        <ColorInput defaultValue={settings.accentColor ?? ""} name="accentColor" />
       </Field>
       <Field>
         <FieldLabel>Theme</FieldLabel>

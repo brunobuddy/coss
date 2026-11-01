@@ -5,6 +5,9 @@ import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
+import { countryName, isCountryCode } from "@/components/fields/countries";
+import { ListInput } from "@/components/fields/list-input";
+import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { saveVerifySettingsAction } from "./actions";
@@ -90,10 +93,12 @@ export function VerifySettingsForm(
       </Field>
       <Field>
         <FieldLabel>Countries SMS codes may go to</FieldLabel>
-        <Input
-          className="font-mono"
-          defaultValue={settings.allowedCountries.join(", ")}
+        <ListInput
+          check={isCountryCode}
+          defaultValue={settings.allowedCountries}
+          display={countryName}
           name="allowedCountries"
+          normalize={(value) => value.toUpperCase()}
           placeholder="US, CA"
         />
         <FieldDescription>
@@ -104,32 +109,35 @@ export function VerifySettingsForm(
       <div className="grid gap-4 sm:grid-cols-3">
         <Field>
           <FieldLabel>Code length</FieldLabel>
-          <Input
+          <UnitInput
             defaultValue={settings.codeLength}
+            groupClassName="max-w-48"
             max={10}
             min={4}
             name="codeLength"
-            type="number"
+            unit="digits"
           />
         </Field>
         <Field>
-          <FieldLabel>Codes expire after (minutes)</FieldLabel>
-          <Input
+          <FieldLabel>Codes expire after</FieldLabel>
+          <UnitInput
             defaultValue={Math.round(settings.ttlSeconds / 60)}
+            groupClassName="max-w-48"
             max={30}
             min={1}
             name="ttlMinutes"
-            type="number"
+            unit="minutes"
           />
         </Field>
         <Field>
           <FieldLabel>Wrong codes allowed</FieldLabel>
-          <Input
+          <UnitInput
             defaultValue={settings.maxAttempts}
+            groupClassName="max-w-48"
             max={10}
             min={1}
             name="maxAttempts"
-            type="number"
+            unit="attempts"
           />
         </Field>
       </div>

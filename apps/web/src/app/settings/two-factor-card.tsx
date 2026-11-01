@@ -16,6 +16,7 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { OTPField, OTPFieldInput } from "@coss/ui/components/otp-field";
 import { LifeBuoyIcon, SmartphoneIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
@@ -195,16 +196,16 @@ function SetupFlow() {
           </div>
           <Field className="w-full">
             <FieldLabel>Authentication code</FieldLabel>
-            <Input
-              autoComplete="one-time-code"
-              autoFocus
-              inputMode="numeric"
-              maxLength={6}
-              name="code"
-              pattern="[0-9]{6}"
-              placeholder="123456"
-              required
-            />
+            <OTPField length={6} name="code" required>
+              {Array.from({ length: 6 }, (_, index) => (
+                <OTPFieldInput
+                  aria-label={index === 0 ? undefined : `Digit ${index + 1} of 6`}
+                  autoFocus={index === 0}
+                  // biome-ignore lint/suspicious/noArrayIndexKey: the slots are fixed positions.
+                  key={index}
+                />
+              ))}
+            </OTPField>
           </Field>
           <div className="w-full">
             <FormError message={error} />

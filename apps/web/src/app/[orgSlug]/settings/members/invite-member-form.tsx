@@ -3,13 +3,7 @@
 import { Button } from "@coss/ui/components/button";
 import { Field, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectTrigger,
-  SelectValue,
-} from "@coss/ui/components/select";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { inviteMemberAction } from "./actions";
@@ -38,18 +32,7 @@ export function InviteMemberForm({ orgSlug }: { orgSlug: string }) {
         </Field>
         <Field>
           <FieldLabel>Role</FieldLabel>
-          <Select defaultValue="member" items={ROLE_ITEMS} name="role">
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectPopup>
-              {ROLE_ITEMS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectPopup>
-          </Select>
+          <Segmented aria-label="Role" defaultValue="member" name="role" options={ROLE_ITEMS} />
         </Field>
         <Button loading={pending} type="submit">
           Send invitation

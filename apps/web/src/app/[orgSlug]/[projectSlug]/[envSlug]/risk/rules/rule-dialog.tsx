@@ -35,6 +35,10 @@ import {
 import { ListChecksIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
+import { countryName, isCountryCode } from "@/components/fields/countries";
+import { ListInput } from "@/components/fields/list-input";
+import { Segmented } from "@/components/fields/segmented";
+import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { saveRiskRuleAction } from "../actions";
@@ -84,13 +88,125 @@ function fromDraft(draft: Draft): { field: RuleField; operator: string; value: u
   return { field: draft.field, operator: draft.operator, value };
 }
 
+const COUNTRY_FIELDS = new Set<RuleField>([
+  "ip.country",
+  "checkout.card_country",
+  "checkout.billing_country",
+  "checkout.shipping_country",
+]);
+
+const FUNDING = ["credit", "debit", "prepaid"];
+
+function numberUnit(field: RuleField): { unit: string; min?: number; max?: number } {
+  if (field === "score" || field.startsWith("content.")) return { unit: "0–1", min: 0, max: 1 };
+  if (field.startsWith("velocity.")) return { unit: "events", min: 0 };
+  if (field === "email.domain_age_days") return { unit: "days", min: 0 };
+  if (field === "checkout.amount") return { unit: "minor units", min: 0 };
+  return { unit: "" };
+}
+
+const isList = (operator: string) => operator === "in" || operator === "not_in";
+
 function blankCondition(field: RuleField = "email.disposable"): Draft {
   const { type } = RULE_FIELDS[field];
   return {
     field,
     operator: RULE_OPERATORS[type][0],
-    value: type === "boolean" ? "true" : "",
+    value: type === "boolean" ? "true" : field === "checkout.card_funding" ? "credit" : "",
   };
+}
+
+function ConditionValue(props: { draft: Draft; onValue: (value: string) => void }) {
+  const { field, operator, value } = props.draft;
+  const { type } = RULE_FIELDS[field];
+  const country = COUNTRY_FIELDS.has(field);
+  if (type === "boolean") {
+    return (
+      <Segmented
+        aria-label="Value"
+        onValueChange={props.onValue}
+        options={[
+          { value: "true", label: "True" },
+          { value: "false", label: "False" },
+        ]}
+        value={value}
+      />
+    );
+  }
+  if (type === "number") {
+    const { unit, min, max } = numberUnit(field);
+    return (
+      <UnitInput
+        aria-label="Value"
+        groupClassName="w-48"
+        inputMode="decimal"
+        max={max}
+        min={min}
+        onChange={(event) => props.onValue(event.currentTarget.value)}
+        placeholder="e.g. 5"
+        required
+        step="any"
+        unit={unit}
+        value={value}
+      />
+    );
+  }
+  if (isList(operator)) {
+    const funding = field === "checkout.card_funding";
+    return (
+      <div className="w-72">
+        <ListInput
+          check={country ? isCountryCode : funding ? (item) => FUNDING.includes(item) : undefined}
+          display={country ? countryName : undefined}
+          keepSpaces={!country}
+          normalize={
+            country
+              ? (item) => item.toUpperCase()
+              : funding
+                ? (item) => item.toLowerCase()
+                : undefined
+          }
+          onValueChange={(items) => props.onValue(items.join(", "))}
+          placeholder={country ? "e.g. DE, AT" : "Add a value"}
+          value={value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)}
+        />
+      </div>
+    );
+  }
+  if (field === "checkout.card_funding") {
+    return (
+      <Segmented
+        aria-label="Value"
+        onValueChange={props.onValue}
+        options={FUNDING.map((item) => ({
+          value: item,
+          label: item.charAt(0).toUpperCase() + item.slice(1),
+        }))}
+        value={value}
+      />
+    );
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        aria-label="Value"
+        className={country ? "w-20 font-mono uppercase" : "w-48"}
+        maxLength={country ? 2 : undefined}
+        onChange={(event) =>
+          props.onValue(country ? event.target.value.toUpperCase() : event.target.value)
+        }
+        placeholder={country ? "DE" : "Value"}
+        required
+        value={value}
+      />
+      {country && isCountryCode(value) ? (
+        <span className="text-muted-foreground text-sm">{countryName(value)}</span>
+      ) : null}
+    </div>
+  );
 }
 
 export function RuleDialog(props: Target & { rule?: RiskRuleOutput; trigger: "create" | "edit" }) {
@@ -181,27 +297,21 @@ function RuleForm(props: Target & { rule?: RiskRuleOutput; onDone: () => void })
           </Field>
           <Field>
             <FieldLabel>Then</FieldLabel>
-            <Select
-              items={RISK_DECISIONS.map((value) => ({ value, label: value }))}
-              onValueChange={(value) => setAction(String(value))}
+            <Segmented
+              aria-label="Then"
+              onValueChange={setAction}
+              options={RISK_DECISIONS.map((value) => ({
+                value,
+                label: value.charAt(0).toUpperCase() + value.slice(1),
+              }))}
               value={action}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectPopup>
-                {RISK_DECISIONS.map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {value}
-                  </SelectItem>
-                ))}
-              </SelectPopup>
-            </Select>
+            />
           </Field>
           <Field>
             <FieldLabel>Position</FieldLabel>
             <Input
               className="w-24"
+              inputMode="numeric"
               min={0}
               onChange={(event) => setPosition(event.target.value)}
               type="number"
@@ -233,22 +343,15 @@ function RuleForm(props: Target & { rule?: RiskRuleOutput; onDone: () => void })
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2 text-sm">
             When
-            <Select
-              items={[
+            <Segmented
+              aria-label="Match"
+              onValueChange={setMatch}
+              options={[
                 { value: "all", label: "all" },
                 { value: "any", label: "any" },
               ]}
-              onValueChange={(value) => setMatch(String(value))}
               value={match}
-            >
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectPopup>
-                <SelectItem value="all">all</SelectItem>
-                <SelectItem value="any">any</SelectItem>
-              </SelectPopup>
-            </Select>
+            />
             of these hold:
           </div>
           {conditions.map((condition, index) => {
@@ -276,7 +379,15 @@ function RuleForm(props: Target & { rule?: RiskRuleOutput; onDone: () => void })
                 </Select>
                 <Select
                   items={operators.map((value) => ({ value, label: OPERATOR_LABELS[value] }))}
-                  onValueChange={(value) => update(index, { operator: String(value) })}
+                  onValueChange={(value) => {
+                    const operator = String(value);
+                    update(
+                      index,
+                      isList(condition.operator) && !isList(operator)
+                        ? { operator, value: condition.value.split(",")[0]?.trim() ?? "" }
+                        : { operator },
+                    );
+                  }}
                   value={condition.operator}
                 >
                   <SelectTrigger className="w-36">
@@ -290,41 +401,7 @@ function RuleForm(props: Target & { rule?: RiskRuleOutput; onDone: () => void })
                     ))}
                   </SelectPopup>
                 </Select>
-                {type === "boolean" ? (
-                  <Select
-                    items={[
-                      { value: "true", label: "true" },
-                      { value: "false", label: "false" },
-                    ]}
-                    onValueChange={(value) => update(index, { value: String(value) })}
-                    value={condition.value}
-                  >
-                    <SelectTrigger className="w-28">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectPopup>
-                      <SelectItem value="true">true</SelectItem>
-                      <SelectItem value="false">false</SelectItem>
-                    </SelectPopup>
-                  </Select>
-                ) : (
-                  <Input
-                    aria-label="Value"
-                    className="w-48"
-                    onChange={(event) => update(index, { value: event.target.value })}
-                    placeholder={
-                      type === "number"
-                        ? "e.g. 5"
-                        : condition.operator === "in" || condition.operator === "not_in"
-                          ? "e.g. DE, AT"
-                          : "Value"
-                    }
-                    required
-                    step={type === "number" ? "any" : undefined}
-                    type={type === "number" ? "number" : "text"}
-                    value={condition.value}
-                  />
-                )}
+                <ConditionValue draft={condition} onValue={(value) => update(index, { value })} />
                 {conditions.length > 1 ? (
                   <Button
                     onClick={() =>
