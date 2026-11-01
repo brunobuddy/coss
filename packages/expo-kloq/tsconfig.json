@@ -1,0 +1,12 @@
+{
+  "extends": "@coss/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["DOM", "ESNext"],
+    "jsx": "react-jsx",
+    "customConditions": ["react-native"],
+    // kloq's sources, which this package type-checks through its imports, are written without it
+    // (cosscom/calendar); apps/site turns it off the same way.
+    "noUncheckedIndexedAccess": false
+  },
+  "include": ["src"]
+}

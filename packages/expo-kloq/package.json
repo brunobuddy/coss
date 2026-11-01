@@ -1,0 +1,37 @@
+{
+  "name": "expo-kloq",
+  "version": "0.1.0",
+  "description": "kloq for Expo: the same calendar model, drawn with native SwiftUI and Jetpack Compose controls.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "kloq": "workspace:*"
+  },
+  "peerDependencies": {
+    "@expo/ui": "~57.0.26",
+    "expo": "~57.0.29",
+    "expo-glass-effect": "~57.0.4",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0"
+  },
+  "devDependencies": {
+    "@coss/tsconfig": "workspace:*",
+    "@expo/ui": "57.0.26",
+    "@types/react": "~19.2.2",
+    "expo": "~57.0.29",
+    "expo-glass-effect": "57.0.4",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "typescript": "catalog:"
+  }
+}
