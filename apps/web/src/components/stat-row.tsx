@@ -28,7 +28,7 @@ export function Stat(props: {
 }) {
   const body = (
     <>
-      <div className="text-muted-foreground text-sm">{props.label}</div>
+      <div className="label-caps text-muted-foreground">{props.label}</div>
       <div className="flex items-baseline gap-1">
         <span className="font-heading font-semibold text-3xl tabular-nums tracking-[-0.02em]">
           {props.value}

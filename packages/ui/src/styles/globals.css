@@ -16,3 +16,53 @@
   background-size: 1.5rem 1.5rem;
   background-position: center;
 }
+
+/*
+ * The dashboard's own finish over coss ui, chosen by `data-slot` so the vendored components stay
+ * as the registry ships them. Unlayered: these win over the components' utility classes.
+ */
+
+/* One label voice: small caps-like labels over tables, sidebar groups and figures. */
+@utility label-caps {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1rem;
+  text-transform: uppercase;
+}
+
+[data-slot="table-head"],
+[data-slot="sidebar-group-label"] {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Primary buttons have a lit top edge; every button gives a little when pressed. */
+[data-slot="button"].bg-primary:not(:disabled) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 16%, transparent),
+    transparent 55%
+  );
+}
+
+[data-slot="button"] {
+  transition-property: box-shadow, background-color, border-color, transform;
+  transition-duration: 150ms;
+}
+
+[data-slot="button"]:not(:disabled):active {
+  transform: translateY(0.5px) scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="button"]:not(:disabled):active {
+    transform: none;
+  }
+}
+
+/* Badges are pills. */
+[data-slot="badge"] {
+  border-radius: 9999px;
+}
