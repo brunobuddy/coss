@@ -2377,6 +2377,9 @@ export const organizationSuspension = pgTable("organization_suspension", {
     .references(() => organization.id, { onDelete: "cascade" }),
   // Internal note for platform admins; never shown to the organization.
   reason: text("reason").notNull(),
+  // What kind of abuse a takedown was for (the admin console's `ABUSE_CATEGORIES`); null for a
+  // plain suspension.
+  category: text("category"),
   suspendedByUserId: text("suspended_by_user_id").references(() => user.id, {
     onDelete: "set null",
   }),

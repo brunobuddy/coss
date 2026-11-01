@@ -19,6 +19,8 @@ mock.module("@coss/tenancy/admin", () => ({
   disableOrganizationScim: mock(async () => ({ complete: true })),
   disableOrganizationSso: mock(async () => {}),
   disableOrganizationSsoRequirement: mock(async () => {}),
+  getUserForAdmin: mock(),
+  listUserMembershipsForAdmin: mock(),
   planOrganizationTakedown: mock(),
   recordAdminAction: audit,
   resetUserTwoFactor: mock(async () => {}),
@@ -71,6 +73,44 @@ mock.module("@coss/reputation", () => ({
   reinstateOrganization: mock(),
   suspendOrganization: suspendSending,
   updateReputationPolicy: mock(),
+}));
+type TestAssessment = {
+  id: string;
+  decision: "allow" | "review" | "block";
+  outcome: "legitimate" | "fraud" | "abuse" | null;
+  review_status: "open" | "resolved" | null;
+  user: { email: string | null };
+};
+const signUpScope = { organizationId: newId("org"), environmentId: newId("env") };
+let scope: typeof signUpScope | null = signUpScope;
+const signUps = new Map<string, TestAssessment[]>();
+const recordRiskFeedback = mock(
+  async (
+    _hash: unknown,
+    _scope: unknown,
+    id: string,
+    params: { outcome: string; note?: string },
+  ) => {
+    for (const assessment of [...signUps.values()].flat()) {
+      if (assessment.id !== id) continue;
+      // Like the real one: feedback also resolves an open review.
+      assessment.outcome = params.outcome as TestAssessment["outcome"];
+      if (assessment.review_status === "open") assessment.review_status = "resolved";
+    }
+    return { id };
+  },
+);
+const riskModule = await import("@coss/risk");
+mock.module("@coss/risk", () => ({
+  ...riskModule,
+  getRiskAssessment: async (_scope: unknown, id: string) =>
+    [...signUps.values()].flat().find((assessment) => assessment.id === id) ?? null,
+  listRiskAssessmentsForEmail: async (_scope: unknown, email: string) => signUps.get(email) ?? [],
+  recordRiskFeedback,
+}));
+mock.module("@/lib/risk", () => ({
+  riskHasher: () => () => "hash",
+  signUpRiskScope: async () => scope,
 }));
 const supportAudit = mock(async () => {});
 mock.module("@/lib/audit", () => ({ supportAudit }));
@@ -360,6 +400,10 @@ const { suspendOrganization, planOrganizationTakedown, revokeApiKeyAsAdmin } = (
   "suspendOrganization" | "planOrganizationTakedown" | "revokeApiKeyAsAdmin",
   ReturnType<typeof mock>
 >;
+const tenancyAdmin = (await import("@coss/tenancy/admin")) as unknown as Record<
+  "getUserForAdmin" | "listUserMembershipsForAdmin",
+  ReturnType<typeof mock>
+>;
 const reputation = await import(
   "../src/app/admin/organizations/[organizationId]/reputation/actions"
 );
@@ -406,9 +450,10 @@ describe("take down", () => {
   const organizationId = newId("org");
   const loner = newId("user");
   const twoOrgs = newId("user");
-  function form(reason: string) {
+  function form(reason: string, category = "phishing") {
     const data = new FormData();
     data.set("organizationId", organizationId);
+    data.set("category", category);
     data.set("reason", reason);
     return data;
   }
@@ -430,6 +475,52 @@ describe("take down", () => {
     revokeApiKeyAsAdmin.mockClear();
     mutate.mockClear();
     audit.mockClear();
+    recordRiskFeedback.mockClear();
+    planOrganizationTakedown.mockClear();
+    signUps.clear();
+    scope = signUpScope;
+  });
+
+  test("needs a known category before anything happens", async () => {
+    planOrganizationTakedown.mockImplementation(async () => plan());
+    for (const category of ["", "fraud", "__proto__"]) {
+      expect(await actions.takeDownOrganizationAction(null, form("Phishing", category))).toEqual({
+        ok: false,
+        error: "Choose what kind of abuse this is.",
+      });
+    }
+    expect(planOrganizationTakedown).not.toHaveBeenCalled();
+  });
+
+  test("reports the banned members' sign-ups, not the kept ones'", async () => {
+    planOrganizationTakedown.mockImplementation(async () => plan());
+    const banned = signUp("spam@x.test");
+    const kept = signUp("dev@x.test");
+    expect((await actions.takeDownOrganizationAction(null, form("Fake bank login"))).ok).toBe(true);
+    expect(suspendOrganization).toHaveBeenCalledWith(
+      expect.objectContaining({ category: "phishing" }),
+    );
+    expect(recordRiskFeedback).toHaveBeenCalledTimes(1);
+    expect(recordRiskFeedback.mock.calls[0]?.slice(1)).toEqual([
+      signUpScope,
+      banned.id,
+      { outcome: "fraud", note: "Phishing: Fake bank login" },
+      { source: "dashboard", actorId: expect.any(String) },
+    ]);
+    expect(kept.outcome).toBeNull();
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "risk_assessment.report",
+        target: { type: "risk_assessment", id: banned.id },
+        metadata: expect.objectContaining({ category: "phishing", outcome: "fraud" }),
+      }),
+    );
+    expect(audit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "organization.take_down",
+        metadata: expect.objectContaining({ reportedAssessmentIds: [banned.id] }),
+      }),
+    );
   });
 
   test("suspends, revokes every key and bans only the members it should", async () => {
@@ -457,9 +548,11 @@ describe("take down", () => {
         action: "organization.take_down",
         reason: "Phishing",
         metadata: {
+          category: "phishing",
           bannedUserIds: [loner],
           keptUserIds: [twoOrgs],
           revokedKeyIds: ["key_1", "key_2"],
+          reportedAssessmentIds: [],
         },
       }),
     );
@@ -473,6 +566,205 @@ describe("take down", () => {
     planOrganizationTakedown.mockImplementation(async () => plan({ deleting: true }));
     expect((await actions.takeDownOrganizationAction(null, form("Spam"))).ok).toBe(false);
     expect(revokeApiKeyAsAdmin).toHaveBeenCalledTimes(2);
+  });
+});
+
+function signUp(email: string, overrides: Partial<TestAssessment> = {}): TestAssessment {
+  const assessment: TestAssessment = {
+    id: newId("rsk"),
+    decision: "review",
+    outcome: null,
+    review_status: "open",
+    user: { email },
+    ...overrides,
+  };
+  signUps.set(email, [...(signUps.get(email) ?? []), assessment]);
+  return assessment;
+}
+
+describe("report abuse", () => {
+  const getUserForAdmin = tenancyAdmin.getUserForAdmin;
+  const listUserMembershipsForAdmin = tenancyAdmin.listUserMembershipsForAdmin;
+  const userId = newId("user");
+  const owned = newId("org");
+  const joined = newId("org");
+
+  function form(fields: Record<string, string>) {
+    const data = new FormData();
+    data.set("category", "spam");
+    data.set("reason", "Bought list");
+    for (const [name, value] of Object.entries(fields)) data.set(name, value);
+    return data;
+  }
+
+  beforeEach(() => {
+    signUps.clear();
+    scope = signUpScope;
+    for (const fn of [
+      audit,
+      mutate,
+      recordRiskFeedback,
+      suspendOrganization,
+      revokeApiKeyAsAdmin,
+      planOrganizationTakedown,
+    ]) {
+      fn.mockClear();
+    }
+    getUserForAdmin.mockImplementation(async () => ({
+      id: userId,
+      email: "Spammer@x.test",
+      role: "user",
+      banned: false,
+    }));
+    listUserMembershipsForAdmin.mockImplementation(async () => [
+      { organization: { id: owned }, role: "owner" },
+      { organization: { id: joined }, role: "member" },
+    ]);
+    planOrganizationTakedown.mockImplementation(async () => ({
+      suspended: false,
+      deleting: false,
+      apiKeys: [{ id: "key_1" }],
+      members: [{ userId, email: "Spammer@x.test", role: "owner", keptBecause: "also in Other" }],
+    }));
+  });
+
+  test("reports one sign-up without touching the account", async () => {
+    const assessment = signUp("spammer@x.test");
+    const result = await actions.reportAbuseAction(
+      null,
+      form({ assessmentId: assessment.id, userId }),
+    );
+    expect(result).toEqual({
+      ok: true,
+      data: { takenDown: false, organizations: 0, reported: 1 },
+    });
+    expect(recordRiskFeedback.mock.calls[0]?.[3]).toEqual({
+      outcome: "abuse",
+      note: "Spam: Bought list",
+    });
+    expect(mutate).not.toHaveBeenCalled();
+    expect(planOrganizationTakedown).not.toHaveBeenCalled();
+
+    // Reporting it again records nothing.
+    expect(
+      await actions.reportAbuseAction(null, form({ assessmentId: assessment.id, userId })),
+    ).toEqual({ ok: false, error: "This sign-up is already reported." });
+    expect(recordRiskFeedback).toHaveBeenCalledTimes(1);
+  });
+
+  test("refuses a sign-up outside coss.com's sign-up environment", async () => {
+    expect(await actions.reportAbuseAction(null, form({ assessmentId: newId("rsk") }))).toEqual({
+      ok: false,
+      error: "Sign-up not found.",
+    });
+    scope = null;
+    expect((await actions.reportAbuseAction(null, form({ userId }))).ok).toBe(false);
+    expect(recordRiskFeedback).not.toHaveBeenCalled();
+  });
+
+  test("takes down the checked organizations it belongs to, bans the user and reports them", async () => {
+    const assessment = signUp("spammer@x.test");
+    const outsider = newId("org");
+    const result = await actions.reportAbuseAction(
+      null,
+      form({
+        assessmentId: assessment.id,
+        userId,
+        takeDown: "on",
+        [`organization:${owned}`]: "on",
+        // Not a membership of this user: ignored.
+        [`organization:${outsider}`]: "on",
+      }),
+    );
+    expect(result).toEqual({
+      ok: true,
+      data: { takenDown: true, organizations: 1, reported: 1 },
+    });
+    expect(planOrganizationTakedown.mock.calls.map(([id]) => id)).toEqual([owned]);
+    expect(suspendOrganization).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: owned, category: "spam" }),
+    );
+    // The plan kept them for another organization; as the target they are banned anyway.
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ body: { userId, banReason: "Bought list" } }),
+    );
+    expect(assessment.outcome).toBe("abuse");
+    expect(audit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "user.take_down",
+        target: { type: "user", id: userId },
+        metadata: expect.objectContaining({
+          category: "spam",
+          organizationIds: [owned],
+          bannedUserIds: [userId],
+          revokedKeyIds: ["key_1"],
+          reportedAssessmentIds: [assessment.id],
+        }),
+      }),
+    );
+  });
+
+  test("doesn't ban an already banned user again, and works without sign-up assessments", async () => {
+    scope = null;
+    getUserForAdmin.mockImplementation(async () => ({
+      id: userId,
+      email: "spammer@x.test",
+      role: null,
+      banned: true,
+    }));
+    const result = await actions.reportAbuseAction(null, form({ userId, takeDown: "on" }));
+    expect(result).toEqual({
+      ok: true,
+      data: { takenDown: true, organizations: 0, reported: 0 },
+    });
+    expect(mutate).not.toHaveBeenCalled();
+    expect(planOrganizationTakedown).not.toHaveBeenCalled();
+  });
+
+  test("refuses platform admins and coss.com's own organization", async () => {
+    getUserForAdmin.mockImplementation(async () => ({
+      id: userId,
+      email: "staff@x.test",
+      role: "admin",
+      banned: false,
+    }));
+    expect(await actions.reportAbuseAction(null, form({ userId, takeDown: "on" }))).toEqual({
+      ok: false,
+      error: "Platform admins can't be taken down: remove the admin role first.",
+    });
+
+    getUserForAdmin.mockImplementation(async () => ({
+      id: userId,
+      email: "spammer@x.test",
+      role: "user",
+      banned: false,
+    }));
+    listUserMembershipsForAdmin.mockImplementation(async () => [
+      { organization: { id: systemOrgId }, role: "member" },
+    ]);
+    expect(
+      await actions.reportAbuseAction(
+        null,
+        form({ userId, takeDown: "on", [`organization:${systemOrgId}`]: "on" }),
+      ),
+    ).toEqual({ ok: false, error: SYSTEM_ORGANIZATION_MESSAGE });
+    expect(mutate).not.toHaveBeenCalled();
+    expect(suspendOrganization).not.toHaveBeenCalled();
+  });
+
+  test("marks a false positive legitimate", async () => {
+    const assessment = signUp("person@x.test", { decision: "block", outcome: "abuse" });
+    const data = new FormData();
+    data.set("assessmentId", assessment.id);
+    expect(await actions.markSignUpLegitimateAction(null, data)).toEqual({ ok: true, data: null });
+    expect(assessment.outcome).toBe("legitimate");
+    expect(audit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "risk_assessment.mark_legitimate",
+        metadata: { email: "person@x.test", previousOutcome: "abuse", decision: "block" },
+      }),
+    );
   });
 });
 

@@ -112,6 +112,7 @@ describe("organization suspension", () => {
     await suspendOrganization({ organizationId, reason: " Phishing reports ", actor });
     expect(await getOrganizationSuspension(organizationId)).toMatchObject({
       reason: "Phishing reports",
+      category: null,
       suspendedByUserId: actor.userId,
     });
     expect((await getOrganizationForAdmin(organizationId))?.suspension).toMatchObject({
@@ -136,6 +137,25 @@ describe("organization suspension", () => {
       slug: tenant.organization.slug,
       suspensionReason: "Phishing reports",
     });
+    expect(events[1]?.metadata).toEqual({ slug: tenant.organization.slug });
+  });
+
+  test("keeps a takedown's category on the suspension and in the audit log", async () => {
+    const tenant = await createTestTenant();
+    const actor = await adminActor();
+    const organizationId = tenant.organization.id;
+    await suspendOrganization({
+      organizationId,
+      reason: "Fake bank login",
+      category: "phishing",
+      actor,
+    });
+    expect((await getOrganizationForAdmin(organizationId))?.suspension).toMatchObject({
+      reason: "Fake bank login",
+      category: "phishing",
+    });
+    const { events } = await listAdminAuditEvents({ organizationId });
+    expect(events[0]?.metadata).toEqual({ slug: tenant.organization.slug, category: "phishing" });
   });
 
   test("refuses the organization's API keys (only once proven valid) and new keys", async () => {

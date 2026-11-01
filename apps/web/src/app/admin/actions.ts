@@ -9,6 +9,8 @@ import {
   MAX_RULE_VALUE,
   parsePeriod,
 } from "@coss/ratelimit";
+import { getRiskAssessment, listRiskAssessmentsForEmail, recordRiskFeedback } from "@coss/risk";
+import type { RiskAssessmentOutput } from "@coss/risk/schemas";
 import {
   ADMIN_REASON_MAX_LENGTH,
   type AdminActor,
@@ -16,6 +18,8 @@ import {
   disableOrganizationScim,
   disableOrganizationSso,
   disableOrganizationSsoRequirement,
+  getUserForAdmin,
+  listUserMembershipsForAdmin,
   planOrganizationTakedown,
   recordAdminAction,
   resetUserTwoFactor,
@@ -27,10 +31,12 @@ import {
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { ABUSE_CATEGORIES, type AbuseCategory, isAbuseCategory } from "@/lib/abuse-categories";
 import type { ActionResult } from "@/lib/action-result";
 import { ActionError, formString, runAction } from "@/lib/actions";
 import { supportAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
+import { riskHasher, signUpRiskScope } from "@/lib/risk";
 import { requirePlatformAdminAction } from "@/lib/session";
 import { isSystemOrganization, SYSTEM_ORGANIZATION_MESSAGE } from "@/lib/system-organization";
 
@@ -333,10 +339,141 @@ export async function unsuspendOrganizationAction(
   });
 }
 
+function formCategory(formData: FormData): AbuseCategory {
+  const category = formString(formData, "category");
+  if (!isAbuseCategory(category)) throw new ActionError("Choose what kind of abuse this is.");
+  return category;
+}
+
+/** The note Risk keeps with the feedback: the category, then the admin's reason (500 characters). */
+function riskNote(category: AbuseCategory, reason: string): string {
+  return `${ABUSE_CATEGORIES[category].label}: ${reason}`.slice(0, 500);
+}
+
+type SignUpScope = NonNullable<Awaited<ReturnType<typeof signUpRiskScope>>>;
+
 /**
- * Takes an abusive organization down in one step: suspends it, revokes every API key, and bans
- * the members who have nothing else on the platform (`planOrganizationTakedown`). Each step is
- * audited on its own and skipped when already done, so running it again finishes a partial run.
+ * Reports one of coss.com's own sign-up assessments to coss.com Risk with the category's outcome:
+ * its mailbox, device, IP and network count against later sign-ups (`history.fraud_*`), and an
+ * open review is resolved. `false` when it already carried that outcome (nothing recorded).
+ */
+async function reportAssessment(input: {
+  actor: AdminActor;
+  scope: SignUpScope;
+  assessment: RiskAssessmentOutput;
+  category: AbuseCategory;
+  reason: string;
+}): Promise<boolean> {
+  const { actor, scope, assessment, category, reason } = input;
+  const outcome = ABUSE_CATEGORIES[category].outcome;
+  if (assessment.outcome === outcome && assessment.review_status !== "open") return false;
+  const updated = await recordRiskFeedback(
+    riskHasher(),
+    scope,
+    assessment.id,
+    { outcome, note: riskNote(category, reason) },
+    { source: "dashboard", actorId: actor.userId },
+  );
+  if (!updated) return false;
+  await recordAdminAction({
+    actor,
+    action: "risk_assessment.report",
+    target: { type: "risk_assessment", id: assessment.id },
+    reason,
+    metadata: {
+      email: assessment.user.email,
+      category,
+      outcome,
+      decision: assessment.decision,
+    },
+  });
+  return true;
+}
+
+/**
+ * Reports every sign-up assessment of these addresses (blocked attempts included). Nothing when
+ * sign-ups aren't assessed (`RISK_SIGNUP_ENVIRONMENT_ID` unset). Returns the reported ids.
+ */
+async function reportSignUps(input: {
+  actor: AdminActor;
+  emails: string[];
+  category: AbuseCategory;
+  reason: string;
+}): Promise<string[]> {
+  const scope = await signUpRiskScope();
+  if (!scope) return [];
+  const reported: string[] = [];
+  for (const email of new Set(input.emails.map((address) => address.toLowerCase()))) {
+    const assessments = await listRiskAssessmentsForEmail(scope, email, {
+      event: "signup",
+      limit: 20,
+    });
+    for (const assessment of assessments) {
+      if (await reportAssessment({ ...input, scope, assessment })) reported.push(assessment.id);
+    }
+  }
+  return reported;
+}
+
+type OrganizationTakedown = {
+  organizationId: string;
+  revokedKeyIds: string[];
+  bannedUserIds: string[];
+  bannedEmails: string[];
+  keptUserIds: string[];
+};
+
+/**
+ * Suspends the organization (with the category), revokes every API key, and bans the members who
+ * have nothing else on the platform (`planOrganizationTakedown`). Each step is audited on its own
+ * and skipped when already done, so running it again finishes a partial run. `null` when the
+ * organization is already being deleted (nothing left to take down).
+ */
+async function takeDownOrganization(input: {
+  actor: AdminActor;
+  organizationId: string;
+  category: AbuseCategory;
+  reason: string;
+}): Promise<OrganizationTakedown | null> {
+  const { actor, organizationId, category, reason } = input;
+  const plan = await planOrganizationTakedown(organizationId);
+  if (plan.deleting) return null;
+
+  if (!plan.suspended) {
+    await suspendOrganization({ organizationId, reason, category, actor });
+    await supportAudit(organizationId, "organization.suspended");
+  }
+  const revokedKeyIds: string[] = [];
+  for (const key of plan.apiKeys) {
+    await revokeApiKeyAsAdmin({ organizationId, keyId: key.id, reason, actor });
+    await supportAudit(organizationId, "api_key.revoked", { type: "api_key", id: key.id });
+    revokedKeyIds.push(key.id);
+  }
+  const bannedUserIds: string[] = [];
+  const bannedEmails: string[] = [];
+  const keptUserIds: string[] = [];
+  for (const member of plan.members) {
+    if (member.keptBecause !== null || member.userId === actor.userId) {
+      keptUserIds.push(member.userId);
+      continue;
+    }
+    await banUser({
+      actor,
+      userId: member.userId,
+      reason,
+      duration: "",
+      metadata: { takeDown: organizationId, category },
+    });
+    bannedUserIds.push(member.userId);
+    bannedEmails.push(member.email);
+  }
+  return { organizationId, revokedKeyIds, bannedUserIds, bannedEmails, keptUserIds };
+}
+
+/**
+ * Takes an abusive organization down and reports it, in one step: suspends it, revokes every API
+ * key, bans the members who have nothing else on the platform, and reports those members'
+ * sign-ups to coss.com Risk so the same mailbox, device and network are flagged next time.
  */
 export async function takeDownOrganizationAction(
   _previous: ActionResult | null,
@@ -348,43 +485,204 @@ export async function takeDownOrganizationAction(
     if (await isSystemOrganization(organizationId)) {
       throw new ActionError(SYSTEM_ORGANIZATION_MESSAGE);
     }
+    const category = formCategory(formData);
     const reason = requiredReason(formData);
-    const plan = await planOrganizationTakedown(organizationId);
-    if (plan.deleting) throw new ActionError("This organization is already being deleted.");
-
-    if (!plan.suspended) {
-      await suspendOrganization({ organizationId, reason, actor });
-      await supportAudit(organizationId, "organization.suspended");
-    }
-    const revokedKeyIds: string[] = [];
-    for (const key of plan.apiKeys) {
-      await revokeApiKeyAsAdmin({ organizationId, keyId: key.id, reason, actor });
-      await supportAudit(organizationId, "api_key.revoked", { type: "api_key", id: key.id });
-      revokedKeyIds.push(key.id);
-    }
-    const bannedUserIds: string[] = [];
-    const keptUserIds: string[] = [];
-    for (const member of plan.members) {
-      if (member.keptBecause !== null || member.userId === actor.userId) {
-        keptUserIds.push(member.userId);
-        continue;
-      }
-      await banUser({
-        actor,
-        userId: member.userId,
-        reason,
-        duration: "",
-        metadata: { takeDown: organizationId },
-      });
-      bannedUserIds.push(member.userId);
-    }
+    const result = await takeDownOrganization({ actor, organizationId, category, reason });
+    if (!result) throw new ActionError("This organization is already being deleted.");
+    const reportedAssessmentIds = await reportSignUps({
+      actor,
+      emails: result.bannedEmails,
+      category,
+      reason,
+    });
     await recordAdminAction({
       actor,
       action: "organization.take_down",
       target: { type: "organization", id: organizationId },
       organizationId,
       reason,
-      metadata: { bannedUserIds, keptUserIds, revokedKeyIds },
+      metadata: {
+        category,
+        bannedUserIds: result.bannedUserIds,
+        keptUserIds: result.keptUserIds,
+        revokedKeyIds: result.revokedKeyIds,
+        reportedAssessmentIds,
+      },
+    });
+    refresh();
+    return null;
+  });
+}
+
+export type ReportAbuseResult = { takenDown: boolean; organizations: number; reported: number };
+
+/**
+ * The admin console's one abuse flow, from a sign-up or a user. Always reports to coss.com Risk
+ * (the sign-up named by `assessmentId`, else every sign-up of the user's address). With
+ * `takeDown=on` it also takes down the organizations checked in the form (`organization:<id>`,
+ * only the user's own memberships count) and bans the user permanently; the members banned with
+ * those organizations are reported too.
+ */
+export async function reportAbuseAction(
+  _previous: ActionResult<ReportAbuseResult> | null,
+  formData: FormData,
+): Promise<ActionResult<ReportAbuseResult>> {
+  return runAction(async () => {
+    const { actor } = await requirePlatformAdminAction();
+    const category = formCategory(formData);
+    const reason = requiredReason(formData);
+    const scope = await signUpRiskScope();
+    const assessmentId = formString(formData, "assessmentId");
+    const assessment = assessmentId && scope ? await getRiskAssessment(scope, assessmentId) : null;
+    if (assessmentId && !assessment) throw new ActionError("Sign-up not found.");
+
+    if (formData.get("takeDown") !== "on") {
+      let reported: string[];
+      if (assessment && scope) {
+        reported = (await reportAssessment({ actor, scope, assessment, category, reason }))
+          ? [assessment.id]
+          : [];
+      } else {
+        const userId = formUserId(formData);
+        const user = await getUserForAdmin(userId);
+        if (!user) throw new ActionError("User not found.");
+        if (!scope) {
+          throw new ActionError(
+            "Sign-ups aren't assessed (RISK_SIGNUP_ENVIRONMENT_ID), so there is nothing to report.",
+          );
+        }
+        reported = await reportSignUps({ actor, emails: [user.email], category, reason });
+      }
+      if (reported.length === 0) throw new ActionError("This sign-up is already reported.");
+      refresh();
+      return { takenDown: false, organizations: 0, reported: reported.length };
+    }
+
+    const userId = formUserId(formData);
+    assertNotSelf(actor, userId);
+    const user = await getUserForAdmin(userId);
+    if (!user) throw new ActionError("User not found.");
+    if ((user.role ?? "").split(",").some((role) => role.trim() === "admin")) {
+      throw new ActionError("Platform admins can't be taken down: remove the admin role first.");
+    }
+    if (assessment && assessment.user.email?.toLowerCase() !== user.email.toLowerCase()) {
+      throw new ActionError("This sign-up belongs to another address.");
+    }
+    const memberships = await listUserMembershipsForAdmin(userId);
+    const selected = memberships.filter(
+      (membership) => formData.get(`organization:${membership.organization.id}`) === "on",
+    );
+    for (const membership of selected) {
+      if (await isSystemOrganization(membership.organization.id)) {
+        throw new ActionError(SYSTEM_ORGANIZATION_MESSAGE);
+      }
+    }
+
+    const takedowns: OrganizationTakedown[] = [];
+    for (const membership of selected) {
+      const result = await takeDownOrganization({
+        actor,
+        organizationId: membership.organization.id,
+        category,
+        reason,
+      });
+      if (!result) continue;
+      takedowns.push(result);
+      await recordAdminAction({
+        actor,
+        action: "organization.take_down",
+        target: { type: "organization", id: result.organizationId },
+        organizationId: result.organizationId,
+        reason,
+        metadata: {
+          category,
+          via: { type: "user", id: userId },
+          bannedUserIds: result.bannedUserIds,
+          keptUserIds: result.keptUserIds,
+          revokedKeyIds: result.revokedKeyIds,
+        },
+      });
+    }
+    // The user is the target: banned even when an organization's plan kept them for another one.
+    const bannedUserIds = new Set(takedowns.flatMap((takedown) => takedown.bannedUserIds));
+    if (!user.banned && !bannedUserIds.has(userId)) {
+      await banUser({
+        actor,
+        userId,
+        reason,
+        duration: "",
+        metadata: { takeDown: userId, category },
+      });
+      bannedUserIds.add(userId);
+    }
+    const reportedAssessmentIds = await reportSignUps({
+      actor,
+      emails: [user.email, ...takedowns.flatMap((takedown) => takedown.bannedEmails)],
+      category,
+      reason,
+    });
+    if (assessment && scope && !reportedAssessmentIds.includes(assessment.id)) {
+      if (await reportAssessment({ actor, scope, assessment, category, reason })) {
+        reportedAssessmentIds.push(assessment.id);
+      }
+    }
+    await recordAdminAction({
+      actor,
+      action: "user.take_down",
+      target: { type: "user", id: userId },
+      reason,
+      metadata: {
+        email: user.email,
+        category,
+        organizationIds: takedowns.map((takedown) => takedown.organizationId),
+        bannedUserIds: [...bannedUserIds],
+        revokedKeyIds: takedowns.flatMap((takedown) => takedown.revokedKeyIds),
+        reportedAssessmentIds,
+      },
+    });
+    refresh();
+    return {
+      takenDown: true,
+      organizations: takedowns.length,
+      reported: reportedAssessmentIds.length,
+    };
+  });
+}
+
+/**
+ * Tells coss.com Risk a sign-up was legitimate (a false positive): it takes back what reporting it
+ * remembered and resolves an open review. It doesn't unban anyone or lift a suspension.
+ */
+export async function markSignUpLegitimateAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const { actor } = await requirePlatformAdminAction();
+    const reason = optionalReason(formData);
+    const scope = await signUpRiskScope();
+    const assessmentId = formString(formData, "assessmentId");
+    const assessment = scope ? await getRiskAssessment(scope, assessmentId) : null;
+    if (!scope || !assessment) throw new ActionError("Sign-up not found.");
+    const previousOutcome = assessment.outcome;
+    const updated = await recordRiskFeedback(
+      riskHasher(),
+      scope,
+      assessment.id,
+      { outcome: "legitimate", ...(reason ? { note: reason } : {}) },
+      { source: "dashboard", actorId: actor.userId },
+    );
+    if (!updated) throw new ActionError("Sign-up not found.");
+    await recordAdminAction({
+      actor,
+      action: "risk_assessment.mark_legitimate",
+      target: { type: "risk_assessment", id: assessment.id },
+      reason,
+      metadata: {
+        email: assessment.user.email,
+        previousOutcome,
+        decision: assessment.decision,
+      },
     });
     refresh();
     return null;

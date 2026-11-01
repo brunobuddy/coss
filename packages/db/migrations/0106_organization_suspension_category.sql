@@ -1,0 +1,1 @@
+ALTER TABLE "organization_suspension" ADD COLUMN "category" text;

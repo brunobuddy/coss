@@ -152,7 +152,7 @@ export default async function AdminOverviewPage() {
           value={formatCompact(screenings.flagged)}
         />
         <Stat
-          detail={`${formatCompact(sendingSuspended.length)} suspended`}
+          detail={`${formatCompact(sendingSuspended.length)} live sending suspended`}
           href="/admin/reputation?status=warning"
           label="Reputation warnings"
           value={formatCompact(warned.length)}
@@ -181,7 +181,7 @@ export default async function AdminOverviewPage() {
         />
         <Stat
           href="/admin/organizations?status=suspended"
-          label="Suspended organizations"
+          label="Accounts suspended"
           value={formatCompact(overview.suspendedOrganizations)}
         />
         <Stat
