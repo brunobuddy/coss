@@ -21,6 +21,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/user-avatar";
 import { postAuth } from "@/lib/auth-post";
+import { RailTooltipTrigger } from "./rail-tooltip";
 
 /** `image` is `avatarUrl(session.user)` (`@/lib/avatars`). */
 export type ShellUser = { name: string; email: string; image: string | null; isAdmin: boolean };
@@ -40,9 +41,11 @@ export function UserNav({ user, compact }: { user: ShellUser; compact?: boolean 
           {compact ? (
             <MenuTrigger
               render={
-                <SidebarMenuButton
-                  className="size-8 justify-center p-0 data-popup-open:bg-sidebar-accent"
-                  tooltip={{ children: user.name || user.email, hidden: isMobile }}
+                <RailTooltipTrigger
+                  label={user.name || user.email}
+                  render={
+                    <SidebarMenuButton className="size-8 justify-center p-0 data-popup-open:bg-sidebar-accent" />
+                  }
                 />
               }
             >

@@ -75,6 +75,7 @@ import {
 import { rememberEnvironment } from "@/lib/remembered-environment";
 import { useActionToast } from "@/lib/toast";
 import { ActiveIndicator, useActiveIndicator } from "./active-indicator";
+import { RailTooltip, RailTooltipTrigger } from "./rail-tooltip";
 import { SidebarWordmark } from "./sidebar-parts";
 import type { ShellOrganization, ShellProject } from "./types";
 import { type ShellUser, UserNav } from "./user-nav";
@@ -203,64 +204,71 @@ function ProductRail(props: {
   const railRef = useRef<HTMLDivElement>(null);
   const railIndicator = useActiveIndicator(railRef, pathname);
   return (
-    <div
-      className="relative flex w-(--sidebar-width-icon) shrink-0 flex-col items-center gap-2 py-2 max-md:w-14 max-md:border-e max-md:pt-3 group-data-[collapsible=icon]:py-0 border-sidebar-border md:border-e md:pe-px group-data-[collapsible=icon]:md:border-e-0"
-      ref={railRef}
-    >
-      <ActiveIndicator {...railIndicator} />
-      <OrganizationMenu
-        current={props.organization}
-        organizations={props.organizations}
-        settingsPaths={props.settingsPaths}
-      />
-      <SidebarMenu className="items-center gap-1">
-        {envBase ? (
+    <RailTooltip>
+      <div
+        className="relative flex w-(--sidebar-width-icon) shrink-0 flex-col items-center gap-2 py-2 max-md:w-14 max-md:border-e max-md:pt-3 group-data-[collapsible=icon]:py-0 border-sidebar-border md:border-e md:pe-px group-data-[collapsible=icon]:md:border-e-0"
+        ref={railRef}
+      >
+        <ActiveIndicator {...railIndicator} />
+        <OrganizationMenu
+          current={props.organization}
+          organizations={props.organizations}
+          settingsPaths={props.settingsPaths}
+        />
+        <SidebarMenu className="items-center gap-1">
+          {envBase ? (
+            <>
+              <RailLink
+                active={area.kind === "home"}
+                href={envBase}
+                icon={HouseIcon}
+                label="Home"
+              />
+              <RailLink
+                active={area.kind === "catalog"}
+                href={`${envBase}/products`}
+                icon={LayoutGridIcon}
+                label="All products"
+              />
+            </>
+          ) : null}
+        </SidebarMenu>
+        {envBase && props.products.length > 0 ? (
           <>
-            <RailLink active={area.kind === "home"} href={envBase} icon={HouseIcon} label="Home" />
-            <RailLink
-              active={area.kind === "catalog"}
-              href={`${envBase}/products`}
-              icon={LayoutGridIcon}
-              label="All products"
-            />
+            <div aria-hidden className="h-px w-6 bg-sidebar-border" />
+            <SidebarMenu className="items-center gap-1">
+              {props.products.map((product) => (
+                <RailLink
+                  active={area.kind === "product" && area.product === product}
+                  href={envBase + product.path}
+                  icon={PRODUCT_ICONS[product.key]}
+                  key={product.key}
+                  label={product.name}
+                />
+              ))}
+            </SidebarMenu>
           </>
         ) : null}
-      </SidebarMenu>
-      {envBase && props.products.length > 0 ? (
-        <>
-          <div aria-hidden className="h-px w-6 bg-sidebar-border" />
-          <SidebarMenu className="items-center gap-1">
-            {props.products.map((product) => (
-              <RailLink
-                active={area.kind === "product" && area.product === product}
-                href={envBase + product.path}
-                icon={PRODUCT_ICONS[product.key]}
-                key={product.key}
-                label={product.name}
-              />
-            ))}
-          </SidebarMenu>
-        </>
-      ) : null}
-      <SidebarMenu className="mt-auto items-center gap-1">
-        {envBase ? (
+        <SidebarMenu className="mt-auto items-center gap-1">
+          {envBase ? (
+            <RailLink
+              active={area.kind === "developers"}
+              href={envBase + DEVELOPERS.path}
+              icon={DEVELOPERS_ICON}
+              label="Developers"
+            />
+          ) : null}
           <RailLink
-            active={area.kind === "developers"}
-            href={envBase + DEVELOPERS.path}
-            icon={DEVELOPERS_ICON}
-            label="Developers"
+            active={area.kind === "organization"}
+            href={settingsHref(props.organization.slug)}
+            icon={ORGANIZATION_ICON}
+            label="Organization"
           />
-        ) : null}
-        <RailLink
-          active={area.kind === "organization"}
-          href={settingsHref(props.organization.slug)}
-          icon={ORGANIZATION_ICON}
-          label="Organization"
-        />
-        <RailLink icon={BookOpenIcon} label="Documentation" link={<a href="/docs" />} />
-      </SidebarMenu>
-      <UserNav compact user={props.user} />
-    </div>
+          <RailLink icon={BookOpenIcon} label="Documentation" link={<a href="/docs" />} />
+        </SidebarMenu>
+        <UserNav compact user={props.user} />
+      </div>
+    </RailTooltip>
   );
 }
 
@@ -271,32 +279,36 @@ function RailLink(
     | { link: ReactElement }
   ),
 ) {
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { setOpenMobile } = useSidebar();
   const navigate = useContext(Navigate);
   const Icon = props.icon;
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton
-        className="size-8 justify-center p-0 data-[active=true]:bg-transparent"
-        isActive={props.active}
+      <RailTooltipTrigger
+        label={props.label}
         render={
-          "link" in props ? (
-            props.link
-          ) : (
-            <Link
-              href={props.href}
-              onNavigate={() => {
-                setOpenMobile(false);
-                navigate(props.href);
-              }}
-            />
-          )
+          <SidebarMenuButton
+            className="size-8 justify-center p-0 data-[active=true]:bg-transparent"
+            isActive={props.active}
+            render={
+              "link" in props ? (
+                props.link
+              ) : (
+                <Link
+                  href={props.href}
+                  onNavigate={() => {
+                    setOpenMobile(false);
+                    navigate(props.href);
+                  }}
+                />
+              )
+            }
+          />
         }
-        tooltip={{ children: props.label, hidden: isMobile }}
       >
         <Icon />
         <span className="sr-only">{props.label}</span>
-      </SidebarMenuButton>
+      </RailTooltipTrigger>
     </SidebarMenuItem>
   );
 }
@@ -323,9 +335,11 @@ function OrganizationMenu(props: {
         <Menu>
           <MenuTrigger
             render={
-              <SidebarMenuButton
-                className="size-8 justify-center p-0 data-popup-open:bg-sidebar-accent"
-                tooltip={{ children: current.name, hidden: isMobile }}
+              <RailTooltipTrigger
+                label={current.name}
+                render={
+                  <SidebarMenuButton className="size-8 justify-center p-0 data-popup-open:bg-sidebar-accent" />
+                }
               />
             }
           >
