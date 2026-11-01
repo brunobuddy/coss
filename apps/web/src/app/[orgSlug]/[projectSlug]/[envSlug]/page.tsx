@@ -223,12 +223,12 @@ export default async function EnvironmentHomePage({
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="relative overflow-hidden rounded-2xl border bg-card shadow-xs/5">
+      <section className="relative -mt-2 overflow-hidden rounded-2xl border bg-card shadow-xs/5 lg:-mt-4">
         <div
           aria-hidden
           className="drafting-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_top_right,black,transparent_65%)]"
         />
-        <div className="relative flex flex-col gap-6 px-6 pt-5 pb-6 sm:px-7 sm:pt-6 sm:pb-7 lg:flex-row lg:items-end lg:justify-between">
+        <div className="relative flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex max-w-xl flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
               <span>
