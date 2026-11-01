@@ -12,6 +12,7 @@
     "test": "bun --env-file=../../.env test"
   },
   "dependencies": {
+    "@coss/dashboard-routes": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/email-layout": "workspace:*",
     "@coss/push": "workspace:*",

@@ -3,7 +3,6 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { type Href, Link, Stack, useLocalSearchParams } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 import {
   Ban,
   CalendarClock,
@@ -32,7 +31,6 @@ import {
 import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../components/screen";
 import { Tabs } from "../../../../../../../components/tabs";
 import { Text } from "../../../../../../../components/text";
-import { DASHBOARD_URL } from "../../../../../../../lib/config";
 import { formatBytes, formatCount, formatDateTime } from "../../../../../../../lib/format";
 import {
   ApiRequestError,
@@ -47,6 +45,7 @@ import {
   RECIPIENT_STATUS_VARIANT,
 } from "../../../../../../../lib/status";
 import { colors, usePalette } from "../../../../../../../lib/theme";
+import { openOnWeb } from "../../../../../../../lib/web";
 
 type Tab = "overview" | "events" | "recipients" | "content" | "attachments";
 
@@ -290,10 +289,8 @@ export default function EmailScreen() {
     return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
   }
   const { email, events, has_more_events, can_send } = query.data;
-  const openOnWeb = () =>
-    void WebBrowser.openBrowserAsync(
-      `${DASHBOARD_URL}/${params.org}/projects/${params.project}/${params.env}/emails/${email.id}`,
-    );
+  const openEmailOnWeb = () =>
+    openOnWeb(`/${params.org}/projects/${params.project}/${params.env}/emails/${email.id}`);
 
   return (
     <>
@@ -422,7 +419,7 @@ export default function EmailScreen() {
             <Panel
               action={
                 email.has_html ? (
-                  <Pressable hitSlop={8} onPress={openOnWeb}>
+                  <Pressable hitSlop={8} onPress={openEmailOnWeb}>
                     <Icon color="mutedForeground" icon={ExternalLink} />
                   </Pressable>
                 ) : undefined
@@ -442,7 +439,7 @@ export default function EmailScreen() {
                   email.has_html ? (
                     <Button
                       icon={ExternalLink}
-                      onPress={openOnWeb}
+                      onPress={openEmailOnWeb}
                       size="sm"
                       title="Preview on coss.com"
                       variant="outline"

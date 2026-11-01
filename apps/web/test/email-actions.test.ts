@@ -24,7 +24,7 @@ const recordAudit = mock(async (_session: unknown, _input: unknown) => {});
 mock.module("@/lib/audit", () => ({ recordAudit }));
 
 const { rescheduleEmailAction } = await import(
-  "../src/app/[orgSlug]/projects/[projectSlug]/[envSlug]/emails/[emailId]/actions"
+  "../src/app/[orgSlug]/[projectSlug]/[envSlug]/email/messages/[emailId]/actions"
 );
 
 function form(scheduledAt: string): FormData {

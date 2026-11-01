@@ -132,7 +132,7 @@ export function LogExplorer(props: LogExplorerProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const { view } = props;
-  const logsPath = `${props.envPath}/logs`;
+  const logsPath = `${props.envPath}/developers/logs`;
   const filters = useMemo(() => parseLogQuery(view.q), [view.q]);
 
   const [entries, setEntries] = useState(props.page.data);

@@ -7,6 +7,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { RESERVED_ORG_SLUGS, zoneForPath } from "@coss/auth/slugs";
+import { RESERVED_PROJECT_SLUGS } from "@coss/dashboard-routes";
 
 const APP_DIR = path.resolve(import.meta.dir, "../src/app");
 
@@ -62,23 +63,15 @@ describe("route segments vs. organization slugs", () => {
     expect(existsSync(path.join(APP_DIR, "page.tsx"))).toBe(false);
   });
 
-  test("static segments under [orgSlug] are known", () => {
-    const allowed = new Set([
-      "projects",
-      "members",
-      "domains",
-      "dedicated-ips",
-      "sms",
-      "settings",
-      "reputation",
-      "spend",
-    ]);
+  test("static segments under [orgSlug] are reserved project slugs", () => {
+    // `/<org>/<segment>` is also where a project would live, so no project may take its slug.
     const segments = staticSegments(path.join(APP_DIR, "[orgSlug]"));
     expect(segments.length).toBeGreaterThan(0);
     for (const segment of segments) {
-      expect({ segment, allowed: allowed.has(segment) || RESERVED_ORG_SLUGS.has(segment) }).toEqual(
-        { segment, allowed: true },
-      );
+      expect({ segment, reserved: RESERVED_PROJECT_SLUGS.has(segment) }).toEqual({
+        segment,
+        reserved: true,
+      });
     }
   });
 });

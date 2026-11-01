@@ -24,4 +24,5 @@ repository root.
   APNs' `Unregistered`/`BadDeviceToken` deletes the device. The text passes through Apple: organization, project and
   environment names and counts only — never free-form text (descriptions, application names), addresses, URLs,
   scores or notes. The payload's `body.path` (what expo-notifications calls `data`) is a
-  dashboard path that is also the app's route; the app opens only paths in its allow-list (`push-route.ts`).
+  route of the app, which keeps the dashboard's former path shape (`/<org>/projects/<project>/<env>/webhooks/…`,
+  `/<org>/reputation`); the app opens only paths in its allow-list (`push-route.ts`).

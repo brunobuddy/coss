@@ -113,13 +113,13 @@ describe("coss open", () => {
   test("URLs of environment and organization pages", () => {
     const slugs = { organization: "acme", project: "web", environment: "production" };
     expect(dashboardPageUrl("https://coss.com", slugs, "overview")).toBe(
-      "https://coss.com/acme/projects/web/production",
+      "https://coss.com/acme/web/production",
     );
     expect(dashboardPageUrl("https://coss.com", slugs, "api-keys")).toBe(
-      "https://coss.com/acme/projects/web/production/api-keys",
+      "https://coss.com/acme/web/production/developers/api-keys",
     );
     expect(dashboardPageUrl("https://coss.com", slugs, "domains")).toBe(
-      "https://coss.com/acme/domains",
+      "https://coss.com/acme/web/production/email/domains",
     );
     expect(dashboardPageUrl("https://coss.com", slugs, "audit-log")).toBe(
       "https://coss.com/acme/settings/audit",
@@ -140,15 +140,15 @@ describe("coss open", () => {
     });
     await withProfiles(io);
     expect(await run(["open", "logs"], io)).toBe(0);
-    expect(opened).toBe("https://coss.com/acme/projects/default/dev/logs");
+    expect(opened).toBe("https://coss.com/acme/default/dev/developers/logs");
 
     const printed = testIo({ fetch: api.fetch, env: { COSS_API_KEY: SANDBOX_KEY } });
     expect(await run(["open", "--print"], printed)).toBe(0);
-    expect(printed.output()).toBe("https://coss.com/acme/projects/default/dev\n");
+    expect(printed.output()).toBe("https://coss.com/acme/default/dev\n");
     const json = testIo({ fetch: api.fetch, env: { COSS_API_KEY: SANDBOX_KEY } });
     expect(await run(["open", "webhooks", "--json"], json)).toBe(0);
     expect(JSON.parse(json.output())).toEqual({
-      url: "https://coss.com/acme/projects/default/dev/webhooks",
+      url: "https://coss.com/acme/default/dev/developers/webhooks",
     });
   });
 
@@ -159,7 +159,7 @@ describe("coss open", () => {
     const io = testIo({ fetch: api.fetch });
     await withProfiles(io);
     expect(await run(["open", "emails"], io)).toBe(0);
-    expect(io.output()).toBe("https://coss.com/acme/projects/default/development/emails\n");
+    expect(io.output()).toBe("https://coss.com/acme/default/development/email/messages\n");
     expect(io.errors()).toContain("using the profile's");
 
     const env = testIo({ fetch: api.fetch, env: { COSS_API_KEY: SANDBOX_KEY } });
@@ -170,6 +170,6 @@ describe("coss open", () => {
   test("unknown pages are usage errors", async () => {
     const io = testIo({ env: { COSS_API_KEY: SANDBOX_KEY } });
     expect(await run(["open", "nope"], io)).toBe(2);
-    expect(io.errors()).toContain("`coss open` takes one page: overview, emails");
+    expect(io.errors()).toContain("`coss open` takes one page: overview, home, products");
   });
 });

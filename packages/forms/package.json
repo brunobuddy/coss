@@ -17,6 +17,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
     "@coss/billing": "workspace:*",
+    "@coss/dashboard-routes": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/logs": "workspace:*",
     "@coss/retention": "workspace:*",

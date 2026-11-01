@@ -750,6 +750,13 @@
       "when": 1793549854116,
       "tag": "0106_organization_suspension_category",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1793567521044,
+      "tag": "0107_massive_zeigeist",
+      "breakpoints": true
     }
   ]
 }

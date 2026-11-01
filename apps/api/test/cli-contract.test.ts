@@ -129,7 +129,7 @@ describe("coss-cli against the API", () => {
     // `coss open` builds the dashboard's URL from the slugs the API reports.
     expect(await run(["open", "logs", "--json"], cli.io)).toBe(0);
     expect(JSON.parse(cli.stdout().trim().split("\n").at(-1) ?? "{}").url).toBe(
-      `https://coss.com/${tenant.organization.slug}/projects/${tenant.project.slug}/${tenant.development.slug}/logs`,
+      `https://coss.com/${tenant.organization.slug}/${tenant.project.slug}/${tenant.development.slug}/developers/logs`,
     );
 
     expect(await run(["emails", "send", "--simulate", "bounced", "--wait", "--json"], cli.io)).toBe(

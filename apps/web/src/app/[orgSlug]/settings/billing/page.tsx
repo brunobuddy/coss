@@ -21,6 +21,7 @@ import {
   usageByDay,
   usageByEnvironment,
 } from "@coss/billing";
+import { settingsHref } from "@coss/dashboard-routes";
 import { listEnvironments, listProjects } from "@coss/tenancy";
 import { Alert, AlertDescription, AlertTitle } from "@coss/ui/components/alert";
 import { Badge } from "@coss/ui/components/badge";
@@ -665,7 +666,7 @@ export default async function BillingPage({
               ? "Limits and alerts for usage beyond your plan."
               : "Only owners can change these."}{" "}
             Budgets for members, projects and API keys are on the{" "}
-            <Link className="underline" href={`/${organization.slug}/spend/budgets`}>
+            <Link className="underline" href={settingsHref(organization.slug, "/spend/budgets")}>
               Spend
             </Link>{" "}
             page.

@@ -154,6 +154,8 @@ export const ID_PREFIXES = {
   // Imports from another email provider (Resend, SendGrid, Postmark), `@coss/migrate`.
   migration: "mig",
   migrationItem: "migitem",
+  // A member's pinned or hidden dashboard products.
+  productPreference: "prodpref",
 } as const;
 
 export type IdPrefix = (typeof ID_PREFIXES)[keyof typeof ID_PREFIXES];

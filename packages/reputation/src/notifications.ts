@@ -5,6 +5,8 @@
  * worker: this package never imports a product). System-level: the scan spans organizations, and
  * every read and write is scoped by the notification's own organization.
  */
+
+import { orgLinkHref } from "@coss/dashboard-routes";
 import { db, type Executor, schema } from "@coss/db";
 import { type EmailBlock, oneLine, renderEmail } from "@coss/email-layout";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
@@ -278,7 +280,7 @@ async function notificationContent(
     organizationName: org.name,
     trigger: event.trigger,
     checks: checks.map((check) => check.message),
-    url: new URL(`/${org.slug}/reputation`, dashboardUrl).toString(),
+    url: new URL(orgLinkHref(org.slug, "/email/reputation"), dashboardUrl).toString(),
   });
   return { recipients, message };
 }

@@ -79,7 +79,7 @@ export async function marketingPage(
     project,
     environment,
     env: { organizationId: organization.id, environmentId: environment.id },
-    base: `/${organization.slug}/projects/${project.slug}/${environment.slug}`,
+    base: `/${organization.slug}/${project.slug}/${environment.slug}`,
     target: { orgSlug: organization.slug, projectSlug: project.slug, envSlug: environment.slug },
   };
 }

@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@coss/billing": "workspace:*",
+    "@coss/dashboard-routes": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/email-layout": "workspace:*",
     "@coss/logs": "workspace:*",

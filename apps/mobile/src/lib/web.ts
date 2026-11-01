@@ -1,14 +1,15 @@
 import * as WebBrowser from "expo-web-browser";
 import { DASHBOARD_URL } from "./config";
+import { dashboardPath } from "./dashboard-path";
 
 export type EnvironmentParams = { org: string; project: string; env: string };
 
-/** The dashboard path of an environment; the app's routes mirror the dashboard's. */
+/** The app's path of an environment (the dashboard's former shape; `openOnWeb` translates it). */
 export function environmentPath(params: EnvironmentParams): string {
   return `/${params.org}/projects/${params.project}/${params.env}`;
 }
 
-/** Opens a dashboard page (a path) in the in-app browser. */
+/** Opens the dashboard's page for one of the app's paths in the in-app browser. */
 export function openOnWeb(path: string): void {
-  void WebBrowser.openBrowserAsync(`${DASHBOARD_URL}${path}`);
+  void WebBrowser.openBrowserAsync(`${DASHBOARD_URL}${dashboardPath(path)}`);
 }

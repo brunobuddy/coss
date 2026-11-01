@@ -65,6 +65,12 @@ export {
   setOrganizationTwoFactorRequired,
 } from "./organizations.ts";
 export {
+  listProductPreferences,
+  productActivityByEnvironment,
+  productFigures,
+  setProductPreference,
+} from "./products.ts";
+export {
   createProject,
   getProject,
   listProjects,

@@ -6,6 +6,8 @@
  * reputation notifications), with the same lease, backoff and age limits. System-level: the scan
  * spans organizations, and every read and write is scoped by the row's own organization.
  */
+
+import { orgLinkHref } from "@coss/dashboard-routes";
 import { db, schema } from "@coss/db";
 import { type EmailBlock, oneLine, renderEmail } from "@coss/email-layout";
 import { and, asc, eq, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
@@ -197,7 +199,10 @@ async function notificationContent(
     domain: target.name,
     organizationName: org.name,
     detail,
-    url: new URL(`/${org.slug}/domains/${row.domainId}/dmarc`, deps.dashboardUrl).toString(),
+    url: new URL(
+      orgLinkHref(org.slug, `/email/domains/${row.domainId}/dmarc`),
+      deps.dashboardUrl,
+    ).toString(),
   });
   return { recipients, message };
 }

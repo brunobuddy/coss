@@ -66,6 +66,7 @@ text it shows is a gist that must match `CLA.md`: change both together, as a new
 | `packages/push` | `@coss/push` | Push notifications to the iOS app: devices (one per app session), the outbox products enqueue into (`enqueuePush`, in the deciding transaction), recipients (role + `orgAccess`) and content resolved at send time, the worker's send loop; `./apns` (APNs over `node:http2`, ES256 provider tokens), `./schemas` (zod only: categories, kinds, registration), `./testing` (`FakePushSender`, `createTestPushDevice`). See `packages/push/AGENTS.md`. |
 | `packages/notifications` | `@coss/notifications` | coss.com's notification emails to organizations: the outbox products enqueue into (`enqueueNotification`, in the deciding transaction; once per dedupe key, optionally delayed), kinds rendered at send time (stale news is skipped), the worker's `notifications` loop, owner/admin recipients, retention; `./testing` (`recordingNotifier`). See `packages/notifications/AGENTS.md`. |
 | `packages/email-layout` | `@coss/email-layout` | The layout of every coss.com email (account emails, notifications): `renderEmail` from typed blocks (heading, paragraph, list, button, link, code, details, steps, note) to matching text and HTML parts. Zero deps, client-safe. |
+| `packages/dashboard-routes` | `@coss/dashboard-routes` | The dashboard's products (`PRODUCTS`: pages, categories, docs), Developers, organization settings and the paths to them (`environmentHref`, `settingsHref`, `orgLinkHref`/`parseOrgLink`), `RESERVED_PROJECT_SLUGS`, `visibleProducts`. Zero deps, client-safe. |
 | `packages/companion` | `@coss/companion` | Wire types of the dashboard's iOS app API (`/api/mobile/v1/*`): plain TypeScript types, zero deps, client-safe. |
 | `packages/retention` | `@coss/retention` | The data retention policy: `RETENTION_POLICY` (published by the docs and the dashboard) and `RETENTION_DAYS` (enforced by each package's purge, run by the worker). Zero deps, client-safe. |
 | `packages/ui` | `@coss/ui` | coss ui components (shadcn `@coss` registry, Base UI) + `theme.css` (tokens), `globals.css` (the dashboard's stylesheet) and `./fonts` (`next/font/local`: Cal Sans as `fontSans`/`fontHeading` and, upright only, `fontCalSans`; Paper Mono as `fontMono`). |
@@ -84,6 +85,7 @@ Runtime dependencies: `observability` (no workspace deps) ← `api`, `worker`, `
 `db ← logs ← webhooks ← risk` (`risk` also `→ signals, ratelimit, retention, screening` — only screening's DB-free `./classifier`, `./text`, `./runtime`, `./testing` — and `billing` — only `./metering` and `./gate` types, for phone checks; `email` imports only `@coss/risk/schemas`, for `WEBHOOK_EVENT_TYPES`), `db ← logs ← webhooks ← reputation ← screening ← email`, `webhooks ← sms → billing, reputation, retention, versioning` (`email` imports only `@coss/sms/schemas`, for `WEBHOOK_EVENT_TYPES`; screening is injected), `reputation ← hooks`, `db ← ratelimit`, `db ← push ← webhooks, hooks, reputation, billing, risk, worker, web` (`push` also `→ retention` and only `@coss/auth/{permissions,org-access}`), `db ← notifications ← sms, worker` (`notifications` also `→ email-layout, retention`); `email-layout` (no deps) ← `auth`, `reputation`, `email`, `billing`, `sms`, `notifications`, `email, webhooks, logs, retention ← migrate` (`billing` only `./gate` types), `webhooks ← billing ← email` (packages take
 `billing`'s plan checks injected — `PlanGate`, `UsageGate`, and in webhooks the structural `WebhookPlanLimits`, since
 billing enqueues `billing.*` events through it — and email imports only `./metering`, `./gate` and `./wire`); `versioning` (no deps) ← `tenancy`, `webhooks`, `email`, `billing` (`schemas`/`wire` examples);
+`dashboard-routes` (no deps) ← `web`, `tenancy`, `email`, `sms`, `reputation`, `billing`, `forms` (paths of dashboard pages);
 `retention` (no deps) ← `tenancy`, `webhooks`, `reputation`, `screening`, `email`, `hooks`, `billing`, `push`, `notifications`, `sign`, `verify`, `forms`, `worker`, `web`, `site`, `mobile`;
 `db ← logs ← webhooks ← verify` (`verify` also `→ sms, risk, reputation, ratelimit, signals, retention, versioning` and only `@coss/billing/{metering,gate,catalog}`; `email` imports only `@coss/verify/schemas`, for `WEBHOOK_EVENT_TYPES`);
 `db ← logs ← webhooks ← sign` (`sign` also `→ versioning, retention` and only `@coss/billing/metering`; `email` imports only `@coss/sign/schemas`, for `WEBHOOK_EVENT_TYPES`); `db ← logs ← webhooks ← risk ← forms` (`forms` also `→ versioning, retention` and only `@coss/billing/metering`; never `@coss/email`: mail and contacts are injected; `email` imports only `@coss/forms/schemas`, for `WEBHOOK_EVENT_TYPES`); `api → tenancy, email, sms, sign, verify, forms, hooks, reputation, webhooks, ratelimit, versioning, logs, billing, risk, screening (`./env` only), db`;
@@ -532,9 +534,13 @@ What an agent pointed at coss.com reads, all describing the same facts — chang
   `@/lib/auth`; client code uses `authClient` from `@/lib/auth-client`.
 - Layout follows coss.com's docs (`apps/site/DESIGN.md`: grayscale, Cal Sans/Paper Mono, hue only for status):
   `AppShell` (`src/components/shell/`) is the sidebar + framed page with breadcrumbs and ⌘K, used by the
-  `[orgSlug]`, `/settings` and `/admin` layouts. `src/lib/navigation.ts` is the one list of pages the sidebar,
-  breadcrumbs, ⌘K and settings tabs read — add a page there. Its items carry icon components, so server components
-  pass an area name (`SubNav nav=…`, `AreaSidebar area=…`), never the lists. Pages compose `PageHeader`, `Panel`
+  `[orgSlug]`, `/settings` and `/admin` layouts. An organization's sidebar (`ConsoleSidebar`) is a rail of the
+  member's products (what the environment uses, `productActivityByEnvironment`, plus what they pinned,
+  `product_preference`; `visibleProducts`) beside a panel with the current product's pages; the header starts with
+  the project/environment switcher. `@coss/dashboard-routes` is the one list of products and their pages (the
+  rail, panel, breadcrumbs, ⌘K, All products, emails' links; the CLI's `coss open` mirrors it) — add a page there;
+  `src/lib/navigation.ts` adds icons and keeps the account and admin lists. Its items carry icon components, so
+  server components pass an area name (`SubNav nav=…`, `AreaSidebar area=…`), never the lists. Pages compose `PageHeader`, `Panel`
   (`<Table variant="card">` or `PanelBody` inside), `EmptyState`, `SpecList`, `StatRow`, `StatusDot`; no back
   links (breadcrumbs). `data-page-width="full"` on a page lifts the shell's `max-w-6xl`.
 - Mutations live in a colocated `actions.ts` (`"use server"`): `(prev: ActionResult<T> | null, formData) => runAction(…)`
@@ -550,8 +556,14 @@ What an agent pointed at coss.com reads, all describing the same facts — chang
   A `<form>` inside `DialogPopup`/`AlertDialogPopup` needs `className="contents"` (otherwise the footer renders outside the
   popup). Popups unmount on close. Add components with `bunx shadcn@latest add @coss/<name>` from `packages/ui`;
   dashboard-specific compositions go in `apps/web/src/components`.
+- URLs are product-first: environment pages at `/<org>/<project>/<env>/<product>/…` (Home at the environment
+  itself, the catalog at `/products`, Developers at `/developers/…`), organization pages at `/<org>/settings/…`.
+  Pages of the organization's own data that belong to a product (domains, dedicated IPs, reputation, SMS numbers)
+  live in that product, in any environment. `/<org>` opens the environment last used (cookie `coss_env.<org>`),
+  and `/<org>?to=/email/domains` a page in it: links made without an environment (emails) use `orgLinkHref`.
 - Routes: a new top-level segment must be added to `RESERVED_ORG_SLUGS` (`packages/auth/src/slugs.ts`), a new static
-  segment under `[orgSlug]` to the allow-list in `apps/web/test/reserved-slugs.test.ts`, signed-out pages to
+  segment under `[orgSlug]` to `RESERVED_PROJECT_SLUGS` (`@coss/dashboard-routes`; projects share that level), a
+  new page below an environment to its product in `@coss/dashboard-routes` (`test/dashboard-routes.test.ts`), signed-out pages to
   `PUBLIC_PATH_PREFIXES` (`src/proxy.ts`). The entry page is `/dashboard` (`DASHBOARD_PATH`), never `/` (the site's
   landing page): use it for every "go to the dashboard" link and as the post-sign-in default (`safeRedirectPath`).
   The dashboard has no root files (icon, robots, sitemap): the site serves them.
@@ -663,7 +675,9 @@ Never edit an applied migration; do renames as a separate step (drizzle-kit prom
    `content/docs/<product>/` (a section of its own: `"root": true`, an `icon` and a `description` in its `meta.json`,
    listed in `content/docs/meta.json`) with Twoslash SDK examples (per-method SDK usage lives in the API reference),
    and its API tags under a `---<Product>---` separator in `content/docs/api-reference/meta.json` (a test fails otherwise).
-7. Dashboard: dependency + `transpilePackages`; pages under `[orgSlug]/projects/[projectSlug]/[envSlug]/`.
+7. Dashboard: dependency + `transpilePackages`; a `PRODUCTS` entry in `@coss/dashboard-routes` (its pages, category,
+   docs), an icon in `PRODUCT_ICONS` and a probe in `productActivityByEnvironment`/`productFigures`
+   (`@coss/tenancy`); pages under `[orgSlug]/[projectSlug]/[envSlug]/<product>/`.
 8. Events/webhooks: record events in the product's own table and call `enqueueWebhookMessage(tx, …)` from
    `@coss/webhooks` in the same transaction; add the payload zod schema + SDK type + contract assertion.
 9. Logs: append a log line per new event with `appendLogEntries(tx, …)` from `@coss/logs` in the same transaction
@@ -765,7 +779,7 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
   (and the dispatch jobs, from the job's `organizationId`); `@coss/sms/admin` is platform-level like `@coss/email/admin`. Server actions take only slugs +
   target ids and derive the org from `requireOrgPermission`; every Better Auth organization call passes `organizationId`
   explicitly (never rely on `session.activeOrganizationId`).
-- **Client-safe modules** never import `@coss/db`: `@coss/risk/{schemas,env}`, `@coss/observability/*`, `@coss/auth/{permissions,slugs,constants,api-key-permissions,org-access}`, `@coss/push/schemas`, `@coss/forms/{schemas,env}`, `@coss/email/schemas`,
+- **Client-safe modules** never import `@coss/db`: `@coss/dashboard-routes`, `@coss/risk/{schemas,env}`, `@coss/observability/*`, `@coss/auth/{permissions,slugs,constants,api-key-permissions,org-access}`, `@coss/push/schemas`, `@coss/forms/{schemas,env}`, `@coss/email/schemas`,
   `@coss/email/{broadcast-schemas,contact-schemas,inbox-schemas,subaccount-schemas,test-event-schemas,env,templates}`, `@coss/sms/{schemas,segments,env}`, `@coss/verify/schemas`, `@coss/hooks/{schemas,env}`, `@coss/reputation/schemas`, `@coss/screening/env`, `@coss/webhooks/{schemas,env}`, `@coss/ratelimit/buckets`, `@coss/versioning`, `@coss/retention`, `@coss/logs/{schemas,query}`, `@coss/billing/{catalog,schemas,engine,money,env,gate,wire}` (`gate` is types only), `@coss/ui/*`, `@coss/ui/theme.css`, `@coss/companion`, `@coss/migrate/templates`, `@coss/email-layout`. `@coss/webhooks`, `@coss/db/jobs`, `@coss/screening/{ai,runtime}`, `@coss/email/{runtime,ses,dispatch,domain-connect}`, `@coss/risk/{runtime,datasets}`, `@coss/signals/*`, `@coss/sms` (root, `./twilio`, `./runtime`, `./dispatch`, `./admin`), `@coss/push` (root, `./apns`), `@coss/notifications` and `@coss/billing` (root, `./metering`, `./runtime`, `./stripe`) are server-only; only `./stripe` (and `./runtime`) import the Stripe SDK. Server-only web
   modules start with `import "server-only"`.
 - **Rate limits** (`@coss/ratelimit`): buckets are defined only in `BUCKETS` (`src/buckets.ts`); GCRA state is one
