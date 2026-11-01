@@ -66,6 +66,13 @@ import {
 import { setProductPreferenceAction } from "@/app/[orgSlug]/actions";
 import { OrganizationAvatar } from "@/components/organization-avatar";
 import {
+  type GlyphTone,
+  PRODUCT_ACTIVE_TEXT,
+  PRODUCT_TEXT,
+  PRODUCT_WASH,
+  ProductGlyph,
+} from "@/components/product-glyph";
+import {
   activeNavItem,
   DEVELOPERS_ICON,
   environmentPath,
@@ -155,7 +162,10 @@ export function ConsoleSidebar(props: ConsoleSidebarProps) {
               <SidebarWordmark href={envBase ?? `/${orgSlug}`} />
             </SidebarHeader>
             <SidebarContent className="relative" ref={panelRef}>
-              <ActiveIndicator {...panelIndicator} />
+              <ActiveIndicator
+                {...panelIndicator}
+                className={area.kind === "product" ? PRODUCT_WASH[area.product.key] : undefined}
+              />
               <Panel
                 area={area}
                 envBase={envBase}
@@ -209,7 +219,10 @@ function ProductRail(props: {
         className="relative flex w-(--sidebar-width-icon) shrink-0 flex-col items-center gap-2 py-2 max-md:w-14 max-md:border-e max-md:pt-3 group-data-[collapsible=icon]:py-0 border-sidebar-border md:border-e md:pe-px group-data-[collapsible=icon]:md:border-e-0"
         ref={railRef}
       >
-        <ActiveIndicator {...railIndicator} />
+        <ActiveIndicator
+          {...railIndicator}
+          className={area.kind === "product" ? PRODUCT_WASH[area.product.key] : undefined}
+        />
         <OrganizationMenu
           current={props.organization}
           organizations={props.organizations}
@@ -240,6 +253,7 @@ function ProductRail(props: {
               {props.products.map((product) => (
                 <RailLink
                   active={area.kind === "product" && area.product === product}
+                  activeClassName={PRODUCT_TEXT[product.key]}
                   href={envBase + product.path}
                   icon={PRODUCT_ICONS[product.key]}
                   key={product.key}
@@ -273,7 +287,7 @@ function ProductRail(props: {
 }
 
 function RailLink(
-  props: { label: string; icon: LucideIcon; active?: boolean } & (
+  props: { label: string; icon: LucideIcon; active?: boolean; activeClassName?: string } & (
     | { href: string }
     /** Another zone of coss.com (the docs): a plain link. */
     | { link: ReactElement }
@@ -306,7 +320,7 @@ function RailLink(
           />
         }
       >
-        <Icon />
+        <Icon className={cn("transition-colors", props.active && props.activeClassName)} />
         <span className="sr-only">{props.label}</span>
       </RailTooltipTrigger>
     </SidebarMenuItem>
@@ -459,6 +473,7 @@ function Panel(props: {
     const section: DashboardSection = area.kind === "product" ? area.product : DEVELOPERS;
     const active = activeNavItem(props.pathname, envBase, section.pages);
     const own = section.pages.filter((page) => !page.shared);
+    const tint = area.kind === "product" ? PRODUCT_ACTIVE_TEXT[area.product.key] : undefined;
     const shared = section.pages.filter((page) => page.shared);
     return (
       <>
@@ -475,10 +490,17 @@ function Panel(props: {
           }
           icon={area.kind === "product" ? PRODUCT_ICONS[area.product.key] : DEVELOPERS_ICON}
           title={section.name}
+          tone={area.kind === "product" ? area.product.key : "neutral"}
         />
-        <PageGroup active={active} base={envBase} pages={own} />
+        <PageGroup activeClassName={tint} active={active} base={envBase} pages={own} />
         {shared.length > 0 ? (
-          <PageGroup active={active} base={envBase} label="Shared across projects" pages={shared} />
+          <PageGroup
+            activeClassName={tint}
+            active={active}
+            base={envBase}
+            label="Shared across projects"
+            pages={shared}
+          />
         ) : null}
       </>
     );
@@ -503,6 +525,7 @@ function Panel(props: {
             <PanelLink
               href={envBase + product.path}
               icon={PRODUCT_ICONS[product.key]}
+              iconClassName={PRODUCT_TEXT[product.key]}
               key={product.key}
               label={product.name}
             />
@@ -521,11 +544,15 @@ function Panel(props: {
   );
 }
 
-function PanelTitle(props: { icon: LucideIcon; title: string; action?: ReactNode }) {
-  const Icon = props.icon;
+function PanelTitle(props: {
+  icon: LucideIcon;
+  title: string;
+  tone?: GlyphTone;
+  action?: ReactNode;
+}) {
   return (
-    <div className="flex h-9 items-center gap-2 px-4 pt-1">
-      <Icon className="size-4 shrink-0 text-muted-foreground" />
+    <div className="flex h-10 items-center gap-2.5 px-3 pt-1">
+      <ProductGlyph icon={props.icon} tone={props.tone ?? "neutral"} />
       <h2 className="min-w-0 flex-1 truncate font-heading font-semibold text-base text-foreground">
         {props.title}
       </h2>
@@ -550,12 +577,15 @@ function PageGroup<T extends DashboardPage>(props: {
   base: string;
   pages: readonly T[];
   active: T | undefined;
+  /** Classes of the open page's link (a product's colour). */
+  activeClassName?: string;
 }) {
   return (
     <PanelGroup label={props.label}>
       {props.pages.map((page) => (
         <PanelLink
           active={page === props.active}
+          className={props.activeClassName}
           href={props.base + page.path}
           key={page.path}
           label={page.label}
@@ -565,14 +595,21 @@ function PageGroup<T extends DashboardPage>(props: {
   );
 }
 
-function PanelLink(props: { href: string; label: string; icon?: LucideIcon; active?: boolean }) {
+function PanelLink(props: {
+  href: string;
+  label: string;
+  icon?: LucideIcon;
+  iconClassName?: string;
+  className?: string;
+  active?: boolean;
+}) {
   const { setOpenMobile } = useSidebar();
   const navigate = useContext(Navigate);
   const Icon = props.icon;
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        className={cn("data-[active=true]:bg-transparent", !Icon && "ps-3")}
+        className={cn("data-[active=true]:bg-transparent", !Icon && "ps-3", props.className)}
         isActive={props.active}
         render={
           <Link
@@ -584,7 +621,7 @@ function PanelLink(props: { href: string; label: string; icon?: LucideIcon; acti
           />
         }
       >
-        {Icon ? <Icon /> : null}
+        {Icon ? <Icon className={props.iconClassName} /> : null}
         <span>{props.label}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>

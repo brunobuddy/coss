@@ -58,14 +58,18 @@ function sameRect(a: IndicatorRect, b: IndicatorRect): boolean {
 }
 
 /** The sliding highlight, drawn behind the buttons of a `relative` container. */
-export function ActiveIndicator(props: ReturnType<typeof useActiveIndicator>) {
+export function ActiveIndicator(
+  props: ReturnType<typeof useActiveIndicator> & { className?: string },
+) {
   if (!props.rect) return null;
   return (
     <span
       aria-hidden
       className={cn(
         "pointer-events-none absolute top-0 left-0 rounded-lg bg-sidebar-accent motion-reduce:transition-none",
-        props.animate && "transition-[translate,width,height] duration-200 ease-out",
+        props.animate &&
+          "transition-[translate,width,height,background-color] duration-200 ease-out",
+        props.className,
       )}
       style={{
         translate: `${props.rect.left}px ${props.rect.top}px`,
