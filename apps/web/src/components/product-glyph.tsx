@@ -62,7 +62,7 @@ export function ProductGlyph(props: { tone: GlyphTone; icon: LucideIcon; classNa
   return (
     <span
       className={cn(
-        "flex size-7 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset",
+        "flex size-7 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset inset-shadow-[0_1px_--theme(--color-white/65%)] dark:inset-shadow-[0_1px_--theme(--color-white/10%)]",
         TILE[props.tone],
         props.className,
       )}

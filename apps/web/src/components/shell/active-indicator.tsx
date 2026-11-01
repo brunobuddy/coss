@@ -66,7 +66,7 @@ export function ActiveIndicator(
     <span
       aria-hidden
       className={cn(
-        "pointer-events-none absolute top-0 left-0 rounded-lg bg-sidebar-accent motion-reduce:transition-none",
+        "pointer-events-none absolute top-0 left-0 rounded-lg bg-sidebar-accent shadow-[0_1px_2px_--theme(--color-black/6%)] inset-shadow-[0_1px_--theme(--color-white/55%)] motion-reduce:transition-none dark:inset-shadow-[0_1px_--theme(--color-white/6%)]",
         props.animate &&
           "transition-[translate,width,height,background-color] duration-200 ease-out",
         props.className,
