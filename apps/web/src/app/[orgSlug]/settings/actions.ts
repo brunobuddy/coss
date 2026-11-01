@@ -3,6 +3,8 @@
 import { DASHBOARD_PATH, validateOrgName, validateOrgSlug } from "@coss/auth/slugs";
 import { unpaidInvoiceCount } from "@coss/billing";
 import {
+  hideOrganizationLogo,
+  refreshOrganizationLogo,
   requestOrganizationDeletion,
   setOrganizationApiVersion,
   setOrganizationTwoFactorRequired,
@@ -178,6 +180,46 @@ export async function upgradeApiVersionAction(
       if (error instanceof TenancyError) throw new ActionError(error.message);
       throw error;
     }
+    refresh();
+    return null;
+  });
+}
+
+/** Looks for the organization's logo again (and shows it again if it was hidden). */
+export async function refreshLogoAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const { organization, session } = await requireOrgPermission(formString(formData, "orgSlug"), {
+      organization: ["update"],
+    });
+    await refreshOrganizationLogo(organization.id);
+    await recordAudit(session, {
+      organizationId: organization.id,
+      action: "organization.logo_refreshed",
+      target: { type: "organization", id: organization.id, label: organization.name },
+    });
+    refresh();
+    return null;
+  });
+}
+
+/** Stops using a logo: the dashboard shows the organization's initials. */
+export async function hideLogoAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const { organization, session } = await requireOrgPermission(formString(formData, "orgSlug"), {
+      organization: ["update"],
+    });
+    await hideOrganizationLogo(organization.id);
+    await recordAudit(session, {
+      organizationId: organization.id,
+      action: "organization.logo_hidden",
+      target: { type: "organization", id: organization.id, label: organization.name },
+    });
     refresh();
     return null;
   });

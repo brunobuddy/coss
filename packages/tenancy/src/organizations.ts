@@ -221,9 +221,14 @@ export async function setOrganizationTwoFactorRequired(input: {
 /** The user's organizations, by name (the org switcher; one query, unlike Better Auth's list). */
 export async function listUserOrganizations(input: {
   userId: string;
-}): Promise<{ name: string; slug: string; role: string }[]> {
+}): Promise<{ id: string; name: string; slug: string; role: string }[]> {
   return db
-    .select({ name: organization.name, slug: organization.slug, role: member.role })
+    .select({
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      role: member.role,
+    })
     .from(member)
     .innerJoin(organization, eq(organization.id, member.organizationId))
     .where(eq(member.userId, input.userId))

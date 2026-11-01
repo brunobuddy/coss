@@ -7,6 +7,8 @@ import { sentryBuildOptions } from "@coss/observability/build";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import {
+  LOGO_CSP,
+  LOGO_PATH,
   RECEIVED_CONTENT_CSP,
   RECEIVED_CONTENT_PATHS,
   securityHeaders,
@@ -72,6 +74,7 @@ const nextConfig: NextConfig = {
         source,
         headers: [{ key: "Content-Security-Policy", value: RECEIVED_CONTENT_CSP }],
       })),
+      { source: LOGO_PATH, headers: [{ key: "Content-Security-Policy", value: LOGO_CSP }] },
     ];
   },
   async redirects() {

@@ -88,6 +88,7 @@ import {
   sweepUnclaimedSms,
 } from "@coss/sms";
 import { runDueOrganizationDeletions } from "@coss/tenancy/deletion";
+import { publicLogoHttp, runDueOrganizationLogos } from "@coss/tenancy/logos";
 import { recordDueVerifySmsUsage } from "@coss/verify";
 import {
   runDueLogDrainDeliveries,
@@ -120,6 +121,7 @@ const SCHEDULED_BATCH = 50;
 const BROADCAST_BATCH = 10;
 const MIGRATION_BATCH = 2;
 const DELETION_BATCH = 5;
+const LOGO_BATCH = 5;
 const RETENTION_BATCH = 1000;
 const BILLING_BATCH = 20;
 const SIGN_COMPLETION_BATCH = 5;
@@ -236,6 +238,7 @@ export const WORKER_LOOP_NAMES = [
   "stale-claims",
   "reputation",
   "organization-deletions",
+  "organization-logos",
   "subaccount-deletions",
   "unclaimed",
   "retention",
@@ -262,6 +265,7 @@ export const WORKER_LOOP_NAMES = [
 ] as const;
 
 export function startJobs(deps: WorkerDeps): Loop[] {
+  const logoHttp = publicLogoHttp();
   // Only the loops this worker runs (`WORKER_LOOPS`), e.g. a fleet dedicated to Hooks deliveries.
   const start = (options: Parameters<typeof startLoop>[0]): Loop | null =>
     !deps.loops || deps.loops.has(options.name) ? startLoop(options) : null;
@@ -428,6 +432,16 @@ export function startJobs(deps: WorkerDeps): Loop[] {
         const subaccounts = await runDueSubaccountEvaluations({ limit: REPUTATION_BATCH });
         return organizations === REPUTATION_BATCH || subaccounts === REPUTATION_BATCH;
       },
+    }),
+    start({
+      // Each organization's logo, from its own website (new organizations within a minute).
+      name: "organization-logos",
+      intervalMs: 60_000,
+      run: async () =>
+        (await runDueOrganizationLogos(
+          { limit: LOGO_BATCH, signal: deps.signal },
+          { http: logoHttp },
+        )) === LOGO_BATCH,
     }),
     start({
       // Organization deletions: releases domains and the SES tenant, then deletes the data.

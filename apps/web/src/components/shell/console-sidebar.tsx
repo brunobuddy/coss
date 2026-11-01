@@ -13,7 +13,6 @@ import {
   settingsHref,
   visibleProducts,
 } from "@coss/dashboard-routes";
-import { Avatar, AvatarFallback } from "@coss/ui/components/avatar";
 import {
   Menu,
   MenuGroup,
@@ -63,6 +62,7 @@ import {
   useState,
 } from "react";
 import { setProductPreferenceAction } from "@/app/[orgSlug]/actions";
+import { OrganizationAvatar } from "@/components/organization-avatar";
 import {
   activeNavItem,
   DEVELOPERS_ICON,
@@ -73,7 +73,6 @@ import {
 import { rememberEnvironment } from "@/lib/remembered-environment";
 import { useActionToast } from "@/lib/toast";
 import { ActiveIndicator, useActiveIndicator } from "./active-indicator";
-import { initials } from "./initials";
 import { SidebarWordmark } from "./sidebar-parts";
 import type { ShellOrganization, ShellProject } from "./types";
 import { type ShellUser, UserNav } from "./user-nav";
@@ -312,11 +311,7 @@ function OrganizationMenu(props: {
               />
             }
           >
-            <Avatar className="size-7 rounded-lg bg-primary text-primary-foreground">
-              <AvatarFallback className="rounded-lg bg-transparent font-semibold text-xs">
-                {initials(props.current.name)}
-              </AvatarFallback>
-            </Avatar>
+            <OrganizationAvatar logo={props.current.logo} name={props.current.name} />
             <span className="sr-only">{props.current.name}</span>
           </MenuTrigger>
           <MenuPopup align="start" className="min-w-60" side={isMobile ? "bottom" : "right"}>
@@ -325,6 +320,11 @@ function OrganizationMenu(props: {
               {props.organizations.map((org) => (
                 <MenuLinkItem key={org.slug} render={<Link href={`/${org.slug}`} />}>
                   <CheckIcon className={org.slug === props.current.slug ? "" : "invisible"} />
+                  <OrganizationAvatar
+                    className="size-5 rounded-md"
+                    logo={org.logo}
+                    name={org.name}
+                  />
                   <span className="min-w-0 flex-1 truncate">{org.name}</span>
                   {org.slug === props.current.slug ? (
                     <span className="ms-3 text-muted-foreground text-xs capitalize">
