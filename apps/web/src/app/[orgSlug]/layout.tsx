@@ -53,7 +53,12 @@ export default async function OrganizationLayout({ children, params }: LayoutPro
   );
   const base = `/${organization.slug}`;
   const projects = toShellProjects(projectRows);
-  const orgs = organizations.map((org) => ({ name: org.name, slug: org.slug, logo: logoOf(org) }));
+  const orgs = organizations.map((org) => ({
+    name: org.name,
+    slug: org.slug,
+    logo: logoOf(org),
+    role: org.role,
+  }));
   const current = { name: organization.name, slug: organization.slug, logo: logoOf(organization) };
   const user = {
     name: session.user.name,

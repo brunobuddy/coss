@@ -39,7 +39,7 @@ import {
 import { cn } from "@coss/ui/lib/utils";
 import {
   BookOpenIcon,
-  CheckIcon,
+  CreditCardIcon,
   EllipsisIcon,
   HouseIcon,
   LayoutGridIcon,
@@ -48,6 +48,8 @@ import {
   PinOffIcon,
   PlusIcon,
   RotateCcwIcon,
+  SettingsIcon,
+  UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
@@ -144,6 +146,7 @@ export function ConsoleSidebar(props: ConsoleSidebarProps) {
             pathname={pathname}
             organizations={props.organizations}
             products={railProducts}
+            settingsPaths={props.settingsPaths}
             user={props.user}
           />
           <div className="flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden">
@@ -192,6 +195,7 @@ function ProductRail(props: {
   organization: ShellOrganization & { role: string };
   organizations: ShellOrganization[];
   products: Product[];
+  settingsPaths: string[];
   user: ShellUser;
 }) {
   const { envBase, area } = props;
@@ -204,7 +208,11 @@ function ProductRail(props: {
       ref={railRef}
     >
       <ActiveIndicator {...railIndicator} />
-      <OrganizationMenu current={props.organization} organizations={props.organizations} />
+      <OrganizationMenu
+        current={props.organization}
+        organizations={props.organizations}
+        settingsPaths={props.settingsPaths}
+      />
       <SidebarMenu className="items-center gap-1">
         {envBase ? (
           <>
@@ -293,12 +301,22 @@ function RailLink(
   );
 }
 
-/** The organization's initials at the top of the rail, opening the organization menu. */
+/** The organization at the top of the rail: who you are in it, its pages, and the others you're in. */
 function OrganizationMenu(props: {
   current: ShellOrganization & { role: string };
   organizations: ShellOrganization[];
+  settingsPaths: string[];
 }) {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const { current } = props;
+  const others = props.organizations.filter((org) => org.slug !== current.slug);
+  const settings = settingsHref(current.slug);
+  const shortcuts = [
+    { label: "Settings", path: "", icon: SettingsIcon },
+    { label: "Members", path: "/members", icon: UsersIcon },
+    { label: "Billing", path: "/billing", icon: CreditCardIcon },
+  ].filter((item) => props.settingsPaths.includes(item.path));
+  const close = () => setOpenMobile(false);
   return (
     <SidebarMenu className="items-center">
       <SidebarMenuItem>
@@ -307,39 +325,72 @@ function OrganizationMenu(props: {
             render={
               <SidebarMenuButton
                 className="size-8 justify-center p-0 data-popup-open:bg-sidebar-accent"
-                tooltip={{ children: props.current.name, hidden: isMobile }}
+                tooltip={{ children: current.name, hidden: isMobile }}
               />
             }
           >
-            <OrganizationAvatar logo={props.current.logo} name={props.current.name} />
-            <span className="sr-only">{props.current.name}</span>
+            <OrganizationAvatar logo={current.logo} name={current.name} />
+            <span className="sr-only">{current.name}</span>
           </MenuTrigger>
-          <MenuPopup align="start" className="min-w-60" side={isMobile ? "bottom" : "right"}>
-            <MenuGroup>
-              <MenuGroupLabel>Organizations</MenuGroupLabel>
-              {props.organizations.map((org) => (
-                <MenuLinkItem key={org.slug} render={<Link href={`/${org.slug}`} />}>
-                  <CheckIcon className={org.slug === props.current.slug ? "" : "invisible"} />
-                  <OrganizationAvatar
-                    className="size-5 rounded-md"
-                    logo={org.logo}
-                    name={org.name}
-                  />
-                  <span className="min-w-0 flex-1 truncate">{org.name}</span>
-                  {org.slug === props.current.slug ? (
-                    <span className="ms-3 text-muted-foreground text-xs capitalize">
-                      {props.current.role}
-                    </span>
-                  ) : null}
-                </MenuLinkItem>
-              ))}
-            </MenuGroup>
+          <MenuPopup align="start" className="w-72" side={isMobile ? "bottom" : "right"}>
+            <div className="flex items-center gap-3 px-2 pt-1.5 pb-2.5">
+              <OrganizationAvatar
+                className="size-10 shrink-0 rounded-xl text-sm"
+                logo={current.logo}
+                name={current.name}
+              />
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate font-heading font-semibold text-base text-foreground">
+                  {current.name}
+                </span>
+                <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs">
+                  <span className="shrink-0">{roleLabel(current.role)}</span>
+                  <span aria-hidden>·</span>
+                  <span className="truncate font-mono">coss.com/{current.slug}</span>
+                </span>
+              </div>
+            </div>
             <MenuSeparator />
-            <MenuLinkItem render={<Link href={settingsHref(props.current.slug)} />}>
-              <ORGANIZATION_ICON />
-              Organization settings
-            </MenuLinkItem>
-            <MenuLinkItem render={<Link href="/onboarding" />}>
+            {shortcuts.map((item) => (
+              <MenuLinkItem
+                key={item.label}
+                render={<Link href={settings + item.path} onNavigate={close} />}
+              >
+                <item.icon />
+                {item.label}
+              </MenuLinkItem>
+            ))}
+            {others.length > 0 ? (
+              <>
+                <MenuSeparator />
+                <MenuGroup>
+                  <MenuGroupLabel>Switch organization</MenuGroupLabel>
+                  {others.map((org) => (
+                    <MenuLinkItem
+                      key={org.slug}
+                      render={<Link href={`/${org.slug}`} onNavigate={close} />}
+                    >
+                      <OrganizationAvatar
+                        className="size-6 shrink-0 rounded-md text-[0.625rem]"
+                        logo={org.logo}
+                        name={org.name}
+                      />
+                      <span className="min-w-0 flex-1 truncate">{org.name}</span>
+                      {org.role ? (
+                        <span className="ms-3 text-muted-foreground text-xs">
+                          {roleLabel(org.role)}
+                        </span>
+                      ) : null}
+                    </MenuLinkItem>
+                  ))}
+                </MenuGroup>
+              </>
+            ) : null}
+            <MenuSeparator />
+            <MenuLinkItem
+              className="text-muted-foreground"
+              render={<Link href="/onboarding" onNavigate={close} />}
+            >
               <PlusIcon />
               New organization
             </MenuLinkItem>
@@ -348,6 +399,12 @@ function OrganizationMenu(props: {
       </SidebarMenuItem>
     </SidebarMenu>
   );
+}
+
+/** `owner` → "Owner"; a member with several roles is named by the first. */
+function roleLabel(role: string): string {
+  const first = role.split(",")[0]?.trim() ?? "";
+  return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
 function Panel(props: {

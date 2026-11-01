@@ -6,6 +6,8 @@ export type ShellOrganization = {
   slug: string;
   /** Its logo's URL (versioned), when one was found. */
   logo?: string | null;
+  /** The signed-in member's role in it. */
+  role?: string;
 };
 
 export type ShellEnvironment = { name: string; slug: string; mode: EnvironmentMode };
