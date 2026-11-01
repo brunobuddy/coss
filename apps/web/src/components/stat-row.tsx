@@ -1,4 +1,5 @@
 import { cn } from "@coss/ui/lib/utils";
+import { ArrowUpRightIcon } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -42,8 +43,15 @@ export function Stat(props: {
   );
   const className = cn("flex min-w-0 flex-col gap-1.5 bg-card px-5 py-4", props.className);
   return props.href ? (
-    <Link className={cn(className, "transition-colors hover:bg-accent/40")} href={props.href}>
+    <Link
+      className={cn(
+        className,
+        "group/stat relative bg-linear-to-b from-transparent to-transparent transition-colors hover:from-transparent hover:from-40% hover:to-foreground/4 hover:bg-accent/15",
+      )}
+      href={props.href}
+    >
       {body}
+      <ArrowUpRightIcon className="absolute top-4 right-4 size-4 text-muted-foreground opacity-0 transition-[opacity,translate] duration-200 group-hover/stat:-translate-y-0.5 group-hover/stat:translate-x-0.5 group-hover/stat:opacity-100 motion-reduce:transition-none" />
     </Link>
   ) : (
     <div className={className}>{body}</div>

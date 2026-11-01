@@ -42,7 +42,7 @@ export function EnvironmentSwitcher(props: {
 
   return (
     <Menu>
-      <MenuTrigger className="-mx-1.5 flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-sm outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent">
+      <MenuTrigger className="flex h-8 min-w-0 items-center gap-2 rounded-lg border border-input border-b-foreground/16 bg-background bg-linear-to-b from-40% from-transparent to-foreground/4 px-2.5 text-sm shadow-xs/5 outline-none transition-[background-color,transform] hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring active:translate-y-px data-popup-open:bg-accent/50 motion-reduce:active:translate-y-0 dark:border-b-input dark:bg-input/32 dark:from-white/5 dark:to-transparent">
         <FolderIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="max-w-40 truncate font-medium text-foreground max-sm:hidden">
           {props.project.name}

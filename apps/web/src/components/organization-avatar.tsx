@@ -17,7 +17,7 @@ export function OrganizationAvatar(props: {
       )}
     >
       {props.logo ? <AvatarImage alt="" className="object-contain p-0.5" src={props.logo} /> : null}
-      <AvatarFallback className="rounded-lg bg-primary font-semibold text-primary-foreground text-xs">
+      <AvatarFallback className="rounded-lg bg-primary bg-linear-to-b from-white/18 to-60% to-transparent font-semibold text-primary-foreground text-xs inset-shadow-[0_1px_--theme(--color-white/16%)]">
         {initials(props.name)}
       </AvatarFallback>
     </Avatar>

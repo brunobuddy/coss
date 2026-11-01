@@ -83,7 +83,7 @@ export function StackedBars(props: {
                   return (
                     <div
                       className={cn(
-                        "min-h-0.5 first:rounded-b-[2px] last:rounded-t-[2px]",
+                        "min-h-0.5 bg-linear-to-b from-white/14 to-transparent first:rounded-b-[2px] last:rounded-t-[2px] last:inset-shadow-[0_1px_--theme(--color-white/35%)]",
                         series.className,
                       )}
                       key={series.key}

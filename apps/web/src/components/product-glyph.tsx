@@ -5,7 +5,7 @@ import type { LucideIcon } from "lucide-react";
 export type GlyphTone = ProductKey | "neutral";
 
 /** Each product's colour: its icon tile everywhere it appears, and its rail icon while open. */
-const TILE: Record<GlyphTone, string> = {
+export const TILE: Record<GlyphTone, string> = {
   email: "bg-orange-500/12 text-orange-600 ring-orange-500/20 dark:text-orange-400",
   marketing: "bg-pink-500/12 text-pink-600 ring-pink-500/20 dark:text-pink-400",
   inboxes: "bg-violet-500/12 text-violet-600 ring-violet-500/20 dark:text-violet-400",

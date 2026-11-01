@@ -148,6 +148,131 @@
     0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent);
 }
 
+/* Popups hang in the same light: a lit top edge over a soft, deep shadow. */
+:is(
+  [data-slot="menu-popup"],
+  [data-slot="select-popup"],
+  [data-slot="popover-popup"],
+  [data-slot="dialog-popup"],
+  [data-slot="alert-dialog-popup"],
+  [data-slot="command-dialog-popup"]
+) {
+  box-shadow:
+    0 16px 40px -12px color-mix(in srgb, black 22%, transparent),
+    0 2px 6px color-mix(in srgb, black 6%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 70%, transparent);
+}
+
+.dark
+  :is(
+    [data-slot="menu-popup"],
+    [data-slot="select-popup"],
+    [data-slot="popover-popup"],
+    [data-slot="dialog-popup"],
+    [data-slot="alert-dialog-popup"],
+    [data-slot="command-dialog-popup"]
+  ) {
+  box-shadow:
+    0 16px 40px -12px color-mix(in srgb, black 70%, transparent),
+    0 2px 6px color-mix(in srgb, black 30%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 7%, transparent);
+}
+
+[data-slot="tooltip-popup"] {
+  box-shadow:
+    0 4px 12px -2px color-mix(in srgb, black 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 60%, transparent);
+}
+
+.dark [data-slot="tooltip-popup"] {
+  box-shadow:
+    0 4px 12px -2px color-mix(in srgb, black 50%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 7%, transparent);
+}
+
+/* The item under the pointer is a raised pill, like the sidebar's highlight. */
+:is(
+  [data-slot="menu-item"],
+  [data-slot="menu-link-item"],
+  [data-slot="menu-checkbox-item"],
+  [data-slot="menu-radio-item"],
+  [data-slot="menu-sub-trigger"],
+  [data-slot="select-item"],
+  [data-slot="command-item"]
+)[data-highlighted] {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 7%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 55%, transparent);
+}
+
+.dark
+  :is(
+    [data-slot="menu-item"],
+    [data-slot="menu-link-item"],
+    [data-slot="menu-checkbox-item"],
+    [data-slot="menu-radio-item"],
+    [data-slot="menu-sub-trigger"],
+    [data-slot="select-item"],
+    [data-slot="command-item"]
+  )[data-highlighted] {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 40%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 6%, transparent);
+}
+
+/* Selects are keycaps like white buttons; checkboxes and radios are wells until checked. */
+:is([data-slot="select-trigger"], [data-slot="select-button"]):not([data-disabled]) {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 40%,
+    color-mix(in srgb, var(--foreground) 3.5%, transparent)
+  );
+  border-bottom-color: color-mix(in srgb, var(--input), var(--foreground) 16%);
+}
+
+.dark :is([data-slot="select-trigger"], [data-slot="select-button"]):not([data-disabled]) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 5%, transparent),
+    transparent 60%
+  );
+  border-bottom-color: var(--input);
+}
+
+:is([data-slot="checkbox"], [data-slot="radio"]):not([data-checked]) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 6%, transparent),
+    transparent 70%
+  );
+}
+
+:is([data-slot="checkbox-indicator"], [data-slot="radio-indicator"])[data-checked] {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 20%, transparent),
+    transparent 60%
+  );
+}
+
+/* Pages arrive with a short rise (`app/[orgSlug]/template.tsx`). */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+.page-enter {
+  animation: page-enter 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
+}
+
 /* Badges are pills. */
 [data-slot="badge"] {
   border-radius: 9999px;
