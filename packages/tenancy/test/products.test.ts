@@ -4,6 +4,7 @@ import {
   createProject,
   listProductPreferences,
   productActivityByEnvironment,
+  productDailyActivity,
   productFigures,
   setProductPreference,
 } from "../src/index.ts";
@@ -74,5 +75,31 @@ describe("productFigures", () => {
       since: new Date(Date.now() - 14 * 86_400_000),
     });
     expect(figures).toMatchObject({ hooks: 2, email: 0, forms: 0, risk: 0 });
+  });
+});
+
+describe("productDailyActivity", () => {
+  test("counts each product's rows per UTC day, oldest first", async () => {
+    const tenant = await createTestTenant();
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 86_400_000);
+    for (const createdAt of [now, now, yesterday]) {
+      await db.insert(schema.contact).values({
+        organizationId: tenant.organization.id,
+        projectId: tenant.project.id,
+        environmentId: tenant.development.id,
+        address: `${crypto.randomUUID()}@example.com`,
+        source: "api",
+        createdAt,
+      });
+    }
+    const daily = await productDailyActivity({
+      organizationId: tenant.organization.id,
+      environmentId: tenant.development.id,
+      days: 3,
+      now,
+    });
+    expect(daily.marketing).toEqual([0, 1, 2]);
+    expect(daily.email).toEqual([0, 0, 0]);
   });
 });

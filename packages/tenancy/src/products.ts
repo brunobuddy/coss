@@ -138,3 +138,54 @@ export async function productFigures(input: {
   if (!row) throw new Error("No figures returned.");
   return row;
 }
+
+type DailyTable = PgTable & {
+  organizationId: PgColumn;
+  environmentId: PgColumn;
+  createdAt: PgColumn;
+};
+
+/** What each product's daily count counts (its busiest kind of row). */
+const DAILY_TABLES: Record<ProductKey, DailyTable> = {
+  email: schema.email,
+  marketing: schema.contact,
+  inboxes: schema.inboxThread,
+  sms: schema.smsMessage,
+  verify: schema.verifyRequest,
+  sign: schema.signRequest,
+  forms: schema.formSubmission,
+  hooks: schema.hookMessage,
+  risk: schema.riskAssessment,
+};
+
+/**
+ * Per product, how many things happened in an environment on each of the last `days` UTC days
+ * (oldest first, today last): emails, texts, signature requests, assessments, form submissions,
+ * Hooks messages… for sparklines. One query.
+ */
+export async function productDailyActivity(input: {
+  organizationId: string;
+  environmentId: string;
+  days: number;
+  now?: Date;
+}): Promise<Record<ProductKey, number[]>> {
+  const now = input.now ?? new Date();
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const since = new Date(today - (input.days - 1) * 86_400_000);
+  const parts = PRODUCT_KEYS.map((key) => {
+    const table = DAILY_TABLES[key];
+    return sql`select ${key}::text as product, to_char(${table.createdAt} at time zone 'UTC', 'YYYY-MM-DD') as day, count(*)::int as count from ${table} where ${table.organizationId} = ${input.organizationId} and ${table.environmentId} = ${input.environmentId} and ${table.createdAt} >= ${since} group by 2`;
+  });
+  const result = await db.execute<{ product: ProductKey; day: string; count: number }>(
+    sql.join(parts, sql` union all `),
+  );
+  const series = Object.fromEntries(
+    PRODUCT_KEYS.map((key) => [key, Array.from({ length: input.days }, () => 0)]),
+  ) as Record<ProductKey, number[]>;
+  for (const row of result.rows) {
+    const index = Math.round((Date.parse(`${row.day}T00:00:00Z`) - since.getTime()) / 86_400_000);
+    const values = series[row.product];
+    if (values && index >= 0 && index < input.days) values[index] = row.count;
+  }
+  return series;
+}

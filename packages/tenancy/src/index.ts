@@ -76,6 +76,7 @@ export {
 export {
   listProductPreferences,
   productActivityByEnvironment,
+  productDailyActivity,
   productFigures,
   setProductPreference,
 } from "./products.ts";
