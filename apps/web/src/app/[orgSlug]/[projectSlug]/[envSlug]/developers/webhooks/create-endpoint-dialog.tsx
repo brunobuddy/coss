@@ -14,8 +14,10 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { WebhookIcon } from "lucide-react";
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
+import { DialogIcon } from "@/components/dialog-icon";
 import { EventTypePicker } from "@/components/event-type-picker";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
@@ -59,6 +61,7 @@ function CreateEndpointForm(props: Target & { eventTypes: readonly string[] }) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={WebhookIcon} />
           <DialogTitle>Endpoint added</DialogTitle>
           <DialogDescription>
             Verify requests with this signing secret (for example with <code>verifyWebhook</code>{" "}
@@ -95,6 +98,7 @@ function CreateEndpointForm(props: Target & { eventTypes: readonly string[] }) {
       <input name="projectSlug" type="hidden" value={props.projectSlug} />
       <input name="envSlug" type="hidden" value={props.envSlug} />
       <DialogHeader>
+        <DialogIcon icon={WebhookIcon} />
         <DialogTitle>Add a webhook endpoint</DialogTitle>
         <DialogDescription>
           coss.com sends a signed POST request to this URL for each selected event.

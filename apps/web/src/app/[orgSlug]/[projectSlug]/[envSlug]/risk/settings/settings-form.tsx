@@ -10,21 +10,16 @@ import { Checkbox } from "@coss/ui/components/checkbox";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectTrigger,
-  SelectValue,
-} from "@coss/ui/components/select";
 import { useState } from "react";
+import { PercentInput } from "@/components/fields/percent-input";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { updateRiskSettingsAction } from "../actions";
 
 const PROVIDERS = [
   { value: "none", label: "Off" },
-  { value: "turnstile", label: "Cloudflare Turnstile" },
+  { value: "turnstile", label: "Turnstile" },
   { value: "hcaptcha", label: "hCaptcha" },
 ];
 
@@ -56,27 +51,23 @@ export function RiskSettingsForm(props: {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel>Review at</FieldLabel>
-            <Input
+            <PercentInput
               defaultValue={props.settings.review_threshold}
               max={1}
               min={0.01}
               name="reviewThreshold"
               required
-              step={0.01}
-              type="number"
             />
             <FieldDescription>Scores at or above this are review.</FieldDescription>
           </Field>
           <Field>
             <FieldLabel>Block at</FieldLabel>
-            <Input
+            <PercentInput
               defaultValue={props.settings.block_threshold}
               max={1}
               min={0.01}
               name="blockThreshold"
               required
-              step={0.01}
-              type="number"
             />
             <FieldDescription>Scores at or above this are block.</FieldDescription>
           </Field>
@@ -87,23 +78,15 @@ export function RiskSettingsForm(props: {
         <legend className="mb-2 font-semibold">Captcha</legend>
         <Field>
           <FieldLabel>Provider</FieldLabel>
-          <Select
-            items={PROVIDERS}
-            name="captchaProvider"
-            onValueChange={(value) => setProvider(String(value))}
-            value={provider}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectPopup>
-              {PROVIDERS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectPopup>
-          </Select>
+          <div>
+            <Segmented
+              aria-label="Provider"
+              name="captchaProvider"
+              onValueChange={setProvider}
+              options={PROVIDERS}
+              value={provider}
+            />
+          </div>
           <FieldDescription>
             Assessments verify their captcha token with it. coss.com sends the provider the token,
             your secret and the user's IP address.
@@ -146,14 +129,12 @@ export function RiskSettingsForm(props: {
           {CONTENT_CATEGORIES.map((category) => (
             <Field key={category}>
               <FieldLabel className="capitalize">{category}</FieldLabel>
-              <Input
+              <PercentInput
                 defaultValue={props.settings.content_thresholds[category] ?? ""}
                 max={1}
                 min={0.01}
                 name={`contentThreshold.${category}`}
                 placeholder="Off"
-                step={0.01}
-                type="number"
               />
             </Field>
           ))}

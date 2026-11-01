@@ -22,8 +22,13 @@ import {
   SelectValue,
 } from "@coss/ui/components/select";
 import { Textarea } from "@coss/ui/components/textarea";
-import { PlusIcon, XIcon } from "lucide-react";
+import { FilterIcon, PlusIcon, XIcon } from "lucide-react";
 import { useActionState, useMemo, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
+import { DateField } from "@/components/fields/date-field";
+import { ListInput } from "@/components/fields/list-input";
+import { Segmented } from "@/components/fields/segmented";
+import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import { deleteSegmentAction, previewSegmentAction, saveSegmentAction } from "./actions";
@@ -103,7 +108,7 @@ const OTHER_OPS: Record<Exclude<ConditionField, "property">, Option[]> = {
     { value: "not_subscribed", label: "is not subscribed to" },
   ],
   created_at: [
-    { value: "within_days", label: "in the last (days)" },
+    { value: "within_days", label: "in the last" },
     { value: "after", label: "after" },
     { value: "before", label: "before" },
   ],
@@ -245,6 +250,90 @@ function SmallSelect(props: {
   );
 }
 
+/** The condition's value, in the control its type and operator call for. */
+function ValueControl(props: {
+  row: Row;
+  type: PropertyType;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  const { row, type } = props;
+  const list = row.field === "property" && (row.op === "in" || row.op === "not_in");
+  const day =
+    (row.field === "created_at" && row.op !== "within_days") ||
+    (row.field === "property" && type === "date");
+  if (props.disabled) {
+    return <Input aria-label="Value" className="w-56" disabled size="sm" value={row.value} />;
+  }
+  if (list) {
+    return (
+      <div className="w-72">
+        <ListInput
+          check={type === "number" ? (value) => Number.isFinite(Number(value)) : undefined}
+          inputMode={type === "number" ? "numeric" : undefined}
+          keepSpaces
+          onValueChange={(values) => props.onChange(values.join(", "))}
+          placeholder="Add values"
+          value={row.value
+            .split(",")
+            .map((part) => part.trim())
+            .filter(Boolean)}
+        />
+      </div>
+    );
+  }
+  if (row.field === "created_at" && row.op === "within_days") {
+    return (
+      <UnitInput
+        aria-label="Days"
+        groupClassName="w-32"
+        min={1}
+        onChange={(event) => props.onChange(event.currentTarget.value)}
+        size="sm"
+        unit="days"
+        value={row.value}
+      />
+    );
+  }
+  if (day && (row.value === "" || /^\d{4}-\d{2}-\d{2}$/.test(row.value))) {
+    return <DateField clearable={false} onValueChange={props.onChange} value={row.value} />;
+  }
+  if (row.field === "property" && type === "boolean") {
+    return (
+      <Segmented
+        aria-label="Value"
+        onValueChange={props.onChange}
+        options={[
+          { value: "true", label: "True" },
+          { value: "false", label: "False" },
+        ]}
+        value={row.value === "false" ? "false" : "true"}
+      />
+    );
+  }
+  return (
+    <Input
+      aria-label="Value"
+      className="w-56"
+      onChange={(event) => props.onChange(event.target.value)}
+      size="sm"
+      step={type === "number" && row.field === "property" ? "any" : undefined}
+      type={type === "number" && row.field === "property" ? "number" : "text"}
+      value={row.value}
+    />
+  );
+}
+
+/** A boolean row always holds "true" or "false" (what its toggle shows). */
+function valueFor(type: PropertyType, value: string): string {
+  return type === "boolean" && value !== "true" && value !== "false" ? "true" : value;
+}
+
+/** Values carry over between operators only when they take the same shape. */
+function shapeOf(op: string): "list" | "days" | "one" {
+  return op === "in" || op === "not_in" ? "list" : op === "within_days" ? "days" : "one";
+}
+
 /**
  * Edits a segment: its name and filter. Flat filters (one level of conditions) get the builder;
  * filters with nested groups or values it can't hold exactly (made through the API) are edited as
@@ -321,10 +410,10 @@ export function SegmentEditor(
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 text-sm">
               Contacts matching
-              <SmallSelect
+              <Segmented
+                aria-label="Match"
                 disabled={disabled}
-                label="Match"
-                onChange={(value) => setMatch(value as "all" | "any")}
+                onValueChange={(value) => setMatch(value as "all" | "any")}
                 options={[
                   { value: "all", label: "all" },
                   { value: "any", label: "any" },
@@ -355,12 +444,14 @@ export function SegmentEditor(
                     <SmallSelect
                       disabled={disabled}
                       label="Property"
-                      onChange={(key) =>
+                      onChange={(key) => {
+                        const next = types.get(key) ?? "string";
                         update(row.id, {
                           key,
-                          op: PROPERTY_OPS[types.get(key) ?? "string"][0]?.value ?? "eq",
-                        })
-                      }
+                          op: PROPERTY_OPS[next][0]?.value ?? "eq",
+                          value: next === type ? valueFor(next, row.value) : valueFor(next, ""),
+                        });
+                      }}
                       options={props.properties.map((p) => ({ value: p.key, label: p.key }))}
                       placeholder="Choose a property"
                       value={row.key}
@@ -369,7 +460,16 @@ export function SegmentEditor(
                   <SmallSelect
                     disabled={disabled}
                     label="Operator"
-                    onChange={(op) => update(row.id, { op })}
+                    onChange={(op) => {
+                      const keep =
+                        (row.field === "property" && type === "string") ||
+                        shapeOf(op) === shapeOf(row.op);
+                      const value = keep ? row.value : "";
+                      update(row.id, {
+                        op,
+                        value: row.field === "property" ? valueFor(type, value) : value,
+                      });
+                    }}
                     options={ops}
                     value={row.op}
                   />
@@ -394,27 +494,11 @@ export function SegmentEditor(
                     />
                   ) : null}
                   {needsValue ? (
-                    <Input
-                      aria-label="Value"
-                      className="w-56"
+                    <ValueControl
                       disabled={disabled}
-                      onChange={(event) => update(row.id, { value: event.target.value })}
-                      placeholder={
-                        row.op === "in" || row.op === "not_in"
-                          ? "a, b, c"
-                          : row.field === "created_at" && row.op !== "within_days"
-                            ? "2026-10-10"
-                            : type === "boolean"
-                              ? "true or false"
-                              : type === "date"
-                                ? "2026-10-10"
-                                : ""
-                      }
-                      size="sm"
-                      type={
-                        row.field === "created_at" && row.op === "within_days" ? "number" : "text"
-                      }
-                      value={row.value}
+                      onChange={(value) => update(row.id, { value })}
+                      row={row}
+                      type={type}
                     />
                   ) : null}
                   {props.canEdit && rows.length > 1 ? (
@@ -493,6 +577,7 @@ export function DeleteSegmentButton(
           <TargetInputs {...props} />
           <input name="segmentId" type="hidden" value={props.segmentId} />
           <AlertDialogHeader>
+            <DialogIcon icon={FilterIcon} tone="danger" />
             <AlertDialogTitle>Delete “{props.name}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Its contacts stay; only the filter goes.

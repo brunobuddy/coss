@@ -24,7 +24,9 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { BanIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { addSmsSuppressionAction, removeSmsSuppressionAction } from "./actions";
@@ -68,6 +70,7 @@ function AddForm(props: Target & { onDone: () => void }) {
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={BanIcon} />
         <DialogTitle>Suppress a number</DialogTitle>
         <DialogDescription>Messages from this environment to it are skipped.</DialogDescription>
       </DialogHeader>
@@ -104,6 +107,7 @@ export function RemoveSmsSuppressionButton(
           <TargetInputs {...props} />
           <input name="suppressionId" type="hidden" value={props.suppressionId} />
           <AlertDialogHeader>
+            <DialogIcon icon={BanIcon} tone="danger" />
             <AlertDialogTitle>Remove {props.phoneNumber}?</AlertDialogTitle>
             <AlertDialogDescription>
               {props.optOut

@@ -11,6 +11,8 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { BuildingIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { leaveOrganizationAction } from "./actions";
@@ -31,6 +33,7 @@ export function LeaveOrganizationButton(props: { orgSlug: string; orgName: strin
         <form action={formAction} className="contents">
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <AlertDialogHeader>
+            <DialogIcon icon={BuildingIcon} tone="danger" />
             <AlertDialogTitle>Leave {props.orgName}?</AlertDialogTitle>
             <AlertDialogDescription>
               You will lose access to its projects, domains and emails right away, and invitations

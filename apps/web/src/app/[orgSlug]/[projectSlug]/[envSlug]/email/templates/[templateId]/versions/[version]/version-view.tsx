@@ -19,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { HistoryIcon } from "lucide-react";
 import { useActionState, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { Panel, PanelBody } from "@/components/panel";
 import { SpecItem, SpecList } from "@/components/spec-list";
@@ -112,6 +114,7 @@ function RestoreButton(props: { target: Target; version: number }) {
           <input name="templateId" type="hidden" value={props.target.templateId} />
           <input name="version" type="hidden" value={props.version} />
           <AlertDialogHeader>
+            <DialogIcon icon={HistoryIcon} />
             <AlertDialogTitle>Restore version {props.version}?</AlertDialogTitle>
             <AlertDialogDescription>
               It replaces the current draft, including unpublished changes. Sends are unaffected

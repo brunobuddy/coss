@@ -32,7 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { InboxIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -93,6 +95,7 @@ function AddReceivingDomainForm(
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={InboxIcon} />
         <DialogTitle>Receive email</DialogTitle>
         <DialogDescription>
           Email sent to any address at this hostname becomes a received email of the environment: an{" "}
@@ -193,6 +196,7 @@ export function RemoveReceivingDomainButton(props: Target & { hostname: string }
         <form action={formAction} className="contents">
           <TargetInputs {...props} />
           <AlertDialogHeader>
+            <DialogIcon icon={InboxIcon} tone="danger" />
             <AlertDialogTitle>Stop receiving at {props.hostname}?</AlertDialogTitle>
             <AlertDialogDescription>
               Email sent to {props.hostname} from now on is dropped. Remove its MX record too.

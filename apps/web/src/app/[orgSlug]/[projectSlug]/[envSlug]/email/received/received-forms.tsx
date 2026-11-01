@@ -25,6 +25,8 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Textarea } from "@coss/ui/components/textarea";
+import { InboxIcon, SendIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { deleteReceivedEmailAction, simulateReceivedEmailAction } from "./actions";
@@ -65,6 +67,7 @@ function SimulateForm(props: Target & { defaultTo: string }) {
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={SendIcon} />
         <DialogTitle>Send a test email</DialogTitle>
         <DialogDescription>
           Receives a message here as if it came from outside, without any email being sent: webhooks
@@ -120,6 +123,7 @@ export function DeleteReceivedEmailButton(props: Target & { receivedEmailId: str
           <TargetInputs {...props} />
           <input name="receivedEmailId" type="hidden" value={props.receivedEmailId} />
           <AlertDialogHeader>
+            <DialogIcon icon={InboxIcon} tone="danger" />
             <AlertDialogTitle>Delete this email?</AlertDialogTitle>
             <AlertDialogDescription>
               Its raw message, bodies and attachments are deleted right away, for the dashboard and

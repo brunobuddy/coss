@@ -15,7 +15,9 @@ import {
 } from "@coss/ui/components/dialog";
 import { Label } from "@coss/ui/components/label";
 import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
+import { UserCogIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { updateMemberRoleAction } from "./actions";
@@ -66,6 +68,7 @@ function ChangeRoleForm(props: Props & { onDone: () => void }) {
       <input name="orgSlug" type="hidden" value={props.orgSlug} />
       <input name="memberId" type="hidden" value={props.memberId} />
       <DialogHeader>
+        <DialogIcon icon={UserCogIcon} />
         <DialogTitle>Change role</DialogTitle>
         <DialogDescription>
           {props.isSelf

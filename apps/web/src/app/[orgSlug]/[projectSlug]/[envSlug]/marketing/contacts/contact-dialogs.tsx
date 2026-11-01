@@ -33,8 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { BracesIcon, FileUpIcon, UserRoundIcon } from "lucide-react";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
+import { DateField } from "@/components/fields/date-field";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import { MAX_IMPORT_ROWS } from "../../email/suppressions/import-limits";
@@ -65,6 +69,7 @@ function AddContactForm(props: MarketingFormTarget & { base: string }) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={UserRoundIcon} />
           <DialogTitle>{state.data.created ? "Contact added" : "Contact updated"}</DialogTitle>
           <DialogDescription>
             {state.data.created
@@ -89,6 +94,7 @@ function AddContactForm(props: MarketingFormTarget & { base: string }) {
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={UserRoundIcon} />
         <DialogTitle>Add a contact</DialogTitle>
         <DialogDescription>
           Only add people who agreed to hear from you. Custom properties can be set on the contact's
@@ -134,6 +140,7 @@ function ImportSummary({ result }: { result: ImportContactsResult }) {
   return (
     <>
       <DialogHeader>
+        <DialogIcon icon={FileUpIcon} />
         <DialogTitle>Import finished</DialogTitle>
         <DialogDescription>
           {plural(result.created, "contact")} added, {plural(result.updated, "contact")} updated
@@ -196,6 +203,7 @@ function ImportContactsForm(
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={FileUpIcon} />
         <DialogTitle>Import contacts</DialogTitle>
         <DialogDescription>
           Upload a CSV with an <code>email</code> column and optional <code>first_name</code>,{" "}
@@ -265,6 +273,7 @@ export function DeleteContactButton(
           <TargetInputs {...props} />
           <input name="contactId" type="hidden" value={props.contactId} />
           <AlertDialogHeader>
+            <DialogIcon icon={UserRoundIcon} tone="danger" />
             <AlertDialogTitle>Delete {props.email}?</AlertDialogTitle>
             <AlertDialogDescription>
               The contact leaves every audience and its topic choices are forgotten. Its
@@ -292,6 +301,40 @@ const PROPERTY_TYPES = [
   { value: "date", label: "Date" },
 ];
 
+const NO_FALLBACK = "none";
+
+/** The fallback in the type's own control; posts what `typedText` reads ("" for none). */
+function FallbackInput(props: { type: string }) {
+  const [flag, setFlag] = useState(NO_FALLBACK);
+  if (props.type === "boolean") {
+    return (
+      <div>
+        <input name="fallback" type="hidden" value={flag === NO_FALLBACK ? "" : flag} />
+        <Segmented
+          aria-label="Fallback"
+          onValueChange={setFlag}
+          options={[
+            { value: NO_FALLBACK, label: "None" },
+            { value: "true", label: "True" },
+            { value: "false", label: "False" },
+          ]}
+          value={flag}
+        />
+      </div>
+    );
+  }
+  if (props.type === "date") return <DateField name="fallback" placeholder="None" />;
+  return (
+    <Input
+      maxLength={2000}
+      name="fallback"
+      placeholder="None"
+      step={props.type === "number" ? "any" : undefined}
+      type={props.type === "number" ? "number" : "text"}
+    />
+  );
+}
+
 export function CreatePropertyDialog(props: MarketingFormTarget) {
   return (
     <Dialog>
@@ -305,10 +348,12 @@ export function CreatePropertyDialog(props: MarketingFormTarget) {
 
 function CreatePropertyForm(props: MarketingFormTarget) {
   const [state, formAction, pending] = useActionState(createContactPropertyAction, null);
+  const [type, setType] = useState("string");
   if (state?.ok) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={BracesIcon} />
           <DialogTitle>Property added</DialogTitle>
           <DialogDescription>Contacts can now have it; templates can use it.</DialogDescription>
         </DialogHeader>
@@ -322,6 +367,7 @@ function CreatePropertyForm(props: MarketingFormTarget) {
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={BracesIcon} />
         <DialogTitle>Add a contact property</DialogTitle>
         <DialogDescription>
           Its key and type can't change later. Templates use it as{" "}
@@ -343,26 +389,18 @@ function CreatePropertyForm(props: MarketingFormTarget) {
         </Field>
         <Field>
           <FieldLabel>Type</FieldLabel>
-          <Select defaultValue="string" items={PROPERTY_TYPES} name="type">
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectPopup>
-              {PROPERTY_TYPES.map((type) => (
-                <SelectItem key={type.value} value={type.value}>
-                  {type.label}
-                </SelectItem>
-              ))}
-            </SelectPopup>
-          </Select>
+          <Segmented
+            aria-label="Type"
+            name="type"
+            onValueChange={setType}
+            options={PROPERTY_TYPES}
+            value={type}
+          />
         </Field>
         <Field>
           <FieldLabel>Fallback</FieldLabel>
-          <Input maxLength={2000} name="fallback" placeholder="None" />
-          <FieldDescription>
-            What templates show for contacts without a value (dates: ISO 8601, booleans: true or
-            false).
-          </FieldDescription>
+          <FallbackInput key={type} type={type} />
+          <FieldDescription>What templates show for contacts without a value.</FieldDescription>
         </Field>
         {state && !state.ok ? <FormError message={state.error} /> : null}
       </DialogPanel>
@@ -390,6 +428,7 @@ export function DeletePropertyButton(
           <TargetInputs {...props} />
           <input name="propertyId" type="hidden" value={props.propertyId} />
           <AlertDialogHeader>
+            <DialogIcon icon={BracesIcon} tone="danger" />
             <AlertDialogTitle>Delete “{props.propertyKey}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Every contact's value is removed. Templates using it render the empty string.

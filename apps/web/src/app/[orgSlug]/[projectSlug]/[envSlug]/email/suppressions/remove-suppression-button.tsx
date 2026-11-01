@@ -11,6 +11,8 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { BanIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { removeSuppressionAction } from "./actions";
@@ -41,6 +43,7 @@ export function RemoveSuppressionButton(props: {
           <input name="envSlug" type="hidden" value={props.envSlug} />
           <input name="suppressionId" type="hidden" value={props.suppressionId} />
           <AlertDialogHeader>
+            <DialogIcon icon={BanIcon} tone="danger" />
             <AlertDialogTitle>Remove {props.address}?</AlertDialogTitle>
             <AlertDialogDescription>
               {props.scope === "*" ? "Emails" : `Emails in the “${props.scope}” category`} from this

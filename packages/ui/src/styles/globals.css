@@ -196,6 +196,106 @@
     inset 0 1px 0 color-mix(in srgb, white 7%, transparent);
 }
 
+/*
+ * A modal's header is a lit band over the drafting dots, set off from the body by a hairline; its
+ * footer is the tray under it. Without a body the header just fades into the footer.
+ */
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]) {
+  position: relative;
+  isolation: isolate;
+  border-start-start-radius: calc(var(--radius-2xl) - 1px);
+  border-start-end-radius: calc(var(--radius-2xl) - 1px);
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 4%, transparent),
+    transparent
+  );
+}
+
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"])::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--foreground) 15%, transparent) 1px,
+    transparent 1.2px
+  );
+  background-size: 1rem 1rem;
+  mask-image: radial-gradient(ellipse 70% 120% at top right, black, transparent);
+}
+
+[data-slot="dialog-header"] {
+  padding-inline-end: 3.5rem;
+}
+
+/* With an icon (`DialogIcon` in apps/web): the tile beside the title and description. */
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]):has(
+  > [data-slot="dialog-icon"]
+) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 1rem;
+  row-gap: 0.375rem;
+  align-items: start;
+  text-align: start;
+}
+
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]) > [data-slot="dialog-icon"] {
+  grid-row: span 2;
+}
+
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]):has(> [data-slot="dialog-icon"])
+  > :not([data-slot="dialog-icon"]) {
+  grid-column: 2;
+}
+
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]):has(> [data-slot="dialog-icon"])
+  > :is([data-slot="dialog-title"], [data-slot="alert-dialog-title"]) {
+  align-self: center;
+  min-height: 1.25rem;
+  margin-top: 0.125rem;
+}
+
+[data-slot="dialog-popup"]:has([data-slot="dialog-panel"]) [data-slot="dialog-header"] {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+[data-slot="dialog-popup"]:has([data-slot="dialog-header"]) [data-slot="dialog-panel"] {
+  padding-top: 1.25rem;
+}
+
+:is([data-slot="dialog-description"], [data-slot="alert-dialog-description"]) {
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+:is([data-slot="dialog-footer"], [data-slot="alert-dialog-footer"]).border-t {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 3%, transparent),
+    transparent 0.75rem
+  );
+}
+
+.dark :is([data-slot="dialog-footer"], [data-slot="alert-dialog-footer"]).border-t {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, black 20%, transparent),
+    transparent 0.75rem
+  );
+}
+
+@media (width < 40rem) {
+  :is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]) {
+    border-radius: 0;
+  }
+}
+
 /* The item under the pointer is a raised pill, like the sidebar's highlight. */
 :is(
   [data-slot="menu-item"],
@@ -290,6 +390,23 @@
 @keyframes grow {
   from {
     scale: 1 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    scale: 0.5;
+  }
+}
+
+/* Checkmark paths are shorter than 24 units, so a 24-unit dash hides them whole. */
+@keyframes tick {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
@@ -388,6 +505,100 @@
     transform-origin: bottom;
     animation: grow 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     animation-delay: calc(120ms + var(--i, 0) * 28ms);
+  }
+
+  /*
+   * Menus and dropdowns grow out of what opened them and shrink back as they close. A select laid
+   * over its trigger (`data-side="none"`) only fades: Base UI measures it in place.
+   */
+  :is([data-slot="menu-popup"], [data-slot="menu-sub-content"], [data-slot="select-popup"]) {
+    transition:
+      opacity 140ms ease-out,
+      scale 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  :is(
+    [data-slot="menu-popup"],
+    [data-slot="menu-sub-content"],
+    [data-slot="select-popup"]
+  )[data-starting-style] {
+    opacity: 0;
+    scale: 0.95;
+  }
+
+  :is(
+    [data-slot="menu-popup"],
+    [data-slot="menu-sub-content"],
+    [data-slot="select-popup"],
+    [data-slot="popover-popup"]
+  )[data-ending-style] {
+    opacity: 0;
+    scale: 0.97;
+    transition-duration: 100ms;
+    transition-timing-function: ease-in;
+  }
+
+  [data-slot="select-popup"][data-side="none"]:is([data-starting-style], [data-ending-style]) {
+    scale: 1;
+  }
+
+  /* The highlight follows the pointer softly instead of blinking from item to item. */
+  :is(
+    [data-slot="menu-item"],
+    [data-slot="menu-link-item"],
+    [data-slot="menu-checkbox-item"],
+    [data-slot="menu-radio-item"],
+    [data-slot="menu-sub-trigger"],
+    [data-slot="select-item"],
+    [data-slot="command-item"]
+  ) {
+    transition:
+      background-color 100ms ease-out,
+      box-shadow 100ms ease-out,
+      color 100ms ease-out;
+  }
+
+  /* Checkboxes and radios give under the finger; their fill pops in and the tick draws itself. */
+  :is([data-slot="checkbox"], [data-slot="radio"]) {
+    transition:
+      box-shadow 150ms,
+      scale 120ms ease-out;
+  }
+
+  :is([data-slot="checkbox"], [data-slot="radio"]):not([data-disabled]):active {
+    scale: 0.88;
+  }
+
+  :is([data-slot="checkbox-indicator"], [data-slot="radio-indicator"]):not([data-unchecked]) {
+    animation: pop 220ms cubic-bezier(0.3, 1.4, 0.6, 1) both;
+  }
+
+  [data-slot="checkbox-indicator"] path {
+    stroke-dasharray: 24;
+    animation: tick 240ms cubic-bezier(0.4, 0, 0.2, 1) 80ms both;
+  }
+
+  [data-slot="radio-indicator"]:not([data-unchecked])::before {
+    animation: pop 240ms cubic-bezier(0.3, 1.6, 0.6, 1) 60ms both;
+  }
+
+  /* A tab's panel fades in as the tab is chosen. */
+  [data-slot="tabs-content"]:not([hidden]) {
+    animation: fade 200ms ease-out both;
+  }
+
+  /* The sidebar's pages crossfade when moving to another product. */
+  .panel-swap {
+    animation: fade 180ms ease-out both;
+  }
+
+  /* Small confirmations: a copied tick pops, an inline error rises into place. */
+  .icon-pop {
+    animation: pop 260ms cubic-bezier(0.3, 1.5, 0.6, 1) both;
+  }
+
+  .enter-rise {
+    animation: rise 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 }
 

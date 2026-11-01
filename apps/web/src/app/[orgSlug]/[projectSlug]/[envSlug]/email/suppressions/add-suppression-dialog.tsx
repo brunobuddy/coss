@@ -14,7 +14,9 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { BanIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { addSuppressionAction } from "./actions";
@@ -64,6 +66,7 @@ function AddSuppressionForm(props: Target & { onDone: () => void }) {
       <input name="projectSlug" type="hidden" value={props.projectSlug} />
       <input name="envSlug" type="hidden" value={props.envSlug} />
       <DialogHeader>
+        <DialogIcon icon={BanIcon} />
         <DialogTitle>Suppress an address</DialogTitle>
         <DialogDescription>
           Emails from this environment skip suppressed recipients; the rest of each email is still

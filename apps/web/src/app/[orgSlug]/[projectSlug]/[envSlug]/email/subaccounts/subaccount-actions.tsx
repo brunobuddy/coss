@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_SUBACCOUNT_QUOTA } from "@coss/email/subaccount-schemas";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -24,8 +25,11 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { UsersRoundIcon } from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
+import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -66,6 +70,7 @@ function CreateSubaccountForm(props: EnvTarget) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={UsersRoundIcon} />
           <DialogTitle>Sub-account added</DialogTitle>
           <DialogDescription>
             Send for it with its id or uid (<code>subaccount</code>), and give it its own domains.
@@ -89,6 +94,7 @@ function CreateSubaccountForm(props: EnvTarget) {
     <form action={formAction} className="contents">
       <Hidden {...props} />
       <DialogHeader>
+        <DialogIcon icon={UsersRoundIcon} />
         <DialogTitle>Add a sub-account</DialogTitle>
         <DialogDescription>
           One of your users: their own domains, suppressions, quotas and reputation.
@@ -134,21 +140,40 @@ export function QuotasForm(
       <Hidden {...target} />
       <div className="grid gap-4 sm:grid-cols-3">
         <Field>
-          <FieldLabel>Recipients per day</FieldLabel>
-          <Input defaultValue={perDay ?? ""} inputMode="numeric" name="perDay" placeholder="None" />
+          <FieldLabel>Recipients</FieldLabel>
+          <UnitInput
+            defaultValue={perDay ?? ""}
+            max={MAX_SUBACCOUNT_QUOTA}
+            min={1}
+            name="perDay"
+            placeholder="No limit"
+            step={1}
+            unit="per day"
+          />
         </Field>
         <Field>
-          <FieldLabel>Recipients per second</FieldLabel>
-          <Input
+          <FieldLabel>Rate</FieldLabel>
+          <UnitInput
             defaultValue={perSecond ?? ""}
-            inputMode="numeric"
+            max={MAX_SUBACCOUNT_QUOTA}
+            min={1}
             name="perSecond"
-            placeholder="None"
+            placeholder="No limit"
+            step={1}
+            unit="per second"
           />
         </Field>
         <Field>
           <FieldLabel>Burst</FieldLabel>
-          <Input defaultValue={burst ?? ""} inputMode="numeric" name="burst" placeholder="None" />
+          <UnitInput
+            defaultValue={burst ?? ""}
+            max={MAX_SUBACCOUNT_QUOTA}
+            min={1}
+            name="burst"
+            placeholder="No limit"
+            step={1}
+            unit="recipients"
+          />
         </Field>
       </div>
       <p className="text-muted-foreground text-sm">
@@ -192,6 +217,7 @@ export function ReinstateButton(props: SubaccountTarget & { name: string }) {
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={UsersRoundIcon} />
             <AlertDialogTitle>Reinstate {name}?</AlertDialogTitle>
             <AlertDialogDescription>
               Its live sends are accepted again and its rates are measured from now on. Fix what
@@ -225,6 +251,7 @@ export function DeleteSubaccountButton(props: SubaccountTarget & { name: string 
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={UsersRoundIcon} tone="danger" />
             <AlertDialogTitle>Delete {name}?</AlertDialogTitle>
             <AlertDialogDescription>
               Its sends are refused at once, then its domains are released and it is removed with

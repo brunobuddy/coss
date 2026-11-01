@@ -27,10 +27,14 @@ import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
 import { Textarea } from "@coss/ui/components/textarea";
+import { BoxIcon, KeyRoundIcon, RotateCcwIcon, TagsIcon, WebhookIcon } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useActionState, useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { DialogIcon } from "@/components/dialog-icon";
 import { EventTypePicker } from "@/components/event-type-picker";
+import { ColorInput } from "@/components/fields/color-input";
+import { ListInput } from "@/components/fields/list-input";
 import { FormError } from "@/components/form-error";
 import type { ActionResult } from "@/lib/action-result";
 import { useActionToast } from "@/lib/toast";
@@ -130,6 +134,7 @@ function CreateApplicationForm(props: EnvTarget) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={BoxIcon} />
           <DialogTitle>Application added</DialogTitle>
           <DialogDescription>
             Add its endpoints, or open its portal and let its user add them.
@@ -153,6 +158,7 @@ function CreateApplicationForm(props: EnvTarget) {
     <form action={formAction} className="contents">
       <Hidden {...props} />
       <DialogHeader>
+        <DialogIcon icon={BoxIcon} />
         <DialogTitle>Add an application</DialogTitle>
         <DialogDescription>
           One of your customers (or users): they get their own endpoints and portal.
@@ -213,6 +219,7 @@ export function DeleteApplicationButton(props: AppTarget & { name: string }) {
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={BoxIcon} tone="danger" />
             <AlertDialogTitle>Delete {name}?</AlertDialogTitle>
             <AlertDialogDescription>
               Its endpoints stop receiving messages, including pending retries, and its portal
@@ -251,6 +258,7 @@ function CreateEndpointForm(props: AppTarget & { eventTypes: readonly string[] }
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={WebhookIcon} />
           <DialogTitle>Endpoint added</DialogTitle>
           <DialogDescription>
             Its receiver verifies requests with this secret (Standard Webhooks).
@@ -277,6 +285,7 @@ function CreateEndpointForm(props: AppTarget & { eventTypes: readonly string[] }
     <form action={formAction} className="contents">
       <Hidden {...target} />
       <DialogHeader>
+        <DialogIcon icon={WebhookIcon} />
         <DialogTitle>Add an endpoint</DialogTitle>
         <DialogDescription>
           coss.com sends this application's messages to the URL, signed with the endpoint's own
@@ -346,6 +355,7 @@ export function DeleteEndpointButton(props: EndpointTarget & { url: string }) {
         <form action={formAction} className="contents">
           <Hidden {...target} />
           <AlertDialogHeader>
+            <DialogIcon icon={WebhookIcon} tone="danger" />
             <AlertDialogTitle>Delete this endpoint?</AlertDialogTitle>
             <AlertDialogDescription>
               {url} stops receiving messages, including pending retries. This can't be undone.
@@ -395,6 +405,7 @@ function RollSecretForm(props: EndpointTarget) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={KeyRoundIcon} />
           <DialogTitle>New signing secret</DialogTitle>
           <DialogDescription>
             Until the previous secret stops signing, every request carries a signature for each.
@@ -413,6 +424,7 @@ function RollSecretForm(props: EndpointTarget) {
     <form action={formAction} className="contents">
       <Hidden {...props} />
       <DialogHeader>
+        <DialogIcon icon={KeyRoundIcon} />
         <DialogTitle>Roll the signing secret?</DialogTitle>
         <DialogDescription>
           A new secret signs every request from now on. Choose how long the current one keeps
@@ -478,6 +490,7 @@ function RecoverForm(props: EndpointTarget & { onDone: () => void }) {
     <form action={formAction} className="contents">
       <Hidden {...target} />
       <DialogHeader>
+        <DialogIcon icon={RotateCcwIcon} />
         <DialogTitle>Recover failed deliveries?</DialogTitle>
         <DialogDescription>
           Deliveries that failed every attempt are sent once more, to the endpoint's current URL and
@@ -575,6 +588,7 @@ function CreateEventTypeForm(props: EnvTarget & { onDone: () => void }) {
     <form action={formAction} className="contents">
       <Hidden {...target} />
       <DialogHeader>
+        <DialogIcon icon={TagsIcon} />
         <DialogTitle>Add an event type</DialogTitle>
         <DialogDescription>
           A kind of message you send. Your applications' users subscribe to the types they want.
@@ -626,6 +640,8 @@ export function ArchiveEventTypeButton(props: EnvTarget & { name: string; archiv
   );
 }
 
+const ORIGIN = /^https?:\/\/[^/?#\s]+$/i;
+
 export function PortalSettingsForm(
   props: EnvTarget & {
     sandbox: boolean;
@@ -646,16 +662,17 @@ export function PortalSettingsForm(
       <Hidden {...target} />
       <Field>
         <FieldLabel>Sites allowed to embed the portal</FieldLabel>
-        <Textarea
-          className="font-mono text-xs"
-          defaultValue={settings.allowedOrigins.join("\n")}
+        <ListInput
+          check={(value) => ORIGIN.test(value)}
+          defaultValue={settings.allowedOrigins}
+          inputMode="url"
           name="allowedOrigins"
           placeholder="https://app.example.com"
-          rows={4}
+          separator="\n"
         />
         <FieldDescription>
-          One origin per line (https://, no path{sandbox ? "; http://localhost works here" : ""}).
-          Without any, the portal only opens as its own page.
+          Origins (https://, no path{sandbox ? "; http://localhost works here" : ""}). Without any,
+          the portal only opens as its own page.
         </FieldDescription>
       </Field>
       <Field>
@@ -669,7 +686,7 @@ export function PortalSettingsForm(
       </Field>
       <Field>
         <FieldLabel>Accent color</FieldLabel>
-        <Input defaultValue={settings.accentColor ?? ""} name="accentColor" placeholder="#2563eb" />
+        <ColorInput defaultValue={settings.accentColor ?? ""} name="accentColor" />
       </Field>
       <Field>
         <FieldLabel>Theme</FieldLabel>

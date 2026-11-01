@@ -24,8 +24,10 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
-import { Textarea } from "@coss/ui/components/textarea";
-import { useActionState } from "react";
+import { UsersRoundIcon } from "lucide-react";
+import { useActionState, useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
+import { ListInput } from "@/components/fields/list-input";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import {
@@ -53,6 +55,7 @@ function NameForm(props: MarketingFormTarget) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={UsersRoundIcon} />
           <DialogTitle>Audience created</DialogTitle>
           <DialogDescription>Add contacts to it from its page or a CSV import.</DialogDescription>
         </DialogHeader>
@@ -66,6 +69,7 @@ function NameForm(props: MarketingFormTarget) {
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={UsersRoundIcon} />
         <DialogTitle>New audience</DialogTitle>
         <DialogDescription>
           A static list of contacts, e.g. beta testers or customers.
@@ -112,15 +116,27 @@ export function RenameAudienceForm(
 
 export function AddMembersForm(props: MarketingFormTarget & { audienceId: string }) {
   const [state, formAction, pending] = useActionState(addAudienceMembersAction, null);
+  const [round, setRound] = useState(0);
+  useEffect(() => {
+    if (state?.ok) setRound((current) => current + 1);
+  }, [state]);
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <TargetInputs {...props} />
       <input name="audienceId" type="hidden" value={props.audienceId} />
       <Field>
         <FieldLabel>Add contacts</FieldLabel>
-        <Textarea name="contacts" placeholder={"ada@example.com\ngrace@example.com"} rows={3} />
+        <ListInput
+          check={(value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)}
+          inputMode="email"
+          key={round}
+          name="contacts"
+          placeholder="ada@example.com"
+          separator={"\n"}
+        />
         <FieldDescription>
-          Addresses of existing contacts, one per line. Add new people on the Contacts page first.
+          Addresses of existing contacts; paste a list to add many. Add new people on the Contacts
+          page first.
         </FieldDescription>
       </Field>
       {state?.ok ? (
@@ -173,6 +189,7 @@ export function DeleteAudienceButton(
           <TargetInputs {...props} />
           <input name="audienceId" type="hidden" value={props.audienceId} />
           <AlertDialogHeader>
+            <DialogIcon icon={UsersRoundIcon} tone="danger" />
             <AlertDialogTitle>Delete “{props.name}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Its contacts stay; only the list goes. Segments that filter on it must change first.

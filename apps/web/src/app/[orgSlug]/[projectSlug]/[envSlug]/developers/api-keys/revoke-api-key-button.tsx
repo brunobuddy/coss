@@ -11,6 +11,8 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { KeyRoundIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { revokeApiKeyAction } from "./actions";
@@ -40,6 +42,7 @@ export function RevokeApiKeyButton(props: {
           <input name="envSlug" type="hidden" value={props.envSlug} />
           <input name="keyId" type="hidden" value={props.keyId} />
           <AlertDialogHeader>
+            <DialogIcon icon={KeyRoundIcon} tone="danger" />
             <AlertDialogTitle>Revoke “{props.keyName}”?</AlertDialogTitle>
             <AlertDialogDescription>
               Requests using this key will be rejected immediately. This can't be undone.

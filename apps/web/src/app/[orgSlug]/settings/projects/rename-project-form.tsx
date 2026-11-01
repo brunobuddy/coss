@@ -14,8 +14,9 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
-import { PencilIcon } from "lucide-react";
+import { FolderIcon, PencilIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { renameProjectAction } from "./actions";
@@ -79,6 +80,7 @@ function RenameProjectForm({
       <input name="orgSlug" type="hidden" value={orgSlug} />
       <input name="projectId" type="hidden" value={project.id} />
       <DialogHeader>
+        <DialogIcon icon={FolderIcon} />
         <DialogTitle>Rename project</DialogTitle>
         <DialogDescription>
           The slug stays <span className="font-mono">{project.slug}</span>, so dashboard links keep

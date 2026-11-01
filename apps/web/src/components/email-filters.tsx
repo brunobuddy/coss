@@ -14,6 +14,7 @@ import {
   emailFilterQuery,
 } from "@/lib/email-filters";
 import { listHref } from "./admin/list-controls";
+import { DateField } from "./fields/date-field";
 import { FilterLinks } from "./filter-links";
 import { SearchForm } from "./search-form";
 
@@ -62,7 +63,7 @@ function FilterInput(props: {
   label: string;
   value: string;
   placeholder?: string;
-  type?: "text" | "email" | "date";
+  type?: "text" | "email";
   list?: string;
 }) {
   const id = `email-filter-${props.name}`;
@@ -187,9 +188,23 @@ export function EmailFilterBar(props: {
                     <option key={domain} value={domain} />
                   ))}
                 </datalist>
-                <div className="grid grid-cols-2 gap-2">
-                  <FilterInput label="Created from" name="since" type="date" value={params.since} />
-                  <FilterInput label="Created to" name="until" type="date" value={params.until} />
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="email-filter-since">Created from</Label>
+                  <DateField
+                    defaultValue={params.since}
+                    id="email-filter-since"
+                    name="since"
+                    placeholder="Any day"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="email-filter-until">Created to</Label>
+                  <DateField
+                    defaultValue={params.until}
+                    id="email-filter-until"
+                    name="until"
+                    placeholder="Any day"
+                  />
                 </div>
                 <p className="text-muted-foreground text-xs">
                   Recipients include cc and bcc. Sender domains include their subdomains. Days are

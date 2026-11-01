@@ -11,6 +11,8 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { ListIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { removeRiskListEntryAction } from "../actions";
@@ -41,6 +43,7 @@ export function RemoveRiskListEntryButton(props: {
           <input name="envSlug" type="hidden" value={props.envSlug} />
           <input name="entryId" type="hidden" value={props.entryId} />
           <AlertDialogHeader>
+            <DialogIcon icon={ListIcon} tone="danger" />
             <AlertDialogTitle>Remove {props.value}?</AlertDialogTitle>
             <AlertDialogDescription>
               Later assessments are no longer {props.list === "block" ? "blocked" : "allowed"} by

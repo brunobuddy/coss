@@ -12,7 +12,9 @@ import {
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
 import { Switch } from "@coss/ui/components/switch";
+import { GlobeIcon } from "lucide-react";
 import { useRef } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -80,6 +82,7 @@ export function DeleteDomainButton(props: Target & { name: string }) {
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <input name="domainId" type="hidden" value={props.domainId} />
           <AlertDialogHeader>
+            <DialogIcon icon={GlobeIcon} tone="danger" />
             <AlertDialogTitle>Delete {props.name}?</AlertDialogTitle>
             <AlertDialogDescription>
               Live API keys will no longer be able to send from this domain. Emails already sent are

@@ -14,9 +14,11 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { ArrowDownToLineIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { createLogDrainAction } from "./actions";
@@ -49,6 +51,7 @@ function CreateDrainForm(props: Target) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={ArrowDownToLineIcon} />
           <DialogTitle>Log drain added</DialogTitle>
           <DialogDescription>
             Requests are signed with this secret: verify NDJSON batches with it (for example with{" "}
@@ -86,6 +89,7 @@ function CreateDrainForm(props: Target) {
       <input name="projectSlug" type="hidden" value={props.projectSlug} />
       <input name="envSlug" type="hidden" value={props.envSlug} />
       <DialogHeader>
+        <DialogIcon icon={ArrowDownToLineIcon} />
         <DialogTitle>Add a log drain</DialogTitle>
         <DialogDescription>
           coss.com posts batches of log lines to this URL, usually within seconds: as signed NDJSON

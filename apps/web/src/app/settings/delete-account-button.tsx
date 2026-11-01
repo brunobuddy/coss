@@ -13,7 +13,9 @@ import {
 import { Button } from "@coss/ui/components/button";
 import { Field, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { UserRoundIcon } from "lucide-react";
 import { useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { deleteAccountAction } from "./actions";
@@ -44,6 +46,7 @@ export function DeleteAccountButton(props: {
         {/* `contents` keeps header/footer as direct flex children of the popup (coss ui pattern). */}
         <form action={formAction} className="contents">
           <AlertDialogHeader>
+            <DialogIcon icon={UserRoundIcon} tone="danger" />
             <AlertDialogTitle>Delete your account?</AlertDialogTitle>
             <AlertDialogDescription>
               You're signed out everywhere, your personal API keys stop working and your profile,

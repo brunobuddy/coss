@@ -14,7 +14,8 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
-import { PlusIcon } from "lucide-react";
+import { FolderIcon, PlusIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { createProjectAction } from "./actions";
@@ -56,6 +57,7 @@ function CreateProjectForm({ orgSlug, maxLength }: { orgSlug: string; maxLength:
     <form action={formAction} className="contents">
       <input name="orgSlug" type="hidden" value={orgSlug} />
       <DialogHeader>
+        <DialogIcon icon={FolderIcon} />
         <DialogTitle>New project</DialogTitle>
         <DialogDescription>
           A project gets a production (live) and a development (sandbox) environment, each with its

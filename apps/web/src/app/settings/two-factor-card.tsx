@@ -16,9 +16,12 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { OTPField, OTPFieldInput } from "@coss/ui/components/otp-field";
+import { LifeBuoyIcon, SmartphoneIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { QrCode } from "@/components/qr-code";
 import { SettingsNote, SettingsRow, SettingsSection } from "@/components/settings";
@@ -156,6 +159,7 @@ function SetupFlow() {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={LifeBuoyIcon} />
           <DialogTitle>Save your backup codes</DialogTitle>
           <DialogDescription>
             Two-factor authentication is on. If you lose your authenticator, each of these codes
@@ -176,6 +180,7 @@ function SetupFlow() {
     return (
       <form className="contents" onSubmit={verify}>
         <DialogHeader>
+          <DialogIcon icon={SmartphoneIcon} />
           <DialogTitle>Scan the QR code</DialogTitle>
           <DialogDescription>
             Scan it with your authenticator app, then enter the 6-digit code it shows.
@@ -191,16 +196,16 @@ function SetupFlow() {
           </div>
           <Field className="w-full">
             <FieldLabel>Authentication code</FieldLabel>
-            <Input
-              autoComplete="one-time-code"
-              autoFocus
-              inputMode="numeric"
-              maxLength={6}
-              name="code"
-              pattern="[0-9]{6}"
-              placeholder="123456"
-              required
-            />
+            <OTPField length={6} name="code" required>
+              {Array.from({ length: 6 }, (_, index) => (
+                <OTPFieldInput
+                  aria-label={index === 0 ? undefined : `Digit ${index + 1} of 6`}
+                  autoFocus={index === 0}
+                  // biome-ignore lint/suspicious/noArrayIndexKey: the slots are fixed positions.
+                  key={index}
+                />
+              ))}
+            </OTPField>
           </Field>
           <div className="w-full">
             <FormError message={error} />
@@ -219,6 +224,7 @@ function SetupFlow() {
   return (
     <form className="contents" onSubmit={start}>
       <DialogHeader>
+        <DialogIcon icon={SmartphoneIcon} />
         <DialogTitle>Set up an authenticator app</DialogTitle>
         <DialogDescription>Confirm your password to continue.</DialogDescription>
       </DialogHeader>
@@ -288,6 +294,7 @@ function BackupCodesFlow() {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={LifeBuoyIcon} />
           <DialogTitle>Your new backup codes</DialogTitle>
           <DialogDescription>
             Your previous codes no longer work. Store these somewhere safe; they won't be shown
@@ -307,6 +314,7 @@ function BackupCodesFlow() {
   return (
     <form className="contents" onSubmit={onSubmit}>
       <DialogHeader>
+        <DialogIcon icon={LifeBuoyIcon} />
         <DialogTitle>Create new backup codes</DialogTitle>
         <DialogDescription>
           Backup codes can't be shown again after setup. Create a new set to replace them; your
@@ -355,6 +363,7 @@ function DisableDialog({ requiredBy }: { requiredBy: string[] }) {
       <DialogPopup>
         <form className="contents" onSubmit={onSubmit}>
           <DialogHeader>
+            <DialogIcon icon={SmartphoneIcon} tone="danger" />
             <DialogTitle>Turn off two-factor authentication?</DialogTitle>
             <DialogDescription>
               Your password alone will be enough to sign in. Your backup codes stop working.

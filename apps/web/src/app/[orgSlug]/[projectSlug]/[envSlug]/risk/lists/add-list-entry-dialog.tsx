@@ -21,7 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { ListIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
+import { countryName, isCountryCode } from "@/components/fields/countries";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { addRiskListEntryAction } from "../actions";
@@ -65,6 +69,9 @@ function AddRiskListEntryForm(props: Target & { onDone: () => void }) {
           }
         : { title: "Already listed", description: "Nothing changed." },
   });
+  const [type, setType] = useState("domain");
+  const [value, setValue] = useState("");
+  const country = type === "country";
   const { onDone } = props;
   useEffect(() => {
     if (state?.ok) onDone();
@@ -77,6 +84,7 @@ function AddRiskListEntryForm(props: Target & { onDone: () => void }) {
       <input name="projectSlug" type="hidden" value={props.projectSlug} />
       <input name="envSlug" type="hidden" value={props.envSlug} />
       <DialogHeader>
+        <DialogIcon icon={ListIcon} />
         <DialogTitle>Add a list entry</DialogTitle>
         <DialogDescription>
           An allow-list match makes the decision <code>allow</code> whatever else fired; a
@@ -86,22 +94,21 @@ function AddRiskListEntryForm(props: Target & { onDone: () => void }) {
       <DialogPanel className="flex flex-col gap-4">
         <Field>
           <FieldLabel>List</FieldLabel>
-          <Select defaultValue="block" items={LISTS} name="list">
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectPopup>
-              {LISTS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectPopup>
-          </Select>
+          <div>
+            <Segmented aria-label="List" defaultValue="block" name="list" options={LISTS} />
+          </div>
         </Field>
         <Field>
           <FieldLabel>Match on</FieldLabel>
-          <Select defaultValue="domain" items={TYPES} name="type">
+          <Select
+            items={TYPES}
+            name="type"
+            onValueChange={(next) => {
+              setType(String(next));
+              if (next === "country") setValue((current) => current.toUpperCase());
+            }}
+            value={type}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -116,7 +123,23 @@ function AddRiskListEntryForm(props: Target & { onDone: () => void }) {
         </Field>
         <Field>
           <FieldLabel>Value</FieldLabel>
-          <Input autoFocus maxLength={320} name="value" placeholder="example.com" required />
+          <div className="flex items-center gap-2">
+            <Input
+              autoFocus
+              className={country ? "w-20 font-mono uppercase" : undefined}
+              maxLength={country ? 2 : 320}
+              name="value"
+              onChange={(event) =>
+                setValue(country ? event.target.value.toUpperCase() : event.target.value)
+              }
+              placeholder={TYPES.find((item) => item.value === type)?.placeholder}
+              required
+              value={value}
+            />
+            {country && isCountryCode(value) ? (
+              <span className="text-muted-foreground text-sm">{countryName(value)}</span>
+            ) : null}
+          </div>
           <FieldDescription>
             Email addresses match their mailbox (dots and +tags folded at Gmail and similar),
             domains include their subdomains, IP ranges use CIDR notation.

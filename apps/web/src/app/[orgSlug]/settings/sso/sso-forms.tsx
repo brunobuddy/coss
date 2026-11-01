@@ -16,8 +16,10 @@ import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import { Textarea } from "@coss/ui/components/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@coss/ui/components/toggle-group";
+import { KeyRoundIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { SettingsFooter, SettingsRow } from "@/components/settings";
 import { SettingsSwitchRow } from "@/components/settings-switch-row";
@@ -235,6 +237,7 @@ export function DeleteSsoProviderButton(props: { orgSlug: string }) {
         <form action={formAction} className="contents">
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <AlertDialogHeader>
+            <DialogIcon icon={KeyRoundIcon} tone="danger" />
             <AlertDialogTitle>Remove the SSO provider?</AlertDialogTitle>
             <AlertDialogDescription>
               Nobody will be able to sign in with SSO, the SSO requirement is turned off, every

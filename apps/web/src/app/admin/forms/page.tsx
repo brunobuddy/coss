@@ -128,6 +128,7 @@ export default async function AdminFormsPage({ searchParams }: PageProps<"/admin
                   </TableCell>
                   <TableCell className="text-right">
                     <AdminActionDialog
+                      icon="form"
                       action={setFormDisabledAction}
                       description={
                         form.disabledByAdminAt

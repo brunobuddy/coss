@@ -12,6 +12,7 @@ import {
   renderBroadcast,
 } from "@coss/email";
 import type { BroadcastOutput } from "@coss/email/broadcast-schemas";
+import { listVerifiedMemberEmails } from "@coss/tenancy";
 import { Alert, AlertDescription, AlertTitle } from "@coss/ui/components/alert";
 import {
   Table,
@@ -119,6 +120,10 @@ export default async function BroadcastPage({
   const controls = { ...target, broadcastId: broadcast.id, name: broadcast.name };
   const canSend = context.can({ broadcast: ["send"] });
   const canTest = canSend && context.can({ email: ["send"] });
+  const recipients =
+    canTest && broadcast.status !== "canceled"
+      ? await listVerifiedMemberEmails({ organizationId: env.organizationId })
+      : [];
   const { stats } = broadcast;
   const fallbacks = contactVariables(
     { address: "", firstName: null, lastName: null, properties: {} },
@@ -135,7 +140,11 @@ export default async function BroadcastPage({
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {canTest && broadcast.status !== "canceled" ? (
-              <TestBroadcastDialog {...controls} />
+              <TestBroadcastDialog
+                {...controls}
+                currentUserEmail={context.session.user.email}
+                recipients={recipients}
+              />
             ) : null}
             {canSend && (broadcast.status === "scheduled" || broadcast.status === "sending") ? (
               <BroadcastChangeButton {...controls} change="pause" />

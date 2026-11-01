@@ -24,8 +24,10 @@ import {
 } from "@coss/ui/components/dialog";
 import { Label } from "@coss/ui/components/label";
 import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
+import { KeyRoundIcon, RotateCcwIcon, WebhookIcon } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
@@ -84,6 +86,7 @@ export function UpgradeEndpointVersionButton(props: Target & { latest: string })
           <TargetInputs {...props} />
           <input name="apiVersion" type="hidden" value={props.latest} />
           <AlertDialogHeader>
+            <DialogIcon icon={WebhookIcon} />
             <AlertDialogTitle>Send events in API version {props.latest}?</AlertDialogTitle>
             <AlertDialogDescription>
               Every event from now on, including pending retries, is rendered in the new version.
@@ -118,6 +121,7 @@ export function DeleteEndpointButton(props: Target & { url: string }) {
         <form action={formAction} className="contents">
           <TargetInputs {...props} />
           <AlertDialogHeader>
+            <DialogIcon icon={WebhookIcon} tone="danger" />
             <AlertDialogTitle>Delete this endpoint?</AlertDialogTitle>
             <AlertDialogDescription>
               {props.url} will stop receiving events, including pending retries. This can't be
@@ -182,6 +186,7 @@ function RollSecretForm(props: Target) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={KeyRoundIcon} />
           <DialogTitle>New signing secret</DialogTitle>
           <DialogDescription>
             Deploy it to your receiver. Until the previous secret stops signing, every request
@@ -207,6 +212,7 @@ function RollSecretForm(props: Target) {
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={KeyRoundIcon} />
         <DialogTitle>Roll the signing secret?</DialogTitle>
         <DialogDescription>
           A new secret signs every request from now on. Choose how long the current one keeps
@@ -301,6 +307,7 @@ function RecoverDeliveriesForm(props: Target & { onDone: () => void }) {
     <form action={formAction} className="contents">
       <TargetInputs {...props} />
       <DialogHeader>
+        <DialogIcon icon={RotateCcwIcon} />
         <DialogTitle>Recover failed deliveries?</DialogTitle>
         <DialogDescription>
           Deliveries that failed every attempt are sent once more, to the endpoint's current URL and

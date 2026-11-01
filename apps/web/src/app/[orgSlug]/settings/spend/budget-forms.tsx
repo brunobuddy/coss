@@ -24,7 +24,6 @@ import {
   DialogTrigger,
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
-import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import {
   Select,
@@ -33,7 +32,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { GaugeIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
+import { MoneyInput } from "@/components/fields/money-input";
+import { ThresholdPicker } from "@/components/fields/threshold-picker";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { deleteBudgetAction, setBudgetAction } from "./actions";
@@ -96,6 +99,7 @@ function BudgetForm(props: Parameters<typeof BudgetDialog>[0] & { onDone: () => 
       {props.targetId ? <input name="targetId" type="hidden" value={props.targetId} /> : null}
       <input name="exempt" type="hidden" value={String(exempt)} />
       <DialogHeader>
+        <DialogIcon icon={GaugeIcon} />
         <DialogTitle>{props.title}</DialogTitle>
         <DialogDescription>{props.description}</DialogDescription>
       </DialogHeader>
@@ -126,13 +130,12 @@ function BudgetForm(props: Parameters<typeof BudgetDialog>[0] & { onDone: () => 
         {exempt ? null : (
           <>
             <Field>
-              <FieldLabel>Monthly budget (USD)</FieldLabel>
-              <Input
+              <FieldLabel>Monthly budget</FieldLabel>
+              <MoneyInput
                 autoFocus
                 defaultValue={props.amount}
-                inputMode="decimal"
                 name="amount"
-                placeholder="50"
+                placeholder="50.00"
                 required
               />
               <FieldDescription>
@@ -141,11 +144,14 @@ function BudgetForm(props: Parameters<typeof BudgetDialog>[0] & { onDone: () => 
               </FieldDescription>
             </Field>
             <Field>
-              <FieldLabel>Alerts at</FieldLabel>
-              <Input defaultValue={props.thresholds ?? "80, 100"} name="alertThresholds" />
+              <FieldLabel>Email alerts at</FieldLabel>
+              <ThresholdPicker
+                defaultValue={props.thresholds}
+                name="alertThresholds"
+                presets={[50, 75, 80, 90, 100]}
+              />
               <FieldDescription>
-                Percentages of the budget that email the billing contacts (and the member it
-                concerns).
+                The billing contacts (and the member it concerns) hear when spend reaches each mark.
               </FieldDescription>
             </Field>
           </>
@@ -181,6 +187,7 @@ export function RemoveBudgetButton(props: {
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <input name="budgetId" type="hidden" value={props.budgetId} />
           <AlertDialogHeader>
+            <DialogIcon icon={GaugeIcon} tone="danger" />
             <AlertDialogTitle>{props.title}</AlertDialogTitle>
             <AlertDialogDescription>{props.description}</AlertDialogDescription>
             {state && !state.ok ? <FormError message={state.error} /> : null}

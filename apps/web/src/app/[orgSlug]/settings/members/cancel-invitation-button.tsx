@@ -11,6 +11,8 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { MailPlusIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { cancelInvitationAction } from "./actions";
@@ -36,6 +38,7 @@ export function CancelInvitationButton(props: {
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <input name="invitationId" type="hidden" value={props.invitationId} />
           <AlertDialogHeader>
+            <DialogIcon icon={MailPlusIcon} tone="danger" />
             <AlertDialogTitle>Cancel the invitation for {props.email}?</AlertDialogTitle>
             <AlertDialogDescription>
               The invitation link will stop working. You can invite them again later.

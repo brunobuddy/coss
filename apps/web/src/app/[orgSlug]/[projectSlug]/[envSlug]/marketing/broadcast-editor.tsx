@@ -16,6 +16,8 @@ import {
 } from "@coss/ui/components/select";
 import { Textarea } from "@coss/ui/components/textarea";
 import { useActionState, useState } from "react";
+import { ListInput } from "@/components/fields/list-input";
+import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
 import { saveBroadcastAction } from "./actions";
@@ -53,6 +55,11 @@ export const EMPTY_DRAFT: BroadcastDraft = {
 };
 
 const NO_TOPIC = "__none";
+
+/** "ada@example.com" or "Ada <ada@example.com>". */
+function looksLikeAddress(value: string): boolean {
+  return /^(?:[^<>]*<[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>|[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+)$/.test(value);
+}
 
 /**
  * A broadcast's content and target. Editable while it is a draft; read-only afterwards (its
@@ -181,12 +188,18 @@ export function BroadcastEditor(
         </Field>
         <Field>
           <FieldLabel>Reply to</FieldLabel>
-          <Input
-            defaultValue={props.draft.replyTo}
-            disabled={disabled}
-            name="replyTo"
-            placeholder="Optional, comma-separated"
-          />
+          {disabled ? (
+            <Input defaultValue={props.draft.replyTo} disabled placeholder="None" />
+          ) : (
+            <ListInput
+              check={looksLikeAddress}
+              defaultValue={props.draft.replyTo}
+              inputMode="email"
+              keepSpaces
+              name="replyTo"
+              placeholder="Optional"
+            />
+          )}
         </Field>
       </div>
       <Field>
@@ -266,17 +279,21 @@ export function BroadcastEditor(
         </Label>
       </div>
       <Field className="max-w-xs">
-        <FieldLabel>Recipients per second</FieldLabel>
-        <Input
+        <FieldLabel>Sending rate</FieldLabel>
+        <UnitInput
           defaultValue={props.draft.ratePerSecond}
           disabled={disabled}
+          groupClassName="max-w-56"
           max={props.planRate}
           min={1}
           name="ratePerSecond"
-          placeholder={`${props.planRate} (your plan's rate)`}
-          type="number"
+          placeholder={String(props.planRate)}
+          unit="per second"
         />
-        <FieldDescription>At most your plan's marketing rate.</FieldDescription>
+        <FieldDescription>
+          Recipients a second; at most your plan's marketing rate ({props.planRate}), which is also
+          the default.
+        </FieldDescription>
       </Field>
       {state && !state.ok ? <FormError message={state.error} /> : null}
       {props.canEdit ? (

@@ -23,8 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { SendIcon } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { sendTestAction } from "../actions";
 
@@ -68,6 +70,7 @@ function TestSendForm(props: Props) {
     return (
       <>
         <DialogHeader>
+          <DialogIcon icon={SendIcon} />
           <DialogTitle>Test sent</DialogTitle>
           <DialogDescription>
             {props.sandbox
@@ -101,6 +104,7 @@ function TestSendForm(props: Props) {
         <input key={address} name="to" type="hidden" value={address} />
       ))}
       <DialogHeader>
+        <DialogIcon icon={SendIcon} />
         <DialogTitle>Send a test</DialogTitle>
         <DialogDescription>
           The saved draft, rendered with the sample values, goes out like any send of this

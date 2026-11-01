@@ -60,6 +60,7 @@ export default async function FormSettingsPage({
             key={form.updatedAt.toISOString()}
             audiences={audiences.data.map((audience) => ({ id: audience.id, name: audience.name }))}
             captchaConfigured={risk.captcha !== null}
+            fieldNames={(form.fields ?? []).map((field) => field.name)}
             formId={form.id}
             sandbox={environment.mode === "sandbox"}
             topics={topics.data.map((topic) => ({ key: topic.key, name: topic.name }))}
