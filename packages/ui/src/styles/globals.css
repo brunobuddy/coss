@@ -51,6 +51,25 @@
   );
 }
 
+/* White (outline) buttons read as keycaps: a faint shade toward a slightly heavier bottom edge. */
+[class*="data-loading:select-none"].bg-popover:not(:disabled) {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 40%,
+    color-mix(in srgb, var(--foreground) 3.5%, transparent)
+  );
+  border-bottom-color: color-mix(in srgb, var(--input), var(--foreground) 16%);
+}
+
+.dark [class*="data-loading:select-none"].bg-popover:not(:disabled) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 5%, transparent),
+    transparent 60%
+  );
+  border-bottom-color: var(--input);
+}
+
 [class*="data-loading:select-none"] {
   transition-property: box-shadow, background-color, border-color, transform;
   transition-duration: 150ms;
