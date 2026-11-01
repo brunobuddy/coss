@@ -30,10 +30,16 @@ export function Sparkline(props: { id: string; values: number[]; className?: str
           <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={`${line} L${width},${height} L0,${height} Z`} fill={`url(#${gradient})`} />
       <path
+        className="sparkline-area"
+        d={`${line} L${width},${height} L0,${height} Z`}
+        fill={`url(#${gradient})`}
+      />
+      <path
+        className="sparkline-line"
         d={line}
         fill="none"
+        pathLength={1}
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"

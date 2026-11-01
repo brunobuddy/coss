@@ -320,7 +320,12 @@ function RailLink(
           />
         }
       >
-        <Icon className={cn("transition-colors", props.active && props.activeClassName)} />
+        <Icon
+          className={cn(
+            "transition-[color,scale] duration-200 ease-out group-hover/menu-item:scale-110 group-active/menu-item:scale-95 motion-reduce:transition-none motion-reduce:group-hover/menu-item:scale-100",
+            props.active && props.activeClassName,
+          )}
+        />
         <span className="sr-only">{props.label}</span>
       </RailTooltipTrigger>
     </SidebarMenuItem>

@@ -35,6 +35,7 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CountUp } from "@/components/count-up";
 import { ModeBadge } from "@/components/email-badges";
 import { Panel, PanelBody } from "@/components/panel";
 import { type GlyphTone, PRODUCT_TEXT, ProductGlyph } from "@/components/product-glyph";
@@ -363,7 +364,7 @@ export default async function EnvironmentHomePage({
                     <div className="flex flex-col gap-2">
                       <span className="flex items-baseline gap-1.5">
                         <span className="font-heading font-semibold text-lg tabular-nums">
-                          {formatCompact(count)}
+                          <CountUp value={formatCompact(count)} />
                         </span>
                         <span className="text-muted-foreground">
                           {count === 1 ? figure.one : figure.many}

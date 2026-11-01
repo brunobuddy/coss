@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@coss/ui/lib/utils";
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 
 export type BarSeries = {
   key: string;
@@ -69,10 +69,15 @@ export function StackedBars(props: {
           <div aria-hidden className="absolute inset-x-0 top-0 border-t border-dashed" />
           {props.columns.map((column, index) => (
             <div
-              className="flex h-full min-w-0 flex-1 flex-col-reverse"
+              className="bar-grow flex h-full min-w-0 flex-1 flex-col-reverse transition-opacity"
               key={column.label}
               onPointerEnter={() => setHover(index)}
-              style={{ opacity: hover === null || hover === index ? 1 : 0.5 }}
+              style={
+                {
+                  opacity: hover === null || hover === index ? 1 : 0.5,
+                  "--i": index,
+                } as CSSProperties
+              }
             >
               {totals[index] === 0 ? (
                 <div className="h-0.5 rounded-[1px] bg-muted-foreground/16" />

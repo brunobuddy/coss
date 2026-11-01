@@ -2,6 +2,7 @@ import { cn } from "@coss/ui/lib/utils";
 import { ArrowUpRightIcon } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CountUp } from "./count-up";
 
 /** A row of measured values, ruled into cells like coss.com's figures (2 columns, 4 from `lg`). */
 export function StatRow(props: { className?: string; children: ReactNode }) {
@@ -32,7 +33,7 @@ export function Stat(props: {
       <div className="label-caps text-muted-foreground">{props.label}</div>
       <div className="flex items-baseline gap-1">
         <span className="font-heading font-semibold text-3xl tabular-nums tracking-[-0.02em]">
-          {props.value}
+          {typeof props.value === "string" ? <CountUp value={props.value} /> : props.value}
         </span>
         {props.unit ? <span className="text-lg text-muted-foreground">{props.unit}</span> : null}
       </div>
