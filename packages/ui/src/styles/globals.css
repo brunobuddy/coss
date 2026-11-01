@@ -38,8 +38,12 @@
   text-transform: uppercase;
 }
 
-/* Primary buttons have a lit top edge; every button gives a little when pressed. */
-[data-slot="button"].bg-primary:not(:disabled) {
+/*
+ * Primary and destructive buttons have a lit top edge; every button gives a little when pressed.
+ * Matched by the button's own classes, not `data-slot`: a button rendered as a dialog or menu
+ * trigger carries the trigger's slot instead.
+ */
+:is(.bg-primary, .bg-destructive)[class*="color-white/16%"]:not(:disabled) {
   background-image: linear-gradient(
     to bottom,
     color-mix(in srgb, white 16%, transparent),
@@ -47,17 +51,17 @@
   );
 }
 
-[data-slot="button"] {
+[class*="data-loading:select-none"] {
   transition-property: box-shadow, background-color, border-color, transform;
   transition-duration: 150ms;
 }
 
-[data-slot="button"]:not(:disabled):active {
+[class*="data-loading:select-none"]:not(:disabled):active {
   transform: translateY(0.5px) scale(0.985);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-slot="button"]:not(:disabled):active {
+  [class*="data-loading:select-none"]:not(:disabled):active {
     transform: none;
   }
 }
