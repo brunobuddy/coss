@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@expo/ui": "57.0.26",
+    "@expo/ui": "57.0.25",
     "expo": "~57.0.29",
     "expo-dev-client": "~57.0.20",
     "expo-glass-effect": "57.0.4",
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@coss/tsconfig": "workspace:*",
-    "@expo/config-plugins": "~57.0.11",
+    "@expo/config-plugins": "~57.0.10",
     "@types/react": "~19.2.2",
     "typescript": "catalog:"
   },

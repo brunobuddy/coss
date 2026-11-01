@@ -16,7 +16,7 @@
     "kloq": "workspace:*"
   },
   "peerDependencies": {
-    "@expo/ui": "~57.0.26",
+    "@expo/ui": "~57.0.25",
     "expo": "~57.0.29",
     "expo-glass-effect": "~57.0.4",
     "react": "19.2.3",
@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@coss/tsconfig": "workspace:*",
-    "@expo/ui": "57.0.26",
+    "@expo/ui": "57.0.25",
     "@types/react": "~19.2.2",
     "expo": "~57.0.29",
     "expo-glass-effect": "57.0.4",
