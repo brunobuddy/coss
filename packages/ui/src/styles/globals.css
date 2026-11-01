@@ -65,4 +65,15 @@
 /* Badges are pills. */
 [data-slot="badge"] {
   border-radius: 9999px;
+  padding-inline: 0.5rem;
+  gap: 0.3125rem;
+}
+
+/* A table inside a panel lines its first and last columns up with the panel's title. */
+[data-slot="card-frame"] :is([data-slot="table-head"], [data-slot="table-cell"]):first-child {
+  padding-inline-start: 1.25rem;
+}
+
+[data-slot="card-frame"] :is([data-slot="table-head"], [data-slot="table-cell"]):last-child {
+  padding-inline-end: 1.25rem;
 }
