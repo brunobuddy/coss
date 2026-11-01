@@ -37,7 +37,11 @@ export function Segmented(props: {
         variant="outline"
       >
         {props.options.map((option) => (
-          <ToggleGroupItem key={option.value} value={option.value}>
+          <ToggleGroupItem
+            className="px-[calc(--spacing(3)-1px)]"
+            key={option.value}
+            value={option.value}
+          >
             {option.icon ? <option.icon /> : null}
             {option.label}
           </ToggleGroupItem>
