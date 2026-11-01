@@ -19,6 +19,7 @@
   "dependencies": {
     "@better-auth/api-key": "catalog:",
     "@coss/auth": "workspace:*",
+    "@coss/dashboard-routes": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/retention": "workspace:*",
     "@coss/versioning": "workspace:*",

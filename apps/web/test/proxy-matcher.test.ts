@@ -13,9 +13,9 @@ const matcher = new RegExp(`^${JSON.parse(`"${literal}"`)}$`);
 describe("proxy matcher", () => {
   test("runs for paths with dots, so their X-Forwarded-For is replaced too", () => {
     for (const pathname of [
-      "/acme/domains/a.b",
+      "/acme/default/production/email/domains/a.b",
       "/api/auth/scim/v2/Users/x.y",
-      "/acme/projects/default/production/logs/export.csv",
+      "/acme/default/production/developers/logs/export.csv",
       "/dashboard",
       "/api/auth/sign-in/email",
     ]) {

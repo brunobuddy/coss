@@ -29,30 +29,48 @@ export type ShellUser = { name: string; email: string; image: string | null; isA
  * The signed-in user at the foot of the sidebar: account settings (where the theme is chosen), the
  * admin console (platform admins) and sign out.
  */
-export function UserNav({ user }: { user: ShellUser }) {
+export function UserNav({ user, compact }: { user: ShellUser; compact?: boolean }) {
   const router = useRouter();
   const { isMobile } = useSidebar();
 
   return (
-    <SidebarMenu>
+    <SidebarMenu className={compact ? "items-center" : undefined}>
       <SidebarMenuItem>
         <Menu>
-          <MenuTrigger
-            render={<SidebarMenuButton className="data-popup-open:bg-sidebar-accent" size="lg" />}
-          >
-            <UserAvatar
-              className="size-8 rounded-lg border bg-background"
-              fallbackClassName="rounded-lg bg-transparent"
-              user={user}
-            />
-            <div className="grid min-w-0 flex-1 text-left leading-tight">
-              <span className="truncate font-medium text-foreground">
-                {user.name || user.email}
-              </span>
-              <span className="truncate text-muted-foreground text-xs">{user.email}</span>
-            </div>
-            <ChevronsUpDownIcon className="ms-auto size-4" />
-          </MenuTrigger>
+          {compact ? (
+            <MenuTrigger
+              render={
+                <SidebarMenuButton
+                  className="size-8 justify-center p-0 data-popup-open:bg-sidebar-accent"
+                  tooltip={{ children: user.name || user.email, hidden: isMobile }}
+                />
+              }
+            >
+              <UserAvatar
+                className="size-7 rounded-lg border bg-background"
+                fallbackClassName="rounded-lg bg-transparent"
+                user={user}
+              />
+              <span className="sr-only">{user.name || user.email}</span>
+            </MenuTrigger>
+          ) : (
+            <MenuTrigger
+              render={<SidebarMenuButton className="data-popup-open:bg-sidebar-accent" size="lg" />}
+            >
+              <UserAvatar
+                className="size-8 rounded-lg border bg-background"
+                fallbackClassName="rounded-lg bg-transparent"
+                user={user}
+              />
+              <div className="grid min-w-0 flex-1 text-left leading-tight">
+                <span className="truncate font-medium text-foreground">
+                  {user.name || user.email}
+                </span>
+                <span className="truncate text-muted-foreground text-xs">{user.email}</span>
+              </div>
+              <ChevronsUpDownIcon className="ms-auto size-4" />
+            </MenuTrigger>
+          )}
           <MenuPopup align="end" className="min-w-56" side={isMobile ? "top" : "right"}>
             <MenuGroup>
               <MenuGroupLabel>

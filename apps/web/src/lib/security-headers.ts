@@ -56,8 +56,8 @@ export function securityHeaders({ dev }: { dev: boolean }): { key: string; value
  * so it is applied in `next.config.ts`, after the default policy.
  */
 export const RECEIVED_CONTENT_PATHS = [
-  "/:orgSlug/projects/:projectSlug/:envSlug/received/:receivedId/raw",
-  "/:orgSlug/projects/:projectSlug/:envSlug/received/:receivedId/attachments/:attachmentId",
+  "/:orgSlug/:projectSlug/:envSlug/email/received/:receivedId/raw",
+  "/:orgSlug/:projectSlug/:envSlug/email/received/:receivedId/attachments/:attachmentId",
 ];
 
 export const RECEIVED_CONTENT_CSP = "sandbox; default-src 'none'";

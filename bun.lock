@@ -244,6 +244,7 @@
         "@coss/auth": "workspace:*",
         "@coss/billing": "workspace:*",
         "@coss/companion": "workspace:*",
+        "@coss/dashboard-routes": "workspace:*",
         "@coss/db": "workspace:*",
         "@coss/email": "workspace:*",
         "@coss/forms": "workspace:*",
@@ -383,6 +384,7 @@
       "name": "@coss/billing",
       "version": "0.0.0",
       "dependencies": {
+        "@coss/dashboard-routes": "workspace:*",
         "@coss/db": "workspace:*",
         "@coss/email-layout": "workspace:*",
         "@coss/push": "workspace:*",
@@ -426,6 +428,15 @@
         "typescript": "catalog:",
       },
     },
+    "packages/dashboard-routes": {
+      "name": "@coss/dashboard-routes",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@coss/tsconfig": "workspace:*",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/db": {
       "name": "@coss/db",
       "version": "0.0.0",
@@ -449,6 +460,7 @@
         "@aws-sdk/client-s3": "catalog:",
         "@aws-sdk/client-sesv2": "catalog:",
         "@coss/billing": "workspace:*",
+        "@coss/dashboard-routes": "workspace:*",
         "@coss/db": "workspace:*",
         "@coss/email-layout": "workspace:*",
         "@coss/forms": "workspace:*",
@@ -493,6 +505,7 @@
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
         "@coss/billing": "workspace:*",
+        "@coss/dashboard-routes": "workspace:*",
         "@coss/db": "workspace:*",
         "@coss/logs": "workspace:*",
         "@coss/retention": "workspace:*",
@@ -678,6 +691,7 @@
       "name": "@coss/reputation",
       "version": "0.0.0",
       "dependencies": {
+        "@coss/dashboard-routes": "workspace:*",
         "@coss/db": "workspace:*",
         "@coss/email-layout": "workspace:*",
         "@coss/push": "workspace:*",
@@ -822,6 +836,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@coss/billing": "workspace:*",
+        "@coss/dashboard-routes": "workspace:*",
         "@coss/db": "workspace:*",
         "@coss/email-layout": "workspace:*",
         "@coss/logs": "workspace:*",
@@ -849,6 +864,7 @@
       "dependencies": {
         "@better-auth/api-key": "catalog:",
         "@coss/auth": "workspace:*",
+        "@coss/dashboard-routes": "workspace:*",
         "@coss/db": "workspace:*",
         "@coss/retention": "workspace:*",
         "@coss/versioning": "workspace:*",
@@ -1346,6 +1362,8 @@
     "@coss/billing": ["@coss/billing@workspace:packages/billing"],
 
     "@coss/companion": ["@coss/companion@workspace:packages/companion"],
+
+    "@coss/dashboard-routes": ["@coss/dashboard-routes@workspace:packages/dashboard-routes"],
 
     "@coss/db": ["@coss/db@workspace:packages/db"],
 

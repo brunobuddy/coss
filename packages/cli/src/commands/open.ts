@@ -4,38 +4,49 @@ import { type Credentials, clientFor, resolveCredentials } from "../context.ts";
 import { apiError, UsageError } from "../errors.ts";
 
 /**
- * Dashboard pages by name: the environment's (under `/<org>/projects/<project>/<env>`) and the
- * organization's (under `/<org>`), as in `apps/web/src/lib/navigation.ts`.
+ * Dashboard pages by name: the environment's (under `/<org>/<project>/<env>`) and the
+ * organization's (under `/<org>/settings`), as in `@coss/dashboard-routes`.
  */
 const ENVIRONMENT_PAGES: Record<string, string> = {
   overview: "",
-  emails: "/emails",
-  templates: "/templates",
-  received: "/received",
-  suppressions: "/suppressions",
-  tracking: "/tracking",
-  broadcasts: "/broadcasts",
-  contacts: "/contacts",
-  audiences: "/audiences",
-  segments: "/segments",
-  topics: "/topics",
-  marketing: "/marketing",
-  risk: "/risk",
+  home: "",
+  products: "/products",
+  email: "/email",
+  emails: "/email/messages",
+  templates: "/email/templates",
+  received: "/email/received",
+  suppressions: "/email/suppressions",
+  subaccounts: "/email/subaccounts",
+  tracking: "/email/tracking",
+  domains: "/email/domains",
+  "dedicated-ips": "/email/dedicated-ips",
+  reputation: "/email/reputation",
+  broadcasts: "/marketing",
+  contacts: "/marketing/contacts",
+  audiences: "/marketing/audiences",
+  segments: "/marketing/segments",
+  topics: "/marketing/topics",
+  marketing: "/marketing/settings",
+  inboxes: "/inboxes",
+  sms: "/sms",
+  verify: "/verify",
+  sign: "/sign",
+  forms: "/forms",
   hooks: "/hooks",
-  "api-keys": "/api-keys",
-  webhooks: "/webhooks",
-  logs: "/logs",
-  "log-drains": "/log-drains",
+  risk: "/risk",
+  developers: "/developers",
+  "api-keys": "/developers/api-keys",
+  webhooks: "/developers/webhooks",
+  logs: "/developers/logs",
+  "log-drains": "/developers/log-drains",
 };
 
 const ORGANIZATION_PAGES: Record<string, string> = {
-  projects: "",
-  domains: "/domains",
-  "dedicated-ips": "/dedicated-ips",
-  members: "/members",
-  reputation: "/reputation",
   settings: "/settings",
+  projects: "/settings/projects",
+  members: "/settings/members",
   billing: "/settings/billing",
+  spend: "/settings/spend",
   "audit-log": "/settings/audit",
 };
 
@@ -51,7 +62,7 @@ export function dashboardPageUrl(dashboardUrl: string, slugs: Slugs, page: strin
   const org = `${dashboardUrl}/${encodeURIComponent(slugs.organization)}`;
   const organizationPage = ORGANIZATION_PAGES[page];
   if (organizationPage !== undefined) return `${org}${organizationPage}`;
-  const environment = `${org}/projects/${encodeURIComponent(slugs.project)}/${encodeURIComponent(slugs.environment)}`;
+  const environment = `${org}/${encodeURIComponent(slugs.project)}/${encodeURIComponent(slugs.environment)}`;
   return `${environment}${ENVIRONMENT_PAGES[page] ?? ""}`;
 }
 

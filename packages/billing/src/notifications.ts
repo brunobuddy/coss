@@ -5,6 +5,8 @@
  * the account's billing email (and cc), else to the organization's owners and admins, and to the
  * member a notification is also for (`user_id`: their budget), while they are still a member.
  */
+
+import { settingsHref } from "@coss/dashboard-routes";
 import { db, type Executor, schema } from "@coss/db";
 import { type EmailBlock, oneLine, renderEmail } from "@coss/email-layout";
 import { enqueuePush, type PushKind } from "@coss/push";
@@ -287,7 +289,7 @@ async function renderBillingNotification(
   const payload = row.payload as Record<string, string | number | undefined>;
   const name = org.name;
   const billingUrl = new URL(`/${org.slug}/settings/billing`, dashboardUrl).toString();
-  const spendUrl = new URL(`/${org.slug}/spend`, dashboardUrl).toString();
+  const spendUrl = new URL(settingsHref(org.slug, "/spend"), dashboardUrl).toString();
   let link = { label: "Open billing", url: billingUrl };
   const blocks: EmailBlock[] = [];
   let subject: string;

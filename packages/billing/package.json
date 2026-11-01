@@ -25,6 +25,7 @@
     "sms:update-prices": "bun --env-file=../../.env scripts/sms-prices.ts"
   },
   "dependencies": {
+    "@coss/dashboard-routes": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/email-layout": "workspace:*",
     "@coss/push": "workspace:*",

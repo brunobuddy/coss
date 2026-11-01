@@ -3829,3 +3829,24 @@ export const migrationItem = pgTable(
     unique("migration_item_source_unique").on(t.migrationId, t.kind, t.sourceId),
   ],
 );
+
+// A member's pinned (true) or hidden (false) dashboard product; no row: shown while in use.
+export const productPreference = pgTable(
+  "product_preference",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.productPreference)),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    product: text("product").notNull(),
+    pinned: boolean("pinned").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [unique("product_preference_member_unique").on(t.organizationId, t.userId, t.product)],
+);

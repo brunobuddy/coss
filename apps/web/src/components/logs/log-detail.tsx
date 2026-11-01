@@ -173,7 +173,7 @@ export function LogDetailSheet(props: {
                 ) : null}
                 {entry.resource_type === "email" && entry.resource_id ? (
                   <Button
-                    render={<Link href={`${props.envPath}/emails/${entry.resource_id}`} />}
+                    render={<Link href={`${props.envPath}/email/messages/${entry.resource_id}`} />}
                     size="xs"
                     variant="outline"
                   >
@@ -182,7 +182,11 @@ export function LogDetailSheet(props: {
                 ) : null}
                 {typeof attributes.endpoint_id === "string" ? (
                   <Button
-                    render={<Link href={`${props.envPath}/webhooks/${attributes.endpoint_id}`} />}
+                    render={
+                      <Link
+                        href={`${props.envPath}/developers/webhooks/${attributes.endpoint_id}`}
+                      />
+                    }
                     size="xs"
                     variant="outline"
                   >

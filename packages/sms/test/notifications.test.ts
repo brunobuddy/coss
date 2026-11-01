@@ -113,7 +113,7 @@ test("a local number: reminded an hour later, then told it's in review and appro
   expect(reminder?.to).toBe(tenant.owner.email);
   expect(reminder?.subject).toBe(`Register your business to send SMS from ${number.phoneNumber}`);
   expect(reminder?.text).toContain(
-    `${DASHBOARD}/${tenant.organization.slug}/sms/register?kind=us_10dlc`,
+    `${DASHBOARD}/${tenant.organization.slug}?to=${encodeURIComponent("/sms/numbers/register?kind=us_10dlc")}`,
   );
   expect(reminder?.text).toContain("[>] 2. Register your business");
 
@@ -130,7 +130,9 @@ test("a local number: reminded an hour later, then told it's in review and appro
   const [submitted] = await send(org, new Date(start + 2 * HOUR));
   expect(submitted?.subject).toBe("Acme, Inc.'s US A2P 10DLC registration is in review");
   expect(submitted?.text).toContain(number.phoneNumber);
-  expect(submitted?.text).toContain(`/sms?registered=${registration.id}`);
+  expect(submitted?.text).toContain(
+    encodeURIComponent(`/sms/numbers?registered=${registration.id}`),
+  );
   expect(submitted?.html).toContain("Carrier review");
 
   const settled = await settle(org, d, start + 2 * HOUR);
@@ -177,7 +179,7 @@ test("an unverified toll-free number links to its own verification", async () =>
   const number = await buy(org, "toll_free", deps());
   const [reminder] = await send(org, new Date(Date.now() + HOUR + 60_000));
   expect(reminder?.subject).toBe(`Verify ${number.phoneNumber} to send SMS`);
-  expect(reminder?.text).toContain(`/sms/register?number=${number.id}`);
+  expect(reminder?.text).toContain(encodeURIComponent(`/sms/numbers/register?number=${number.id}`));
 });
 
 test("a rejected registration says why and links to registering again", async () => {

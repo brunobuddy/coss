@@ -127,9 +127,10 @@ the React Native SDK's, so the app scrubs its few event fields itself.
   page's read permission) for the environment or organization screen's link to it.
 - `src/app/` holds routes only (Expo Router); everything else lives in `src/lib` and
   `src/components`. Relative imports (no path aliases).
-- Routes mirror the dashboard's paths (`/[org]/projects/[project]/[env]/…`, `/[org]/settings/…`),
-  so `coss://<dashboard path>` deep links work and `WebButton`/`openOnWeb` (`src/lib/web.ts`)
-  open the same page on coss.com. Copy is the dashboard's, copied verbatim (say where from).
+- Routes keep the dashboard's former paths (`/[org]/projects/[project]/[env]/emails`, `/[org]/domains`,
+  `/[org]/settings/…`); the dashboard moved to product-first ones (`/<org>/<project>/<env>/email/messages`,
+  `@coss/dashboard-routes`). `WebButton`/`openOnWeb` (`src/lib/web.ts`) take an app path and open the same page
+  on coss.com through `dashboardPath` (`src/lib/dashboard-path.ts`): change it with the dashboard's URLs. Copy is the dashboard's, copied verbatim (say where from).
 - Design follows the dashboard (`apps/site/DESIGN.md`, coss ui): grayscale, hue only for status.
   `src/lib/theme.ts` holds coss ui's tokens (`packages/ui/src/styles/theme.css`, light and `.dark`)
   as `DynamicColorIOS` colors (`colors`) and plain ones for SVG (`usePalette`). Type is Cal Sans and

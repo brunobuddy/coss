@@ -40,6 +40,7 @@ const nextConfig: NextConfig = {
     "@coss/observability",
     "@coss/billing",
     "@coss/companion",
+    "@coss/dashboard-routes",
     "@coss/push",
     "@coss/sms",
     "@coss/migrate",

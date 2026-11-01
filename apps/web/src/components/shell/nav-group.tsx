@@ -39,7 +39,7 @@ export function NavGroup(props: {
                   }
                   tooltip={item.label}
                 >
-                  <Icon />
+                  {Icon ? <Icon /> : null}
                   <span>{item.label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

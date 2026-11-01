@@ -14,6 +14,12 @@ import {
 import { createTestOrganization } from "./helpers.ts";
 
 describe("createProject", () => {
+  test("never takes a slug the organization's own pages use", async () => {
+    const { organization } = await createTestOrganization();
+    const { project } = await createProject({ organizationId: organization.id, name: "Settings" });
+    expect(project.slug).toBe("settings-2");
+  });
+
   test("creates production (live) and development (sandbox) environments", async () => {
     const { organization } = await createTestOrganization();
     const { project, environments } = await createProject({
