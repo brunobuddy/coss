@@ -1,0 +1,37 @@
+{
+  "name": "@coss/expo-kloq-example",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "EXPO_NO_TYPESCRIPT_SETUP=1 expo start --dev-client",
+    "ios": "EXPO_NO_TYPESCRIPT_SETUP=1 expo run:ios",
+    "android": "EXPO_NO_TYPESCRIPT_SETUP=1 expo run:android",
+    "prebuild": "EXPO_NO_TYPESCRIPT_SETUP=1 expo prebuild",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@expo/ui": "57.0.26",
+    "expo": "~57.0.29",
+    "expo-dev-client": "~57.0.20",
+    "expo-glass-effect": "57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "expo-kloq": "workspace:*",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0"
+  },
+  "devDependencies": {
+    "@coss/tsconfig": "workspace:*",
+    "@expo/config-plugins": "~57.0.11",
+    "@types/react": "~19.2.2",
+    "typescript": "catalog:"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "typescript"
+      ]
+    }
+  }
+}

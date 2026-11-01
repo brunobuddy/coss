@@ -1,0 +1,157 @@
+# A paced walkthrough of every interaction, for recording a demo on the iOS Simulator:
+#   xcrun simctl io booted recordVideo --codec=h264 demo.mov   (in another terminal)
+#   JAVA_HOME=… maestro test maestro/demo.yaml
+# Run it against a Release build (`expo run:ios --configuration Release`): a debug build's
+# dev-client button sits over the sheets' Save button. Seeds are relative to today.
+appId: com.coss.kloq.example
+---
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Quick add"
+    timeout: 30000
+- runFlow: pause.yaml
+
+# ── navigation ──────────────────────────────────────────────────────────────
+- tapOn: "Next week"
+- runFlow: pause.yaml
+- tapOn: "Next week"
+- runFlow: pause.yaml
+- tapOn: "Previous week"
+- runFlow: pause.yaml
+- tapOn: "Today"
+- runFlow: pause.yaml
+
+# ── views ───────────────────────────────────────────────────────────────────
+- tapOn: "Day"
+- runFlow: pause.yaml
+- tapOn: "Next day"
+- runFlow: pause.yaml
+- tapOn: "Today"
+- tapOn: "Month"
+- runFlow: pause.yaml
+- runFlow: pause.yaml
+- tapOn: "Year"
+- runFlow: pause.yaml
+- scroll
+- runFlow: pause.yaml
+- tapOn: "Schedule"
+- runFlow: pause.yaml
+- scroll
+- runFlow: pause.yaml
+- tapOn: "More"
+- tapOn: "View"
+- tapOn: "Timeline"
+- runFlow: pause.yaml
+- runFlow: pause.yaml
+- tapOn: "More"
+- tapOn: "View"
+- tapOn: "3 days"
+- runFlow: pause.yaml
+- tapOn: "Week"
+- runFlow: pause.yaml
+
+# ── the event sheet: native pickers, all-day, calendar, recurrence, alerts ─
+- tapOn: "Design review"
+- runFlow: pause.yaml
+- tapOn: "13:00"
+- runFlow: pause.yaml
+- swipe:
+    start: "51%,62%"
+    end: "51%,58%"
+- runFlow: pause.yaml
+- tapOn:
+    point: "50%,12%"
+- runFlow: pause.yaml
+- tapOn:
+    point: "57%,45%"
+- runFlow: pause.yaml
+- runFlow: pause.yaml
+- tapOn:
+    point: "50%,12%"
+- tapOn:
+    point: "84%,38%"
+- runFlow: pause.yaml
+- tapOn:
+    point: "84%,38%"
+- runFlow: pause.yaml
+- tapOn: "Team"
+- runFlow: pause.yaml
+- tapOn: "Work"
+- runFlow: pause.yaml
+- tapOn: "Does not repeat"
+- runFlow: pause.yaml
+- tapOn: "Daily"
+- runFlow: pause.yaml
+- tapOn: "Daily"
+- runFlow: pause.yaml
+- tapOn: "Custom…"
+- runFlow: pause.yaml
+- scroll
+- runFlow: pause.yaml
+- tapOn: "Weekly"
+- runFlow: pause.yaml
+- tapOn: "W"
+- runFlow: pause.yaml
+- tapOn: "Every week, Increment"
+- runFlow: pause.yaml
+- tapOn: "Add alert"
+- runFlow: pause.yaml
+- tapOn: "Save"
+- runFlow: pause.yaml
+
+# ── a repeating event: the "this / this and following / all" dialog ──────
+- tapOn:
+    text: "Standup"
+    index: 2
+- runFlow: pause.yaml
+- tapOn: "Standup"
+- inputText: " (moved)"
+- tapOn: "Save"
+- runFlow: pause.yaml
+- tapOn: "This event"
+- runFlow: pause.yaml
+- tapOn:
+    text: "Standup"
+    index: 3
+- runFlow: pause.yaml
+- scroll
+- tapOn: "Delete event"
+- runFlow: pause.yaml
+- tapOn: "This and following events"
+- runFlow: pause.yaml
+
+# ── new event and quick add ─────────────────────────────────────────────────
+- tapOn: "New event"
+- runFlow: pause.yaml
+- tapOn: "Title"
+- inputText: "Focus time"
+- runFlow: pause.yaml
+- tapOn: "Add"
+- runFlow: pause.yaml
+- tapOn: "Quick add"
+- runFlow: pause.yaml
+- inputText: "Coffee with Dana tomorrow 3pm at Monmouth"
+- runFlow: pause.yaml
+- runFlow: pause.yaml
+- tapOn: "Add"
+- runFlow: pause.yaml
+
+# ── calendar toggles and the multi-zone gutter ─────────────────────────────
+- tapOn: "More"
+- tapOn: "Calendars & time zones"
+- runFlow: pause.yaml
+- tapOn:
+    point: "84%,29%"
+- runFlow: pause.yaml
+- tapOn:
+    point: "84%,77%"
+- runFlow: pause.yaml
+- tapOn: "Done"
+- runFlow: pause.yaml
+- tapOn: "Day"
+- runFlow: pause.yaml
+- runFlow: pause.yaml
+- tapOn: "Week"
+- runFlow: pause.yaml
+- runFlow: pause.yaml

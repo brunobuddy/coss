@@ -1,0 +1,11 @@
+{
+  "extends": "@coss/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["DOM", "ESNext"],
+    "jsx": "react-jsx",
+    "customConditions": ["react-native"],
+    // expo-kloq type-checks kloq's sources through its imports; they are written without it
+    "noUncheckedIndexedAccess": false
+  },
+  "include": ["index.ts", "src"]
+}

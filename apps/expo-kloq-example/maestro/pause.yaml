@@ -1,0 +1,7 @@
+# A beat between demo steps, so the recording is watchable.
+appId: com.coss.kloq.example
+---
+- extendedWaitUntil:
+    visible: "__pause__"
+    timeout: 1800
+    optional: true
