@@ -743,6 +743,13 @@
       "when": 1793399470678,
       "tag": "0105_unusual_silhouette",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1793549854116,
+      "tag": "0106_organization_suspension_category",
+      "breakpoints": true
     }
   ]
 }

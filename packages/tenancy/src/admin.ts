@@ -63,6 +63,11 @@ export const ADMIN_ACTIONS = [
   "organization.delete",
   "organization.disable_scim",
   "organization.take_down",
+  // A user and the organizations they run, taken down from the sign-ups or user page; target the user.
+  "user.take_down",
+  // Outcomes reported on coss.com's own sign-up assessments (coss.com Risk); target the assessment.
+  "risk_assessment.report",
+  "risk_assessment.mark_legitimate",
   "api_key.revoke",
   "email.view_content",
   "reputation.suspended",
@@ -97,7 +102,14 @@ export const ADMIN_ACTIONS = [
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
-export type AdminTargetType = "user" | "organization" | "api_key" | "email" | "commit" | "form";
+export type AdminTargetType =
+  | "user"
+  | "organization"
+  | "api_key"
+  | "email"
+  | "commit"
+  | "form"
+  | "risk_assessment";
 
 export type AdminAuditEvent = {
   id: string;
@@ -216,6 +228,8 @@ export async function listAdminAuditEvents(
 
 export type OrganizationSuspension = {
   reason: string;
+  /** The kind of abuse a takedown was for; `null` for a plain suspension. */
+  category: string | null;
   suspendedByUserId: string | null;
   createdAt: Date;
 };
@@ -227,6 +241,7 @@ export async function getOrganizationSuspension(
   const [row] = await db
     .select({
       reason: organizationSuspension.reason,
+      category: organizationSuspension.category,
       suspendedByUserId: organizationSuspension.suspendedByUserId,
       createdAt: organizationSuspension.createdAt,
     })
@@ -249,11 +264,13 @@ async function requireOrganization(organizationId: string, executor: Executor = 
 /**
  * Suspends an organization: its API keys are refused (403 `organization_suspended`), its webhook
  * deliveries are held until it is lifted, and its dashboard becomes read-only. The reason is an
- * internal note for admins.
+ * internal note for admins; `category` names the kind of abuse when a takedown suspends it (the
+ * admin console's catalog, stored as given).
  */
 export async function suspendOrganization(input: {
   organizationId: string;
   reason: string;
+  category?: string | null;
   actor: AdminActor;
 }): Promise<void> {
   const reason = normalizeReason(input.reason, true) as string;
@@ -261,7 +278,12 @@ export async function suspendOrganization(input: {
     const org = await requireOrganization(input.organizationId, tx);
     const [inserted] = await tx
       .insert(organizationSuspension)
-      .values({ organizationId: org.id, reason, suspendedByUserId: input.actor.userId })
+      .values({
+        organizationId: org.id,
+        reason,
+        category: input.category ?? null,
+        suspendedByUserId: input.actor.userId,
+      })
       .onConflictDoNothing()
       .returning({ organizationId: organizationSuspension.organizationId });
     if (!inserted) throw new TenancyError("conflict", "This organization is already suspended.");
@@ -272,7 +294,7 @@ export async function suspendOrganization(input: {
         target: { type: "organization", id: org.id },
         organizationId: org.id,
         reason,
-        metadata: { slug: org.slug },
+        metadata: { slug: org.slug, ...(input.category ? { category: input.category } : {}) },
       },
       tx,
     );
@@ -451,6 +473,7 @@ export async function getOrganizationForAdmin(
         createdAt: organization.createdAt,
       },
       reason: organizationSuspension.reason,
+      category: organizationSuspension.category,
       suspendedByUserId: organizationSuspension.suspendedByUserId,
       suspendedAt: organizationSuspension.createdAt,
       suspendedByEmail: user.email,
@@ -478,6 +501,7 @@ export async function getOrganizationForAdmin(
       row.reason !== null && row.suspendedAt !== null
         ? {
             reason: row.reason,
+            category: row.category,
             suspendedByUserId: row.suspendedByUserId,
             suspendedByEmail: row.suspendedByEmail,
             createdAt: row.suspendedAt,

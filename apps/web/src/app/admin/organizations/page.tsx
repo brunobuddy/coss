@@ -29,7 +29,7 @@ export const metadata: Metadata = { title: "Organizations · Admin" };
 
 const STATUSES = [
   { value: "all", label: "All" },
-  { value: "suspended", label: "Suspended" },
+  { value: "suspended", label: "Account suspended" },
 ];
 
 export default async function AdminOrganizationsPage({

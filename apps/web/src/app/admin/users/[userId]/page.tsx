@@ -35,7 +35,7 @@ import {
 } from "@/components/admin/status-badges";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
-import { RiskDecisionBadge } from "@/components/risk-badges";
+import { RiskDecisionBadge, RiskOutcomeBadge } from "@/components/risk-badges";
 import { SpecItem, SpecList } from "@/components/spec-list";
 import { formatDateTime } from "@/lib/format";
 import { signUpRiskScope } from "@/lib/risk";
@@ -43,6 +43,7 @@ import { requirePlatformAdmin } from "@/lib/session";
 import {
   banUserAction,
   impersonateUserAction,
+  markSignUpLegitimateAction,
   resetTwoFactorAction,
   revokeUserSessionAction,
   revokeUserSessionsAction,
@@ -50,6 +51,7 @@ import {
   unbanUserAction,
   unlinkUserSsoAction,
 } from "../../actions";
+import { ReportAbuseDialog } from "../../report-abuse-dialog";
 
 export const metadata: Metadata = { title: "User · Admin" };
 
@@ -79,7 +81,10 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
   ]);
   const isSelf = user.id === actor.userId;
   const isAdmin = (user.role ?? "").split(",").some((role) => role.trim() === "admin");
-  const ownedOrganizations = memberships.filter((m) => m.role.split(",").includes("owner"));
+  // Owned organizations still running: a ban alone doesn't stop their API keys.
+  const ownedOrganizations = memberships.filter(
+    (m) => m.role.split(",").includes("owner") && !m.suspended,
+  );
   const fields = { userId: user.id };
 
   return (
@@ -158,6 +163,22 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                   .filter(Boolean)
                   .join(" · ") || "—"}
               </SpecItem>
+              <SpecItem label="Reported">
+                {signUp.outcome ? <RiskOutcomeBadge outcome={signUp.outcome} /> : "Not yet"}
+                {signUp.outcome !== "legitimate" &&
+                (signUp.decision !== "allow" || signUp.outcome !== null) ? (
+                  <AdminActionDialog
+                    action={markSignUpLegitimateAction}
+                    description="coss.com Risk takes back what reporting this sign-up remembered (its mailbox, device and network stop counting against later sign-ups) and resolves an open review. It doesn't unban the user or lift any suspension."
+                    fields={{ assessmentId: signUp.id }}
+                    reason="optional"
+                    submitLabel="Mark legitimate"
+                    success="Sign-up marked legitimate"
+                    title="Mark this sign-up legitimate?"
+                    triggerLabel="Mark legitimate"
+                  />
+                ) : null}
+              </SpecItem>
               <SpecItem label="Reasons" stacked>
                 {signUp.reasons.length > 0
                   ? signUp.reasons.map((reason) => reason.message).join(" · ")
@@ -179,6 +200,24 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
         {isSelf ? null : (
           <PanelBody className="flex flex-col gap-4">
             <div className="flex flex-wrap gap-2">
+              {isAdmin && !signUpScope ? null : (
+                <ReportAbuseDialog
+                  email={user.email}
+                  organizations={memberships.map((membership) => ({
+                    id: membership.organization.id,
+                    name: membership.organization.name,
+                    role: membership.role,
+                    suspended: membership.suspended,
+                  }))}
+                  signUpsAssessed={signUpScope !== null}
+                  takeDownBlocked={
+                    isAdmin
+                      ? "Platform admins can't be taken down: remove the admin role first."
+                      : null
+                  }
+                  user={{ id: user.id, banned: user.banned }}
+                />
+              )}
               {user.banned ? (
                 <AdminActionDialog
                   action={unbanUserAction}
@@ -193,7 +232,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
               ) : (
                 <AdminActionDialog
                   action={banUserAction}
-                  description={`${user.email} is signed out everywhere and can't sign in. Their organizations' API keys keep working; suspend an organization to stop those.`}
+                  description={`${user.email} is signed out everywhere and can't sign in. Nothing is reported to coss.com Risk, and their organizations' API keys keep working: use Take down & report for abuse.`}
                   destructive
                   fields={fields}
                   reason="required"
@@ -289,9 +328,9 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
             </div>
             {user.banned && ownedOrganizations.length > 0 ? (
               <p className="text-muted-foreground text-sm">
-                This user owns {ownedOrganizations.length} organization
+                This user owns {ownedOrganizations.length} active organization
                 {ownedOrganizations.length === 1 ? "" : "s"}. A ban doesn't stop their API keys:
-                open one below to suspend it if it should stop sending.
+                Take down & report takes them down too.
               </p>
             ) : null}
             {isAdmin ? (

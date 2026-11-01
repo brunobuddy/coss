@@ -18,6 +18,7 @@ import {
 import { UserPlusIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminActionDialog } from "@/components/admin/admin-action-dialog";
 import { listHref, stringParam } from "@/components/admin/list-controls";
 import { UserStatusBadge } from "@/components/admin/status-badges";
 import { CursorPager } from "@/components/cursor-pager";
@@ -25,10 +26,12 @@ import { EmptyState } from "@/components/empty-state";
 import { FilterLinks } from "@/components/filter-links";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
-import { RiskDecisionBadge } from "@/components/risk-badges";
+import { RiskDecisionBadge, RiskOutcomeBadge } from "@/components/risk-badges";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { signUpRiskScope } from "@/lib/risk";
 import { requirePlatformAdmin } from "@/lib/session";
+import { markSignUpLegitimateAction } from "../actions";
+import { ReportAbuseDialog } from "../report-abuse-dialog";
 
 export const metadata: Metadata = { title: "Sign-ups" };
 
@@ -142,7 +145,7 @@ export default async function AdminSignUpsPage({ searchParams }: PageProps<"/adm
   return (
     <div className="flex flex-col gap-6" data-page-width="full">
       <PageHeader
-        description="Every sign-up as coss.com Risk assessed it, newest first. Blocked sign-ups were refused and have no account; the address, IP and user agent are kept for 90 days."
+        description="Every sign-up as coss.com Risk assessed it, newest first. Blocked sign-ups were refused and have no account; the address, IP and user agent are kept for 90 days. Report abuse here (or take the account down with it) so Risk flags the same mailbox, device and network next time; mark false positives legitimate."
         title="Sign-ups"
       />
       <FilterLinks
@@ -169,13 +172,13 @@ export default async function AdminSignUpsPage({ searchParams }: PageProps<"/adm
           <Table variant="card">
             <TableHeader>
               <TableRow>
-                <TableHead>When</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Sign-up</TableHead>
                 <TableHead>Decision</TableHead>
                 <TableHead>Reasons</TableHead>
                 <TableHead>IP</TableHead>
                 <TableHead>Account</TableHead>
                 <TableHead>Organizations</TableHead>
+                <TableHead className="w-0" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -183,22 +186,29 @@ export default async function AdminSignUpsPage({ searchParams }: PageProps<"/adm
                 const email = assessment.user.email;
                 const user = email ? users.get(email.toLowerCase()) : undefined;
                 const ip = assessment.signals.ip;
+                const reported = assessment.outcome === "fraud" || assessment.outcome === "abuse";
+                const canReport = !reported || (user !== undefined && !user.banned);
+                const canMarkLegitimate =
+                  assessment.outcome !== "legitimate" &&
+                  (assessment.decision !== "allow" || reported);
                 return (
                   <TableRow key={assessment.id}>
-                    <TableCell
-                      className="whitespace-nowrap text-muted-foreground"
-                      title={formatDateTime(assessment.created_at)}
-                    >
-                      {formatRelative(assessment.created_at, now)}
-                    </TableCell>
-                    <TableCell className="max-w-64 truncate font-medium" title={email ?? ""}>
-                      {user ? (
-                        <Link className="hover:underline" href={`/admin/users/${user.id}`}>
-                          {email}
-                        </Link>
-                      ) : (
-                        (email ?? <span className="text-muted-foreground">forgotten</span>)
-                      )}
+                    <TableCell className="max-w-64">
+                      <span className="block truncate font-medium" title={email ?? ""}>
+                        {user ? (
+                          <Link className="hover:underline" href={`/admin/users/${user.id}`}>
+                            {email}
+                          </Link>
+                        ) : (
+                          (email ?? <span className="text-muted-foreground">forgotten</span>)
+                        )}
+                      </span>
+                      <span
+                        className="block text-muted-foreground text-xs"
+                        title={formatDateTime(assessment.created_at)}
+                      >
+                        {formatRelative(assessment.created_at, now)}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-2">
@@ -207,8 +217,16 @@ export default async function AdminSignUpsPage({ searchParams }: PageProps<"/adm
                           {assessment.score.toFixed(2)}
                         </span>
                       </span>
+                      {assessment.outcome ? (
+                        <span
+                          className="mt-1 flex items-center gap-1 text-muted-foreground text-xs"
+                          title="The outcome reported to coss.com Risk"
+                        >
+                          reported <RiskOutcomeBadge outcome={assessment.outcome} />
+                        </span>
+                      ) : null}
                     </TableCell>
-                    <TableCell className="max-w-96 whitespace-normal text-sm">
+                    <TableCell className="min-w-64 max-w-96 whitespace-normal text-sm">
                       {assessment.reasons.length > 0
                         ? assessment.reasons.map((reason) => reason.message).join(" · ")
                         : "—"}
@@ -229,6 +247,31 @@ export default async function AdminSignUpsPage({ searchParams }: PageProps<"/adm
                       )}
                     </TableCell>
                     <TableCell>{user ? <Organizations user={user} /> : null}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <span className="flex flex-col items-end gap-2">
+                        {canMarkLegitimate ? (
+                          <AdminActionDialog
+                            action={markSignUpLegitimateAction}
+                            description="coss.com Risk takes back what reporting this sign-up remembered (its mailbox, device and network stop counting against later sign-ups) and resolves an open review. It doesn't unban anyone or lift a suspension."
+                            fields={{ assessmentId: assessment.id }}
+                            reason="optional"
+                            submitLabel="Mark legitimate"
+                            success="Sign-up marked legitimate"
+                            title={`Mark ${email ?? "this sign-up"} legitimate?`}
+                            triggerLabel="Legitimate"
+                          />
+                        ) : null}
+                        {canReport ? (
+                          <ReportAbuseDialog
+                            assessmentId={assessment.id}
+                            email={email}
+                            organizations={user?.organizations ?? []}
+                            signUpsAssessed
+                            user={user ? { id: user.id, banned: user.banned } : null}
+                          />
+                        ) : null}
+                      </span>
+                    </TableCell>
                   </TableRow>
                 );
               })}

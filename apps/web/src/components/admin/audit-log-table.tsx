@@ -11,6 +11,7 @@ import {
 } from "@coss/ui/components/table";
 import { HistoryIcon } from "lucide-react";
 import Link from "next/link";
+import { abuseCategoryLabel } from "@/lib/abuse-categories";
 import { DEPLOY_REPOSITORY } from "@/lib/deploy-runs";
 import { formatDateTime } from "@/lib/format";
 import { EmptyState } from "../empty-state";
@@ -24,9 +25,12 @@ const ACTION_LABELS: Record<string, { label: string; variant: "error" | "success
   "user.revoke_session": { label: "Revoked a session", variant: "info" },
   "user.revoke_sessions": { label: "Revoked all sessions", variant: "info" },
   "user.reset_two_factor": { label: "Reset two-factor", variant: "error" },
-  "organization.suspend": { label: "Suspended organization", variant: "error" },
-  "organization.unsuspend": { label: "Lifted suspension", variant: "success" },
+  "organization.suspend": { label: "Suspended account", variant: "error" },
+  "organization.unsuspend": { label: "Lifted account suspension", variant: "success" },
   "organization.take_down": { label: "Took down organization", variant: "error" },
+  "user.take_down": { label: "Took down user", variant: "error" },
+  "risk_assessment.report": { label: "Reported sign-up to Risk", variant: "error" },
+  "risk_assessment.mark_legitimate": { label: "Marked sign-up legitimate", variant: "success" },
   "form.disable": { label: "Disabled a form", variant: "error" },
   "form.enable": { label: "Re-enabled a form", variant: "success" },
   "email.view_content": { label: "Viewed email content", variant: "info" },
@@ -70,6 +74,7 @@ function describe(event: AdminAuditEvent): string {
   const meta = event.metadata;
   const parts: string[] = [];
   if (typeof meta.email === "string") parts.push(meta.email);
+  if (typeof meta.category === "string") parts.push(abuseCategoryLabel(meta.category) ?? "");
   if (typeof meta.slug === "string") parts.push(meta.slug);
   if (typeof meta.role === "string") parts.push(`role → ${meta.role}`);
   if (typeof meta.duration === "string") parts.push(meta.duration);
@@ -80,6 +85,9 @@ function describe(event: AdminAuditEvent): string {
   if (typeof meta.plan === "string") parts.push(meta.plan);
   if (Array.isArray(meta.bannedUserIds)) parts.push(`${meta.bannedUserIds.length} banned`);
   if (Array.isArray(meta.revokedKeyIds)) parts.push(`${meta.revokedKeyIds.length} keys revoked`);
+  if (Array.isArray(meta.reportedAssessmentIds)) {
+    parts.push(`${meta.reportedAssessmentIds.length} sign-ups reported`);
+  }
   if (typeof meta.subject === "string") parts.push(`“${meta.subject}”`);
   if (event.targetType === "commit") parts.push(event.targetId.slice(0, 7));
   return parts.join(" · ") || event.targetId;

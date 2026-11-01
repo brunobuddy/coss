@@ -39,6 +39,7 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AbuseCategoryField } from "@/components/admin/abuse-category-field";
 import { AdminActionDialog } from "@/components/admin/admin-action-dialog";
 import { AuditLogTable } from "@/components/admin/audit-log-table";
 import { listHref } from "@/components/admin/list-controls";
@@ -55,7 +56,9 @@ import {
   PanelHeader,
   PanelTitle,
 } from "@/components/panel";
+import { SpecItem, SpecList } from "@/components/spec-list";
 import { Stat, StatRow } from "@/components/stat-row";
+import { abuseCategoryLabel } from "@/lib/abuse-categories";
 import { formatDateTime } from "@/lib/format";
 import { requirePlatformAdmin } from "@/lib/session";
 import { isSystemOrganization } from "@/lib/system-organization";
@@ -180,39 +183,37 @@ export default async function AdminOrganizationPage({
 
       <Panel>
         <PanelHeader>
-          <PanelTitle>Suspension</PanelTitle>
+          <PanelTitle>Enforcement</PanelTitle>
           <PanelDescription>
-            A suspended organization's API keys are refused with 403 organization_suspended, its
-            webhook deliveries are held (they resume when lifted), and its dashboard is read-only.
-            Members see that it is suspended, never the reason.
-            {isSystem && !suspension
-              ? " This is coss.com's own organization (it sends account emails), so it can't be suspended."
+            Three levers, from lightest to heaviest. Members never see an admin's reason.
+            {isSystem
+              ? " This is coss.com's own organization (it sends account emails), so none of them apply."
               : null}
           </PanelDescription>
           <PanelAction className="flex flex-wrap gap-2">
             {suspension ? (
               <AdminActionDialog
                 action={unsuspendOrganizationAction}
-                description="API keys work again immediately and held webhook deliveries resume."
+                description="API keys that weren't revoked work again immediately and held webhook deliveries resume. Members banned by a takedown stay banned, and revoked keys stay revoked."
                 fields={fields}
                 reason="optional"
                 submitLabel="Lift suspension"
-                success="Suspension lifted"
-                title={`Lift the suspension of ${organization.name}?`}
-                triggerLabel="Lift suspension"
+                success="Account suspension lifted"
+                title={`Lift the account suspension of ${organization.name}?`}
+                triggerLabel="Lift account suspension"
               />
             ) : isSystem ? null : (
               <AdminActionDialog
                 action={suspendOrganizationAction}
-                description="Its API keys stop working immediately, webhook deliveries are held, and members can only view the dashboard."
+                description="Every API key is refused (403 organization_suspended), webhook deliveries are held, and members can only view the dashboard. Nothing is revoked or banned, and nothing is reported: use it while you investigate, or for a legal or billing hold."
                 destructive
                 fields={fields}
                 reason="required"
-                reasonPlaceholder="e.g. Phishing reported by …"
-                submitLabel="Suspend organization"
-                success="Organization suspended"
-                title={`Suspend ${organization.name}?`}
-                triggerLabel="Suspend"
+                reasonPlaceholder="e.g. Investigating phishing reports, ticket #1234"
+                submitLabel="Suspend account"
+                success="Account suspended"
+                title={`Suspend ${organization.name}'s account?`}
+                triggerLabel="Suspend account"
               />
             )}
             {isSystem || deletion ? null : (
@@ -220,24 +221,26 @@ export default async function AdminOrganizationPage({
                 action={takeDownOrganizationAction}
                 description={
                   <>
-                    For spam and abuse. Suspends the organization
+                    For confirmed abuse. Suspends the account
                     {takedown.suspended ? " (already suspended)" : ""}, revokes its{" "}
-                    {takedown.apiKeys.length} API {takedown.apiKeys.length === 1 ? "key" : "keys"}{" "}
-                    and permanently bans the members who have nothing else on the platform. Each
-                    step is recorded in the audit log.
+                    {takedown.apiKeys.length} API {takedown.apiKeys.length === 1 ? "key" : "keys"},
+                    permanently bans the members who have nothing else on the platform, and reports
+                    their sign-ups to coss.com Risk so the same mailbox, device and network are
+                    flagged next time. Each step is recorded in the audit log.
                   </>
                 }
                 destructive
                 fields={fields}
                 reason="required"
                 reasonPlaceholder="e.g. Phishing campaign, see /admin/emails"
-                submitLabel="Take down"
-                success="Organization taken down"
+                submitLabel="Take down and report"
+                success="Organization taken down and reported"
                 title={`Take down ${organization.name}?`}
-                triggerLabel="Take down"
+                triggerLabel="Take down & report"
               >
+                <AbuseCategoryField />
                 <div className="flex flex-col gap-2 text-sm">
-                  <p className="font-medium">Banned ({banned.length})</p>
+                  <p className="font-medium">Banned and reported ({banned.length})</p>
                   {banned.length > 0 ? (
                     <ul className="list-disc ps-5 text-muted-foreground">
                       {banned.map((member) => (
@@ -259,6 +262,9 @@ export default async function AdminOrganizationPage({
                           </li>
                         ))}
                       </ul>
+                      <p className="text-muted-foreground">
+                        To take down one of them as well, open them from Sign-ups or Users.
+                      </p>
                     </>
                   ) : null}
                 </div>
@@ -266,10 +272,41 @@ export default async function AdminOrganizationPage({
             )}
           </PanelAction>
         </PanelHeader>
+        <PanelBody flush>
+          <SpecList>
+            <SpecItem label="Suspend live sending" stacked>
+              Live sends are refused (account_suspended); sandbox and the dashboard keep working,
+              and the customer is told by email, webhook and banner. For bounce, complaint or
+              content problems with a customer you want to keep. On the{" "}
+              <Link
+                className="underline"
+                href={`/admin/organizations/${organization.id}/reputation`}
+              >
+                Sending reputation
+              </Link>{" "}
+              tab; the worker also does this on its own. Undo: Reinstate.
+            </SpecItem>
+            <SpecItem label="Suspend account" stacked>
+              Every API key refused (organization_suspended), webhooks held, dashboard read-only.
+              Members see it's suspended, not why. For investigations and holds. Undo: Lift account
+              suspension.
+            </SpecItem>
+            <SpecItem label="Take down & report" stacked>
+              Suspend account, revoke every key, ban members with nothing else on coss.com, and
+              report their sign-ups to coss.com Risk. For confirmed abuse. Lifting the suspension
+              undoes only the suspension.
+            </SpecItem>
+          </SpecList>
+        </PanelBody>
         {suspension ? (
           <PanelBody>
             <Alert variant="error">
-              <AlertTitle>Suspended {formatDateTime(suspension.createdAt)}</AlertTitle>
+              <AlertTitle className="flex items-center gap-2">
+                Account suspended {formatDateTime(suspension.createdAt)}
+                {suspension.category ? (
+                  <Badge variant="error">{abuseCategoryLabel(suspension.category)}</Badge>
+                ) : null}
+              </AlertTitle>
               <AlertDescription>
                 <p>{suspension.reason}</p>
                 <p>

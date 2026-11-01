@@ -105,12 +105,12 @@ export function ReinstateButton({ organizationId }: { organizationId: string }) 
   return (
     <NoteDialog
       action={reinstateOrganizationAction}
-      description="Live sending resumes immediately. Rates are measured again from now on, so the sending that caused the suspension can't suspend the organization again."
+      description="Live sending resumes immediately. Rates are measured again from now on, so the sending that caused the suspension can't suspend the organization again. An account suspension (Overview) is separate and stays as it is."
       organizationId={organizationId}
-      submit="Reinstate"
-      success="Organization reinstated"
-      title="Reinstate this organization?"
-      trigger="Reinstate"
+      submit="Reinstate live sending"
+      success="Live sending reinstated"
+      title="Reinstate live sending?"
+      trigger="Reinstate live sending"
     />
   );
 }
@@ -133,13 +133,13 @@ export function SuspendButton({ organizationId }: { organizationId: string }) {
   return (
     <NoteDialog
       action={suspendOrganizationAction}
-      description="Live sends are refused with account_suspended and new live keys can't be created until an admin reinstates the organization. Sandbox keys keep working. The organization's live webhook endpoints receive account.suspended."
+      description="Live sends are refused with account_suspended and new live keys can't be created until an admin reinstates the organization. Sandbox keys and the dashboard keep working, and the customer is told: owners and admins get an email and live webhook endpoints receive account.suspended. To stop everything, or for abuse, use Suspend account or Take down & report on the Overview tab instead."
       destructive
       organizationId={organizationId}
-      submit="Suspend"
+      submit="Suspend live sending"
       success="Live sending suspended"
       title="Suspend live sending?"
-      trigger="Suspend"
+      trigger="Suspend live sending"
     />
   );
 }
