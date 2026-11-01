@@ -166,15 +166,20 @@ export function ConsoleSidebar(props: ConsoleSidebarProps) {
                 {...panelIndicator}
                 className={area.kind === "product" ? PRODUCT_WASH[area.product.key] : undefined}
               />
-              <Panel
-                area={area}
-                envBase={envBase}
-                orgSlug={orgSlug}
-                pathname={pathname}
-                preferences={props.preferences}
-                settingsPaths={props.settingsPaths}
-                visible={visible}
-              />
+              <div
+                className="panel-swap flex flex-col gap-2"
+                key={area.kind === "product" ? area.product.key : area.kind}
+              >
+                <Panel
+                  area={area}
+                  envBase={envBase}
+                  orgSlug={orgSlug}
+                  pathname={pathname}
+                  preferences={props.preferences}
+                  settingsPaths={props.settingsPaths}
+                  visible={visible}
+                />
+              </div>
             </SidebarContent>
           </div>
         </div>

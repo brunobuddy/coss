@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from "@coss/ui/components/alert";
 export function FormError({ message }: { message: string | null | undefined }) {
   if (!message) return null;
   return (
-    <Alert variant="error">
+    <Alert className="enter-rise" variant="error">
       <AlertDescription>{message}</AlertDescription>
     </Alert>
   );

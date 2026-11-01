@@ -31,7 +31,7 @@ export function CopyValue(props: { value: string; display?: string; className?: 
         size="icon-xs"
         variant="ghost"
       >
-        {copied ? <CheckIcon /> : <CopyIcon />}
+        {copied ? <CheckIcon className="icon-pop" /> : <CopyIcon />}
       </Button>
     </span>
   );

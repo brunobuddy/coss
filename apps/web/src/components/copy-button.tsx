@@ -22,7 +22,7 @@ export function CopyButton({ value, label = "Copy" }: { value: string; label?: s
       size="sm"
       variant="outline"
     >
-      {status === "copied" ? <CheckIcon /> : <CopyIcon />}
+      {status === "copied" ? <CheckIcon className="icon-pop" /> : <CopyIcon />}
       {status === "copied" ? "Copied" : status === "failed" ? "Copy failed" : label}
     </Button>
   );
