@@ -117,6 +117,12 @@
   background-image: none;
 }
 
+/* A transparent control is part of something else (the ⌘K palette's search), not a well. */
+:is([data-slot="input-control"], [data-slot="input-group"])[class*="bg-transparent"],
+.dark :is([data-slot="input-control"], [data-slot="input-group"])[class*="bg-transparent"] {
+  background-image: none;
+}
+
 [data-slot="tab-indicator"].bg-background,
 [data-slot="switch-thumb"] {
   background-image: linear-gradient(
