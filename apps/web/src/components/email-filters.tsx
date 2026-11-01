@@ -14,7 +14,6 @@ import {
   emailFilterQuery,
 } from "@/lib/email-filters";
 import { listHref } from "./admin/list-controls";
-import { EMAIL_STATUS_TONE } from "./email-badges";
 import { FilterLinks } from "./filter-links";
 import { SearchForm } from "./search-form";
 
@@ -114,7 +113,6 @@ export function EmailFilterBar(props: {
             value: filter.value,
             label: filter.label,
             href: href({ status: filter.value }),
-            tone: filter.value === "all" ? undefined : EMAIL_STATUS_TONE[filter.value],
           }))}
           value={params.status}
         />
