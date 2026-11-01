@@ -13,7 +13,11 @@ const ACTIVE = '[data-sidebar="menu-button"][data-active="true"]';
  * when `key` (the pathname) changes and on resizes; `animate` turns on after the first placement,
  * so the highlight appears in place and only slides when the active button changes.
  */
-export function useActiveIndicator(container: RefObject<HTMLElement | null>, key: string) {
+export function useActiveIndicator(
+  container: RefObject<HTMLElement | null>,
+  key: string,
+  selector: string = ACTIVE,
+) {
   const [rect, setRect] = useState<IndicatorRect | null>(null);
   const [animate, setAnimate] = useState(false);
 
@@ -22,7 +26,7 @@ export function useActiveIndicator(container: RefObject<HTMLElement | null>, key
     const root = container.current;
     if (!root) return setRect(null);
     const measure = () => {
-      const button = root.querySelector<HTMLElement>(ACTIVE);
+      const button = root.querySelector<HTMLElement>(selector);
       if (!button || button.getClientRects().length === 0) return setRect(null);
       const outer = root.getBoundingClientRect();
       const inner = button.getBoundingClientRect();
@@ -41,7 +45,7 @@ export function useActiveIndicator(container: RefObject<HTMLElement | null>, key
       if (child.getAttribute("aria-hidden") !== "true") observer.observe(child);
     }
     return () => observer.disconnect();
-  }, [container, key]);
+  }, [container, key, selector]);
 
   useEffect(() => {
     if (!rect) return setAnimate(false);
