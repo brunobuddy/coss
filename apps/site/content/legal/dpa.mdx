@@ -1,7 +1,7 @@
 ---
 title: Data Processing Addendum
 description: How Cal.com processes personal data on your behalf as your processor, incorporated into the Terms of Service.
-lastUpdated: 2026-10-30
+lastUpdated: 2026-11-02
 ---
 
 This Data Processing Addendum ("**DPA**") forms part of, and is incorporated by reference into, the
@@ -326,8 +326,11 @@ never stored, logged or included in webhook events; only a keyed hash is kept un
 completed signature request sends the certificate authority and the timestamp authority only cryptographic hashes,
 never the document. Tracking records
 the user agent but not the IP address. Content screening sends only a bounded extract of a message (sender, subject,
-up to 8,000 characters of text and link hosts and paths without query strings; for SMS, the sending number, the text
-and link hosts and paths), never recipients or attachments, to a provider that retains nothing; webhook events about
+up to 8,000 characters of text, images displayed in the email including inline image attachments, and link hosts
+and paths without query strings; for SMS, the sending number, the text and link hosts and paths), excluding recipient
+envelope lists and unrelated attachments, to a provider that retains nothing. Message text and images may themselves
+contain personal data. Restricted sender domains may be retained after domain or account deletion for abuse prevention
+until reviewed and released; webhook events about
 text messages never include their text; screening verdicts never store message content. Rate limiting keys store email
 addresses only as hashes. Risk assessments keep email addresses, IP addresses and user agents for 90 days, remember
 identifiers (including card fingerprints and device identifiers) across assessments only as keyed hashes, never

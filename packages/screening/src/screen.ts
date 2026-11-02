@@ -13,7 +13,7 @@ import {
   suspendOrganization,
 } from "@coss/reputation";
 import type { ContentScreeningPolicy } from "@coss/reputation/schemas";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lte, sql } from "drizzle-orm";
 import {
   type ClassifierVerdict,
   type ContentClassifier,
@@ -32,7 +32,9 @@ export type ScreeningVerdict = ContentScreeningRow["verdict"];
 export const CONTENT_SCREENING_TRIGGER = "content_screening";
 
 /** Long enough for a slow decision (Jev answers in well under a second), short enough to send on. */
-export const DEFAULT_SCREENING_TIMEOUT_MS = 3000;
+export const DEFAULT_SCREENING_TIMEOUT_MS = 10_000;
+/** Two distinct high-scoring flags in the reputation window stop sending. */
+export const REPEATED_FLAG_THRESHOLD = 0.9;
 
 export type ScreeningDeps = {
   classifier: ContentClassifier;
@@ -54,7 +56,9 @@ export type ScreenInput = {
   /** The product's message id, e.g. an email id. */
   subjectId: string;
   /** Called only when the message is sampled, so unsampled messages cost nothing. */
-  content: () => ScreeningContent | Promise<ScreeningContent>;
+  content: (signal: AbortSignal) => ScreeningContent | Promise<ScreeningContent>;
+  /** Product-specific abuse memory, written atomically with an enforced block. */
+  onBlock?: (tx: Executor, now: Date) => Promise<void>;
   /**
    * The message was held after its screening failed and is being tried again: it is screened
    * again (it was a sample), at its earlier position, without being counted twice.
@@ -73,6 +77,8 @@ export type ScreenInput = {
    */
   group?: {
     id: string;
+    /** Read the group's current reset time; lock its standing row when called in a transaction. */
+    reinstatedAt?: (tx: Executor) => Promise<Date | null>;
     onBlock: (tx: Executor, input: { trigger: string; note: string; now: Date }) => Promise<void>;
   };
 };
@@ -94,25 +100,35 @@ export async function screenMessage(
   deps: ScreeningDeps,
 ): Promise<ScreenOutcome> {
   const now = deps.now ?? (() => new Date());
-  const policy = policyOf(await getReputationStanding(input.organizationId)).contentScreening;
+  const standing = await getReputationStanding(input.organizationId);
+  const reputationPolicy = policyOf(standing);
+  const policy = reputationPolicy.contentScreening;
   if (!policy.enabled) return SEND;
+  const timestamp = now();
+  const resetAt = input.group ? await input.group.reinstatedAt?.(db) : standing?.reinstatedAt;
+  const windowStart = new Date(
+    Math.max(
+      timestamp.getTime() - reputationPolicy.windowDays * 86_400_000,
+      resetAt?.getTime() ?? 0,
+    ),
+  );
 
   const earlier = input.retry ? await earlierSample(input, now()) : null;
   const { sequence, owed } =
     earlier ?? (await countMessage(input.organizationId, input.product, input.group?.id ?? ""));
   if (!earlier && !owed && !input.force && !shouldScreen(sequence, policy, deps.random)) {
-    return SEND;
+    // A warning must increase scrutiny even before the reputation worker evaluates it.
+    if (!(await recentFlag(db, input, windowStart, timestamp))) return SEND;
   }
   const isSystemOrganization = input.organizationId === deps.systemOrganizationId;
 
   const started = performance.now();
   let verdict: ClassifierVerdict;
   try {
-    const content = await input.content();
-    verdict = await deps.classifier.classify(
-      content,
-      AbortSignal.timeout(deps.timeoutMs ?? DEFAULT_SCREENING_TIMEOUT_MS),
-    );
+    const signal = AbortSignal.timeout(deps.timeoutMs ?? DEFAULT_SCREENING_TIMEOUT_MS);
+    const content = await input.content(signal);
+    signal.throwIfAborted();
+    verdict = await deps.classifier.classify(content, signal);
   } catch (error) {
     console.error(
       `[screening] ${deps.classifier.name} failed on ${input.product} ${input.subjectId}:`,
@@ -150,9 +166,37 @@ export async function screenMessage(
   }
 
   const top = topCategory(verdict.scores);
-  const outcome = classify(top.score, policy, isSystemOrganization);
-  const createdAt = now();
+  let outcome = classify(top.score, policy, isSystemOrganization);
+  let createdAt = now();
   const screening = await db.transaction(async (tx) => {
+    if (policy.enforce && !isSystemOrganization && outcome !== "clean") {
+      // Classify outside the lock; serialize only evidence and the decision so simultaneous
+      // high flags cannot both escape as the first one. Retries of one subject count once.
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${`screening:${input.organizationId}:${input.group?.id ?? ""}`}, 0))`,
+      );
+      createdAt = now();
+      // Support may have reinstated this scope while the model was answering. Its earlier
+      // flags were reviewed and must not immediately suspend it again.
+      const [latest] = input.group
+        ? []
+        : await tx
+            .select({ reinstatedAt: schema.reputationStanding.reinstatedAt })
+            .from(schema.reputationStanding)
+            .where(eq(schema.reputationStanding.organizationId, input.organizationId))
+            .for("update");
+      const latestReset = input.group ? await input.group.reinstatedAt?.(tx) : latest?.reinstatedAt;
+      const currentWindowStart = new Date(
+        Math.max(windowStart.getTime(), latestReset?.getTime() ?? 0),
+      );
+      if (
+        outcome === "flagged" &&
+        top.score >= REPEATED_FLAG_THRESHOLD &&
+        (await recentFlag(tx, input, currentWindowStart, createdAt, true))
+      ) {
+        outcome = "blocked";
+      }
+    }
     const row = await insertScreening(tx, input, {
       sequence,
       classifier: deps.classifier.name,
@@ -167,11 +211,13 @@ export async function screenMessage(
       createdAt,
     });
     if (!policy.enforce || outcome === "clean") return row;
-    const note = `${input.product} ${input.subjectId} scored ${top.score.toFixed(2)} for ${top.category} (${row.id}).`;
+    const repeated = outcome === "blocked" && top.score < policy.blockThreshold;
+    const note = `${input.product} ${input.subjectId} scored ${top.score.toFixed(2)} for ${top.category} (${row.id}).${repeated ? " Repeated high-scoring flags." : ""}`;
     if (input.group) {
       // The group answers for its own messages; its flags only show in the admin console.
       if (outcome === "blocked") {
         await input.group.onBlock(tx, { trigger: CONTENT_SCREENING_TRIGGER, note, now: createdAt });
+        await input.onBlock?.(tx, createdAt);
       }
       return row;
     }
@@ -186,12 +232,38 @@ export async function screenMessage(
         },
         tx,
       );
+      // Match reinstatement/backfill lock order: standing first, then domain abuse memory.
+      await input.onBlock?.(tx, createdAt);
     }
     // The content screening check turns flags into a warning (and keeps a block suspended).
     await markReputationDue(tx, input.organizationId, createdAt);
     return row;
   });
   return { action: policy.enforce && outcome === "blocked" ? "block" : "send", screening };
+}
+
+async function recentFlag(tx: Executor, input: ScreenInput, start: Date, end: Date, high = false) {
+  const [flag] = await tx
+    .select({ id: contentScreening.id })
+    .from(contentScreening)
+    .where(
+      and(
+        eq(contentScreening.organizationId, input.organizationId),
+        input.group
+          ? eq(contentScreening.groupId, input.group.id)
+          : isNull(contentScreening.groupId),
+        eq(contentScreening.verdict, "flagged"),
+        eq(contentScreening.enforced, true),
+        gte(contentScreening.createdAt, start),
+        lte(contentScreening.createdAt, end),
+        high ? gte(contentScreening.topScore, REPEATED_FLAG_THRESHOLD) : undefined,
+        high
+          ? sql`not (${contentScreening.product} = ${input.product} and ${contentScreening.subjectId} = ${input.subjectId})`
+          : undefined,
+      ),
+    )
+    .limit(1);
+  return Boolean(flag);
 }
 
 function classify(

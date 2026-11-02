@@ -1254,6 +1254,18 @@ export async function authorizeLiveSender(input: {
         "Domains in the dashboard, or use a sandbox key to test.",
     );
   }
+  const [blockedDomain] = await db
+    .select({ domain: schema.emailSenderDomainBlock.domain })
+    .from(schema.emailSenderDomainBlock)
+    .where(inArray(schema.emailSenderDomainBlock.domain, domainSuffixes(fromDomain)))
+    .limit(1);
+  if (blockedDomain) {
+    throw new EmailError(
+      "sending_paused",
+      "Live sending from this domain is restricted because of its sending history. " +
+        "Contact support to resume.",
+    );
+  }
   // A sub-account's domain is its own; the organization's domains are for sub-accounts only when
   // shared with them.
   if (match.subaccountId !== null && match.subaccountId !== subaccountId) {

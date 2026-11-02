@@ -63,7 +63,8 @@ import {
   SendEmailRequest,
   SUBJECT_MAX_LENGTH,
 } from "./schemas.ts";
-import { emailScreeningContent } from "./screening.ts";
+import { loadEmailScreeningContent, recordScreeningDomainBlock } from "./screening.ts";
+import type { ScreeningImageLoader } from "./screening-images.ts";
 import type { EmailService, SendEnvironment } from "./service.ts";
 import { resolveStoreContent } from "./storage-settings.ts";
 import { topicsByKey } from "./topics.ts";
@@ -909,6 +910,7 @@ export type BroadcastWorkerDeps = {
   refundThrottle?: (input: { organizationId: string; count: number }) => Promise<void>;
   /** Content screening (`screenMessage`), once per live broadcast. */
   screen?: (input: ScreenInput) => Promise<ScreenOutcome>;
+  screeningImages?: ScreeningImageLoader;
   /** The plan's marketing rate (recipients per second) of an organization. */
   planRate?: (organizationId: string) => Promise<number>;
 };
@@ -1111,7 +1113,9 @@ async function start(
         subjectId: row.id,
         force: true,
         retry: row.screeningStatus === "held",
-        content: () => emailScreeningContent({ from: row.from, ...preview }),
+        content: (signal) =>
+          loadEmailScreeningContent({ from: row.from, ...preview }, signal, deps.screeningImages),
+        onBlock: (tx, at) => recordScreeningDomainBlock(tx, row, at),
       });
     } catch (error) {
       console.error(`[email:broadcasts] screening ${row.id} failed:`, error);

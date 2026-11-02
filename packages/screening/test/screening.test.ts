@@ -12,7 +12,7 @@ import {
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
 import { and, eq } from "drizzle-orm";
 import { contentScreeningCheck } from "../src/check.ts";
-import type { ScreeningContent } from "../src/classifier.ts";
+import type { ContentClassifier, ScreeningContent } from "../src/classifier.ts";
 import { fakeClassifier } from "../src/fake.ts";
 import { listScreenings } from "../src/read.ts";
 import { CONTENT_SCREENING_TRIGGER, type ScreenInput, screenMessage } from "../src/screen.ts";
@@ -51,6 +51,31 @@ async function counter(organizationId: string) {
 }
 
 describe("screenMessage", () => {
+  test("reinstatement during classification excludes the reviewed flags", async () => {
+    const tenant = await createTestTenant();
+    await screenMessage(input(tenant, "[coss-test:spam:0.94]"), { classifier: fakeClassifier() });
+    const started = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const classifier: ContentClassifier = {
+      name: "gate",
+      classify: async (content, signal) => {
+        started.resolve();
+        await resume.promise;
+        return fakeClassifier({ scores: { spam: 0.94 } }).classify(content, signal);
+      },
+    };
+    const pending = screenMessage(input(tenant), { classifier });
+    await started.promise;
+    await screenMessage(input(tenant, "[coss-test:phishing]"), { classifier: fakeClassifier() });
+    await reinstateOrganization({
+      organizationId: tenant.organization.id,
+      adminUserId: tenant.owner.id,
+      note: "Reviewed",
+    });
+    resume.resolve();
+    expect(await pending).toMatchObject({ action: "send", screening: { verdict: "flagged" } });
+    expect((await getReputationStanding(tenant.organization.id))?.status).toBe("good");
+  });
   test("screens the first messages, then only milestones and the random sample", async () => {
     const tenant = await createTestTenant();
     const classifier = fakeClassifier();
@@ -108,6 +133,126 @@ describe("screenMessage", () => {
     const [event] = await listReputationEvents(tenant.organization.id);
     expect(event).toMatchObject({ type: "suspended", actor: "system" });
     expect(event?.note).toContain(subject.subjectId);
+  });
+
+  test("the second distinct 0.94 flag is blocked even beyond the initial sample", async () => {
+    const tenant = await createTestTenant();
+    await updateReputationPolicy({
+      organizationId: tenant.organization.id,
+      adminUserId: tenant.owner.id,
+      overrides: { contentScreening: { alwaysFirst: 1, milestones: [], sampleRate: 0 } },
+    });
+    const first = input(tenant, "hi [coss-test:spam:0.94]");
+    const classifier = fakeClassifier();
+    expect(await screenMessage(first, { classifier, random: never })).toMatchObject({
+      action: "send",
+      screening: { verdict: "flagged" },
+    });
+    // Retrying one subject is not a second piece of evidence.
+    expect(
+      await screenMessage({ ...first, retry: true }, { classifier, random: never }),
+    ).toMatchObject({
+      action: "send",
+      screening: { verdict: "flagged" },
+    });
+    expect(
+      await screenMessage(input(tenant, "hi [coss-test:spam:0.94]"), { classifier, random: never }),
+    ).toMatchObject({
+      action: "block",
+      screening: { verdict: "blocked", sequence: 2 },
+    });
+    expect((await getReputationStanding(tenant.organization.id))?.status).toBe("suspended");
+  });
+
+  test("concurrent high flags cannot all pass as the first flag", async () => {
+    const tenant = await createTestTenant();
+    const outcomes = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        screenMessage(input(tenant, "hi [coss-test:spam:0.94]"), { classifier: fakeClassifier() }),
+      ),
+    );
+    expect(outcomes.filter((outcome) => outcome.action === "send")).toHaveLength(1);
+    expect(outcomes.filter((outcome) => outcome.action === "block")).toHaveLength(4);
+  });
+
+  test("lower flags, expired flags, shadow flags and other groups do not cause escalation", async () => {
+    const tenant = await createTestTenant();
+    const classifier = fakeClassifier();
+    await screenMessage(input(tenant, "[coss-test:spam:0.8]"), { classifier });
+    await screenMessage(input(tenant, "[coss-test:spam:0.94]"), {
+      classifier,
+      now: () => new Date(Date.now() - 8 * 86_400_000),
+    });
+    await screenMessage(
+      {
+        ...input(tenant, "[coss-test:spam:0.94]"),
+        group: { id: "other", onBlock: async () => {} },
+      },
+      { classifier },
+    );
+    expect(
+      await screenMessage(input(tenant, "[coss-test:spam:0.94]"), { classifier }),
+    ).toMatchObject({
+      action: "send",
+      screening: { verdict: "flagged" },
+    });
+  });
+
+  test("reinstatement resets high-flag history and groups escalate independently", async () => {
+    const tenant = await createTestTenant();
+    const classifier = fakeClassifier();
+    await screenMessage(input(tenant, "[coss-test:spam:0.94]"), { classifier });
+    await screenMessage(input(tenant, "[coss-test:spam]"), { classifier });
+    await reinstateOrganization({
+      organizationId: tenant.organization.id,
+      adminUserId: tenant.owner.id,
+      note: "Reviewed",
+    });
+    expect(
+      await screenMessage(input(tenant, "[coss-test:spam:0.94]"), { classifier }),
+    ).toMatchObject({ action: "send" });
+    let blocks = 0;
+    const group = {
+      id: "group",
+      onBlock: async () => {
+        blocks++;
+      },
+    };
+    await screenMessage({ ...input(tenant, "[coss-test:spam:0.94]"), group }, { classifier });
+    expect(
+      await screenMessage({ ...input(tenant, "[coss-test:spam:0.94]"), group }, { classifier }),
+    ).toMatchObject({ action: "block" });
+    expect(blocks).toBe(1);
+    expect((await getReputationStanding(tenant.organization.id))?.status).toBe("good");
+    expect(
+      await screenMessage(
+        {
+          ...input(tenant, "[coss-test:spam:0.94]"),
+          group: { ...group, reinstatedAt: async () => new Date() },
+        },
+        { classifier },
+      ),
+    ).toMatchObject({ action: "send" });
+  });
+
+  test("shadow and system organizations never escalate repeated high flags", async () => {
+    for (const system of [false, true]) {
+      const tenant = await createTestTenant();
+      if (!system)
+        await updateReputationPolicy({
+          organizationId: tenant.organization.id,
+          adminUserId: tenant.owner.id,
+          overrides: { contentScreening: { enforce: false } },
+        });
+      for (let i = 0; i < 3; i++) {
+        expect(
+          await screenMessage(input(tenant, "[coss-test:spam:0.94]"), {
+            classifier: fakeClassifier(),
+            ...(system ? { systemOrganizationId: tenant.organization.id } : {}),
+          }),
+        ).toMatchObject({ action: "send", screening: { verdict: "flagged" } });
+      }
+    }
   });
 
   test("never blocks or suspends coss.com's own organization: a block only flags", async () => {

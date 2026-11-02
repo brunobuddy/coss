@@ -60,3 +60,7 @@ repository root.
   (stale evaluations write nothing) and send `subaccount.*` webhooks to the sub-account's environment (live only). A
   paused sub-account never moves the organization's standing, which still counts all its sending.
 
+
+- Reinstating an organization also clears its non-group `email_sender_domain_block` rows in the
+  transition transaction. This is the support release path for sender-domain screening restrictions;
+  neither automatic warning recovery nor domain/organization deletion clears this abuse memory.

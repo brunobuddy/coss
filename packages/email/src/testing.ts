@@ -50,6 +50,7 @@ export function dispatchingEmailService(opts: {
   liveProvider: EmailProvider;
   sandboxProvider: EmailProvider;
   screen?: EmailServiceOptions["screen"];
+  screeningImages?: EmailServiceOptions["screeningImages"];
   screeningFailureAllowlist?: EmailServiceOptions["screeningFailureAllowlist"];
   trackingBaseUrl?: string;
   trackingDomainProvider?: string;

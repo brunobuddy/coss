@@ -373,13 +373,14 @@ describe("dispatch", () => {
   test("delivers a queued email", async () => {
     const tenant = await createTestTenant();
     const { service, liveProvider } = fakeProviders();
+    const from = await verifiedFrom(tenant.organization.id);
     const [row] = await db
       .insert(schema.email)
       .values({
         organizationId: tenant.organization.id,
         projectId: tenant.project.id,
         environmentId: tenant.production.id,
-        from: "hello@acme.com",
+        from,
         to: ["user@example.com"],
         subject: "Queued",
         text: "Hi",
@@ -429,6 +430,7 @@ describe("dispatch", () => {
   test("concurrent dispatchers send an email only once", async () => {
     const tenant = await createTestTenant();
     const gated = gatedProvider();
+    const from = await verifiedFrom(tenant.organization.id, gated.provider.name);
     const service = createEmailService({
       liveProvider: gated.provider,
       sandboxProvider: new FakeEmailProvider({ log: false }),
@@ -440,7 +442,7 @@ describe("dispatch", () => {
         organizationId: tenant.organization.id,
         projectId: tenant.project.id,
         environmentId: tenant.production.id,
-        from: "hello@acme.com",
+        from,
         to: ["user@example.com"],
         subject: "Race",
         text: "Hi",

@@ -136,12 +136,17 @@ resets) are printed to the dashboard's server console in development.
   250th, 500th and 1000th, then 2% at random. At ≥ 0.95 the email fails with `content_rejected` and the
   organization is suspended (the reputation guard's `content_screening` trigger); at ≥ 0.70 it is sent but the
   organization is warned until the flag ages out of the window. In enforcement mode, classifier errors and
-  timeouts (3 s) hold the email: it is tried (and screened) again every minute, and fails as
+  timeouts (10 s, including image downloads) hold the email: it is tried (and screened) again every minute, and fails as
   `content_screening_unavailable` only if screening is still down an hour after it was due. coss.com's
   own notification organization always sends so an AI outage cannot stop account recovery. Admins see every verdict on the organization's reputation page and can
   tune thresholds and sampling, switch to shadow mode, or turn screening off per organization (e.g. for
   phishing-simulation senders). Locally `SCREENING_CLASSIFIER=fake` flags content containing `[coss-test:phishing]`
-  (or `spam`, `malware`, `fraud`; `[coss-test:spam:0.8]` sets the score).
+  (or `spam`, `malware`, `fraud`; `[coss-test:spam:0.8]` sets the score). Any active enforced flag
+  forces subsequent messages through screening; a second distinct score ≥ 0.90 in the reputation
+  window blocks and suspends. Short image-based emails are always screened. Image content is inspected
+  by a vision-capable model; generic alt text and unsubscribe footers cannot substitute for it.
+  Enforced blocks also restrict the verified sender domain across organizations, surviving domain or
+  account deletion. Support reinstatement clears that organization's restrictions.
 - **Organization deletion** — owners delete an organization from its Settings by typing its slug (not while it
   is suspended; platform admins can, from `/admin`, audited). Members, invitations, API keys, the SSO provider and
   the sessions it created go at once and scheduled emails never send; the worker then removes the organization's
@@ -403,9 +408,28 @@ drop `for <address>` clauses naming other environments' recipients).
 2. Set `SCREENING_CLASSIFIER=ai` and `AI_GATEWAY_API_KEY` for the worker (which screens emails), and
    `RISK_CLASSIFIER=ai` with the same key for the api (risk's content classification, at request time, 3 s
    timeout, limited per organization by the `risk.classify*` buckets). `SCREENING_MODEL` defaults to
-   `typesafe-ai/jev`; any Gateway decision model id works.
+   `typesafe-ai/jev`; any Gateway decision model id works for text. Email images use the pinned,
+   vision-capable `typesafe-ai/jev-1.14.0` with the same key and zero-data-retention setting. Images are
+   downloaded through public-address checks with no redirects (16 images/animation frames, 2 MiB each, 8 MiB total);
+   small images are normalized to at least 512×512 (including tracking pixels). Missing, unsupported or
+   over-limit images hold the message for the normal retry rather than sending unseen content.
 3. Cost: one screening is about 2k input tokens (bodies are truncated to 8,000 characters) — about $0.0001 with
-   Jev — so the default sampling costs a few dollars per million live emails.
+   Jev for text. Image inspection, always-screened image-based mail and increased screening after
+   flags add usage beyond the base random sample.
+
+After applying the sender-domain memory migration, backfill historical screening blocks using the new
+worker image (before rolling out live services). The first command only counts candidates; the second
+writes idempotently and considers only organizations still suspended by screening:
+
+```sh
+infra/scripts/ecs-task.sh --image-tag <new-image-tag> worker -- bun packages/email/scripts/backfill-screening-domains.ts
+infra/scripts/ecs-task.sh --image-tag <new-image-tag> worker -- bun packages/email/scripts/backfill-screening-domains.ts --apply
+```
+
+For a reviewed domain transfer whose original organization was deleted, operators can release its
+restriction with `packages/email/scripts/release-screening-domain.ts --domain <name> --admin <admin user id> --note <review note>`
+in the worker image. The command requires an active platform admin and writes an admin audit event.
+
 
 ## Rate limits on ElastiCache Serverless for Valkey
 
