@@ -219,7 +219,7 @@ export const PRODUCT_COLUMNS: readonly MenuColumn[] = [
       api("scheduling", {
         description: "Availability and bookings.",
         icon: CalendarCheckIn01Icon,
-        href: "/#scheduling",
+        href: "/docs/scheduling",
       }),
       {
         label: CALENDAR.name,

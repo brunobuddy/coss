@@ -1,0 +1,51 @@
+---
+title: Notifications
+description: Who hears about a booking, and how.
+---
+
+By default, attendees and hosts get an email when a booking's confirmed, moved or cancelled, with a
+calendar invitation, and attendees get a reminder a day before. Webhooks always fire, whatever's on here.
+
+Turn each one on or off in your settings, or per event type:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({
+  email_from: "appointments@example.com",
+  brand_name: "Acme Health",
+  notifications: {
+    confirmed: { email_host: false },
+    reminder: { email_attendee: true, sms_attendee: true },
+  },
+});
+```
+
+The events are `confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined` and `reminder`. To
+send everything yourself, turn them all off and use [webhooks](/docs/webhooks).
+
+Emails come from `email_from`, on one of your verified domains. Without one, they come from coss.com on
+your behalf. They use fixed templates with your event type's title and your brand name, and the only link
+in them is the attendee's manage link. Titles, host names and brand names can't contain links, and in live
+environments they're screened for abuse when you set them, rather than each email being screened.
+
+An SMS reminder needs `sms_from`, one of your approved numbers, and the attendee's `phone`. Getting their
+consent is yours to do, and a STOP is always honored.
+
+## Meeting links
+
+An event type's `locations` say where it happens. `google_meet` and `microsoft_teams` create a link with the
+calendar event, so they need a connected calendar from that provider: the confirmation waits briefly for it,
+and it then appears on the booking with `scheduling.booking.location_ready`. For your own video vendor, use
+`link` and set it after the `confirmed` webhook:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const bookingId = "book_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+await coss.scheduling.bookings.updateLocation(bookingId, {
+  location: { type: "link", url: "https://video.example.com/room/abc" },
+});
+```

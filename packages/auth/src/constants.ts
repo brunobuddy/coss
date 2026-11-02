@@ -47,6 +47,7 @@ export const API_KEY_PERMISSIONS: Record<string, string[]> = {
   // Settings (`update`) are dashboard-only for now.
   verify: ["send", "check", "read"],
   form: ["create", "read", "update", "delete"],
+  scheduling: ["create", "read", "update", "delete"],
 };
 
 /** The header the dashboard's sign-up form carries `coss/device`'s token in (coss.com Risk). */

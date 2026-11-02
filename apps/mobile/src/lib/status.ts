@@ -212,6 +212,7 @@ export const DRAIN_SOURCE_LABELS: Record<string, string> = {
   sign: "Signature events",
   verify: "Verification events",
   forms: "Form submissions",
+  scheduling: "Bookings",
   audit: "Audit events",
 };
 

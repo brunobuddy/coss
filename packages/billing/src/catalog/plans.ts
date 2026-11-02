@@ -49,6 +49,7 @@ export const PLANS = {
       "email.received": 3_000,
       "forms.submissions": 1_000,
       "forms.file_uploads": 1_000,
+      "scheduling.bookings": 100,
       "email.inboxes": INBOX_DAYS_INCLUDED,
       "risk.phone_checks": PHONE_CHECKS_INCLUDED,
     },

@@ -12,7 +12,15 @@ import {
   type SecretsKeyRing,
 } from "./secrets.ts";
 
-const { hookEndpoint, logDrain, migration, riskSettings, smsAccount, webhookEndpoint } = schema;
+const {
+  hookEndpoint,
+  logDrain,
+  migration,
+  riskSettings,
+  schedulingCalendarConnection,
+  smsAccount,
+  webhookEndpoint,
+} = schema;
 
 /**
  * Tables of endpoints with a current and a previous (rolled) secret: coss.com's own webhook endpoints
@@ -25,8 +33,8 @@ const ROLLED_SECRET_TABLES = [
 
 export type ReencryptResult = {
   /**
-   * Webhook endpoints, Hooks endpoints, log drains, captcha secrets, SMS auth tokens and imports'
-   * provider keys looked at.
+   * Webhook endpoints, Hooks endpoints, log drains, captcha secrets, SMS auth tokens, imports'
+   * provider keys and calendar credentials looked at.
    */
   checked: number;
   /** Rows rewritten (with `dryRun`: that would be). */
@@ -64,6 +72,7 @@ export async function reencryptWebhookSecrets(opts: {
   await reencryptCaptchaSecrets({ ...opts, batchSize }, result);
   await reencryptSmsAuthTokens({ ...opts, batchSize }, result);
   await reencryptMigrationCredentials({ ...opts, batchSize }, result);
+  await reencryptCalendarCredentials({ ...opts, batchSize }, result);
   return result;
 }
 
@@ -278,6 +287,83 @@ async function reencryptSmsAuthTokens(
         .set({ authToken, updatedAt: sql`${smsAccount.updatedAt}` })
         .where(and(eq(smsAccount.organizationId, row.id), eq(smsAccount.authToken, stored)))
         .returning({ id: smsAccount.organizationId });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < opts.batchSize) break;
+    after = last.id;
+  }
+}
+
+/**
+ * Scheduling's calendar credentials. Refreshes rewrite these rows all the time, so a conflict just
+ * means the row now holds a newer value, which the writer encrypted with the primary key already.
+ */
+async function reencryptCalendarCredentials(
+  opts: {
+    keys: SecretsKeyRing;
+    dryRun?: boolean;
+    batchSize: number;
+    scope?: { organizationIds: string[] };
+  },
+  result: ReencryptResult,
+): Promise<void> {
+  const { keys } = opts;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingCalendarConnection.id,
+        organizationId: schedulingCalendarConnection.organizationId,
+        stored: schedulingCalendarConnection.encryptedCredentials,
+      })
+      .from(schedulingCalendarConnection)
+      .where(
+        and(
+          gt(schedulingCalendarConnection.id, after),
+          isNotNull(schedulingCalendarConnection.encryptedCredentials),
+          opts.scope
+            ? inArray(schedulingCalendarConnection.organizationId, opts.scope.organizationIds)
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingCalendarConnection.id))
+      .limit(opts.batchSize);
+    for (const row of rows) {
+      const stored = row.stored;
+      if (!stored) continue;
+      result.checked++;
+      if (isEncryptedWithPrimary(stored, keys)) continue;
+      let encryptedCredentials: string;
+      try {
+        encryptedCredentials = encryptSecret(decryptSecret(stored, keys), keys);
+      } catch (error) {
+        result.unreadable.push({
+          id: row.id,
+          organizationId: row.organizationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        continue;
+      }
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      const [updated] = await db
+        .update(schedulingCalendarConnection)
+        .set({
+          encryptedCredentials,
+          updatedAt: sql`${schedulingCalendarConnection.updatedAt}`,
+        })
+        .where(
+          and(
+            eq(schedulingCalendarConnection.id, row.id),
+            eq(schedulingCalendarConnection.organizationId, row.organizationId),
+            eq(schedulingCalendarConnection.encryptedCredentials, stored),
+          ),
+        )
+        .returning({ id: schedulingCalendarConnection.id });
       if (updated) result.reencrypted++;
       else result.conflicts++;
     }

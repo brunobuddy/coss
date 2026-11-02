@@ -4,7 +4,15 @@
  * infra/test checks it against the apps' env schemas, turbo.json and the Dockerfiles.
  */
 
-export type ServiceName = "web" | "site" | "portal" | "sign" | "api" | "worker" | "smtp";
+export type ServiceName =
+  | "web"
+  | "site"
+  | "portal"
+  | "sign"
+  | "scheduling"
+  | "api"
+  | "worker"
+  | "smtp";
 
 /**
  * - `plain`: a task-definition `environment` value (`value`: the production value, or how to get it).
@@ -172,6 +180,51 @@ const awsRegion: EnvVar = {
   value: "us-east-2",
   description: "Region of Sign's documents bucket.",
 };
+
+const schedulingEnv: EnvVar[] = [
+  {
+    name: "SCHEDULING_DATA_KEYS",
+    kind: "secret",
+    required: false,
+    value:
+      "openssl rand -base64 32 (one per stage; losing it makes attendees' details unreadable). A comma-separated list while rotating: the first encrypts, every one decrypts",
+    description:
+      "Encrypts Scheduling's attendee details and answers. Same value for api and worker.",
+  },
+  {
+    name: "SCHEDULING_PUBLIC_URL",
+    kind: "plain",
+    required: false,
+    description:
+      "Origin of the hosted scheduling app (apps/scheduling, on a registrable domain of its own); session and manage links point there. Unset: sessions have no url, and emails have no manage link.",
+  },
+  {
+    name: "GOOGLE_CALENDAR_CLIENT_ID",
+    kind: "plain",
+    required: false,
+    description: "Scheduling's Google OAuth app for calendar access, not sign-in's.",
+  },
+  {
+    name: "GOOGLE_CALENDAR_CLIENT_SECRET",
+    kind: "secret",
+    required: false,
+    value: "From the Google Cloud console.",
+    description: "Scheduling's Google OAuth app for calendar access.",
+  },
+  {
+    name: "MICROSOFT_CALENDAR_CLIENT_ID",
+    kind: "plain",
+    required: false,
+    description: "Scheduling's Microsoft app for calendar access.",
+  },
+  {
+    name: "MICROSOFT_CALENDAR_CLIENT_SECRET",
+    kind: "secret",
+    required: false,
+    value: "From the Microsoft Entra admin center.",
+    description: "Scheduling's Microsoft app for calendar access.",
+  },
+];
 
 const signPublicUrl: EnvVar = {
   name: "SIGN_PUBLIC_URL",
@@ -521,7 +574,9 @@ const apiPublicUrl: EnvVar = {
  * Error and performance monitoring (Sentry organization `cosscom`, see @coss/observability). Each
  * runtime has its own project; DSNs aren't secrets (browsers receive the dashboard's).
  */
-function sentry(project: "web" | "portal" | "sign" | "api" | "worker" | "smtp"): EnvVar[] {
+function sentry(
+  project: "web" | "portal" | "sign" | "scheduling" | "api" | "worker" | "smtp",
+): EnvVar[] {
   return [
     {
       name: "SENTRY_DSN",
@@ -621,6 +676,7 @@ export const SERVICES: Service[] = [
       ...email,
       webhookKey,
       portalPublicUrl,
+      ...schedulingEnv.filter((variable) => variable.name.startsWith("SCHEDULING_")),
       signPublicUrl,
       signDocumentsBucket,
       formsPublicUrl,
@@ -844,6 +900,34 @@ export const SERVICES: Service[] = [
     ],
   },
   {
+    // Scheduling's hosted pages, on their own domain (SCHEDULING_HOST in routing.ts: Cloudflare →
+    // ALB). A client of the API; the database only answers which origins may embed a session.
+    name: "scheduling",
+    dockerfile: "apps/scheduling/Dockerfile",
+    port: 3005,
+    healthCheckPath: "/api/health",
+    stopTimeout: 30,
+    cpu: 256,
+    memory: 512,
+    minTasks: 2,
+    needsInternet: false,
+    env: [
+      ...db,
+      apiPublicUrl,
+      ...sentry("scheduling"),
+      { name: "NODE_ENV", kind: "image", required: true, value: "production", description: "" },
+      { name: "PORT", kind: "image", required: true, value: "3005", description: "" },
+      { name: "HOSTNAME", kind: "image", required: true, value: "0.0.0.0", description: "" },
+      {
+        name: "KEEP_ALIVE_TIMEOUT",
+        kind: "image",
+        required: true,
+        value: "75000",
+        description: "",
+      },
+    ],
+  },
+  {
     name: "api",
     dockerfile: "apps/api/Dockerfile",
     port: 3001,
@@ -873,6 +957,7 @@ export const SERVICES: Service[] = [
       emailLinkKeys,
       portalPublicUrl,
       signDocumentsBucket,
+      ...schedulingEnv,
       signPublicUrl,
       notificationsEnvironment,
       notificationsFrom,
@@ -915,6 +1000,7 @@ export const SERVICES: Service[] = [
           "coss.com's sender of form notifications (\"<form name> via coss.com\"), on a verified domain of NOTIFICATIONS_ENVIRONMENT_ID's organization; default NOTIFICATIONS_FROM's address.",
       },
       ...signSeal,
+      ...schedulingEnv,
       signPublicUrl,
       {
         name: "SIGN_NOTIFICATIONS_FROM",

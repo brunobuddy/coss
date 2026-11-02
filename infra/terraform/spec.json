@@ -159,6 +159,19 @@
           "description": "Origin of the Hooks portal (apps/portal, on a registrable domain of its own); portal session links point there. Unset: creating a portal session fails (503) until the portal is deployed."
         },
         {
+          "name": "SCHEDULING_DATA_KEYS",
+          "kind": "secret",
+          "required": false,
+          "value": "openssl rand -base64 32 (one per stage; losing it makes attendees' details unreadable). A comma-separated list while rotating: the first encrypts, every one decrypts",
+          "description": "Encrypts Scheduling's attendee details and answers. Same value for api and worker."
+        },
+        {
+          "name": "SCHEDULING_PUBLIC_URL",
+          "kind": "plain",
+          "required": false,
+          "description": "Origin of the hosted scheduling app (apps/scheduling, on a registrable domain of its own); session and manage links point there. Unset: sessions have no url, and emails have no manage link."
+        },
+        {
           "name": "SIGN_PUBLIC_URL",
           "kind": "plain",
           "required": false,
@@ -703,6 +716,89 @@
       ]
     },
     {
+      "name": "scheduling",
+      "dockerfile": "apps/scheduling/Dockerfile",
+      "port": 3005,
+      "healthCheckPath": "/api/health",
+      "stopTimeout": 30,
+      "cpu": 256,
+      "memory": 512,
+      "minTasks": 2,
+      "needsInternet": false,
+      "env": [
+        {
+          "name": "DATABASE_URL",
+          "kind": "secret",
+          "required": true,
+          "value": "postgres://<user>:<password>@<rds-endpoint>:5432/coss?sslmode=verify-full&sslrootcert=/etc/ssl/certs/rds-global-bundle.pem",
+          "description": "RDS Postgres over verified TLS (the images ship the RDS CA bundle at that path)."
+        },
+        {
+          "name": "DATABASE_POOL_MAX",
+          "kind": "plain",
+          "required": false,
+          "value": "10",
+          "description": "pg pool size per task. Sum over all tasks must stay below RDS max_connections."
+        },
+        {
+          "name": "API_PUBLIC_URL",
+          "kind": "plain",
+          "required": true,
+          "value": "https://api.coss.com",
+          "description": "The API's public origin (OpenAPI, dashboard snippets and email tracking URLs)."
+        },
+        {
+          "name": "SENTRY_DSN",
+          "kind": "plain",
+          "required": false,
+          "value": "DSN of the `scheduling` Sentry project (Project settings → Client Keys)",
+          "description": "Unset: nothing is reported."
+        },
+        {
+          "name": "SENTRY_ENVIRONMENT",
+          "kind": "plain",
+          "required": false,
+          "value": "production (the stage's name)",
+          "description": "Sentry environment; defaults to NODE_ENV."
+        },
+        {
+          "name": "SENTRY_TRACES_SAMPLE_RATE",
+          "kind": "plain",
+          "required": false,
+          "value": "0.1",
+          "description": "Share of requests/jobs traced (0–1)."
+        },
+        {
+          "name": "NODE_ENV",
+          "kind": "image",
+          "required": true,
+          "value": "production",
+          "description": ""
+        },
+        {
+          "name": "PORT",
+          "kind": "image",
+          "required": true,
+          "value": "3005",
+          "description": ""
+        },
+        {
+          "name": "HOSTNAME",
+          "kind": "image",
+          "required": true,
+          "value": "0.0.0.0",
+          "description": ""
+        },
+        {
+          "name": "KEEP_ALIVE_TIMEOUT",
+          "kind": "image",
+          "required": true,
+          "value": "75000",
+          "description": ""
+        }
+      ]
+    },
+    {
       "name": "api",
       "dockerfile": "apps/api/Dockerfile",
       "port": 3001,
@@ -893,6 +989,45 @@
           "kind": "plain",
           "required": false,
           "description": "Sign's documents bucket (Terraform output sign_documents_bucket), with AWS_REGION. Unset: Sign is off in production."
+        },
+        {
+          "name": "SCHEDULING_DATA_KEYS",
+          "kind": "secret",
+          "required": false,
+          "value": "openssl rand -base64 32 (one per stage; losing it makes attendees' details unreadable). A comma-separated list while rotating: the first encrypts, every one decrypts",
+          "description": "Encrypts Scheduling's attendee details and answers. Same value for api and worker."
+        },
+        {
+          "name": "SCHEDULING_PUBLIC_URL",
+          "kind": "plain",
+          "required": false,
+          "description": "Origin of the hosted scheduling app (apps/scheduling, on a registrable domain of its own); session and manage links point there. Unset: sessions have no url, and emails have no manage link."
+        },
+        {
+          "name": "GOOGLE_CALENDAR_CLIENT_ID",
+          "kind": "plain",
+          "required": false,
+          "description": "Scheduling's Google OAuth app for calendar access, not sign-in's."
+        },
+        {
+          "name": "GOOGLE_CALENDAR_CLIENT_SECRET",
+          "kind": "secret",
+          "required": false,
+          "value": "From the Google Cloud console.",
+          "description": "Scheduling's Google OAuth app for calendar access."
+        },
+        {
+          "name": "MICROSOFT_CALENDAR_CLIENT_ID",
+          "kind": "plain",
+          "required": false,
+          "description": "Scheduling's Microsoft app for calendar access."
+        },
+        {
+          "name": "MICROSOFT_CALENDAR_CLIENT_SECRET",
+          "kind": "secret",
+          "required": false,
+          "value": "From the Microsoft Entra admin center.",
+          "description": "Scheduling's Microsoft app for calendar access."
         },
         {
           "name": "SIGN_PUBLIC_URL",
@@ -1249,6 +1384,45 @@
           "kind": "plain",
           "required": false,
           "description": "An RFC 3161 time-stamping authority: seals carry its timestamp (PAdES B-T), and the validation data of its chain (B-LT)."
+        },
+        {
+          "name": "SCHEDULING_DATA_KEYS",
+          "kind": "secret",
+          "required": false,
+          "value": "openssl rand -base64 32 (one per stage; losing it makes attendees' details unreadable). A comma-separated list while rotating: the first encrypts, every one decrypts",
+          "description": "Encrypts Scheduling's attendee details and answers. Same value for api and worker."
+        },
+        {
+          "name": "SCHEDULING_PUBLIC_URL",
+          "kind": "plain",
+          "required": false,
+          "description": "Origin of the hosted scheduling app (apps/scheduling, on a registrable domain of its own); session and manage links point there. Unset: sessions have no url, and emails have no manage link."
+        },
+        {
+          "name": "GOOGLE_CALENDAR_CLIENT_ID",
+          "kind": "plain",
+          "required": false,
+          "description": "Scheduling's Google OAuth app for calendar access, not sign-in's."
+        },
+        {
+          "name": "GOOGLE_CALENDAR_CLIENT_SECRET",
+          "kind": "secret",
+          "required": false,
+          "value": "From the Google Cloud console.",
+          "description": "Scheduling's Google OAuth app for calendar access."
+        },
+        {
+          "name": "MICROSOFT_CALENDAR_CLIENT_ID",
+          "kind": "plain",
+          "required": false,
+          "description": "Scheduling's Microsoft app for calendar access."
+        },
+        {
+          "name": "MICROSOFT_CALENDAR_CLIENT_SECRET",
+          "kind": "secret",
+          "required": false,
+          "value": "From the Microsoft Entra admin center.",
+          "description": "Scheduling's Microsoft app for calendar access."
         },
         {
           "name": "SIGN_PUBLIC_URL",
@@ -2169,6 +2343,29 @@
                 "HttpHeaderName": "X-Forms-Origin-Verify",
                 "Values": [
                   "<forms-origin-verify-secret>"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "priority": 150,
+          "targetGroup": "scheduling",
+          "conditions": [
+            {
+              "Field": "host-header",
+              "HostHeaderConfig": {
+                "Values": [
+                  "cossbook.com"
+                ]
+              }
+            },
+            {
+              "Field": "http-header",
+              "HttpHeaderConfig": {
+                "HttpHeaderName": "X-Scheduling-Origin-Verify",
+                "Values": [
+                  "<scheduling-origin-verify-secret>"
                 ]
               }
             }

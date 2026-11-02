@@ -72,6 +72,8 @@ export const orgStatements = {
   verify: ["send", "check", "read", "update"],
   // Forms (hosted form endpoints): forms, their submissions (read, release from spam, delete).
   form: ["create", "read", "update", "delete"],
+  // Scheduling: hosts, event types, bookings and settings.
+  scheduling: ["create", "read", "update", "delete"],
 } as const;
 
 export const orgAc = createAccessControl(orgStatements);
@@ -103,6 +105,7 @@ const fullCossAccess = {
   inbox: ["create", "read", "update", "delete", "send"],
   verify: ["send", "check", "read", "update"],
   form: ["create", "read", "update", "delete"],
+  scheduling: ["create", "read", "update", "delete"],
 } as const;
 
 const readOnlyCossAccess = {
@@ -131,6 +134,7 @@ const readOnlyCossAccess = {
   inbox: ["read"],
   verify: ["read"],
   form: ["read"],
+  scheduling: ["read"],
 } as const;
 
 export const orgRoles = {

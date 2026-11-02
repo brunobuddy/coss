@@ -1,7 +1,7 @@
 import type { PlanGate, UsageGate } from "@coss/billing/gate";
 import type { DomainDeps, EmailService, LinkKeyRing } from "@coss/email";
 import type { InboundRuntime } from "@coss/email/runtime";
-import { FakeFormFileStore, type FormFileStore } from "@coss/forms";
+import { FakeFormFileStore, type FormFileStore, hostedPageScreening } from "@coss/forms";
 import { type LogWriter, noopLogWriter } from "@coss/logs";
 import {
   type ClientIpResolver,
@@ -10,6 +10,7 @@ import {
   type RateLimiter,
 } from "@coss/ratelimit";
 import { DEVELOPMENT_HASH_KEY, type RiskDeps } from "@coss/risk";
+import type { SchedulingDeps } from "@coss/scheduling";
 import { createSignService, FakeDocumentStore, type SignService } from "@coss/sign";
 import type { SmsService } from "@coss/sms";
 import { createVerifyService, type SharedSmsSender, verifyCodeKey } from "@coss/verify";
@@ -29,6 +30,14 @@ import { traceContext } from "./middleware/trace-context.ts";
 import { withApiVersionDocs } from "./openapi-versions.ts";
 import { createFormEndpointRoutes, FORMS_PATH_PREFIX } from "./routes/forms-public.ts";
 import { createPreferenceRoutes } from "./routes/preferences.ts";
+import {
+  createSchedulingCallbackRoutes,
+  SCHEDULING_CALLBACK_PATH,
+} from "./routes/scheduling-callbacks.ts";
+import {
+  createSchedulingClientRoutes,
+  SCHEDULING_CLIENT_PATH,
+} from "./routes/scheduling-client.ts";
 import { createSmsCallbackRoutes, SMS_CALLBACK_PATH } from "./routes/sms-callbacks.ts";
 import { createTrackingRoutes, TRACKING_PATH_PREFIX } from "./routes/tracking.ts";
 import { createV1Router } from "./routes/v1.ts";
@@ -58,6 +67,12 @@ export type CreateAppOptions = {
     sharedSms?: SharedSmsSender | null;
     cossEmail?: CossVerifySender | null;
   };
+  /**
+   * Scheduling's attendee data key ring and lookup key (`SCHEDULING_DATA_KEYS`, `RISK_HASH_KEY`).
+   * Required, as a throwaway key would make every stored attendee unreadable; `null` turns the
+   * product off (`scheduling_unavailable`), as production does until it's configured.
+   */
+  scheduling: SchedulingDeps | null;
   /** Identity provider and DNS resolver for domain management. Defaults to the fake provider. */
   domainDeps?: DomainDeps;
   /**
@@ -213,7 +228,7 @@ export function createApp(opts: CreateAppOptions) {
   app.use((c, next) =>
     (c.req.path.startsWith(TRACKING_PATH_PREFIX)
       ? trackingHeaders
-      : c.req.path.startsWith(FORMS_PATH_PREFIX)
+      : c.req.path.startsWith(FORMS_PATH_PREFIX) || c.req.path.startsWith(SCHEDULING_CLIENT_PATH)
         ? formHeaders
         : strictHeaders)(c, next),
   );
@@ -246,6 +261,25 @@ export function createApp(opts: CreateAppOptions) {
     SMS_CALLBACK_PATH,
     createSmsCallbackRoutes({ keys: opts.webhookDeps.secretsKeys, publicUrl: opts.publicUrl }),
   );
+
+  // Google's and Microsoft's calendars: consent coming back, and push notifications.
+  if (opts.scheduling?.calendars) {
+    app.route(
+      SCHEDULING_CALLBACK_PATH,
+      createSchedulingCallbackRoutes({ calendars: opts.scheduling.calendars }),
+    );
+  }
+
+  // What browsers call with a session: the hosted pages, and customers' own UIs.
+  if (opts.scheduling) {
+    app.route(
+      SCHEDULING_CLIENT_PATH,
+      createSchedulingClientRoutes({
+        deps: { ...opts.scheduling, billing: opts.billing },
+        hostedUrl: opts.scheduling.publicUrl ?? null,
+      }),
+    );
+  }
 
   // Forms' public endpoint, where customers' sites post (its own host in production).
   if (formsUrl) {
@@ -288,6 +322,11 @@ export function createApp(opts: CreateAppOptions) {
       signUrl: opts.signUrl === undefined ? "http://localhost:3004" : opts.signUrl,
       formsUrl,
       formsStore,
+      scheduling: opts.scheduling && {
+        ...opts.scheduling,
+        billing: opts.billing,
+        screenSetup: opts.scheduling.screenSetup ?? hostedPageScreening(opts.riskDeps),
+      },
       riskDeps: opts.riskDeps,
       inbound,
       shutdownSignal: opts.shutdownSignal ?? new AbortController().signal,
@@ -401,6 +440,38 @@ export function openApiDocumentConfig(serverUrl: string) {
         name: "Form submissions",
         description:
           "What people submitted to a form, with uploaded files; release spam, or delete.",
+      },
+      {
+        name: "Scheduling hosts",
+        description: "The people who can be booked: your doctors, tutors or consultants.",
+      },
+      {
+        name: "Scheduling schedules",
+        description: "A host's weekly hours and date overrides, in their local time.",
+      },
+      {
+        name: "Scheduling event types",
+        description: "What can be booked: one-on-one, a pool, collective or a group session.",
+      },
+      {
+        name: "Scheduling availability",
+        description: "Which times can be booked, for one event type or across many hosts.",
+      },
+      {
+        name: "Scheduling bookings",
+        description: "Bookings and holds: create, reschedule, cancel, approve and erase.",
+      },
+      {
+        name: "Scheduling series",
+        description: "Recurring bookings, whose occurrences can each move on their own.",
+      },
+      {
+        name: "Scheduling calendars",
+        description: "Connect a host's calendars, and choose which of them count.",
+      },
+      {
+        name: "Scheduling settings",
+        description: "Embedding origins, branding, notifications and calendar failure behaviour.",
       },
       {
         name: "Receiving",

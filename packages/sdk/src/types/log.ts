@@ -13,7 +13,8 @@ export type LogSource =
   | "sms"
   | "sign"
   | "verify"
-  | "forms";
+  | "forms"
+  | "scheduling";
 
 /**
  * `error`: 5xx responses, bounces, complaints, failures. `warning`: 4xx responses, delays,

@@ -1,0 +1,54 @@
+---
+title: Hosts and availability
+description: The people who can be booked, and when.
+---
+
+A **host** is someone who can be booked, usually one of your users. Give each your own id as `uid`,
+and use it wherever an id goes.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.hosts.create({
+  uid: "doctor_482",
+  name: "Dr. Ana Reyes",
+  time_zone: "America/New_York",
+  attributes: { licensed_in: ["NY", "NJ"], language: "es" },
+});
+```
+
+An `email` is where their notifications go, not an identity: two hosts can share one, and a host
+needs none. `attributes` are what [pools](/docs/scheduling/pools-and-groups) choose hosts by.
+
+## Schedules
+
+A schedule is weekly hours in local time, with Sunday as day `0`. A host's first schedule is their
+default.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.schedules.create("doctor_482", {
+  rules: [
+    { days: [1, 2, 3, 4], start: "09:00", end: "17:00" },
+    { days: [5], start: "09:00", end: "12:00" },
+  ],
+  overrides: [
+    { date: "2027-12-24", ranges: [] },
+    { date: "2027-12-31", ranges: [{ start: "09:00", end: "11:00" }] },
+  ],
+});
+```
+
+An override replaces that whole day: no ranges means unavailable. Hours stay put across daylight
+saving, so 09:00 is 09:00 on both sides of a clock change. A range can't cross midnight: use two, and
+`24:00` for the end of a day.
+
+Changing a schedule only changes what's offered next. Existing bookings stay.
+
+## Hosts leaving
+
+A `disabled` host keeps their bookings but isn't offered. A host with bookings still to come can't be
+deleted (`host_has_live_bookings`): cancel them or disable the host.

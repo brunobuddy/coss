@@ -49,6 +49,7 @@ const nextConfig: NextConfig = {
     "@coss/sign",
     "@coss/verify",
     "@coss/forms",
+    "@coss/scheduling",
     "@coss/notifications",
     "@coss/email-layout",
   ],

@@ -1,0 +1,247 @@
+/** Microsoft 365 calendars over Graph, on an injected `fetch` so tests run on a fake. */
+import { type Interval, normalizeIntervals } from "../engine/intervals.ts";
+import {
+  type CalendarChannel,
+  type CalendarClient,
+  CalendarError,
+  type CalendarEventState,
+  type CalendarEventWrite,
+  type CalendarEventWritten,
+  errorFromStatus,
+  type HttpFetch,
+  type RemoteCalendar,
+} from "./client.ts";
+
+const API = "https://graph.microsoft.com/v1.0";
+const GRAPH_BATCH = 20;
+// Graph allows a calendar subscription at most about three days.
+const MAX_SUBSCRIPTION_SECONDS = 4200 * 60;
+
+type GraphDate = { dateTime: string; timeZone: string };
+type GraphEvent = {
+  id: string;
+  isCancelled?: boolean;
+  showAs?: string;
+  isAllDay?: boolean;
+  start: GraphDate;
+  end: GraphDate;
+  onlineMeeting?: { joinUrl?: string } | null;
+};
+
+// We ask for UTC with `Prefer`, so naive timestamps are UTC.
+function instantOf(date: GraphDate): number {
+  const hasZone = /(Z|[+-]\d\d:\d\d)$/.test(date.dateTime);
+  return Date.parse(hasZone ? date.dateTime : `${date.dateTime}Z`);
+}
+
+function toBody(event: CalendarEventWrite) {
+  return {
+    subject: event.title,
+    sensitivity: "private",
+    showAs: "busy",
+    responseRequested: false,
+    start: { dateTime: new Date(event.startMs).toISOString(), timeZone: "UTC" },
+    end: { dateTime: new Date(event.endMs).toISOString(), timeZone: "UTC" },
+    ...(event.location ? { location: { displayName: event.location } } : {}),
+    ...(event.conference === "microsoft_teams"
+      ? { isOnlineMeeting: true, onlineMeetingProvider: "teamsForBusiness" }
+      : {}),
+  };
+}
+
+function written(event: GraphEvent): CalendarEventWritten {
+  return { providerEventId: event.id, meetingUrl: event.onlineMeeting?.joinUrl ?? null };
+}
+
+const UTC_PREFER = { Prefer: 'outlook.timezone="UTC"' };
+
+export function microsoftCalendarClient(input: {
+  accessToken: string;
+  fetcher: HttpFetch;
+}): CalendarClient {
+  const { accessToken, fetcher } = input;
+
+  const call = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
+    const url = path.startsWith("http") ? path : `${API}${path}`;
+    const res = await fetcher(url, {
+      ...init,
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        ...(init.body ? { "content-type": "application/json" } : {}),
+        ...init.headers,
+      },
+    });
+    if (res.status === 204) return undefined as T;
+    if (!res.ok) {
+      const code = await res
+        .json()
+        .then((body: { error?: { code?: string } }) => body.error?.code)
+        .catch(() => undefined);
+      // A revoked or suspended account comes back as 403 with one of these.
+      if (code === "InvalidAuthenticationToken" || code === "ErrorAccessDenied") {
+        throw new CalendarError("auth", code, "The calendar refused our access.");
+      }
+      throw errorFromStatus(res.status, code ?? "graph_error", res.headers.get("retry-after"));
+    }
+    return (await res.json()) as T;
+  };
+
+  const encode = encodeURIComponent;
+
+  return {
+    async listCalendars(): Promise<RemoteCalendar[]> {
+      const calendars: RemoteCalendar[] = [];
+      let next: string | undefined =
+        "/me/calendars?$select=id,name,isDefaultCalendar,canEdit&$top=100";
+      while (next) {
+        const page: {
+          value?: { id: string; name?: string; isDefaultCalendar?: boolean; canEdit?: boolean }[];
+          "@odata.nextLink"?: string;
+        } = await call(next);
+        for (const item of page.value ?? []) {
+          calendars.push({
+            externalId: item.id,
+            name: item.name ?? null,
+            primary: item.isDefaultCalendar === true,
+            writable: item.canEdit !== false,
+          });
+        }
+        next = page["@odata.nextLink"];
+      }
+      return calendars;
+    },
+
+    async fetchBusy({ calendarIds, fromMs, toMs }) {
+      const from = encode(new Date(fromMs).toISOString());
+      const to = encode(new Date(toMs).toISOString());
+      // `$select` is what keeps titles out: Graph has no narrower read scope.
+      const query = `?startDateTime=${from}&endDateTime=${to}&$select=showAs,start,end,isCancelled&$top=999`;
+      const result: Record<string, Interval[]> = {};
+
+      const collect = (events: GraphEvent[], into: Interval[]) => {
+        for (const event of events) {
+          if (event.isCancelled || event.showAs === "free") continue;
+          into.push({ startMs: instantOf(event.start), endMs: instantOf(event.end) });
+        }
+      };
+
+      for (let index = 0; index < calendarIds.length; index += GRAPH_BATCH) {
+        const batch = calendarIds.slice(index, index + GRAPH_BATCH);
+        const response = await call<{
+          responses?: {
+            id: string;
+            status: number;
+            body?: { value?: GraphEvent[]; "@odata.nextLink"?: string; error?: { code?: string } };
+          }[];
+        }>("/$batch", {
+          method: "POST",
+          body: JSON.stringify({
+            requests: batch.map((calendarId, position) => ({
+              id: String(position),
+              method: "GET",
+              url: `/me/calendars/${calendarId}/calendarView${query}`,
+              headers: UTC_PREFER,
+            })),
+          }),
+        });
+        if (!response.responses) {
+          throw new CalendarError("transient", "no_responses", "Graph returned no responses.");
+        }
+        for (const item of response.responses) {
+          const id = batch[Number(item.id)];
+          // Left out, not empty: a failure must not read as free.
+          if (!id || item.status !== 200 || !item.body) continue;
+          const intervals: Interval[] = [];
+          collect(item.body.value ?? [], intervals);
+          let next = item.body["@odata.nextLink"];
+          let failed = false;
+          while (next) {
+            try {
+              const page: { value?: GraphEvent[]; "@odata.nextLink"?: string } = await call(next, {
+                headers: UTC_PREFER,
+              });
+              collect(page.value ?? [], intervals);
+              next = page["@odata.nextLink"];
+            } catch {
+              failed = true;
+              break;
+            }
+          }
+          if (!failed) result[id] = normalizeIntervals(intervals);
+        }
+      }
+      return result;
+    },
+
+    async createEvent(calendarId, event) {
+      return written(
+        await call<GraphEvent>(`/me/calendars/${calendarId}/events`, {
+          method: "POST",
+          // `transactionId` is what makes a retried create return the first event.
+          body: JSON.stringify({ ...toBody(event), transactionId: event.key }),
+        }),
+      );
+    },
+
+    async updateEvent(_calendarId, providerEventId, event) {
+      return written(
+        await call<GraphEvent>(`/me/events/${encode(providerEventId)}`, {
+          method: "PATCH",
+          body: JSON.stringify(toBody(event)),
+        }),
+      );
+    },
+
+    async deleteEvent(_calendarId, providerEventId) {
+      try {
+        await call(`/me/events/${encode(providerEventId)}`, { method: "DELETE" });
+      } catch (error) {
+        if (error instanceof CalendarError && error.status === 404) return;
+        throw error;
+      }
+    },
+
+    async getEvent(_calendarId, providerEventId): Promise<CalendarEventState | null> {
+      try {
+        const event = await call<GraphEvent>(
+          `/me/events/${encode(providerEventId)}?$select=start,end,isCancelled`,
+          { headers: UTC_PREFER },
+        );
+        if (event.isCancelled) return { state: "deleted" };
+        return {
+          state: "present",
+          startMs: instantOf(event.start),
+          endMs: instantOf(event.end),
+        };
+      } catch (error) {
+        if (error instanceof CalendarError && error.status === 404) {
+          return { state: "deleted" };
+        }
+        throw error;
+      }
+    },
+
+    async subscribe({ calendarId, webhookUrl, token, ttlSeconds }): Promise<CalendarChannel> {
+      const seconds = Math.min(ttlSeconds, MAX_SUBSCRIPTION_SECONDS);
+      const created = await call<{ id: string; expirationDateTime?: string }>("/subscriptions", {
+        method: "POST",
+        body: JSON.stringify({
+          changeType: "created,updated,deleted",
+          notificationUrl: webhookUrl,
+          resource: `/me/calendars/${calendarId}/events`,
+          expirationDateTime: new Date(Date.now() + seconds * 1000).toISOString(),
+          clientState: token,
+        }),
+      });
+      return {
+        channelId: created.id,
+        resourceId: null,
+        expiresAtMs: created.expirationDateTime ? Date.parse(created.expirationDateTime) : null,
+      };
+    },
+
+    async unsubscribe({ channelId }) {
+      await call(`/subscriptions/${encode(channelId)}`, { method: "DELETE" });
+    },
+  };
+}

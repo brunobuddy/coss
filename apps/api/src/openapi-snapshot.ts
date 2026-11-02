@@ -37,6 +37,10 @@ export function renderOpenApiSnapshot(): string {
     }),
     webhookDeps: { secretsKeys: secretsKeyRing([Buffer.alloc(32)]), allowInsecureUrls: false },
     links: { keys: DEVELOPMENT_LINK_KEYS },
+    scheduling: {
+      dataKeys: secretsKeyRing([Buffer.alloc(32)]),
+      lookupKey: Buffer.alloc(32),
+    },
     // The development hash key and in-memory counters: no route runs.
     riskDeps: createRiskDeps(
       {},

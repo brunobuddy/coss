@@ -16,6 +16,11 @@ output "sign_certificate_validation_records" {
   value       = [for option in aws_acm_certificate.sign.domain_validation_options : { name = option.resource_record_name, value = option.resource_record_value }]
 }
 
+output "scheduling_certificate_validation_records" {
+  description = "CNAMEs to add (DNS only) in Scheduling's Cloudflare zone."
+  value       = [for option in aws_acm_certificate.scheduling.domain_validation_options : { name = option.resource_record_name, value = option.resource_record_value }]
+}
+
 output "forms_certificate_validation_records" {
   description = "CNAMEs to add (DNS only) in Forms' Cloudflare zone."
   value       = [for option in aws_acm_certificate.forms.domain_validation_options : { name = option.resource_record_name, value = option.resource_record_value }]
@@ -40,7 +45,7 @@ output "api_distribution" {
 }
 
 output "alb_dns_name" {
-  description = "Target of the proxied track.cosslinks.com, portal and Sign host records (Cloudflare)."
+  description = "Target of the proxied track.cosslinks.com, portal, Sign, Forms and Scheduling host records (Cloudflare)."
   value       = aws_lb.main.dns_name
 }
 

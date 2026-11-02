@@ -36,7 +36,7 @@ build() {
     return 0
   fi
   case "$service" in
-    web | site | portal | sign) release_arg="NEXT_DEPLOYMENT_ID=$TAG" ;;
+    web | site | portal | sign | scheduling) release_arg="NEXT_DEPLOYMENT_ID=$TAG" ;;
     *) release_arg="SENTRY_RELEASE=$TAG" ;;
   esac
   # Only the dependency layers are reusable (the build layer depends on the commit), so the layer

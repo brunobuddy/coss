@@ -8,6 +8,7 @@ import {
 import { sentryEnvShape } from "@coss/observability/env";
 import { rateLimitEnvShape } from "@coss/ratelimit/env";
 import { riskDatasetEnvShape } from "@coss/risk/env";
+import { schedulingEnvShape } from "@coss/scheduling/env";
 import { screeningEnvShape } from "@coss/screening/env";
 import { signSealEnvShape, signStoreEnvShape } from "@coss/sign/env";
 import { smsEnvShape } from "@coss/sms/env";
@@ -67,6 +68,8 @@ export const env = createEnv({
             )
           : undefined,
       ),
+    // Scheduling: attendee data, and coss.com's OAuth apps for calendars.
+    ...schedulingEnvShape,
     // IPinfo Lite (ASN and country for risk assessments); without it those signals are missing.
     ...riskDatasetEnvShape,
     // Days of environment logs kept (@coss/logs); expired days are dropped hourly.

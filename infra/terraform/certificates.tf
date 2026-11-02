@@ -91,3 +91,17 @@ resource "aws_acm_certificate" "smtp" {
 resource "aws_acm_certificate_validation" "smtp" {
   certificate_arn = aws_acm_certificate.smtp.arn
 }
+
+# Scheduling's host (its own Cloudflare zone): validation CNAME from the
+# `scheduling_certificate_validation_records` output, added DNS-only in that zone.
+resource "aws_acm_certificate" "scheduling" {
+  domain_name       = var.scheduling_host
+  validation_method = "DNS"
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_acm_certificate_validation" "scheduling" {
+  certificate_arn = aws_acm_certificate.scheduling.arn
+}

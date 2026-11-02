@@ -207,7 +207,7 @@ resource "aws_security_group" "db" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "db" {
-  for_each                     = toset(["web", "portal", "sign", "api", "worker", "smtp"])
+  for_each                     = toset(["web", "portal", "sign", "scheduling", "api", "worker", "smtp"])
   security_group_id            = aws_security_group.db.id
   referenced_security_group_id = aws_security_group.task[each.key].id
   ip_protocol                  = "tcp"

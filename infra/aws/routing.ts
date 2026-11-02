@@ -6,7 +6,7 @@
  */
 import { SITE_ASSET_PREFIX, ZONE_ROUTES, type ZoneRoute } from "@coss/auth/slugs";
 
-export type TargetGroup = "web" | "site" | "portal" | "sign" | "api";
+export type TargetGroup = "web" | "site" | "portal" | "sign" | "scheduling" | "api";
 
 /**
  * CloudFront origins of the coss.com distribution: the ALB (every app in ECS), and one per
@@ -78,6 +78,14 @@ export const FORMS_ORIGIN_VERIFY_PLACEHOLDER = "<forms-origin-verify-secret>";
 /** The only paths the forms host serves. */
 export const FORMS_PATH_PATTERN = "/f/*";
 
+/**
+ * Scheduling's hosted pages (`apps/scheduling`) on a registrable domain of their own. The same
+ * self-serve Cloudflare account and setup as Sign's.
+ */
+export const SCHEDULING_HOST = "cossbook.com";
+export const SCHEDULING_ORIGIN_VERIFY_HEADER = "X-Scheduling-Origin-Verify";
+export const SCHEDULING_ORIGIN_VERIFY_PLACEHOLDER = "<scheduling-origin-verify-secret>";
+
 /** The API's open pixel and click redirect routes, the only paths custom hostnames serve. */
 export const TRACKING_PATH_PATTERN = "/t/*";
 
@@ -110,7 +118,7 @@ export type ListenerRule = {
  * api.coss.com goes first, so the coss.com rules don't need a host condition; then the tracking
  * routes on any host (customer tracking domains, from Cloudflare), the Hooks portal and Sign's
  * signing app (also from Cloudflare, each with its own header); then the dashboard (default zone)
- * and, after it, Forms' host (from Cloudflare, with its own header).
+ * and, after it, Forms' and Scheduling's hosts (from Cloudflare, each with its own header).
  */
 export function albListenerRules(): ListenerRule[] {
   const verified = {
@@ -200,6 +208,19 @@ export function albListenerRules(): ListenerRule[] {
         HttpHeaderConfig: {
           HttpHeaderName: FORMS_ORIGIN_VERIFY_HEADER,
           Values: [FORMS_ORIGIN_VERIFY_PLACEHOLDER],
+        },
+      },
+    ],
+  });
+  tail.push({
+    targetGroup: "scheduling",
+    conditions: [
+      { Field: "host-header", HostHeaderConfig: { Values: [SCHEDULING_HOST] } },
+      {
+        Field: "http-header",
+        HttpHeaderConfig: {
+          HttpHeaderName: SCHEDULING_ORIGIN_VERIFY_HEADER,
+          Values: [SCHEDULING_ORIGIN_VERIFY_PLACEHOLDER],
         },
       },
     ],

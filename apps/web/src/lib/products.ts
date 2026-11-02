@@ -20,6 +20,7 @@ export const PRODUCT_FIGURES: Record<ProductKey, { one: string; many: string; re
   verify: { one: "verification", many: "verifications", recent: true },
   sign: { one: "signature request", many: "signature requests", recent: true },
   forms: { one: "form", many: "forms", recent: false },
+  scheduling: { one: "booking", many: "bookings", recent: true },
   hooks: { one: "application", many: "applications", recent: false },
   risk: { one: "assessment", many: "assessments", recent: true },
 };

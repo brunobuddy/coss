@@ -39,6 +39,7 @@ export async function productActivityByEnvironment(
       verify: anyIn(schema.verifyRequest, schema.verifyRequest.environmentId),
       sign: anyIn(schema.signRequest, schema.signRequest.environmentId),
       forms: anyIn(schema.form, schema.form.environmentId),
+      scheduling: anyIn(schema.schedulingHost, schema.schedulingHost.environmentId),
       hooks: anyIn(schema.hookApplication, schema.hookApplication.environmentId),
       risk: anyIn(schema.riskAssessment, schema.riskAssessment.environmentId),
     })
@@ -131,6 +132,7 @@ export async function productFigures(input: {
       verify: countIn(schema.verifyRequest, schema.verifyRequest, input),
       sign: countIn(schema.signRequest, schema.signRequest, input),
       forms: countIn(schema.form, schema.form, all),
+      scheduling: countIn(schema.schedulingBooking, schema.schedulingBooking, input),
       hooks: countIn(schema.hookApplication, schema.hookApplication, all),
       risk: countIn(schema.riskAssessment, schema.riskAssessment, input),
     })
@@ -154,6 +156,7 @@ const DAILY_TABLES: Record<ProductKey, DailyTable> = {
   verify: schema.verifyRequest,
   sign: schema.signRequest,
   forms: schema.formSubmission,
+  scheduling: schema.schedulingBooking,
   hooks: schema.hookMessage,
   risk: schema.riskAssessment,
 };

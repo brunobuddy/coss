@@ -30,6 +30,7 @@
     "@coss/reputation": "workspace:*",
     "@coss/retention": "workspace:*",
     "@coss/risk": "workspace:*",
+    "@coss/scheduling": "workspace:*",
     "@coss/screening": "workspace:*",
     "@coss/sign": "workspace:*",
     "@coss/sms": "workspace:*",

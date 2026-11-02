@@ -15,6 +15,7 @@ export const LOG_SOURCES = [
   "sign",
   "verify",
   "forms",
+  "scheduling",
 ] as const;
 export type LogSource = (typeof LOG_SOURCES)[number];
 

@@ -265,6 +265,8 @@ export const email = pgTable(
     // Internal sends whose body holds a secret (sign-in links in auth emails): `html`/`text` are
     // cleared when the email leaves `queued`/`scheduled`, like attachment content.
     discardBody: boolean("discard_body").notNull().default(false),
+    // Internal senders only (fixed templates whose variable text was screened at setup).
+    screeningExempt: boolean("screening_exempt").notNull().default(false),
     // The environment's content storage when the email was sent (`email_storage_settings`): when
     // false, the subject, body, headers, template variables and attachment filenames are cleared
     // once the email leaves `queued`/`scheduled` (`content_discarded_at` records when).
@@ -2513,6 +2515,7 @@ export const logSource = pgEnum("log_source", [
   "sign",
   "verify",
   "forms",
+  "scheduling",
 ]);
 export type LogSource = (typeof logSource.enumValues)[number];
 
@@ -2642,6 +2645,7 @@ export const logDrainSource = pgEnum("log_drain_source", [
   "sign",
   "verify",
   "forms",
+  "scheduling",
 ]);
 export type LogDrainSource = (typeof logDrainSource.enumValues)[number];
 

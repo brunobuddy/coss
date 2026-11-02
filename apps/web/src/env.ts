@@ -5,6 +5,7 @@ import { hookEnvShape } from "@coss/hooks/env";
 import { sentryEnvShape } from "@coss/observability/env";
 import { rateLimitEnvShape } from "@coss/ratelimit/env";
 import { riskEnvShape } from "@coss/risk/env";
+import { schedulingEnvShape } from "@coss/scheduling/env";
 import { screeningEnvShape } from "@coss/screening/env";
 import { signStoreEnvShape } from "@coss/sign/env";
 import { smsEnvShape } from "@coss/sms/env";
@@ -43,6 +44,9 @@ export const env = createEnv({
     ...emailEnvShape,
     ...rateLimitEnvShape,
     ...webhookEnvShape,
+    // Reads attendees' details on the bookings pages; session links go to the hosted app.
+    SCHEDULING_DATA_KEYS: schedulingEnvShape.SCHEDULING_DATA_KEYS,
+    SCHEDULING_PUBLIC_URL: schedulingEnvShape.SCHEDULING_PUBLIC_URL,
     // Where the Hooks portal is served ("Open portal" links).
     ...hookEnvShape,
     // Sign: where signing and builder links point, and its documents (S3, with AWS_REGION).

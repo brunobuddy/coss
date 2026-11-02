@@ -1,0 +1,40 @@
+---
+title: Privacy
+description: What's stored about attendees, for how long, and what to know about health data.
+---
+
+## What's stored
+
+- **From calendars:** when they're busy. No titles, attendees or descriptions.
+- **About attendees:** only what you send. A booking needs just a `time_zone`: without a name or email, an
+  attendee simply isn't emailed. Contact details and answers are encrypted, and a `uid` of your own lets you
+  find and erase someone.
+- **In logs and webhooks:** ids, times and statuses. Request bodies of bookings aren't logged.
+
+## How long
+
+<RetentionTable />
+
+Erase someone sooner with their `uid`:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.attendees.erase("patient_77");
+```
+
+Coss.com isn't a system of record. If you must keep a booking's details for longer, such as a clinical
+record, keep them in your own systems.
+
+## Health data
+
+<Callout type="warn">
+Our [Terms](/legal/terms) don't allow protected health information without a written agreement, and we
+don't yet offer a Business Associate Agreement. A doctor, a patient and a time can be health data on their own,
+so please talk to us before using Scheduling for patients.
+</Callout>
+
+Scheduling is built so it can hold that data safely, and you can reduce what it holds today: use opaque `uid`s
+rather than names, avoid sensitive `questions` and `metadata`, turn off emails you'd rather send yourself, and
+choose neutral event type titles, since a title like "Oncology follow-up" appears in emails.

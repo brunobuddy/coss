@@ -332,6 +332,20 @@ coss forms submissions form_01kd2m8n3p4q5r6s7t8v9w0x1y --status held
   (`held` is Risk's review queue), `--limit` caps them. Values are what someone typed: read them
   with `--json` or `coss api forms/<form>/submissions/<id>`.
 
+## Scheduling
+
+See the environment's [hosts and bookings](/docs/scheduling):
+
+```sh
+coss scheduling hosts
+coss scheduling bookings --host doctor_482 --status confirmed
+```
+
+- `coss scheduling hosts` prints each host's id, your `uid`, name, time zone and status (`--limit`).
+- `coss scheduling bookings` lists bookings, newest first; `--host` and
+  `--status held|pending_approval|confirmed|cancelled|declined` narrow them, `--limit` caps them.
+  `--json` prints attendees' details, which `coss scheduling bookings` otherwise leaves out.
+
 ## Receive emails
 
 ```sh

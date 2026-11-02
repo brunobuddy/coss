@@ -7,6 +7,7 @@ export default defineConfig({
     "src/index.ts",
     "src/device.ts",
     "src/sign.ts",
+    "src/scheduling.ts",
     "src/forms.ts",
     "src/diagnose.ts",
     "src/nodemailer.ts",

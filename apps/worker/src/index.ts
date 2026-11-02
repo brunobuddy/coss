@@ -1,3 +1,4 @@
+import { schedulingCalendarAppsFromEnv, schedulingDataKeysFromEnv } from "@coss/scheduling/runtime";
 /**
  * Background worker: dispatches queued emails, delivers webhooks, re-checks domains, recovers
  * lost or interrupted sends, sends account and reputation emails and (with `EMAIL_PROVIDER=ses`)
@@ -61,6 +62,7 @@ import { hookThrottle } from "./hooks-throttle.ts";
 import { dmarcReportQuota, inboundQuota, type SesInboundDeps } from "./inbound.ts";
 import { startJobs, WORKER_LOOP_NAMES } from "./jobs.ts";
 import { monitoredDispatch } from "./monitoring.ts";
+import { schedulingNotifier } from "./scheduling-notifier.ts";
 import { createShutdown } from "./shutdown.ts";
 import { addressOf, signMailer } from "./sign-mailer.ts";
 import { createSqsApi } from "./sqs.ts";
@@ -263,6 +265,11 @@ const signNotifications =
       }
     : null;
 
+const schedulingDataKeys = schedulingDataKeysFromEnv({
+  SCHEDULING_DATA_KEYS: env.SCHEDULING_DATA_KEYS,
+  NODE_ENV: process.env.NODE_ENV,
+});
+
 // Forms: files of deleted and purged submissions, and organization deletion; notifications,
 // contacts and verification emails through the email product (form-mailer.ts, form-contacts.ts).
 const formsStore = formsStoreFromEnv(env);
@@ -356,6 +363,27 @@ const loops = startJobs({
   signStore,
   formsStore,
   formDeliveries,
+  schedulingNotifications: schedulingDataKeys && {
+    dataKeys: schedulingDataKeys,
+    publicUrl: env.SCHEDULING_PUBLIC_URL ?? null,
+    notifier: schedulingNotifier({
+      service: emailService,
+      sms: smsService,
+      limiter: rateLimits.limiter,
+      fallback:
+        systemEnvironment && env.NOTIFICATIONS_FROM
+          ? { environment: systemEnvironment, address: addressOf(env.NOTIFICATIONS_FROM) }
+          : null,
+    }),
+  },
+  scheduling: schedulingDataKeys && {
+    dataKeys: schedulingDataKeys,
+    calendars: {
+      secretsKeys,
+      apps: schedulingCalendarAppsFromEnv(env),
+      publicUrl: env.API_PUBLIC_URL ?? "http://localhost:3001",
+    },
+  },
   webhooks: { secretsKeys, send },
   migrations: {
     secretsKeys,

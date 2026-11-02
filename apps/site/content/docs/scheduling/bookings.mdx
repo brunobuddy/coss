@@ -1,0 +1,95 @@
+---
+title: Bookings
+description: Book, hold, approve, move and cancel.
+---
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+const { data: booking, error } = await coss.scheduling.bookings.create({
+  event_type: eventTypeId,
+  start: "2027-01-04T15:00:00Z",
+  attendee: { uid: "patient_77", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" },
+});
+if (error?.code === "slot_unavailable") {
+  // Someone else got there first: show the slots again.
+}
+```
+
+The SDK retries safely: every attempt carries the same `Idempotency-Key`, so a lost response can't
+book twice. A refused request keeps no key.
+
+## Taking payment first
+
+Hold the slot, charge the customer, then confirm. A hold isn't charged and tells nobody, and confirming
+one always succeeds before it expires.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+const { data: hold } = await coss.scheduling.holds.create({
+  event_type: eventTypeId,
+  start: "2027-01-04T15:00:00Z",
+  attendee: { uid: "patient_77", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" },
+});
+// hold?.hold_expires_at: ten minutes by default (the event type's hold_ttl_seconds).
+
+// ...take the payment, then:
+await coss.scheduling.holds.confirm(hold!.id);
+```
+
+After a hold expires, confirming answers `hold_expired`, or books anyway with `if_still_free` if nobody
+else took the slot. `coss.scheduling.holds.release` gives a slot back early.
+
+## Approval
+
+An event type with `requires_approval` makes each booking `pending_approval`. The time stays blocked
+until `approve`, `decline`, or the deadline (`approval_ttl_minutes`), which declines it. Nothing's
+charged or added to a calendar until it's approved.
+
+## Questions
+
+An event type can ask `questions`, answered in `answers`. Answers are encrypted, and only come back
+when you retrieve one booking: never in lists, webhooks, logs, emails or calendars. See
+[Privacy](/docs/scheduling/privacy) before asking anything sensitive.
+
+## Rescheduling and cancelling
+
+`reschedule` keeps the booking's id, and its old time stays booked unless the new one's free. Your API
+key can always do both. Attendees using a [manage link](/docs/scheduling/embedding) are held to the event
+type's `cancel_notice_minutes` and `reschedule_notice_minutes`.
+
+## Recurring series
+
+A series books up to 52 occurrences at the attendee's local time, so a weekly 10:00 stays 10:00 across a
+clock change. Each is an ordinary booking that can move on its own, and a pool keeps one host throughout.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+const params = {
+  event_type: eventTypeId,
+  start: "2027-01-04T15:00:00Z",
+  attendee: { uid: "patient_77", time_zone: "America/New_York" },
+  recurrence: { frequency: "weekly" as const, count: 12 },
+  on_conflict: "skip" as const,
+};
+
+const { data: preview } = await coss.scheduling.series.preview(params);
+const { data: series } = await coss.scheduling.series.create(params);
+// series?.conflicts lists any occurrence that wasn't free.
+```
+
+With `on_conflict: "reject"`, the default, one taken occurrence books nothing.
+
+## Webhooks
+
+Bookings send `scheduling.booking.confirmed`, `.pending_approval`, `.rescheduled`, `.cancelled`,
+`.declined`, `.no_show`, `.external_conflict`, `.calendar_write_failed` and `.location_ready`. They carry
+ids, times and statuses only. Retrieve the booking for anything about the person.

@@ -376,7 +376,8 @@ export type LogSource =
   | "sms"
   | "sign"
   | "verify"
-  | "forms";
+  | "forms"
+  | "scheduling";
 export type LogLevel = "info" | "warning" | "error";
 export type LogRange = "1h" | "24h" | "7d";
 
@@ -730,6 +731,7 @@ export type LogDrainSource =
   | "sign"
   | "verify"
   | "forms"
+  | "scheduling"
   | "audit";
 
 export type LogDrain = {

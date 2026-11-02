@@ -84,10 +84,14 @@ export const RETENTION_DAYS = {
   formSubmissions: 90,
   /** Form submissions flagged as spam, held, or never confirmed by the submitter. */
   formSpam: 14,
+  /** Attendees' details and answers on a booking, counted from when the booking ended. */
+  schedulingPersonalData: 90,
+  /** What's left of a booking once redacted (time, host, status), counted from when it ended. */
+  schedulingBookings: 395,
 } as const satisfies Record<string, number>;
 
 export type RetentionPeriod =
-  | { days: number; after: "creation" | "expiry" }
+  | { days: number; after: "creation" | "expiry" | "booking_end" }
   | { until: "sent" | "deleted" | "closed" };
 
 export type RetentionRule = {
@@ -373,6 +377,20 @@ export const RETENTION_POLICY: readonly RetentionRule[] = [
     period: { days: RETENTION_DAYS.formSpam, after: "creation" },
   },
   {
+    id: "scheduling_personal_data",
+    label: "Booking attendee details",
+    description:
+      "The attendee's name, email address and phone number, their answers to booking questions and the booking's metadata. You can also erase an attendee right away.",
+    period: { days: RETENTION_DAYS.schedulingPersonalData, after: "booking_end" },
+  },
+  {
+    id: "scheduling_bookings",
+    label: "Bookings",
+    description:
+      "A booking's time, host, event type, status and history, without its attendee's details. Calendars contribute only busy times, which are replaced as calendars change and deleted when a calendar is disconnected.",
+    period: { days: RETENTION_DAYS.schedulingBookings, after: "booking_end" },
+  },
+  {
     id: "migrations",
     label: "Imports from other providers",
     description: `Reports of imports from Resend, SendGrid or Postmark: what was found, what was imported and what needs attention. The provider's API key is deleted as soon as an import finishes or is canceled, and an import that is never started is deleted after ${formatRetentionDays(RETENTION_DAYS.migrationDrafts)}. What it imported is kept like anything you create yourself.`,
@@ -382,7 +400,7 @@ export const RETENTION_POLICY: readonly RetentionRule[] = [
     id: "account",
     label: "Account and configuration",
     description:
-      "Users, organizations, projects, environments, API keys, domains, SMS phone numbers and carrier registrations (with the business details they were registered with), email templates (with every published version), webhook endpoints, log drains, Hooks applications, event types and endpoints, risk allow and block lists, forms, contact properties, audiences, segments, topics, settings, and billing details (plan, contracts and credits). Items you delete (a key, a domain, a template, an endpoint, a drain, an application) are removed right away.",
+      "Users, organizations, projects, environments, API keys, domains, SMS phone numbers and carrier registrations (with the business details they were registered with), email templates (with every published version), webhook endpoints, log drains, Hooks applications, event types and endpoints, risk allow and block lists, forms, scheduling hosts, schedules, event types and connected calendars, contact properties, audiences, segments, topics, settings, and billing details (plan, contracts and credits). Items you delete (a key, a domain, a template, an endpoint, a drain, an application) are removed right away.",
     period: { until: "closed" },
   },
 ];
@@ -406,5 +424,6 @@ export function formatRetentionPeriod(period: RetentionPeriod): string {
     return period.until === "deleted" ? "Until you delete it" : "While your account exists";
   }
   const duration = formatRetentionDays(period.days);
+  if (period.after === "booking_end") return `${duration} after the booking ends`;
   return period.after === "expiry" ? `${duration} after expiry` : duration;
 }

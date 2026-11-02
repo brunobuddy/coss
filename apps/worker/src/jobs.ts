@@ -64,6 +64,17 @@ import {
 } from "@coss/reputation";
 import { RETENTION_DAYS } from "@coss/retention";
 import { refreshDueDatasets } from "@coss/risk";
+import {
+  checkHostEditedEvents,
+  expireDueBookings,
+  type NotificationDeps,
+  releaseOrganizationCalendars,
+  renewDueCalendarChannels,
+  runDueCalendarSyncs,
+  runDueCalendarWrites,
+  runDueSchedulingNotifications,
+  type SchedulingWorkerDeps,
+} from "@coss/scheduling";
 import { contentScreeningCheck } from "@coss/screening";
 import {
   type DocumentStore,
@@ -124,6 +135,7 @@ const DELETION_BATCH = 5;
 const LOGO_BATCH = 5;
 const RETENTION_BATCH = 1000;
 const BILLING_BATCH = 20;
+const SCHEDULING_BATCH = 50;
 const SIGN_COMPLETION_BATCH = 5;
 const SIGN_NOTIFICATION_BATCH = 50;
 const SIGN_CLEANUP_BATCH = 500;
@@ -174,6 +186,10 @@ export type WorkerDeps = {
   signCompletion?: SignCompletionDeps | null;
   /** Sign's document store: an organization's objects go when it is deleted. */
   signStore?: DocumentStore | null;
+  /** Scheduling's attendee data keys, and calendars; `null`: its loops are off. */
+  scheduling?: SchedulingWorkerDeps | null;
+  /** Scheduling's emails and texts; `null`: held. */
+  schedulingNotifications?: NotificationDeps | null;
   /** Forms' file store: deletions of removed submissions' files, and organization deletion. */
   formsStore?: FormFileStore | null;
   /** Forms' notifications, contacts and verification emails; `null`: off (no forms host yet). */
@@ -217,6 +233,11 @@ export type WorkerDeps = {
  * configuration.
  */
 export const WORKER_LOOP_NAMES = [
+  "scheduling-expiry",
+  "scheduling-notifications",
+  "scheduling-calendar-sync",
+  "scheduling-calendar-writes",
+  "scheduling-calendar-channels",
   "email-dispatch",
   "email-dispatch-marketing",
   "webhooks",
@@ -467,6 +488,14 @@ export function startJobs(deps: WorkerDeps): Loop[] {
                 await assertLease();
                 await deps.formsStore.deleteOrganization(organizationId);
               }
+              // Calendar channels stop, and coss.com's access to hosts' calendars is revoked.
+              if (deps.scheduling?.calendars) {
+                await releaseOrganizationCalendars(
+                  organizationId,
+                  deps.scheduling.calendars,
+                  assertLease,
+                );
+              }
               // Numbers stop sending and the Twilio subaccount is closed.
               await releaseOrganizationSmsResources(organizationId, deps.sms.senders, assertLease);
               // The running month is invoiced (once); the invoice outlives the organization.
@@ -670,6 +699,58 @@ export function startJobs(deps: WorkerDeps): Loop[] {
           )) === NOTIFICATION_BATCH,
       }),
     );
+  }
+  const scheduling = deps.scheduling;
+  if (scheduling) {
+    loops.push(
+      start({
+        // Tidies up and tells customers: an expired hold blocks nobody even if this never ran.
+        name: "scheduling-expiry",
+        intervalMs: 30_000,
+        run: async () => (await expireDueBookings(scheduling)) === SCHEDULING_BATCH,
+      }),
+    );
+    const notifications = deps.schedulingNotifications;
+    if (notifications) {
+      loops.push(
+        start({
+          name: "scheduling-notifications",
+          intervalMs: 5000,
+          run: async () =>
+            (await runDueSchedulingNotifications(notifications, { limit: SCHEDULING_BATCH })) ===
+            SCHEDULING_BATCH,
+        }),
+      );
+    }
+    const calendars = scheduling.calendars;
+    if (calendars) {
+      loops.push(
+        start({
+          // A push marks a calendar due straight away, so this keeps availability close to live.
+          name: "scheduling-calendar-sync",
+          intervalMs: 2000,
+          run: async () =>
+            (await runDueCalendarSyncs(calendars, { limit: SCHEDULING_BATCH })) ===
+            SCHEDULING_BATCH,
+        }),
+        start({
+          name: "scheduling-calendar-writes",
+          intervalMs: 2000,
+          run: async () =>
+            (await runDueCalendarWrites(calendars, { limit: SCHEDULING_BATCH })) ===
+            SCHEDULING_BATCH,
+        }),
+        start({
+          name: "scheduling-calendar-channels",
+          intervalMs: 5 * 60_000,
+          run: async () => {
+            await renewDueCalendarChannels(calendars, { limit: SCHEDULING_BATCH });
+            await checkHostEditedEvents(calendars, { limit: SCHEDULING_BATCH });
+            return false;
+          },
+        }),
+      );
+    }
   }
   const signCompletion = deps.signCompletion;
   if (signCompletion) {

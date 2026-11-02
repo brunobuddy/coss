@@ -62,6 +62,21 @@ export type {
   RiskUsersResource,
 } from "./resources/risk.ts";
 export type {
+  SchedulingAttendeesResource,
+  SchedulingAvailabilityResource,
+  SchedulingBookingsResource,
+  SchedulingCalendarsResource,
+  SchedulingEventTypesResource,
+  SchedulingHoldsResource,
+  SchedulingHostsResource,
+  SchedulingResource,
+  SchedulingSchedulesResource,
+  SchedulingSeriesResource,
+  SchedulingSessionsResource,
+  SchedulingSettingsResource,
+  SchedulingSlotsResource,
+} from "./resources/scheduling.ts";
+export type {
   SignDocumentsResource,
   SignRequestsResource,
   SignResource,
@@ -434,6 +449,7 @@ export type {
   UpdateRiskRuleParams,
   UpdateRiskSettingsParams,
 } from "./types/risk.ts";
+export type * from "./types/scheduling.ts";
 export type {
   AnchoredSignFieldInput,
   CreateSignBuilderSessionParams,
