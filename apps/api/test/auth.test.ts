@@ -1,5 +1,5 @@
 import { describe, expect, spyOn, test } from "bun:test";
-import { createRateLimiter, MemoryStore } from "@coss/ratelimit";
+import { memoryLimiter } from "@coss/ratelimit/testing";
 import { createEnvironmentApiKey } from "@coss/tenancy";
 import { suspendOrganization, unsuspendOrganization } from "@coss/tenancy/admin";
 import { createTestTenant, createTestUser } from "@coss/tenancy/testing";
@@ -190,7 +190,8 @@ describe("authentication", () => {
 describe("requireApiKey", () => {
   function appWith(authenticate: Authenticate) {
     const app = new Hono<AppEnv>();
-    const limiter = createRateLimiter({ store: new MemoryStore() });
+    // Frozen clock: a real one refills a token every 20 ms, so the 101st request could pass.
+    const limiter = memoryLimiter();
     app.use(requestId);
     app.use(async (c, next) => {
       c.set("rateLimiter", limiter);
