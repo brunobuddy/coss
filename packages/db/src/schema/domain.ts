@@ -2300,6 +2300,22 @@ export const contentScreeningVerdict = pgEnum("content_screening_verdict", [
 ]);
 
 /**
+ * Verified sending domains blocked by enforced content screening. No organization/domain FK:
+ * deleting an identity or account must not erase abuse memory. Support reinstatement clears it.
+ */
+export const emailSenderDomainBlock = pgTable(
+  "email_sender_domain_block",
+  {
+    domain: text("domain").primaryKey(),
+    organizationId: text("organization_id").notNull(),
+    groupId: text("group_id"),
+    subjectId: text("subject_id").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("email_sender_domain_block_organization_idx").on(t.organizationId)],
+);
+
+/**
  * One AI content screening of an outgoing message (`@coss/screening`). Product-agnostic: the
  * message is named by `product` + `subject_id` (no FK), and its content is never copied here.
  */

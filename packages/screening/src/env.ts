@@ -9,6 +9,8 @@ export type ScreeningClassifierName = (typeof SCREENING_CLASSIFIERS)[number];
 
 /** A Vercel AI Gateway decision model; any other decision model on the Gateway works too. */
 export const DEFAULT_SCREENING_MODEL = "typesafe-ai/jev";
+/** The unversioned Jev alias is text-only; this version advertises image input and ZDR. */
+export const DEFAULT_SCREENING_IMAGE_MODEL = "typesafe-ai/jev-1.14.0";
 
 export const screeningEnvShape = {
   SCREENING_CLASSIFIER: z.enum(SCREENING_CLASSIFIERS).default("off"),

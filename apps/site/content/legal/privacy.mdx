@@ -1,7 +1,7 @@
 ---
 title: Privacy Policy
 description: What personal data Cal.com collects for coss.com, why, who we share it with, and your rights.
-lastUpdated: 2026-10-30
+lastUpdated: 2026-11-02
 ---
 
 This Privacy Policy explains how **Cal.com, Inc.** ("**Cal.com**", "**we**", "**us**") handles personal data in
@@ -136,13 +136,15 @@ To protect the people who receive messages, and the deliverability of every cust
 of messages sent from **live** environments before delivery. Sandbox messages are never screened.
 
 - **What is screened:** a sample of messages per organization, more frequently for new senders. We never tell
-  customers which messages will be sampled.
-- **What the model sees:** the sender address, the subject, up to 8,000 characters of the message's readable text, and
-  the host and path of its links (query strings removed); for SMS, the sending number, the text and the host and path
-  of its links. It does not see recipient addresses or phone numbers, or attachments.
+  customers which messages will be sampled. Short image-based emails and flagged senders receive additional screening.
+- **What the model sees:** the sender address, the subject, up to 8,000 characters of the message's readable text,
+  images displayed in an email (including inline image attachments), and the host and path of its links (query strings
+  removed); for SMS, the sending number, the text and the host and path of its links. We do not include recipient
+  envelope lists or unrelated attachments; message text and images may themselves contain personal data.
 - **Who processes it:** the classification runs through Vercel's AI Gateway on AI models from its providers, with
   zero data retention: they may not keep the content or use it to train models.
-- **What we keep:** the verdict and its scores, never the message content.
+- **What we keep:** the verdict and its scores, never the message content in screening records. Restricted sender
+  domains may be retained after domain or account deletion to prevent repeated abuse, until reviewed and released.
 - **What can happen:** a message judged highly likely to be spam, phishing, malware or fraud is not delivered and its
   organization's live sending is suspended. Lower-confidence results can trigger a review of the organization's
   sending reputation.

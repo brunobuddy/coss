@@ -12,12 +12,20 @@ export const SCREENING_CATEGORIES = ["spam", "phishing", "malware", "fraud"] as 
 export type ScreeningCategory = (typeof SCREENING_CATEGORIES)[number];
 
 /**
- * What a classifier sees: plain text only, already truncated (`prepareText`). `text` is content
+ * What a classifier sees: bounded text and, for email, downloaded image bytes. `text` is content
  * people post on a customer's platform (a profile bio, a comment, a listing), classified for
  * coss.com Risk.
  */
 export type ScreeningContent =
-  | { kind: "email"; from: string; subject: string; text: string; links: string[] }
+  | {
+      kind: "email";
+      from: string;
+      subject: string;
+      text: string;
+      links: string[];
+      /** Downloaded by the product with SSRF checks; never pass customer URLs to the model. */
+      images?: { data: Uint8Array; mediaType: string }[];
+    }
   | { kind: "sms"; from: string; body: string; links: string[] }
   | { kind: "text"; text: string; links: string[] };
 

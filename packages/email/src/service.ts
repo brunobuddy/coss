@@ -56,7 +56,12 @@ import {
   type SendEmailRequestOutput,
   uniqueRecipientCount,
 } from "./schemas.ts";
-import { emailScreeningContent } from "./screening.ts";
+import {
+  imageDominantEmail,
+  loadEmailScreeningContent,
+  recordScreeningDomainBlock,
+} from "./screening.ts";
+import type { ScreeningImageLoader } from "./screening-images.ts";
 import { type Skip, skippedRecipients } from "./send-eligibility.ts";
 import { resolveStoreContent } from "./storage-settings.ts";
 import { pauseSubaccount } from "./subaccount-reputation.ts";
@@ -423,6 +428,8 @@ export type EmailServiceOptions = {
    * `screenMessage` from `@coss/screening`). A `block` fails the email with the verdict's safe code.
    */
   screen?: (input: ScreenInput) => Promise<ScreenOutcome>;
+  /** Public, size-bounded image fetcher by default; injectable for network-free tests. */
+  screeningImages?: ScreeningImageLoader;
   /** Organizations whose mail must survive an unexpected screening-system failure. */
   screeningFailureAllowlist?: ReadonlySet<string>;
   /**
@@ -493,6 +500,25 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
       eq(email.status, "queued"),
       isNull(email.provider),
     );
+    if (!sandbox) {
+      try {
+        // A domain restriction or suspension may have arrived after acceptance. This also
+        // covers unsampled messages and broadcasts whose content was screened earlier.
+        await authorizeLiveSender({
+          provider: provider.name,
+          organizationId: row.organizationId,
+          from: row.from,
+          stream: row.stream,
+          subaccountId: row.subaccountId,
+        });
+      } catch (error) {
+        if (!(error instanceof EmailError)) throw error;
+        // The broadcast worker owns pausing and dropping these queued rows for Resume.
+        if (error.code === "marketing_paused" && row.broadcastId) return currentEmail(row);
+        if (error.code !== "billing_hold") await failUnclaimed(row, error);
+        return currentEmail(row);
+      }
+    }
     if (row.stream === "marketing") {
       if (!sandbox && (await isMarketingPaused(row.organizationId))) {
         // Paused since it was accepted. A broadcast's email is left to its worker, which pauses
@@ -620,13 +646,28 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         environmentId: row.environmentId,
         product: "email",
         subjectId: row.id,
-        content: () => emailScreeningContent(row),
+        content: (signal) => loadEmailScreeningContent(row, signal, opts.screeningImages),
+        force: imageDominantEmail(row),
+        onBlock: (tx, now) => recordScreeningDomainBlock(tx, row, now),
         retry: row.errorCode === SCREENING_UNAVAILABLE.code,
         // A sub-account is screened on its own: a block pauses it, never the organization.
         ...(subaccountId
           ? {
               group: {
                 id: subaccountId,
+                reinstatedAt: async (tx) => {
+                  const [group] = await tx
+                    .select({ reinstatedAt: schema.emailSubaccount.reinstatedAt })
+                    .from(schema.emailSubaccount)
+                    .where(
+                      and(
+                        eq(schema.emailSubaccount.id, subaccountId),
+                        eq(schema.emailSubaccount.organizationId, row.organizationId),
+                      ),
+                    )
+                    .for("update");
+                  return group?.reinstatedAt ?? null;
+                },
                 onBlock: (tx, block) =>
                   pauseSubaccount(tx, {
                     organizationId: row.organizationId,

@@ -462,3 +462,25 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   backing off) runs `releaseSubaccountEmailResources` (identities, domain rows, tenant) and deletes the row (cascading
   its suppressions); organization deletion releases sub-accounts' identities and tenants with the rest. A downgrade
   to a plan without sub-accounts is refused while live ones exist (`hasLiveSubaccounts`).
+
+- **Screening images and sender-domain memory** (`screening.ts`, `screening-images.ts`): short HTML
+  bodies (<200 visible body characters, excluding alt text and hidden padding) with images are always screened, even beyond
+  the normal sample. Sampled emails and broadcasts load image sources, CSS backgrounds, data images
+  and CID attachments (before attachment purging). Inspect every discovered image or hold the email;
+  never silently truncate: at most 16 images/animation frames, 2 MiB each, 8 MiB total.
+  Sharp validates raster metadata under a 16-megapixel cap, enlarges/pads small images to at least
+  512×512 for the pinned endpoint, and extracts every animation frame (or holds over-limit animations). Remote HTTP(S) fetches use
+  `publicAddressLookup`, check IP literals, forbid credentials and nonstandard ports, and follow no
+  redirects. Unsupported, unavailable or oversized images enter the existing screening-error retry path.
+  `recordScreeningDomainBlock` records an enforced block's verified sender domain in
+  `email_sender_domain_block` in the screening transaction. No domain/org FK: deletion or transfer
+  must not erase it. A sub-account can restrict only its own domain, never a shared platform domain.
+  `authorizeLiveSender` refuses that domain and descendants across organizations (`sending_paused`);
+  immediate queued sends now recheck live authorization at dispatch, as scheduled sends already do.
+  Org/sub-account reinstatement clears only its own restrictions. After deploying the schema, use
+  `scripts/backfill-screening-domains.ts` (dry-run; `--apply` to write) to seed still-active historical
+  org screening suspensions, including From domains whose identity has since been deleted.
+
+  The operator-only `scripts/release-screening-domain.ts --domain <name> --admin <user id> --note <reason>`
+  clears a restriction after a transfer or deletion of the source organization; it requires an active
+  platform admin and records `email.domain_screening_released` in the admin audit log.

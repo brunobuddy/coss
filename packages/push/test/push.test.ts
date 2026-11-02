@@ -437,6 +437,11 @@ describe("sending", () => {
     const tenant = await createTestTenant();
     const first = await createTestPushDevice({ userId: tenant.owner.id });
     await createTestPushDevice({ userId: tenant.owner.id });
+    // This test exercises lease fencing, not UUID order when registrations share a millisecond.
+    await db
+      .update(schema.pushDevice)
+      .set({ createdAt: new Date(Date.now() - 1000) })
+      .where(eq(schema.pushDevice.id, first.device.id));
     const endpoint = await disabledEndpoint(tenant);
     await enqueueEndpointDisabled(tenant, endpoint.id);
     const sender = new FakePushSender();

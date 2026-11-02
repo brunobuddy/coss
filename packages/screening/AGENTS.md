@@ -6,12 +6,12 @@ repository root.
 - **Content screening** (`packages/screening`, tables `content_screening` (ids `scr_`) + `content_screening_counter`):
   `screenMessage` runs in the worker for **live** messages only, inside `complete()` right before `provider.send` (after
   the claim, so the stale-claim sweep covers a crash) — the `screen` option of `createEmailService`, wired only by the
-  worker. A product passes `product` + `subjectId` + a lazy `content()` (plain text, `prepareText`/`prepareLinks`:
+  worker. A product passes `product` + `subjectId` + a lazy `content(signal)` (bounded text and optional image bytes, `prepareText`/`prepareLinks`:
   truncated to 8,000 chars, link hosts+paths without query strings); the screening package never imports a product, so
   SMS reuses it as is. Sampling (`ReputationPolicy.contentScreening`, per-org overrides in the admin `PolicyForm`): the
   first `alwaysFirst`, the `milestones`, then `sampleRate` at random — never make it fully predictable. The position
   comes from one `INSERT … ON CONFLICT … RETURNING new.seen, old.owed` (Postgres 18). Classifier errors/timeouts
-  (3 s) record an `error` verdict. Enforced screening **holds** that email: the claim is given back (`provider` NULL,
+  (10 s, shared by content preparation and classification) record an `error` verdict. Enforced screening **holds** that email: the claim is given back (`provider` NULL,
   `error_code = 'content_screening_unavailable'` as the marker) and it is dispatched again in
   `SCREENING_RETRY_DELAY_S`, its retry screened again at its old position (`retry`, never counted twice), until it is
   sent or the unclaimed sweep fails it `content_screening_unavailable` an hour after it was due (`UNCLAIMED_FAIL_MS`,
@@ -29,3 +29,22 @@ repository root.
   scores are admin-only (customers see `content_rejected` and the standing, never an oracle). The AI adapter asks one
   boolean question per category with `experimental_decide` (renamed from `experimental_evaluate`), passes the message
   as JSON state with "untrusted data" in every instruction, and always requests Gateway `zeroDataRetention`.
+
+- **Escalation**: any active enforced flag forces screening of every subsequent message in that
+  organization's scope (or group), across products, within the reputation window. The second distinct
+  subject scoring at least `REPEATED_FLAG_THRESHOLD` (0.90), while still below the configured block
+  threshold, is recorded as `blocked` and stopped immediately. The verdict transaction takes an advisory
+  lock per org/group before counting flags; concurrent flags cannot all pass as the first. Retries count
+  once; expired flags, shadow verdicts and pre-reinstatement flags do not count. Groups supply a transaction-aware `reinstatedAt` reader that locks their standing row; parent and sibling flags never affect them. System organizations never escalate.
+- **Email images**: the email product resolves image bytes before classification with public-address
+  checks, pinned DNS, no redirects, byte/count limits and the same abort signal. Jev's unversioned alias
+  is text-only; the AI adapter routes messages with image bytes to `DEFAULT_SCREENING_IMAGE_MODEL`
+  (`typesafe-ai/jev-1.14.0`, advertised as vision-capable in the live Gateway catalog). It sends JSON
+  state plus file parts, always with ZDR, never raw customer image URLs. Text-only screening keeps
+  `SCREENING_MODEL`. Images, generic alt text and unsubscribe footers are explicitly untrusted.
+  Products may supply `ScreenInput.onBlock(tx, now)` for abuse memory written in the verdict transaction;
+  it runs only for enforced blocks, including escalation, and never for system-organization flags.
+
+  Reinstatement is re-read under the verdict transaction's scope lock before escalation. Block hooks
+  run after the standing transition so their lock order matches reinstatement and backfill (standing,
+  then sender-domain memory).

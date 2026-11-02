@@ -368,7 +368,7 @@ export async function reinstateOrganization(input: {
   const event = await db.transaction(async (tx) => {
     const current = await getReputationStanding(input.organizationId, tx);
     if (current?.status !== "suspended") return null;
-    return applyTransition(tx, {
+    const moved = await applyTransition(tx, {
       organizationId: input.organizationId,
       from: "suspended",
       to: "good",
@@ -379,6 +379,17 @@ export async function reinstateOrganization(input: {
       metrics: metricsSnapshot(current.metrics),
       now: input.now,
     });
+    if (moved) {
+      await tx
+        .delete(schema.emailSenderDomainBlock)
+        .where(
+          and(
+            eq(schema.emailSenderDomainBlock.organizationId, input.organizationId),
+            isNull(schema.emailSenderDomainBlock.groupId),
+          ),
+        );
+    }
+    return moved;
   });
   if (!event) {
     throw new ReputationError("not_suspended", "This organization is not suspended.");
