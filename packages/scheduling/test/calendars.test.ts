@@ -367,7 +367,7 @@ describe("availability follows the calendar", () => {
   });
 
   test("a revoked token hides the host at once, alerts once, and last_known keeps them offered", async () => {
-    const { env, eventType, host, api, deps } = await synced();
+    const { env, eventType, host, api } = await synced();
     // The stored token expired, and refreshing is refused.
     const expired = calendarDeps(api, () => new Date(NOW.getTime() + 2 * 3_600_000));
     api.refreshFails = true;
