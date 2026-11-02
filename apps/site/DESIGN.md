@@ -41,11 +41,7 @@ There is one moment: the hero's blocks drop into their sockets one after another
 (`.assembly-seat` with a staggered delay, exponential ease-out, skipped when `prefers-reduced-motion`
 is set). Don't add entrance animations to other sections.
 
-The exception is `/crowd-opinionated-source-software`, a manifesto rather than a catalog: every topic has an
-illustration (`src/components/coss-landing/`, client islands on `motion`) that starts when it scrolls into view,
-loops gently, stays grayscale and holds its final frame under `prefers-reduced-motion`.
-
-Shipyard's page (`/shipyard`) is the other exception: its drawings (`src/components/shipyard/drawings.tsx`)
+Shipyard's page (`/shipyard`) is the exception: its drawings (`src/components/shipyard/drawings.tsx`)
 drop in part by part when they scroll into view, lift on hover, and carry Shipyard's one amber lamp; all of it
 stops under `prefers-reduced-motion`.
 

@@ -25,7 +25,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${SITE_URL}${COMPARE_ROUTE}/${c.slug}`,
       lastModified: c.checked,
     })),
-    { url: `${SITE_URL}/crowd-opinionated-source-software` },
     { url: `${SITE_URL}${SHIPYARD.path}` },
     ...shipyardSource.getPages().map((page) => ({ url: `${SITE_URL}${page.url}` })),
     { url: `${SITE_URL}${CALENDAR.path}` },

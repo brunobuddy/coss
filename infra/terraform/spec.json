@@ -1905,9 +1905,9 @@
               "Field": "path-pattern",
               "PathPatternConfig": {
                 "Values": [
-                  "/crowd-opinionated-source-software",
                   "/shipyard",
-                  "/shipyard/*"
+                  "/shipyard/*",
+                  "/kloq"
                 ]
               }
             },
@@ -1930,9 +1930,9 @@
               "Field": "path-pattern",
               "PathPatternConfig": {
                 "Values": [
-                  "/kloq",
                   "/kloq/*",
-                  "/docs"
+                  "/docs",
+                  "/docs/*"
                 ]
               }
             },
@@ -1955,9 +1955,9 @@
               "Field": "path-pattern",
               "PathPatternConfig": {
                 "Values": [
-                  "/docs/*",
                   "/legal",
-                  "/legal/*"
+                  "/legal/*",
+                  "/llms.txt"
                 ]
               }
             },
@@ -1980,9 +1980,9 @@
               "Field": "path-pattern",
               "PathPatternConfig": {
                 "Values": [
-                  "/llms.txt",
                   "/llms-full.txt",
-                  "/site-assets"
+                  "/site-assets",
+                  "/site-assets/*"
                 ]
               }
             },
@@ -2005,9 +2005,9 @@
               "Field": "path-pattern",
               "PathPatternConfig": {
                 "Values": [
-                  "/site-assets/*",
                   "/icon.svg",
-                  "/favicon.ico"
+                  "/favicon.ico",
+                  "/robots.txt"
                 ]
               }
             },
@@ -2030,9 +2030,9 @@
               "Field": "path-pattern",
               "PathPatternConfig": {
                 "Values": [
-                  "/robots.txt",
                   "/sitemap.xml",
-                  "/.well-known"
+                  "/.well-known",
+                  "/.well-known/*"
                 ]
               }
             },
@@ -2055,9 +2055,9 @@
               "Field": "path-pattern",
               "PathPatternConfig": {
                 "Values": [
-                  "/.well-known/*",
                   "/products",
-                  "/products/*"
+                  "/products/*",
+                  "/compare"
                 ]
               }
             },
@@ -2080,9 +2080,9 @@
               "Field": "path-pattern",
               "PathPatternConfig": {
                 "Values": [
-                  "/compare",
                   "/compare/*",
-                  "/solutions"
+                  "/solutions",
+                  "/solutions/*"
                 ]
               }
             },
@@ -2105,7 +2105,6 @@
               "Field": "path-pattern",
               "PathPatternConfig": {
                 "Values": [
-                  "/solutions/*",
                   "/opengraph-image"
                 ]
               }
@@ -2242,12 +2241,6 @@
             "origin": "alb",
             "cache": "origin",
             "reason": "site zone (/about)"
-          },
-          {
-            "pathPattern": "/crowd-opinionated-source-software",
-            "origin": "alb",
-            "cache": "origin",
-            "reason": "site zone (/crowd-opinionated-source-software)"
           },
           {
             "pathPattern": "/shipyard",
@@ -2438,7 +2431,6 @@
     "invalidateAfterDeploy": [
       "/pricing*",
       "/about*",
-      "/crowd-opinionated-source-software*",
       "/shipyard*",
       "/kloq*",
       "/docs*",

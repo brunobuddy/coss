@@ -31,7 +31,8 @@ test("the playground may call exactly the API servers of the OpenAPI document", 
   expect(apiOrigins({ dev: true })).toContain(DEV_API_ORIGIN);
 });
 
-test("frames only YouTube's privacy-enhanced player", () => {
+test("frames nothing", () => {
   const policy = directives(contentSecurityPolicy({ dev: false }));
-  expect(policy.get("frame-src")).toEqual(["https://www.youtube-nocookie.com"]);
+  expect(policy.get("frame-src")).toBeUndefined();
+  expect(policy.get("default-src")).toEqual(["'self'"]);
 });
