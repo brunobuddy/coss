@@ -125,6 +125,7 @@ plain_env = {
   scheduling = {
     DATABASE_POOL_MAX         = "5"
     API_PUBLIC_URL            = "https://api.coss.com"
+    SENTRY_DSN                = "https://5ec65d2d11dbe023040d38909af656b7@o4512237982711808.ingest.de.sentry.io/4512364862242896"
     SENTRY_ENVIRONMENT        = "production"
     SENTRY_TRACES_SAMPLE_RATE = "0.1"
   }
