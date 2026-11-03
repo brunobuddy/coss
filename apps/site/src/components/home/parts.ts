@@ -45,6 +45,7 @@ export const PRODUCTS: readonly Product[] = [
     id: "scheduling",
     name: "Scheduling",
     call: "coss.scheduling",
+    href: "/products/scheduling",
     summary: "Availability and bookings, from the team behind Cal.com.",
     features: [
       "Availability across calendars",

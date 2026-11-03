@@ -6,7 +6,7 @@ import { PRODUCT_GROUPS } from "@/lib/marks";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 
 const DESCRIPTION =
-  "Every coss.com product: email, inboxes for AI agents, SMS, one-time codes, e-signatures, forms, webhooks and risk checks, on one API key and one SDK.";
+  "Every coss.com product: email, inboxes for AI agents, SMS, one-time codes, e-signatures, forms, scheduling, webhooks and risk checks, on one API key and SDK.";
 
 export const metadata = pageMetadata({
   title: "Products: one API for email, SMS, inboxes, signatures and more · coss.com",

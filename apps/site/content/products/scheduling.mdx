@@ -1,0 +1,199 @@
+---
+title: Scheduling
+description: coss.com Scheduling is a booking API for platforms. Providers set hours and connect calendars, customers book in your app, and overlaps are refused.
+seoTitle: "Scheduling API for marketplaces and platforms · coss.com"
+headline: Bookings inside your product.
+call: coss.scheduling
+mark: scheduling
+docs: /docs/scheduling
+group: Messaging
+features:
+  - Double-booking refused by a database constraint
+  - Google, Microsoft and CalDAV calendars
+  - An embeddable booker and host portal
+  - Holds and approvals
+  - Pools, collective bookings and group sessions
+  - Recurring series
+  - Webhooks for bookings and calendars
+  - Confirmations and reminders by email and SMS
+related:
+  - email
+  - sms
+  - forms
+  - platform
+faq:
+  - question: How do I add scheduling to my app?
+    answer: Add each person who can be booked as a host with coss.scheduling.hosts.create(), give them a schedule, and create an event type. Your customers then book through the API, or in a booker you embed with mountBooker from coss/scheduling. Hosts set their hours and connect their calendars through your own UI or the host portal you embed with mountHostPortal.
+  - question: How does coss.com prevent double-booking?
+    answer: Every booking takes a claim on its host's time, buffers included, and a Postgres exclusion constraint refuses two claims of one host that overlap. That constraint is the enforcement, so two people clicking at once, a second tab or a retry can't both win. The one who loses gets slot_unavailable.
+  - question: Which calendars can hosts connect?
+    answer: Google and Microsoft through their consent screens, and CalDAV servers such as Apple's with an app-specific password. coss.com stores when each calendar is busy and adds bookings to the calendar the host chooses, as private events titled "Appointment" with no attendees. It stores no titles, descriptions or attendees of other events.
+  - question: What happens if a calendar can't be read?
+    answer: It never counts as free. By default, if access is lost the host stops being offered at once, you get a scheduling.calendar.needs_reauth webhook and the host gets an email with a link to reconnect. If a provider is having trouble, what's known keeps being used for up to seven hours, or twenty minutes for calendars without push notifications, then the host stops being offered until a read works.
+  - question: How do I take payment before a booking is confirmed?
+    answer: Hold the slot with coss.scheduling.holds.create(), charge the customer with your own payment provider, then confirm with coss.scheduling.holds.confirm(). A hold keeps the time for ten minutes by default, so nobody else can take it, and it tells nobody and isn't charged.
+  - question: Do I need to build a booking page?
+    answer: No. Your server creates a session for one event type, host or booking, and the page opens from its link or in an iframe in your app. If you'd rather build your own UI, the API and the browser client API do everything those pages do.
+  - question: What counts as a billable booking?
+    answer: One per confirmed booking, per occurrence of a series and per group session, however many people attend. Holds and pending approvals aren't charged, rescheduling is free and a cancelled booking stays charged. Sandbox environments are free, and the Free plan includes bookings every month. The pricing page has the rate.
+---
+
+<Section title="How it works" lede="For marketplaces and other platforms whose providers get booked: add them as hosts, and their customers book them in your app.">
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// On your server: a provider, their hours and what can be booked.
+await coss.scheduling.hosts.create({
+  uid: "tutor_482",
+  name: "Ana Reyes",
+  email: "ana@example.com",
+  time_zone: "America/New_York",
+});
+
+await coss.scheduling.schedules.create("tutor_482", {
+  rules: [{ days: [1, 2, 3, 4, 5], start: "09:00", end: "17:00" }],
+});
+
+const { data: eventType } = await coss.scheduling.eventTypes.create({
+  title: "Trial lesson",
+  duration_minutes: 30,
+  buffer_after_minutes: 10,
+  hosts: [{ host: "tutor_482" }],
+});
+
+// When a signed-in customer wants to book: a session for their browser.
+const { data: session } = await coss.scheduling.sessions.createForBooker({
+  event_type: eventType!.id,
+  attendee: { uid: "customer_77", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" },
+});
+// Hand session.url to the browser.
+```
+
+```ts twoslash
+import { mountBooker } from "coss/scheduling";
+declare const sessionUrl: string;
+declare const container: HTMLElement;
+// ---cut---
+// In the browser: the booker in an iframe on your own page.
+mountBooker({
+  url: sessionUrl,
+  container,
+  onEvent: (event) => {
+    if (event.type === "booked") console.log("Booked", event.booking_id);
+  },
+});
+```
+
+Hosts get the same treatment: `coss.scheduling.sessions.createForHost` and `mountHostPortal` put their hours, calendars and bookings on a page in your app. To book from your own UI, list times with `coss.scheduling.slots.list` and book with `coss.scheduling.bookings.create`. See the [Scheduling guide](/docs/scheduling) and the [API reference](/docs/api-reference/scheduling-bookings/create-scheduling-booking).
+
+</Section>
+
+<Section title="A slot can't be taken twice" lede="Double-booking is refused by the database, so it holds under races, retries and second tabs.">
+
+Every booking takes a claim on its host's time, with its buffers. A Postgres exclusion constraint, `scheduling_claim_no_overlap`, refuses any two claims of one host that overlap. It's the only enforcement: slot lists and re-checks just avoid asking a question it would refuse, so there's no gap between checking and writing for a booking to slip through.
+
+When two people go for one time, one gets the booking and the other gets `slot_unavailable`, and you show them the times again. The same claim backs holds, pending approvals, series and group sessions. Every attempt the SDK retries carries the same `Idempotency-Key`, so a lost response can't book twice.
+
+Events made outside coss.com are a different case. Something added to a host's calendar can still land on a booked time. The booking stands, coss.com never cancels on its own, and you get `scheduling.booking.external_conflict`.
+
+</Section>
+
+<Section title="From the team behind Cal.com" lede="Scheduling is a hard problem we've spent years on.">
+
+coss.com Scheduling is built by the team behind [Cal.com](https://cal.com), on the same scheduling technology that has processed tens of millions of bookings there. Time zones, availability and calendar connections have already met the real world, and you get them through one API key alongside the rest of coss.com.
+
+</Section>
+
+<Section title="Everything a booking needs" lede="Availability, calendars, the booking itself and telling people about it, on the key you already use for the rest of coss.com.">
+
+<Features>
+
+<Feature title="Calendars">
+Hosts connect Google, Microsoft or CalDAV calendars. Their busy times block slots, and bookings go on the calendar they choose. Changes arrive by push from Google and Microsoft, CalDAV is read every five minutes, and a calendar that can't be read never counts as free. See [calendars](/docs/scheduling/calendars).
+</Feature>
+
+<Feature title="An embeddable booker and host portal">
+`mountBooker` and `mountHostPortal` open coss.com's pages in an iframe in your app, under your brand name. Your API key stays on your server: a session is short-lived and reaches one thing, and only your allowed origins can embed it or call the client API. See [embedding](/docs/scheduling/embedding).
+</Feature>
+
+<Feature title="Your own UI, if you prefer">
+Every step is an API call, and a session's token also works from a browser against the client API. coss.com's own pages are built on that API, so nothing they do is out of your reach.
+</Feature>
+
+<Feature title="Holds and approvals">
+Hold a slot while you take payment with your own provider, then confirm it. Or set `requires_approval`: the time stays blocked until the host approves or declines, and a booking nobody answers is declined at its deadline. See [bookings](/docs/scheduling/bookings).
+</Feature>
+
+<Feature title="Pools and collective bookings">
+A `pool` books any available host, sharing bookings by `weight`, narrowed by attributes such as language. `collective` needs every required host free at once. `availability.search` answers who's free across up to 500 hosts, for a marketplace's search page. See [pools and groups](/docs/scheduling/pools-and-groups).
+</Feature>
+
+<Feature title="Group sessions">
+With `kind: "group"` and a `capacity`, each attendee books a seat in the same session, with a booking and manage link of their own. The host's time is taken by the first seat and given back with the last, and a full session answers `slot_unavailable`.
+</Feature>
+
+<Feature title="Recurring series">
+Book up to 52 weekly or monthly occurrences at the attendee's local time, so 10:00 stays 10:00 across a clock change. Preview first, then skip or refuse occurrences that are taken. Each is an ordinary booking that can move on its own.
+</Feature>
+
+<Feature title="Hours that hold up">
+Weekly hours in the host's time zone, date overrides, buffers, minimum notice, booking windows, and limits per host per day or week. Listing slots and booking both use one definition of what can be booked, so they can't disagree. See [hosts and availability](/docs/scheduling/hosts).
+</Feature>
+
+<Feature title="Who gets told">
+Attendees and hosts get emails with calendar invitations, from your own domain or from coss.com on your behalf. Attendees get a reminder a day before, by SMS too from your own number if you turn it on, and you can turn off any of them. Google Meet and Microsoft Teams links come with the calendar event. Bookings and calendars send [webhooks](/docs/webhooks) and log lines. See [notifications](/docs/scheduling/notifications).
+</Feature>
+
+</Features>
+
+</Section>
+
+<Section title="Built to hold little about people" lede="Calendars, attendees and the events on your webhooks each carry as little as the job needs.">
+
+From calendars, coss.com stores when they're busy and nothing else: no titles, descriptions or attendees of other events. A booking goes on a host's calendar as a private event titled "Appointment", with no attendees, so their colleagues learn nothing from it.
+
+Attendee contact details and answers are encrypted, and a booking only needs a `time_zone`, so you can use your own ids rather than names. Answers come back only when you retrieve one booking, never in lists, webhooks, logs, emails or calendars, and webhooks carry ids, times and statuses. `coss.scheduling.attendees.erase` removes someone's contact details and answers from their bookings right away.
+
+Our [Terms](/legal/terms) don't allow special categories of personal data or protected health information without a written agreement. See [privacy](/docs/scheduling/privacy) for what's stored and for how long.
+
+</Section>
+
+<Section title="Specifications" lede="The limits of a booking. The API reference lists each one with its field.">
+
+<Specs>
+<Spec label="Calendars">Google, Microsoft, CalDAV</Spec>
+<Spec label="Event type kinds">one-on-one, pool, collective, group</Spec>
+<Spec label="Duration">5 minutes to 24 hours</Spec>
+<Spec label="Buffers">up to 8 hours before and after</Spec>
+<Spec label="Holds">10 minutes by default, 1 minute to 24 hours</Spec>
+<Spec label="Approval deadline">1 day by default, up to 30 days</Spec>
+<Spec label="Series">up to 52 occurrences, weekly or monthly</Spec>
+<Spec label="Group session">2 to 10,000 seats</Spec>
+<Spec label="Slots per request">up to 62 days</Spec>
+<Spec label="Availability search">up to 500 hosts</Spec>
+<Spec label="Calendars read ahead">400 days</Spec>
+<Spec label="Questions per event type">25</Spec>
+<Spec label="Host session">1 hour by default, at most 24 hours</Spec>
+<Spec label="Booker session">30 minutes by default, at most 24 hours</Spec>
+<Spec label="Embedding origins">up to 10, https</Spec>
+<Spec label="Attendee details kept"><RetentionPeriod of="scheduling_personal_data" /></Spec>
+<Spec label="Bookings kept"><RetentionPeriod of="scheduling_bookings" /></Spec>
+</Specs>
+
+</Section>
+
+<Section title="Pricing" lede="You pay per confirmed booking. Holds and pending approvals cost nothing until they're confirmed.">
+
+<UsageRates meters="scheduling.bookings" />
+
+The Free plan includes <Included meter="scheduling.bookings" />. A group session is one booking however many attend, and each occurrence of a series is one. Rescheduling is free, and a cancelled booking stays charged. Booking emails sent from your own domain are billed like any email, and SMS reminders like any text message. See [pricing](/pricing) for the plans.
+
+</Section>
+
+<Section title="Test it in a sandbox" lede="Sandbox environments run the same code, including the double-booking guarantee and the hosted pages, and bill nothing.">
+
+With a sandbox (`coss_test_…`) key, emails go to the fake provider, so nobody's mailed, and the dashboard shows them with their links. Connect a simulated calendar and set its busy times with `coss.scheduling.calendars.setSimulatedBusy`, and test your handlers with `coss trigger scheduling.booking.confirmed`. See [testing](/docs/scheduling/testing).
+
+</Section>
