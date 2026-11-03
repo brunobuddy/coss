@@ -31,6 +31,23 @@ output "smtp_certificate_validation_records" {
   value       = [for option in aws_acm_certificate.smtp.domain_validation_options : { name = option.resource_record_name, value = option.resource_record_value }]
 }
 
+output "edge_certificate_validation_records" {
+  description = "CNAMEs to add (DNS only) for the hosted domains' CloudFront certificates. Some already exist, from the load balancer's certificates."
+  value = distinct(concat(
+    flatten([for certificate in aws_acm_certificate.hosted_edge : [for option in certificate.domain_validation_options : { name = option.resource_record_name, value = option.resource_record_value }]]),
+    [for option in aws_acm_certificate.redirects.domain_validation_options : { name = option.resource_record_name, value = option.resource_record_value }],
+    [for option in aws_acm_certificate.tracking.domain_validation_options : { name = option.resource_record_name, value = option.resource_record_value }],
+  ))
+}
+
+output "hosted_distribution_domains" {
+  description = "What each hosted host's DNS-only record points at."
+  value = merge(
+    { for name, distribution in aws_cloudfront_distribution.hosted : local.hosted[name].host => distribution.domain_name },
+    { for host, _ in local.spec.cloudFront.hostedRedirects : host => aws_cloudfront_distribution.redirects.domain_name },
+  )
+}
+
 output "nlb_dns_name" {
   description = "Target of the DNS-only smtp.coss.com CNAME (Cloudflare can't proxy SMTP)."
   value       = aws_lb.smtp.dns_name
@@ -45,7 +62,7 @@ output "api_distribution" {
 }
 
 output "alb_dns_name" {
-  description = "Target of the proxied track.cosslinks.com, portal, Sign, Forms and Scheduling host records (Cloudflare)."
+  description = "Target of the proxied track.cosslinks.com record (Cloudflare)."
   value       = aws_lb.main.dns_name
 }
 

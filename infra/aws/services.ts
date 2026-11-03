@@ -907,7 +907,7 @@ export const SERVICES: Service[] = [
     ],
   },
   {
-    // The Hooks portal, on its own domain (PORTAL_HOST in routing.ts: Cloudflare → ALB).
+    // The Hooks portal, on its own domain (PORTAL_HOST in routing.ts: CloudFront → ALB).
     name: "portal",
     dockerfile: "apps/portal/Dockerfile",
     port: 3003,
@@ -936,7 +936,7 @@ export const SERVICES: Service[] = [
     ],
   },
   {
-    // Sign's signing app, on its own domain (SIGN_HOST in routing.ts: Cloudflare → ALB). It reads
+    // Sign's signing app, on its own domain (SIGN_HOST in routing.ts: CloudFront → ALB). It reads
     // documents and stores signatures in the documents bucket (Terraform's task policy, sign.tf).
     name: "sign",
     dockerfile: "apps/sign/Dockerfile",
@@ -967,7 +967,7 @@ export const SERVICES: Service[] = [
     ],
   },
   {
-    // Scheduling's hosted pages, on their own domain (SCHEDULING_HOST in routing.ts: Cloudflare →
+    // Scheduling's hosted pages, on their own domain (SCHEDULING_HOST in routing.ts: CloudFront →
     // ALB). A client of the API; the database only answers which origins may embed a session.
     name: "scheduling",
     dockerfile: "apps/scheduling/Dockerfile",

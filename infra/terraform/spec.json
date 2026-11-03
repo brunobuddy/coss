@@ -2689,6 +2689,87 @@
         "cachedBehaviours": []
       }
     },
+    "hostedDistributions": {
+      "portal": {
+        "host": "portal.cosshooks.com",
+        "originVerifyHeader": "X-Portal-Origin-Verify",
+        "originVerifySecret": "<portal-origin-verify-secret>",
+        "waf": "hosted",
+        "cachedBehaviours": [
+          {
+            "pathPattern": "/_next/static/*",
+            "origin": "alb",
+            "cache": "origin",
+            "reason": "Hashed, immutable assets of the hosted Next apps."
+          }
+        ]
+      },
+      "sign": {
+        "host": "cosssign.com",
+        "originVerifyHeader": "X-Sign-Origin-Verify",
+        "originVerifySecret": "<sign-origin-verify-secret>",
+        "waf": "hosted",
+        "cachedBehaviours": [
+          {
+            "pathPattern": "/_next/static/*",
+            "origin": "alb",
+            "cache": "origin",
+            "reason": "Hashed, immutable assets of the hosted Next apps."
+          }
+        ]
+      },
+      "scheduling": {
+        "host": "cossbook.com",
+        "originVerifyHeader": "X-Scheduling-Origin-Verify",
+        "originVerifySecret": "<scheduling-origin-verify-secret>",
+        "waf": "hosted",
+        "cachedBehaviours": [
+          {
+            "pathPattern": "/_next/static/*",
+            "origin": "alb",
+            "cache": "origin",
+            "reason": "Hashed, immutable assets of the hosted Next apps."
+          }
+        ]
+      },
+      "forms": {
+        "host": "cossforms.com",
+        "originVerifyHeader": "X-Forms-Origin-Verify",
+        "originVerifySecret": "<forms-origin-verify-secret>",
+        "waf": "hosted",
+        "cachedBehaviours": []
+      },
+      "tracking": {
+        "host": "track.cosslinks.com",
+        "originVerifyHeader": "X-Tracking-Origin-Verify",
+        "originVerifySecret": "<tracking-origin-verify-secret>",
+        "waf": "tracking",
+        "cachedBehaviours": []
+      }
+    },
+    "hostedRedirects": {
+      "www.cosssign.com": {
+        "to": "https://cosssign.com",
+        "keepPath": true
+      },
+      "www.cossbook.com": {
+        "to": "https://cossbook.com",
+        "keepPath": true
+      },
+      "www.cossforms.com": {
+        "to": "https://cossforms.com",
+        "keepPath": true
+      },
+      "cosshooks.com": {
+        "to": "https://coss.com",
+        "keepPath": false
+      },
+      "cosslinks.com": {
+        "to": "https://coss.com",
+        "keepPath": false
+      }
+    },
+    "formsOtherPathsRedirect": "https://coss.com/docs/forms",
     "invalidateAfterDeploy": [
       "/pricing*",
       "/about*",

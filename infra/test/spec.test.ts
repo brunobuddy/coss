@@ -24,11 +24,13 @@ import {
   EXTERNAL_ZONES,
   FORMS_HOST,
   FORMS_ORIGIN_VERIFY_HEADER,
+  HOSTED_REDIRECTS,
+  type HostedDistribution,
   TRACKING_HOST,
   TRACKING_ORIGIN_VERIFY_HEADER,
 } from "../aws/routing.ts";
 import { SERVICES, type ServiceName } from "../aws/services.ts";
-import { awsSpecJson } from "../aws/spec.ts";
+import { awsSpec, awsSpecJson } from "../aws/spec.ts";
 
 const ROOT = path.resolve(import.meta.dir, "../..");
 const read = (file: string) => readFileSync(path.join(ROOT, file), "utf8");
@@ -118,6 +120,33 @@ describe("services", () => {
 
   test("Fargate limits", () => {
     for (const service of SERVICES) expect(service.stopTimeout).toBeLessThanOrEqual(120);
+  });
+});
+
+describe("hosted distributions", () => {
+  const spec = awsSpec();
+  const rules = albListenerRules();
+
+  const distributions = spec.cloudFront.hostedDistributions as Record<string, HostedDistribution>;
+  for (const [name, hosted] of Object.entries(distributions)) {
+    test(`${name} sends the header its load balancer rule requires`, () => {
+      const headers = rules.flatMap((rule) =>
+        rule.conditions.flatMap((condition) =>
+          condition.Field === "http-header" ? [condition.HttpHeaderConfig] : [],
+        ),
+      );
+      expect(headers).toContainEqual({
+        HttpHeaderName: hosted.originVerifyHeader,
+        Values: [hosted.originVerifySecret],
+      });
+    });
+  }
+
+  test("redirects never point at a host that only redirects", () => {
+    const redirects = Object.entries(HOSTED_REDIRECTS);
+    for (const [, { to }] of redirects) {
+      expect(redirects.map(([host]) => `https://${host}`)).not.toContain(to);
+    }
   });
 });
 

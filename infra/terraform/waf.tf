@@ -3,11 +3,21 @@
 # blocked: API sends carry whole HTML emails (often > 8 KB, sometimes script-like markup), SDKs
 # on some runtimes send no User-Agent, and sandboxes allow localhost origins. Those last bodies trip
 # EC2MetaDataSSRF_BODY, which outbound delivery doesn't rely on: it refuses private addresses itself.
+# Hosted pages take what people type (Forms screens it itself). Tracking links are opened by shared
+# mail proxies and scanners, which often send no User-Agent.
 locals {
   waf = {
     dashboard = {
       rate_limit      = var.waf_rate_limits.dashboard
       count_overrides = ["SizeRestrictions_BODY", "EC2MetaDataSSRF_BODY"]
+    }
+    hosted = {
+      rate_limit      = var.waf_rate_limits.hosted
+      count_overrides = ["SizeRestrictions_BODY", "CrossSiteScripting_BODY", "EC2MetaDataSSRF_BODY", "GenericRFI_BODY", "GenericLFI_BODY"]
+    }
+    tracking = {
+      rate_limit      = var.waf_rate_limits.tracking
+      count_overrides = ["NoUserAgent_HEADER"]
     }
     api = {
       rate_limit      = var.waf_rate_limits.api

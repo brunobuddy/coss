@@ -548,13 +548,10 @@ Cloudflare DNS (coss.com zone, DNS only)
                               └─ /origin, /origin/* ─▶ Origin UI (Vercel)    worker (Bun, no load balancer)┘   SES · SNS · SQS
   Cloudflare DNS (cosslinks.com zone, self-serve account, proxied)
   track.cosslinks.com + customer tracking domains (Cloudflare for SaaS) ──(X-Tracking-Origin-Verify)──▶ ALB /t/* ─▶ api
-  Cloudflare DNS (cosshooks.com zone, self-serve account, proxied)
+  Cloudflare DNS (each host's zone, self-serve account, DNS only), each host with its own CloudFront distribution
   portal.cosshooks.com (Hooks portal) ──(X-Portal-Origin-Verify)──▶ ALB ─▶ portal (Next, :3003)
-  Cloudflare DNS (cosssign.com zone, self-serve account, proxied)
   cosssign.com (Sign's signing app) ──(X-Sign-Origin-Verify)──▶ ALB ─▶ sign (Next, :3004)
-  Cloudflare DNS (cossforms.com zone, self-serve account, proxied)
   cossforms.com/f/* (Forms' endpoints and hosted pages) ──(X-Forms-Origin-Verify)──▶ ALB ─▶ api
-  Cloudflare DNS (cossbook.com zone, self-serve account, proxied)
   cossbook.com (Scheduling's hosted pages) ──(X-Scheduling-Origin-Verify)──▶ ALB ─▶ scheduling (Next, :3005)
   Cloudflare DNS (coss.com zone, DNS only)
   smtp.coss.com ──(TCP 465/2465, 587/2587, client IP preserved)──▶ NLB ─▶ smtp (Bun, :2465 TLS, :2587 STARTTLS)
@@ -591,7 +588,7 @@ Cloudflare DNS (coss.com zone, DNS only)
   Target groups: health checks `/api/health` (web, site, portal) and `/health` (api), HTTP 200, no database access;
   deregistration delay 30 s. Keep the idle timeout at 60 s: the apps hold idle connections for 75 s
   (`KEEP_ALIVE_TIMEOUT`, Bun `idleTimeout`) so the ALB never reuses one they are closing.
-- **CloudFront + WAF:** two distributions, certificates from ACM in us-east-1, HTTP→HTTPS redirect, a response
+- **CloudFront + WAF:** `coss.com` and `api.coss.com` (and the hosted domains, below), certificates from ACM in us-east-1, HTTP→HTTPS redirect, a response
   headers policy that adds HSTS (2 years, subdomains, preload).
   - `coss.com`: origins `alb` (HTTPS only, custom header `X-Origin-Verify: <secret>`, origin request policy
     `Managed-AllViewer`, so `Host`, cookies and query strings reach the apps) and one per external zone of the coss
@@ -652,40 +649,21 @@ Cloudflare DNS (coss.com zone, DNS only)
   `terraform output nlb_dns_name` (Cloudflare can't proxy SMTP). `SMTP_PUBLIC_HOST=smtp.coss.com` (web) shows the
   settings on environment pages; leave it unset on a stage whose relay isn't reachable yet. No SES
   permissions: the relay only stores and enqueues, the worker sends.
-- **Hooks portal (`cosshooks.com`, the same self-serve Cloudflare account as `cosslinks.com`):** `apps/portal`,
-  the page customers embed for their users, runs as the `portal` service on a registrable domain of its own (never
-  under coss.com, which would make it same-site with the dashboard). `portal.cosshooks.com` is a **proxied** record
-  pointing at the ALB (`terraform output alb_dns_name`), which serves it with its own ACM certificate (an SNI
-  listener certificate; validation CNAME from `terraform output portal_certificate_validation_records`, DNS only),
-  so the zone's SSL mode is **Full (strict)**. A request header transform rule sets
-  `X-Portal-Origin-Verify: <secret>` (Secrets Manager `coss/production/portal-origin-verify`) on every request in
-  the zone; the ALB forwards `portal.cosshooks.com` with it to the portal and nothing else. A redirect rule sends
-  the apex to `https://coss.com`. `PORTAL_PUBLIC_URL=https://portal.cosshooks.com` (web, api) makes portal session
-  links point there.
-- **Sign's signing app (`cosssign.com`, the same self-serve Cloudflare account):** `apps/sign` runs as the `sign`
-  service and is set up like the portal, but on the apex: a **proxied** CNAME to the ALB (flattened), its own SNI
-  listener certificate (validation CNAME from `terraform output sign_certificate_validation_records`), SSL mode
-  **Full (strict)**, and a transform rule setting `X-Sign-Origin-Verify: <secret>` (Secrets Manager
-  `coss/production/sign-origin-verify`) for `cosssign.com`. `www` (a proxied `100::`) only redirects to the apex.
-  `SIGN_PUBLIC_URL=https://cosssign.com` (web, api, worker) makes signing links point there. Sign itself stays off
-  until `SIGN_DOCUMENTS_BUCKET` is set (`packages/sign/AGENTS.md`, "Going live").
-- **Forms (`cossforms.com`, in the same self-serve Cloudflare account):**
-  the api serves `/f/*` (form endpoints, hosted pages, submitters' confirmation links) on it, set up like Sign's
-  apex: a **proxied** CNAME to the ALB, its own SNI listener certificate (validation CNAME from
-  `terraform output forms_certificate_validation_records`), SSL mode **Full (strict)**, and a transform rule
-  setting `X-Forms-Origin-Verify: <secret>` (Secrets Manager `coss/production/forms-origin-verify`). The ALB
-  forwards only `/f/*` on that host to the api. `FORMS_PUBLIC_URL=https://cossforms.com` and `FORMS_FILES_BUCKET`
-  (`terraform output forms_files_bucket`), both plain on web, api and worker, switch Forms on: the api serves
-  `/f/*` only on that host in production (`packages/forms/AGENTS.md`, "Production"). A redirect rule sends
-  everything else on the domain (the apex included) to `https://coss.com/docs/forms` (302), next to `www`'s
-  redirect to the apex.
-- **Scheduling's hosted pages (`cossbook.com`, the same self-serve Cloudflare account):** `apps/scheduling` runs as
-  the `scheduling` service, set up like Sign's apex: a **proxied** CNAME to the ALB, its own SNI listener certificate
-  (validation CNAME from `terraform output scheduling_certificate_validation_records`), SSL mode **Full (strict)**,
-  a transform rule setting `X-Scheduling-Origin-Verify: <secret>` (Secrets Manager
-  `coss/production/scheduling-origin-verify`) for `cossbook.com`, and `www` (a proxied `100::`) redirecting to the
-  apex. `SCHEDULING_PUBLIC_URL=https://cossbook.com` (web, api, worker) makes session and manage links point there.
-  Scheduling is off in a stage without `SCHEDULING_DATA_KEYS` (`packages/scheduling/AGENTS.md`, "Going live").
+- **Hosted domains (`infra/terraform/hosted-domains.tf`, `hostedDistributions` in `infra/aws/routing.ts`):** the
+  Hooks portal (`portal.cosshooks.com`), Sign's signing app (`cosssign.com`), Forms (`cossforms.com`) and Scheduling's
+  hosted pages (`cossbook.com`) each live on a registrable domain of their own, so they're never same-site with the
+  dashboard. Each host is a **DNS-only** CNAME (flattened at an apex; Cloudflare, the self-serve account) to a CloudFront
+  distribution of its own (`terraform output hosted_distribution_domains`), which sends that host's origin header
+  (Secrets Manager `coss/production/<host>-origin-verify`); the ALB forwards the host with that header and nothing
+  else. CloudFront validates the ALB's certificate for the host, so each has an SNI listener certificate besides its
+  CloudFront one (validation CNAMEs: the `*_certificate_validation_records` and
+  `edge_certificate_validation_records` outputs). They share the `hosted` web ACL, whose body rules only count
+  because these pages take what people type. Only `/_next/static/*` is cached. A CloudFront function sends everything
+  on the forms host outside `/f/*` to `https://coss.com/docs/forms`; the api serves `/f/*` only on that host in
+  production (`packages/forms/AGENTS.md`, "Production"). `www` of Sign, Forms and Scheduling and the `cosshooks.com`
+  and `cosslinks.com` apexes point at one redirect-only distribution (`HOSTED_REDIRECTS`). `PORTAL_PUBLIC_URL`,
+  `SIGN_PUBLIC_URL`, `FORMS_PUBLIC_URL` and `SCHEDULING_PUBLIC_URL` point the apps' links there; Sign, Forms and
+  Scheduling stay off without their own settings (each package's AGENTS.md, "Going live" or "Production").
 
 ### Monitoring and cost guardrails
 

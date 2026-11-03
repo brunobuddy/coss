@@ -131,12 +131,12 @@ injected `FormMailer` and `FormContactSink`, which the worker implements.
 
 ## Production
 
-Live at `https://cossforms.com` (`FORMS_PUBLIC_URL`; Cloudflare's self-serve account, a proxied
-apex → the ALB's `/f/*` rule to the api with `X-Forms-Origin-Verify`, its ACM certificate on the
-listener; README, "Deploying to AWS"), uploads in `FORMS_FILES_BUCKET` (SSE-KMS, no public
+Live at `https://cossforms.com` (`FORMS_PUBLIC_URL`; a CloudFront distribution of its own → the
+ALB's `/f/*` rule to the api with `X-Forms-Origin-Verify`, its ACM certificate on the listener;
+README, "Deploying to AWS"), uploads in `FORMS_FILES_BUCKET` (SSE-KMS, no public
 access, objects expire after `RETENTION_DAYS.formSubmissions` + 1 days), IAM for api, worker and
 web. Never move it to a coss.com subdomain: phishing reports would land on coss.com.
 `FORMS_NOTIFICATIONS_FROM` (worker) is optional. Anything on the domain outside `/f/*` (the apex
-included) redirects to `https://coss.com/docs/forms` (a Cloudflare redirect rule). Still to do:
+included) redirects to `https://coss.com/docs/forms` (a CloudFront function). Still to do:
 the `abuse@coss.com` mailbox the pages link to, watched (the admin console's "Disable form"
 takes a form down).

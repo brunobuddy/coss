@@ -109,7 +109,7 @@ variable "cloudflare_ipv4_ranges" {
 }
 
 variable "waf_rate_limits" {
-  type        = object({ dashboard = number, api = number })
+  type        = object({ dashboard = number, api = number, hosted = number, tracking = number })
   description = "Requests per IP per 5 minutes before WAF blocks (flood protection; the apps rate-limit precisely)."
 }
 
