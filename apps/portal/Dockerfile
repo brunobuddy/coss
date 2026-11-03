@@ -52,13 +52,15 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \
     PORT=3003 \
+    TLS_PORT=4003 \
     KEEP_ALIVE_TIMEOUT=75000
 WORKDIR /app
 COPY --from=build /repo/apps/portal/.next/standalone ./
+COPY infra/runtime/tls-entry.mjs ./tls-entry.mjs
 COPY --from=build /repo/apps/portal/.next/static ./apps/portal/.next/static
 # Next writes its cache under .next at runtime; everything else stays root-owned and read-only.
 RUN mkdir -p apps/portal/.next/cache && chown node:node apps/portal/.next/cache
 USER node
-EXPOSE 3003
+EXPOSE 3003 4003
 # SIGTERM: Next stops accepting connections and finishes in-flight requests before exiting.
-CMD ["node", "apps/portal/server.js"]
+CMD ["node", "tls-entry.mjs", "apps/portal/server.js"]

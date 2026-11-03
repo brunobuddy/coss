@@ -41,7 +41,9 @@ ENV NODE_ENV=production NO_COLOR=1 SENTRY_RELEASE=${SENTRY_RELEASE} API_PORT=300
 # .env loading and the scripts' --env-file are no-ops: configuration comes from the task.
 WORKDIR /app
 COPY --from=install /app ./
+COPY infra/runtime/tls-entry.mjs ./tls-entry.mjs
 USER bun
-EXPOSE 3001
+ENV TLS_PORT=4001
+EXPOSE 3001 4001
 # SIGTERM: stops accepting connections, finishes in-flight requests, closes the pg pool.
-CMD ["bun", "apps/api/src/index.ts"]
+CMD ["bun", "tls-entry.mjs", "apps/api/src/index.ts"]

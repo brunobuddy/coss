@@ -321,3 +321,17 @@ describe("terraform", () => {
     expect(read("infra/terraform/spec.json")).toBe(awsSpecJson());
   });
 });
+
+describe("TLS to the containers", () => {
+  const entryCommand = (name: string) =>
+    name === "api" ? "apps/api/src/index.ts" : `apps/${name}/server.js`;
+  for (const service of SERVICES.filter((candidate) => candidate.port !== undefined)) {
+    test(`${service.name}: its image serves tlsPort through tls-entry`, () => {
+      const dockerfile = read(`apps/${service.name}/Dockerfile`);
+      expect(service.tlsPort).toBeNumber();
+      expect(dockerfile).toContain(`TLS_PORT=${service.tlsPort}`);
+      expect(dockerfile).toContain("COPY infra/runtime/tls-entry.mjs ./tls-entry.mjs");
+      expect(dockerfile).toContain(`"tls-entry.mjs", "${entryCommand(service.name)}"`);
+    });
+  }
+});
