@@ -40,10 +40,10 @@ function blockedV4(address: string): boolean {
 /** The 8 hextets of an IPv6 address (handles `::` and an embedded IPv4 tail). */
 function hextets(address: string): number[] {
   let text = address.toLowerCase().split("%")[0] ?? "";
-  const v4Tail = /(\d+\.\d+\.\d+\.\d+)$/.exec(text);
-  if (v4Tail?.[1]) {
-    const value = v4ToInt(v4Tail[1]);
-    text = `${text.slice(0, -v4Tail[1].length)}${(value >>> 16).toString(16)}:${(value & 0xffff).toString(16)}`;
+  const v4Tail = text.slice(text.lastIndexOf(":") + 1);
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(v4Tail)) {
+    const value = v4ToInt(v4Tail);
+    text = `${text.slice(0, -v4Tail.length)}${(value >>> 16).toString(16)}:${(value & 0xffff).toString(16)}`;
   }
   const [head = "", tail] = text.split("::");
   const parse = (part: string) => (part ? part.split(":").map((h) => Number.parseInt(h, 16)) : []);

@@ -8,6 +8,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { db, schema } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { decryptSecret, encryptSecret } from "@coss/webhooks";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { BookingActor } from "./bookings.ts";
@@ -41,7 +42,7 @@ export function schedulingSessionUrl(
   sessionId: string,
   token: string,
 ): string {
-  return `${publicUrl.replace(/\/+$/, "")}/${PATH_OF[kind]}/${sessionId}#${token}`;
+  return `${withoutTrailingSlashes(publicUrl)}/${PATH_OF[kind]}/${sessionId}#${token}`;
 }
 
 type Created = { id: string; token: string; url: string | null; expiresAt: Date };

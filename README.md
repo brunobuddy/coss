@@ -445,8 +445,8 @@ A warning is logged in either case.
    `AWS_REGION=eu-west-1 bun run valkey:bootstrap --subnet-ids subnet-a,subnet-b --security-group-ids sg-… [--name coss] [--max-ecpu 5000] [--max-storage-gb 1]`
    It creates a password user limited to the `<prefix>:*` keys and the commands the limiter uses, a disabled
    `default` user, a user group and the serverless cache (Valkey 8, TLS).
-3. Set what it prints (`VALKEY_URL=rediss://…`, `VALKEY_CLUSTER=true`, `RATE_LIMIT_KEY_PREFIX`) for the API,
-   dashboard and worker (which counts the daily inbound limit). The password is only printed when the user is created; `--rotate-password` makes a new one
+3. Set what it gives you (`VALKEY_URL=rediss://…`, in a private temporary file whose path it prints, then `VALKEY_CLUSTER=true`, `RATE_LIMIT_KEY_PREFIX`) for the API,
+   dashboard and worker (which counts the daily inbound limit). The password is only written when the user is created; `--rotate-password` makes a new one
    (running processes apply each bucket's outage policy until they get it).
 4. Set `CLIENT_IP_HEADER` (e.g. `x-forwarded-for`) and `TRUSTED_PROXY_COUNT` (how many of your proxies append
    to it) to match your load balancers. Without them, public unauthenticated entry points use an aggregate

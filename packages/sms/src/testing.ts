@@ -1,5 +1,5 @@
 /** Test helpers for the SMS product (and the apps' tests that use it). */
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { db, schema } from "@coss/db";
 import { encryptSecret } from "@coss/webhooks";
 import { eq } from "drizzle-orm";
@@ -64,8 +64,8 @@ export function dispatchingSmsService(
 
 /** A random valid US number (area code 415, exchange 200-999). */
 export function testPhoneNumber(): string {
-  const exchange = 200 + Math.floor(Math.random() * 800);
-  const line = Math.floor(Math.random() * 10_000);
+  const exchange = randomInt(200, 1000);
+  const line = randomInt(10_000);
   return `+1415${exchange}${String(line).padStart(4, "0")}`;
 }
 

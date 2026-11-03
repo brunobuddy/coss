@@ -45,7 +45,10 @@ export function docsPath(page: string, origin: string): string | null {
 }
 
 export function registerDocsTools(server: McpServer, options: DocsOptions = {}): void {
-  const origin = (options.baseUrl ?? DEFAULT_DOCS_URL).replace(/\/+$/, "");
+  const baseUrl = options.baseUrl ?? DEFAULT_DOCS_URL;
+  let end = baseUrl.length;
+  while (end > 0 && baseUrl[end - 1] === "/") end--;
+  const origin = baseUrl.slice(0, end);
   const request = options.fetch ?? fetch;
 
   const get = async (path: string): Promise<Response | string> => {

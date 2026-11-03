@@ -6,6 +6,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { appendLogEntries } from "@coss/logs";
 import {
   decryptSecret,
@@ -76,10 +77,10 @@ const fetcherOf = (deps: CalendarDeps): HttpFetch => deps.fetcher ?? fetch;
 const nowMs = (deps: CalendarDeps): number => (deps.now?.() ?? new Date()).getTime();
 
 export const oauthRedirectUri = (deps: Pick<CalendarDeps, "publicUrl">, provider: OAuthProvider) =>
-  `${deps.publicUrl.replace(/\/+$/, "")}/scheduling/oauth/${provider}/callback`;
+  `${withoutTrailingSlashes(deps.publicUrl)}/scheduling/oauth/${provider}/callback`;
 
 export const pushWebhookUrl = (deps: Pick<CalendarDeps, "publicUrl">, provider: OAuthProvider) =>
-  `${deps.publicUrl.replace(/\/+$/, "")}/scheduling/push/${provider}`;
+  `${withoutTrailingSlashes(deps.publicUrl)}/scheduling/push/${provider}`;
 
 const appOf = (deps: CalendarDeps, provider: OAuthProvider): OAuthApp => {
   const app = deps.apps[provider];

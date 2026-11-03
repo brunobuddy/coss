@@ -9,6 +9,7 @@
 
 import { environmentHref } from "@coss/dashboard-routes";
 import { db, schema } from "@coss/db";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { and, asc, eq, inArray, lte, notExists, sql } from "drizzle-orm";
 import {
   type FormContactSink,
@@ -169,7 +170,7 @@ async function notify(loaded: Loaded, deps: FormDeliveryDeps): Promise<Outcome> 
     );
   const { slugs } = loaded;
   const submissionUrl =
-    deps.dashboardUrl.replace(/\/+$/, "") +
+    withoutTrailingSlashes(deps.dashboardUrl) +
     environmentHref(slugs, `/forms/${row.id}/submissions/${submission.id}`);
   const content = notificationContent({
     formName: row.name,

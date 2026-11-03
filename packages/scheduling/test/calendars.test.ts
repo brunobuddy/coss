@@ -10,7 +10,7 @@ import {
   pinnedDavTransport,
 } from "../src/calendar/caldav.ts";
 import { googleCalendarClient } from "../src/calendar/google.ts";
-import { busyFromIcs } from "../src/calendar/ical.ts";
+import { busyFromIcs, escapeIcsText } from "../src/calendar/ical.ts";
 import { microsoftCalendarClient } from "../src/calendar/microsoft.ts";
 import {
   buildIcs,
@@ -1069,8 +1069,12 @@ describe("ics", () => {
     });
     expect(ics).toContain("DTSTART:20310106T090000Z");
     expect(ics).toContain("SEQUENCE:2");
-    expect(ics).toContain("SUMMARY:Consult\\, with; care");
+    expect(ics).toContain("SUMMARY:Consult\\, with\\; care");
     for (const line of ics.split("\r\n")) expect(line.length).toBeLessThanOrEqual(75);
     expect(ics.endsWith("\r\n")).toBe(true);
   });
+});
+
+test("iCalendar text escapes what RFC 5545 reserves", () => {
+  expect(escapeIcsText("a;b,c\\d\ne")).toBe("a\\;b\\,c\\\\d\\ne");
 });

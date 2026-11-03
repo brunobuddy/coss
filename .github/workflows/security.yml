@@ -42,8 +42,6 @@ jobs:
           category: /language:${{ matrix.language }}
 
   dependency-audit:
-    # Not on pull requests: known advisories in the lockfile would fail every one of them.
-    if: github.event_name != 'pull_request'
     runs-on: blacksmith-2vcpu-ubuntu-2404
     permissions:
       contents: read
@@ -52,4 +50,6 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: package.json
-      - run: bun audit --audit-level=high
+      # Ignored, both only in the iOS app's toolchain: decode-uri-component through expo-router (its fix
+      # is ESM-only, which query-string 7 can't load) and zod 3 inside Expo's CLI, a developer tool.
+      - run: bun audit --audit-level=high --ignore=GHSA-mrhx-c7xc-m3w5 GHSA-qr28-fpjm-wq7f

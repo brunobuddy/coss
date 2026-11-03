@@ -39,7 +39,16 @@ const SECRET_VALUES: [RegExp, string][] = [
  * Query strings and fragments of paths and URLs: tokens (`?token=`, OAuth `code`/`state`) and
  * search terms. A `?` not following a path ("why?") is kept.
  */
-const QUERY = /(\/[^\s?#]*)[?#][^\s]*/g;
+const WORD = /\S+/g;
+
+function withoutQuery(word: string): string {
+  const slash = word.indexOf("/");
+  if (slash === -1) return word;
+  for (let at = slash; at < word.length; at++) {
+    if (word[at] === "?" || word[at] === "#") return word.slice(0, at);
+  }
+  return word;
+}
 
 const SECRET_HEADERS = new Set([
   "authorization",
@@ -73,7 +82,7 @@ const DROPPED_ATTRIBUTE_PATTERN =
  * the query strings of its paths removed.
  */
 export function scrubUrl(value: string): string {
-  let scrubbed = value.replace(QUERY, "$1");
+  let scrubbed = value.replace(WORD, withoutQuery);
   for (const [pattern, replacement] of [...SECRET_PATH_SEGMENTS, ...SECRET_VALUES]) {
     scrubbed = scrubbed.replace(pattern, replacement);
   }

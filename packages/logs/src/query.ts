@@ -81,15 +81,48 @@ export const LOG_QUERY_SUGGESTIONS: readonly { key: LogQueryKey; hint: string }[
   { key: "recipient", hint: "user@example.com" },
 ];
 
+const WHITESPACE = /\s/;
+const LINE_TERMINATOR = /[\n\r\u2028\u2029]/;
+const KEY_PREFIX = /^-?[a-z]+:/i;
+// Longer than any key, so a long word costs the same as a short one.
+const MAX_KEY_PREFIX = 64;
+
+/** The closing quote of the string opening at `open`, or -1. */
+function closingQuote(input: string, open: number): number {
+  for (let at = open + 1; at < input.length; at++) {
+    if (input[at] === '"') return at;
+    if (input[at] !== "\\") continue;
+    at++;
+    if (at >= input.length || LINE_TERMINATOR.test(input[at] as string)) return -1;
+  }
+  return -1;
+}
+
+/** Words and `"quoted strings"`, optionally `key:"quoted"`. By hand, so unclosed quotes stay linear. */
 function tokenize(input: string): string[] {
   const tokens: string[] = [];
-  const re = /(-?[a-z]+:)?"((?:[^"\\]|\\.)*)"|\S+/gi;
-  for (const match of input.matchAll(re)) {
-    if (match[2] !== undefined) {
-      tokens.push(`${match[1] ?? ""}${match[2].replace(/\\(.)/g, "$1")}`);
-    } else {
-      tokens.push(match[0]);
+  let at = 0;
+  // Once one string runs off the end, later ones would too: don't scan again for each.
+  let unclosed = false;
+  while (at < input.length) {
+    if (WHITESPACE.test(input[at] as string)) {
+      at++;
+      continue;
     }
+    const prefix = KEY_PREFIX.exec(input.slice(at, at + MAX_KEY_PREFIX))?.[0] ?? "";
+    const open = input[at + prefix.length] === '"' ? at + prefix.length : at;
+    const close = input[open] === '"' && !unclosed ? closingQuote(input, open) : -1;
+    if (close !== -1) {
+      const body = input.slice(open + 1, close).replace(/\\(.)/g, "$1");
+      tokens.push(`${open === at ? "" : prefix}${body}`);
+      at = close + 1;
+      continue;
+    }
+    if (input[open] === '"') unclosed = true;
+    let end = at + 1;
+    while (end < input.length && !WHITESPACE.test(input[end] as string)) end++;
+    tokens.push(input.slice(at, end));
+    at = end;
   }
   return tokens;
 }
