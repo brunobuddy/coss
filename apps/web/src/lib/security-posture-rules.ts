@@ -25,6 +25,11 @@ export type Readings = {
   outsideAccess: Reading<boolean>;
   alerts: Reading<{ confirmed: number; pending: number }>;
   accessLogs: Reading<{ loadBalancer: boolean; network: boolean }>;
+  databaseAudit: Reading<{ extension: boolean; classes: string | null }>;
+  encryption: Reading<{
+    targetGroups: { total: number; encrypted: number };
+    topics: { total: number; encrypted: number };
+  }>;
 };
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -181,7 +186,40 @@ export function postureChecks(readings: Readings, now: Date = new Date()): Postu
             fix: "Check the delivery settings. New logs take a few minutes to appear after setup.",
           },
     ),
+    check("database_audit", "Database audit log", readings.databaseAudit, (audit) =>
+      audit.extension && audit.classes && audit.classes !== "none"
+        ? {
+            state: "ok",
+            summary: "Postgres records every schema and role change, without customer data.",
+          }
+        : {
+            state: "warning",
+            summary: "Postgres isn't recording schema or role changes.",
+            fix: "Reboot the database after applying its parameter group, then CREATE EXTENSION pgaudit.",
+          },
+    ),
+    check("encryption", "Encryption inside AWS", readings.encryption, ({ targetGroups, topics }) =>
+      targetGroups.encrypted === targetGroups.total && topics.encrypted === topics.total
+        ? {
+            state: "ok",
+            summary: "Traffic reaching the containers and notifications are encrypted.",
+          }
+        : {
+            state: "warning",
+            summary: `Not yet encrypted: ${plainFailures([
+              targetGroups.encrypted < targetGroups.total &&
+                `${targetGroups.total - targetGroups.encrypted} of ${targetGroups.total} load balancer routes to containers`,
+              topics.encrypted < topics.total &&
+                `${topics.total - topics.encrypted} of ${topics.total} notification topics`,
+            ])}.`,
+            fix: "PHI must be encrypted in transit and at rest under the BAA. Apply infra/terraform.",
+          },
+    ),
   ];
+}
+
+function plainFailures(found: Array<string | false>): string {
+  return found.filter(Boolean).join(" and ");
 }
 
 const STATE_ORDER: Record<CheckState, number> = { failing: 0, unknown: 1, warning: 2, ok: 3 };
@@ -311,5 +349,37 @@ export function postureVerdict(
     tone: "success",
     title: "All clear",
     description: "Every protection is on and nothing serious has been flagged.",
+  };
+}
+
+export type DatabaseAuditEntry = {
+  at: Date;
+  kind: string;
+  command: string;
+  object: string;
+  statement: string;
+};
+
+const STATEMENT_LENGTH = 200;
+
+/** One pgaudit log line: `… AUDIT: SESSION,1,1,DDL,CREATE TABLE,TABLE,public.x,create table x,<not logged>`. */
+export function parseAuditLine(message: string, at: Date): DatabaseAuditEntry | null {
+  const start = message.indexOf("AUDIT: ");
+  if (start === -1) return null;
+  const fields = message.slice(start + "AUDIT: ".length).split(",");
+  if (fields.length < 8) return null;
+  const [, , , kind, command, , object] = fields;
+  const statement = fields
+    .slice(7)
+    .join(",")
+    .replace(/,<[^>]*>\s*$/, "")
+    .trim();
+  return {
+    at,
+    kind: kind ?? "",
+    command: command ?? "",
+    object: object ?? "",
+    statement:
+      statement.length > STATEMENT_LENGTH ? `${statement.slice(0, STATEMENT_LENGTH)}…` : statement,
   };
 }

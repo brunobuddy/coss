@@ -239,6 +239,25 @@ resource "aws_cloudtrail" "organization" {
   }
 }
 
+# Created by hand before anything else existed; only its policy is managed here.
+resource "aws_s3_bucket_policy" "state" {
+  bucket = "coss-org-tfstate-${local.management_account_id}"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "TlsOnly"
+      Effect    = "Deny"
+      Principal = "*"
+      Action    = "s3:*"
+      Resource = [
+        "arn:aws:s3:::coss-org-tfstate-${local.management_account_id}",
+        "arn:aws:s3:::coss-org-tfstate-${local.management_account_id}/*",
+      ]
+      Condition = { Bool = { "aws:SecureTransport" = "false" } }
+    }]
+  })
+}
+
 # --- Detection ---------------------------------------------------------------------------------
 
 resource "aws_guardduty_detector" "management" {

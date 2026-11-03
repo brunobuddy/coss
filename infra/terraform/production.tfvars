@@ -67,6 +67,7 @@ plain_env = {
     SECURITY_MANAGEMENT_ROLE_ARN = "arn:aws:iam::456651119109:role/coss-security-read"
     SECURITY_ALERTS_TOPIC_ARN    = "arn:aws:sns:us-east-2:294417174674:coss-alerts"
     SECURITY_ACCESS_LOGS_BUCKET  = "coss-production-access-logs-294417174674"
+    SECURITY_DATABASE_LOG_GROUP  = "/aws/rds/instance/coss-production/postgresql"
     BETTER_AUTH_URL              = "https://coss.com"
     API_PUBLIC_URL               = "https://api.coss.com"
     SMTP_PUBLIC_HOST             = "smtp.coss.com"

@@ -11,10 +11,15 @@ import {
   GetTrailStatusCommand,
   LookupEventsCommand,
 } from "@aws-sdk/client-cloudtrail";
+import { CloudWatchLogsClient, FilterLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
 import {
   ConfigServiceClient,
   DescribeConfigurationRecorderStatusCommand,
 } from "@aws-sdk/client-config-service";
+import {
+  DescribeTargetGroupsCommand,
+  ElasticLoadBalancingV2Client,
+} from "@aws-sdk/client-elastic-load-balancing-v2";
 import {
   GetDetectorCommand,
   GetFindingsCommand,
@@ -29,13 +34,21 @@ import {
   GetFindingsCommand as GetHubFindingsCommand,
   SecurityHubClient,
 } from "@aws-sdk/client-securityhub";
-import { ListSubscriptionsByTopicCommand, SNSClient } from "@aws-sdk/client-sns";
+import {
+  GetTopicAttributesCommand,
+  ListSubscriptionsByTopicCommand,
+  SNSClient,
+} from "@aws-sdk/client-sns";
 import { AssumeRoleCommand, STSClient } from "@aws-sdk/client-sts";
+import { db } from "@coss/db";
+import { sql } from "drizzle-orm";
 import { env } from "@/env";
 import {
   type ControlFinding,
   type ControlScore,
+  type DatabaseAuditEntry,
   type PostureCheck,
+  parseAuditLine,
   postureChecks,
   postureVerdict,
   type Reading,
@@ -57,6 +70,10 @@ const REGION = "us-east-2";
 const GLOBAL_REGION = "us-east-1";
 const ROOT_LOOKUP_DAYS = 90;
 const MAX_HUB_PAGES = 10;
+const MAX_LOG_PAGES = 5;
+const AUDIT_DAYS = 30;
+const AUDIT_SHOWN = 25;
+const TOPICS = ["coss-alerts", "coss-ses-events", "coss-ses-inbound"];
 const CLIENT = {
   maxAttempts: 2,
   requestHandler: { connectionTimeout: 3_000, requestTimeout: 8_000 },
@@ -207,6 +224,32 @@ async function logsArrived(
   return false;
 }
 
+async function logLines(
+  client: CloudWatchLogsClient,
+  logGroupName: string,
+  filterPattern: string,
+  startTime: number,
+): Promise<{ message: string; at: Date }[]> {
+  const lines: { message: string; at: Date }[] = [];
+  let nextToken: string | undefined;
+  for (let page = 0; page < MAX_LOG_PAGES; page += 1) {
+    const response = await client.send(
+      new FilterLogEventsCommand({ logGroupName, filterPattern, startTime, nextToken }),
+    );
+    for (const event of response.events ?? []) {
+      lines.push({ message: event.message ?? "", at: new Date(event.timestamp ?? 0) });
+    }
+    nextToken = response.nextToken;
+    if (!nextToken) break;
+  }
+  return lines;
+}
+
+export type DatabaseActivity = {
+  entries: DatabaseAuditEntry[];
+  failedLoginsToday: number;
+};
+
 export type OutsideAccessFinding = {
   id: string;
   resource: string;
@@ -222,6 +265,7 @@ export type SecurityPosture = {
   threats: Reading<Threat[]>;
   score: Reading<ControlScore>;
   outsideAccess: Reading<OutsideAccessFinding[]>;
+  database: Reading<DatabaseActivity>;
 };
 
 export async function getSecurityPosture(): Promise<SecurityPosture> {
@@ -253,6 +297,9 @@ export async function getSecurityPosture(): Promise<SecurityPosture> {
     configRecording,
     alerts,
     accessLogs,
+    databaseAudit,
+    encryption,
+    database,
     production,
     managementId,
     analyzerState,
@@ -354,6 +401,57 @@ export async function getSecurityPosture(): Promise<SecurityPosture> {
       ]);
       return { loadBalancer, network };
     }),
+    read(async () => {
+      const [row] = (
+        await db.execute<{ extension: boolean; classes: string | null }>(
+          sql`select exists(select 1 from pg_extension where extname = 'pgaudit') as extension,
+                     current_setting('pgaudit.log', true) as classes`,
+        )
+      ).rows;
+      return { extension: row?.extension === true, classes: row?.classes ?? null };
+    }),
+    read(async () => {
+      if (!env.SECURITY_ALERTS_TOPIC_ARN) throw new Error("SECURITY_ALERTS_TOPIC_ARN is unset");
+      const prefix = env.SECURITY_ALERTS_TOPIC_ARN.replace(/[^:]+$/, "");
+      const sns = new SNSClient(region);
+      const [groups, topics] = await Promise.all([
+        new ElasticLoadBalancingV2Client(region).send(new DescribeTargetGroupsCommand({})),
+        Promise.all(
+          TOPICS.map((topic) =>
+            sns.send(new GetTopicAttributesCommand({ TopicArn: `${prefix}${topic}` })),
+          ),
+        ),
+      ]);
+      const routes = (groups.TargetGroups ?? []).filter((group) =>
+        group.Protocol?.startsWith("HTTP"),
+      );
+      return {
+        targetGroups: {
+          total: routes.length,
+          encrypted: routes.filter((group) => group.Protocol === "HTTPS").length,
+        },
+        topics: {
+          total: topics.length,
+          encrypted: topics.filter((topic) => topic.Attributes?.KmsMasterKeyId).length,
+        },
+      };
+    }),
+    read(async () => {
+      const group = env.SECURITY_DATABASE_LOG_GROUP;
+      if (!group) throw new Error("SECURITY_DATABASE_LOG_GROUP is unset");
+      const logs = new CloudWatchLogsClient(region);
+      const [audit, failed] = await Promise.all([
+        logLines(logs, group, '"AUDIT: "', Date.now() - AUDIT_DAYS * 86_400_000),
+        logLines(logs, group, '"password authentication failed"', Date.now() - 86_400_000),
+      ]);
+      return {
+        entries: audit
+          .flatMap(({ message, at }) => parseAuditLine(message, at) ?? [])
+          .sort((a, b) => b.at.getTime() - a.at.getTime())
+          .slice(0, AUDIT_SHOWN),
+        failedLoginsToday: failed.length,
+      };
+    }),
     productionDetector,
     managementDetector,
     analyzer,
@@ -418,6 +516,8 @@ export async function getSecurityPosture(): Promise<SecurityPosture> {
       : analyzerState,
     alerts,
     accessLogs,
+    databaseAudit,
+    encryption,
   };
   const checks = sortChecks(postureChecks(readings));
   return {
@@ -427,5 +527,6 @@ export async function getSecurityPosture(): Promise<SecurityPosture> {
     threats,
     score,
     outsideAccess,
+    database,
   };
 }

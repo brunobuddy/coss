@@ -794,6 +794,13 @@ export const SERVICES: Service[] = [
         description: "The security page checks load balancer and VPC flow logs still arrive.",
       },
       {
+        name: "SECURITY_DATABASE_LOG_GROUP",
+        kind: "plain",
+        required: false,
+        value: "the database's CloudWatch log group",
+        description: "The security page's database activity: pgaudit's lines and failed logins.",
+      },
+      {
         name: "DEPLOY_GITHUB_APP_ID",
         kind: "plain",
         required: false,

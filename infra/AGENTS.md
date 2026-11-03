@@ -50,3 +50,9 @@ hand like production's. `aws_organizations_organization` lists every trusted ser
 adding it there, or the next apply turns it off. The `ProtectSecurityMonitoring` SCP denies changes to production's
 detector and recorder, so a Terraform change to them needs that SCP detached first (from the management account).
 A new AWS account in the organization is covered by the trail and Access Analyzer, but needs its own GuardDuty.
+
+The database audits schema and role changes with pgaudit (no parameters or reads, which can hold customer data), and
+its log group keeps a year. After a fresh database, once the parameter group's `shared_preload_libraries` is applied by
+a reboot: `infra/scripts/ecs-task.sh worker -- bun -e '…CREATE EXTENSION IF NOT EXISTS pgaudit…'`. SNS topics are
+encrypted with `alias/coss-production-sns`, whose key policy must name every service that publishes to them: one
+missing loses its messages silently.

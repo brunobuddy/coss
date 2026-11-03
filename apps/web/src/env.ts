@@ -96,6 +96,7 @@ export const env = createEnv({
     SECURITY_MANAGEMENT_ROLE_ARN: z.string().startsWith("arn:aws:iam::").optional(),
     SECURITY_ALERTS_TOPIC_ARN: z.string().startsWith("arn:aws:sns:").optional(),
     SECURITY_ACCESS_LOGS_BUCKET: z.string().optional(),
+    SECURITY_DATABASE_LOG_GROUP: z.string().optional(),
     DEPLOY_GITHUB_APP_ID: z.string().regex(/^\d+$/, "The app's numeric id.").optional(),
     DEPLOY_GITHUB_APP_PRIVATE_KEY: z.string().includes("PRIVATE KEY").optional(),
     // Domain Connect (src/lib/domain-connect.ts): the RSA key apply links are signed with, and the
