@@ -8,4 +8,5 @@ export * from "./push.ts";
 export * from "./scheduling.ts";
 export * from "./sign.ts";
 export * from "./sms.ts";
+export * from "./support.ts";
 export * from "./verify.ts";

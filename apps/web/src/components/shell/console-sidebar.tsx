@@ -11,6 +11,7 @@ import {
   type ProductPreferences,
   sectionOf,
   settingsHref,
+  supportHref,
   visibleProducts,
 } from "@coss/dashboard-routes";
 import {
@@ -43,6 +44,7 @@ import {
   EllipsisIcon,
   HouseIcon,
   LayoutGridIcon,
+  LifeBuoyIcon,
   type LucideIcon,
   PinIcon,
   PinOffIcon,
@@ -102,7 +104,7 @@ export type ConsoleSidebarProps = {
 };
 
 type Area =
-  | { kind: "home" | "catalog" | "developers" | "organization" }
+  | { kind: "home" | "catalog" | "developers" | "organization" | "support" }
   | { kind: "product"; product: Product };
 
 /**
@@ -195,6 +197,8 @@ const Navigate = createContext<(href: string) => void>(() => {});
 function areaOf(pathname: string, orgSlug: string, envBase: string | null): Area {
   const settings = settingsHref(orgSlug);
   if (pathname === settings || pathname.startsWith(`${settings}/`)) return { kind: "organization" };
+  const support = supportHref(orgSlug);
+  if (pathname === support || pathname.startsWith(`${support}/`)) return { kind: "support" };
   if (!envBase || !pathname.startsWith(envBase)) return { kind: "home" };
   const rest = pathname.slice(envBase.length);
   if (rest === "/products") return { kind: "catalog" };
@@ -283,9 +287,15 @@ function ProductRail(props: {
             icon={ORGANIZATION_ICON}
             label="Organization"
           />
+          <RailLink
+            active={area.kind === "support"}
+            href={supportHref(props.organization.slug)}
+            icon={LifeBuoyIcon}
+            label="Support"
+          />
           <RailLink icon={BookOpenIcon} label="Documentation" link={<a href="/docs" />} />
         </SidebarMenu>
-        <UserNav compact user={props.user} />
+        <UserNav compact supportHref={supportHref(props.organization.slug)} user={props.user} />
       </div>
     </RailTooltip>
   );

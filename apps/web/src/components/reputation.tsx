@@ -14,6 +14,7 @@ import {
 } from "@coss/ui/components/table";
 import { HistoryIcon } from "lucide-react";
 import Link from "next/link";
+import { SupportLink } from "@/components/support/support-link";
 import { formatDateTime } from "@/lib/format";
 import { EmptyState } from "./empty-state";
 import { Panel, PanelBody } from "./panel";
@@ -46,6 +47,7 @@ export function ReputationBanner(props: {
     "status" | "reason" | "marketingPausedAt" | "marketingReason"
   >;
   href: string;
+  orgSlug: string;
 }) {
   const { status, reason } = props.standing;
   if (status === "good") {
@@ -60,11 +62,22 @@ export function ReputationBanner(props: {
         {suspended ? "Live sending is suspended" : "Your sending reputation needs attention"}
       </AlertTitle>
       <AlertDescription>
-        {suspended
-          ? `coss.com suspended live sending for this organization (${triggerLabel(reason).toLowerCase()}). Sandbox keys still work. Contact support to resume sending.`
-          : reason === "content_screening"
-            ? "Content screening flagged some of your recent emails as possible spam or phishing. Emails it is confident about are blocked and suspend live sending automatically."
-            : `${triggerLabel(reason)} is approaching the level at which coss.com suspends live sending automatically.`}{" "}
+        {suspended ? (
+          <>
+            coss.com suspended live sending for this organization (
+            {triggerLabel(reason).toLowerCase()}). Sandbox keys still work.{" "}
+            <SupportLink
+              orgSlug={props.orgSlug}
+              subject="Live sending suspended"
+              topic="deliverability"
+            />{" "}
+            to resume sending.
+          </>
+        ) : reason === "content_screening" ? (
+          "Content screening flagged some of your recent emails as possible spam or phishing. Emails it is confident about are blocked and suspend live sending automatically."
+        ) : (
+          `${triggerLabel(reason)} is approaching the level at which coss.com suspends live sending automatically.`
+        )}{" "}
         <Link className="underline" href={props.href}>
           View reputation
         </Link>

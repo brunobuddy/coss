@@ -11,6 +11,7 @@ import {
 import { FormError } from "@coss/forms";
 import { HookError } from "@coss/hooks";
 import { ReputationError } from "@coss/reputation";
+import { SupportError } from "@coss/support";
 import { TenancyError } from "@coss/tenancy";
 import { isAPIError } from "better-auth/api";
 import { unstable_rethrow } from "next/navigation";
@@ -57,7 +58,8 @@ function userFacingMessage(error: unknown): string {
     error instanceof SubaccountError ||
     error instanceof BillingError ||
     error instanceof HookError ||
-    error instanceof FormError
+    error instanceof FormError ||
+    error instanceof SupportError
   ) {
     return error.message;
   }

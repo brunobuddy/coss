@@ -272,6 +272,22 @@ export const Category = z
   .string()
   .regex(CATEGORY, "Must be 1-256 characters: ASCII letters, numbers, underscores or dashes.");
 
+/** Why a file with this name can't be attached to an email; `null` when it can. */
+export function attachmentFilenameProblem(value: string): string | null {
+  const extension = fileExtension(value);
+  if (CONTROL_CHARACTERS.test(value) || FORMAT_CHARACTERS.test(value)) {
+    return "Filenames must not contain control or invisible formatting characters.";
+  }
+  if (value.includes("/") || value.includes("\\")) return "Filenames must not contain / or \\.";
+  if (extension === "" || value.endsWith(".")) {
+    return 'Filenames need an extension, e.g. "invoice.pdf".';
+  }
+  if (BLOCKED_ATTACHMENT_EXTENSIONS.has(extension)) {
+    return `Attachments with the .${extension} extension cannot be sent.`;
+  }
+  return null;
+}
+
 const Attachment = z
   .strictObject({
     filename: z
@@ -279,17 +295,7 @@ const Attachment = z
       .min(1, "Filename must not be empty.")
       .max(FILENAME_MAX_LENGTH, `Filenames can be at most ${FILENAME_MAX_LENGTH} characters.`)
       .superRefine((value, ctx) => {
-        const extension = fileExtension(value);
-        let message: string | null = null;
-        if (CONTROL_CHARACTERS.test(value) || FORMAT_CHARACTERS.test(value)) {
-          message = "Filenames must not contain control or invisible formatting characters.";
-        } else if (value.includes("/") || value.includes("\\")) {
-          message = "Filenames must not contain / or \\.";
-        } else if (extension === "" || value.endsWith(".")) {
-          message = 'Filenames need an extension, e.g. "invoice.pdf".';
-        } else if (BLOCKED_ATTACHMENT_EXTENSIONS.has(extension)) {
-          message = `Attachments with the .${extension} extension cannot be sent.`;
-        }
+        const message = attachmentFilenameProblem(value);
         if (message) ctx.addIssue({ code: "custom", message });
       }),
     content: z

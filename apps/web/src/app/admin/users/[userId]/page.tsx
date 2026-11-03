@@ -33,6 +33,7 @@ import {
   PlatformRoleBadge,
   UserStatusBadge,
 } from "@/components/admin/status-badges";
+import { SupportTicketsPanel } from "@/components/admin/support-tickets-panel";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
 import { RiskDecisionBadge, RiskOutcomeBadge } from "@/components/risk-badges";
@@ -99,6 +100,8 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
         }
         title={user.name}
       />
+
+      <SupportTicketsPanel requesterEmail={user.email} />
 
       <Panel title="Account">
         <PanelBody flush>

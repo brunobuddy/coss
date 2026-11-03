@@ -44,6 +44,7 @@ import {
   SettingsSection,
   SettingsTable,
 } from "@/components/settings";
+import { SupportLink } from "@/components/support/support-link";
 import { env } from "@/env";
 import { recordAudit } from "@/lib/audit";
 import { billingRuntime, systemOrganizationId } from "@/lib/billing";
@@ -233,7 +234,19 @@ export default async function BillingPage({
               ? "An invoice is overdue. Pay it below and sending resumes right away."
               : holds.some((hold) => hold.reason === "spend_limit")
                 ? "This month's usage reached your spend limit. Raise it below, or sending resumes next month."
-                : "coss.com paused live sending for billing reasons. Contact support."}{" "}
+                : "coss.com paused live sending for billing reasons."}{" "}
+            {holds.some(
+              (hold) => hold.reason === "delinquent" || hold.reason === "spend_limit",
+            ) ? null : (
+              <>
+                <SupportLink
+                  orgSlug={context.organization.slug}
+                  subject="Billing hold"
+                  topic="billing"
+                />
+                .{" "}
+              </>
+            )}
             Sandbox keys keep working.
           </AlertDescription>
         </Alert>

@@ -99,6 +99,18 @@ export const ADMIN_ACTIONS = [
   // Forms: a form disabled for abuse (phishing, spam), or turned back on; target the form.
   "form.disable",
   "form.enable",
+  // Support: a rep's work on a ticket; target the ticket.
+  "support.replied",
+  "support.note_added",
+  "support.assigned",
+  "support.severity_changed",
+  "support.status_changed",
+  "support.spam_changed",
+  "support.organization_confirmed",
+  "support.message_revealed",
+  "support.cc_added",
+  "support.attachment_downloaded",
+  "support.saved_reply_changed",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
@@ -109,7 +121,8 @@ export type AdminTargetType =
   | "email"
   | "commit"
   | "form"
-  | "risk_assessment";
+  | "risk_assessment"
+  | "support_ticket";
 
 export type AdminAuditEvent = {
   id: string;

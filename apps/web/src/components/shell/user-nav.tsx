@@ -16,7 +16,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@coss/ui/components/sidebar";
-import { ChevronsUpDownIcon, LogOutIcon, SettingsIcon, ShieldIcon } from "lucide-react";
+import {
+  ChevronsUpDownIcon,
+  LifeBuoyIcon,
+  LogOutIcon,
+  SettingsIcon,
+  ShieldIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/user-avatar";
@@ -30,7 +36,15 @@ export type ShellUser = { name: string; email: string; image: string | null; isA
  * The signed-in user at the foot of the sidebar: account settings (where the theme is chosen), the
  * admin console (platform admins) and sign out.
  */
-export function UserNav({ user, compact }: { user: ShellUser; compact?: boolean }) {
+export function UserNav({
+  user,
+  compact,
+  supportHref,
+}: {
+  user: ShellUser;
+  compact?: boolean;
+  supportHref?: string;
+}) {
   const router = useRouter();
   const { isMobile } = useSidebar();
 
@@ -86,6 +100,12 @@ export function UserNav({ user, compact }: { user: ShellUser; compact?: boolean 
                 <SettingsIcon />
                 Account settings
               </MenuLinkItem>
+              {supportHref ? (
+                <MenuLinkItem render={<Link href={supportHref} />}>
+                  <LifeBuoyIcon />
+                  Support
+                </MenuLinkItem>
+              ) : null}
               {user.isAdmin ? (
                 <MenuLinkItem render={<Link href="/admin" />}>
                   <ShieldIcon />

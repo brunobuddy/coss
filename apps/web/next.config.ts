@@ -49,6 +49,7 @@ const nextConfig: NextConfig = {
     "@coss/sign",
     "@coss/verify",
     "@coss/forms",
+    "@coss/support",
     "@coss/scheduling",
     "@coss/notifications",
     "@coss/email-layout",
@@ -97,6 +98,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Suppression CSV imports upload up to 2 MB (`import-limits.ts`) plus multipart overhead.
     serverActions: { bodySizeLimit: "3mb" },
+    // Support uploads are up to 10 MB plus multipart overhead; past this the proxy cuts the body.
+    proxyClientMaxBodySize: "11mb",
   },
 };
 

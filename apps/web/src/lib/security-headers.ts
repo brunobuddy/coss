@@ -58,6 +58,8 @@ export function securityHeaders({ dev }: { dev: boolean }): { key: string; value
 export const RECEIVED_CONTENT_PATHS = [
   "/:orgSlug/:projectSlug/:envSlug/email/received/:receivedId/raw",
   "/:orgSlug/:projectSlug/:envSlug/email/received/:receivedId/attachments/:attachmentId",
+  "/:orgSlug/support/attachments/:attachmentId",
+  "/admin/support/attachments/:attachmentId",
 ];
 
 export const RECEIVED_CONTENT_CSP = "sandbox; default-src 'none'";

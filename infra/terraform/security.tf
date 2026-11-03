@@ -438,6 +438,7 @@ locals {
   tls_only_buckets = {
     forms_files = aws_s3_bucket.forms_files.id
     sign        = aws_s3_bucket.sign_documents.id
+    support     = aws_s3_bucket.support_files.id
     state       = "coss-tfstate-${var.account_id}"
   }
 }

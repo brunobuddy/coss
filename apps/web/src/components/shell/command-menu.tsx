@@ -24,6 +24,7 @@ import {
   FolderIcon,
   HouseIcon,
   LayoutGridIcon,
+  LifeBuoyIcon,
   type LucideIcon,
   SearchIcon,
   SettingsIcon,
@@ -132,7 +133,23 @@ export function CommandMenu({ data }: { data: CommandMenuData }) {
       );
       result.push({
         value: org.name,
-        items: navEntries("Organization", settingsHref(org.slug), settings, ORGANIZATION_ICON),
+        items: [
+          {
+            value: "support help contact",
+            label: "Support",
+            keywords: "help ticket contact",
+            icon: LifeBuoyIcon,
+            href: `/${org.slug}/support`,
+          },
+          {
+            value: "new support ticket",
+            label: "New support ticket",
+            keywords: "help contact",
+            icon: LifeBuoyIcon,
+            href: `/${org.slug}/support/new`,
+          },
+          ...navEntries("Organization", settingsHref(org.slug), settings, ORGANIZATION_ICON),
+        ],
       });
     }
     if (org && data.projects && data.projects.length > 0) {

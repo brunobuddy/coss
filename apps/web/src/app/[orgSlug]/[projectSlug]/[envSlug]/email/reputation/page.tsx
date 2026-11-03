@@ -35,7 +35,7 @@ export default async function ReputationPage({
         title="Reputation"
       />
       {tenant?.sendingStatus === "disabled" ? (
-        <SendingPausedAlert cause={tenant.statusCause} />
+        <SendingPausedAlert cause={tenant.statusCause} orgSlug={orgSlug} />
       ) : null}
       {standing?.marketingPausedAt ? (
         <MarketingPausedAlert reason={standing.marketingReason} />

@@ -15,6 +15,7 @@ import { OrganizationAvatar } from "@/components/organization-avatar";
 import { RetentionPolicySection } from "@/components/retention-policy";
 import { SettingsPage, SettingsRow, SettingsSection } from "@/components/settings";
 import { StatusDot } from "@/components/status-dot";
+import { SupportLink } from "@/components/support/support-link";
 import { requireOrgMember } from "@/lib/session";
 import { UpgradeApiVersionButton } from "./api-version-form";
 import { DeleteOrganizationButton } from "./delete-organization-button";
@@ -229,9 +230,14 @@ export default async function OrganizationSettingsPage({
         {isOwner ? (
           <SettingsRow
             description={
-              suspended
-                ? "A suspended organization can't be deleted. Contact support."
-                : "Permanently delete its projects, emails, domains, suppression lists and webhooks. Members lose access and API keys stop working at once."
+              suspended ? (
+                <>
+                  A suspended organization can't be deleted.{" "}
+                  <SupportLink orgSlug={organization.slug} topic="account" />.
+                </>
+              ) : (
+                "Permanently delete its projects, emails, domains, suppression lists and webhooks. Members lose access and API keys stop working at once."
+              )
             }
             label="Delete organization"
           >

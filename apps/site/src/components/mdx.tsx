@@ -29,6 +29,7 @@ import {
   PlansWith,
   PlanTable,
   Rate,
+  SupportTable,
   UsageRates,
 } from "./billing";
 import { DocsTable, DocsTd, DocsTh, DocsTr } from "./docs-table";
@@ -160,6 +161,7 @@ export function getMDXComponents(components?: MDXComponents) {
     PlanPrice,
     PlansWith,
     PlanTable,
+    SupportTable,
     Rate,
     ReputationThresholds,
     ReputationWindow,

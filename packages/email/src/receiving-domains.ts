@@ -48,7 +48,8 @@ export function normalizeReceivingHostname(
 ): string {
   let hostname: string;
   try {
-    hostname = normalizeDomainName(input);
+    // Reserved names stop anyone claiming them; this must be under a domain the organization holds.
+    hostname = normalizeDomainName(input, { allowReserved: true });
   } catch (error) {
     if (error instanceof DomainError) {
       throw new DomainError("invalid_receiving_hostname", error.message);

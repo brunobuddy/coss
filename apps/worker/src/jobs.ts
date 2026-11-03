@@ -98,6 +98,20 @@ import {
   sweepStaleSmsClaims,
   sweepUnclaimedSms,
 } from "@coss/sms";
+import {
+  autoResolveQuietTickets,
+  copySupportAttachments,
+  enqueueSupportAlerts,
+  ingestSupportEmails,
+  purgeExpiredSupportTickets,
+  purgeSupportLeftovers,
+  runDueSupportDeliveries,
+  type SupportDeliveryDeps,
+  type SupportFileStore,
+  type SupportIntakeDeps,
+  syncSupportDeliveries,
+  wakeSnoozedTickets,
+} from "@coss/support";
 import { runDueOrganizationDeletions } from "@coss/tenancy/deletion";
 import { publicLogoHttp, runDueOrganizationLogos } from "@coss/tenancy/logos";
 import { recordDueVerifySmsUsage } from "@coss/verify";
@@ -194,6 +208,8 @@ export type WorkerDeps = {
   formsStore?: FormFileStore | null;
   /** Forms' notifications, contacts and verification emails; `null`: off (no forms host yet). */
   formDeliveries?: FormDeliveryDeps | null;
+  /** coss.com's support desk; `null`: off. */
+  support?: SupportWorkerDeps | null;
   /** Sign's emails, reminders and expiry; `null`: off (no document store or signing app yet). */
   signNotifications?: SignNotificationDeps | null;
   /** Push notifications to the iOS app; `null`: held until APNs is configured. */
@@ -228,7 +244,7 @@ export type WorkerDeps = {
 /**
  * Every loop (and pg-boss's email dispatch, one queue per stream), by name, for `WORKER_LOOPS`. The
  * conditional ones (`billing-notifications`, `auth-emails`, `reputation-notifications`,
- * `dmarc-notifications`, `notifications`, `push-notifications`, `sign-completions`, `sign-notifications`, `sign-cleanup`, `forms`, `ses-events`,
+ * `dmarc-notifications`, `notifications`, `push-notifications`, `sign-completions`, `sign-notifications`, `sign-cleanup`, `forms`, `support`, `ses-events`,
  * `ses-inbound`) also need their
  * configuration.
  */
@@ -282,9 +298,23 @@ export const WORKER_LOOP_NAMES = [
   "sign-notifications",
   "sign-cleanup",
   "forms",
+  "support",
   "ses-events",
   "ses-inbound",
 ] as const;
+
+export type SupportWorkerDeps = {
+  /** Mail received in the support environment; `null`: only dashboard tickets. */
+  intake: SupportIntakeDeps | null;
+  /** `null`: customers' emails wait until the mailer is configured. */
+  delivery: SupportDeliveryDeps | null;
+  inbound: { get(key: string): Promise<Uint8Array | null> } | null;
+  store: SupportFileStore | null;
+  /** Reps' alerts are this organization's notifications; `null`: none. */
+  alertsOrganizationId: string | null;
+};
+
+const SUPPORT_BATCH = 25;
 
 export function startJobs(deps: WorkerDeps): Loop[] {
   const logoHttp = publicLogoHttp();
@@ -803,6 +833,44 @@ export function startJobs(deps: WorkerDeps): Loop[] {
             ? await runDueFormStoreCleanup({ limit: FORMS_CLEANUP_BATCH }, formsStore)
             : 0;
           return delivered === FORMS_DELIVERY_BATCH || cleaned === FORMS_CLEANUP_BATCH;
+        },
+      }),
+    );
+  }
+  const support = deps.support;
+  if (support) {
+    let nextHousekeeping = 0;
+    loops.push(
+      start({
+        // A rep's reply or a customer's email should land within seconds.
+        name: "support",
+        intervalMs: 3000,
+        run: async () => {
+          const filed = support.intake
+            ? await ingestSupportEmails({ limit: SUPPORT_BATCH }, support.intake)
+            : 0;
+          const copied = await copySupportAttachments(
+            { limit: SUPPORT_BATCH },
+            { inbound: support.inbound, store: support.store },
+          );
+          const sent = support.delivery
+            ? await runDueSupportDeliveries({ limit: SUPPORT_BATCH }, support.delivery)
+            : 0;
+          if (support.alertsOrganizationId) {
+            await enqueueSupportAlerts({
+              organizationId: support.alertsOrganizationId,
+              limit: SUPPORT_BATCH,
+            });
+          }
+          if (Date.now() >= nextHousekeeping) {
+            nextHousekeeping = Date.now() + 60_000;
+            if (support.delivery) await syncSupportDeliveries({}, support.delivery);
+            await wakeSnoozedTickets({});
+            await autoResolveQuietTickets({});
+            await purgeExpiredSupportTickets({ store: support.store });
+            await purgeSupportLeftovers({ store: support.store });
+          }
+          return filed === SUPPORT_BATCH || copied === SUPPORT_BATCH || sent === SUPPORT_BATCH;
         },
       }),
     );

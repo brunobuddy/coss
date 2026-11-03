@@ -108,11 +108,18 @@ export default async function OrganizationLayout({ children, params }: LayoutPro
             {standing ? (
               <ReputationBanner
                 href={orgLinkHref(organization.slug, "/email/reputation")}
+                orgSlug={organization.slug}
                 standing={standing}
               />
             ) : null}
-            {suspended ? <SuspendedAlert /> : null}
-            {billing ? <BillingBanner href={`${base}/settings/billing`} state={billing} /> : null}
+            {suspended ? <SuspendedAlert orgSlug={organization.slug} /> : null}
+            {billing ? (
+              <BillingBanner
+                href={`${base}/settings/billing`}
+                orgSlug={organization.slug}
+                state={billing}
+              />
+            ) : null}
             {ownBudgetPaused ? (
               <Alert variant="error">
                 <AlertDescription>
