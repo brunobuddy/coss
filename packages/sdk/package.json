@@ -1,6 +1,6 @@
 {
   "name": "coss",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "The official TypeScript SDK for coss.com: email, SMS, video, scheduling and more behind one API key.",
   "license": "MIT",
   "homepage": "https://coss.com/docs",

@@ -1,5 +1,35 @@
 # coss
 
+## 0.11.0
+
+### Minor Changes
+
+- a951582: Forms: `coss.forms` (create, list, get, update, remove) and `coss.forms.submissions` (list, get,
+  remove, release, file) for hosted form endpoints screened by Risk.
+- 545d704: `coss/forms`: `attachForm(form)` and `submitForm()` post a form to its coss.com Forms endpoint from
+  the browser (JSON answers with errors per field, a `coss/device` token for Risk).
+- 09ccfba: Types for Forms: contacts created by a form have `source: "form"`, form submissions log with
+  `source: "forms"`, and usage has the `forms.submissions` meter.
+- 9d65e49: Forms webhooks: `form.submission.received` and `form.submission.flagged` events
+  (`FormSubmissionWebhookEvent`), with the Forms wire types (`Form`, `FormSubmission`, …).
+- 95707e1: Log drains: `format` (`ndjson`, `loki`, `datadog`, `otlp`) sends batches straight to Loki (Grafana
+  Cloud), Datadog or an OTLP/HTTP collector, and `auth_header` carries the intake's key (encrypted,
+  never returned; drains show `auth_header_name`).
+- a2ed56a: Adds `coss.scheduling`: hosts, schedules, event types, slots, availability search, bookings, holds, recurring
+  series, calendars, sessions and settings. `coss/scheduling` embeds the hosted pages (`mountBooker`,
+  `mountHostPortal`).
+  
+  `coss-mcp` gets tools to list hosts, slots and bookings and to cancel a booking; `coss-cli` gets
+  `coss scheduling hosts` and `coss scheduling bookings`.
+- b4cb758: OpenTelemetry: with `@opentelemetry/api` installed (an optional peer dependency), every call gets a
+  client span and sends its context as `traceparent`. The API stores it on the emails and text
+  messages a call sends and echoes it in their log lines and webhooks (`data.traceparent`, typed on
+  `EmailWebhookEventData` and `SmsWebhookEventData`). `tracing: false` turns it off.
+
+### Patch Changes
+
+- 9f31e28: Billing: usage can have the `forms.file_uploads` meter (MB of accepted form submissions' files).
+
 ## 0.10.0
 
 ### Minor Changes
