@@ -78,29 +78,27 @@ const trackingDomains: EnvVar[] = [
     name: "TRACKING_DOMAIN_PROVIDER",
     kind: "plain",
     required: true,
-    value: "cloudflare",
-    description: "Custom tracking domains are Cloudflare for SaaS custom hostnames.",
+    value: "cloudfront",
+    description: "Custom tracking domains are CloudFront distribution tenants.",
   },
   {
-    name: "CLOUDFLARE_API_TOKEN",
-    kind: "secret",
-    required: true,
-    description:
-      "Cloudflare API token limited to the coss.com zone with SSL and Certificates: Edit " +
-      "(custom hostnames). Same value for web, api and worker.",
-  },
-  {
-    name: "CLOUDFLARE_ZONE_ID",
+    name: "TRACKING_DISTRIBUTION_ID",
     kind: "plain",
     required: true,
-    description: "The coss.com zone id (Cloudflare dashboard, zone overview).",
+    description: "The multi-tenant CloudFront distribution tracking domains are tenants of.",
+  },
+  {
+    name: "TRACKING_CONNECTION_GROUP_ID",
+    kind: "plain",
+    required: true,
+    description: "The connection group tracking domains' tenants are created in.",
   },
   {
     name: "TRACKING_CNAME_TARGET",
     kind: "plain",
-    required: false,
-    value: "track.cosslinks.com",
-    description: "The zone's fallback origin, which customers CNAME their tracking domain to.",
+    required: true,
+    description:
+      "The connection group's routing endpoint, which customers CNAME their tracking domain to.",
   },
 ];
 

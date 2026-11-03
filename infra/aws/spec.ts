@@ -33,7 +33,7 @@ export function awsSpec() {
       },
       placeholders: {
         [ORIGIN_VERIFY_PLACEHOLDER]: "the origin-verify secret (CloudFront's custom header)",
-        [TRACKING_ORIGIN_VERIFY_PLACEHOLDER]: `the ${TRACKING_ORIGIN_VERIFY_HEADER} secret (Cloudflare's transform rule)`,
+        [TRACKING_ORIGIN_VERIFY_PLACEHOLDER]: `the ${TRACKING_ORIGIN_VERIFY_HEADER} secret (the tracking distributions' custom header)`,
       },
     },
     cloudFront: {

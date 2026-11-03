@@ -10,12 +10,12 @@ export const EMAIL_PROVIDERS = ["fake", "ses"] as const;
 export type EmailProviderName = (typeof EMAIL_PROVIDERS)[number];
 
 /** Values of `TRACKING_DOMAIN_PROVIDER`: what serves custom tracking hostnames over HTTPS. */
-export const TRACKING_DOMAIN_PROVIDERS = ["fake", "cloudflare"] as const;
+export const TRACKING_DOMAIN_PROVIDERS = ["fake", "cloudfront"] as const;
 
 export type TrackingDomainProviderName = (typeof TRACKING_DOMAIN_PROVIDERS)[number];
 
-/** The host customers CNAME their tracking domain to, unless `TRACKING_CNAME_TARGET` says otherwise. */
-export const DEFAULT_TRACKING_CNAME_TARGET = "track.cosslinks.com";
+/** The fake provider's CNAME target when `TRACKING_CNAME_TARGET` is unset. Nothing serves it. */
+export const DEFAULT_FAKE_TRACKING_CNAME_TARGET = "track.coss.test";
 
 /**
  * SES tenant names are `<prefix>-<organization id>[-marketing]` and at most 64 characters, so the
@@ -46,12 +46,12 @@ export const emailEnvShape = {
   // The transactional stream's; the marketing stream's is `<name>-marketing`.
   SES_CONFIGURATION_SET: z.string().regex(SES_CONFIGURATION_SET_PATTERN).optional(),
   SES_TENANT_PREFIX: z.string().regex(SES_TENANT_PREFIX_PATTERN).optional(),
-  // Custom tracking domains: Cloudflare for SaaS custom hostnames on coss.com's zone in production
-  // (the token and zone id are required with `cloudflare`), an in-memory fake otherwise.
+  // Custom tracking domains: tenants of a CloudFront multi-tenant distribution in production (the
+  // three below are required with `cloudfront`), an in-memory fake otherwise.
   TRACKING_DOMAIN_PROVIDER: z.enum(TRACKING_DOMAIN_PROVIDERS).default("fake"),
-  CLOUDFLARE_API_TOKEN: z.string().optional(),
-  CLOUDFLARE_ZONE_ID: z.string().optional(),
-  // The zone's fallback origin, which customers point their tracking CNAME at.
+  TRACKING_DISTRIBUTION_ID: z.string().optional(),
+  TRACKING_CONNECTION_GROUP_ID: z.string().optional(),
+  // The connection group's routing endpoint, which customers point their tracking CNAME at.
   TRACKING_CNAME_TARGET: z.string().optional(),
   // Receiving: coss.com's managed inbound domain (`<label>.<domain>` addresses per environment;
   // default `inbound.coss.test` with the fake provider) and, with SES, the bucket received
@@ -86,8 +86,8 @@ export type EmailEnv = {
   SES_CONFIGURATION_SET?: string | undefined;
   SES_TENANT_PREFIX?: string | undefined;
   TRACKING_DOMAIN_PROVIDER?: TrackingDomainProviderName | undefined;
-  CLOUDFLARE_API_TOKEN?: string | undefined;
-  CLOUDFLARE_ZONE_ID?: string | undefined;
+  TRACKING_DISTRIBUTION_ID?: string | undefined;
+  TRACKING_CONNECTION_GROUP_ID?: string | undefined;
   TRACKING_CNAME_TARGET?: string | undefined;
   INBOUND_MANAGED_DOMAIN?: string | undefined;
   SES_INBOUND_BUCKET?: string | undefined;
