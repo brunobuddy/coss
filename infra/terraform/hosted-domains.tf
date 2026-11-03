@@ -237,3 +237,92 @@ resource "aws_cloudfront_distribution" "redirects" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 }
+
+# --- Customers' tracking domains ------------------------------------------------------------------
+
+# Each customer domain is a tenant of this distribution (`@coss/email`'s CloudFront provider). Tenants'
+# hosts aren't on the load balancer's certificate, so the origin is reached by a name of its own.
+resource "aws_acm_certificate" "tracking_origin" {
+  domain_name       = "tracking-origin.cosslinks.com"
+  validation_method = "DNS"
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_acm_certificate_validation" "tracking_origin" {
+  certificate_arn = aws_acm_certificate.tracking_origin.arn
+}
+
+resource "aws_lb_listener_certificate" "tracking_origin" {
+  listener_arn    = aws_lb_listener.https.arn
+  certificate_arn = aws_acm_certificate_validation.tracking_origin.certificate_arn
+}
+
+resource "aws_cloudfront_connection_group" "tracking" {
+  name         = "${local.name}-tracking"
+  enabled      = true
+  ipv6_enabled = true
+}
+
+resource "aws_cloudfront_multitenant_distribution" "tracking" {
+  comment      = "Customers' tracking domains (${var.stage})"
+  enabled      = true
+  http_version = "http2and3"
+  web_acl_id   = aws_wafv2_web_acl.edge["tracking"].arn
+
+  origin {
+    id          = "alb"
+    domain_name = aws_acm_certificate.tracking_origin.domain_name
+    custom_origin_config {
+      http_port                = 80
+      https_port               = 443
+      origin_protocol_policy   = "https-only"
+      origin_ssl_protocols     = ["TLSv1.2"]
+      origin_read_timeout      = 60
+      origin_keepalive_timeout = 30
+    }
+    custom_header {
+      header_name  = local.hosted.tracking.originVerifyHeader
+      header_value = local.header_secrets[local.hosted.tracking.originVerifySecret]
+    }
+  }
+
+  default_cache_behavior {
+    target_origin_id           = "alb"
+    viewer_protocol_policy     = "redirect-to-https"
+    compress                   = true
+    cache_policy_id            = data.aws_cloudfront_cache_policy.disabled.id
+    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.tenant.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.hsts.id
+    allowed_methods {
+      items          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+      cached_methods = ["GET", "HEAD"]
+    }
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
+  tenant_config {}
+}
+
+data "aws_cloudfront_origin_request_policy" "tenant" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
+output "tracking_tenants" {
+  description = "TRACKING_DISTRIBUTION_ID, TRACKING_CONNECTION_GROUP_ID and TRACKING_CNAME_TARGET."
+  value = {
+    distribution_id     = aws_cloudfront_multitenant_distribution.tracking.id
+    connection_group_id = aws_cloudfront_connection_group.tracking.id
+    cname_target        = aws_cloudfront_connection_group.tracking.routing_endpoint
+  }
+}
