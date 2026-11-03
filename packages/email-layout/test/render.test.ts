@@ -28,4 +28,28 @@ describe("renderEmail", () => {
     expect(message.text).toContain("Number: +18005550100");
     expect(message.text).toEndWith("--\nBecause.");
   });
+
+  test("the title and subtitle are escaped and in both parts", () => {
+    const message = renderEmail({
+      subject: "Subject",
+      title: "<i>Title</i>",
+      subtitle: "<b>Bailey</b> replied",
+      blocks: [{ paragraph: "Hello" }],
+    });
+    expect(message.html).toContain("&lt;i&gt;Title&lt;/i&gt;");
+    expect(message.html).toContain("&lt;b&gt;Bailey&lt;/b&gt; replied");
+    expect(message.text).toStartWith("<i>Title</i>\n\n<b>Bailey</b> replied\n\nHello");
+  });
+
+  test("it reads without the extras strict clients strip", () => {
+    const { html } = renderEmail({ subject: "Subject", blocks: [{ paragraph: "Hello" }] });
+    expect(html).toContain('alt="coss.com"');
+    expect(html).toContain('bgcolor="#0c0c0e"');
+    // Gmail refuses @font-face: it must not share a <style> with the phone layout.
+    const styles = html.match(/<style>[\s\S]*?<\/style>/g) ?? [];
+    expect(styles.filter((style) => style.includes("@font-face"))).toHaveLength(1);
+    expect(
+      styles.filter((style) => style.includes("@font-face") && style.includes("@media")),
+    ).toEqual([]);
+  });
 });

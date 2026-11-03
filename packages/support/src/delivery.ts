@@ -128,6 +128,7 @@ function contentOf(
     return {
       subject,
       title: ticket.subject,
+      subtitle: `${fromNameOf(message)} replied on ticket #${ticket.number}`,
       blocks: [...toEmailBlocks(message.body), ...footer],
       reason: REASON,
     };
@@ -137,6 +138,7 @@ function contentOf(
     return {
       subject,
       title: ticket.subject,
+      subtitle: `Ticket #${ticket.number}`,
       preview: `${name} replied to your support request.`,
       blocks: [
         { paragraph: `${name} replied to your support request:` },
@@ -158,6 +160,7 @@ function contentOf(
     return {
       subject,
       title: "We got your message",
+      subtitle: ticket.subject,
       preview: `Ticket #${ticket.number}. A person will reply.`,
       blocks: [
         { paragraph: "Thanks for getting in touch. A person will read this and reply here." },
@@ -171,6 +174,7 @@ function contentOf(
     return {
       subject,
       title: "We've closed this ticket",
+      subtitle: `Ticket #${ticket.number}: ${ticket.subject}`,
       blocks: [
         {
           paragraph:
