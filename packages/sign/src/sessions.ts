@@ -7,6 +7,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { db, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { and, eq, sql } from "drizzle-orm";
 import { SignError } from "./errors.ts";
 import type { SignRequestRow } from "./requests.ts";
@@ -37,7 +38,7 @@ function hashToken(token: string): string {
 
 /** The signing link for a session: the id in the path, the token in the fragment. */
 export function signSessionUrl(signUrl: string, sessionId: string, token: string): string {
-  return `${signUrl.replace(/\/+$/, "")}/s/${sessionId}#${token}`;
+  return `${withoutTrailingSlashes(signUrl)}/s/${sessionId}#${token}`;
 }
 
 /**

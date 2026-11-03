@@ -176,9 +176,10 @@ lint && composer test` (Laravel), `bundle exec rubocop && bundle exec rake test`
 run ruff format --check && uv run pytest` (Django); their end-to-end tests run when `COSS_E2E` holds the line `bun
 run --cwd apps/api serve:test` prints.
 
-**Security scanning** (`.github/workflows/security.yml`): CodeQL analyzes the TypeScript and the workflows on pull
-requests, on main and weekly, with findings in the repository's Security tab. `bun audit` checks dependencies for
-high-severity advisories on main and weekly. Neither is a required check. Cal.com's SDLC policy (Drata) asks for this.
+**Security scanning** (`.github/workflows/security.yml`): CodeQL analyzes the TypeScript and the workflows, and `bun
+audit` checks dependencies for high-severity advisories, on pull requests, on main and weekly. CodeQL's findings are
+in the repository's Security tab. Neither is a required check. Cal.com's SDLC policy (Drata) asks for this. The advisories
+`bun audit` ignores are listed with their reasons in the workflow: only the iOS app's toolchain.
 
 **Remote cache** (README, "Remote cache"): `typecheck` and `build` results are uploaded to Turbo's Vercel Remote Cache
 (team `cal`, signed) and the merge queue replays any task whose hash it finds (pull request runs get no cache

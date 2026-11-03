@@ -171,3 +171,25 @@ describe("publicLogoHttp", () => {
     expect(await http(new URL("https://169.254.169.254/latest/meta-data"), options)).toBeNull();
   });
 });
+
+describe("recognizing an SVG", () => {
+  const sniff = (text: string) => sniffImage(Buffer.from(text));
+
+  test("with a declaration, comments and a doctype, or none", () => {
+    expect(sniff("<svg></svg>")).toBe("svg");
+    expect(
+      sniff(
+        '  <?xml version="1.0"?>\n<!-- a --><!-- b -->\n<!DOCTYPE svg PUBLIC "x">\n<SVG a="1">',
+      ),
+    ).toBe("svg");
+    expect(sniff("<!-- never closed <svg>")).toBeNull();
+    expect(sniff("<html><svg></svg>")).toBeNull();
+    expect(sniff("<svgfoo>")).toBeNull();
+  });
+
+  test("a body full of comment openers stays fast", () => {
+    const started = performance.now();
+    sniff("<!--".repeat(250));
+    expect(performance.now() - started).toBeLessThan(100);
+  });
+});

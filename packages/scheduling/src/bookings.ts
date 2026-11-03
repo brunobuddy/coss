@@ -138,7 +138,7 @@ function checkAnswers(eventType: EventTypeRow, answers: Answers | undefined): vo
   }
 }
 
-const URL_LIKE = /https?:\/\/|www\.|[a-z0-9-]+\.[a-z]{2,}\//i;
+const URL_LIKE = /https?:\/\/|www\.|(?<![a-z0-9-])[a-z0-9-]+\.[a-z]{2,}\//i;
 
 /** A name is printed in emails sent to the attendee, who may be anyone: no room for a link. */
 function checkAttendee(attendee: AttendeeInputOutput): void {

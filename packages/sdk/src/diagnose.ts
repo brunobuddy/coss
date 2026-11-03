@@ -518,7 +518,9 @@ export function diagnoseEmail(input: DiagnoseEmailInput): Diagnosis {
 
 /** The bare domain of a From header (`Acme <hi@acme.com>` → `acme.com`). */
 export function fromDomain(from: string): string | null {
-  const address = /<([^>]+)>/.exec(from)?.[1] ?? from;
+  const open = from.indexOf("<");
+  const close = open === -1 ? -1 : from.indexOf(">", open);
+  const address = close > open + 1 ? from.slice(open + 1, close) : from;
   const at = address.lastIndexOf("@");
   return at === -1
     ? null

@@ -21,6 +21,7 @@ import {
   isReplayOf,
   withIdempotencyKey,
 } from "@coss/db/idempotency";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import type { ScreenInput, ScreenOutcome } from "@coss/screening";
 import { and, asc, eq, inArray, isNull, lte, not, notExists, or } from "drizzle-orm";
 import type { SmsDispatchQueue } from "./dispatch.ts";
@@ -228,7 +229,7 @@ function failedEvent(
 }
 
 export function createSmsService(opts: SmsServiceOptions): SmsService {
-  const callbackBaseUrl = opts.callbackBaseUrl?.replace(/\/+$/, "");
+  const callbackBaseUrl = opts.callbackBaseUrl && withoutTrailingSlashes(opts.callbackBaseUrl);
   // Sandbox environments never reach a real provider, whatever `liveProvider` is.
   const providerFor = (sandbox: boolean) => (sandbox ? opts.sandboxProvider : opts.liveProvider);
 

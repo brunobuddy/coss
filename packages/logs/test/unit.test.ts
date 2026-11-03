@@ -245,3 +245,18 @@ describe("log drain record ids", () => {
     expect(new Set(ids).size).toBe(40);
   });
 });
+
+describe("search terms", () => {
+  test("quoted strings, keyed ones, and quotes that never close", () => {
+    expect(parseLogQuery('level:error "two words"').levels).toEqual(["error"]);
+    expect(parseLogQuery('"two words" plain').text).toBe("two words plain");
+    expect(parseLogQuery('"a \\"b\\" c"').text).toBe('a "b" c');
+    expect(parseLogQuery('"never closed word').text).toBe('"never closed word');
+  });
+
+  test("many unclosed quotes stay fast", () => {
+    const started = performance.now();
+    parseLogQuery('"a '.repeat(50_000));
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+});

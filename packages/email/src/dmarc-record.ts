@@ -63,8 +63,15 @@ export function parseDmarcRecord(value: string): DmarcRecord | null {
     .split(";")
     .map((part) => part.trim())
     .filter(Boolean);
-  const first = parts[0]?.match(/^v\s*=\s*(.*)$/i);
-  if (first?.[1]?.trim().toUpperCase() !== "DMARC1") return null;
+  const firstEq = parts[0]?.indexOf("=") ?? -1;
+  if (firstEq < 0 || parts[0]?.slice(0, firstEq).trim().toLowerCase() !== "v") return null;
+  if (
+    parts[0]
+      ?.slice(firstEq + 1)
+      .trim()
+      .toUpperCase() !== "DMARC1"
+  )
+    return null;
   const tags: [string, string][] = [];
   for (const part of parts.slice(1)) {
     const eq = part.indexOf("=");

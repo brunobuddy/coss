@@ -7,7 +7,8 @@ import { SchedulingError } from "./errors.ts";
 
 export type SetupScreening = (input: { organizationId: string; text: string }) => Promise<boolean>;
 
-const URL_LIKE = /https?:\/\/|www\.|[a-z0-9-]+\.(com|net|org|io|ru|xyz|top|info|biz|co)\b/i;
+const URL_LIKE =
+  /https?:\/\/|www\.|(?<![a-z0-9-])[a-z0-9-]+\.(com|net|org|io|ru|xyz|top|info|biz|co)\b/i;
 
 /** Text that lands in emails can't carry a link: the only link in them is the manage link. */
 export function refuseLinks(value: string | null | undefined, param: string): void {
