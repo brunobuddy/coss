@@ -20,14 +20,13 @@
     "@coss/tenancy": "workspace:*",
     "@sentry/bun": "catalog:",
     "@t3-oss/env-core": "catalog:",
-    "smtp-server": "3.19.16",
+    "smtp-server": "3.21.3",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@coss/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "@types/nodemailer": "catalog:",
-    "@types/smtp-server": "3.5.13",
     "drizzle-orm": "catalog:",
     "nodemailer": "catalog:",
     "typescript": "catalog:"

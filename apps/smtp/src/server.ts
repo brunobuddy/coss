@@ -459,7 +459,7 @@ export function createSmtpRelay(options: SmtpRelayOptions): SmtpRelay {
                 const address = listener.address();
                 resolve(typeof address === "object" && address ? address.port : port);
               });
-              listener.once("error", reject);
+              server.once("error", reject);
             }),
         ),
       );
