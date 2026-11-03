@@ -93,12 +93,11 @@ outside the requested window. `FakeGoogleCalendarApi` (`./testing`) echoes write
 
 ## Going live
 
-1. `SCHEDULING_DATA_KEYS` in the stage secret. Until then Scheduling is off in production: the API answers 503
-   `scheduling_unavailable`, the worker's loops don't run and the dashboard's pages don't exist.
-2. Google OAuth verification and Microsoft publisher verification; `GOOGLE_CALENDAR_*`, `MICROSOFT_CALENDAR_*`.
-3. `apps/scheduling` at `cossbook.com` (README, "Scheduling's hosted pages"): Cloudflare and the certificate are in
-   place; the `terraform apply` that creates the service and its ALB rule runs just before the merge that first
-   deploys it, since the service can't start without its image and the Deploy workflow can't roll out without the
-   service.
-4. DPA annexes, subprocessors and the Privacy Policy (`apps/site/AGENTS.md`, 30 days' notice for a new subprocessor).
-5. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.
+Live in production at `cossbook.com` (README, "Scheduling's hosted pages"). Without `SCHEDULING_DATA_KEYS` in a stage
+secret, Scheduling is off there: the API answers 503 `scheduling_unavailable`, the worker's loops don't run and the
+dashboard's pages don't exist. Still to do:
+
+1. Google OAuth verification and Microsoft publisher verification; `GOOGLE_CALENDAR_*`, `MICROSOFT_CALENDAR_*`. Until
+   then hosts can only connect CalDAV calendars.
+2. DPA annexes, subprocessors and the Privacy Policy (`apps/site/AGENTS.md`, 30 days' notice for a new subprocessor).
+3. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.

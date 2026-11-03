@@ -30,8 +30,8 @@ unset_secrets = [
   "IPINFO_PRIVACY_TOKEN",
   # Sign's CSC sealer (SSL.com eSigner): until its account exists.
   "SIGN_CSC_CLIENT_SECRET", "SIGN_CSC_PASSWORD", "SIGN_CSC_TOTP_SECRET",
-  # Scheduling: off until its data key is stored; each calendar provider until its OAuth app exists.
-  "SCHEDULING_DATA_KEYS", "GOOGLE_CALENDAR_CLIENT_SECRET", "MICROSOFT_CALENDAR_CLIENT_SECRET",
+  # Scheduling's calendar providers: until each OAuth app exists.
+  "GOOGLE_CALENDAR_CLIENT_SECRET", "MICROSOFT_CALENDAR_CLIENT_SECRET",
 ]
 initial_image_tag  = "2a8195a759b0f11d430f3e9cebfcf535a99dbca7"
 log_retention_days = 30
