@@ -1017,7 +1017,7 @@ export const SERVICES: Service[] = [
     // Lets each loop finish its current item: a webhook attempt (10 s), a domain check, an SQS batch.
     stopTimeout: 120,
     cpu: 256,
-    memory: 512,
+    memory: 1024,
     minTasks: 1,
     needsInternet: true,
     taskRolePolicy: "worker",

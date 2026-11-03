@@ -43,6 +43,12 @@ RUN --mount=type=secret,id=sentry_auth_token,required=false \
 # Only the traced server (.next/standalone keeps Bun's isolated node_modules as relative symlinks)
 # and the static assets. No package manager, no sources.
 FROM ${NODE_IMAGE}:${NODE_VERSION}-slim AS runtime
+# Debian's security fixes, refreshed weekly by BASE_PATCH_WEEK; nothing here runs Perl.
+ARG BASE_PATCH_WEEK=""
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -qq \
+  && DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade \
+  && dpkg --purge --force-remove-essential --force-depends perl-base \
+  && rm -rf /var/lib/apt/lists/*
 # Postgres TLS: DATABASE_URL=…?sslmode=verify-full&sslrootcert=/etc/ssl/certs/rds-global-bundle.pem
 # The directory first: ADD would create missing parents with the file's mode (644), and Node
 # exits when /etc/ssl exists but can't be read (its OpenSSL config is looked up there).

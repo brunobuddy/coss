@@ -24,6 +24,7 @@ function healthy(): Readings {
       value: { logging: true, latestDelivery: new Date("2026-11-03T11:55:00Z"), error: null },
     },
     threatDetection: { ok: true, value: { production: true, management: true } },
+    containerMonitoring: { ok: true, value: { healthy: 1, unhealthy: 0 } },
     securityHub: { ok: true, value: { enabled: true, standardStatuses: ["READY"] } },
     configRecording: { ok: true, value: true },
     outsideAccess: { ok: true, value: true },
@@ -257,6 +258,28 @@ describe("log query results", () => {
 
   test("a time it can't read fails, rather than dropping the change", () => {
     expect(() => logQueryTime("")).toThrow();
+  });
+});
+
+describe("container monitoring", () => {
+  test("every cluster reporting is fine", () => {
+    expect(stateOf(healthy(), "container_monitoring")).toBe("ok");
+  });
+
+  test("an unhealthy cluster or no coverage asks for a look", () => {
+    for (const value of [
+      { healthy: 1, unhealthy: 1 },
+      { healthy: 0, unhealthy: 0 },
+    ]) {
+      expect(
+        stateOf({ ...healthy(), containerMonitoring: { ok: true, value } }, "container_monitoring"),
+      ).toBe("warning");
+    }
+  });
+
+  test("a failed read is unknown", () => {
+    const readings = { ...healthy(), containerMonitoring: { ok: false as const, error: "denied" } };
+    expect(stateOf(readings, "container_monitoring")).toBe("unknown");
   });
 });
 

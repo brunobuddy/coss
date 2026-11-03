@@ -76,7 +76,7 @@ resource "aws_db_instance" "main" {
   allow_major_version_upgrade           = false
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
-  enabled_cloudwatch_logs_exports       = ["postgresql"]
+  enabled_cloudwatch_logs_exports       = ["postgresql", "upgrade"]
 }
 
 import {
@@ -87,5 +87,10 @@ import {
 # Where pgaudit's lines land; a year, unlike the services' shorter application logs.
 resource "aws_cloudwatch_log_group" "database" {
   name              = "/aws/rds/instance/${local.name}/postgresql"
+  retention_in_days = 365
+}
+
+resource "aws_cloudwatch_log_group" "database_upgrade" {
+  name              = "/aws/rds/instance/${local.name}/upgrade"
   retention_in_days = 365
 }

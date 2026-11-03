@@ -131,6 +131,13 @@ describe("Dockerfiles", () => {
   const nodeMajor = pkg.engines.node.replace(/^>=/, "");
 
   for (const service of SERVICES) {
+    test(`${service.dockerfile} patches its runtime stage`, () => {
+      const runtime = read(service.dockerfile).split(/ AS runtime\n/)[1] ?? "";
+      expect(runtime).toContain('ARG BASE_PATCH_WEEK=""');
+      expect(runtime).toContain("apt-get -y -qq upgrade");
+      expect(runtime).toContain("--purge --force-remove-essential --force-depends perl-base");
+    });
+
     test(`${service.dockerfile} pins the repo's Bun, Node and turbo`, () => {
       const dockerfile = read(service.dockerfile);
       expect(dockerfile).toContain(`ARG BUN_VERSION=${bunVersion}\n`);

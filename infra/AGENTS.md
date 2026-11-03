@@ -57,6 +57,13 @@ a reboot: `infra/scripts/ecs-task.sh worker -- sh -c "cd packages/db && bun -e '
 encrypted with `alias/coss-production-sns`, whose key policy must name every service that publishes to them: one
 missing loses its messages silently.
 
+GuardDuty Runtime Monitoring adds its agent to tasks as they start, so it needs up to 128 MB of a small task's memory;
+`/admin/security` shows its coverage. Changing it needs the `ProtectSecurityMonitoring` SCP detached from production
+(`AWS_PROFILE=coss-management aws organizations detach-policy`), then attached again straight after.
+
+Every image's runtime stage installs Debian's security fixes and removes Perl; `build-images.sh` passes the week as
+`BASE_PATCH_WEEK`, so layers cached from the frozen base image don't keep patches from arriving.
+
 A Lambda (`infra/lambda/mask-access-logs.mjs`, `coss-production-mask-access-logs`) rewrites each load balancer and
 CloudFront log file on arrival, masking the secrets emailed links and sign-in callbacks carry in URLs; a new URL secret
 belongs in its lists as well as `SECRET_PATH_SEGMENTS`. Failures alarm to `coss-alerts`. Security Hub's EC2.18 is
