@@ -109,10 +109,15 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
 - **Custom tracking domains** (`packages/email/src/tracking-domains.ts`, table `tracking_domain`, ids `tdom_`):
   at most one per sending domain, a strict subdomain of it outside its MAIL FROM subdomain, and the hostname's most
   specific domain across orgs must be that domain. Served by a `TrackingHostnameProvider` (`DomainDeps.tracking`):
-  Cloudflare for SaaS custom hostnames (`cloudflare/custom-hostnames.ts`, plain `fetch`) or the fake. The provider
-  alone decides `active` (hostname and certificate live); the CNAME check (`checkTrackingRecord`) is only shown to
-  the customer. Never adopt a hostname already registered in the zone (`TrackingHostnameTakenError` →
-  `tracking_domain_taken`). Lifecycle mirrors domains (`pending` → `active`; an active one that stops →
+  tenants of a CloudFront multi-tenant distribution (`cloudfront/tenants.ts`: one per hostname, with a managed
+  certificate, through the injectable `CloudFrontTenantsApi`) or the fake. The provider alone decides `active`
+  (tenant enabled, domain active, certificate issued); the CNAME check (`checkTrackingRecord`) is only shown to
+  the customer. Never adopt a hostname already registered at CloudFront (`TrackingHostnameTakenError` →
+  `tracking_domain_taken`). An issued managed certificate serves nothing until it is attached to the tenant
+  (`Customizations.Certificate`), so the provider's `get` attaches it, and a stale ETag just waits for the next check.
+  Removing a tenant takes two passes: CloudFront refuses to delete it until the disable
+  has deployed (minutes), so the first `delete` disables it and throws; `checkTrackingDomain` retries in 10 minutes
+  and `deleteTrackingDomain`/`deleteDomain` ask the user to try again shortly. Lifecycle mirrors domains (`pending` → `active`; an active one that stops →
   `temporary_failure`; never active within 72 h, or given up/unknown at the provider → `failed`, hostname released;
   restart via the domain's verify). The worker's `domains` loop re-checks them. `deleteDomain` releases the hostname
   first (the row cascades). The URL is resolved **at dispatch** in `instrument` (`trackingBaseUrlFor`, only when
@@ -121,9 +126,10 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   email, and the `/t/*` routes ignore `Host`. Removing one breaks links in emails already sent through it. API:
   `POST`/`DELETE /v1/domains/{id}/tracking` (`domain:create`/`domain:delete`, no new permission), `Domain.tracking`
   (a `z.union([…, z.null()])`: `.nullable()` loses `null` in the OpenAPI document). Edge: `track.cosslinks.com`
-  (the default tracking host, `TRACKING_PUBLIC_URL`, and Cloudflare's fallback origin; zone `cosslinks.com` in a
-  self-serve Cloudflare account, never the coss.com zone) → ALB rule `/t/*` + `X-Tracking-Origin-Verify` → api
-  (`infra/aws/routing.ts`).
+  (the default tracking host, `TRACKING_PUBLIC_URL`) and customer domains (a CNAME to the connection group's routing
+  endpoint, `TRACKING_CNAME_TARGET`) → CloudFront → ALB rule `/t/*` + `X-Tracking-Origin-Verify` → api
+  (`infra/aws/routing.ts`). Domain Connect's template fixes the target at `track.cosslinks.com`, so it skips the
+  tracking record for any other target and customers publish that CNAME by hand.
 - **Domain Connect** (`packages/email/src/domain-connect.ts`, `@coss/email/domain-connect`; the dashboard's
   `apps/web/src/lib/domain-connect.ts`): one-click DNS setup through the customer's DNS provider, synchronous flow
   only and always signed (`DOMAIN_CONNECT_PRIVATE_KEY`; providers check `sig` against the TXT records at

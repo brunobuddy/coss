@@ -1477,7 +1477,7 @@ export type TrackingDomainRecord = {
 /**
  * The custom tracking hostname of a sending domain (e.g. `links.acme.com`, a CNAME to coss.com's
  * tracking host): open pixels and click redirects of emails sent from that domain use it once the
- * provider (Cloudflare for SaaS) serves it with a certificate. At most one per domain; hostnames
+ * provider (CloudFront) serves it with a certificate. At most one per domain; hostnames
  * are unique across organizations while not `failed`.
  */
 export const trackingDomain = pgTable(
@@ -1492,7 +1492,7 @@ export const trackingDomain = pgTable(
     hostname: text("hostname").notNull(),
     status: trackingDomainStatus("status").notNull().default("pending"),
     provider: text("provider").notNull(),
-    // The provider's id for the hostname (a Cloudflare custom hostname id); null until created.
+    // The provider's id for the hostname (a CloudFront distribution tenant id); null until created.
     providerHostnameId: text("provider_hostname_id"),
     record: jsonb("record").$type<TrackingDomainRecord>().notNull(),
     // The latest problem the provider reported (certificate validation, blocked hostname…).

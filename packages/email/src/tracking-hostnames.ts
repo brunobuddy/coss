@@ -1,10 +1,10 @@
 /**
- * The port that serves custom tracking hostnames (e.g. `links.acme.com`) over HTTPS: Cloudflare
- * for SaaS in production (custom hostnames on coss.com's zone, each with its own certificate), an
- * in-memory fake in development and tests.
+ * The port that serves custom tracking hostnames (e.g. `links.acme.com`) over HTTPS: CloudFront
+ * distribution tenants in production (each with its own managed certificate), an in-memory fake in
+ * development and tests.
  */
 
-export type TrackingHostnameProviderName = "fake" | "cloudflare";
+export type TrackingHostnameProviderName = "fake" | "cloudfront";
 
 /** What the provider says about one hostname. */
 export type TrackingHostnameState = {
@@ -27,7 +27,7 @@ export class TrackingHostnameTakenError extends Error {
 
 export interface TrackingHostnameProvider {
   readonly name: TrackingHostnameProviderName;
-  /** The host customers point their tracking CNAME at (e.g. `track.cosslinks.com`). */
+  /** The host customers point their tracking CNAME at (in production, a connection group's routing endpoint). */
   readonly cnameTarget: string;
   /** Registers the hostname; throws `TrackingHostnameTakenError` when it already exists. */
   create(hostname: string): Promise<{ id: string; state: TrackingHostnameState }>;

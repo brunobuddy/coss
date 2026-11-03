@@ -1,8 +1,8 @@
 /**
  * Custom tracking domains: a sending domain's own hostname (e.g. `links.acme.com`, a CNAME to
  * coss.com's tracking host) for the open pixel and click redirects of emails sent from it. The
- * hostname provider (Cloudflare for SaaS) issues its certificate and proxies `/t/*` to the API;
- * the worker re-checks it like domains. Sends pick the tracking domain of their From domain at
+ * hostname provider (a CloudFront distribution tenant) issues its certificate and proxies `/t/*`
+ * to the API; the worker re-checks it like domains. Sends pick the tracking domain of their From domain at
  * dispatch, and fall back to the default tracking host while it is not `active`.
  */
 import { db, schema } from "@coss/db";
@@ -359,7 +359,7 @@ export async function checkTrackingDomain(
   deps: DomainDeps,
 ): Promise<TrackingDomainRow> {
   const row = await requireTrackingDomain(input);
-  // Another provider's hostname (e.g. a fake one after switching to Cloudflare) can't be checked.
+  // Another provider's hostname (e.g. a fake one after switching to CloudFront) can't be checked.
   if (row.status === "deleting" || row.provider !== deps.tracking.name) {
     return row;
   }
@@ -475,9 +475,13 @@ export async function deleteTrackingDomain(
     try {
       await deps.tracking.delete(row.providerHostnameId);
     } catch (error) {
+      // The provider may have stopped serving it already: sends must not use it until a check says so.
       await db
         .update(trackingDomain)
-        .set({ status: row.status, nextCheckAt: row.nextCheckAt })
+        .set({
+          status: row.status === "active" ? "temporary_failure" : row.status,
+          nextCheckAt: new Date(),
+        })
         .where(scope);
       console.error(`[email:tracking-domains] deleting ${row.hostname} failed:`, error);
       throw new DomainError(

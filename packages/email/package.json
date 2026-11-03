@@ -27,6 +27,7 @@
     "domain-connect:key": "bun --env-file=../../.env scripts/domain-connect-key.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-cloudfront": "catalog:",
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/client-sesv2": "catalog:",
     "@coss/billing": "workspace:*",

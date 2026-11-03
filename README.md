@@ -105,9 +105,9 @@ resets) are printed to the dashboard's server console in development.
   own redirect (`API_PUBLIC_URL/t/…`) when it hands the email to the provider; the stored email keeps the original
   HTML. Opens and clicks show up as `email.opened` / `email.clicked` events, webhooks, counts on the email
   (`tracking`) and per-link click counts. Independent of SES's own tracking, which stays off.
-  A verified domain can have a **custom tracking domain** (e.g. `links.acme.com`, a CNAME to `track.cosslinks.com`):
-  emails from it are tracked through that hostname while it is active. coss.com registers it as a Cloudflare for SaaS
-  custom hostname (`TRACKING_DOMAIN_PROVIDER=cloudflare`), which issues its certificate and proxies `/t/*` to the API.
+  A verified domain can have a **custom tracking domain** (e.g. `links.acme.com`, a CNAME to the target the dashboard
+  shows): emails from it are tracked through that hostname while it is active. coss.com registers it as a CloudFront
+  distribution tenant (`TRACKING_DOMAIN_PROVIDER=cloudfront`), which gets its certificate and serves `/t/*` from the API.
 - **Webhooks** — per environment, signed with [Standard Webhooks](https://www.standardwebhooks.com) headers and
   retried for about a day. Verify them with `verifyWebhook` from the SDK.
 - **Single sign-on** — per organization, OpenID Connect or SAML 2.0 (Better Auth's SSO plugin), set up under
@@ -546,8 +546,8 @@ Cloudflare DNS (coss.com zone, DNS only)
                               │                                                 ├─▶ site   (Next, :3002)  ├─▶ RDS Postgres
                               ├─ /ui, /ui/*         ─▶ coss ui   (Vercel)       └─▶ api    (Bun,  :3001) ─┤   Valkey
                               └─ /origin, /origin/* ─▶ Origin UI (Vercel)    worker (Bun, no load balancer)┘   SES · SNS · SQS
-  Cloudflare DNS (cosslinks.com zone, self-serve account, proxied)
-  track.cosslinks.com + customer tracking domains (Cloudflare for SaaS) ──(X-Tracking-Origin-Verify)──▶ ALB /t/* ─▶ api
+  Cloudflare DNS (cosslinks.com zone, self-serve account, DNS only)
+  track.cosslinks.com + customer tracking domains (CloudFront tenants) ──(X-Tracking-Origin-Verify)──▶ ALB /t/* ─▶ api
   Cloudflare DNS (each host's zone, self-serve account, DNS only), each host with its own CloudFront distribution
   portal.cosshooks.com (Hooks portal) ──(X-Portal-Origin-Verify)──▶ ALB ─▶ portal (Next, :3003)
   cosssign.com (Sign's signing app) ──(X-Sign-Origin-Verify)──▶ ALB ─▶ sign (Next, :3004)
@@ -581,7 +581,7 @@ Cloudflare DNS (coss.com zone, DNS only)
   | Priority | Conditions | Target group |
   |---|---|---|
   | 10 | host `api.coss.com` + `X-Origin-Verify` | api |
-  | 20 | path `/t/*` + `X-Tracking-Origin-Verify` (any host: customer tracking domains through Cloudflare) | api |
+  | 20 | path `/t/*` + `X-Tracking-Origin-Verify` (any host: customer tracking domains) | api |
   | 30–80 | the site's paths (`/`, `/pricing`, `/docs*`, `/legal*`, `/llms*.txt`, `/site-assets/*`, root files, `/.well-known*`; 3 per rule) + `X-Origin-Verify` | site |
   | 90 | host `coss.com` + `X-Origin-Verify` (every other path: org slugs, `/dashboard`, `/api/*`, `/_next/*`) | web |
 
@@ -624,19 +624,18 @@ Cloudflare DNS (coss.com zone, DNS only)
   run as a one-off task (below).
 - **DNS (Cloudflare, zone `coss.com`):** `coss.com` and `api.coss.com` are DNS-only CNAMEs (flattened at the apex)
   to their distributions; ACM validation CNAMEs; DKIM and MAIL FROM records of coss.com's own sending domain.
-- **Tracking links (`cosslinks.com`, a self-serve Cloudflare account, not the coss.com zone):** every tracking
+- **Tracking links (`cosslinks.com`, DNS in a self-serve Cloudflare account, not the coss.com zone):** every tracking
   link points at a domain of its own, so a sender's abuse flagged by URL blocklists never lands on coss.com.
-  `track.cosslinks.com` is a **proxied** record pointing at the ALB's DNS name (`terraform output alb_dns_name`):
-  it is the default tracking origin (`TRACKING_PUBLIC_URL`, api + worker) and the Cloudflare for SaaS fallback
-  origin customers CNAME their tracking domains to (`TRACKING_CNAME_TARGET`). coss.com registers each customer domain
-  as a custom hostname (HTTP certificate validation) with `CLOUDFLARE_API_TOKEN` (an account token scoped to the
-  zone, SSL and Certificates: Edit) and `CLOUDFLARE_ZONE_ID`. A request header transform rule sets
-  `X-Tracking-Origin-Verify: <secret>` (Secrets Manager `coss/production/tracking-origin-verify`) on every request
-  in the zone: the ALB forwards `/t/*` with it to the api target group for any host, and nothing else. SSL mode
-  **Full** (zone-wide; the zone serves nothing else): Cloudflare connects with the caller's hostname as SNI, which
-  the ALB's certificate doesn't cover; the header secret is what proves a request came through Cloudflare. The
-  apex redirects to coss.com. Free plan: 100 custom hostnames included, then $0.10 each per month.
-
+  `track.cosslinks.com` is a hosted domain (below) and the default tracking origin (`TRACKING_PUBLIC_URL`, api +
+  worker). Customers' tracking domains are tenants of a CloudFront multi-tenant distribution
+  (`aws_cloudfront_multitenant_distribution.tracking`): coss.com creates a tenant per domain, CloudFront validates the
+  domain over HTTP once its CNAME points at the connection group's routing endpoint (`TRACKING_CNAME_TARGET`), and
+  coss.com attaches the issued certificate to the tenant. `TRACKING_DISTRIBUTION_ID`, `TRACKING_CONNECTION_GROUP_ID`
+  and the target come from `terraform output tracking_tenants`. Tenants reach the ALB through
+  `tracking-origin.cosslinks.com`, a DNS-only CNAME with its own listener certificate, because their hosts aren't on the
+  ALB's. Multi-tenant distributions don't support the legacy logging the other distributions use, so tenants' requests
+  appear only in the ALB's access logs. The ALB forwards `/t/*` with `X-Tracking-Origin-Verify` to the api for any
+  host, and nothing else. The `cosslinks.com` apex redirects to coss.com.
 - **SMTP relay (`smtp.coss.com`):** the `smtp` service behind a network load balancer
   (`infra/terraform/nlb.tf`): TCP listeners 465 and 2465 → container port 2465 (implicit TLS), 587 and 2587 → 2587
   (STARTTLS), client addresses preserved (the relay limits connections and failed logins per address), so the
@@ -684,7 +683,7 @@ Cloudflare DNS (coss.com zone, DNS only)
 One Secrets Manager secret per stage, `coss/production` (JSON), injected through each task definition's `secrets`
 (one key per `secret` variable of `infra/aws/services.ts`): `DATABASE_URL`, `BETTER_AUTH_SECRET`, `VALKEY_URL`,
 `WEBHOOK_SECRETS_KEY`, `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`, `TURNSTILE_SECRET_KEY`, `GOOGLE_CLIENT_SECRET`,
-`GITHUB_CLIENT_SECRET`, `CLOUDFLARE_API_TOKEN`,
+`GITHUB_CLIENT_SECRET`,
 `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `AI_GATEWAY_API_KEY`, `SMTP_TLS_PASSPHRASE` (any random value: it
 only protects the SMTP relay's exported certificate key), `RISK_HASH_KEY` (changing it resets what
 risk assessments remember), `EMAIL_LINK_KEYS` (marketing email's preference, unsubscribe and confirmation links;

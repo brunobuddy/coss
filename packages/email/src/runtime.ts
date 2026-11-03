@@ -4,15 +4,16 @@
  */
 import type { PlanGate } from "@coss/billing/gate";
 import {
-  type CloudflareConfig,
-  CloudflareTrackingHostnameProvider,
-} from "./cloudflare/custom-hostnames.ts";
+  type CloudFrontTrackingConfig,
+  CloudFrontTrackingHostnameProvider,
+  createCloudFrontTenantsApi,
+} from "./cloudfront/tenants.ts";
 import type { DnsResolver } from "./dns.ts";
 import { publicDnsResolver } from "./dns.ts";
 import type { DomainDeps } from "./domains.ts";
 import {
   DEFAULT_FAKE_INBOUND_DOMAIN,
-  DEFAULT_TRACKING_CNAME_TARGET,
+  DEFAULT_FAKE_TRACKING_CNAME_TARGET,
   type EmailEnv,
   type EmailProviderName,
 } from "./env.ts";
@@ -45,7 +46,7 @@ export {
 /** What serves custom tracking hostnames (default: the fake). */
 export type TrackingRuntimeConfig =
   | { provider: "fake"; cnameTarget?: string }
-  | ({ provider: "cloudflare" } & CloudflareConfig);
+  | ({ provider: "cloudfront" } & CloudFrontTrackingConfig);
 
 /** Receiving: coss.com's managed inbound domain, and the S3 bucket with SES. */
 export type InboundRuntimeConfig = { managedDomain: string; bucket?: string; s3Api?: S3Api };
@@ -59,21 +60,26 @@ export type EmailRuntimeConfig = (
   inbound?: InboundRuntimeConfig;
 };
 
-/** The tracking hostname config for validated app env; `cloudflare` requires its variables. */
+/** The tracking hostname config for validated app env; `cloudfront` requires its variables. */
 function trackingRuntimeConfig(env: EmailEnv): TrackingRuntimeConfig {
-  const cnameTarget = env.TRACKING_CNAME_TARGET || DEFAULT_TRACKING_CNAME_TARGET;
-  if (env.TRACKING_DOMAIN_PROVIDER !== "cloudflare") return { provider: "fake", cnameTarget };
-  const { CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID } = env;
-  if (!CLOUDFLARE_API_TOKEN || !CLOUDFLARE_ZONE_ID) {
+  const { TRACKING_DISTRIBUTION_ID, TRACKING_CONNECTION_GROUP_ID, TRACKING_CNAME_TARGET } = env;
+  if (env.TRACKING_DOMAIN_PROVIDER !== "cloudfront") {
+    return {
+      provider: "fake",
+      cnameTarget: TRACKING_CNAME_TARGET || DEFAULT_FAKE_TRACKING_CNAME_TARGET,
+    };
+  }
+  if (!TRACKING_DISTRIBUTION_ID || !TRACKING_CONNECTION_GROUP_ID || !TRACKING_CNAME_TARGET) {
     throw new Error(
-      "TRACKING_DOMAIN_PROVIDER=cloudflare requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID.",
+      "TRACKING_DOMAIN_PROVIDER=cloudfront requires TRACKING_DISTRIBUTION_ID, " +
+        "TRACKING_CONNECTION_GROUP_ID and TRACKING_CNAME_TARGET.",
     );
   }
   return {
-    provider: "cloudflare",
-    apiToken: CLOUDFLARE_API_TOKEN,
-    zoneId: CLOUDFLARE_ZONE_ID,
-    cnameTarget,
+    provider: "cloudfront",
+    distributionId: TRACKING_DISTRIBUTION_ID,
+    connectionGroupId: TRACKING_CONNECTION_GROUP_ID,
+    cnameTarget: TRACKING_CNAME_TARGET,
   };
 }
 
@@ -153,9 +159,11 @@ export function sesInboundMxHost(region: string): string {
 function createTrackingHostnameProvider(
   config: TrackingRuntimeConfig | undefined,
 ): TrackingHostnameProvider {
-  if (config?.provider === "cloudflare") return new CloudflareTrackingHostnameProvider(config);
+  if (config?.provider === "cloudfront") {
+    return new CloudFrontTrackingHostnameProvider(config, createCloudFrontTenantsApi());
+  }
   return new FakeTrackingHostnameProvider({
-    cnameTarget: config?.cnameTarget ?? DEFAULT_TRACKING_CNAME_TARGET,
+    cnameTarget: config?.cnameTarget ?? DEFAULT_FAKE_TRACKING_CNAME_TARGET,
   });
 }
 
