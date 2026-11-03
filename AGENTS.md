@@ -177,9 +177,8 @@ run ruff format --check && uv run pytest` (Django); their end-to-end tests run w
 run --cwd apps/api serve:test` prints.
 
 **Security scanning** (`.github/workflows/security.yml`): CodeQL analyzes the TypeScript and the workflows on pull
-requests, on main and weekly, and pull requests that add a dependency with a high-severity advisory fail
-`dependency-review`. Findings are in the repository's Security tab. Neither is a required check. Cal.com's SDLC policy
-(Drata) asks for this: it's also what Zoom's app review was told.
+requests, on main and weekly, with findings in the repository's Security tab. `bun audit` checks dependencies for
+high-severity advisories on main and weekly. Neither is a required check. Cal.com's SDLC policy (Drata) asks for this.
 
 **Remote cache** (README, "Remote cache"): `typecheck` and `build` results are uploaded to Turbo's Vercel Remote Cache
 (team `cal`, signed) and the merge queue replays any task whose hash it finds (pull request runs get no cache

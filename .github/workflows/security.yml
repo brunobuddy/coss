@@ -1,7 +1,7 @@
 name: Security
 
-# Static analysis of the code and workflows, and vulnerabilities in dependencies a pull request adds.
-# Findings are in the repository's Security tab. Neither job is a required check.
+# Static analysis of the code and workflows, and known vulnerabilities in dependencies. CodeQL's findings
+# are in the repository's Security tab. Neither job is a required check.
 on:
   pull_request:
   push:
@@ -41,13 +41,15 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
 
-  dependency-review:
-    if: github.event_name == 'pull_request'
+  dependency-audit:
+    # Not on pull requests: known advisories in the lockfile would fail every one of them.
+    if: github.event_name != 'pull_request'
     runs-on: blacksmith-2vcpu-ubuntu-2404
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          fail-on-severity: high
+          bun-version-file: package.json
+      - run: bun audit --audit-level=high
