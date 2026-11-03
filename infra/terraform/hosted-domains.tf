@@ -83,7 +83,7 @@ resource "aws_cloudfront_function" "redirects" {
       var request = event.request;
       var redirect = REDIRECTS[request.headers.host.value];
       if (!redirect) return { statusCode: 404, statusDescription: "Not Found" };
-      var location = redirect.to + "/";
+      var location = redirect.to;
       if (redirect.keepPath) {
         var query = Object.keys(request.querystring).map(function (name) {
           var value = request.querystring[name];

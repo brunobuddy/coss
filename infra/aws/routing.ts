@@ -157,13 +157,18 @@ export function hostedDistributions(): Record<string, HostedDistribution> {
   };
 }
 
-/** Hosts that only redirect. `keepPath` keeps the request's path and query. */
+/** Hosts that only redirect. `keepPath` appends the request's path and query to `to`. */
 export const HOSTED_REDIRECTS: Record<string, { to: string; keepPath: boolean }> = {
   "www.cosssign.com": { to: `https://${SIGN_HOST}`, keepPath: true },
   "www.cossbook.com": { to: `https://${SCHEDULING_HOST}`, keepPath: true },
   "www.cossforms.com": { to: `https://${FORMS_HOST}`, keepPath: true },
-  "cosshooks.com": { to: `https://${DASHBOARD_HOST}`, keepPath: false },
-  "cosslinks.com": { to: `https://${DASHBOARD_HOST}`, keepPath: false },
+  "cosshooks.com": { to: `https://${DASHBOARD_HOST}/`, keepPath: false },
+  "cosslinks.com": { to: `https://${DASHBOARD_HOST}/`, keepPath: false },
+  "www.coss.com": { to: `https://${DASHBOARD_HOST}`, keepPath: true },
+  "ui.coss.com": { to: `https://${DASHBOARD_HOST}/ui`, keepPath: true },
+  "mail.coss.com": { to: "https://mail.google.com/a/coss.com", keepPath: false },
+  "calendar.coss.com": { to: "https://www.google.com/calendar/hosted/coss.com", keepPath: false },
+  "drive.coss.com": { to: "https://drive.google.com/a/coss.com", keepPath: false },
 };
 
 /** Where anything on the forms host outside `/f/*` goes. */

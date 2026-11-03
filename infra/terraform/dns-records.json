@@ -1,0 +1,237 @@
+{
+  "coss.com": {
+    "*._report._dmarc.inbound TXT": {
+      "name": "*._report._dmarc.inbound",
+      "records": [
+        "v=DMARC1"
+      ],
+      "ttl": 300,
+      "type": "TXT"
+    },
+    "*.inbound MX": {
+      "name": "*.inbound",
+      "records": [
+        "10 inbound-smtp.us-east-2.amazonaws.com."
+      ],
+      "ttl": 300,
+      "type": "MX"
+    },
+    "2lxana7wxprize6d3y4iprqe7mkwkpvq._domainkey CNAME": {
+      "name": "2lxana7wxprize6d3y4iprqe7mkwkpvq._domainkey",
+      "records": [
+        "2lxana7wxprize6d3y4iprqe7mkwkpvq.dkim.amazonses.com."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "2nzm26k5nclbyocybjycbpnrkoqmqdib._domainkey.inbound CNAME": {
+      "name": "2nzm26k5nclbyocybjycbpnrkoqmqdib._domainkey.inbound",
+      "records": [
+        "2nzm26k5nclbyocybjycbpnrkoqmqdib.dkim.amazonses.com."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "3ekz3fbu3xsmi2qakxi37ryptad6cshb._domainkey CNAME": {
+      "name": "3ekz3fbu3xsmi2qakxi37ryptad6cshb._domainkey",
+      "records": [
+        "3ekz3fbu3xsmi2qakxi37ryptad6cshb.dkim.amazonses.com."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "5blvzd7inxwmapbzhs47zdsxs7fgngoc._domainkey CNAME": {
+      "name": "5blvzd7inxwmapbzhs47zdsxs7fgngoc._domainkey",
+      "records": [
+        "5blvzd7inxwmapbzhs47zdsxs7fgngoc.dkim.amazonses.com."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "@ MX": {
+      "name": "",
+      "records": [
+        "1 aspmx.l.google.com.",
+        "10 alt3.aspmx.l.google.com.",
+        "10 alt4.aspmx.l.google.com.",
+        "5 alt1.aspmx.l.google.com.",
+        "5 alt2.aspmx.l.google.com."
+      ],
+      "ttl": 300,
+      "type": "MX"
+    },
+    "@ TXT": {
+      "name": "",
+      "records": [
+        "fayrdwjiwc",
+        "google-site-verification=aeCgrtOzPesAc00IrLFHIxY8iER6ImFxSWeGw0F6mqY",
+        "v=spf1 include:_spf.google.com -all"
+      ],
+      "ttl": 300,
+      "type": "TXT"
+    },
+    "_2dbc67f3f23c4bab78ee8003b0cf9ed7.drive CNAME": {
+      "name": "_2dbc67f3f23c4bab78ee8003b0cf9ed7.drive",
+      "records": [
+        "_0b3b83163ef64259de536d1a8f398309.wzccmgtwzk.acm-validations.aws."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "_32112c17b4f6acbd85e34a53103e1f08.mail CNAME": {
+      "name": "_32112c17b4f6acbd85e34a53103e1f08.mail",
+      "records": [
+        "_fdf10885b85d07d48f7d42c2a8021d1e.wzccmgtwzk.acm-validations.aws."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "_4136cefa7918eead1d65dbb5d54e8d66.www CNAME": {
+      "name": "_4136cefa7918eead1d65dbb5d54e8d66.www",
+      "records": [
+        "_4d956fb69f636b2c0d3ac9344fe2648e.wzccmgtwzk.acm-validations.aws."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "_41efa195bfad0baac327f44747a25f6b CNAME": {
+      "name": "_41efa195bfad0baac327f44747a25f6b",
+      "records": [
+        "_0197a167a19da62009166ce77713026d.wzccmgtwzk.acm-validations.aws."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "_6e28302f96acff0bc484d36d1d8e3517.calendar CNAME": {
+      "name": "_6e28302f96acff0bc484d36d1d8e3517.calendar",
+      "records": [
+        "_b6f76233796abde80f4aaa816514a751.wzccmgtwzk.acm-validations.aws."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "_7bb8263e337303577f3e94e26af92d7b.ui CNAME": {
+      "name": "_7bb8263e337303577f3e94e26af92d7b.ui",
+      "records": [
+        "_fce226a2da978f5f16c733eacc2d3961.wzccmgtwzk.acm-validations.aws."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "_a6a8ca49651bde7e2348d88ae253f30b.smtp CNAME": {
+      "name": "_a6a8ca49651bde7e2348d88ae253f30b.smtp",
+      "records": [
+        "_dc24ab633a62c28f37d5062986ccbefc.wzccmgtwzk.acm-validations.aws."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "_b55828701dcf28618a23f7e36c4c4a28.api CNAME": {
+      "name": "_b55828701dcf28618a23f7e36c4c4a28.api",
+      "records": [
+        "_647657557c71a7b8381457ad8aff98fb.wzccmgtwzk.acm-validations.aws."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "_dck1 TXT": {
+      "name": "_dck1",
+      "records": [
+        "p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsuEFvIcegNFD9DHhRk/n3WPorMZwS0l4huroBQ3eksU5gvYozASZt957UQfkDx/60fDR+uLx6FiWmv9WMYSB7vI6NBq5x5etAc4k1EAI2QINCI6lJ8X2cDsQAHZiaIgv79jyivY9ZN8pnWmeYbVXXSMnbVpP",
+        "p=2,a=RS256,d=bfYasAbrBwFhcQjhul+v3Fh0QHqZ2XNBT2a9BUaYY315A6ueg2fuT/sOpXyxYFH6h+Jys0w7u5h2EeLzacA5fDDA+o8JQaV3sdfGcTmWL9Eepz2GDKR/8sPWiTJ8y6uSdCCQZZ+bMEcxX9NiRBjWtRxCyj0rXRNEqV5TG8bGYep4utHCpSO4BQYJkwIDAQAB"
+      ],
+      "ttl": 300,
+      "type": "TXT"
+    },
+    "_dmarc TXT": {
+      "name": "_dmarc",
+      "records": [
+        "v=DMARC1; p=quarantine; fo=1; pct=100; rf=afrf; ri=86400; sp=quarantine; aspf=s; adkim=s; rua=mailto:bailey@coss.com; ruf=mailto:bailey@coss.com"
+      ],
+      "ttl": 300,
+      "type": "TXT"
+    },
+    "google._domainkey TXT": {
+      "name": "google._domainkey",
+      "records": [
+        "v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzALQQ4HoZsek1GmdD/wa+CUaHQcOveUaKMQcbZtvETTQhmqdJHfo2HyScaCP4Jeqe3sKUaQGJfPX1LEh7oSngfmfrDYMmsdKDawnfSguyzC94DP+Fs1NYvT1KU5EG5x4/jb29TyoV1WO+cMFj+H9U9qQTKnc7+2vTxhJvq40CflXdqa0rELwhnU0Rff3dJtFn8p\"\"ib/IPlP17NBSeuwf6OoJ9lFu5MdaNMCdRa+FZB4MLKeA/UJ/N0k/uzaOxpIAsYeOMoIayCi9UB4uvE+4DgK+Jb71G4R4xXBw/BhQvXzkSFjKABbiNiuEdVbAb5BrnbbplADeXfmM8w1+zrwfcXQIDAQAB"
+      ],
+      "ttl": 300,
+      "type": "TXT"
+    },
+    "inbound MX": {
+      "name": "inbound",
+      "records": [
+        "10 inbound-smtp.us-east-2.amazonaws.com."
+      ],
+      "ttl": 300,
+      "type": "MX"
+    },
+    "jw3xlfrfx6tc7xbxxxkuwispsdlzqw7s._domainkey.inbound CNAME": {
+      "name": "jw3xlfrfx6tc7xbxxxkuwispsdlzqw7s._domainkey.inbound",
+      "records": [
+        "jw3xlfrfx6tc7xbxxxkuwispsdlzqw7s.dkim.amazonses.com."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "r3nw2oaae7qympchwzvciysnq2rk3jyz._domainkey.inbound CNAME": {
+      "name": "r3nw2oaae7qympchwzvciysnq2rk3jyz._domainkey.inbound",
+      "records": [
+        "r3nw2oaae7qympchwzvciysnq2rk3jyz.dkim.amazonses.com."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "reply MX": {
+      "name": "reply",
+      "records": [
+        "10 inbound-smtp.us-east-2.amazonaws.com."
+      ],
+      "ttl": 300,
+      "type": "MX"
+    },
+    "send MX": {
+      "name": "send",
+      "records": [
+        "10 feedback-smtp.us-east-2.amazonses.com."
+      ],
+      "ttl": 300,
+      "type": "MX"
+    },
+    "send TXT": {
+      "name": "send",
+      "records": [
+        "v=spf1 include:amazonses.com ~all"
+      ],
+      "ttl": 300,
+      "type": "TXT"
+    },
+    "track CNAME": {
+      "name": "track",
+      "records": [
+        "spotless-macaw.aplolinks.com."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    }
+  },
+  "cosssign.com": {
+    "_743039eaa4df4f3f8f6220aada9d20dd.www CNAME": {
+      "name": "_743039eaa4df4f3f8f6220aada9d20dd.www",
+      "records": [
+        "_7cdc3f577e79586bb6e53100e5a54d12.wzccmgtwzk.acm-validations.aws."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    },
+    "_c51573eab2e883c9df1684a0069ff0f7 CNAME": {
+      "name": "_c51573eab2e883c9df1684a0069ff0f7",
+      "records": [
+        "_9efc871d851747c3b55af10146c8fd8d.wzccmgtwzk.acm-validations.aws."
+      ],
+      "ttl": 300,
+      "type": "CNAME"
+    }
+  }
+}

@@ -2797,11 +2797,31 @@
         "keepPath": true
       },
       "cosshooks.com": {
-        "to": "https://coss.com",
+        "to": "https://coss.com/",
         "keepPath": false
       },
       "cosslinks.com": {
+        "to": "https://coss.com/",
+        "keepPath": false
+      },
+      "www.coss.com": {
         "to": "https://coss.com",
+        "keepPath": true
+      },
+      "ui.coss.com": {
+        "to": "https://coss.com/ui",
+        "keepPath": true
+      },
+      "mail.coss.com": {
+        "to": "https://mail.google.com/a/coss.com",
+        "keepPath": false
+      },
+      "calendar.coss.com": {
+        "to": "https://www.google.com/calendar/hosted/coss.com",
+        "keepPath": false
+      },
+      "drive.coss.com": {
+        "to": "https://drive.google.com/a/coss.com",
         "keepPath": false
       }
     },
