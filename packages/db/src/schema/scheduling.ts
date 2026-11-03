@@ -837,6 +837,8 @@ export const schedulingSession = pgTable(
     bookingId: text("booking_id"),
     // A fixed identity for a booker session, so the browser can't book as someone else.
     encryptedAttendee: text("encrypted_attendee"),
+    // The fixed identity's `uid`, in the clear like `scheduling_attendee.uid`: how erasure finds it.
+    attendeeUid: text("attendee_uid"),
     readOnly: boolean("read_only").notNull().default(false),
     apiKeyId: text("api_key_id"),
     createdByUserId: text("created_by_user_id"),
@@ -868,6 +870,9 @@ export const schedulingSession = pgTable(
     unique("scheduling_session_token_hash_unique").on(t.tokenHash),
     index("scheduling_session_expires_at_idx").on(t.expiresAt),
     index("scheduling_session_booking_idx").on(t.bookingId),
+    index("scheduling_session_attendee_uid_idx")
+      .on(t.environmentId, t.attendeeUid)
+      .where(sql`${t.attendeeUid} IS NOT NULL`),
     check(
       "scheduling_session_scope",
       sql`(${t.kind} = 'host' AND ${t.hostId} IS NOT NULL)

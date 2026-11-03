@@ -36,7 +36,7 @@ export type SchedulingReencryptResult = {
   conflicts: number;
 };
 
-// `decryptSecret`'s own errors name WEBHOOK_SECRETS_KEY.
+// A wrong key's own error comes from the cipher and says nothing useful.
 function unreadableReason(stored: string, keys: SecretsKeyRing): string {
   const [version, keyId] = stored.split(":");
   if (version === "v2" && keyId && !keys.keys.some((key) => key.id === keyId)) {

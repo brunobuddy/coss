@@ -16,10 +16,13 @@ export function schedulingDataKeysFromEnv(env: {
   NODE_ENV?: string | undefined;
 }): SecretsKeyRing | null {
   if (env.SCHEDULING_DATA_KEYS) {
-    return secretsKeyRing(decodeSchedulingDataKeys(env.SCHEDULING_DATA_KEYS));
+    return secretsKeyRing(
+      decodeSchedulingDataKeys(env.SCHEDULING_DATA_KEYS),
+      "SCHEDULING_DATA_KEYS",
+    );
   }
   if (env.NODE_ENV === "production") return null;
-  return secretsKeyRing([DEVELOPMENT_KEY]);
+  return secretsKeyRing([DEVELOPMENT_KEY], "SCHEDULING_DATA_KEYS");
 }
 
 export function schedulingCalendarAppsFromEnv(env: {

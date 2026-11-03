@@ -803,7 +803,7 @@ export const eraseAttendeeRoute = createRoute({
   tags: [TAG_BOOKINGS],
   summary: "Erase an attendee",
   description:
-    "Removes this person's details and answers from every booking now. The bookings themselves stay.",
+    "Removes this person's details and answers from every booking now, and ends any booker session fixed to them. The bookings themselves stay.",
   security: [{ bearerAuth: [] }],
   middleware: acting("delete"),
   request: { params: AttendeeParams },

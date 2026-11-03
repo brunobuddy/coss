@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
-import { db, schema } from "@coss/db";
+import { describe, expect, spyOn, test } from "bun:test";
+import { db, pool, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { and, eq, sql } from "drizzle-orm";
 import {
@@ -660,6 +660,75 @@ describe("pools", () => {
     expect(booking.hosts).toEqual([free.id]);
     expect(transactionIds).toBeGreaterThan(0);
     expect(transactionIds).toBeLessThanOrEqual(2);
+  });
+
+  test("a slot nobody can take costs one attempt and one read, not one per host", async () => {
+    const env = await tenantEnv("live");
+    const hosts = [];
+    for (let index = 0; index < 30; index++) {
+      hosts.push(await createHost(env, { name: `No hours ${index}`, time_zone: "UTC" }));
+    }
+    const eventType = await eventTypeFor(
+      env,
+      hosts.map((host) => ({ host: host.id })),
+      { kind: "pool" },
+    );
+    const client = await pool.connect();
+    const query = spyOn(Object.getPrototypeOf(client), "query");
+    client.release();
+    query.mockClear();
+    try {
+      await expect(
+        createBooking(env, request(eventType.id, at("09:00")), deps, actor),
+      ).rejects.toMatchObject({ code: "slot_unavailable" });
+      expect(query.mock.calls.length).toBeLessThan(60);
+    } finally {
+      query.mockRestore();
+    }
+    await auditClaims(env);
+  });
+
+  test("a required host who can't make it ends a pool's search at once", async () => {
+    const env = await tenantEnv();
+    const required = await createHost(env, { name: "No hours", time_zone: "UTC" });
+    const members = await Promise.all([hostWithHours(env), hostWithHours(env), hostWithHours(env)]);
+    const eventType = await eventTypeFor(
+      env,
+      [
+        { host: required.id, role: "required" },
+        ...members.map((host) => ({ host: host?.id as string })),
+      ],
+      { kind: "pool" },
+    );
+    await expect(
+      createBooking(env, request(eventType.id, at("09:00")), deps, actor),
+    ).rejects.toMatchObject({ code: "slot_unavailable" });
+  });
+
+  test("a pool's narrowing keeps rank order and finds the one who's free", async () => {
+    const env = await tenantEnv();
+    const free = await hostWithHours(env);
+    const noHours = [];
+    for (let index = 0; index < 5; index++) {
+      noHours.push(await createHost(env, { name: `No hours ${index}`, time_zone: "UTC" }));
+    }
+    const eventType = await eventTypeFor(
+      env,
+      [free, ...noHours].map((host) => ({ host: host?.id as string })),
+      { kind: "pool" },
+    );
+    await db
+      .update(schema.schedulingEventTypeHost)
+      .set({ lastAssignedAt: new Date() })
+      .where(
+        and(
+          eq(schema.schedulingEventTypeHost.eventTypeId, eventType.id),
+          eq(schema.schedulingEventTypeHost.hostId, free?.id as string),
+        ),
+      );
+    const { booking } = await createBooking(env, request(eventType.id, at("09:00")), deps, actor);
+    expect(booking.hosts).toEqual([free?.id as string]);
+    await auditClaims(env);
   });
 
   test("bookings spread by weight", async () => {
