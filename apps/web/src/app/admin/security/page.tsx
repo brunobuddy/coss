@@ -126,7 +126,7 @@ function Score({ score }: Pick<SecurityPosture, "score">) {
       <PanelBody flush>
         <EmptyState
           compact
-          description={`Security Hub's first full evaluation can take up to a day after it's turned on. ${score.value.total} checks so far.`}
+          description={`Security Hub's first full evaluation can take up to a day after it's turned on. ${score.value.total} ${score.value.total === 1 ? "check" : "checks"} so far.`}
           icon={ShieldIcon}
           title="Still evaluating"
         />

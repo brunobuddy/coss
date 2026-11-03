@@ -22,7 +22,7 @@ export type Readings = {
   lastRootSignIn: Reading<Date | null>;
   trail: Reading<{ logging: boolean; latestDelivery: Date | null; error: string | null } | null>;
   threatDetection: Reading<{ production: boolean; management: boolean }>;
-  securityHub: Reading<boolean>;
+  securityHub: Reading<{ enabled: boolean; standardStatuses: string[] }>;
   configRecording: Reading<boolean>;
   outsideAccess: Reading<boolean>;
   alerts: Reading<{ confirmed: number; pending: number }>;
@@ -132,15 +132,26 @@ export function postureChecks(readings: Readings, now: Date = new Date()): Postu
             fix: "Re-apply Terraform. Only the management account can remove the policy keeping it on.",
           },
     ),
-    check("security_hub", "Configuration checks", readings.securityHub, (on) =>
-      on
-        ? { state: "ok", summary: "Security Hub grades production against AWS's best practices." }
-        : {
-            state: "failing",
-            summary: "Security Hub is off in production.",
-            fix: "Apply infra/terraform.",
-          },
-    ),
+    check("security_hub", "Configuration checks", readings.securityHub, (hub) => {
+      if (!hub.enabled) {
+        return {
+          state: "failing",
+          summary: "Security Hub is off in production.",
+          fix: "Apply infra/terraform.",
+        };
+      }
+      if (hub.standardStatuses.length === 0 || !hub.standardStatuses.every((s) => s === "READY")) {
+        return {
+          state: "warning",
+          summary: `Security Hub is on, but its checks aren't running (${hub.standardStatuses.join(", ") || "no standard enabled"}).`,
+          fix: "If this lasts more than a few hours, turn the standard off and on again in Security Hub.",
+        };
+      }
+      return {
+        state: "ok",
+        summary: "Security Hub grades production against AWS's best practices.",
+      };
+    }),
     check("config", "Configuration history", readings.configRecording, (on) =>
       on
         ? { state: "ok", summary: "AWS Config records how production's resources change." }

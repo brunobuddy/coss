@@ -31,6 +31,7 @@ import { GetAccountSummaryCommand, IAMClient } from "@aws-sdk/client-iam";
 import { ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3";
 import {
   DescribeHubCommand,
+  GetEnabledStandardsCommand,
   GetFindingsCommand as GetHubFindingsCommand,
   SecurityHubClient,
 } from "@aws-sdk/client-securityhub";
@@ -358,9 +359,18 @@ export async function getSecurityPosture(): Promise<SecurityPosture> {
     read(async () => {
       try {
         const { HubArn } = await hub.send(new DescribeHubCommand({}));
-        return Boolean(HubArn);
+        if (!HubArn) return { enabled: false, standardStatuses: [] };
+        const { StandardsSubscriptions } = await hub.send(new GetEnabledStandardsCommand({}));
+        return {
+          enabled: true,
+          standardStatuses: (StandardsSubscriptions ?? []).map(
+            (standard) => standard.StandardsStatus ?? "UNKNOWN",
+          ),
+        };
       } catch (error) {
-        if (error instanceof Error && error.name === "InvalidAccessException") return false;
+        if (error instanceof Error && error.name === "InvalidAccessException") {
+          return { enabled: false, standardStatuses: [] };
+        }
         throw error;
       }
     }),

@@ -21,7 +21,7 @@ function healthy(): Readings {
       value: { logging: true, latestDelivery: new Date("2026-11-03T11:55:00Z"), error: null },
     },
     threatDetection: { ok: true, value: { production: true, management: true } },
-    securityHub: { ok: true, value: true },
+    securityHub: { ok: true, value: { enabled: true, standardStatuses: ["READY"] } },
     configRecording: { ok: true, value: true },
     outsideAccess: { ok: true, value: true },
     alerts: { ok: true, value: { confirmed: 1, pending: 0 } },
@@ -112,7 +112,10 @@ describe("posture checks", () => {
   });
 
   test("problems sort first", () => {
-    const readings = { ...healthy(), securityHub: { ok: true as const, value: false } };
+    const readings = {
+      ...healthy(),
+      securityHub: { ok: true as const, value: { enabled: false, standardStatuses: [] } },
+    };
     expect(sortChecks(postureChecks(readings, NOW))[0]?.id).toBe("security_hub");
   });
 });
@@ -233,5 +236,19 @@ describe("encryption and audit checks", () => {
     expect(stateOf(audit(false, "ddl,role"), "database_audit")).toBe("warning");
     expect(stateOf(audit(true, "none"), "database_audit")).toBe("warning");
     expect(stateOf(audit(true, "ddl,role"), "database_audit")).toBe("ok");
+  });
+});
+
+describe("Security Hub's check", () => {
+  const hub = (enabled: boolean, standardStatuses: string[]) => ({
+    ...healthy(),
+    securityHub: { ok: true as const, value: { enabled, standardStatuses } },
+  });
+
+  test("on but not grading isn't fine", () => {
+    expect(stateOf(hub(true, ["PENDING"]), "security_hub")).toBe("warning");
+    expect(stateOf(hub(true, []), "security_hub")).toBe("warning");
+    expect(stateOf(hub(true, ["READY"]), "security_hub")).toBe("ok");
+    expect(stateOf(hub(false, []), "security_hub")).toBe("failing");
   });
 });
