@@ -152,6 +152,12 @@ export const PRODUCT_COLUMNS: readonly MenuColumn[] = [
         href: "/products/forms",
         badge: "New",
       },
+      api("scheduling", {
+        description: "Bookings and calendars in your app.",
+        icon: CalendarCheckIn01Icon,
+        href: "/products/scheduling",
+        badge: "New",
+      }),
       api("video", { description: "Rooms and recordings.", icon: Video01Icon, href: "/#video" }),
     ],
   },
@@ -216,11 +222,6 @@ export const PRODUCT_COLUMNS: readonly MenuColumn[] = [
   {
     title: "More from coss.com",
     links: [
-      api("scheduling", {
-        description: "Availability and bookings.",
-        icon: CalendarCheckIn01Icon,
-        href: "/docs/scheduling",
-      }),
       {
         label: CALENDAR.name,
         description: "A React calendar component.",
@@ -365,6 +366,7 @@ export const FOOTER_COLUMNS: readonly { title: string; links: readonly [string, 
       ["Verify", "/products/verify"],
       ["Sign", "/products/sign"],
       ["Forms", "/products/forms"],
+      ["Scheduling", "/products/scheduling"],
       ["Hooks", "/products/hooks"],
       ["Risk", "/products/risk"],
       ["Rate limiting", "/products/rate-limiting"],
