@@ -1,6 +1,6 @@
 {
   "name": "coss-mcp",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "MCP server for coss.com: lets coding agents look up emails and SMS, diagnose delivery, and manage domains, suppressions and webhooks.",
   "license": "MIT",
   "homepage": "https://coss.com/docs/mcp",
@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.1",
-    "coss": "^0.10.0",
+    "coss": "^0.11.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
