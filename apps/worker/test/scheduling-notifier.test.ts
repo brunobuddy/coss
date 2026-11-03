@@ -37,6 +37,7 @@ async function email(overrides: Partial<SchedulingEmail> = {}): Promise<Scheduli
         method: "REQUEST",
       }),
     },
+    logo: null,
     idempotencyKey: `scheduling:${crypto.randomUUID()}`,
     ...overrides,
   };
@@ -189,5 +190,56 @@ test("coss.com's address never sends the copy with the customer's name on top", 
   expect(sent).toEqual([
     { environmentId: tenant.production.id, html: "<p>branded</p>" },
     { environmentId: coss.production.id, html: "<p>coss</p>" },
+  ]);
+});
+
+test("the logo goes inline with the customer's copy, and never with coss.com's", async () => {
+  const tenant = await createTestTenant();
+  const coss = await createTestTenant();
+  const sent: { environmentId: string; attachments: unknown }[] = [];
+  const notifier = schedulingNotifier({
+    service: {
+      async send(input) {
+        sent.push({
+          environmentId: input.environment.environmentId,
+          attachments: input.params.attachments?.map((attachment) => attachment.content_id ?? null),
+        });
+        if (input.environment.environmentId === tenant.production.id) {
+          throw new EmailError("domain_not_verified", "Not verified.");
+        }
+        return { replayed: false } as never;
+      },
+    },
+    limiter: memoryLimiter(),
+    fallback: {
+      environment: {
+        organizationId: coss.organization.id,
+        projectId: coss.project.id,
+        environmentId: coss.production.id,
+        mode: "live",
+      },
+      address: "notifications@coss.test",
+    },
+  });
+  const message = await email({
+    environment: {
+      organizationId: tenant.organization.id,
+      projectId: tenant.project.id,
+      environmentId: tenant.production.id,
+      mode: "live",
+    },
+    from: "bookings@acme.test",
+    ics: null,
+    logo: {
+      filename: "logo.png",
+      content: Buffer.from("logo").toString("base64"),
+      contentType: "image/png",
+      contentId: "logo@acme",
+    },
+  });
+  await notifier.email(message);
+  expect(sent).toEqual([
+    { environmentId: tenant.production.id, attachments: ["logo@acme"] },
+    { environmentId: coss.production.id, attachments: undefined },
   ]);
 });

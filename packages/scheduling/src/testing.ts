@@ -5,6 +5,19 @@ import type { SchedulingDeps } from "./types.ts";
 
 const TEST_KEY = createHash("sha256").update("scheduling test key").digest();
 
+/** Only what `parseLogo` reads: a signature and a size. */
+export function testPng(width: number, height: number): string {
+  const image = Buffer.alloc(24);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(image);
+  image.writeUInt32BE(13, 8);
+  image.write("IHDR", 12, "latin1");
+  image.writeUInt32BE(width, 16);
+  image.writeUInt32BE(height, 20);
+  return image.toString("base64");
+}
+
+export const TEST_PNG = testPng(400, 100);
+
 export function testSchedulingDeps(overrides: Partial<SchedulingDeps> = {}): SchedulingDeps {
   return {
     dataKeys: secretsKeyRing([TEST_KEY]),

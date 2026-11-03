@@ -93,6 +93,12 @@ names to the AI Gateway. In exchange, text a customer controls is screened at se
 link. Never add a free-form field to these emails without screening it. SMS goes through `@coss/sms`, so it's sampled
 as usual: keep names out of it.
 
+Branding only applies under the customer's own `email_from`: `renderMessage` puts their name or logo and accent in
+`html`, and `cossHtml`, what coss.com's address sends, has none of them. `scheduling_logo` holds a PNG or JPEG checked
+by its bytes (`parseLogo`), never SVG. Emails carry it inline (`cid:`) and pages get it as a data URL from `/session`:
+neither loads a remote image, since a request per open would say who's whose patient. A logo can't be screened like
+text, and it can't hold a link.
+
 ## Billing
 
 One `scheduling.bookings` unit per confirmed booking, series occurrence or group session, guarded by a compare-and-set

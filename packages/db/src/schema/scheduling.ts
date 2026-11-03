@@ -9,6 +9,7 @@ import {
   bigserial,
   boolean,
   check,
+  customType,
   date,
   foreignKey,
   index,
@@ -945,5 +946,33 @@ export const schedulingSettings = pgTable(
       foreignColumns: [environment.id, environment.organizationId],
     }).onDelete("cascade"),
     unique("scheduling_settings_environment_unique").on(t.environmentId),
+  ],
+);
+
+const logoBytes = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+
+/** Apart from `scheduling_settings`, which every session reads. */
+export const schedulingLogo = pgTable(
+  "scheduling_logo",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.schedulingLogo)),
+    organizationId: text("organization_id").notNull(),
+    environmentId: text("environment_id").notNull(),
+    contentType: text("content_type").notNull(),
+    image: logoBytes("image").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    foreignKey({
+      name: "scheduling_logo_environment_fk",
+      columns: [t.environmentId, t.organizationId],
+      foreignColumns: [environment.id, environment.organizationId],
+    }).onDelete("cascade"),
+    unique("scheduling_logo_environment_unique").on(t.environmentId),
   ],
 );

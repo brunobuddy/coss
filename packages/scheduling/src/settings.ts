@@ -2,6 +2,7 @@
 import { db, schema } from "@coss/db";
 import { and, eq } from "drizzle-orm";
 import { SchedulingError } from "./errors.ts";
+import { getLogoRow, logoDataUrl, removeLogo, type SchedulingLogoRow, saveLogo } from "./logo.ts";
 import type { SettingsObjectOutput, UpdateSettingsRequestOutput } from "./schemas.ts";
 import { refuseLinks, type SetupScreening, screenSetup } from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
@@ -25,12 +26,23 @@ function toWireNotifications(row: SettingsRow | undefined): SettingsObjectOutput
   );
 }
 
-function toSettingsObject(row: SettingsRow | undefined): SettingsObjectOutput {
+function toSettingsObject(
+  row: SettingsRow | undefined,
+  logo: SchedulingLogoRow | null,
+): SettingsObjectOutput {
   return {
     object: "scheduling.settings",
     allowed_origins: row?.allowedOrigins ?? [],
     brand_name: row?.brandName ?? null,
     accent_color: row?.accentColor ?? null,
+    logo: logo
+      ? {
+          content_type: logo.contentType as "image/png" | "image/jpeg",
+          width: logo.width,
+          height: logo.height,
+          data_url: logoDataUrl(logo),
+        }
+      : null,
     email_from: row?.emailFrom ?? null,
     sms_from: row?.smsFrom ?? null,
     calendar_failure_mode: row?.calendarFailureMode ?? "hide",
@@ -71,7 +83,8 @@ export async function getSettingsRow(scope: Scope): Promise<SettingsRow | undefi
 }
 
 export async function getSettings(scope: Scope): Promise<SettingsObjectOutput> {
-  return toSettingsObject(await getSettingsRow(scope));
+  const [row, logo] = await Promise.all([getSettingsRow(scope), getLogoRow(scope)]);
+  return toSettingsObject(row, logo);
 }
 
 export async function updateSettings(
@@ -81,6 +94,8 @@ export async function updateSettings(
 ): Promise<SettingsObjectOutput> {
   refuseLinks(params.brand_name, "brand_name");
   if (params.brand_name) await screenSetup(env, params.brand_name, opts.screen, "brand_name");
+  if (params.logo) await saveLogo(env, params.logo.content);
+  else if (params.logo === null) await removeLogo(env);
   const values = {
     ...(params.allowed_origins !== undefined
       ? { allowedOrigins: params.allowed_origins.map((origin) => checkedOrigin(origin, env.mode)) }
@@ -126,5 +141,5 @@ export async function updateSettings(
       set: { ...values, updatedAt: new Date() },
     })
     .returning();
-  return toSettingsObject(row);
+  return toSettingsObject(row, await getLogoRow(env));
 }

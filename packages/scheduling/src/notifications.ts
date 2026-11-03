@@ -11,7 +11,9 @@ import { db, type Executor, schema } from "@coss/db";
 import { type EmailBlock, type EmailContent, oneLine, renderEmail } from "@coss/email-layout";
 import { and, asc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { decryptContact } from "./attendees.ts";
+import { accentColors } from "./branding.ts";
 import { buildIcs } from "./calendar/ical.ts";
+import { getLogoRow, LOGO_CONTENT_ID, type SchedulingLogoRow } from "./logo.ts";
 import { createHostInvitationSession, createManageSession } from "./sessions.ts";
 import type { SchedulingDeps } from "./types.ts";
 
@@ -62,18 +64,35 @@ export function resolvePolicy(
   };
 }
 
-/** The customer's name on top only under their own address; coss.com's sends `cossHtml`. */
-function renderMessage(
-  settings: { emailFrom: string | null; brandName: string | null } | null | undefined,
-  content: EmailContent,
-) {
+type Branding = {
+  settings: typeof schedulingSettings.$inferSelect | undefined;
+  logo: SchedulingLogoRow | null;
+};
+
+/** The customer's branding only under their own address; coss.com's sends `cossHtml`. */
+function renderMessage(branding: Branding, senderName: string, content: EmailContent) {
+  const { settings, logo } = branding;
   const coss = renderEmail(content);
-  const brand = settings?.emailFrom ? settings.brandName : null;
+  if (!settings?.emailFrom) return { ...coss, cossHtml: coss.html, logo: null };
+  const accent = settings.accentColor ? accentColors(settings.accentColor) : null;
+  const branded = renderEmail({
+    ...content,
+    brand: oneLine(settings.brandName ?? "") || senderName,
+    ...(logo
+      ? { logo: { src: `cid:${LOGO_CONTENT_ID}`, width: logo.width, height: logo.height } }
+      : {}),
+    ...(accent ? { accent } : {}),
+  });
+  return { ...coss, html: branded.html, cossHtml: coss.html, logo: logo && emailLogo(logo) };
+}
+
+/** Inside the message, not a remote image: opening an email tells neither us nor the customer. */
+function emailLogo(logo: SchedulingLogoRow): NonNullable<SchedulingEmail["logo"]> {
   return {
-    subject: coss.subject,
-    text: coss.text,
-    html: brand ? renderEmail({ ...content, brand }).html : coss.html,
-    cossHtml: coss.html,
+    filename: logo.contentType === "image/png" ? "logo.png" : "logo.jpg",
+    content: logo.image.toString("base64"),
+    contentType: logo.contentType,
+    contentId: LOGO_CONTENT_ID,
   };
 }
 
@@ -157,6 +176,8 @@ export type SchedulingEmail = {
   /** What coss.com's address sends, including when the customer's stops being verified. */
   cossHtml: string;
   ics: { filename: string; content: string; method: "REQUEST" | "CANCEL" } | null;
+  /** Inline in `html`, so it goes only with that, never with `cossHtml`. */
+  logo: { filename: string; content: string; contentType: string; contentId: string } | null;
   idempotencyKey: string;
 };
 
@@ -320,6 +341,11 @@ async function settingsOf(row: Claimed) {
   return settings;
 }
 
+async function brandingOf(row: Claimed): Promise<Branding> {
+  const settings = await settingsOf(row);
+  return { settings, logo: settings?.emailFrom ? await getLogoRow(row) : null };
+}
+
 async function sendBookingEmail(
   row: Claimed,
   booking: BookingRow,
@@ -328,7 +354,8 @@ async function sendBookingEmail(
 ): Promise<"sent" | "no_address"> {
   const env = await environmentOf(row);
   if (!env) return "no_address";
-  const settings = await settingsOf(row);
+  const branding = await brandingOf(row);
+  const { settings } = branding;
   const event = row.kind as NotificationEvent;
   const senderName = oneLine(settings?.brandName ?? titleOf(booking));
   const when = async (timeZone: string, locale: string | null) =>
@@ -392,7 +419,7 @@ async function sendBookingEmail(
           ? [{ button: { label: "Reschedule or cancel", url: manage.url } } as EmailBlock]
           : []),
       ];
-      const message = renderMessage(settings, {
+      const message = renderMessage(branding, senderName, {
         subject: SUBJECTS[event](titleOf(booking)),
         blocks,
         reason: `You're receiving this because of your booking with ${senderName}.`,
@@ -407,6 +434,7 @@ async function sendBookingEmail(
         html: message.html,
         cossHtml: message.cossHtml,
         ics: withIcs ? ics({ name: contact.name, email: contact.email }) : null,
+        logo: message.logo,
         idempotencyKey: `${key}:${attendee.id}`,
       });
       sent = true;
@@ -444,7 +472,7 @@ async function sendBookingEmail(
         ],
       },
     ];
-    const message = renderMessage(settings, {
+    const message = renderMessage(branding, senderName, {
       subject: SUBJECTS[event](titleOf(booking)),
       blocks,
       reason: `You're receiving this as a host with ${senderName}.`,
@@ -459,6 +487,7 @@ async function sendBookingEmail(
       html: message.html,
       cossHtml: message.cossHtml,
       ics: withIcs ? ics({ name: host.name, email: host.email }) : null,
+      logo: message.logo,
       idempotencyKey: `${key}:${host.id}`,
     });
     sent = true;
@@ -512,13 +541,14 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
       and(eq(schedulingHost.id, row.hostId), eq(schedulingHost.organizationId, row.organizationId)),
     );
   if (!host?.email) return "no_address";
-  const settings = await settingsOf(row);
+  const branding = await brandingOf(row);
+  const { settings } = branding;
   const senderName = oneLine(settings?.brandName ?? "Your bookings");
   const session = deps.publicUrl
     ? await createHostInvitationSession(env, host.id, deps.publicUrl, now)
     : null;
   const zoom = row.kind === "zoom_needs_reauth";
-  const message = renderMessage(settings, {
+  const message = renderMessage(branding, senderName, {
     subject: zoom ? "Your Zoom account needs reconnecting" : "Your calendar needs reconnecting",
     blocks: [
       {
@@ -549,6 +579,7 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
     html: message.html,
     cossHtml: message.cossHtml,
     ics: null,
+    logo: message.logo,
     idempotencyKey: `scheduling:${row.id}`,
   });
   return "sent";

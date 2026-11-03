@@ -20,11 +20,13 @@ import {
   getBooking,
   getEventType,
   getHost,
+  getLogoRow,
   getSettingsRow,
   listBookings,
   listConnections,
   listEventTypeSlots,
   listSchedules,
+  logoDataUrl,
   rescheduleBooking,
   type SchedulingDeps,
   SchedulingError,
@@ -214,10 +216,11 @@ export function createSchedulingClientRoutes(opts: {
   };
 
   const branding = async (env: AuthenticatedSession["env"]) => {
-    const settings = await getSettingsRow(env);
+    const [settings, logo] = await Promise.all([getSettingsRow(env), getLogoRow(env)]);
     return {
       brand_name: settings?.brandName ?? null,
       accent_color: settings?.accentColor ?? null,
+      logo: logo ? { data_url: logoDataUrl(logo), width: logo.width, height: logo.height } : null,
     };
   };
 

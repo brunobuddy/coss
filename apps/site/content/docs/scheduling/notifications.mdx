@@ -26,9 +26,35 @@ The events are `confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `dec
 send everything yourself, turn them all off and use [webhooks](/docs/webhooks).
 
 Emails come from `email_from`, on one of your verified domains. Without one, they come from coss.com on
-your behalf. They use fixed templates with your event type's title and your brand name, and the only link
-in them is the attendee's manage link. Titles, host names and brand names can't contain links, and in live
-environments they're screened for abuse when you set them, rather than each email being screened.
+your behalf, in coss.com's own layout. They use fixed templates with your event type's title and your brand
+name, and the only link in them is the attendee's manage link. Titles, host names and brand names can't
+contain links, and in live environments they're screened for abuse when you set them, rather than each email
+being screened.
+
+## Your branding
+
+From your own address, emails carry your brand name or logo at the top, and your accent color on their button.
+The hosted pages show them too.
+
+```ts twoslash
+import { readFile } from "node:fs/promises";
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const logo = await readFile("logo.png");
+
+await coss.scheduling.settings.update({
+  email_from: "appointments@example.com",
+  brand_name: "Acme Health",
+  accent_color: "#2563eb",
+  logo: { content: logo.toString("base64") },
+});
+```
+
+A logo is a PNG or JPEG of 200 KB at most, on a white background or a transparent one. It travels inside
+each email rather than being loaded from a server, so nobody learns when an email was opened and mail clients
+don't ask to show images. Text on your accent color is black or white, whichever reads better, and a color
+too pale to see on a white page is ignored. Set `logo` to `null` to remove it.
 
 An SMS reminder needs `sms_from`, one of your approved numbers, and the attendee's `phone`. Getting their
 consent is yours to do, and a STOP is always honored.

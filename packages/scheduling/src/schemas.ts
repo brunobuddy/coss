@@ -5,6 +5,7 @@
  */
 import { LATEST_API_VERSION } from "@coss/versioning";
 import { z } from "zod";
+import { LOGO_MAX_BYTES } from "./branding.ts";
 
 export const SCHEDULING_BOOKING_EVENT_TYPES = [
   "scheduling.booking.created",
@@ -716,6 +717,17 @@ export const CancelSeriesRequest = z
   })
   .meta({ id: "CancelSeriesRequest", examples: [{ from_index: 4 }] });
 
+const LOGO_MAX_BASE64 = Math.ceil(LOGO_MAX_BYTES / 3) * 4;
+
+const SettingsLogo = z
+  .object({
+    content_type: z.enum(["image/png", "image/jpeg"]),
+    width: z.number().int(),
+    height: z.number().int(),
+    data_url: z.string().meta({ description: "The image, as a `data:` URL." }),
+  })
+  .meta({ id: "SchedulingLogo" });
+
 export const SettingsObject = z
   .object({
     object: z.literal("scheduling.settings"),
@@ -724,6 +736,9 @@ export const SettingsObject = z
     }),
     brand_name: z.string().nullable(),
     accent_color: z.string().nullable(),
+    logo: SettingsLogo.nullable().meta({
+      description: "At the top of the hosted pages, and of emails sent from `email_from`.",
+    }),
     email_from: z.string().nullable().meta({
       description: "Sender of booking emails, on a verified domain.",
     }),
@@ -754,6 +769,7 @@ export const SettingsObject = z
         allowed_origins: ["https://app.example.com"],
         brand_name: "Acme Health",
         accent_color: null,
+        logo: null,
         email_from: "appointments@example.com",
         sms_from: null,
         calendar_failure_mode: "hide",
@@ -770,6 +786,15 @@ export const UpdateSettingsRequest = z
     accent_color: z
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/, "Use #RRGGBB.")
+      .nullable()
+      .optional(),
+    logo: z
+      .strictObject({
+        content: z
+          .base64()
+          .max(LOGO_MAX_BASE64, "A logo can be 200 KB at most.")
+          .meta({ description: "A PNG or JPEG's bytes, base64-encoded. 200 KB at most." }),
+      })
       .nullable()
       .optional(),
     email_from: z.email().max(320).nullable().optional(),

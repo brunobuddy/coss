@@ -168,6 +168,7 @@ export const ID_PREFIXES = {
   schedulingSession: "schs",
   schedulingOauthState: "soauth",
   schedulingSettings: "schset",
+  schedulingLogo: "schlogo",
   // Imports from another email provider (Resend, SendGrid, Postmark), `@coss/migrate`.
   migration: "mig",
   migrationItem: "migitem",

@@ -6,6 +6,7 @@ export type SchedulingErrorCode =
   | "invalid_attendee"
   | "invalid_answers"
   | "invalid_time"
+  | "invalid_logo"
   | "uid_taken"
   | "slot_unavailable"
   | "booking_not_changeable"
@@ -29,6 +30,7 @@ const STATUS_BY_CODE = {
   invalid_attendee: 422,
   invalid_answers: 422,
   invalid_time: 422,
+  invalid_logo: 422,
   uid_taken: 422,
   slot_unavailable: 422,
   booking_not_changeable: 422,
