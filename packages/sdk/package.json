@@ -70,7 +70,7 @@
     "@react-email/render": "2.1.0",
     "@types/bun": "1.4.2",
     "@types/react": "19.3.0",
-    "better-auth": "1.7.7",
+    "better-auth": "1.7.16",
     "nodemailer": "10.0.13",
     "publint": "0.3.25",
     "react": "19.3.0",
