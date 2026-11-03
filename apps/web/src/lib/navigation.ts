@@ -121,6 +121,7 @@ export const ADMIN_NAV: NavItem[] = [
   { label: "Reputation", path: "/reputation", icon: GaugeIcon },
   { label: "Billing", path: "/billing", icon: CreditCardIcon },
   { label: "Deploys", path: "/deploys", icon: RocketIcon },
+  { label: "Security", path: "/security", icon: ShieldIcon },
 ];
 
 /**

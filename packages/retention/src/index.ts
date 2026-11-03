@@ -40,6 +40,8 @@ export const RETENTION_DAYS = {
   reputationHistory: 730,
   /** Platform admin actions. */
   adminAuditLog: 730,
+  /** Load balancer, CDN and network flow logs, expired by their bucket's lifecycle rule. */
+  accessLogs: 90,
   /** Sessions, verification tokens and invitations, counted from their expiry. */
   expiredAuth: 7,
   /** Risk assessments with their reasons, signals and feedback. */
@@ -265,6 +267,13 @@ export const RETENTION_POLICY: readonly RetentionRule[] = [
     label: "Admin audit log",
     description: "Actions coss.com staff take on organizations and users.",
     period: { days: RETENTION_DAYS.adminAuditLog, after: "creation" },
+  },
+  {
+    id: "access_logs",
+    label: "Network and access logs",
+    description:
+      "Our load balancer, CDN and network flow logs: IP addresses, requested URLs, user agents and connection details, kept to investigate abuse and security incidents.",
+    period: { days: RETENTION_DAYS.accessLogs, after: "creation" },
   },
   {
     id: "expired_auth",

@@ -7,6 +7,13 @@ resource "aws_lb" "main" {
   idle_timeout               = local.spec.alb.idleTimeoutSeconds
   drop_invalid_header_fields = true
   enable_deletion_protection = true
+
+  depends_on = [aws_s3_bucket_policy.access_logs]
+  access_logs {
+    bucket  = aws_s3_bucket.access_logs.id
+    prefix  = "alb"
+    enabled = true
+  }
 }
 
 resource "aws_lb_target_group" "service" {

@@ -11,6 +11,16 @@
     "test": "bun --env-file=../../.env test --isolate"
   },
   "dependencies": {
+    "@aws-sdk/client-accessanalyzer": "catalog:",
+    "@aws-sdk/client-artifact": "catalog:",
+    "@aws-sdk/client-cloudtrail": "catalog:",
+    "@aws-sdk/client-config-service": "catalog:",
+    "@aws-sdk/client-guardduty": "catalog:",
+    "@aws-sdk/client-iam": "catalog:",
+    "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/client-securityhub": "catalog:",
+    "@aws-sdk/client-sns": "catalog:",
+    "@aws-sdk/client-sts": "catalog:",
     "@better-auth/core": "catalog:",
     "@better-auth/passkey": "catalog:",
     "@better-auth/sso": "catalog:",

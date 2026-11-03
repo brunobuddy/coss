@@ -131,3 +131,8 @@ variable "monthly_budget_usd" {
   type        = number
   description = "Monthly AWS spend that triggers budget alerts (80% actual, 100% forecasted)."
 }
+
+variable "management_account_id" {
+  description = "The AWS Organization's management account (infra/organization)."
+  type        = string
+}

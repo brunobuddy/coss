@@ -356,6 +356,27 @@
           "description": "Sign-in with GitHub (token exchange)."
         },
         {
+          "name": "SECURITY_MANAGEMENT_ROLE_ARN",
+          "kind": "plain",
+          "required": false,
+          "value": "the management account's coss-security-read role (infra/organization)",
+          "description": "The admin console's security page. It assumes this role for what only the management account knows: root MFA, the audit trail, outside access."
+        },
+        {
+          "name": "SECURITY_ALERTS_TOPIC_ARN",
+          "kind": "plain",
+          "required": false,
+          "value": "the coss-alerts SNS topic",
+          "description": "The security page checks a confirmed email subscribes to it."
+        },
+        {
+          "name": "SECURITY_ACCESS_LOGS_BUCKET",
+          "kind": "plain",
+          "required": false,
+          "value": "the access logs bucket (Terraform output access_logs_bucket)",
+          "description": "The security page checks load balancer and VPC flow logs still arrive."
+        },
+        {
           "name": "DEPLOY_GITHUB_APP_ID",
           "kind": "plain",
           "required": false,
