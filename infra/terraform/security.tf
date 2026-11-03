@@ -478,8 +478,14 @@ resource "aws_iam_role_policy" "task_web_security" {
       {
         Sid      = "DatabaseAudit"
         Effect   = "Allow"
-        Action   = ["logs:FilterLogEvents"]
+        Action   = ["logs:StartQuery"]
         Resource = "${aws_cloudwatch_log_group.database.arn}:*"
+      },
+      {
+        Sid      = "DatabaseAuditResults"
+        Effect   = "Allow"
+        Action   = ["logs:GetQueryResults"]
+        Resource = "*"
       },
       {
         Sid      = "LogDelivery"

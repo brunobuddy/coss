@@ -53,7 +53,7 @@ A new AWS account in the organization is covered by the trail and Access Analyze
 
 The database audits schema and role changes with pgaudit (no parameters or reads, which can hold customer data), and
 its log group keeps a year. After a fresh database, once the parameter group's `shared_preload_libraries` is applied by
-a reboot: `infra/scripts/ecs-task.sh worker -- bun -e '…CREATE EXTENSION IF NOT EXISTS pgaudit…'`. SNS topics are
+a reboot: `infra/scripts/ecs-task.sh worker -- sh -c "cd packages/db && bun -e '…CREATE EXTENSION IF NOT EXISTS pgaudit…'"` (`pg` only resolves from there). SNS topics are
 encrypted with `alias/coss-production-sns`, whose key policy must name every service that publishes to them: one
 missing loses its messages silently.
 

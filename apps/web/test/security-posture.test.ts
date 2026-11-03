@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
+  logQueryRows,
+  logQueryTime,
   parseAuditLine,
   postureChecks,
   postureVerdict,
@@ -210,6 +212,24 @@ describe("parseAuditLine", () => {
     expect(parseAuditLine("LOG:  connection received", at)).toBeNull();
     const line = `AUDIT: SESSION,1,1,ROLE,ALTER ROLE,,,${"x".repeat(300)},<not logged>`;
     expect(parseAuditLine(line, at)?.statement).toHaveLength(201);
+  });
+});
+
+describe("log query results", () => {
+  test("reads the rows and times Logs Insights returns", () => {
+    expect(
+      logQueryRows([
+        [
+          { field: "@timestamp", value: "2026-11-03 14:06:29.000" },
+          { field: "@message", value: "AUDIT: x" },
+        ],
+      ]),
+    ).toEqual([{ "@timestamp": "2026-11-03 14:06:29.000", "@message": "AUDIT: x" }]);
+    expect(logQueryTime("2026-11-03 14:06:29.000")).toEqual(new Date("2026-11-03T14:06:29Z"));
+  });
+
+  test("a time it can't read fails, rather than dropping the change", () => {
+    expect(() => logQueryTime("")).toThrow();
   });
 });
 
