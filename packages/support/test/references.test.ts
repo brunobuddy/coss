@@ -47,6 +47,7 @@ describe("support references", () => {
       id: domain.id,
     });
     expect(supportReferenceLabel("email")).toBe("Email");
+    expect(supportReferenceLabel("form")).toBe("Form");
   });
 
   test("another organization's item doesn't resolve", async () => {

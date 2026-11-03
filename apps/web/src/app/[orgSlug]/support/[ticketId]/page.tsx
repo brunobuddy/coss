@@ -1,4 +1,4 @@
-import { PRODUCTS } from "@coss/dashboard-routes";
+import { getProduct, isProductKey } from "@coss/dashboard-routes";
 import { formatSupportTime, getCustomerTicket, markCustomerTicketRead } from "@coss/support";
 import {
   CUSTOMER_TICKET_STATE_LABELS,
@@ -44,7 +44,8 @@ export default async function SupportTicketPage({
   if (!session.session.impersonatedBy) await markCustomerTicketRead(scope, ticket.id);
 
   const state = customerTicketState(ticket.status);
-  const productName = PRODUCTS.find((product) => product.key === ticket.context.product)?.name;
+  const product = ticket.context.product;
+  const productName = product && isProductKey(product) ? getProduct(product).name : undefined;
   const now = new Date();
   const hidden = { orgSlug, ticketId: ticket.id };
   const items: ConversationItem[] = ticket.messages.map((message) => ({

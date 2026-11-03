@@ -51,13 +51,14 @@ export function schedulingNotifier(opts: {
     email: SchedulingEmail,
     environment: SendEnvironment,
     from: string,
+    html: string,
   ): Promise<void> {
     const params = SendEmailRequest.parse({
       from,
       to: email.to,
       subject: email.subject,
       text: email.text,
-      html: email.html,
+      html,
       category: "scheduling",
       // Manage links are secrets: never through click redirects, and in live environments never
       // kept after sending.
@@ -105,12 +106,12 @@ export function schedulingNotifier(opts: {
       if (email.environment.mode === "sandbox") {
         const address = email.from ?? opts.fallback?.address ?? SANDBOX_FALLBACK_ADDRESS;
         const name = email.from ? email.senderName : `${email.senderName} via coss.com`;
-        await send(email, email.environment, named(name, address));
+        await send(email, email.environment, named(name, address), email.html);
         return;
       }
       if (email.from) {
         try {
-          await send(email, email.environment, named(email.senderName, email.from));
+          await send(email, email.environment, named(email.senderName, email.from), email.html);
           return;
         } catch (error) {
           if (!(error instanceof EmailError && error.code === "domain_not_verified")) throw error;
@@ -126,6 +127,7 @@ export function schedulingNotifier(opts: {
         email,
         opts.fallback.environment,
         named(`${email.senderName} via coss.com`, opts.fallback.address),
+        email.cossHtml,
       );
     },
     ...(opts.sms

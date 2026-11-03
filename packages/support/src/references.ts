@@ -1,7 +1,4 @@
-/**
- * What a ticket can point at. A pasted id is only kept if it belongs to the organization: a ticket
- * must never lead a rep to another customer's data, or tell anyone that an id exists elsewhere.
- */
+// A pasted id is kept only if it's the organization's: a ticket must never lead a rep elsewhere.
 import { db, schema } from "@coss/db";
 import { ID_PREFIXES } from "@coss/db/id";
 import { and, desc, eq, sql } from "drizzle-orm";
@@ -23,6 +20,15 @@ const REFERENCES = [
   },
   { prefix: ID_PREFIXES.broadcast, type: "broadcast", label: "Broadcast", table: schema.broadcast },
   { prefix: ID_PREFIXES.domain, type: "domain", label: "Domain", table: schema.domain },
+  { prefix: ID_PREFIXES.contact, type: "contact", label: "Contact", table: schema.contact },
+  {
+    prefix: ID_PREFIXES.emailTemplate,
+    type: "email_template",
+    label: "Email template",
+    table: schema.emailTemplate,
+  },
+  { prefix: ID_PREFIXES.inbox, type: "inbox", label: "Inbox", table: schema.inbox },
+  { prefix: ID_PREFIXES.form, type: "form", label: "Form", table: schema.form },
   {
     prefix: ID_PREFIXES.webhookEndpoint,
     type: "webhook_endpoint",
@@ -103,7 +109,6 @@ export async function recentEmailReferences(input: {
   }));
 }
 
-/** The environment's latest text messages. */
 export async function recentSmsReferences(input: {
   organizationId: string;
   environmentId: string;

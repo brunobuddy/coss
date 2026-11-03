@@ -41,6 +41,53 @@ describe("renderEmail", () => {
     expect(message.text).toStartWith("<i>Title</i>\n\n<b>Bailey</b> replied\n\nHello");
   });
 
+  test("the preview is the message, then the subtitle; a long title keeps its size on phones", () => {
+    const reply = renderEmail({
+      subject: "Subject",
+      subtitle: "Bailey replied",
+      blocks: [{ paragraph: "Try this first." }],
+    }).html;
+    expect(reply).toMatch(/<div style="display:none[^>]*>Try this first\.<\/div>/);
+    const bare = renderEmail({ subject: "Subject", subtitle: "Bailey replied", blocks: [] }).html;
+    expect(bare).toMatch(/<div style="display:none[^>]*>Bailey replied<\/div>/);
+    expect(reply).toContain('<h1 class="coss-title"');
+    const long = renderEmail({ subject: "A very long subject ".repeat(5), blocks: [] }).html;
+    expect(long).not.toContain('<h1 class="coss-title"');
+  });
+
+  test("a brand replaces the wordmark and takes no markup", () => {
+    const branded = renderEmail({
+      subject: "Subject",
+      brand: "<b>Acme</b>",
+      blocks: [{ paragraph: "Hello" }],
+    });
+    expect(branded.html).not.toContain("coss.com");
+    expect(branded.html).toContain("&lt;b&gt;Acme&lt;/b&gt;");
+    expect(renderEmail({ subject: "Subject", blocks: [] }).html).toContain("wordmark.png");
+    // A name of only spaces or invisible characters must not leave the email without a sender.
+    expect(renderEmail({ subject: "Subject", brand: " \u200b ", blocks: [] }).html).toContain(
+      "wordmark.png",
+    );
+  });
+
+  test("a passcode never reaches the preview, and the new blocks are escaped in both parts", () => {
+    const message = renderEmail({
+      subject: "Your code",
+      blocks: [
+        { passcode: "483920" },
+        { note: "It expires soon." },
+        { fields: [{ label: "<i>Name</i>", value: "Ada\n<script>" }] },
+        { quote: "<b>Please sign</b>" },
+      ],
+    });
+    const [preview] = message.html.match(/<div style="display:none[^>]*>[^<]*<\/div>/) ?? [];
+    expect(preview).not.toContain("483920");
+    expect(message.text).toContain("483920");
+    expect(message.text).toContain("<i>Name</i>:\nAda\n<script>");
+    expect(message.html).not.toContain("<script>");
+    expect(message.html).toContain("&lt;b&gt;Please sign&lt;/b&gt;");
+  });
+
   test("it reads without the extras strict clients strip", () => {
     const { html } = renderEmail({ subject: "Subject", blocks: [{ paragraph: "Hello" }] });
     expect(html).toContain('alt="coss.com"');

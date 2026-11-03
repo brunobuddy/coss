@@ -1,6 +1,6 @@
 import { billingOverview } from "@coss/billing";
 import { formatSupportTarget, PLANS, supportResponseMinutes } from "@coss/billing/catalog";
-import { PRODUCTS } from "@coss/dashboard-routes";
+import { getProduct, isProductKey } from "@coss/dashboard-routes";
 import { listDomains } from "@coss/email";
 import { listSendersForAdmin } from "@coss/email/admin";
 import { getOrganizationStanding } from "@coss/reputation";
@@ -34,7 +34,9 @@ async function OrganizationFacts(props: { organizationId: string; now: Date }) {
     listSendersForAdmin({ since: new Date(now.getTime() - 7 * DAY), now, organizationId }),
     listDomains({ organizationId }),
   ]);
-  if (!detail) return <p className="text-muted-foreground text-sm">This organization is gone.</p>;
+  if (!detail) {
+    return <p className="p-5 text-muted-foreground text-sm">This organization is gone.</p>;
+  }
   const plan = billing.state.terms.plan;
   const sender = senders[0];
   const verified = domains.filter((domain) => domain.status === "verified");
@@ -117,8 +119,9 @@ export async function TicketContextPanel(props: { data: SupportTicketForRep }) {
               ) : null}
               {context.product ? (
                 <SpecItem label="Product">
-                  {PRODUCTS.find((product) => product.key === context.product)?.name ??
-                    context.product}
+                  {isProductKey(context.product)
+                    ? getProduct(context.product).name
+                    : context.product}
                 </SpecItem>
               ) : null}
               {context.resourceId ? (

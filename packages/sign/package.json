@@ -20,6 +20,7 @@
     "@aws-sdk/client-s3": "catalog:",
     "@coss/billing": "workspace:*",
     "@coss/db": "workspace:*",
+    "@coss/email-layout": "workspace:*",
     "@coss/logs": "workspace:*",
     "@coss/retention": "workspace:*",
     "@coss/versioning": "workspace:*",
