@@ -4,7 +4,7 @@
  * Every review passes, except a business whose legal name contains `[reject]` (its resources' ids
  * say so); tests can hold reviews pending with `hold` and decide them with `decide`.
  */
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import type { SmsBusinessProfile } from "@coss/db/schema";
 import type { AvailableNumber, ReviewStatus, TwilioApi, TwilioMessage } from "./api.ts";
 import type { TwilioCredentials } from "./client.ts";
@@ -101,8 +101,8 @@ export class FakeTwilioApi implements TwilioApi {
     this.#record("searchNumbers", [account.accountSid, input]);
     const area = input.kind === "toll_free" ? "833" : (input.areaCode ?? "415");
     return Array.from({ length: input.limit }, () => {
-      const exchange = 200 + Math.floor(Math.random() * 800);
-      const line = String(Math.floor(Math.random() * 10_000)).padStart(4, "0");
+      const exchange = randomInt(200, 1000);
+      const line = String(randomInt(10_000)).padStart(4, "0");
       return {
         phoneNumber: `+1${area}${exchange}${line}`,
         locality: input.kind === "toll_free" ? null : "San Francisco",

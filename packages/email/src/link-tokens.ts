@@ -13,6 +13,7 @@
  * link (`p` preferences, `c` confirmation) is authenticated data, so one can't pass as the other.
  */
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { withoutTrailingSlashes } from "@coss/db/url";
 
 const VERSION = "a";
 const KEY_ID_LENGTH = 11;
@@ -194,7 +195,7 @@ export function preferenceLinks(input: {
   emailId?: string | null;
   topic?: string | null;
 }): PreferenceLinks {
-  const base = input.baseUrl.replace(/\/+$/, "");
+  const base = withoutTrailingSlashes(input.baseUrl);
   const urlOf = (payload: { emailId: string | null; topic: string | null }) =>
     `${base}${PREFERENCES_PATH_PREFIX}${mintLinkToken(input.keys, {
       kind: "preferences",
@@ -241,5 +242,5 @@ export function confirmationLink(input: {
     topic: null,
     issuedAt: input.issuedAt,
   });
-  return `${input.baseUrl.replace(/\/+$/, "")}${PREFERENCES_PATH_PREFIX}confirm/${token}`;
+  return `${withoutTrailingSlashes(input.baseUrl)}${PREFERENCES_PATH_PREFIX}confirm/${token}`;
 }

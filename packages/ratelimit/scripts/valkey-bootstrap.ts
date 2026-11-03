@@ -11,13 +11,16 @@
  *
  * The cache lives in a VPC: the api, dashboard (and anything else that rate limits) must run in it,
  * and the security group must allow inbound TCP 6379 from them. Prints the env vars to set. The
- * app user's password is printed only when it is created or rotated (`--rotate-password`); rotating
+ * app user's password is written to a private temporary file only when it is created or rotated (`--rotate-password`); rotating
  * breaks running processes until they get the new VALKEY_URL.
  *
  * Needs credentials allowed to manage ElastiCache (the default AWS credential chain).
  */
 
 import { randomBytes } from "node:crypto";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { parseArgs } from "node:util";
 import {
   CreateServerlessCacheCommand,
@@ -252,9 +255,16 @@ const endpoint = cache.Endpoint;
 if (!endpoint?.Address) throw new Error(`${cacheName} has no endpoint.`);
 
 console.info("\nSet these for the api and the dashboard:\n");
-console.info(
-  `VALKEY_URL=rediss://${appUserId}:${password ?? "<password>"}@${endpoint.Address}:${endpoint.Port ?? 6379}`,
-);
+const valkeyUrl = (secret: string) =>
+  `rediss://${appUserId}:${secret}@${endpoint.Address}:${endpoint.Port ?? 6379}`;
+if (password) {
+  // Never on stdout: this also runs where output is kept, such as a one-off task's logs.
+  const file = join(mkdtempSync(join(tmpdir(), "coss-valkey-")), "valkey-url");
+  writeFileSync(file, valkeyUrl(password), { mode: 0o600 });
+  console.info(`VALKEY_URL is in ${file}. Move it to the stage secret, then delete it.`);
+} else {
+  console.info(`VALKEY_URL=${valkeyUrl("<password>")}`);
+}
 console.info("VALKEY_CLUSTER=true");
 console.info(`RATE_LIMIT_KEY_PREFIX=${keyPrefix}`);
 if (!password) {

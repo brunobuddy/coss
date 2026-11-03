@@ -22,7 +22,7 @@ import {
 import { useEffect, useState } from "react";
 import { clearSupportDraft, SupportComposer } from "@/components/support/composer";
 import type { ActionResult } from "@/lib/action-result";
-import { toast } from "@/lib/toast";
+import { isSuccessRedirect, toast } from "@/lib/toast";
 import { createTicketAction } from "../actions";
 
 type Expectation = { target: string; by: string };
@@ -129,7 +129,7 @@ function ReferenceField(props: {
         ) : null}
       </Autocomplete>
       <FieldDescription>
-        An email, text message, domain or anything else with an ID, like email_01k…
+        The ID of an email, text message, domain, form, contact or similar, like email_01k…
       </FieldDescription>
     </Field>
   );
@@ -168,9 +168,10 @@ export function NewTicketForm(props: {
     try {
       return await createTicketAction(previous, formData);
     } catch (error) {
-      // Only a redirect gets here (failures come back as a result): the ticket exists.
-      clearSupportDraft(draftKey);
-      toast.success("Ticket sent");
+      if (isSuccessRedirect(error)) {
+        clearSupportDraft(draftKey);
+        toast.success("Ticket sent");
+      }
       throw error;
     }
   }
@@ -197,14 +198,20 @@ export function NewTicketForm(props: {
         <SelectField
           items={[{ value: NONE, label: "Not a specific product" }, ...props.products]}
           label="Product"
-          onChange={setProduct}
+          onChange={(value) => {
+            setProduct(value);
+            setReference("");
+          }}
           value={product}
         />
       </div>
       <SelectField
         items={[{ value: NONE, label: "Not a specific project" }, ...props.environments]}
         label="Project"
-        onChange={setEnvironmentId}
+        onChange={(value) => {
+          setEnvironmentId(value);
+          setReference("");
+        }}
         value={environmentId}
       />
       <ReferenceField

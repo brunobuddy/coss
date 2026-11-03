@@ -330,6 +330,28 @@ describe("meeting links", () => {
 });
 
 describe("what's in them", () => {
+  test("the customer's name is on top only under their own address", async () => {
+    const own = await setUp();
+    await updateSettings(own.env, { email_from: "bookings@acme.test", brand_name: "Acme Health" });
+    await book(own);
+    const branded = notifier();
+    await run(own.env, branded.notification);
+    expect(branded.emails.length).toBeGreaterThan(0);
+    for (const email of branded.emails) {
+      expect(email.html).not.toContain("wordmark.png");
+      expect(email.html).toContain("Acme Health");
+      // What coss.com's address falls back to when the customer's stops being verified.
+      expect(email.cossHtml).toContain("wordmark.png");
+    }
+
+    const theirs = await setUp();
+    await updateSettings(theirs.env, { brand_name: "Acme Health" });
+    await book(theirs);
+    const viaCoss = notifier();
+    await run(theirs.env, viaCoss.notification);
+    for (const email of viaCoss.emails) expect(email.html).toContain("wordmark.png");
+  });
+
   test("no answers, ever", async () => {
     const s = await setUp({
       questions: [{ key: "reason", type: "text", label: "Reason", required: false, options: [] }],

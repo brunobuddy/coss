@@ -219,10 +219,7 @@ export function sniffImage(body: Buffer): LogoImageType | null {
     return "ico";
   }
   const text = body.toString("utf8", 0, Math.min(body.length, 1024)).trimStart();
-  if (/^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!doctype svg[^>]*>\s*)?<svg[\s>]/i.test(text)) {
-    return "svg";
-  }
-  return null;
+  return startsWithSvg(text) ? "svg" : null;
 }
 
 /** No scripts, event handlers, foreign HTML or external references: an SVG that is only a drawing. */
@@ -289,13 +286,36 @@ function attribute(tag: string, name: string): string | null {
   return value === undefined ? null : decodeEntities(value.trim());
 }
 
+/** An optional XML declaration, comments and doctype, then `<svg`. By hand: comments backtrack badly. */
+function startsWithSvg(text: string): boolean {
+  let rest = text;
+  const after = (end: number, length = 1) => rest.slice(end + length).trimStart();
+  if (/^<\?xml/i.test(rest)) {
+    const end = rest.indexOf(">");
+    if (end === -1) return false;
+    rest = after(end);
+  }
+  while (rest.startsWith("<!--")) {
+    const end = rest.indexOf("-->", 4);
+    if (end === -1) return false;
+    rest = after(end, 3);
+  }
+  if (/^<!doctype svg/i.test(rest)) {
+    const end = rest.indexOf(">");
+    if (end === -1) return false;
+    rest = after(end);
+  }
+  return /^<svg[\s>]/i.test(rest);
+}
+
+/** `&amp;` goes last: `&amp;lt;` means the text `&lt;`, not `<`. */
 function decodeEntities(value: string): string {
   return value
-    .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 }
 
 function resolve(href: string, base: URL): URL | null {

@@ -66,7 +66,10 @@ export function parseSupportInline(text: string): SupportInline[] {
       continue;
     }
     // Sentence punctuation after a link isn't part of it.
-    const url = (match[2] ?? "").replace(/[.,;:!?)\]]+$/, "");
+    const linked = match[2] ?? "";
+    let end = linked.length;
+    while (end > 0 && ".,;:!?)]".includes(linked[end - 1] as string)) end--;
+    const url = linked.slice(0, end);
     parts.push({ type: "link", url });
     position = start + url.length;
   }

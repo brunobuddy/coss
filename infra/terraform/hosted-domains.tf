@@ -339,6 +339,12 @@ resource "aws_iam_role_policy" "task_tracking_domains" {
         Action   = ["cloudfront:CreateDistributionTenant"]
         Resource = "*"
       },
+      # CloudFront requests and attaches tenants' certificates with the caller's permissions.
+      {
+        Effect   = "Allow"
+        Action   = ["acm:RequestCertificate", "acm:DescribeCertificate"]
+        Resource = "*"
+      },
       {
         Effect = "Allow"
         Action = [

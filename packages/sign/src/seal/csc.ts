@@ -7,6 +7,7 @@
  * made here from the credential's TOTP secret.
  */
 import { createHmac, createPublicKey, verify } from "node:crypto";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { parseCertificate, sha256, signatureAlgorithmFor } from "./crypto.ts";
 import type { Sealer } from "./sealer.ts";
 
@@ -222,7 +223,7 @@ export class CscSealer implements Sealer {
   /** POSTs to `<url>/<method>`; a rejected token is renewed once (SSL.com answers 400, not 401). */
   private async call<T>(method: string, body: object, retried = false): Promise<T> {
     const response = await (this.opts.fetch ?? fetch)(
-      `${this.opts.url.replace(/\/+$/, "")}/${method}`,
+      `${withoutTrailingSlashes(this.opts.url)}/${method}`,
       {
         method: "POST",
         headers: {

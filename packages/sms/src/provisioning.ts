@@ -13,6 +13,7 @@ import type { PlanGate } from "@coss/billing/gate";
 import { recordUsage } from "@coss/billing/metering";
 import { db, type Executor, schema } from "@coss/db";
 import { isId } from "@coss/db/id";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { decryptSecret, encryptSecret, type SecretsKeyRing } from "@coss/webhooks";
 import {
   and,
@@ -327,7 +328,7 @@ async function messagingService(
   deps: SmsSenderDeps,
 ): Promise<string> {
   if (row.messagingServiceSid) return row.messagingServiceSid;
-  const base = deps.callbackBaseUrl.replace(/\/+$/, "");
+  const base = withoutTrailingSlashes(deps.callbackBaseUrl);
   const friendlyName = `coss ${row.id}`;
   // A toll-free number registered again (after a rejection) is still in its earlier
   // registration's service, and a number belongs to one service: that one is used again.

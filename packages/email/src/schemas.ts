@@ -50,7 +50,7 @@ const CONTROL_CHARACTERS = /\p{Cc}/u;
 // Invisible format characters (bidi overrides, zero-width joiners…) and line/paragraph separators.
 const FORMAT_CHARACTERS = /[\p{Cf}\p{Zl}\p{Zp}]/u;
 const NON_ASCII = /\P{ASCII}/u;
-const NAME_ADDR = /^(.*?)\s*<([^<>]*)>$/;
+const LINE_BREAK = /[\r\n\u2028\u2029]/;
 const QUOTED_NAME = /^"(?:[^"\\]|\\.)*"$/;
 // RFC 5322 specials (minus "."): unquoted, they change how the address is parsed downstream.
 const UNQUOTED_NAME_SPECIALS = /["<>,;:@()[\]\\]/;
@@ -184,9 +184,13 @@ export type ParsedEmailAddress = { name: string | null; address: string };
  */
 export function parseEmailAddress(value: string): ParsedEmailAddress {
   const trimmed = value.trim();
-  const match = NAME_ADDR.exec(trimmed);
-  if (!match) return { name: null, address: trimmed };
-  return { name: match[1] || null, address: match[2]?.trim() ?? "" };
+  const open = trimmed.lastIndexOf("<");
+  const name = open < 0 ? "" : trimmed.slice(0, open);
+  // Not `Name <address>`, so the address check refuses the whole value: a line break never reaches a header.
+  if (open < 0 || trimmed.indexOf(">", open) !== trimmed.length - 1 || LINE_BREAK.test(name)) {
+    return { name: null, address: trimmed };
+  }
+  return { name: name.trimEnd() || null, address: trimmed.slice(open + 1, -1).trim() };
 }
 
 const strictEmail = z.email();
@@ -257,7 +261,13 @@ function addressList(minItems: number) {
         .min(minItems, "Provide at least one recipient.")
         .max(MAX_RECIPIENTS, `At most ${MAX_RECIPIENTS} addresses are allowed.`),
     ],
-    { error: "Expected an email address or an array of email addresses." },
+    {
+      // An oversized array aborts its branch (zod stops reading it), so the union speaks for it.
+      error: (issue) =>
+        Array.isArray(issue.input) && issue.input.length > MAX_RECIPIENTS
+          ? `At most ${MAX_RECIPIENTS} addresses are allowed.`
+          : "Expected an email address or an array of email addresses.",
+    },
   );
 }
 

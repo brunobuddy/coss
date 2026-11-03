@@ -178,6 +178,10 @@ async function emailLink(due: Due, deps: SignNotificationDeps, now: Date) {
   });
 }
 
+function brandOf(from: string | null, requester: string): string | undefined {
+  return from ? requester : undefined;
+}
+
 async function sender(request: RequestRow) {
   const settings = await getSignSettings(request);
   return {
@@ -287,17 +291,21 @@ async function sendInvitation(
 ): Promise<string | null> {
   const { from, requester } = await sender(item.request);
   const link = await emailLink(item, deps, now);
-  const invitation = (message: string | null) =>
+  const invitation = (message: string | null, brand?: string) =>
     invitationEmail({
       requester,
       title: item.request.title,
       message,
       url: link.url,
       expiresAt: item.request.expiresAt,
+      brand,
     });
   // The requester's own words only go out under their own address (or nowhere: a sandbox);
   // coss.com's sender, which the mailer falls back to, always gets the copy without them.
-  const content = invitation(from || item.sandbox ? item.request.message : null);
+  const content = invitation(
+    from || item.sandbox ? item.request.message : null,
+    brandOf(from, requester),
+  );
   const sent = await deps.mailer.send({
     environment: environmentOf(item.request, item.sandbox),
     from,
@@ -368,17 +376,21 @@ async function remind(now: Date, limit: number, scope: Scope, deps: SignNotifica
       // its key is the time it was asked, the automatic ones' their number.
       const asked = item.signer.remindRequestedAt;
       const count = asked ? item.signer.reminderCount : item.signer.reminderCount + 1;
+      const reminder = (brand?: string) =>
+        reminderEmail({
+          requester,
+          title: item.request.title,
+          url: link.url,
+          expiresAt: item.request.expiresAt,
+          brand,
+        });
       const sent = await deps.mailer.send({
         environment: environmentOf(item.request, item.sandbox),
         from,
         requester,
         to: item.signer.email,
-        ...reminderEmail({
-          requester,
-          title: item.request.title,
-          url: link.url,
-          expiresAt: item.request.expiresAt,
-        }),
+        ...reminder(brandOf(from, requester)),
+        cossContent: reminder(),
         idempotencyKey: asked
           ? `sign-remind:${item.signer.id}:asked:${asked.getTime()}`
           : `sign-remind:${item.signer.id}:${count}`,
@@ -464,12 +476,15 @@ async function sendCopies(now: Date, limit: number, scope: Scope, deps: SignNoti
         apiKeyId: null,
         now,
       });
+      const signedCopy = (brand?: string) =>
+        signedCopyEmail({ requester, title: item.request.title, url: link.url, attached, brand });
       const sent = await deps.mailer.send({
         environment: environmentOf(item.request, item.sandbox),
         from,
         requester,
         to: item.signer.email,
-        ...signedCopyEmail({ requester, title: item.request.title, url: link.url, attached }),
+        ...signedCopy(brandOf(from, requester)),
+        cossContent: signedCopy(),
         idempotencyKey: `sign-copy:${item.signer.id}`,
         attachment: attached ? { filename: document.filename, content: document.content } : null,
       });

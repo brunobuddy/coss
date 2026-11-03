@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     "@coss/ui",
     "@coss/db",
+    "@coss/email-layout",
     "@coss/logs",
     "@coss/observability",
     "@coss/push",

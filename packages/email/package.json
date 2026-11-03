@@ -49,7 +49,7 @@
     "drizzle-orm": "catalog:",
     "parse5": "8.0.1",
     "pg-boss": "catalog:",
-    "postal-mime": "4.0.6",
+    "postal-mime": "4.2.0",
     "sharp": "0.35.5",
     "tldts": "7.4.16",
     "zod": "catalog:"

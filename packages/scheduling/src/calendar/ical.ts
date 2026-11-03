@@ -101,7 +101,7 @@ function fold(line: string): string {
 }
 
 export const escapeIcsText = (value: string): string =>
-  value.replace(/\\/g, "\\\\").replace(/;/g, ";").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  value.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 
 /**
  * One event in UTC, never floating local time. `method` makes it an invitation an email client

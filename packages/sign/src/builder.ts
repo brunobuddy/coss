@@ -6,6 +6,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { db, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { and, eq, sql } from "drizzle-orm";
 import { SignError } from "./errors.ts";
 import {
@@ -83,7 +84,7 @@ export async function createSignBuilderSession(input: {
     object: "sign_builder_session",
     id: session.id,
     template_id: session.templateId,
-    url: `${input.signUrl.replace(/\/+$/, "")}/b/${session.id}#${token}`,
+    url: `${withoutTrailingSlashes(input.signUrl)}/b/${session.id}#${token}`,
     token,
     expires_at: session.expiresAt.toISOString(),
   };

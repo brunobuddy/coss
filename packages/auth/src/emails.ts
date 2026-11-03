@@ -244,8 +244,7 @@ export function renderAuthEmail(
         },
         button("Verify email address"),
         {
-          paragraph:
-            "The link expires in an hour. If you didn't sign up for coss.com, you can ignore this email.",
+          note: "The link expires in an hour. If you didn't sign up for coss.com, you can ignore this email.",
         },
       ];
       break;
@@ -255,7 +254,7 @@ export function renderAuthEmail(
         { paragraph: `Someone asked to reset the password of the coss.com account ${input.to}.` },
         button("Choose a new password"),
         {
-          paragraph:
+          note:
             "The link expires in an hour and works once. If you didn't ask for this, you can " +
             "ignore this email: your password stays the same.",
         },
@@ -275,7 +274,7 @@ export function renderAuthEmail(
         },
         button("View the invitation"),
         {
-          paragraph:
+          note:
             `Sign in or sign up with ${input.to} to accept it.` +
             (input.data.expiresAt
               ? ` It expires on ${EXPIRY_FORMAT.format(new Date(input.data.expiresAt))} UTC.`

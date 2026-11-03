@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { db, schema } from "@coss/db";
-import { FakeEmailProvider } from "@coss/email";
+import { EmailError, FakeEmailProvider } from "@coss/email";
 import { SendEmailRequest } from "@coss/email/schemas";
 import { createVerifiedDomain, dispatchingEmailService } from "@coss/email/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
@@ -24,6 +24,7 @@ async function email(overrides: Partial<SchedulingEmail> = {}): Promise<Scheduli
     subject: "Confirmed: Consultation",
     text: "Your booking is confirmed.",
     html: "<p>Your booking is confirmed.</p>",
+    cossHtml: "<p>Your booking is confirmed.</p>",
     ics: {
       filename: "booking.ics",
       method: "REQUEST",
@@ -143,4 +144,50 @@ test("a live email with no sender of its own and no fallback waits, rather than 
   const message = await email();
   const live = { ...message, environment: { ...message.environment, mode: "live" as const } };
   await expect(notifier.email(live)).rejects.toThrow("coss.com's sender");
+});
+
+test("coss.com's address never sends the copy with the customer's name on top", async () => {
+  const tenant = await createTestTenant();
+  const coss = await createTestTenant();
+  const sent: { environmentId: string; html: string | undefined }[] = [];
+  const notifier = schedulingNotifier({
+    service: {
+      async send(input) {
+        sent.push({
+          environmentId: input.environment.environmentId,
+          html: input.params.html ?? undefined,
+        });
+        if (input.environment.environmentId === tenant.production.id) {
+          throw new EmailError("domain_not_verified", "Not verified.");
+        }
+        return { replayed: false } as never;
+      },
+    },
+    limiter: memoryLimiter(),
+    fallback: {
+      environment: {
+        organizationId: coss.organization.id,
+        projectId: coss.project.id,
+        environmentId: coss.production.id,
+        mode: "live",
+      },
+      address: "notifications@coss.test",
+    },
+  });
+  const message = await email({
+    environment: {
+      organizationId: tenant.organization.id,
+      projectId: tenant.project.id,
+      environmentId: tenant.production.id,
+      mode: "live",
+    },
+    from: "bookings@acme.test",
+    html: "<p>branded</p>",
+    cossHtml: "<p>coss</p>",
+  });
+  await notifier.email(message);
+  expect(sent).toEqual([
+    { environmentId: tenant.production.id, html: "<p>branded</p>" },
+    { environmentId: coss.production.id, html: "<p>coss</p>" },
+  ]);
 });

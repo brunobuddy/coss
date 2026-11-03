@@ -7,7 +7,8 @@
  */
 import { escapeHtml } from "./marketing-footer.ts";
 
-const PLACEHOLDER = /\{\{\{\s*contact\.([a-z][a-z0-9_]{0,49})(?:\|([^}]*))?\s*\}\}\}/g;
+// The fallback's length is capped so a template full of unclosed placeholders stays linear.
+const PLACEHOLDER = /\{\{\{\s*contact\.([a-z][a-z0-9_]{0,49})(?:\|([^}]{0,500})|\s*)\}\}\}/g;
 
 /** The contact keys a template uses (what each email's variables snapshot keeps). */
 export function templateKeys(...templates: (string | null | undefined)[]): string[] {
@@ -66,9 +67,10 @@ export function withPreheader(html: string, previewText: string | null | undefin
   const preheader =
     '<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">' +
     `${escapeHtml(previewText)}</div>`;
-  const body = /<body[^>]*>/i.exec(html);
-  if (!body) return `${preheader}${html}`;
-  const at = body.index + body[0].length;
+  const body = /<body/i.exec(html);
+  const end = body ? html.indexOf(">", body.index) : -1;
+  if (end === -1) return `${preheader}${html}`;
+  const at = end + 1;
   return `${html.slice(0, at)}${preheader}${html.slice(at)}`;
 }
 

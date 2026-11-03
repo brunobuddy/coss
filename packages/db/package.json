@@ -9,6 +9,7 @@
     "./idempotency": "./src/idempotency.ts",
     "./jobs": "./src/jobs.ts",
     "./partitions": "./src/partitions.ts",
+    "./url": "./src/url.ts",
     "./schema": "./src/schema/index.ts",
     "./testing": "./src/testing.ts"
   },

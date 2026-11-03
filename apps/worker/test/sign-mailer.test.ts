@@ -25,6 +25,7 @@ function email(overrides: Partial<SignEmail> = {}): SignEmail {
     subject: "Sign this",
     text: "text",
     html: "<p>html</p>",
+    cossContent: { subject: "Sign this", text: "text", html: "<p>coss</p>" },
     idempotencyKey: "sign-invite:ssgn_1",
     ...overrides,
   };
@@ -80,6 +81,8 @@ describe("signMailer", () => {
       environment: coss,
       idempotencyKey: "sign-invite:ssgn_1",
     });
+    // The copy with the customer's name on top never goes from coss.com's address.
+    expect(recorder.sent[0]?.params.html).toBe("<p>coss</p>");
 
     const ok = service();
     await signMailer({ service: ok, fallback: null }).send(

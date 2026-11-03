@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { db, schema } from "@coss/db";
-import { listEmailSummariesPage } from "@coss/email";
+import { EmailError, listEmailSummariesPage } from "@coss/email";
 import { createVerifiedDomain } from "@coss/email/testing";
 import { createTestSmsNumber } from "@coss/sms/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
@@ -305,6 +305,7 @@ describe("Verify over the API", () => {
       subject: "Your Acme verification code",
       text: "Your code is 000000",
       html: "<p>000000</p>",
+      cossHtml: "<p>000000</p>",
       idempotencyKey: "vrf_x:send:1",
     };
     const first = await sender(input);
@@ -345,6 +346,7 @@ describe("Verify over the API", () => {
       subject: "Your Acme verification code",
       text: "Your code is 123456",
       html: "<p>123456</p>",
+      cossHtml: "<p>123456</p>",
       idempotencyKey: "vrf_y:send:1",
     };
     const first = await sender(input);
@@ -352,6 +354,58 @@ describe("Verify over the API", () => {
     // The environment set its own sender since: the retry must not send a second email.
     const again = await sender({ ...input, from: `codes@${ownDomain.name}` });
     expect(again).toEqual(first);
+  });
+
+  test("coss.com's address never sends the copy with the customer's name on top", async () => {
+    const tenant = await createTestTenant();
+    const coss = await createTestTenant();
+    const sent: { environmentId: string; html: string | undefined }[] = [];
+    const sender = verifyEmailSender({
+      service: {
+        async send(input) {
+          sent.push({
+            environmentId: input.environment.environmentId,
+            html: input.params.html ?? undefined,
+          });
+          if (input.environment.environmentId === tenant.production.id) {
+            throw new EmailError("domain_not_verified", "Not verified.");
+          }
+          return { email: { id: "email_x", status: "queued", failure: null } } as never;
+        },
+      },
+      coss: {
+        environment: {
+          organizationId: coss.organization.id,
+          projectId: coss.project.id,
+          environmentId: coss.production.id,
+          mode: "live",
+        },
+        address: "notifications@coss.test",
+      },
+    });
+    const result = await sender({
+      environment: {
+        organizationId: tenant.organization.id,
+        projectId: tenant.project.id,
+        environmentId: tenant.production.id,
+        mode: "live",
+      },
+      apiKeyId: null,
+      apiKeyOwnerId: null,
+      from: "codes@acme.test",
+      appName: "Acme",
+      to: `fallback-${crypto.randomUUID()}@example.com`,
+      subject: "Your Acme verification code",
+      text: "Your code is 123456",
+      html: "<p>branded</p>",
+      cossHtml: "<p>coss</p>",
+      idempotencyKey: `vrf_${crypto.randomUUID()}:send:1`,
+    });
+    expect(result.route).toBe("coss_email");
+    expect(sent).toEqual([
+      { environmentId: tenant.production.id, html: "<p>branded</p>" },
+      { environmentId: coss.production.id, html: "<p>coss</p>" },
+    ]);
   });
 
   test("a check names a verification or a destination", async () => {

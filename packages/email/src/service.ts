@@ -9,6 +9,7 @@ import {
   isReplayOf,
   withIdempotencyKey,
 } from "@coss/db/idempotency";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { isMarketingPaused } from "@coss/reputation";
 import type { ScreenInput, ScreenOutcome } from "@coss/screening";
 import { and, asc, eq, inArray, isNull, lt, lte, not, notExists, or, sql } from "drizzle-orm";
@@ -477,7 +478,7 @@ export const SCREENING_RETRY_DELAY_S = 60;
 export const THROTTLE_RETRY_DELAY_S = 30;
 
 export function createEmailService(opts: EmailServiceOptions): EmailService {
-  const trackingBaseUrl = opts.trackingBaseUrl?.replace(/\/+$/, "");
+  const trackingBaseUrl = opts.trackingBaseUrl && withoutTrailingSlashes(opts.trackingBaseUrl);
   // Sandbox environments never reach a real provider, whatever `liveProvider` is.
   const providerFor = (sandbox: boolean) => (sandbox ? opts.sandboxProvider : opts.liveProvider);
   const broadcastContent = broadcastContentCache();

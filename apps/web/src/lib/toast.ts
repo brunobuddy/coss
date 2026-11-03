@@ -43,6 +43,11 @@ type Options<T> = {
   errors?: "inline" | "toast";
 };
 
+/** A redirect to sign-in, SSO or two-factor setup is a guard refusing the action before any change. */
+export function isSuccessRedirect(error: unknown): boolean {
+  return isRedirectError(error) && !isAccessRedirect(getURLFromRedirectError(error));
+}
+
 /**
  * `useActionState` for a server action that also toasts its outcome. Use it for every mutation
  * a user triggers, so each one is confirmed even when the page changes only subtly.
@@ -56,13 +61,8 @@ export function useActionToast<T>(
     try {
       result = await action(previous, formData);
     } catch (error) {
-      // An action that redirects (e.g. back to a list after deleting) rejects with the redirect;
-      // one to sign-in, SSO or two-factor setup is a guard refusing it before any change.
-      if (
-        isRedirectError(error) &&
-        !isAccessRedirect(getURLFromRedirectError(error)) &&
-        typeof options.success !== "function"
-      ) {
+      // An action that redirects (e.g. back to a list after deleting) rejects with the redirect.
+      if (isSuccessRedirect(error) && typeof options.success !== "function") {
         show(options.success);
       }
       throw error;

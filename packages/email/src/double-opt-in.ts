@@ -6,6 +6,7 @@
  * three before it confirms; the caller also charges the confirmation rate limits.
  */
 import { db, schema } from "@coss/db";
+import { renderEmail } from "@coss/email-layout";
 import { and, eq, sql } from "drizzle-orm";
 import { type ContactEnvironment, inContactEnvironment } from "./contact-properties.ts";
 import { CONFIRMATION_URL_PLACEHOLDER } from "./contact-schemas.ts";
@@ -40,18 +41,17 @@ export async function confirmationSender(env: ContactEnvironment): Promise<strin
 }
 
 function defaultContent(name: string, url: string) {
-  return {
-    subject: `Confirm your subscription to ${name.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, " ")}`,
-    html:
-      '<!doctype html><html><body style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5">' +
-      `<p>Please confirm that you want to receive email from ${escapeHtml(name)}.</p>` +
-      `<p><a href="${escapeHtml(url)}">Confirm my subscription</a></p>` +
-      "<p>If you didn't ask for this, ignore this email: you won't be subscribed.</p>" +
-      "</body></html>",
-    text:
-      `Please confirm that you want to receive email from ${name}:\n\n${url}\n\n` +
-      "If you didn't ask for this, ignore this email: you won't be subscribed.\n",
-  };
+  // Always the customer's own send (`confirmationSender`), so it carries their name.
+  return renderEmail({
+    subject: `Confirm your subscription to ${name}`,
+    title: "Confirm your subscription",
+    brand: name,
+    blocks: [
+      { paragraph: `Please confirm that you want to receive email from ${name}.` },
+      { button: { label: "Confirm my subscription", url } },
+      { note: "If you didn't ask for this, ignore this email: you won't be subscribed." },
+    ],
+  });
 }
 
 /**

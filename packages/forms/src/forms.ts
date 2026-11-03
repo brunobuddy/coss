@@ -10,6 +10,7 @@ import type {
   FormFilesConfig,
   FormHostedConfig,
 } from "@coss/db/schema";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { resolveRiskSettings } from "@coss/risk";
 import { and, count, desc, eq, inArray, type SQL, sql } from "drizzle-orm";
 import { FormError } from "./errors.ts";
@@ -109,7 +110,7 @@ export function hostedOf(row: Pick<FormRow, "hosted">): FormHostedConfig {
 }
 
 export function formEndpoint(links: FormLinks, formId: string): string {
-  return `${links.publicUrl.replace(/\/+$/, "")}/f/${formId}`;
+  return `${withoutTrailingSlashes(links.publicUrl)}/f/${formId}`;
 }
 
 export function toFormObject(
