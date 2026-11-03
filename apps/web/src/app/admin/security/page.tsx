@@ -387,7 +387,7 @@ export default async function AdminSecurityPage() {
       </Panel>
 
       <Panel
-        description="Who changed the database's structure or roles, from Postgres's own audit log. Customer data is never recorded here."
+        description="Who changed the database's structure or roles, from Postgres's own audit log, leaving out the partitions every deploy re-creates. Customer data is never recorded here."
         title="Database activity"
       >
         <DatabaseActivity database={posture.database} />

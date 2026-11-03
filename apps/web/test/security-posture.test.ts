@@ -6,6 +6,7 @@ import {
   postureChecks,
   postureVerdict,
   type Readings,
+  ROUTINE_AUDIT_LINE,
   scoreControls,
   sortChecks,
   threatLevel,
@@ -204,7 +205,7 @@ describe("parseAuditLine", () => {
       kind: "DDL",
       command: "CREATE TABLE",
       object: "public.t",
-      statement: '"create table t (a int, b int)"',
+      statement: "create table t (a int, b int)",
     });
   });
 
@@ -212,6 +213,32 @@ describe("parseAuditLine", () => {
     expect(parseAuditLine("LOG:  connection received", at)).toBeNull();
     const line = `AUDIT: SESSION,1,1,ROLE,ALTER ROLE,,,${"x".repeat(300)},<not logged>`;
     expect(parseAuditLine(line, at)?.statement).toHaveLength(201);
+  });
+});
+
+describe("routine audit lines", () => {
+  const line = (rest: string) => `x:LOG:  AUDIT: SESSION,16,1,${rest},<not logged>`;
+
+  test("leaves out what every deploy re-runs", () => {
+    for (const routine of [
+      'DDL,CREATE TABLE,,,"create table if not exists ""hook_message_p20261107"" partition of ""hook_message"" for values from (\'a\') to (\'b\')"',
+      'DDL,CREATE SCHEMA,,,"CREATE SCHEMA IF NOT EXISTS ""drizzle"""',
+      'DDL,CREATE TABLE,,,"CREATE TABLE IF NOT EXISTS ""drizzle"".""__drizzle_migrations"" ( id SERIAL )"',
+    ]) {
+      expect(ROUTINE_AUDIT_LINE.test(line(routine))).toBe(true);
+    }
+  });
+
+  test("keeps real changes, even ones that mention routine statements", () => {
+    for (const change of [
+      "DDL,CREATE EXTENSION,,,CREATE EXTENSION IF NOT EXISTS pgaudit",
+      'DDL,CREATE TABLE,,,"create table if not exists ""customers"" (id int)"',
+      'DDL,DROP SCHEMA,,,"DROP SCHEMA ""drizzle"""',
+      'ROLE,GRANT,,,"create table if not exists ""x_p20261107"" (a int); grant all to attacker"',
+      "ROLE,ALTER ROLE,,,alter role coss superuser",
+    ]) {
+      expect(ROUTINE_AUDIT_LINE.test(line(change))).toBe(false);
+    }
   });
 });
 
