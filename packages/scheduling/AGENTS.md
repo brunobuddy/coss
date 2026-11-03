@@ -123,9 +123,8 @@ secret, Scheduling is off there: the API answers 503 `scheduling_unavailable`, t
 dashboard's pages don't exist. Rotating the key: README, "Rotating `SCHEDULING_DATA_KEYS`" (`bun run
 scheduling:reencrypt`). Still to do:
 
-1. Zoom's app review: until it's approved and `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET` and `ZOOM_WEBHOOK_SECRET_TOKEN` are
-   set, hosts aren't offered Zoom. Test against a real Zoom account first: only `FakeZoomApi` has run this code.
-2. Google OAuth verification (project `coss-scheduling` under coss.com's Google organization: submitted, under review).
-   Until it passes, Google's consent screen warns and caps the app at 100 users. Microsoft's app ("coss.com Scheduling"
-   in Cal.com's Entra tenant) is publisher-verified; its secret expires in 2028.
-3. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.
+1. Zoom's app review. The app "coss.com" is in Cal.com's Zoom developer account, separate from Cal.com's own, and
+   production runs its Development credentials, which only work for users in that Zoom account. Zoom keeps separate
+   Production credentials: swap to them once the app's published. The deauthorization URL exists only on the Production
+   side, so that path hasn't run against Zoom. Only `FakeZoomApi` has run this code so far.
+2. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.
