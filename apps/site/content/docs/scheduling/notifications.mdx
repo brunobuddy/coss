@@ -39,13 +39,7 @@ An event type's `locations` say where it happens. `google_meet` and `microsoft_t
 calendar event, so they need a connected calendar from that provider: the confirmation waits briefly for it,
 and it then appears on the booking with `scheduling.booking.location_ready`.
 
-`zoom` creates a meeting on the host's Zoom account, so the host connects Zoom the way they connect a
-calendar, with `provider: "zoom"`. Live environments can't connect Zoom until coss.com's Zoom app is approved;
-in a sandbox, a host with a `simulated` calendar gets a pretend link. If the host has no Zoom connected, the
-booking still stands, with no link and a `scheduling.booking.calendar_write_failed` webhook. Meetings have a
-waiting room, aren't recorded automatically, and hold no attendee details. Group event types can't use Zoom
-yet. Zoom is the host's own account: if a booking involves health data, check that it's covered by their own
-agreement with Zoom.
+`zoom` creates a meeting on the host's own Zoom account, once they've [connected it](/docs/scheduling/zoom).
 
 For your own video vendor, use `link` and set it after the `confirmed` webhook:
 
