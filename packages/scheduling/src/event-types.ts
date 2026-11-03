@@ -3,7 +3,7 @@ import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
 import { and, asc, desc, eq, inArray, isNull, lt, notInArray, sql } from "drizzle-orm";
 import { SchedulingError } from "./errors.ts";
-import { checkTimeZone, resolveHost } from "./hosts.ts";
+import { checkTimeZone, type HostRow, resolveHost } from "./hosts.ts";
 import type {
   CreateEventTypeRequestOutput,
   EventTypeObjectOutput,
@@ -164,9 +164,10 @@ async function replaceHosts(
   row: EventTypeRow,
   hosts: readonly HostInput[],
 ): Promise<void> {
-  const resolved = await Promise.all(
-    hosts.map(async (input) => ({ input, host: await resolveHost(tx, scope, input.host) })),
-  );
+  const resolved: { input: HostInput; host: HostRow }[] = [];
+  for (const input of hosts) {
+    resolved.push({ input, host: await resolveHost(tx, scope, input.host) });
+  }
   const scheduleIds = resolved.flatMap(({ input }) => (input.schedule ? [input.schedule] : []));
   if (scheduleIds.length > 0) {
     const owned = await tx

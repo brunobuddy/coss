@@ -9,6 +9,7 @@ import { Spinner } from "@coss/ui/components/spinner";
 import { Textarea } from "@coss/ui/components/textarea";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { SlotPicker } from "@/components/slot-picker";
+import { useAccentColor } from "@/lib/branding";
 import { browserTimeZone, ClientApiError, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
 
@@ -22,6 +23,7 @@ type Question = {
 
 type Session = {
   brand_name: string | null;
+  accent_color: string | null;
   sandbox: boolean;
   attendee_fixed: boolean;
   event_type: {
@@ -116,6 +118,7 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
   // One attempt's key, new for each chosen time: a double click or a retry can't book twice.
   const [attemptKey, setAttemptKey] = useState(() => crypto.randomUUID());
 
+  useAccentColor(session?.accent_color);
   useEffect(reportHeight, []);
   useEffect(() => {
     call<Session>("/session")

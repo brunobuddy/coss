@@ -449,6 +449,7 @@ export const schedulingGroupSession = pgTable(
     }).onDelete("cascade"),
     unique("scheduling_group_session_id_organization_unique").on(t.id, t.organizationId),
     unique("scheduling_group_session_slot_unique").on(t.eventTypeId, t.hostId, t.startAt),
+    index("scheduling_group_session_end_at_idx").on(t.endAt),
   ],
 );
 
@@ -484,6 +485,7 @@ export const schedulingSeries = pgTable(
       t.idempotencyKey,
     ),
     index("scheduling_series_environment_idx").on(t.environmentId, t.createdAt),
+    index("scheduling_series_created_at_idx").on(t.createdAt),
   ],
 );
 
@@ -557,6 +559,7 @@ export const schedulingBooking = pgTable(
     index("scheduling_booking_series_idx").on(t.seriesId, t.seriesIndex),
     index("scheduling_booking_group_session_idx").on(t.groupSessionId),
     index("scheduling_booking_end_idx").on(t.endAt),
+    index("scheduling_booking_unredacted_end_idx").on(t.endAt).where(sql`${t.redactedAt} IS NULL`),
     index("scheduling_booking_hold_expiry_idx")
       .on(t.holdExpiresAt)
       .where(sql`${t.status} = 'held'`),
@@ -644,6 +647,8 @@ export const schedulingClaim = pgTable(
     index("scheduling_claim_group_session_idx").on(t.groupSessionId),
     index("scheduling_claim_host_day_idx").on(t.hostId, t.limitDay),
     index("scheduling_claim_host_week_idx").on(t.hostId, t.limitWeek),
+    index("scheduling_claim_occupied_end_idx").on(t.occupiedEnd),
+    index("scheduling_claim_live_until_idx").on(t.liveUntil).where(sql`${t.liveUntil} IS NOT NULL`),
     check("scheduling_claim_occupied_order", sql`${t.occupiedStart} < ${t.occupiedEnd}`),
     check(
       "scheduling_claim_live_order",

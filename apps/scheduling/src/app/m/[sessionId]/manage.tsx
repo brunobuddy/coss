@@ -5,6 +5,7 @@ import { Button } from "@coss/ui/components/button";
 import { Spinner } from "@coss/ui/components/spinner";
 import { useEffect, useMemo, useState } from "react";
 import { SlotPicker } from "@/components/slot-picker";
+import { useAccentColor } from "@/lib/branding";
 import { browserTimeZone, type ClientApiError, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
 
@@ -36,10 +37,17 @@ export function Manage({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
   const [moving, setMoving] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [working, setWorking] = useState(false);
+  const [accentColor, setAccentColor] = useState<string | null>(null);
   const browserZone = useMemo(browserTimeZone, []);
   const timeZone = booking?.attendees[0]?.time_zone ?? browserZone;
 
+  useAccentColor(accentColor);
   useEffect(reportHeight, []);
+  useEffect(() => {
+    call<{ accent_color: string | null }>("/session")
+      .then((value) => setAccentColor(value.accent_color))
+      .catch(() => {});
+  }, [call]);
   useEffect(() => {
     call<Booking>("/booking")
       .then((value) => {

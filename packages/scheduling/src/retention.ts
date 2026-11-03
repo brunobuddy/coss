@@ -5,8 +5,8 @@
  */
 import { db, schema } from "@coss/db";
 import { RETENTION_DAYS } from "@coss/retention";
-import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
-import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import { and, eq, inArray, isNull, lt, type SQL, sql } from "drizzle-orm";
+import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import type { SchedulingEnvironment } from "./types.ts";
 
 const {
@@ -86,82 +86,84 @@ export async function purgeExpiredBookings(opts: PurgeOptions = {}): Promise<num
 }
 
 /** Sessions, consents in progress, emptied series and group sessions, and spent limit buckets. */
-export async function purgeSchedulingLeftovers(opts: PurgeOptions = {}): Promise<number> {
+export async function purgeSchedulingLeftovers(opts: PurgeOptions = {}): Promise<number[]> {
   const now = opts.now ?? new Date();
   const dayAgo = new Date(now.getTime() - DAY_MS);
   const limit = opts.limit ?? 1000;
-  const scopeOf = (column: AnyPgColumn) =>
-    opts.scope ? inArray(column, [...opts.scope.organizationIds]) : undefined;
-  await db.delete(schedulingSession).where(
-    inArray(
-      schedulingSession.id,
-      db
-        .select({ id: schedulingSession.id })
-        .from(schedulingSession)
-        .where(
-          and(lt(schedulingSession.expiresAt, dayAgo), scopeOf(schedulingSession.organizationId)),
-        )
-        .limit(limit),
-    ),
-  );
-  await db.delete(schedulingOauthState).where(
-    inArray(
-      schedulingOauthState.id,
-      db
-        .select({ id: schedulingOauthState.id })
-        .from(schedulingOauthState)
-        .where(
-          and(
-            lt(schedulingOauthState.expiresAt, now),
-            scopeOf(schedulingOauthState.organizationId),
-          ),
-        )
-        .limit(limit),
-    ),
-  );
-  await db
-    .delete(schedulingLimitBucket)
+  const bookingsCutoff = new Date(now.getTime() - RETENTION_DAYS.schedulingBookings * DAY_MS);
+  const scopeOf = (column: AnyPgColumn) => scoped(column, opts);
+  const batch = async <T extends PgTable & { id: AnyPgColumn }>(
+    table: T,
+    where: SQL | undefined,
+  ) => {
+    const oldest = db
+      .select({ id: table.id })
+      .from(table as PgTable)
+      .where(where)
+      .limit(limit);
+    const gone = await db
+      .delete(table)
+      .where(and(inArray(table.id, oldest), where))
+      .returning({ id: table.id });
+    return gone.length;
+  };
+  const spentBuckets = db
+    .select({
+      scope: schedulingLimitBucket.scope,
+      scopeId: schedulingLimitBucket.scopeId,
+      period: schedulingLimitBucket.period,
+    })
+    .from(schedulingLimitBucket)
     .where(
       and(
         lt(schedulingLimitBucket.createdAt, new Date(now.getTime() - 60 * DAY_MS)),
         scopeOf(schedulingLimitBucket.organizationId),
       ),
-    );
-  await db
-    .delete(schedulingClaim)
+    )
+    .limit(limit);
+  const buckets = await db
+    .delete(schedulingLimitBucket)
     .where(
+      sql`(${schedulingLimitBucket.scope}, ${schedulingLimitBucket.scopeId}, ${schedulingLimitBucket.period}) in ${spentBuckets}`,
+    )
+    .returning({ scope: schedulingLimitBucket.scope });
+  return [
+    await batch(
+      schedulingSession,
+      and(lt(schedulingSession.expiresAt, dayAgo), scopeOf(schedulingSession.organizationId)),
+    ),
+    await batch(
+      schedulingOauthState,
+      and(lt(schedulingOauthState.expiresAt, now), scopeOf(schedulingOauthState.organizationId)),
+    ),
+    buckets.length,
+    await batch(
+      schedulingClaim,
       and(
-        scopeOf(schedulingClaim.organizationId),
         lt(schedulingClaim.occupiedEnd, new Date(now.getTime() - 14 * DAY_MS)),
+        scopeOf(schedulingClaim.organizationId),
       ),
-    );
-  await db
-    .delete(schedulingClaim)
-    .where(and(scopeOf(schedulingClaim.organizationId), lt(schedulingClaim.liveUntil, dayAgo)));
-  await db
-    .delete(schedulingGroupSession)
-    .where(
+    ),
+    await batch(
+      schedulingClaim,
+      and(lt(schedulingClaim.liveUntil, dayAgo), scopeOf(schedulingClaim.organizationId)),
+    ),
+    await batch(
+      schedulingGroupSession,
       and(
+        lt(schedulingGroupSession.endAt, bookingsCutoff),
         scopeOf(schedulingGroupSession.organizationId),
-        lt(
-          schedulingGroupSession.endAt,
-          new Date(now.getTime() - RETENTION_DAYS.schedulingBookings * DAY_MS),
-        ),
       ),
-    );
-  await db
-    .delete(schedulingSeries)
-    .where(
+    ),
+    await batch(
+      schedulingSeries,
       and(
+        lt(schedulingSeries.createdAt, bookingsCutoff),
         scopeOf(schedulingSeries.organizationId),
-        lt(
-          schedulingSeries.createdAt,
-          new Date(now.getTime() - RETENTION_DAYS.schedulingBookings * DAY_MS),
-        ),
         sql`not exists (select 1 from scheduling_booking b where b.series_id = ${schedulingSeries.id})`,
       ),
-    );
-  return 0;
+    ),
+  ];
 }
 
 /**

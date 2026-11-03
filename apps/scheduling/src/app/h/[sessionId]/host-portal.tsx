@@ -10,12 +10,14 @@ import { Spinner } from "@coss/ui/components/spinner";
 import { Switch } from "@coss/ui/components/switch";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@coss/ui/components/tabs";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { useAccentColor } from "@/lib/branding";
 import { type ClientApiError, type ClientCall, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
 import { ContinueWithGoogle } from "./continue-with-google";
 
 type Session = {
   brand_name: string | null;
+  accent_color: string | null;
   read_only: boolean;
   sandbox: boolean;
   host: { id: string; name: string; time_zone: string };
@@ -589,6 +591,7 @@ export function HostPortal({ sessionId, apiUrl }: { sessionId: string; apiUrl: s
   const [session, setSession] = useState<Session | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
+  useAccentColor(session?.accent_color);
   useEffect(reportHeight, []);
   useEffect(() => {
     call<Session>("/session")

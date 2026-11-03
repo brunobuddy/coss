@@ -63,6 +63,15 @@ export function slotRuleOf(
 
 export type LoadedHost = HostInputs & { calendarReason: string | null };
 
+const HOSTS_PER_TURN = 25;
+
+/** Hundreds of hosts are tens of ms of pure computing, and other requests share this thread. */
+export async function takeTurn(hostIndex: number): Promise<void> {
+  if (hostIndex > 0 && hostIndex % HOSTS_PER_TURN === 0) {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+}
+
 function groupedBy<T>(rows: readonly T[], key: (row: T) => string): Map<string, T[]> {
   const groups = new Map<string, T[]>();
   for (const row of rows) {
@@ -236,7 +245,8 @@ export async function loadHostInputs(
   const sessionsByHost = groupedBy(sessions, (row) => row.hostId);
   const calendarsByHost = groupedBy(calendars, (row) => row.hostId);
 
-  for (const host of hosts) {
+  for (const [index, host] of hosts.entries()) {
+    await takeTurn(index);
     const hostSchedules = schedulesByHost.get(host.id) ?? [];
     const schedule = host.scheduleId
       ? hostSchedules.find((candidate) => candidate.id === host.scheduleId)
@@ -515,7 +525,8 @@ export async function listEventTypeSlots(
   });
   const rule = slotRuleOf(eventType, duration);
   const perHost = new Map<string, number[]>();
-  for (const [hostId, host] of loaded) {
+  for (const [index, [hostId, host]] of [...loaded].entries()) {
+    await takeTurn(index);
     perHost.set(
       hostId,
       listSlots({ nowMs: input.nowMs, rule, host, fromMs: input.fromMs, toMs: input.toMs }),
@@ -575,7 +586,8 @@ export async function searchAvailability(
     uid: string | null;
     slots: { startMs: number; endMs: number }[];
   }[] = [];
-  for (const entry of entries) {
+  for (const [index, entry] of entries.entries()) {
+    await takeTurn(index);
     const host = loaded.get(entry.host.id);
     if (!host) continue;
     const slots = listSlots({
