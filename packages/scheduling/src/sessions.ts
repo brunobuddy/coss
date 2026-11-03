@@ -54,6 +54,7 @@ type MintInput = {
   eventTypeId?: string | null;
   bookingId?: string | null;
   encryptedAttendee?: string | null;
+  encryptedAttributes?: string | null;
   attendeeUid?: string | null;
   readOnly?: boolean;
   apiKeyId?: string | null;
@@ -76,6 +77,7 @@ async function mint(input: MintInput): Promise<Created> {
     eventTypeId: input.eventTypeId ?? null,
     bookingId: input.bookingId ?? null,
     encryptedAttendee: input.encryptedAttendee ?? null,
+    encryptedAttributes: input.encryptedAttributes ?? null,
     attendeeUid: input.attendeeUid ?? null,
     readOnly: input.readOnly ?? false,
     apiKeyId: input.apiKeyId ?? null,
@@ -132,6 +134,7 @@ export async function createBookerSession(
   input: {
     eventType: string;
     host?: string | undefined;
+    attributes?: Record<string, string | string[]> | undefined;
     attendee?: AttendeeInputOutput | undefined;
     expiresIn?: number | undefined;
     apiKeyId?: string | null;
@@ -149,6 +152,9 @@ export async function createBookerSession(
     hostId: host?.id ?? null,
     encryptedAttendee: input.attendee
       ? encryptSecret(JSON.stringify(input.attendee), deps.dataKeys)
+      : null,
+    encryptedAttributes: input.attributes
+      ? encryptSecret(JSON.stringify(input.attributes), deps.dataKeys)
       : null,
     attendeeUid: input.attendee?.uid ?? null,
     apiKeyId: input.apiKeyId ?? null,
@@ -289,4 +295,16 @@ export function fixedAttendee(
 ): AttendeeInputOutput | null {
   if (!session.encryptedAttendee) return null;
   return JSON.parse(decryptSecret(session.encryptedAttendee, deps.dataKeys)) as AttendeeInputOutput;
+}
+
+/** Who this booker session may be routed to. Only ever set by the customer's server. */
+export function sessionAttributes(
+  session: Pick<SessionRow, "encryptedAttributes">,
+  deps: Pick<SchedulingDeps, "dataKeys">,
+): Record<string, string | string[]> | undefined {
+  if (!session.encryptedAttributes) return undefined;
+  return JSON.parse(decryptSecret(session.encryptedAttributes, deps.dataKeys)) as Record<
+    string,
+    string | string[]
+  >;
 }

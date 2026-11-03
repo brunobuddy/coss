@@ -293,6 +293,8 @@ export const schedulingEventTypeHost = pgTable(
     organizationId: text("organization_id").notNull(),
     role: schedulingHostRole("role").notNull().default("member"),
     weight: integer("weight").notNull().default(100),
+    // False: only here to count a host a pool's `host_filter` found, who's no member of its own.
+    assigned: boolean("assigned").notNull().default(true),
     // Bookings assigned, net of cancellations before the start: the pool's fairness counter.
     fairUnits: integer("fair_units").notNull().default(0),
     lastAssignedAt: instant("last_assigned_at"),
@@ -844,6 +846,8 @@ export const schedulingSession = pgTable(
     bookingId: text("booking_id"),
     // A fixed identity for a booker session, so the browser can't book as someone else.
     encryptedAttendee: text("encrypted_attendee"),
+    // A booker session's routing, such as a specialty: with an attendee, it says what they need.
+    encryptedAttributes: text("encrypted_attributes"),
     // The fixed identity's `uid`, in the clear like `scheduling_attendee.uid`: how erasure finds it.
     attendeeUid: text("attendee_uid"),
     readOnly: boolean("read_only").notNull().default(false),

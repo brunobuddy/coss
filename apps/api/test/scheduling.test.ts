@@ -340,6 +340,77 @@ describe("client API", () => {
     expect(JSON.stringify(booking)).not.toContain("sam@example.com");
   });
 
+  test("a session routes to a specialist: the browser can't see or widen it", async () => {
+    const s = await setUp();
+    for (const [uid, specialty] of [
+      ["derm", "dermatology"],
+      ["cardio", "cardiology"],
+    ] as const) {
+      await call(s.app, s.key, "POST", "/hosts", {
+        uid,
+        name: uid,
+        time_zone: "UTC",
+        attributes: { specialty },
+      });
+      await call(s.app, s.key, "POST", `/hosts/${uid}/schedules`, {
+        rules: [
+          uid === "derm"
+            ? { days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "10:00" }
+            : { days: [0, 1, 2, 3, 4, 5, 6], start: "14:00", end: "15:00" },
+        ],
+      });
+    }
+    const pool = (await (
+      await call(s.app, s.key, "POST", "/event_types", {
+        title: "See a specialist",
+        kind: "pool",
+        duration_minutes: 30,
+        hosts: [{ host: "derm" }, { host: "cardio" }],
+      })
+    ).json()) as { id: string };
+    const { token } = await bookerSession(
+      { ...s, eventType: pool.id },
+      { attributes: { specialty: "cardiology" } },
+    );
+
+    const session = await (await client(s.app, token, "GET", "/session")).text();
+    expect(session).not.toContain("cardiology");
+
+    const range = "?start=2031-01-06T00:00:00Z&end=2031-01-07T00:00:00Z";
+    const { data } = (await (await client(s.app, token, "GET", `/slots${range}`)).json()) as {
+      data: { start: string }[];
+    };
+    expect(data.map((slot) => slot.start)).toEqual([
+      "2031-01-06T14:00:00.000Z",
+      "2031-01-06T14:30:00.000Z",
+    ]);
+
+    const widened = await client(s.app, token, "POST", "/bookings", {
+      start: "2031-01-06T09:00:00Z",
+      attributes: { specialty: "dermatology" },
+      attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+    });
+    expect(widened.status).toBe(422);
+    const dermTime = await client(s.app, token, "POST", "/bookings", {
+      start: "2031-01-06T09:00:00Z",
+      attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+    });
+    expect((await errorOf(dermTime)).code).toBe("slot_unavailable");
+    const booked = await client(s.app, token, "POST", "/bookings", {
+      start: "2031-01-06T14:00:00Z",
+      attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+    });
+    expect(booked.status).toBe(201);
+    const { id: bookingId } = (await booked.json()) as { id: string };
+    const full = (await (await call(s.app, s.key, "GET", `/bookings/${bookingId}`)).json()) as {
+      hosts: string[];
+    };
+    const cardio = (await (await call(s.app, s.key, "GET", "/hosts/cardio")).json()) as {
+      id: string;
+    };
+    expect(full.hosts).toEqual([cardio.id]);
+  });
+
   test("a fixed attendee can't be replaced from the browser", async () => {
     const s = await setUp();
     const { token } = await bookerSession(s, {

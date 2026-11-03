@@ -981,6 +981,10 @@ const CreateBookerSessionRequest = z
   .strictObject({
     event_type: z.string().meta({ description: "The event type's id or uid." }),
     host: z.string().optional().meta({ description: "Only this host (id or uid)." }),
+    attributes: CreateBookingRequest.shape.attributes.meta({
+      description:
+        "Only offer times, and book, among pool hosts matching all of these. The browser can't see or change them.",
+    }),
     attendee: CreateBookingRequest.shape.attendee.optional().meta({
       description: "Who's booking, if you already know: the browser then can't change it.",
     }),
@@ -1644,6 +1648,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       {
         eventType: body.event_type,
         host: body.host,
+        attributes: body.attributes,
         attendee: body.attendee,
         expiresIn: body.expires_in,
         apiKeyId: c.var.auth.apiKeyId,

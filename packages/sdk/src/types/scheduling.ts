@@ -510,6 +510,8 @@ export interface CreateSchedulingBookerSessionParams {
   event_type: string;
   /** Only this host (id or uid). */
   host?: string;
+  /** Only offer times, and book, among pool hosts matching all of these. */
+  attributes?: SchedulingAttributes;
   /** Who's booking, if you already know: the browser then can't change it. */
   attendee?: SchedulingAttendeeInput;
   expires_in?: number;

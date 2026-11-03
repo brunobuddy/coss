@@ -191,6 +191,7 @@ export async function eraseAttendee(
       .update(schedulingSession)
       .set({
         encryptedAttendee: null,
+        encryptedAttributes: null,
         attendeeUid: null,
         revokedAt: sql`coalesce(${schedulingSession.revokedAt}, ${now.toISOString()}::timestamptz)`,
       })

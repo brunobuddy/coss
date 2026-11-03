@@ -11,6 +11,7 @@ export const SCHEDULING_DATA_KEY_COLUMNS = [
   "scheduling_attendee.encrypted_contact",
   "scheduling_attendee.encrypted_answers",
   "scheduling_session.encrypted_attendee",
+  "scheduling_session.encrypted_attributes",
 ] as const;
 
 export type SchedulingDataKeyColumn = (typeof SCHEDULING_DATA_KEY_COLUMNS)[number];
@@ -170,12 +171,16 @@ async function reencryptSessions(opts: Options, result: SchedulingReencryptResul
         id: schedulingSession.id,
         organizationId: schedulingSession.organizationId,
         attendee: schedulingSession.encryptedAttendee,
+        attributes: schedulingSession.encryptedAttributes,
       })
       .from(schedulingSession)
       .where(
         and(
           gt(schedulingSession.id, after),
-          isNotNull(schedulingSession.encryptedAttendee),
+          or(
+            isNotNull(schedulingSession.encryptedAttendee),
+            isNotNull(schedulingSession.encryptedAttributes),
+          ),
           opts.scope
             ? inArray(schedulingSession.organizationId, [...opts.scope.organizationIds])
             : undefined,
@@ -187,7 +192,10 @@ async function reencryptSessions(opts: Options, result: SchedulingReencryptResul
       result.checked++;
       const next = rewritten(
         row,
-        [["scheduling_session.encrypted_attendee", row.attendee]],
+        [
+          ["scheduling_session.encrypted_attendee", row.attendee],
+          ["scheduling_session.encrypted_attributes", row.attributes],
+        ],
         opts,
         result,
       );
@@ -199,12 +207,20 @@ async function reencryptSessions(opts: Options, result: SchedulingReencryptResul
       await opts.beforeWrite?.(row.id);
       const [updated] = await db
         .update(schedulingSession)
-        .set({ encryptedAttendee: next.get("scheduling_session.encrypted_attendee") ?? null })
+        .set({
+          encryptedAttendee: next.get("scheduling_session.encrypted_attendee") ?? null,
+          encryptedAttributes: next.get("scheduling_session.encrypted_attributes") ?? null,
+        })
         .where(
           and(
             eq(schedulingSession.id, row.id),
             eq(schedulingSession.organizationId, row.organizationId),
-            eq(schedulingSession.encryptedAttendee, row.attendee as string),
+            row.attendee === null
+              ? isNull(schedulingSession.encryptedAttendee)
+              : eq(schedulingSession.encryptedAttendee, row.attendee),
+            row.attributes === null
+              ? isNull(schedulingSession.encryptedAttributes)
+              : eq(schedulingSession.encryptedAttributes, row.attributes),
           ),
         )
         .returning({ id: schedulingSession.id });

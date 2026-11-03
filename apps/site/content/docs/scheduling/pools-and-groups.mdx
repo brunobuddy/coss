@@ -20,7 +20,7 @@ const { data: eventType } = await coss.scheduling.eventTypes.create({
 });
 ```
 
-Hosts come from `hosts`, plus any active host matching all of `host_filter`. A slot is offered if anyone's
+Hosts come from `hosts`, plus any active host matching all of `host_filter` right now. A slot is offered if anyone's
 free, and a booking goes to whoever's furthest behind their share (`weight`), then whoever's waited
 longest. If they've just been taken, it moves on to the next.
 
@@ -38,6 +38,8 @@ await coss.scheduling.bookings.create({
   attendee: { uid: "patient_77", time_zone: "America/Los_Angeles" },
 });
 ```
+
+See [Routing](/docs/scheduling/routing) for sending each person to the right kind of host.
 
 ## Who's free?
 

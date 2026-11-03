@@ -116,6 +116,7 @@ test("erasing someone ends the booker sessions fixed to them, and only those", a
       env,
       {
         eventType: eventTypeId,
+        attributes: { specialty: "dermatology" },
         attendee: { uid, name: "Sam", email: "sam@example.com", time_zone: "UTC" },
         publicUrl: null,
       },
@@ -134,6 +135,7 @@ test("erasing someone ends the booker sessions fixed to them, and only those", a
   await eraseAttendee(env, { uid: "p" });
   const erased = await stored(theirs.id);
   expect(erased?.encryptedAttendee).toBeNull();
+  expect(erased?.encryptedAttributes).toBeNull();
   expect(erased?.attendeeUid).toBeNull();
   expect(erased?.revokedAt).not.toBeNull();
   await expect(authenticateSchedulingSession(theirs.token)).rejects.toThrow();

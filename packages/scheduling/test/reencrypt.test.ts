@@ -21,6 +21,7 @@ import {
   SCHEDULING_DATA_KEY_COLUMNS,
   type SchedulingDeps,
   type SchedulingEnvironment,
+  sessionAttributes,
 } from "../src/index.ts";
 import { schedulingDataKeysFromEnv } from "../src/runtime.ts";
 import { testSchedulingDeps } from "../src/testing.ts";
@@ -368,6 +369,32 @@ describe("reencryptSchedulingData", () => {
     expect(
       isEncryptedWithPrimary((await sessionRow(survivor.id)).encryptedAttendee as string, during),
     ).toBe(true);
+  });
+
+  test("a session's routing moves too, with or without an attendee", async () => {
+    const fixture = await setUp();
+    const routed = (attendee: boolean) =>
+      createBookerSession(
+        fixture.env,
+        {
+          eventType: fixture.eventType.id,
+          attributes: { specialty: "dermatology" },
+          ...(attendee ? { attendee: { name: "Sam", time_zone: "UTC" } } : {}),
+          publicUrl: null,
+        },
+        depsWith(before),
+      );
+    const alone = await routed(false);
+    const withAttendee = await routed(true);
+    const result = await reencryptSchedulingData({ keys: during, scope: fixture.scope });
+    expect(result).toMatchObject({ reencrypted: 2, conflicts: 0, unreadableCount: 0 });
+    for (const session of [alone, withAttendee]) {
+      const row = await sessionRow(session.id);
+      expect(row.encryptedAttributes).not.toContain("dermatology");
+      expect(isEncryptedWithPrimary(row.encryptedAttributes as string, during)).toBe(true);
+      expect(sessionAttributes(row, depsWith(during))).toEqual({ specialty: "dermatology" });
+    }
+    expect((await sessionRow(alone.id)).encryptedAttendee).toBeNull();
   });
 
   test("batches reach every row, and the result holds no content or keys", async () => {
