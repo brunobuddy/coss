@@ -61,6 +61,7 @@ import {
   postureVerdict,
   type Reading,
   type Readings,
+  ROUTINE_AUDIT_LINE,
   scoreControls,
   sortChecks,
   type Threat,
@@ -468,7 +469,7 @@ export async function getSecurityPosture(): Promise<SecurityPosture> {
         queryLogs(
           logs,
           group,
-          `filter @message like "AUDIT: " | fields @timestamp, @message | sort @timestamp desc | limit ${AUDIT_SHOWN}`,
+          `filter @message like "AUDIT: " and @message not like /${ROUTINE_AUDIT_LINE.source}/ | fields @timestamp, @message | sort @timestamp desc | limit ${AUDIT_SHOWN}`,
           AUDIT_DAYS,
         ),
         queryLogs(

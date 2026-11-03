@@ -378,6 +378,16 @@ export type DatabaseAuditEntry = {
 
 const STATEMENT_LENGTH = 200;
 
+/** What each deploy's migrator re-runs; anchored on the command so a grant can't hide here. */
+export const ROUTINE_AUDIT_LINE =
+  /AUDIT: SESSION,\d+,\d+,DDL,(CREATE TABLE,,,"create table if not exists ""\w+_p\d{8}""|CREATE SCHEMA,,,"CREATE SCHEMA IF NOT EXISTS ""drizzle"""|CREATE TABLE,,,"CREATE TABLE IF NOT EXISTS ""drizzle"".""__drizzle_migrations"")/;
+
+function unquoteCsv(value: string): string {
+  return value.startsWith('"') && value.endsWith('"')
+    ? value.slice(1, -1).replaceAll('""', '"')
+    : value;
+}
+
 export type LogQueryRow = Record<string, string>;
 
 export function logQueryRows(
@@ -402,11 +412,13 @@ export function parseAuditLine(message: string, at: Date): DatabaseAuditEntry | 
   const fields = message.slice(start + "AUDIT: ".length).split(",");
   if (fields.length < 8) return null;
   const [, , , kind, command, , object] = fields;
-  const statement = fields
-    .slice(7)
-    .join(",")
-    .replace(/,<[^>]*>\s*$/, "")
-    .trim();
+  const statement = unquoteCsv(
+    fields
+      .slice(7)
+      .join(",")
+      .replace(/,<[^>]*>\s*$/, "")
+      .trim(),
+  );
   return {
     at,
     kind: kind ?? "",
