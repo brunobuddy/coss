@@ -140,7 +140,7 @@ variable "management_account_id" {
 variable "alb_tls_phase" {
   description = "Moving the load balancer to TLS targets without a gap: plain, both (tasks register in both), routed (rules use TLS), tls (plain removed)."
   type        = string
-  default     = "plain"
+  default     = "both"
   validation {
     condition     = contains(["plain", "both", "routed", "tls"], var.alb_tls_phase)
     error_message = "One of plain, both, routed, tls."

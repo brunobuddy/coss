@@ -106,7 +106,22 @@ resource "aws_lb_listener_rule" "spec" {
 
   action {
     type             = "forward"
-    target_group_arn = local.alb_routed_targets[each.value.targetGroup].arn
+    target_group_arn = var.alb_tls_phase == "both" ? null : local.alb_routed_targets[each.value.targetGroup].arn
+
+    # ECS only registers tasks in a target group that a rule uses: attached, but with no traffic.
+    dynamic "forward" {
+      for_each = var.alb_tls_phase == "both" ? [each.value.targetGroup] : []
+      content {
+        target_group {
+          arn    = aws_lb_target_group.service[forward.value].arn
+          weight = 100
+        }
+        target_group {
+          arn    = aws_lb_target_group.tls[forward.value].arn
+          weight = 0
+        }
+      }
+    }
   }
 
   dynamic "condition" {

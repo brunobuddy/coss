@@ -40,7 +40,7 @@ actual="$(
   jq -r '
     def values($field; $config): [.Conditions[] | select(.Field == $field) | .[$config].Values[]] | sort | join(",");
     .Rules | map(select(.IsDefault | not)) | sort_by(.Priority | tonumber)[]
-    | "alb rule \(.Priority) → \(.Actions[0].TargetGroupArn // "none" | split("/")[1] | sub("-tls$"; ""))"
+    | "alb rule \(.Priority) → \(.Actions[0].TargetGroupArn // (.Actions[0].ForwardConfig.TargetGroups // [] | max_by(.Weight).TargetGroupArn) // "none" | split("/")[1] | sub("-tls$"; ""))"
       + " host=[\(values("host-header"; "HostHeaderConfig"))]"
       + " path=[\(values("path-pattern"; "PathPatternConfig"))]"
       + " header=[\([.Conditions[] | select(.Field == "http-header") | .HttpHeaderConfig.HttpHeaderName] | sort | join(","))]"
