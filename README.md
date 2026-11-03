@@ -787,13 +787,15 @@ skips, so production never goes back to an older commit unless you dispatch one:
    land before the commit's code does, or without it if a later build fails).
 3. Roll out all seven services at once (`infra/scripts/ecs-deploy.sh <sha> <services…>`): each gets a new revision
    of its latest task definition with the new image, and the script fails if the circuit breaker rolled it back. A
-   service behind the load balancer counts as deployed once its new tasks passed their health checks and the old
-   ones are draining; the worker (no health check) once its old tasks are gone and the new ones ran for 60 s
+   service behind the load balancer counts as deployed once its new tasks passed their health checks and ECS is
+   stopping the old ones, which can still answer requests for up to a minute; the worker (no health check) once its old tasks are gone and the new ones ran for 60 s
    without a failure. Rolling deploys keep 100 % healthy; SIGTERM drains each task (Next and the API finish in-flight requests,
    the worker finishes each loop's current item, the SMTP relay answers messages in progress and sends idle
    clients `421`, so they reconnect to another task).
-4. Record the commit in SSM (`/coss/production/image-tag`, read by Terraform) and invalidate the spec's
-   `cloudFront.invalidateAfterDeploy` paths on the coss.com distribution.
+4. Record the commit in SSM (`/coss/production/image-tag`, read by Terraform), wait for the old site tasks to go
+   (`infra/scripts/ecs-wait-drained.sh`: an old task answering after the invalidation would put its page back in
+   the cache for a year) and invalidate the spec's `cloudFront.invalidateAfterDeploy` paths on the coss.com
+   distribution.
 5. Check routing (`infra/scripts/check-routing.sh`, also runnable locally): the ALB's rules and the coss.com
    distribution's cached behaviours must match `infra/terraform/spec.json`. Routing changes (a new `ZONE_ROUTES`
    entry, i.e. a new site page or zone) only go live with `terraform apply`, which deploys never run, so until

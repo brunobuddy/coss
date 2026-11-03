@@ -225,6 +225,10 @@ jobs:
       - name: Record the deployed commit
         if: steps.latest.outputs.deploy == 'true'
         run: aws ssm put-parameter --name "/coss/$STAGE/image-tag" --value "$TAG" --overwrite >/dev/null
+      # An old task answering after the invalidation would put its page back in the cache for a year.
+      - name: Wait for the old site tasks to go
+        if: steps.latest.outputs.deploy == 'true'
+        run: infra/scripts/ecs-wait-drained.sh site
       # Docs pages are cached for a year at the edge. Only our apps' cached paths, never the hashed
       # assets: tabs opened before this deploy still load their old chunks from the cache.
       - name: Invalidate the coss.com CDN
