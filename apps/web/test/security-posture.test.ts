@@ -155,6 +155,7 @@ describe("scoreControls", () => {
       remediationUrl: null,
     });
     const score = scoreControls([
+      ...Array.from({ length: 16 }, (_, i) => finding(`X.${i}`, "LOW", "PASSED")),
       finding("S3.1", "MEDIUM", "PASSED"),
       finding("S3.1", "MEDIUM", "FAILED"),
       finding("S3.1", "MEDIUM", "FAILED"),
@@ -162,15 +163,25 @@ describe("scoreControls", () => {
       finding("RDS.1", "HIGH", "PASSED"),
       finding("ECS.1", "LOW", "PASSED"),
     ]);
-    expect(score.total).toBe(4);
-    expect(score.passing).toBe(2);
-    expect(score.percent).toBe(50);
+    expect(score.total).toBe(20);
+    expect(score.passing).toBe(18);
+    expect(score.percent).toBe(90);
     expect(score.failing.map((c) => c.controlId)).toEqual(["IAM.1", "S3.1"]);
     expect(score.failing[1]?.resources).toBe(2);
   });
 
-  test("no findings means no score", () => {
+  test("no score until enough controls have run", () => {
     expect(scoreControls([]).percent).toBeNull();
+    const finding = {
+      controlId: "S3.1",
+      title: "S3.1",
+      severity: "HIGH",
+      compliance: "FAILED" as const,
+      remediationUrl: null,
+    };
+    const early = scoreControls([finding]);
+    expect(early.percent).toBeNull();
+    expect(early.failing).toHaveLength(1);
   });
 });
 
