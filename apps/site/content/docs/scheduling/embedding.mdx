@@ -26,6 +26,8 @@ const { data: session } = await coss.scheduling.sessions.createForBooker({
 // Pass session?.url to the browser.
 ```
 
+To send them to a particular kind of host, add [`attributes`](/docs/scheduling/routing).
+
 Open the `url` on its own, or embed it with `coss/scheduling`:
 
 ```ts

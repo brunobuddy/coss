@@ -382,11 +382,13 @@ export async function candidatesOf(
     hostRefs?: readonly string[] | undefined;
   } = {},
 ): Promise<Candidates> {
-  const memberships = (await eventTypeHosts(executor, eventType)).filter((row) => !row.removedAt);
+  const rows = await eventTypeHosts(executor, eventType);
+  const memberships = rows.filter((row) => !row.removedAt);
+  const removed = new Set(rows.filter((row) => row.removedAt).map((row) => row.hostId));
   const assigned = await hostsByIds(
     executor,
     scope,
-    memberships.map((row) => row.hostId),
+    memberships.filter((row) => row.assigned).map((row) => row.hostId),
   );
   const byHost = new Map(memberships.map((row) => [row.hostId, row]));
   const hosts = new Map(assigned.map((host) => [host.id, host]));
@@ -402,6 +404,8 @@ export async function candidatesOf(
         ),
       );
     for (const host of filtered) {
+      // Taken out of the pool by name, which a filter doesn't undo.
+      if (removed.has(host.id)) continue;
       if (attributesMatch(host.attributes, eventType.hostFilter)) hosts.set(host.id, host);
     }
   }

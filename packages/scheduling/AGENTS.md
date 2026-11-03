@@ -26,6 +26,15 @@ it questions it would refuse.
 
 An audit in `test/bookings.test.ts` checks every live booking holds exactly one claim per host.
 
+## Routing
+
+`candidatesOf` (`availability.ts`) is the one answer to who could take a booking, for slots, search, booking and moving
+a booking: named hosts, plus a pool's `host_filter` matches right now, narrowed by `attributes`, and it never falls back
+to someone who doesn't match. A row in `scheduling_event_type_host` with `assigned = false` only counts bookings for a
+host a filter found, and never makes them a member. A host taken off `hosts` by name stays out whatever the filter says.
+A booker session's `attributes` come from the customer's server and are encrypted, since with an attendee they can say
+what someone needs; the browser never sees them or sends its own.
+
 ## Slots
 
 `isBookable` is the one definition of "can this be booked": listing and booking both call it, so they can't disagree.

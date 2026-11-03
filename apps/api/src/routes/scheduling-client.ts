@@ -31,6 +31,7 @@ import {
   type SchedulingDeps,
   SchedulingError,
   sessionActor,
+  sessionAttributes,
   startCalendarAuthorization,
   toConnectionObject,
   updateCalendar,
@@ -259,6 +260,7 @@ export function createSchedulingClientRoutes(opts: {
     eventType: string,
     hostRef: string | undefined,
     durationMinutes?: number,
+    attributes?: Record<string, string | string[]>,
   ) => {
     const query = SlotQuery.safeParse({
       start: c.req.query("start"),
@@ -272,6 +274,7 @@ export function createSchedulingClientRoutes(opts: {
       toMs: instant(query.data.end, "end"),
       nowMs: (deps.now?.() ?? new Date()).getTime(),
       hostRef,
+      attributes,
       durationMinutes: durationMinutes ?? query.data.duration_minutes,
     });
     // An attendee sees times, never who else could take them.
@@ -283,7 +286,13 @@ export function createSchedulingClientRoutes(opts: {
   };
 
   router.get("/slots", async (c) =>
-    slotsFor(c, eventTypeOf(c), c.var.session.session.hostId ?? undefined),
+    slotsFor(
+      c,
+      eventTypeOf(c),
+      c.var.session.session.hostId ?? undefined,
+      undefined,
+      sessionAttributes(c.var.session.session, deps),
+    ),
   );
 
   router.post("/bookings", async (c) => {
@@ -299,6 +308,7 @@ export function createSchedulingClientRoutes(opts: {
         eventType,
         startMs: instant(body.start, "start"),
         host: session.hostId ?? undefined,
+        attributes: sessionAttributes(session, deps),
         durationMinutes: body.duration_minutes,
         attendee,
         answers: body.answers,

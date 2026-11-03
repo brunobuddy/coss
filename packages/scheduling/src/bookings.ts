@@ -219,7 +219,12 @@ async function lockHostsAndMemberships(
   for (const hostId of sorted) {
     await tx
       .insert(schedulingEventTypeHost)
-      .values({ eventTypeId: eventType.id, hostId, organizationId: eventType.organizationId })
+      .values({
+        eventTypeId: eventType.id,
+        hostId,
+        organizationId: eventType.organizationId,
+        assigned: false,
+      })
       .onConflictDoNothing();
   }
   const memberships = await tx
@@ -1661,6 +1666,14 @@ export async function rescheduleBooking(
       throw new SchedulingError("invalid_event_type", "This booking's hosts can't be changed.", {
         param: "host",
       });
+    }
+    if (replacement) {
+      const { members } = await candidatesOf(tx, env, eventType, { hostRef: replacement.id });
+      if (!members.some((candidate) => candidate.host.id === replacement.id)) {
+        throw new SchedulingError("invalid_event_type", "That host can't take this event type.", {
+          param: "host",
+        });
+      }
     }
     const hosts = replacement
       ? [...current.filter((host) => host.id !== member?.hostId), replacement]

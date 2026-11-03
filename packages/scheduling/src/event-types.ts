@@ -48,7 +48,7 @@ export function toEventTypeObject(
     locations: row.locations as EventTypeObjectOutput["locations"],
     host_filter: row.hostFilter ?? null,
     hosts: hosts
-      .filter((host) => !host.removedAt)
+      .filter((host) => host.assigned && !host.removedAt)
       .map((host) => ({
         host: host.hostId,
         role: host.role,
@@ -213,6 +213,7 @@ async function replaceHosts(
       and(
         eq(schedulingEventTypeHost.eventTypeId, row.id),
         eq(schedulingEventTypeHost.organizationId, row.organizationId),
+        eq(schedulingEventTypeHost.assigned, true),
         isNull(schedulingEventTypeHost.removedAt),
         keep.length > 0 ? notInArray(schedulingEventTypeHost.hostId, keep) : undefined,
       ),
@@ -222,6 +223,7 @@ async function replaceHosts(
       role: input.role,
       weight: input.weight,
       scheduleId: input.schedule,
+      assigned: true,
       removedAt: null,
     };
     await tx
