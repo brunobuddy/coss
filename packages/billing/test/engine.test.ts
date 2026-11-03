@@ -196,6 +196,22 @@ describe("terms", () => {
     expect(rateCardAt(new Date("2026-10-31T23:59:59Z"))).toBe(card);
   });
 
+  test("the January 2027 card raises SMS to Canada and received in the US, nothing else", () => {
+    const december = rateCardAt(new Date("2026-12-31T23:59:59Z"));
+    const january = rateCardAt(new Date("2027-01-01T00:00:00Z"));
+    const unit = (at: typeof january, meter: MeterKey, dimension: string) =>
+      at.rates[meter]?.byDimension?.[dimension]?.tiers[0]?.unitNanos;
+    expect(unit(december, "sms.segments", "country=CA")).toBe(20_800_000n);
+    expect(unit(january, "sms.segments", "country=CA")).toBe(22_000_000n);
+    expect(unit(january, "verify.sms", "country=CA")).toBe(22_000_000n);
+    expect(unit(december, "sms.received_segments", "country=US")).toBe(14_800_000n);
+    expect(unit(january, "sms.received_segments", "country=US")).toBe(16_000_000n);
+    expect(unit(january, "sms.segments", "country=US")).toBe(14_200_000n);
+    expect(unit(january, "sms.segments", "country=GB")).toBe(66_500_000n);
+    expect(january.rates["sms.numbers"]).toBe(december.rates["sms.numbers"]);
+    expect(january.rates["email.recipients"]).toBe(december.rates["email.recipients"]);
+  });
+
   test("entitlement overrides merge over the plan's", () => {
     const scale = terms({
       version: 1,

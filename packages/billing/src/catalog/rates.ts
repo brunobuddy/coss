@@ -1,6 +1,7 @@
 /** List prices. A price change is a new dated card: periods before it keep the old prices. */
 import { dimensionKey, type MeterKey } from "./meters.ts";
 import { SMS_PRICES_2026_11_01 } from "./sms-prices-2026-11-01.generated.ts";
+import { SMS_PRICES_2027_01_01 } from "./sms-prices-2027-01-01.generated.ts";
 
 /** Units up to and including `upTo` (cumulative; `null` = no limit) cost `unitNanos` each. */
 export type Tier = { upTo: number | null; unitNanos: bigint };
@@ -134,8 +135,21 @@ const NOVEMBER_2026: RateCard = {
   },
 };
 
+const JANUARY_2027: RateCard = {
+  // Twilio's price changes: SMS to Canada and SMS received in the US.
+  effectiveFrom: new Date("2027-01-01T00:00:00Z"),
+  rates: {
+    ...NOVEMBER_2026.rates,
+    "sms.segments": { byDimension: flatRates("country", SMS_PRICES_2027_01_01.outbound) },
+    "sms.received_segments": {
+      byDimension: flatRates("country", SMS_PRICES_2027_01_01.inbound),
+    },
+    "verify.sms": { byDimension: flatRates("country", SMS_PRICES_2027_01_01.outbound) },
+  },
+};
+
 /** In ascending `effectiveFrom` order. */
-export const RATE_CARDS: readonly RateCard[] = [LAUNCH, NOVEMBER_2026];
+export const RATE_CARDS: readonly RateCard[] = [LAUNCH, NOVEMBER_2026, JANUARY_2027];
 
 /** The list prices in effect at `at` (the first card for earlier dates). */
 export function rateCardAt(at: Date, cards: readonly RateCard[] = RATE_CARDS): RateCard {
