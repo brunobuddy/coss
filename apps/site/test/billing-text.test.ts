@@ -28,9 +28,9 @@ describe("renderBillingComponents", () => {
     );
     expect(text).toContain("| SMS (US) | $0.0142 per segment | |");
     expect(text).toContain(
-      "| SMS (other countries) | $0.0208 to $0.1134 per segment | By country: coss.com/pricing#sms |",
+      "| SMS (other countries) | $0.022 to $0.1134 per segment | By country: coss.com/pricing#sms |",
     );
-    expect(text).toContain("| SMS received (US) | $0.0148 per segment | |");
+    expect(text).toContain("| SMS received (US) | $0.016 per segment | |");
     expect(text).toContain("| SMS phone numbers (toll-free) | $2.15 per number-month | |");
     expect(text).toContain(
       "| SMS registration fees (campaign vetting) | $15.00 | Passed through at cost |",
