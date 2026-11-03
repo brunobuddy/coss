@@ -52,4 +52,4 @@ jobs:
           bun-version-file: package.json
       # Ignored, both only in the iOS app's toolchain: decode-uri-component through expo-router (its fix
       # is ESM-only, which query-string 7 can't load) and zod 3 inside Expo's CLI, a developer tool.
-      - run: bun audit --audit-level=high --ignore=GHSA-mrhx-c7xc-m3w5 GHSA-qr28-fpjm-wq7f
+      - run: bun audit --audit-level=high --ignore=GHSA-mrhx-c7xc-m3w5 --ignore=GHSA-qr28-fpjm-wq7f
