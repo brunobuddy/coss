@@ -151,8 +151,17 @@ resource "aws_vpc_security_group_ingress_rule" "alb_cloudflare" {
   to_port           = 443
 }
 
+resource "aws_vpc_security_group_egress_rule" "alb_to_tasks_tls" {
+  for_each                     = local.alb_tls_targets
+  security_group_id            = aws_security_group.alb_cloudfront.id
+  referenced_security_group_id = aws_security_group.task[each.key].id
+  ip_protocol                  = "tcp"
+  from_port                    = each.value.tlsPort
+  to_port                      = each.value.tlsPort
+}
+
 resource "aws_vpc_security_group_egress_rule" "alb_to_tasks" {
-  for_each                     = local.lb_services
+  for_each                     = local.alb_plain_targets
   security_group_id            = aws_security_group.alb_cloudfront.id
   referenced_security_group_id = aws_security_group.task[each.key].id
   ip_protocol                  = "tcp"
@@ -168,8 +177,17 @@ resource "aws_security_group" "task" {
   tags        = { Name = "${local.name}-${each.key}" }
 }
 
+resource "aws_vpc_security_group_ingress_rule" "task_from_alb_tls" {
+  for_each                     = local.alb_tls_targets
+  security_group_id            = aws_security_group.task[each.key].id
+  referenced_security_group_id = aws_security_group.alb_cloudfront.id
+  ip_protocol                  = "tcp"
+  from_port                    = each.value.tlsPort
+  to_port                      = each.value.tlsPort
+}
+
 resource "aws_vpc_security_group_ingress_rule" "task_from_alb" {
-  for_each                     = local.lb_services
+  for_each                     = local.alb_plain_targets
   security_group_id            = aws_security_group.task[each.key].id
   referenced_security_group_id = aws_security_group.alb_cloudfront.id
   ip_protocol                  = "tcp"

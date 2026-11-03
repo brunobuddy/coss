@@ -56,3 +56,7 @@ its log group keeps a year. After a fresh database, once the parameter group's `
 a reboot: `infra/scripts/ecs-task.sh worker -- bun -e '…CREATE EXTENSION IF NOT EXISTS pgaudit…'`. SNS topics are
 encrypted with `alias/coss-production-sns`, whose key policy must name every service that publishes to them: one
 missing loses its messages silently.
+
+The load balancer reaches containers over TLS: `runtime/tls-entry.mjs`, copied into each image, terminates it on
+`tlsPort` with a certificate made at start (the load balancer doesn't validate target certificates) and pipes to the
+app's plain port. `tls-entry.mjs` runs the app in its own process, so SIGTERM and draining are the app's as before.

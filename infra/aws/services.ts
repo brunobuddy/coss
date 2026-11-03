@@ -32,6 +32,8 @@ export type Service = {
   dockerfile: string;
   /** Container port the ALB target group forwards to (absent: no load balancer). */
   port?: number;
+  /** Where the load balancer reaches it, over TLS (infra/runtime/tls-entry.mjs, set by the image). */
+  tlsPort?: number;
   /** ALB target group health check: HTTP 200 expected. Never touches the database. */
   healthCheckPath?: string;
   /**
@@ -661,6 +663,7 @@ export const SERVICES: Service[] = [
     name: "web",
     dockerfile: "apps/web/Dockerfile",
     port: 3000,
+    tlsPort: 4000,
     healthCheckPath: "/api/health",
     stopTimeout: 30,
     cpu: 512,
@@ -850,6 +853,7 @@ export const SERVICES: Service[] = [
     name: "site",
     dockerfile: "apps/site/Dockerfile",
     port: 3002,
+    tlsPort: 4002,
     healthCheckPath: "/api/health",
     stopTimeout: 30,
     cpu: 256,
@@ -875,6 +879,7 @@ export const SERVICES: Service[] = [
     name: "portal",
     dockerfile: "apps/portal/Dockerfile",
     port: 3003,
+    tlsPort: 4003,
     healthCheckPath: "/api/health",
     stopTimeout: 30,
     cpu: 256,
@@ -904,6 +909,7 @@ export const SERVICES: Service[] = [
     name: "sign",
     dockerfile: "apps/sign/Dockerfile",
     port: 3004,
+    tlsPort: 4004,
     healthCheckPath: "/api/health",
     stopTimeout: 30,
     cpu: 256,
@@ -934,6 +940,7 @@ export const SERVICES: Service[] = [
     name: "scheduling",
     dockerfile: "apps/scheduling/Dockerfile",
     port: 3005,
+    tlsPort: 4005,
     healthCheckPath: "/api/health",
     stopTimeout: 30,
     cpu: 256,
@@ -960,6 +967,7 @@ export const SERVICES: Service[] = [
     name: "api",
     dockerfile: "apps/api/Dockerfile",
     port: 3001,
+    tlsPort: 4001,
     healthCheckPath: "/health",
     stopTimeout: 30,
     cpu: 512,

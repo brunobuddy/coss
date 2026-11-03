@@ -1,5 +1,7 @@
 /** The pure part of the admin console's security page: readings to plain-language verdicts. */
 
+import { formatDateTime } from "./format";
+
 export type CheckState = "ok" | "warning" | "failing" | "unknown";
 
 export type Reading<T> = { ok: true; value: T } | { ok: false; error: string };
@@ -77,10 +79,10 @@ export function postureChecks(readings: Readings, now: Date = new Date()): Postu
       return age < ROOT_RECENT_MS
         ? {
             state: "warning",
-            summary: `Root signed in at ${last.toISOString()}.`,
+            summary: `Root signed in on ${formatDateTime(last)}.`,
             fix: "If that wasn't you, change the root password and check the audit trail now.",
           }
-        : { state: "ok", summary: `Last root sign-in: ${last.toISOString()}.` };
+        : { state: "ok", summary: `Last root sign-in: ${formatDateTime(last)}.` };
     }),
     check("audit_trail", "Audit trail recording", readings.trail, (trail) => {
       if (!trail) {
@@ -110,7 +112,7 @@ export function postureChecks(readings: Readings, now: Date = new Date()): Postu
       if (now.getTime() - trail.latestDelivery.getTime() > TRAIL_STALE_MS) {
         return {
           state: "failing",
-          summary: `Nothing delivered since ${trail.latestDelivery.toISOString()}.`,
+          summary: `Nothing delivered since ${formatDateTime(trail.latestDelivery)}.`,
           fix: "Check the trail's status in the management account.",
         };
       }
@@ -261,8 +263,11 @@ export type FailingControl = {
   remediationUrl: string | null;
 };
 
+/** Security Hub evaluates its controls over about a day; a handful passing means little. */
+const MIN_CONTROLS_FOR_SCORE = 20;
+
 export type ControlScore = {
-  /** Controls with no failing resource, as a whole percent; null before the first evaluation. */
+  /** Controls with no failing resource, as a whole percent; null until enough have been evaluated. */
   percent: number | null;
   passing: number;
   total: number;
@@ -299,7 +304,7 @@ export function scoreControls(findings: readonly ControlFinding[]): ControlScore
   const total = controls.size;
   const passing = total - failing.length;
   return {
-    percent: total === 0 ? null : Math.round((passing / total) * 100),
+    percent: total < MIN_CONTROLS_FOR_SCORE ? null : Math.round((passing / total) * 100),
     passing,
     total,
     failing,

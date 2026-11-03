@@ -118,26 +118,28 @@ function Threats({ threats }: Pick<SecurityPosture, "threats">) {
 
 function Score({ score }: Pick<SecurityPosture, "score">) {
   if (!score.ok) return <Unreadable title="Couldn't read Security Hub" />;
-  if (score.value.percent === null) {
+  const urgent = score.value.failing.filter((control) =>
+    ["CRITICAL", "HIGH"].includes(control.severity),
+  );
+  if (score.value.percent === null && urgent.length === 0) {
     return (
       <PanelBody flush>
         <EmptyState
           compact
-          description="Security Hub's first full evaluation can take up to a day after it's turned on."
+          description={`Security Hub's first full evaluation can take up to a day after it's turned on. ${score.value.total} checks so far.`}
           icon={ShieldIcon}
-          title="No results yet"
+          title="Still evaluating"
         />
       </PanelBody>
     );
   }
-  const urgent = score.value.failing.filter((control) =>
-    ["CRITICAL", "HIGH"].includes(control.severity),
-  );
   const others = score.value.failing.length - urgent.length;
   return (
     <>
       <PanelBody>
-        <p className="font-heading font-semibold text-3xl tabular-nums">{score.value.percent}%</p>
+        <p className="font-heading font-semibold text-3xl tabular-nums">
+          {score.value.percent === null ? "Still evaluating" : `${score.value.percent}%`}
+        </p>
         <p className="text-muted-foreground text-sm">
           {score.value.passing} of {score.value.total} checks pass.
           {others > 0
