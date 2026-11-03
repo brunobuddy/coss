@@ -13,6 +13,7 @@ export * from "./errors.ts";
 export * from "./event-types.ts";
 export * from "./hosts.ts";
 export * from "./notifications.ts";
+export * from "./reencrypt.ts";
 export * from "./retention.ts";
 export * from "./schedules.ts";
 export * from "./screening.ts";

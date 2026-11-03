@@ -618,6 +618,50 @@ describe("changing a booking", () => {
 });
 
 describe("pools", () => {
+  test("each host tried and lost leaves nothing behind in the transaction", async () => {
+    const env = await tenantEnv("live");
+    const free = await hostWithHours(env);
+    const noHours = [];
+    for (let index = 0; index < 12; index++) {
+      noHours.push(await createHost(env, { name: `No hours ${index}`, time_zone: "UTC" }));
+    }
+    const eventType = await eventTypeFor(
+      env,
+      [free, ...noHours].map((host) => ({ host: host.id })),
+      { kind: "pool" },
+    );
+    // Assigned most recently, so it's tried last.
+    await db
+      .update(schema.schedulingEventTypeHost)
+      .set({ lastAssignedAt: new Date() })
+      .where(
+        and(
+          eq(schema.schedulingEventTypeHost.eventTypeId, eventType.id),
+          eq(schema.schedulingEventTypeHost.hostId, free.id),
+        ),
+      );
+    let transactionIds = -1;
+    const { booking } = await createBooking(
+      env,
+      request(eventType.id, at("09:00")),
+      testSchedulingDeps({
+        billing: {
+          async reserve(tx) {
+            const { rows } = await tx.execute<{ locks: number }>(sql`
+              select count(*)::int as locks from pg_locks
+              where pid = pg_backend_pid() and locktype = 'transactionid'
+            `);
+            transactionIds = rows[0]?.locks ?? -1;
+          },
+        },
+      }),
+      actor,
+    );
+    expect(booking.hosts).toEqual([free.id]);
+    expect(transactionIds).toBeGreaterThan(0);
+    expect(transactionIds).toBeLessThanOrEqual(2);
+  });
+
   test("bookings spread by weight", async () => {
     const env = await tenantEnv();
     const [a, b] = await Promise.all([hostWithHours(env), hostWithHours(env)]);

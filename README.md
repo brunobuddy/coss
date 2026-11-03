@@ -846,6 +846,7 @@ scripts/ecs-task.sh --task-role "$(terraform -chdir=terraform output -raw bootst
   bun apps/worker/scripts/ses-bootstrap.ts --name coss --tenant-prefix coss --alert-email ops@coss.com
 scripts/ecs-task.sh api -- bun packages/tenancy/scripts/create-admin.ts --email you@example.com [--verify-email]
 scripts/ecs-task.sh worker -- bun apps/worker/scripts/webhooks-reencrypt.ts --dry-run
+scripts/ecs-task.sh worker -- bun apps/worker/scripts/scheduling-reencrypt.ts --dry-run
 ```
 
 First deployment of a stage: Terraform (network, RDS, IAM, secrets, ECR, certificates; validation CNAMEs in
@@ -949,6 +950,42 @@ After a leak of the key, do all four steps right away: with the database alone t
 every endpoint's signing secret can be read. Customers should then [roll their endpoint
 secrets](https://coss.com/docs/webhooks#rolling-the-secret) with no grace period. Locally, `bun run
 webhooks:reencrypt` does step 3 against `DATABASE_URL`.
+
+### Rotating `SCHEDULING_DATA_KEYS`
+
+The variable is a comma-separated list of keys, newest first: the first encrypts, every one decrypts. It protects
+attendees' contact details and answers and the identity a booker session is fixed to
+(`scheduling_attendee.encrypted_contact`, `.encrypted_answers`, `scheduling_session.encrypted_attendee`). Calendar
+credentials aren't in it: they use `WEBHOOK_SECRETS_KEY`, [rotated on their own](#rotating-webhook_secrets_key).
+Customers notice nothing. The web, api and worker services all read it.
+
+1. Generate a key (`openssl rand -base64 32`) and **append** it: `SCHEDULING_DATA_KEYS=<old>,<new>` (`put-secret.sh
+   SCHEDULING_DATA_KEYS --clipboard`). Deploy web, api and worker. Every task can now decrypt with both keys; nothing
+   is encrypted with the new one yet.
+2. Swap the order, `<new>,<old>`, and deploy again. New attendees and booker sessions are encrypted with the new key.
+   Doing step 1 first means no task that only knows the old key ever reads something made with the new one. Wait for
+   the deploy to finish: a task still on the old order keeps writing with the old key.
+3. Run the one-off task from the worker image, first with `--dry-run`, which only counts and also finds unreadable
+   rows:
+
+   ```sh
+   scripts/ecs-task.sh worker -- bun apps/worker/scripts/scheduling-reencrypt.ts --dry-run
+   scripts/ecs-task.sh worker -- bun apps/worker/scripts/scheduling-reencrypt.ts
+   ```
+
+   It rewrites one row at a time with a compare-and-set while traffic continues, so an attendee erased meanwhile stays
+   erased. It exits 1 if something is left over: a row changed while it ran (run it again) or a value no listed key
+   decrypts (it lists the row, column and key id, never content; find that key or accept the loss before going on).
+   Stopped halfway, run it again: finished rows are skipped. `--batch-size` (default 200) sets how many rows it reads
+   at once. It took 7.5 s for 59,000 rows against a local database.
+4. Run it once more with `--dry-run`. It must report `0 to re-encrypt` and exit 0.
+5. Remove the old key, `<new>`, and deploy. Keep the old key somewhere safe until the database's backups from before
+   step 3 have expired, since restoring one needs it. After that, destroy it.
+
+After a leak of the key, do all of this right away, and destroy the old key as soon as step 5 is deployed instead of
+waiting: backups from before the rotation then can't be read by anyone, including you. Locally, `bun run
+scheduling:reencrypt` does step 3 against `DATABASE_URL`. It refuses to run without `SCHEDULING_DATA_KEYS`, so it can
+never fall back on the development key.
 
 ### Rotating `EMAIL_LINK_KEYS`
 

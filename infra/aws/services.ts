@@ -189,7 +189,7 @@ const schedulingEnv: EnvVar[] = [
     value:
       "openssl rand -base64 32 (one per stage; losing it makes attendees' details unreadable). A comma-separated list while rotating: the first encrypts, every one decrypts",
     description:
-      "Encrypts Scheduling's attendee details and answers. Same value for api and worker.",
+      "Encrypts Scheduling's attendee details and answers. Same value for web, api and worker.",
   },
   {
     name: "SCHEDULING_PUBLIC_URL",

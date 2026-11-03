@@ -29,6 +29,7 @@ import {
 } from "./availability.ts";
 import { hostsBusyNow } from "./calendar/live-check.ts";
 import {
+  inSavepoint,
   isDeadlock,
   isExclusionViolation,
   makeClaimPermanent,
@@ -367,7 +368,7 @@ async function assignAndClaim(
   for (const member of choices) {
     const hosts = member ? [...required, member] : required;
     try {
-      const liveUntil = await tx.transaction((savepoint) =>
+      const liveUntil = await inSavepoint(tx, (savepoint) =>
         claimHosts(savepoint, plan, hosts, bookingId, schedules),
       );
       return { hosts, liveUntil };
@@ -1794,11 +1795,13 @@ export async function listBookings(
         query.attendeeUid
           ? sql`exists (select 1 from ${schedulingAttendee}
               where ${schedulingAttendee.bookingId} = ${schedulingBooking.id}
+                and ${schedulingAttendee.environmentId} = ${scope.environmentId}
                 and ${schedulingAttendee.uid} = ${query.attendeeUid})`
           : undefined,
         query.attendeeEmail
           ? sql`exists (select 1 from ${schedulingAttendee}
               where ${schedulingAttendee.bookingId} = ${schedulingBooking.id}
+                and ${schedulingAttendee.environmentId} = ${scope.environmentId}
                 and ${schedulingAttendee.emailHmac} = ${emailLookup(query.attendeeEmail, deps)})`
           : undefined,
       ),
@@ -1962,7 +1965,7 @@ export async function createSeries(
         ttlSeconds,
       };
       try {
-        const created = await tx.transaction(async (savepoint) => {
+        const created = await inSavepoint(tx, async (savepoint) => {
           const inserted = await insertBookingRow(savepoint, context, request, {
             status,
             startMs,
@@ -2008,7 +2011,7 @@ export async function createSeries(
     for (const chosen of choiceSets) {
       try {
         // The whole series for this host, undone either way until the best one is known.
-        const outcome = await tx.transaction(async (savepoint) => {
+        const outcome = await inSavepoint(tx, async (savepoint) => {
           const done = await attempt(savepoint, series.id, chosen, false);
           return done;
         });
@@ -2020,7 +2023,7 @@ export async function createSeries(
         const probe = new LostSlot("probe");
         let conflictCount = 0;
         try {
-          await tx.transaction(async (savepoint) => {
+          await inSavepoint(tx, async (savepoint) => {
             const done = await attempt(savepoint, series.id, chosen, true);
             conflictCount = done.conflicts.length;
             throw probe;

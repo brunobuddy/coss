@@ -3,7 +3,7 @@
  * exclusion constraint decides, and everything else (slot lists, re-checks) only avoids asking it
  * questions it would refuse.
  */
-import { type Executor, schema } from "@coss/db";
+import { type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, newId } from "@coss/db/id";
 import { and, eq, sql } from "drizzle-orm";
 import type { Interval } from "./engine/intervals.ts";
@@ -92,6 +92,23 @@ export async function releaseBookingClaims(
         eq(schedulingClaim.organizationId, booking.organizationId),
       ),
     );
+}
+
+/** Drizzle's nested `transaction` never releases after a rollback, so retries nest and keep their locks. */
+export async function inSavepoint<T>(
+  tx: Transaction,
+  run: (savepoint: Transaction) => Promise<T>,
+): Promise<T> {
+  await tx.execute(sql`savepoint scheduling_attempt`);
+  try {
+    const result = await run(tx);
+    await tx.execute(sql`release savepoint scheduling_attempt`);
+    return result;
+  } catch (error) {
+    await tx.execute(sql`rollback to savepoint scheduling_attempt`);
+    await tx.execute(sql`release savepoint scheduling_attempt`);
+    throw error;
+  }
 }
 
 export function isExclusionViolation(error: unknown): boolean {
