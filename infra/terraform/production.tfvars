@@ -27,8 +27,6 @@ github_repository = "cosscom/coss"
 deploy_actor_ids = ["2538462", "8019099", "25907159", "55134778", "343308169", "118344674"]
 # Optional secrets not stored in coss/production: take a name out once put-secret.sh has set it.
 unset_secrets = [
-  # Scheduling's Zoom app: until Zoom approves it.
-  "ZOOM_CLIENT_SECRET", "ZOOM_WEBHOOK_SECRET_TOKEN",
   "IPINFO_PRIVACY_TOKEN",
   # Sign's CSC sealer (SSL.com eSigner): until its account exists.
   "SIGN_CSC_CLIENT_SECRET", "SIGN_CSC_PASSWORD", "SIGN_CSC_TOTP_SECRET",
@@ -156,6 +154,7 @@ plain_env = {
     SCHEDULING_PUBLIC_URL        = "https://cossbook.com"
     GOOGLE_CALENDAR_CLIENT_ID    = "776019028945-dnuug57hi1tsjfdbu93evm8ggp1ge00q.apps.googleusercontent.com"
     MICROSOFT_CALENDAR_CLIENT_ID = "e58a0c0d-e1bb-4aef-a861-43c755d96761"
+    ZOOM_CLIENT_ID               = "ipQnslr7RRGyv0tedOdTyg"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
     FORMS_PUBLIC_URL   = "https://cossforms.com"
     FORMS_FILES_BUCKET = "coss-production-forms-files-294417174674"
@@ -205,6 +204,7 @@ plain_env = {
     SCHEDULING_PUBLIC_URL               = "https://cossbook.com"
     GOOGLE_CALENDAR_CLIENT_ID           = "776019028945-dnuug57hi1tsjfdbu93evm8ggp1ge00q.apps.googleusercontent.com"
     MICROSOFT_CALENDAR_CLIENT_ID        = "e58a0c0d-e1bb-4aef-a861-43c755d96761"
+    ZOOM_CLIENT_ID                      = "ipQnslr7RRGyv0tedOdTyg"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
     FORMS_PUBLIC_URL       = "https://cossforms.com"
     FORMS_FILES_BUCKET     = "coss-production-forms-files-294417174674"
