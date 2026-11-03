@@ -685,7 +685,7 @@ Cloudflare DNS (coss.com zone, DNS only)
   a transform rule setting `X-Scheduling-Origin-Verify: <secret>` (Secrets Manager
   `coss/production/scheduling-origin-verify`) for `cossbook.com`, and `www` (a proxied `100::`) redirecting to the
   apex. `SCHEDULING_PUBLIC_URL=https://cossbook.com` (web, api, worker) makes session and manage links point there.
-  Scheduling itself stays off until `SCHEDULING_DATA_KEYS` is stored (`packages/scheduling/AGENTS.md`, "Going live").
+  Scheduling is off in a stage without `SCHEDULING_DATA_KEYS` (`packages/scheduling/AGENTS.md`, "Going live").
 
 ### Monitoring and cost guardrails
 
