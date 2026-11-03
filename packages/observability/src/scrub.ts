@@ -11,6 +11,7 @@ import type { Breadcrumb, Event, Log, StreamedSpanJSON } from "@sentry/core";
  * Path segments that are bearer secrets: whoever has the URL can act with it. Route templates
  * (`:token`) and already masked segments are kept.
  */
+// Access logs have their own list: infra/lambda/mask-access-logs.mjs.
 const SECRET_PATH_SEGMENTS: [RegExp, string][] = [
   // Open pixel, click redirect and one-click unsubscribe (apps/api/src/routes/tracking.ts), and the
   // preference center and unsubscribe pages (apps/api/src/routes/preferences.ts).

@@ -503,3 +503,110 @@ resource "aws_iam_role_policy" "task_web_security" {
     ]
   })
 }
+
+# --- Secrets in access logs ------------------------------------------------------------------------
+
+# Load balancers and CloudFront can't leave URLs out of their logs, and emailed links carry tokens.
+data "archive_file" "mask_access_logs" {
+  type        = "zip"
+  source_file = "${path.module}/../lambda/mask-access-logs.mjs"
+  output_path = "${path.module}/.terraform/mask-access-logs.zip"
+}
+
+resource "aws_iam_role" "mask_access_logs" {
+  name = "${local.name}-mask-access-logs"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_cloudwatch_log_group" "mask_access_logs" {
+  name              = "/aws/lambda/${local.name}-mask-access-logs"
+  retention_in_days = 90
+}
+
+resource "aws_iam_role_policy" "mask_access_logs" {
+  role = aws_iam_role.mask_access_logs.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["s3:GetObject", "s3:PutObject"]
+        Resource = [
+          "${aws_s3_bucket.access_logs.arn}/alb/*",
+          "${aws_s3_bucket.access_logs.arn}/cloudfront/*",
+        ]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "${aws_cloudwatch_log_group.mask_access_logs.arn}:*"
+      },
+    ]
+  })
+}
+
+resource "aws_lambda_function" "mask_access_logs" {
+  function_name    = "${local.name}-mask-access-logs"
+  role             = aws_iam_role.mask_access_logs.arn
+  runtime          = "nodejs24.x"
+  architectures    = ["arm64"]
+  handler          = "mask-access-logs.handler"
+  filename         = data.archive_file.mask_access_logs.output_path
+  source_code_hash = data.archive_file.mask_access_logs.output_base64sha256
+  memory_size      = 512
+  timeout          = 120
+  depends_on       = [aws_cloudwatch_log_group.mask_access_logs, aws_iam_role_policy.mask_access_logs]
+}
+
+resource "aws_lambda_permission" "mask_access_logs" {
+  function_name  = aws_lambda_function.mask_access_logs.function_name
+  action         = "lambda:InvokeFunction"
+  principal      = "s3.amazonaws.com"
+  source_arn     = aws_s3_bucket.access_logs.arn
+  source_account = var.account_id
+}
+
+resource "aws_s3_bucket_notification" "access_logs" {
+  bucket = aws_s3_bucket.access_logs.id
+  dynamic "lambda_function" {
+    for_each = ["alb/", "cloudfront/"]
+    content {
+      lambda_function_arn = aws_lambda_function.mask_access_logs.arn
+      events              = ["s3:ObjectCreated:*"]
+      filter_prefix       = lambda_function.value
+      filter_suffix       = ".gz"
+    }
+  }
+  depends_on = [aws_lambda_permission.mask_access_logs]
+}
+
+# A failure leaves that log file unmasked until it expires.
+resource "aws_cloudwatch_metric_alarm" "mask_access_logs" {
+  alarm_name          = "${local.name}-mask-access-logs-errors"
+  alarm_description   = "Access log files aren't being masked: secrets in their URLs stay readable"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  dimensions          = { FunctionName = aws_lambda_function.mask_access_logs.function_name }
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.alarm_actions
+  ok_actions          = local.alarm_actions
+}
+
+# --- Security Hub findings ------------------------------------------------------------------------
+
+resource "aws_ssm_service_setting" "block_public_documents" {
+  setting_id    = "/ssm/documents/console/public-sharing-permission"
+  setting_value = "Disable"
+}

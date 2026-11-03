@@ -57,6 +57,13 @@ a reboot: `infra/scripts/ecs-task.sh worker -- sh -c "cd packages/db && bun -e '
 encrypted with `alias/coss-production-sns`, whose key policy must name every service that publishes to them: one
 missing loses its messages silently.
 
+A Lambda (`infra/lambda/mask-access-logs.mjs`, `coss-production-mask-access-logs`) rewrites each load balancer and
+CloudFront log file on arrival, masking the secrets emailed links and sign-in callbacks carry in URLs; a new URL secret
+belongs in its lists as well as `SECRET_PATH_SEGMENTS`. Failures alarm to `coss-alerts`. Security Hub's EC2.18 is
+told the SMTP relay's ports are meant to be public, with a setting Terraform can't hold: `aws securityhub
+update-security-control --security-control-id EC2.18 --parameters
+'{"authorizedTcpPorts":{"ValueType":"CUSTOM","Value":{"IntegerList":[80,443,2465,2587]}}}'`.
+
 The load balancer reaches containers over TLS: `runtime/tls-entry.mjs`, copied into each image, terminates it on
 `tlsPort` with a certificate made at start (the load balancer doesn't validate target certificates) and pipes to the
 app's plain port. `tls-entry.mjs` runs the app in its own process, so SIGTERM and draining are the app's as before.
