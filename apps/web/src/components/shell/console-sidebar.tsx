@@ -106,7 +106,7 @@ type Area =
   | { kind: "product"; product: Product };
 
 /**
- * The dashboard's sidebar: a rail of the member's products (what the environment uses, plus what
+ * The dashboard's sidebar: a rail of the member's products (what the project uses, plus what
  * they pinned) beside a panel with the current product's pages. The rail stays when it collapses.
  */
 export function ConsoleSidebar(props: ConsoleSidebarProps) {
@@ -133,7 +133,9 @@ export function ConsoleSidebar(props: ConsoleSidebarProps) {
 
   const area = areaOf(pathname, orgSlug, envBase);
   const inUse =
-    project && environment ? (props.inUse[`${project.slug}/${environment.slug}`] ?? []) : [];
+    project && environment
+      ? project.environments.flatMap((env) => props.inUse[`${project.slug}/${env.slug}`] ?? [])
+      : [];
   const visible = visibleProducts(inUse, props.preferences);
   const railProducts = PRODUCTS.filter(
     (product) =>
@@ -638,7 +640,7 @@ function PanelLink(props: {
   );
 }
 
-/** Pin a product to the rail, hide it, or go back to showing it while the environment uses it. */
+/** Pin a product to the rail, hide it, or go back to showing it while the project uses it. */
 function ProductActions(props: {
   orgSlug: string;
   product: Product;

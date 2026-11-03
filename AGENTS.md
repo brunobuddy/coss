@@ -548,7 +548,8 @@ What an agent pointed at coss.com reads, all describing the same facts — chang
 - Layout follows coss.com's docs (`apps/site/DESIGN.md`: grayscale, Cal Sans/Paper Mono, hue only for status):
   `AppShell` (`src/components/shell/`) is the sidebar + framed page with breadcrumbs and ⌘K, used by the
   `[orgSlug]`, `/settings` and `/admin` layouts. An organization's sidebar (`ConsoleSidebar`) is a rail of the
-  member's products (what the environment uses, `productActivityByEnvironment`, plus what they pinned,
+  member's products (what any environment of the project uses, `productActivityByEnvironment` and
+  `productUseInProject`, labelled "In use in Production" where only another one does, plus what they pinned,
   `product_preference`; `visibleProducts`) beside a panel with the current product's pages; the header starts with
   the project/environment switcher. `@coss/dashboard-routes` is the one list of products and their pages (the
   rail, panel, breadcrumbs, ⌘K, All products, emails' links; the CLI's `coss open` mirrors it) — add a page there;

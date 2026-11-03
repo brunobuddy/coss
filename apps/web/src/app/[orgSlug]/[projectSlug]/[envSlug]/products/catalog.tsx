@@ -5,10 +5,12 @@ import {
   PRODUCTS,
   type ProductKey,
   type ProductPreferences,
+  type ProductUse,
 } from "@coss/dashboard-routes";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@coss/ui/components/input-group";
 import { SearchIcon } from "lucide-react";
 import { useState } from "react";
+import { ProductElsewhere } from "@/components/product-elsewhere";
 import { ProductCell, ProductGrid } from "@/components/product-grid";
 import { ProductPinButton } from "@/components/product-pin-button";
 import { SectionHeading } from "@/components/section-heading";
@@ -18,7 +20,8 @@ import { StatusDot } from "@/components/status-dot";
 export function ProductCatalog(props: {
   base: string;
   orgSlug: string;
-  inUse: ProductKey[];
+  projectSlug: string;
+  use: ProductUse;
   visible: ProductKey[];
   preferences: ProductPreferences;
 }) {
@@ -54,13 +57,14 @@ export function ProductCatalog(props: {
             <SectionHeading title={category.label} />
             <ProductGrid>
               {products.map((product) => {
-                const inUse = props.inUse.includes(product.key);
+                const inUse = props.use.here.includes(product.key);
+                const elsewhere = props.use.elsewhere[product.key];
                 const pinned = props.preferences[product.key] === true;
                 return (
                   <ProductCell
                     action={
                       <ProductPinButton
-                        inUse={inUse}
+                        inUse={props.use.inProject.includes(product.key)}
                         orgSlug={props.orgSlug}
                         preference={props.preferences[product.key]}
                         product={{ key: product.key, name: product.name }}
@@ -68,7 +72,14 @@ export function ProductCatalog(props: {
                       />
                     }
                     detail={
-                      inUse || pinned ? (
+                      elsewhere ? (
+                        <ProductElsewhere
+                          environments={elsewhere}
+                          organization={props.orgSlug}
+                          product={product}
+                          project={props.projectSlug}
+                        />
+                      ) : inUse || pinned ? (
                         <StatusDot
                           className="text-muted-foreground"
                           tone={inUse ? "success" : "neutral"}

@@ -38,6 +38,7 @@ import { notFound } from "next/navigation";
 import { CountUp } from "@/components/count-up";
 import { ModeBadge } from "@/components/email-badges";
 import { Panel, PanelBody } from "@/components/panel";
+import { ProductElsewhere } from "@/components/product-elsewhere";
 import { type GlyphTone, PRODUCT_TEXT, ProductGlyph } from "@/components/product-glyph";
 import { ProductCell, ProductGrid } from "@/components/product-grid";
 import { SectionHeading } from "@/components/section-heading";
@@ -46,7 +47,7 @@ import { Sparkline } from "@/components/sparkline";
 import { StatusDot, type StatusTone } from "@/components/status-dot";
 import { formatCompact, formatRelative } from "@/lib/format";
 import { DEVELOPERS_ICON, PRODUCT_ICONS } from "@/lib/navigation";
-import { PRODUCT_FIGURES, productActivity, productPreferences } from "@/lib/products";
+import { PRODUCT_FIGURES, productPreferences, productUse } from "@/lib/products";
 import { requireOrgMember } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Home" };
@@ -88,13 +89,16 @@ export default async function EnvironmentHomePage({
     environment: environment.slug,
   });
 
-  const [activity, preferences] = await Promise.all([
-    productActivity(organization.id),
+  const [use, preferences] = await Promise.all([
+    productUse({
+      organizationId: organization.id,
+      projectId: project.id,
+      environmentSlug: environment.slug,
+    }),
     productPreferences(organization.id, session.user.id),
   ]);
-  const inUse = activity.get(environment.id) ?? [];
-  const yours = visibleProducts(inUse, preferences);
-  const uses = (key: ProductKey) => inUse.includes(key);
+  const yours = visibleProducts(use.inProject, preferences);
+  const uses = (key: ProductKey) => use.here.includes(key);
 
   const [figures, daily, keys, domains, endpoints, reviews, awaiting, email, logs] =
     await Promise.all([
@@ -212,6 +216,7 @@ export default async function EnvironmentHomePage({
   const remaining = steps.filter((step) => !step.done).length;
 
   const yourProducts = PRODUCTS.filter((product) => yours.includes(product.key));
+  const inUseHere = PRODUCTS.filter((product) => uses(product.key));
   const discover = PRODUCTS.filter((product) => !yours.includes(product.key));
   const firstName = session.user.name?.trim().split(/\s+/)[0];
   const summary = yourProducts
@@ -280,10 +285,10 @@ export default async function EnvironmentHomePage({
               </Button>
             </div>
           </div>
-          {yourProducts.length > 0 ? (
+          {inUseHere.length > 0 ? (
             <div className="flex items-center gap-3 lg:flex-col lg:items-end">
               <div className="flex -space-x-2">
-                {yourProducts.slice(0, 6).map((product) => (
+                {inUseHere.slice(0, 6).map((product) => (
                   <Link
                     aria-label={product.name}
                     className="rounded-xl ring-4 ring-card transition-transform hover:z-10 hover:-translate-y-0.5 motion-reduce:transition-none"
@@ -299,7 +304,7 @@ export default async function EnvironmentHomePage({
                 ))}
               </div>
               <span className="text-muted-foreground text-xs">
-                {yourProducts.length} {yourProducts.length === 1 ? "product" : "products"} in use
+                {inUseHere.length} {inUseHere.length === 1 ? "product" : "products"} in use
               </span>
             </div>
           ) : null}
@@ -351,32 +356,42 @@ export default async function EnvironmentHomePage({
                 All products
               </Button>
             }
-            description={`The last ${DAYS} days of the products this environment uses, and the ones you pinned.`}
+            description={`The last ${DAYS} days of the products this project uses, and the ones you pinned.`}
             title="Your products"
           />
           <ProductGrid>
             {yourProducts.map((product) => {
               const figure = PRODUCT_FIGURES[product.key];
               const count = figures[product.key];
+              const elsewhere = use.elsewhere[product.key];
               return (
                 <ProductCell
                   detail={
-                    <div className="flex flex-col gap-2">
-                      <span className="flex items-baseline gap-1.5">
-                        <span className="font-heading font-semibold text-lg tabular-nums">
-                          <CountUp value={formatCompact(count)} />
-                        </span>
-                        <span className="text-muted-foreground">
-                          {count === 1 ? figure.one : figure.many}
-                          {figure.recent ? ` in ${DAYS} days` : ""}
-                        </span>
-                      </span>
-                      <Sparkline
-                        className={PRODUCT_TEXT[product.key]}
-                        id={product.key}
-                        values={daily[product.key]}
+                    elsewhere ? (
+                      <ProductElsewhere
+                        environments={elsewhere}
+                        organization={organization.slug}
+                        product={product}
+                        project={project.slug}
                       />
-                    </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <span className="flex items-baseline gap-1.5">
+                          <span className="font-heading font-semibold text-lg tabular-nums">
+                            <CountUp value={formatCompact(count)} />
+                          </span>
+                          <span className="text-muted-foreground">
+                            {count === 1 ? figure.one : figure.many}
+                            {figure.recent ? ` in ${DAYS} days` : ""}
+                          </span>
+                        </span>
+                        <Sparkline
+                          className={PRODUCT_TEXT[product.key]}
+                          id={product.key}
+                          values={daily[product.key]}
+                        />
+                      </div>
+                    )
                   }
                   href={base + product.path}
                   key={product.key}
