@@ -32,6 +32,11 @@ function writeDraft(key: string, value: string): void {
   }
 }
 
+/** For a form that navigates away on success, which skips the composer's own clearing. */
+export function clearSupportDraft(key: string): void {
+  writeDraft(key, "");
+}
+
 /**
  * Writes to a ticket: a draft that survives a reload, attachments uploaded as they're picked, and
  * ⌘↵ to send. The page refreshing around it keeps all of that.
@@ -55,6 +60,10 @@ export function SupportComposer(props: {
   const [text, setText] = useState("");
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [uploading, setUploading] = useState(0);
+  const [shortcut, setShortcut] = useState<string | null>(null);
+  useEffect(() => {
+    setShortcut(/mac|iphone|ipad/i.test(navigator.platform) ? "⌘↵" : "Ctrl+↵");
+  }, []);
   const modeRef = useRef(mode);
   modeRef.current = mode;
 
@@ -224,7 +233,9 @@ export function SupportComposer(props: {
           }}
           type="file"
         />
-        <span className="hidden text-muted-foreground text-xs sm:inline">⌘↵ to send</span>
+        {shortcut ? (
+          <span className="hidden text-muted-foreground text-xs sm:inline">{shortcut} to send</span>
+        ) : null}
         <div className="ms-auto flex flex-wrap items-center gap-2">
           {props.extraActions?.({ pending: blocked, mode })}
           <Button disabled={blocked} loading={pending} size="sm" type="submit">

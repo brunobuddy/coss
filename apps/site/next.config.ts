@@ -43,7 +43,14 @@ const nextConfig: NextConfig = {
   // `next build` doesn't check the same project again. Image builds keep the check.
   typescript: { ignoreBuildErrors: process.env.SKIP_BUILD_TYPECHECK === "1" },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders({ dev }) }];
+    return [
+      { source: "/:path*", headers: securityHeaders({ dev }) },
+      // Mail clients load the emails' font from another origin.
+      {
+        source: "/site-assets/email/:file*",
+        headers: [{ key: "Access-Control-Allow-Origin", value: "*" }],
+      },
+    ];
   },
   async rewrites() {
     return [

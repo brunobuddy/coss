@@ -1,12 +1,15 @@
 "use server";
 
+import { isProductKey } from "@coss/dashboard-routes";
 import {
   createDashboardTicket,
   reopenAsCustomer,
   replyAsCustomer,
   resolveAsCustomer,
+  resolveSupportReference,
 } from "@coss/support";
 import { newTicketSchema, supportBodySchema } from "@coss/support/schemas";
+import { listProjectsWithEnvironments } from "@coss/tenancy";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "@/lib/action-result";
@@ -34,6 +37,43 @@ function contextPath(value: string, orgSlug: string): string | undefined {
   return value.startsWith(`/${orgSlug}/`) && value.length <= 300 ? value : undefined;
 }
 
+/** What the customer says the ticket is about, checked against their own organization. */
+async function ticketContext(formData: FormData, organization: { id: string; slug: string }) {
+  const path = contextPath(formString(formData, "from"), organization.slug);
+  const environmentId = formString(formData, "environmentId");
+  const product = formString(formData, "product");
+  const referenceId = formString(formData, "reference");
+  const projects = environmentId
+    ? await listProjectsWithEnvironments({ organizationId: organization.id })
+    : [];
+  const owner = projects.find(({ environments }) =>
+    environments.some((environment) => environment.id === environmentId),
+  );
+  const environment = owner?.environments.find((item) => item.id === environmentId);
+  if (environmentId && !environment) throw new ActionError("Choose one of your projects.");
+  if (product && !isProductKey(product)) throw new ActionError("Choose one of the products.");
+  const reference = referenceId
+    ? await resolveSupportReference({ organizationId: organization.id, id: referenceId })
+    : null;
+  if (referenceId && !reference) {
+    throw new ActionError(
+      "We couldn't find that ID in this organization. Check it, or leave it out.",
+    );
+  }
+  return {
+    ...(path ? { path } : {}),
+    ...(environment && owner
+      ? {
+          environmentId,
+          projectName: owner.project.name,
+          environmentName: environment.name,
+        }
+      : {}),
+    ...(product ? { product } : {}),
+    ...(reference ? { resourceType: reference.type, resourceId: reference.id } : {}),
+  };
+}
+
 export async function createTicketAction(
   _previous: ActionResult<null> | null,
   formData: FormData,
@@ -50,7 +90,6 @@ export async function createTicketAction(
     if (!parsed.success) {
       throw new ActionError(parsed.error.issues[0]?.message ?? "Check the form.");
     }
-    const path = contextPath(formString(formData, "from"), context.organization.slug);
     const ticket = await createDashboardTicket(
       {
         organizationId: context.organization.id,
@@ -58,7 +97,7 @@ export async function createTicketAction(
         author,
         ...parsed.data,
         attachmentIds: attachmentIdsOf(formData),
-        context: path ? { path } : {},
+        context: await ticketContext(formData, context.organization),
       },
       supportDeps,
     );

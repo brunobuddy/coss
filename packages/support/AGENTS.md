@@ -39,6 +39,9 @@ from the admin console (`/admin/support`). Tables in `packages/db/src/schema/sup
   unless the role is owner or admin. Notes, internal events and rep-only messages never leave that module,
   and a rep is only a first name. `@coss/support/admin` is platform-level: call it only after
   `requirePlatformAdmin*`, and record `support.*` admin audit events.
+- **What a ticket is about** (`support_ticket.context`, `references.ts`): project and environment, product,
+  and one item. A pasted id is kept only if it belongs to the organization (`resolveSupportReference`):
+  never let a ticket lead a rep to another customer's data. A new kind of item is one entry in `REFERENCES`.
 - **The clock.** Targets are `SUPPORT_TIERS` (`@coss/billing/catalog`), the one source for pricing, docs,
   dashboard and SLA. `responseDueAt` (`sla.ts`) counts `SUPPORT_HOURS` in `America/Chicago`; a contract's
   `terms.support.allHours` runs it 24x7 (no paging exists: don't sell that until it does). It starts when

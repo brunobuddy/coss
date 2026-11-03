@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  Autocomplete,
+  AutocompleteEmpty,
+  AutocompleteInput,
+  AutocompleteItem,
+  AutocompleteList,
+  AutocompletePopup,
+} from "@coss/ui/components/autocomplete";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
@@ -11,32 +19,160 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
-import { useState } from "react";
-import { SupportComposer } from "@/components/support/composer";
+import { useEffect, useState } from "react";
+import { clearSupportDraft, SupportComposer } from "@/components/support/composer";
 import type { ActionResult } from "@/lib/action-result";
+import { toast } from "@/lib/toast";
 import { createTicketAction } from "../actions";
 
 type Expectation = { target: string; by: string };
+type Option = { value: string; label: string };
+type ReferenceOption = { id: string; label: string; detail: string };
+
+const NONE = "none";
+
+function SelectField(props: {
+  label: string;
+  items: Option[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Field>
+      <FieldLabel>{props.label}</FieldLabel>
+      <Select
+        items={props.items}
+        onValueChange={(value) => props.onChange(String(value))}
+        value={props.value}
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectPopup>
+          {props.items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectPopup>
+      </Select>
+    </Field>
+  );
+}
+
+/** Recent items of the chosen project and product, or any id pasted in. */
+function ReferenceField(props: {
+  orgSlug: string;
+  environmentId: string;
+  product: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [items, setItems] = useState<ReferenceOption[]>([]);
+  useEffect(() => {
+    setItems([]);
+    if (props.environmentId === NONE || props.product === NONE) return;
+    const params = new URLSearchParams({
+      environmentId: props.environmentId,
+      product: props.product,
+    });
+    let current = true;
+    fetch(`/${props.orgSlug}/support/references?${params}`)
+      .then((response) => (response.ok ? response.json() : { items: [] }))
+      .then((body: { items: ReferenceOption[] }) => {
+        if (current) setItems(body.items);
+      })
+      .catch(() => {
+        // The field still takes a pasted id.
+      });
+    return () => {
+      current = false;
+    };
+  }, [props.orgSlug, props.environmentId, props.product]);
+
+  return (
+    <Field>
+      <FieldLabel>Related item (optional)</FieldLabel>
+      <Autocomplete
+        filter={(item: ReferenceOption, query) => {
+          const search = query.trim().toLowerCase();
+          return `${item.id} ${item.label} ${item.detail}`.toLowerCase().includes(search);
+        }}
+        itemToStringValue={(item: ReferenceOption) => item.id}
+        items={items}
+        onValueChange={props.onChange}
+        openOnInputClick={items.length > 0}
+        value={props.value}
+      >
+        <AutocompleteInput
+          placeholder={items.length > 0 ? "Search recent items, or paste an ID" : "Paste an ID"}
+        />
+        {items.length > 0 ? (
+          <AutocompletePopup>
+            <AutocompleteEmpty>
+              None of the recent items match. You can paste an ID.
+            </AutocompleteEmpty>
+            <AutocompleteList>
+              {(item: ReferenceOption) => (
+                <AutocompleteItem key={item.id} value={item}>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate">{item.label}</span>
+                    <span className="truncate font-mono text-muted-foreground text-xs">
+                      {item.detail ? `${item.detail} · ` : ""}
+                      {item.id}
+                    </span>
+                  </span>
+                </AutocompleteItem>
+              )}
+            </AutocompleteList>
+          </AutocompletePopup>
+        ) : null}
+      </Autocomplete>
+      <FieldDescription>
+        An email, text message, domain or anything else with an ID, like email_01k…
+      </FieldDescription>
+    </Field>
+  );
+}
 
 export function NewTicketForm(props: {
   orgSlug: string;
   from: string;
-  categories: { value: string; label: string }[];
+  categories: Option[];
   defaultCategory: string;
   defaultSubject: string;
+  environments: Option[];
+  defaultEnvironmentId: string | null;
+  products: Option[];
+  defaultProduct: string | null;
+  defaultReference: string;
   canBeUrgent: boolean;
   expectations: Record<"normal" | "urgent", Expectation>;
 }) {
   const [subject, setSubject] = useState(props.defaultSubject);
   const [category, setCategory] = useState(props.defaultCategory);
   const [severity, setSeverity] = useState<"normal" | "urgent">("normal");
+  const [environmentId, setEnvironmentId] = useState(props.defaultEnvironmentId ?? NONE);
+  const [product, setProduct] = useState(props.defaultProduct ?? NONE);
+  const [reference, setReference] = useState(props.defaultReference);
   const expected = props.expectations[severity];
+  const draftKey = `support-draft:new:${props.orgSlug}`;
 
   async function submit(previous: ActionResult<null> | null, formData: FormData) {
     formData.set("subject", subject);
     formData.set("category", category);
     formData.set("severity", severity);
-    return createTicketAction(previous, formData);
+    formData.set("environmentId", environmentId === NONE ? "" : environmentId);
+    formData.set("product", product === NONE ? "" : product);
+    formData.set("reference", reference);
+    try {
+      return await createTicketAction(previous, formData);
+    } catch (error) {
+      // Only a redirect gets here (failures come back as a result): the ticket exists.
+      clearSupportDraft(draftKey);
+      toast.success("Ticket sent");
+      throw error;
+    }
   }
 
   return (
@@ -51,25 +187,33 @@ export function NewTicketForm(props: {
           value={subject}
         />
       </Field>
-      <Field>
-        <FieldLabel>Topic</FieldLabel>
-        <Select
+      <div className="grid gap-5 sm:grid-cols-2">
+        <SelectField
           items={props.categories}
-          onValueChange={(value) => setCategory(String(value))}
+          label="Topic"
+          onChange={setCategory}
           value={category}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectPopup>
-            {props.categories.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectPopup>
-        </Select>
-      </Field>
+        />
+        <SelectField
+          items={[{ value: NONE, label: "Not a specific product" }, ...props.products]}
+          label="Product"
+          onChange={setProduct}
+          value={product}
+        />
+      </div>
+      <SelectField
+        items={[{ value: NONE, label: "Not a specific project" }, ...props.environments]}
+        label="Project"
+        onChange={setEnvironmentId}
+        value={environmentId}
+      />
+      <ReferenceField
+        environmentId={environmentId}
+        onChange={setReference}
+        orgSlug={props.orgSlug}
+        product={product}
+        value={reference}
+      />
       {props.canBeUrgent ? (
         <Field>
           <FieldLabel>How urgent is it?</FieldLabel>
@@ -94,14 +238,14 @@ export function NewTicketForm(props: {
       </p>
       <SupportComposer
         action={submit}
-        draftKey={`support-draft:new:${props.orgSlug}`}
+        draftKey={draftKey}
         hidden={{ orgSlug: props.orgSlug, from: props.from }}
         modes={[
           {
             value: "reply",
             label: "Message",
             placeholder:
-              "What happened, what you expected, and any ids or errors you saw. Please leave out passwords and API keys.",
+              "What happened, what you expected, and any errors you saw. Please leave out passwords and API keys.",
           },
         ]}
         sendLabel={() => "Send ticket"}

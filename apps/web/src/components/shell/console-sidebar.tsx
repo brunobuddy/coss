@@ -457,6 +457,11 @@ function roleLabel(role: string): string {
   return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
+const SUPPORT_PAGES: DashboardPage[] = [
+  { label: "Tickets", path: "" },
+  { label: "New ticket", path: "/new" },
+];
+
 function Panel(props: {
   area: Area;
   envBase: string | null;
@@ -485,6 +490,20 @@ function Panel(props: {
             pages={pages.filter((page) => page.group === group)}
           />
         ))}
+      </>
+    );
+  }
+
+  if (area.kind === "support") {
+    const base = supportHref(props.orgSlug);
+    return (
+      <>
+        <PanelTitle icon={LifeBuoyIcon} title="Support" />
+        <PageGroup
+          active={activeNavItem(props.pathname, base, SUPPORT_PAGES)}
+          base={base}
+          pages={SUPPORT_PAGES}
+        />
       </>
     );
   }

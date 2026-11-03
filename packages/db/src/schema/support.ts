@@ -68,6 +68,9 @@ export const supportAttachmentState = pgEnum("support_attachment_state", [
 export type SupportTicketContext = {
   path?: string;
   environmentId?: string;
+  projectName?: string;
+  environmentName?: string;
+  product?: string;
   resourceType?: string;
   resourceId?: string;
 };

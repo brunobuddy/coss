@@ -118,7 +118,7 @@ export default async function SupportPage({ params }: PageProps<"/[orgSlug]/supp
           )}
         </Panel>
         <Panel title={`${PLANS[plan].name} plan support`}>
-          <PanelBody className="flex flex-col gap-3">
+          <PanelBody flush>
             <SpecList>
               <SpecItem label="Response target">
                 {formatSupportTarget(supportResponseMinutes(plan, "normal"), { allHours })}
@@ -132,13 +132,16 @@ export default async function SupportPage({ params }: PageProps<"/[orgSlug]/supp
               <SpecItem label="Hours">{allHours ? "All hours" : SUPPORT_HOURS.label}</SpecItem>
             </SpecList>
             {plan === "free" || plan === "pro" ? (
-              <Button
-                render={<Link href={settingsHref(orgSlug, "/billing/plans")} />}
-                size="sm"
-                variant="outline"
-              >
-                Compare plans
-              </Button>
+              <div className="border-t p-5">
+                <Button
+                  className="w-full"
+                  render={<Link href={settingsHref(orgSlug, "/billing/plans")} />}
+                  size="sm"
+                  variant="outline"
+                >
+                  Compare plans
+                </Button>
+              </div>
             ) : null}
           </PanelBody>
         </Panel>
