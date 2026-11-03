@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
+import type { LogWriter } from "@coss/logs";
+import { memoryLogWriter } from "@coss/logs/testing";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
-import { createTestApp, errorOf, type TestApp } from "./helpers.ts";
+import { createTestApp, errorOf, type TestApp, waitForLogLines } from "./helpers.ts";
 
 const MONDAY = "2031-01-06";
 const at = (time: string) => `${MONDAY}T${time}:00.000Z`;
@@ -26,7 +28,7 @@ function call(
   );
 }
 
-async function setUp(): Promise<{
+async function setUp(opts: { logWriter?: LogWriter } = {}): Promise<{
   tenant: TestTenant;
   app: TestApp;
   key: string;
@@ -34,7 +36,7 @@ async function setUp(): Promise<{
   host: string;
 }> {
   const tenant = await createTestTenant();
-  const { app } = createTestApp();
+  const { app } = createTestApp(opts);
   const key = tenant.sandboxKey;
   const hostRes = await call(app, key, "POST", "/hosts", {
     uid: "doctor_1",
@@ -418,10 +420,20 @@ describe("client API", () => {
     expect(local.status).toBe(200);
   });
 
-  test("session tokens never reach the request log", async () => {
-    const s = await setUp();
-    const { token } = await bookerSession(s);
-    const res = await s.app.request("/v1/logs", { headers: { Authorization: `Bearer ${s.key}` } });
-    expect(JSON.stringify(await res.json())).not.toContain(token);
+  test("session tokens and attendees' details never reach the request log", async () => {
+    const writer = memoryLogWriter();
+    const s = await setUp({ logWriter: writer });
+    const { token } = await bookerSession(s, {
+      attendee: { uid: "p", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" },
+    });
+    const session = await s.app.request("/scheduling/client/session", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(session.status).toBe(200);
+    const lines = await waitForLogLines(writer, 1);
+    const logged = JSON.stringify(lines);
+    expect(logged).toContain("/v1/scheduling/booker_sessions");
+    expect(logged).not.toContain(token);
+    expect(logged).not.toContain("sam@example.com");
   });
 });

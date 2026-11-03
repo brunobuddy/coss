@@ -1131,7 +1131,8 @@ const iso = (ms: number) => new Date(ms).toISOString();
 /** Simulated connections need no provider, so they work where no calendars are configured. */
 function localCalendarDeps(deps: SchedulingDeps): CalendarDeps {
   return {
-    secretsKeys: deps.dataKeys,
+    // With no apps nothing gets decrypted, and attendees' keys were never the ones to try.
+    secretsKeys: NOT_CONFIGURED.dataKeys,
     apps: { google: null, microsoft: null },
     publicUrl: "http://localhost:3001",
     ...(deps.now ? { now: deps.now } : {}),

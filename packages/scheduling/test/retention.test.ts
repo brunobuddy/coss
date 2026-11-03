@@ -13,6 +13,7 @@ import {
   eraseAttendee,
   getBooking,
   purgeExpiredBookings,
+  purgeSchedulingLeftovers,
   redactExpiredBookings,
   type SchedulingEnvironment,
 } from "../src/index.ts";
@@ -139,4 +140,47 @@ test("erasing someone ends the booker sessions fixed to them, and only those", a
   const kept = await stored(someoneElses.id);
   expect(kept?.encryptedAttendee).not.toBeNull();
   expect(kept?.revokedAt).toBeNull();
+});
+
+test("leftovers go in batches, and what's still in use stays", async () => {
+  const { env, eventTypeId, scope } = await booked();
+  const mint = (expiresIn: number, now: Date) =>
+    createBookerSession(env, { eventType: eventTypeId, expiresIn, publicUrl: null, now }, deps);
+  const longAgo = new Date(Date.now() - 10 * DAY);
+  for (let index = 0; index < 3; index++) await mint(60, longAgo);
+  const live = await mint(3600, new Date());
+  const buckets = ["2020-01", "2020-02", "2020-03"].map((period) => ({
+    organizationId: env.organizationId,
+    scope: "host",
+    scopeId: env.environmentId,
+    period,
+    createdAt: longAgo,
+  }));
+  await db.insert(schema.schedulingLimitBucket).values(buckets);
+  await db.insert(schema.schedulingLimitBucket).values({
+    organizationId: env.organizationId,
+    scope: "host",
+    scopeId: env.environmentId,
+    period: "2030-01",
+  });
+  const now = new Date(Date.now() + 60 * DAY);
+  const bucketsOf = () =>
+    db
+      .select()
+      .from(schema.schedulingLimitBucket)
+      .where(eq(schema.schedulingLimitBucket.organizationId, env.organizationId));
+  const first = await purgeSchedulingLeftovers({ limit: 2, scope, now: new Date() });
+  expect(first[0]).toBe(2);
+  expect(Math.max(...first)).toBe(2);
+  const second = await purgeSchedulingLeftovers({ limit: 2, scope, now: new Date() });
+  expect(second[0]).toBe(1);
+  const [kept] = await db
+    .select()
+    .from(schema.schedulingSession)
+    .where(eq(schema.schedulingSession.id, live.id));
+  expect(kept).toBeDefined();
+  expect(await bucketsOf()).toHaveLength(4);
+  const later = await purgeSchedulingLeftovers({ limit: 2, scope, now });
+  expect(later[2]).toBe(2);
+  expect(await bucketsOf()).toHaveLength(2);
 });

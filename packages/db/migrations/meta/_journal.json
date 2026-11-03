@@ -813,6 +813,13 @@
       "when": 1793719973815,
       "tag": "0115_perpetual_king_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1793724658797,
+      "tag": "0116_spicy_wolfpack",
+      "breakpoints": true
     }
   ]
 }

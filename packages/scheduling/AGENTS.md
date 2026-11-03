@@ -106,7 +106,9 @@ environment on the Pro plan; `--capped` adds a usage cap, which makes every book
 `DATABASE_POOL_MAX`. It exits 1 if a race didn't have the winners it should or anything failed unexpectedly, and prints
 `EXPLAIN (ANALYZE, BUFFERS)` of the statements the hot paths really sent, flagging selective sequential scans of big
 tables. A pool tries its top candidate, then reads who could still take the slot and tries only them, so a slot nobody can
-take costs one attempt and one read rather than an attempt per host. `createSeries` still tries each host in turn.
+take costs one attempt and one read rather than an attempt per host. A series on a pool of more than three reads first
+too: everyone free for all of it, or with `skip` the three with the fewest conflicts. Loops over hosts call `takeTurn`,
+since slots are computed on the API's one thread.
 
 ## Going live
 

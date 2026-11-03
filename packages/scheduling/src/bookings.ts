@@ -26,6 +26,7 @@ import {
   candidatesOf,
   loadHostInputs,
   slotRuleOf,
+  takeTurn,
 } from "./availability.ts";
 import { hostsBusyNow } from "./calendar/live-check.ts";
 import {
@@ -1934,6 +1935,61 @@ export async function previewSeries(
   return results;
 }
 
+/** How many hosts a large pool's `skip` series tries: each try books the whole series. */
+const SERIES_HOST_ATTEMPTS = 3;
+
+/**
+ * The hosts worth trying for a whole series, by what's committed now, in rank order: everyone free
+ * for all of it, or with `skip` the few with the fewest conflicts. Each attempt still decides.
+ */
+async function seriesChoices(
+  env: SchedulingEnvironment,
+  candidates: Candidates,
+  members: readonly HostRow[],
+  input: {
+    eventTypeId: string;
+    starts: readonly number[];
+    rule: SlotRule;
+    nowMs: number;
+    failureMode: "hide" | "last_known";
+    onConflict: SeriesRequest["onConflict"];
+  },
+): Promise<HostRow[]> {
+  const { starts, rule, nowMs } = input;
+  const required = candidates.required.map((entry) => entry.host);
+  const schedules = schedulesOf(candidates);
+  const loaded = await loadHostInputs(db, {
+    scope: env,
+    hosts: [...required, ...members].map((host) => ({
+      id: host.id,
+      timeZone: host.timeZone,
+      scheduleId: schedules.get(host.id) ?? null,
+    })),
+    eventTypeId: input.eventTypeId,
+    fromMs: Math.min(...starts),
+    toMs: Math.max(...starts) + rule.durationMinutes * MINUTE_MS,
+    nowMs,
+    calendarFailureMode: input.failureMode,
+  });
+  const bookable = (host: HostRow, startMs: number) => {
+    const inputs = loaded.get(host.id);
+    return inputs ? isBookable(startMs, { nowMs, rule, host: inputs }).ok : false;
+  };
+  const open = starts.filter((startMs) => required.every((host) => bookable(host, startMs)));
+  const conflicts = new Map<string, number>();
+  for (const [index, member] of members.entries()) {
+    await takeTurn(index);
+    const free = open.filter((startMs) => bookable(member, startMs)).length;
+    conflicts.set(member.id, starts.length - free);
+  }
+  const conflictsOf = (host: HostRow) => conflicts.get(host.id) ?? starts.length;
+  if (input.onConflict !== "skip") return members.filter((host) => conflictsOf(host) === 0);
+  return members
+    .filter((host) => conflictsOf(host) < starts.length)
+    .sort((a, b) => conflictsOf(a) - conflictsOf(b))
+    .slice(0, SERIES_HOST_ATTEMPTS);
+}
+
 /**
  * Creates each occurrence as an ordinary booking, in one transaction. A pool tries each host for
  * the whole series, because a patient wants the same doctor every week; with `skip`, the best host
@@ -1966,9 +2022,20 @@ export async function createSeries(
   const hash = hashRequest({ series: { ...request, idempotencyKey: undefined } });
   const context: NewBookingContext = { env, eventType, deps, actor, now };
 
-  const memberChoices = candidates.members.length > 0 ? ranked(candidates, hash) : [];
+  const memberRanking = candidates.members.length > 0 ? ranked(candidates, hash) : [];
+  const memberChoices =
+    memberRanking.length > SERIES_HOST_ATTEMPTS
+      ? await seriesChoices(env, candidates, memberRanking, {
+          eventTypeId: eventType.id,
+          starts,
+          rule,
+          nowMs: now.getTime(),
+          failureMode,
+          onConflict: request.onConflict,
+        })
+      : memberRanking;
   const choiceSets: Candidates[] =
-    memberChoices.length > 0
+    memberRanking.length > 0
       ? memberChoices.map((member) => ({
           required: candidates.required,
           members: candidates.members.filter((entry) => entry.host.id === member.id),

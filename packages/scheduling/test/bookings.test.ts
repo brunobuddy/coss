@@ -731,6 +731,33 @@ describe("pools", () => {
     await auditClaims(env);
   });
 
+  test("a search over many hosts lets other requests run", async () => {
+    const env = await tenantEnv();
+    const hosts = [];
+    for (let index = 0; index < 60; index++) {
+      hosts.push(await createHost(env, { name: `Host ${index}`, time_zone: "UTC" }));
+    }
+    const eventType = await eventTypeFor(
+      env,
+      hosts.map((host) => ({ host: host.id })),
+      { kind: "pool" },
+    );
+    const turns = spyOn(globalThis, "setImmediate");
+    try {
+      await searchAvailability(env, {
+        eventTypeRef: eventType.id,
+        fromMs: at("00:00"),
+        toMs: at("00:00") + 7 * 86_400_000,
+        nowMs: at("00:00"),
+        slotsPerHost: 1,
+        limit: 10,
+      });
+      expect(turns.mock.calls.length).toBeGreaterThanOrEqual(4);
+    } finally {
+      turns.mockRestore();
+    }
+  });
+
   test("bookings spread by weight", async () => {
     const env = await tenantEnv();
     const [a, b] = await Promise.all([hostWithHours(env), hostWithHours(env)]);
@@ -999,6 +1026,101 @@ describe("series", () => {
     expect(new Set(result.bookings.flatMap((booking) => booking.hosts))).toEqual(
       new Set([b?.id as string]),
     );
+  });
+
+  const noHoursPool = async (env: SchedulingEnvironment, count: number) => {
+    const hosts = [];
+    for (let index = 0; index < count; index++) {
+      hosts.push(await createHost(env, { name: `No hours ${index}`, time_zone: "UTC" }));
+    }
+    return hosts;
+  };
+  const seriesOf = (eventType: string, onConflict: "reject" | "skip") => ({
+    eventType,
+    startMs: at("09:00"),
+    attendee: { uid: "p", time_zone: "UTC" },
+    recurrence,
+    onConflict,
+  });
+
+  test("a large pool nobody can serve refuses a series without trying each host", async () => {
+    const env = await tenantEnv("live");
+    const hosts = await noHoursPool(env, 30);
+    const eventType = await eventTypeFor(
+      env,
+      hosts.map((host) => ({ host: host.id })),
+      { kind: "pool" },
+    );
+    const client = await pool.connect();
+    const query = spyOn(Object.getPrototypeOf(client), "query");
+    client.release();
+    query.mockClear();
+    try {
+      await expect(
+        createSeries(env, seriesOf(eventType.id, "reject"), deps, actor),
+      ).rejects.toMatchObject({ code: "slot_unavailable" });
+      expect(query.mock.calls.length).toBeLessThan(30);
+    } finally {
+      query.mockRestore();
+    }
+  });
+
+  test("a large pool's series goes to the one free for all of it", async () => {
+    const env = await tenantEnv();
+    const [busy, free, ...others] = await Promise.all([
+      hostWithHours(env),
+      hostWithHours(env),
+      hostWithHours(env),
+      hostWithHours(env),
+    ]);
+    const eventType = await eventTypeFor(
+      env,
+      [busy, free, ...others].map((host) => ({ host: host?.id as string })),
+      { kind: "pool" },
+    );
+    for (const host of [busy, ...others]) {
+      const blocker = await eventTypeFor(env, [{ host: host?.id as string }]);
+      await createBooking(env, request(blocker.id, at("09:00") + 7 * 86_400_000), deps, actor);
+    }
+    const { result } = await createSeries(env, seriesOf(eventType.id, "reject"), deps, actor);
+    expect(new Set(result.bookings.flatMap((booking) => booking.hosts))).toEqual(
+      new Set([free?.id as string]),
+    );
+    await auditClaims(env);
+  });
+
+  test("with skip, a large pool's series goes to who has the fewest conflicts", async () => {
+    const env = await tenantEnv();
+    const hosts = await Promise.all([
+      hostWithHours(env),
+      hostWithHours(env),
+      hostWithHours(env),
+      hostWithHours(env),
+    ]);
+    const eventType = await eventTypeFor(
+      env,
+      hosts.map((host) => ({ host: host?.id as string })),
+      { kind: "pool" },
+    );
+    for (const [index, host] of hosts.entries()) {
+      const blocker = await eventTypeFor(env, [{ host: host?.id as string }]);
+      await createBooking(env, request(blocker.id, at("09:00") + 7 * 86_400_000), deps, actor);
+      if (index === 0) continue;
+      await createBooking(
+        env,
+        request(blocker.id, at("09:00") + 14 * 86_400_000, {
+          attendee: { uid: "other", time_zone: "UTC" },
+        }),
+        deps,
+        actor,
+      );
+    }
+    const { result } = await createSeries(env, seriesOf(eventType.id, "skip"), deps, actor);
+    expect(new Set(result.bookings.flatMap((booking) => booking.hosts))).toEqual(
+      new Set([hosts[0]?.id as string]),
+    );
+    expect(result.conflicts).toHaveLength(1);
+    await auditClaims(env);
   });
 
   test("replaying a series returns the same bookings", async () => {
