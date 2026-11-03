@@ -238,6 +238,7 @@ export const WORKER_LOOP_NAMES = [
   "scheduling-calendar-sync",
   "scheduling-calendar-writes",
   "scheduling-calendar-channels",
+  "scheduling-calendar-host-edits",
   "email-dispatch",
   "email-dispatch-marketing",
   "webhooks",
@@ -741,10 +742,17 @@ export function startJobs(deps: WorkerDeps): Loop[] {
             SCHEDULING_BATCH,
         }),
         start({
+          // Until a new calendar has its channel, changes to it wait for the 5 minute poll.
           name: "scheduling-calendar-channels",
+          intervalMs: 15_000,
+          run: async () =>
+            (await renewDueCalendarChannels(calendars, { limit: SCHEDULING_BATCH })) ===
+            SCHEDULING_BATCH,
+        }),
+        start({
+          name: "scheduling-calendar-host-edits",
           intervalMs: 5 * 60_000,
           run: async () => {
-            await renewDueCalendarChannels(calendars, { limit: SCHEDULING_BATCH });
             await checkHostEditedEvents(calendars, { limit: SCHEDULING_BATCH });
             return false;
           },

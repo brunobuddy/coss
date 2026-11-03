@@ -300,6 +300,26 @@ describe("availability follows the calendar", () => {
     expect(await slotStarts(env, eventType.id)).toEqual(["09:30", "10:00"]);
   });
 
+  test("a new channel re-reads the calendar, so nothing before it is missed", async () => {
+    const { env, eventType, api, deps } = await synced();
+    api.busy.set("doctor@example.com", [
+      { start: new Date(at("09:00")).toISOString(), end: new Date(at("09:30")).toISOString() },
+    ]);
+    await renewDueCalendarChannels(deps, { scope: scope(env) });
+    await runDueCalendarSyncs(deps, { scope: scope(env) });
+    expect(await slotStarts(env, eventType.id)).toEqual(["09:30", "10:00"]);
+  });
+
+  test("two workers renewing together create one channel", async () => {
+    const { env, api, deps } = await synced();
+    api.delayMs = 100;
+    await Promise.all([
+      renewDueCalendarChannels(deps, { scope: scope(env) }),
+      renewDueCalendarChannels(deps, { scope: scope(env) }),
+    ]);
+    expect(api.requests.filter((request) => request.endsWith("/events/watch"))).toHaveLength(1);
+  });
+
   test("only busy times are stored: no titles, attendees or event ids", async () => {
     const { host, api, deps, env } = await synced();
     api.busy.set("doctor@example.com", [
