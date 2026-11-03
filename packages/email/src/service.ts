@@ -102,6 +102,12 @@ export type SendEmailInput = {
    */
   discardBody?: boolean;
   /**
+   * Internal callers only, never reachable from the public API or SMTP: skips per-email content
+   * screening. For fixed templates whose variable text was screened when it was set up (Scheduling's
+   * booking emails, which name a patient and a doctor: sampling would send them to the AI Gateway).
+   */
+  screeningExempt?: boolean;
+  /**
    * Internal callers only (the dashboard's test sends): render the template's draft, refused
    * (`template_revision_mismatch`) unless it is still at the revision the caller checked.
    */
@@ -638,7 +644,9 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
     // A broadcast's content was screened once, before its emails were made; one personalized
     // with contact values (which could carry any text or link) is sampled like any send.
     const personalized = Object.keys(row.variables ?? {}).length > 0;
-    if (sandbox || !opts.screen || (row.broadcastId && !personalized)) return null;
+    if (sandbox || !opts.screen || row.screeningExempt || (row.broadcastId && !personalized)) {
+      return null;
+    }
     const { subaccountId } = row;
     try {
       const outcome = await opts.screen({
@@ -1290,6 +1298,7 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
     },
     opts: {
       discardBody?: boolean;
+      screeningExempt?: boolean;
       templateDraft?: { revision: number };
       paramPrefix?: string;
     } = {},
@@ -1381,6 +1390,7 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         html: content ? content.html : params.html,
         text: content ? content.text : params.text,
         discardBody: opts.discardBody ?? false,
+        screeningExempt: opts.screeningExempt ?? false,
         storeContent,
         headers: params.headers,
         tags: params.tags,
@@ -1487,7 +1497,11 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         input,
         params,
         { tracking: new Map(), templates: new Map() },
-        { discardBody: input.discardBody, templateDraft: input.templateDraft },
+        {
+          discardBody: input.discardBody,
+          screeningExempt: input.screeningExempt,
+          templateDraft: input.templateDraft,
+        },
       );
     } catch (error) {
       // A retry of a request that already succeeded still replays, even if its template changed

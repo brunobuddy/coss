@@ -12,6 +12,7 @@ import { formsStoreFromEnv } from "@coss/forms/runtime";
 import { createLogWriter } from "@coss/logs";
 import { createRateLimitRuntime } from "@coss/ratelimit";
 import { createRiskDeps, riskHashKeyFromEnv } from "@coss/risk/runtime";
+import { schedulingCalendarAppsFromEnv, schedulingDataKeysFromEnv } from "@coss/scheduling/runtime";
 import { createSignService } from "@coss/sign";
 import { signStoreFromEnv } from "@coss/sign/runtime";
 import { createSmsService } from "@coss/sms";
@@ -71,6 +72,10 @@ const trackingUrl = env.TRACKING_PUBLIC_URL ?? publicUrl;
 
 const usage = createUsageGate({ systemOrganizationId });
 const signStore = signStoreFromEnv(env);
+const schedulingDataKeys = schedulingDataKeysFromEnv({
+  SCHEDULING_DATA_KEYS: env.SCHEDULING_DATA_KEYS,
+  NODE_ENV: process.env.NODE_ENV,
+});
 const app = createApp({
   emailService: createEmailService({
     liveProvider: email.liveProvider,
@@ -120,6 +125,18 @@ const app = createApp({
     usage,
   }),
   plans,
+  scheduling: schedulingDataKeys && {
+    publicUrl:
+      env.SCHEDULING_PUBLIC_URL ??
+      (process.env.NODE_ENV === "production" ? null : "http://localhost:3005"),
+    dataKeys: schedulingDataKeys,
+    lookupKey: Buffer.from(riskHashKeyFromEnv(env)),
+    calendars: {
+      secretsKeys,
+      apps: schedulingCalendarAppsFromEnv(env),
+      publicUrl: env.API_PUBLIC_URL ?? publicUrl,
+    },
+  },
   publicUrl: env.API_PUBLIC_URL,
   portalUrl: env.PORTAL_PUBLIC_URL ?? null,
   signUrl: env.SIGN_PUBLIC_URL ?? null,

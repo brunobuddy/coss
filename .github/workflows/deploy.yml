@@ -1,7 +1,7 @@
 name: Deploy
 
-# Production deploys (README, "Deploying to AWS"): builds the seven images, migrates once the Bun
-# images are built (while the Next.js apps still build), rolls out all seven services at once and
+# Production deploys (README, "Deploying to AWS"): builds the eight images, migrates once the Bun
+# images are built (while the Next.js apps still build), rolls out all eight services at once and
 # invalidates the coss.com CDN. Jobs that touch AWS run on CodeBuild-hosted
 # runners whose role holds the credentials (infra/terraform/deploy.tf); nothing AWS-related is stored
 # in GitHub. Pushes to main ship in batches (the `gate` job); run it by hand to deploy main at once,
@@ -127,7 +127,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        images: [web, site, portal, sign]
+        images: [web, site, portal, sign, scheduling]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -221,7 +221,7 @@ jobs:
         run: infra/scripts/newer-deployed.sh
       - name: Roll out
         if: steps.latest.outputs.deploy == 'true'
-        run: infra/scripts/ecs-deploy.sh "$TAG" api worker web site portal sign smtp
+        run: infra/scripts/ecs-deploy.sh "$TAG" api worker web site portal sign scheduling smtp
       - name: Record the deployed commit
         if: steps.latest.outputs.deploy == 'true'
         run: aws ssm put-parameter --name "/coss/$STAGE/image-tag" --value "$TAG" --overwrite >/dev/null

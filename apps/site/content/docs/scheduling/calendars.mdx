@@ -1,0 +1,76 @@
+---
+title: Calendars
+description: Keep hosts from being booked over something else, and put bookings on their calendars.
+---
+
+A host connects their calendars on [their own page](/docs/scheduling/embedding), or through your UI.
+For Google and Microsoft, ask for a consent URL and open it in a new window, because providers refuse
+to be framed:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data } = await coss.scheduling.calendars.authorize("doctor_482", {
+  provider: "google",
+  return_url: "https://app.example.com/settings/calendar",
+});
+// Send the host to data?.url. They come back with ?coss_calendar=connected.
+```
+
+`return_url` must be on one of your [allowed origins](/docs/scheduling/embedding). Apple and other
+CalDAV servers use an app-specific password instead:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.calendars.connect("doctor_482", {
+  provider: "caldav",
+  url: "https://caldav.icloud.com",
+  username: "ana@example.com",
+  password: "abcd-efgh-ijkl-mnop",
+});
+```
+
+## What coss.com reads and writes
+
+It reads **when a calendar is busy**, and nothing else: no titles, attendees or descriptions are read
+through Google or stored from any provider. A booking is added to the host's chosen calendar as a
+private event titled "Appointment", with no attendees, so the host's colleagues learn nothing from it
+and their calendar provider sends nobody an invitation.
+
+A primary calendar counts by default. Choose others with `coss.scheduling.calendars.update`:
+`read_busy` for whether it blocks slots, and `write_target` for whether bookings go on it.
+
+Calendars are read up to 400 days ahead. Past that, a host with a calendar isn't offered, since their time
+can't be checked.
+
+## When a calendar changes
+
+Google and Microsoft tell coss.com about changes within seconds, and every calendar is read again
+every few hours anyway. CalDAV has no such notifications, so it's read every five minutes. Just before
+a booking, the host's calendar is also checked live, for up to two seconds.
+
+If something lands on a booked time anyway, the booking stands and you get
+`scheduling.booking.external_conflict`. The same goes for a host moving or deleting the event: coss.com
+stays the record of what's booked, and never cancels on its own.
+
+<Callout type="warn">
+A foreign event entirely inside a booking's own calendar event can't be detected: calendars report busy
+times without saying whose they are.
+</Callout>
+
+## When a calendar fails
+
+A calendar that can't be read never counts as free.
+
+- **Access lost** (revoked, expired, password changed). The host stops being offered at once. You get
+  `scheduling.calendar.needs_reauth`, they get an email with a link to reconnect, and existing bookings
+  stay.
+- **The provider's having a bad hour.** What's known keeps being used for up to seven hours, or twenty
+  minutes for calendars without notifications, then the host stops being offered until a read works.
+
+A hidden host is visible and fixable, and a double-booked patient isn't, so that's the default. To keep
+offering last known times, flagging those bookings instead, set `calendar_failure_mode` to `last_known`
+in your settings.

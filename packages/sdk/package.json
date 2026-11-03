@@ -29,6 +29,7 @@
     "./diagnose": "./dist/diagnose.js",
     "./forms": "./dist/forms.js",
     "./nodemailer": "./dist/nodemailer.js",
+    "./scheduling": "./dist/scheduling.js",
     "./sign": "./dist/sign.js",
     "./package.json": "./package.json"
   },

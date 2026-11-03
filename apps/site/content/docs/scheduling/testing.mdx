@@ -1,0 +1,29 @@
+---
+title: Testing
+description: Sandbox environments and simulated calendars.
+---
+
+In a sandbox environment, emails use the fake provider, so nobody's mailed, and nothing's charged. Everything
+else works as it does live, including the double-booking guarantee and hosted pages.
+
+## Simulated calendars
+
+Connect a calendar nobody hosts, and set its busy times yourself:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.calendars.connect("doctor_482", { provider: "simulated" });
+
+await coss.scheduling.calendars.setSimulatedBusy("doctor_482", {
+  intervals: [{ start: "2027-01-04T15:00:00Z", end: "2027-01-04T16:00:00Z" }],
+});
+```
+
+You can also connect real calendars in a sandbox, to see the consent flow.
+
+## Webhooks
+
+Test your handlers with `coss trigger scheduling.booking.confirmed`, or
+`coss.webhookEvents.test({ type: "scheduling.booking.confirmed" })`.

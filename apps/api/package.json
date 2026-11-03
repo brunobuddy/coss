@@ -25,6 +25,7 @@
     "@coss/ratelimit": "workspace:*",
     "@coss/reputation": "workspace:*",
     "@coss/risk": "workspace:*",
+    "@coss/scheduling": "workspace:*",
     "@coss/screening": "workspace:*",
     "@coss/sign": "workspace:*",
     "@coss/sms": "workspace:*",

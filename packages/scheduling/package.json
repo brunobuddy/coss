@@ -1,0 +1,38 @@
+{
+  "name": "@coss/scheduling",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./engine": "./src/engine/index.ts",
+    "./schemas": "./src/schemas.ts",
+    "./testing": "./src/testing.ts",
+    "./env": "./src/env.ts",
+    "./runtime": "./src/runtime.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun --env-file=../../.env test"
+  },
+  "dependencies": {
+    "@coss/billing": "workspace:*",
+    "@coss/db": "workspace:*",
+    "@coss/email-layout": "workspace:*",
+    "@coss/logs": "workspace:*",
+    "@coss/retention": "workspace:*",
+    "@coss/versioning": "workspace:*",
+    "@coss/webhooks": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "fast-xml-parser": "5.11.2",
+    "ical.js": "2.2.1",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@coss/tenancy": "workspace:*",
+    "@coss/tsconfig": "workspace:*",
+    "@types/bun": "catalog:",
+    "fast-check": "4.3.0",
+    "typescript": "catalog:"
+  }
+}

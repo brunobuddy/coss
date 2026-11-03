@@ -11,6 +11,7 @@ api_host           = "api.coss.com"
 portal_host        = "portal.cosshooks.com"
 sign_host          = "cosssign.com"
 forms_host         = "cossforms.com"
+scheduling_host    = "cossbook.com"
 smtp_host          = "smtp.coss.com"
 external_origin_hosts = {
   ui     = "coss-com-ui.vercel.app"
@@ -29,6 +30,8 @@ unset_secrets = [
   "IPINFO_PRIVACY_TOKEN",
   # Sign's CSC sealer (SSL.com eSigner): until its account exists.
   "SIGN_CSC_CLIENT_SECRET", "SIGN_CSC_PASSWORD", "SIGN_CSC_TOTP_SECRET",
+  # Scheduling: off until its data key is stored; each calendar provider until its OAuth app exists.
+  "SCHEDULING_DATA_KEYS", "GOOGLE_CALENDAR_CLIENT_SECRET", "MICROSOFT_CALENDAR_CLIENT_SECRET",
 ]
 initial_image_tag  = "2a8195a759b0f11d430f3e9cebfcf535a99dbca7"
 log_retention_days = 30
@@ -41,13 +44,14 @@ db_engine_version   = "18.6"
 db_password_version = 1
 
 autoscaling = {
-  web    = { max = 6, cpu_target = 60 }
-  site   = { max = 4, cpu_target = 60 }
-  portal = { max = 4, cpu_target = 60 }
-  sign   = { max = 4, cpu_target = 60 }
-  api    = { max = 6, cpu_target = 60 }
-  worker = { max = 2, cpu_target = 70 }
-  smtp   = { max = 4, cpu_target = 60 }
+  web        = { max = 6, cpu_target = 60 }
+  site       = { max = 4, cpu_target = 60 }
+  portal     = { max = 4, cpu_target = 60 }
+  sign       = { max = 4, cpu_target = 60 }
+  scheduling = { max = 4, cpu_target = 60 }
+  api        = { max = 6, cpu_target = 60 }
+  worker     = { max = 2, cpu_target = 70 }
+  smtp       = { max = 4, cpu_target = 60 }
 }
 
 waf_rate_limits = { dashboard = 5000, api = 20000 }
@@ -60,16 +64,17 @@ cloudflare_ipv4_ranges = [
 
 plain_env = {
   web = {
-    BETTER_AUTH_URL          = "https://coss.com"
-    API_PUBLIC_URL           = "https://api.coss.com"
-    SMTP_PUBLIC_HOST         = "smtp.coss.com"
-    TRUSTED_PROXY_HOPS       = "2"
-    TURNSTILE_SITE_KEY       = "0x4AAAAAAFU8QY0DX4ZJGoSK"
-    PORTAL_PUBLIC_URL        = "https://portal.cosshooks.com"
-    SIGN_PUBLIC_URL          = "https://cosssign.com"
+    BETTER_AUTH_URL       = "https://coss.com"
+    API_PUBLIC_URL        = "https://api.coss.com"
+    SMTP_PUBLIC_HOST      = "smtp.coss.com"
+    TRUSTED_PROXY_HOPS    = "2"
+    TURNSTILE_SITE_KEY    = "0x4AAAAAAFU8QY0DX4ZJGoSK"
+    PORTAL_PUBLIC_URL     = "https://portal.cosshooks.com"
+    SIGN_PUBLIC_URL       = "https://cosssign.com"
+    SCHEDULING_PUBLIC_URL = "https://cossbook.com"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
-    FORMS_PUBLIC_URL = "https://cossforms.com"
-    FORMS_FILES_BUCKET = "coss-production-forms-files-294417174674"
+    FORMS_PUBLIC_URL         = "https://cossforms.com"
+    FORMS_FILES_BUCKET       = "coss-production-forms-files-294417174674"
     GOOGLE_CLIENT_ID         = "204721091156-k33omqkstijuaari06eidtlefif81p9m.apps.googleusercontent.com"
     GITHUB_CLIENT_ID         = "Ov23liYEf7MwkA26M9Ul"
     DEPLOY_GITHUB_APP_ID     = "5340076"
@@ -117,6 +122,13 @@ plain_env = {
     SENTRY_ENVIRONMENT        = "production"
     SENTRY_TRACES_SAMPLE_RATE = "0.1"
   }
+  scheduling = {
+    DATABASE_POOL_MAX         = "5"
+    API_PUBLIC_URL            = "https://api.coss.com"
+    SENTRY_DSN                = "https://5ec65d2d11dbe023040d38909af656b7@o4512237982711808.ingest.de.sentry.io/4512364862242896"
+    SENTRY_ENVIRONMENT        = "production"
+    SENTRY_TRACES_SAMPLE_RATE = "0.1"
+  }
   sign = {
     DATABASE_POOL_MAX         = "5"
     AWS_REGION                = "us-east-2"
@@ -129,16 +141,17 @@ plain_env = {
     SENTRY_TRACES_SAMPLE_RATE = "0.1"
   }
   api = {
-    BETTER_AUTH_URL     = "https://coss.com"
-    API_PUBLIC_URL      = "https://api.coss.com"
-    TRACKING_PUBLIC_URL = "https://track.cosslinks.com"
-    PORTAL_PUBLIC_URL   = "https://portal.cosshooks.com"
-    SIGN_PUBLIC_URL     = "https://cosssign.com"
+    BETTER_AUTH_URL       = "https://coss.com"
+    API_PUBLIC_URL        = "https://api.coss.com"
+    TRACKING_PUBLIC_URL   = "https://track.cosslinks.com"
+    PORTAL_PUBLIC_URL     = "https://portal.cosshooks.com"
+    SIGN_PUBLIC_URL       = "https://cosssign.com"
+    SCHEDULING_PUBLIC_URL = "https://cossbook.com"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
-    FORMS_PUBLIC_URL = "https://cossforms.com"
+    FORMS_PUBLIC_URL   = "https://cossforms.com"
     FORMS_FILES_BUCKET = "coss-production-forms-files-294417174674"
-    API_CORS_ORIGINS    = "https://coss.com"
-    EMAIL_PROVIDER      = "ses"
+    API_CORS_ORIGINS   = "https://coss.com"
+    EMAIL_PROVIDER     = "ses"
     # Twilio's callbacks are verified with each organization's subaccount token (in the database);
     # the parent account's credentials (in the secret) are risk's phone checks'.
     SMS_PROVIDER             = "twilio"
@@ -180,14 +193,15 @@ plain_env = {
     API_PUBLIC_URL                      = "https://api.coss.com"
     TRACKING_PUBLIC_URL                 = "https://track.cosslinks.com"
     SIGN_PUBLIC_URL                     = "https://cosssign.com"
+    SCHEDULING_PUBLIC_URL               = "https://cossbook.com"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
-    FORMS_PUBLIC_URL = "https://cossforms.com"
-    FORMS_FILES_BUCKET = "coss-production-forms-files-294417174674"
-    EMAIL_PROVIDER                      = "ses"
-    AWS_REGION                          = "us-east-2"
-    SES_CONFIGURATION_SET               = "coss"
-    SES_TENANT_PREFIX                   = "coss"
-    SES_EVENTS_QUEUE_URL                = "https://sqs.us-east-2.amazonaws.com/294417174674/coss-events"
+    FORMS_PUBLIC_URL      = "https://cossforms.com"
+    FORMS_FILES_BUCKET    = "coss-production-forms-files-294417174674"
+    EMAIL_PROVIDER        = "ses"
+    AWS_REGION            = "us-east-2"
+    SES_CONFIGURATION_SET = "coss"
+    SES_TENANT_PREFIX     = "coss"
+    SES_EVENTS_QUEUE_URL  = "https://sqs.us-east-2.amazonaws.com/294417174674/coss-events"
     # Receiving (ses:bootstrap --managed-domain inbound.coss.com).
     INBOUND_MANAGED_DOMAIN = "inbound.coss.com"
     SES_INBOUND_BUCKET     = "coss-inbound-294417174674"

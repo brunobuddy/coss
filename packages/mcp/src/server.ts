@@ -10,6 +10,7 @@ import { registerInboxTools } from "./tools/inboxes.ts";
 import { registerLogTools } from "./tools/logs.ts";
 import { registerReceivingTools } from "./tools/receiving.ts";
 import { registerRiskTools } from "./tools/risk.ts";
+import { registerSchedulingTools } from "./tools/scheduling.ts";
 import { registerSendingTools } from "./tools/sending.ts";
 import { registerSetupTools } from "./tools/setup.ts";
 import { type KeyMode, keyMode, type ToolContext } from "./tools/shared.ts";
@@ -120,6 +121,7 @@ export function createCossMcpServer(options: CossMcpServerOptions): McpServer {
   registerRiskTools(ctx);
   registerReceivingTools(ctx);
   registerFormTools(ctx);
+  registerSchedulingTools(ctx);
   registerInboxTools(ctx);
   registerLogTools(ctx);
   registerAccountTools(ctx);

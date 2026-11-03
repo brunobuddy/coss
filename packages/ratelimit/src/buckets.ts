@@ -479,6 +479,31 @@ export const BUCKETS = {
   // Twilio's status and inbound callbacks (`/sms/twilio/*`): signatures are checked before
   // anything is stored, so this only bounds the work forged requests cause. A store outage allows
   // rather than drops delivery reports and replies.
+  // A browser session's calls, per session, and per address before the token is even looked up.
+  "scheduling.session": {
+    scope: "key",
+    limit: 20,
+    periodMs: SECOND,
+    burst: 60,
+    overridable: false,
+    failureMode: "deny",
+  },
+  "scheduling.ip": {
+    scope: "ip",
+    limit: 50,
+    periodMs: SECOND,
+    burst: 150,
+    overridable: false,
+    failureMode: "deny",
+  },
+  "scheduling.callbacks": {
+    scope: "ip",
+    limit: 200,
+    periodMs: SECOND,
+    burst: 1_000,
+    overridable: false,
+    failureMode: "allow",
+  },
   "sms.callbacks": {
     scope: "ip",
     limit: 200,

@@ -19,6 +19,7 @@ import type { LogEntryInput, LogWriter } from "@coss/logs";
 import type { ClientIpResolver, RateLimiter } from "@coss/ratelimit";
 import type { RiskDeps } from "@coss/risk";
 import { testRiskDeps } from "@coss/risk/testing";
+import { testSchedulingDeps } from "@coss/scheduling/testing";
 import type { SignService } from "@coss/sign";
 import { createSmsService, FakeSmsProvider, type SmsService } from "@coss/sms";
 import { memorySmsDispatchQueue } from "@coss/sms/testing";
@@ -63,6 +64,8 @@ export function createTestApp(
     /** Defaults to the fake provider's receiving (managed domain `inbound.coss.test`). */
     inbound?: InboundRuntime | null;
     riskDeps?: RiskDeps;
+    /** `null`: Scheduling is off, as in production without its key. */
+    scheduling?: null;
     /** Enforce plans (`createPlanGate`) and Free's allowance (`createUsageGate`). Off by default. */
     plans?: PlanGate;
     billing?: UsageGate;
@@ -119,6 +122,7 @@ export function createTestApp(
     plans: opts.plans,
     billing: opts.billing,
     riskDeps: opts.riskDeps ?? testRiskDeps(),
+    scheduling: opts.scheduling === null ? null : testSchedulingDeps(),
     rateLimiter: opts.rateLimiter,
     clientIp: opts.clientIp,
 

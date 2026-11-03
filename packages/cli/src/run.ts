@@ -27,6 +27,7 @@ import { logsTailCommand } from "./commands/logs.ts";
 import { openCommand } from "./commands/open.ts";
 import { profilesListCommand, useCommand } from "./commands/profiles.ts";
 import { RISK_COMMANDS } from "./commands/risk.ts";
+import { SCHEDULING_COMMANDS } from "./commands/scheduling.ts";
 import { smsSendCommand } from "./commands/sms.ts";
 import {
   templatesListCommand,
@@ -78,6 +79,7 @@ export const COMMANDS: readonly Command[] = [
   ...HOOKS_COMMANDS,
   ...RISK_COMMANDS,
   ...FORMS_COMMANDS,
+  ...SCHEDULING_COMMANDS,
   domainsListCommand,
   domainsAddCommand,
   domainsGetCommand,

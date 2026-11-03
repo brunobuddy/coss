@@ -10,6 +10,7 @@ import {
 import {
   BotIcon,
   BuildingIcon,
+  CalendarClockIcon,
   ClipboardListIcon,
   CodeXmlIcon,
   CreditCardIcon,
@@ -56,6 +57,7 @@ export const PRODUCT_ICONS: Record<ProductKey, LucideIcon> = {
   verify: ShieldCheckIcon,
   sign: SignatureIcon,
   forms: ClipboardListIcon,
+  scheduling: CalendarClockIcon,
   hooks: WaypointsIcon,
   risk: ShieldAlertIcon,
 };
@@ -163,6 +165,8 @@ const SEGMENT_LABELS: Record<string, string> = {
   emails: "Emails",
   sms: "SMS",
   forms: "Forms",
+  scheduling: "Scheduling",
+  hosts: "Hosts",
   builder: "Fields and page",
   submissions: "Submissions",
   sign: "Sign",

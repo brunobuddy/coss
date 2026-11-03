@@ -1965,3 +1965,76 @@ describe("coss.risk checkouts, devices and calibration against the API", () => {
     expect(again.data?.score).toBe(0.6);
   });
 });
+
+describe("coss.scheduling against the API", () => {
+  test("host, schedule, event type, slots, a booking's life, a hold, a session", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const start = "2031-01-06T10:00:00.000Z";
+    const moved = "2031-01-06T11:00:00.000Z";
+    const later = "2031-01-06T14:00:00.000Z";
+
+    const host = must(
+      (await scheduling.hosts.create({ uid: "doctor_1", name: "Dr. Reyes", time_zone: "UTC" }))
+        .data,
+    );
+    expect(host).toMatchObject({ object: "scheduling.host", uid: "doctor_1", status: "active" });
+    expect((await scheduling.hosts.get("doctor_1")).data?.id).toBe(host.id);
+
+    const schedule = await scheduling.schedules.create("doctor_1", {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+    });
+    expect(schedule.error).toBeNull();
+
+    const eventType = must(
+      (
+        await scheduling.eventTypes.create({
+          title: "Consultation",
+          duration_minutes: 30,
+          hosts: [{ host: "doctor_1" }],
+          locations: [{ type: "link", url: "https://example.com/room" }],
+        })
+      ).data,
+    );
+    expect(eventType.object).toBe("scheduling.event_type");
+
+    const slots = await scheduling.slots.list(eventType.id, {
+      start: "2031-01-06T00:00:00.000Z",
+      end: "2031-01-07T00:00:00.000Z",
+    });
+    expect(slots.data?.data.map((slot) => slot.start)).toContain(start);
+
+    const attendee = { uid: "patient_1", name: "Sam Lee", time_zone: "UTC" };
+    const booking = must(
+      (await scheduling.bookings.create({ event_type: eventType.id, start, attendee })).data,
+    );
+    expect(booking).toMatchObject({ object: "scheduling.booking", status: "confirmed", start });
+    expect(booking.hosts).toEqual([host.id]);
+
+    const taken = await scheduling.bookings.create({ event_type: eventType.id, start, attendee });
+    expect(taken.data).toBeNull();
+    expect(taken.error).not.toBeNull();
+
+    const rescheduled = await scheduling.bookings.reschedule(booking.id, { start: moved });
+    expect(rescheduled.data).toMatchObject({ id: booking.id, start: moved });
+    expect((await scheduling.bookings.get(booking.id)).data?.attendees[0]?.uid).toBe("patient_1");
+    expect((await scheduling.bookings.cancel(booking.id)).data?.status).toBe("cancelled");
+
+    const hold = must(
+      (await scheduling.holds.create({ event_type: eventType.id, start: later, attendee })).data,
+    );
+    expect(hold.status).toBe("held");
+    expect((await scheduling.holds.confirm(hold.id)).data?.status).toBe("confirmed");
+
+    const session = await scheduling.sessions.createForHost("doctor_1");
+    expect(session.error).toBeNull();
+    expect(session.data?.token.length).toBeGreaterThan(20);
+
+    const settings = await scheduling.settings.update({ brand_name: "Acme Health" });
+    expect(settings.data?.brand_name).toBe("Acme Health");
+
+    const erased = await scheduling.attendees.erase("patient_1");
+    expect(erased.error).toBeNull();
+  });
+});

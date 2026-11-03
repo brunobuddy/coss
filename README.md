@@ -554,6 +554,8 @@ Cloudflare DNS (coss.com zone, DNS only)
   cosssign.com (Sign's signing app) ──(X-Sign-Origin-Verify)──▶ ALB ─▶ sign (Next, :3004)
   Cloudflare DNS (cossforms.com zone, self-serve account, proxied)
   cossforms.com/f/* (Forms' endpoints and hosted pages) ──(X-Forms-Origin-Verify)──▶ ALB ─▶ api
+  Cloudflare DNS (cossbook.com zone, self-serve account, proxied)
+  cossbook.com (Scheduling's hosted pages) ──(X-Scheduling-Origin-Verify)──▶ ALB ─▶ scheduling (Next, :3005)
   Cloudflare DNS (coss.com zone, DNS only)
   smtp.coss.com ──(TCP 465/2465, 587/2587, client IP preserved)──▶ NLB ─▶ smtp (Bun, :2465 TLS, :2587 STARTTLS)
 ```
@@ -677,6 +679,13 @@ Cloudflare DNS (coss.com zone, DNS only)
   `/f/*` only on that host in production (`packages/forms/AGENTS.md`, "Production"). A redirect rule sends
   everything else on the domain (the apex included) to `https://coss.com/docs/forms` (302), next to `www`'s
   redirect to the apex.
+- **Scheduling's hosted pages (`cossbook.com`, the same self-serve Cloudflare account):** `apps/scheduling` runs as
+  the `scheduling` service, set up like Sign's apex: a **proxied** CNAME to the ALB, its own SNI listener certificate
+  (validation CNAME from `terraform output scheduling_certificate_validation_records`), SSL mode **Full (strict)**,
+  a transform rule setting `X-Scheduling-Origin-Verify: <secret>` (Secrets Manager
+  `coss/production/scheduling-origin-verify`) for `cossbook.com`, and `www` (a proxied `100::`) redirecting to the
+  apex. `SCHEDULING_PUBLIC_URL=https://cossbook.com` (web, api, worker) makes session and manage links point there.
+  Scheduling itself stays off until `SCHEDULING_DATA_KEYS` is stored (`packages/scheduling/AGENTS.md`, "Going live").
 
 ### Monitoring and cost guardrails
 

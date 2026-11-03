@@ -3,6 +3,7 @@ import type { DomainDeps, EmailService, LinkKeyRing } from "@coss/email";
 import type { InboundRuntime } from "@coss/email/runtime";
 import type { FormFileStore } from "@coss/forms";
 import type { RiskDeps } from "@coss/risk";
+import type { SchedulingDeps } from "@coss/scheduling";
 import type { SignService } from "@coss/sign";
 import type { SmsService } from "@coss/sms";
 import type { VerifyService } from "@coss/verify";
@@ -30,6 +31,7 @@ import { createRiskRoutes } from "./risk.ts";
 import { createRiskConfigRoutes } from "./risk-config.ts";
 import { createRiskLimitRoutes } from "./risk-limits.ts";
 import { createRiskLookupRoutes } from "./risk-lookups.ts";
+import { createSchedulingRoutes } from "./scheduling.ts";
 import { createSegmentRoutes } from "./segments.ts";
 import { createSignRoutes } from "./sign.ts";
 import { createSignTemplateRoutes } from "./sign-templates.ts";
@@ -60,6 +62,8 @@ export type V1Dependencies = {
   formsUrl: string | null;
   /** Forms' uploads; `null`: no store (files can't be read). */
   formsStore: FormFileStore | null;
+  /** Scheduling's attendee data keys and plan checks; `null`: it isn't available. */
+  scheduling: SchedulingDeps | null;
   /** Receiving (`EmailRuntime.inbound`); `null` when the deployment doesn't receive email. */
   inbound: InboundRuntime | null;
   riskDeps: RiskDeps;
@@ -112,6 +116,7 @@ export function createV1Router(deps: V1Dependencies): OpenAPIHono<AppEnv> {
       billing: deps.billing,
     }),
   );
+  v1.route("/", createSchedulingRoutes(deps.scheduling));
   v1.route("/", createTrackingSettingsRoutes());
   v1.route("/", createStorageSettingsRoutes());
   v1.route(

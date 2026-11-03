@@ -75,6 +75,19 @@ export const WEBHOOK_EVENT_TYPES: readonly WebhookEventType[] = [
   "verification.blocked",
   "form.submission.received",
   "form.submission.flagged",
+  "scheduling.booking.created",
+  "scheduling.booking.pending_approval",
+  "scheduling.booking.confirmed",
+  "scheduling.booking.rescheduled",
+  "scheduling.booking.cancelled",
+  "scheduling.booking.declined",
+  "scheduling.booking.no_show",
+  "scheduling.booking.external_conflict",
+  "scheduling.booking.calendar_write_failed",
+  "scheduling.booking.location_ready",
+  "scheduling.calendar.connected",
+  "scheduling.calendar.needs_reauth",
+  "scheduling.calendar.disconnected",
 ];
 
 /** Types only live environments receive: `domain.*`, `account.*`, `subaccount.*` and `billing.*`. */

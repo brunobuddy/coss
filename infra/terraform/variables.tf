@@ -55,6 +55,11 @@ variable "forms_host" {
   description = "Forms' host, the api's `/f/*` (FORMS_HOST in infra/aws/routing.ts)."
 }
 
+variable "scheduling_host" {
+  type        = string
+  description = "Scheduling's hosted pages' host (SCHEDULING_HOST in infra/aws/routing.ts)."
+}
+
 variable "external_origin_hosts" {
   type        = map(string)
   description = "Production hostname of each external zone (spec.json cloudFront.origins other than alb): the coss ui and qnot repositories' Vercel projects."

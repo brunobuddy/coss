@@ -19,6 +19,7 @@ export const PRODUCT_CATEGORIES = [
   { key: "email", label: "Email" },
   { key: "messaging", label: "Messaging and identity" },
   { key: "documents", label: "Documents and data" },
+  { key: "scheduling", label: "Scheduling" },
   { key: "trust", label: "Events and trust" },
 ] as const;
 
@@ -32,6 +33,7 @@ export const PRODUCT_KEYS = [
   "verify",
   "sign",
   "forms",
+  "scheduling",
   "hooks",
   "risk",
 ] as const;
@@ -144,6 +146,20 @@ export const PRODUCTS: readonly Product[] = [
     path: "/forms",
     docs: "/docs/forms",
     pages: [{ label: "Forms", path: "/forms" }],
+  },
+  {
+    key: "scheduling",
+    category: "scheduling",
+    name: "Scheduling",
+    description: "Availability and bookings for your users.",
+    path: "/scheduling",
+    docs: "/docs/scheduling",
+    pages: [
+      { label: "Bookings", path: "/scheduling", exact: true },
+      { label: "Hosts", path: "/scheduling/hosts" },
+      { label: "Event types", path: "/scheduling/event-types" },
+      { label: "Settings", path: "/scheduling/settings" },
+    ],
   },
   {
     key: "hooks",

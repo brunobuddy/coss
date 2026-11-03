@@ -771,6 +771,41 @@
       "when": 1793643354828,
       "tag": "0109_dashing_warbird",
       "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1793658344714,
+      "tag": "0110_slim_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 111,
+      "version": "7",
+      "when": 1793658351709,
+      "tag": "0111_scheduling_claim_no_overlap",
+      "breakpoints": true
+    },
+    {
+      "idx": 112,
+      "version": "7",
+      "when": 1793659203153,
+      "tag": "0112_equal_the_leader",
+      "breakpoints": true
+    },
+    {
+      "idx": 113,
+      "version": "7",
+      "when": 1793659316312,
+      "tag": "0113_sturdy_stingray",
+      "breakpoints": true
+    },
+    {
+      "idx": 114,
+      "version": "7",
+      "when": 1793660796324,
+      "tag": "0114_dark_captain_cross",
+      "breakpoints": true
     }
   ]
 }

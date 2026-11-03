@@ -1,5 +1,10 @@
 # packages/screening — content screening
 
+The one exemption from screening a sample of live email is `screeningExempt` on `EmailService.send`:
+internal callers only, unreachable from the public API or SMTP, and only for fixed templates whose
+variable text was itself screened at setup (Scheduling's booking emails, `packages/scheduling/src/screening.ts`).
+A new caller needs the same: no customer HTML, no links but its own, and its text screened another way.
+
 Read together with the root `AGENTS.md` (conventions, tenancy rule, tests). Paths are from the
 repository root.
 

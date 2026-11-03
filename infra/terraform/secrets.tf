@@ -28,6 +28,11 @@ resource "random_password" "sign_origin_verify" {
   special = false
 }
 
+resource "random_password" "scheduling_origin_verify" {
+  length  = 48
+  special = false
+}
+
 resource "random_password" "forms_origin_verify" {
   length  = 48
   special = false
@@ -71,6 +76,16 @@ resource "aws_secretsmanager_secret" "sign_origin_verify" {
 resource "aws_secretsmanager_secret_version" "sign_origin_verify" {
   secret_id     = aws_secretsmanager_secret.sign_origin_verify.id
   secret_string = random_password.sign_origin_verify.result
+}
+
+resource "aws_secretsmanager_secret" "scheduling_origin_verify" {
+  name        = "coss/${var.stage}/scheduling-origin-verify"
+  description = "X-Scheduling-Origin-Verify: set by Cloudflare's transform rule on Scheduling's zone"
+}
+
+resource "aws_secretsmanager_secret_version" "scheduling_origin_verify" {
+  secret_id     = aws_secretsmanager_secret.scheduling_origin_verify.id
+  secret_string = random_password.scheduling_origin_verify.result
 }
 
 resource "aws_secretsmanager_secret" "forms_origin_verify" {

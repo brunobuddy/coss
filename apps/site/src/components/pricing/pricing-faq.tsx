@@ -62,7 +62,7 @@ function questions(): { question: string; answer: ReactNode; text?: string }[] {
         "Yes. Owners can set a spend limit: when usage beyond your credit reaches it, live sending pauses until the next month or until the limit is raised. Usage alerts go out at 80% and 100% of your credit, and owners can change those thresholds.",
     },
     {
-      question: "Can I send SMS? What about video and scheduling?",
+      question: "Can I send SMS? What about video?",
       answer: (
         <>
           SMS is available now on every paid plan: it's priced per segment by destination country,
@@ -71,10 +71,10 @@ function questions(): { question: string; answer: ReactNode; text?: string }[] {
           <Link className="text-foreground underline underline-offset-4" href="/docs/sms">
             SMS docs
           </Link>
-          ). Video and scheduling are on the way; their rates are listed above.
+          ). Video is on the way; its rate is listed above.
         </>
       ),
-      text: "SMS is available now on every paid plan: it's priced per segment by destination country, with phone numbers and US carrier registration fees passed through at cost, and sandbox environments simulate it for free on any plan. Video and scheduling are on the way; their rates are listed above.",
+      text: "SMS is available now on every paid plan: it's priced per segment by destination country, with phone numbers and US carrier registration fees passed through at cost, and sandbox environments simulate it for free on any plan. Video is on the way; its rate is listed above.",
     },
   ];
 }

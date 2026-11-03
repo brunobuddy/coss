@@ -1,0 +1,72 @@
+---
+title: Embedding
+description: Coss.com's pages in your app, or your own UI, without your API key in a browser.
+---
+
+Your API key stays on your server. For a browser, your server creates a **session**: short-lived, for one
+thing, with its token in the URL's fragment, which never reaches a server.
+
+| Session | Lets the browser | Lasts |
+|---|---|---|
+| `createForHost` | Set one host's hours, connect their calendars, see their bookings | An hour by default, up to a day |
+| `createForBooker` | Book one event type | 30 minutes by default, up to a day |
+| `createForBooking` | Reschedule or cancel one booking | Until a day after it ends. Stops when it's cancelled |
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+// On your server:
+const { data: session } = await coss.scheduling.sessions.createForBooker({
+  event_type: eventTypeId,
+  // Someone you've signed in: the browser can't book as anyone else.
+  attendee: { uid: "patient_77", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" },
+});
+// Pass session?.url to the browser.
+```
+
+Open the `url` on its own, or embed it with `coss/scheduling`:
+
+```ts
+import { mountBooker, mountHostPortal } from "coss/scheduling";
+
+mountBooker({
+  url: session.url,
+  container: document.getElementById("booking"),
+  onEvent: (event) => {
+    if (event.type === "booked") showThanks(event.booking_id);
+  },
+});
+
+mountHostPortal({
+  url: hostSession.url,
+  container: document.getElementById("availability"),
+});
+```
+
+The page's origin must be in your settings' `allowed_origins`:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({
+  allowed_origins: ["https://app.example.com"],
+  brand_name: "Acme Health",
+});
+```
+
+Events carry ids and statuses only. The pages tell your app `ready`, `booked`, `rescheduled`, `cancelled`,
+`availability_saved`, `calendar_connected` and `error`.
+
+## Your own UI
+
+A session's `token` also works directly from a browser, against the client API at
+`/scheduling/client/*`, with `Authorization: Bearer <token>`. It's how coss.com's own pages work, so
+nothing they do is out of your reach. Calls are only accepted from your `allowed_origins`, and a session
+reaches only its own scope: an attendee sees times, never who else could take them.
+
+Booker sessions have `GET /session`, `GET /slots` and `POST /bookings`. Manage sessions have
+`GET /booking`, `GET /booking/slots`, `POST /booking/reschedule` and `POST /booking/cancel`. Host sessions
+have `/host/schedules`, `/host/calendar_connections`, `/host/calendars/{id}` and `/host/bookings`.

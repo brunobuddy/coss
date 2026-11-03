@@ -68,6 +68,7 @@ ID and notarized by Apple (since 0.3.0), so one downloaded with a browser runs w
 | `coss risk assess --event <event>` | Assesses an event (`--email`, `--ip`, `--user`, `--content`, `--data '{…}'`…) and prints the decision, score and reasons. Sandbox fixtures (`192.0.2.1`, `disposable.test`, `[coss-test:spam]`…) produce each decision. |
 | `coss risk assessments`, `coss risk feedback <assessment> --outcome <outcome>` | Assessments (`--review open`: the review queue), and what a user turned out to be. |
 | `coss risk lists list`, `coss risk lists add <allow\|block> <type> <value>`, `coss risk lists remove <entry>` | The allow and block lists (`--note`, `--expires 7d`). |
+| `coss scheduling hosts`, `coss scheduling bookings` | The environment's [hosts and bookings](https://coss.com/docs/scheduling). |
 | `coss forms list`, `coss forms submissions <form>` | The environment's [forms](https://coss.com/docs/forms) and their endpoints, and a form's submissions (`--status held`: Risk's review queue). |
 | `coss domains list` | The organization's sending domains and their status. |
 | `coss domains add <domain>` | Adds a domain and prints the DNS records to publish (`--format bind` prints zone-file lines). |

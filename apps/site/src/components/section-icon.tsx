@@ -1,5 +1,6 @@
 import {
   ApiIcon,
+  CalendarCheckIn01Icon,
   ClipboardPenLineIcon,
   InboxIcon,
   Layers01Icon,
@@ -17,6 +18,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 /** The icons a docs section's meta.json can name (`"icon": "Mail"`). */
 const SECTION_ICONS = {
   Api: ApiIcon,
+  Calendar: CalendarCheckIn01Icon,
   Code: SourceCodeIcon,
   Form: ClipboardPenLineIcon,
   Inbox: InboxIcon,

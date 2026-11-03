@@ -17,6 +17,7 @@ import {
 import { FormError } from "@coss/forms";
 import { HookError } from "@coss/hooks";
 import { RiskError } from "@coss/risk";
+import { SchedulingError } from "@coss/scheduling";
 import { SignError } from "@coss/sign";
 import { SmsError } from "@coss/sms";
 import { VerifyError } from "@coss/verify";
@@ -416,6 +417,33 @@ function fromFormError(error: FormError): ApiError {
   }
 }
 
+function fromSchedulingError(error: SchedulingError): ApiError {
+  switch (error.code) {
+    case "not_found":
+      return new ApiError(404, {
+        type: "not_found_error",
+        code: error.code,
+        message: error.message,
+      });
+    case "account_suspended":
+      return new ApiError(403, {
+        type: "permission_error",
+        code: error.code,
+        message: error.message,
+      });
+    case "idempotency_in_progress":
+      return new ApiError(
+        409,
+        { type: "api_error", code: error.code, message: error.message },
+        { "Retry-After": "1" },
+      );
+    case "scheduling_unavailable":
+      return new ApiError(503, { type: "api_error", code: error.code, message: error.message });
+    default:
+      return invalidRequest(error.code, error.message, error.param);
+  }
+}
+
 function invalidRequest(code: string, message: string, param?: string): ApiError {
   return new ApiError(422, {
     type: "invalid_request_error",
@@ -631,6 +659,7 @@ export function toApiError(error: unknown): ApiError | null {
   if (error instanceof SignError) return fromSignError(error);
   if (error instanceof VerifyError) return fromVerifyError(error);
   if (error instanceof FormError) return fromFormError(error);
+  if (error instanceof SchedulingError) return fromSchedulingError(error);
   // A 5xx exception is a server fault: left to the caller to log and answer with a generic 500.
   if (error instanceof HTTPException && error.status < 500) return fromHttpException(error);
   return null;

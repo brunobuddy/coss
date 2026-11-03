@@ -25,6 +25,7 @@
         "@coss/ratelimit": "workspace:*",
         "@coss/reputation": "workspace:*",
         "@coss/risk": "workspace:*",
+        "@coss/scheduling": "workspace:*",
         "@coss/screening": "workspace:*",
         "@coss/sign": "workspace:*",
         "@coss/sms": "workspace:*",
@@ -119,6 +120,34 @@
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "drizzle-orm": "catalog:",
+        "postcss": "catalog:",
+        "tailwindcss": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "apps/scheduling": {
+      "name": "@coss/scheduling-app",
+      "version": "0.0.0",
+      "dependencies": {
+        "@coss/db": "workspace:*",
+        "@coss/observability": "workspace:*",
+        "@coss/scheduling": "workspace:*",
+        "@coss/ui": "workspace:*",
+        "@sentry/nextjs": "catalog:",
+        "@t3-oss/env-nextjs": "catalog:",
+        "next": "catalog:",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@coss/tenancy": "workspace:*",
+        "@coss/tsconfig": "workspace:*",
+        "@tailwindcss/postcss": "catalog:",
+        "@types/bun": "catalog:",
+        "@types/node": "catalog:",
+        "@types/react": "catalog:",
+        "@types/react-dom": "catalog:",
         "postcss": "catalog:",
         "tailwindcss": "catalog:",
         "typescript": "catalog:",
@@ -256,6 +285,7 @@
         "@coss/reputation": "workspace:*",
         "@coss/retention": "workspace:*",
         "@coss/risk": "workspace:*",
+        "@coss/scheduling": "workspace:*",
         "@coss/screening": "workspace:*",
         "@coss/sign": "workspace:*",
         "@coss/sms": "workspace:*",
@@ -306,6 +336,7 @@
         "@coss/billing": "workspace:*",
         "@coss/db": "workspace:*",
         "@coss/email": "workspace:*",
+        "@coss/email-layout": "workspace:*",
         "@coss/forms": "workspace:*",
         "@coss/hooks": "workspace:*",
         "@coss/logs": "workspace:*",
@@ -317,6 +348,7 @@
         "@coss/reputation": "workspace:*",
         "@coss/retention": "workspace:*",
         "@coss/risk": "workspace:*",
+        "@coss/scheduling": "workspace:*",
         "@coss/screening": "workspace:*",
         "@coss/sign": "workspace:*",
         "@coss/sms": "workspace:*",
@@ -467,6 +499,7 @@
         "@coss/reputation": "workspace:*",
         "@coss/retention": "workspace:*",
         "@coss/risk": "workspace:*",
+        "@coss/scheduling": "workspace:*",
         "@coss/screening": "workspace:*",
         "@coss/sign": "workspace:*",
         "@coss/sms": "workspace:*",
@@ -738,6 +771,30 @@
         "@coss/tenancy": "workspace:*",
         "@coss/tsconfig": "workspace:*",
         "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/scheduling": {
+      "name": "@coss/scheduling",
+      "version": "0.0.0",
+      "dependencies": {
+        "@coss/billing": "workspace:*",
+        "@coss/db": "workspace:*",
+        "@coss/email-layout": "workspace:*",
+        "@coss/logs": "workspace:*",
+        "@coss/retention": "workspace:*",
+        "@coss/versioning": "workspace:*",
+        "@coss/webhooks": "workspace:*",
+        "drizzle-orm": "catalog:",
+        "fast-xml-parser": "5.11.2",
+        "ical.js": "2.2.1",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@coss/tenancy": "workspace:*",
+        "@coss/tsconfig": "workspace:*",
+        "@types/bun": "catalog:",
+        "fast-check": "4.3.0",
         "typescript": "catalog:",
       },
     },
@@ -1397,6 +1454,10 @@
     "@coss/retention": ["@coss/retention@workspace:packages/retention"],
 
     "@coss/risk": ["@coss/risk@workspace:packages/risk"],
+
+    "@coss/scheduling": ["@coss/scheduling@workspace:packages/scheduling"],
+
+    "@coss/scheduling-app": ["@coss/scheduling-app@workspace:apps/scheduling"],
 
     "@coss/screening": ["@coss/screening@workspace:packages/screening"],
 
@@ -2676,6 +2737,8 @@
 
     "extend": ["extend@3.0.2", "", {}, "sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g=="],
 
+    "fast-check": ["fast-check@4.3.0", "", { "dependencies": { "pure-rand": "^7.0.0" } }, "sha512-JVw/DJSxVKl8uhCb7GrwanT9VWsCIdBkK3WpP37B/Au4pyaspriSjtrY2ApbSFwTg3ViPfniT13n75PhzE7VEQ=="],
+
     "fast-deep-equal": ["fast-deep-equal@3.1.3", "", {}, "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q=="],
 
     "fast-string-truncated-width": ["fast-string-truncated-width@3.0.3", "", {}, "sha512-0jjjIEL6+0jag3l2XWWizO64/aZVtpiGE3t0Zgqxv0DPuxiMjvB3M24fCyhZUO4KomJQPj3LTSUnDP3GpdwC0g=="],
@@ -2791,6 +2854,8 @@
     "https-proxy-agent": ["https-proxy-agent@5.0.1", "", { "dependencies": { "agent-base": "6", "debug": "4" } }, "sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA=="],
 
     "human-id": ["human-id@4.2.2", "", { "bin": { "human-id": "dist/cli.js" } }, "sha512-Z+8unD6em/MJwyrkWQ2M3wygRGI1+MztbutiNwk1DCuEPXOZRWGjtcMPZYP1exY9iNZMhd7ZOSMQSo9WYtiQRw=="],
+
+    "ical.js": ["ical.js@2.2.1", "", {}, "sha512-yK/UlPbEs316igb/tjRgbFA8ZV75rCsBJp/hWOatpyaPNlgw0dGDmU+FoicOcwX4xXkeXOkYiOmCqNPFpNPkQg=="],
 
     "ignore": ["ignore@5.3.2", "", {}, "sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g=="],
 
@@ -3274,6 +3339,8 @@
 
     "punycode.js": ["punycode.js@2.3.1", "", {}, "sha512-uxFIHU0YlHYhDQtV4R9J6a52SLx28BCjT+4ieh7IGbgwVJWO+km431c4yRlREUAsAmt/uMjQUyQHNEPf0M39CA=="],
 
+    "pure-rand": ["pure-rand@7.0.1", "", {}, "sha512-oTUZM/NAZS8p7ANR3SHh30kXB+zK2r2BPcEn/awJIbOvq82WoMN4p62AWWp3Hhw50G0xMsw1mhIBLqHw64EcNQ=="],
+
     "pvtsutils": ["pvtsutils@1.3.6", "", { "dependencies": { "tslib": "^2.8.1" } }, "sha512-PLgQXQ6H2FWCaeRak8vvk1GW462lMxB5s3Jm673N82zI4vqtVUPuZdffdZbPDFRoU8kAhItWFtPCWiPpp4/EDg=="],
 
     "pvutils": ["pvutils@1.2.0", "", {}, "sha512-BbubeCEyTuQjVMakvJQ/Sxbc93F2pwmbsxONT/ZRrwU7Ua38d8unYTwXpTVLAKJ4BDuH9IGztCjQcd/N/39Dvg=="],
@@ -3735,6 +3802,10 @@
     "@coss/portal/@types/react": ["@types/react@19.3.0", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg=="],
 
     "@coss/portal/react": ["react@19.3.0", "", {}, "sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog=="],
+
+    "@coss/scheduling-app/@types/react": ["@types/react@19.3.0", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg=="],
+
+    "@coss/scheduling-app/react": ["react@19.3.0", "", {}, "sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog=="],
 
     "@coss/sign-app/@types/react": ["@types/react@19.3.0", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg=="],
 

@@ -16,6 +16,7 @@ import { LogDrainsResource } from "./resources/log-drains.ts";
 import { LogsResource } from "./resources/logs.ts";
 import { ReputationResource } from "./resources/reputation.ts";
 import { RiskResource } from "./resources/risk.ts";
+import { SchedulingResource } from "./resources/scheduling.ts";
 import { SignResource } from "./resources/sign.ts";
 import { SmsResource } from "./resources/sms.ts";
 import { VerifyResource } from "./resources/verify.ts";
@@ -134,6 +135,8 @@ export class Coss {
   readonly verify: VerifyResource;
   /** Hosted form endpoints and their submissions (`coss.forms.create()`). */
   readonly forms: FormsResource;
+  /** Availability and bookings (`coss.scheduling.bookings.create()`). */
+  readonly scheduling: SchedulingResource;
   /** The API key's environment, project and organization (`coss.environment.get()`). */
   readonly environment: EnvironmentResource;
   /** The client's own API key (`coss.apiKey.revoke()`). */
@@ -217,6 +220,7 @@ export class Coss {
     this.inboxes = new InboxesResource(http);
     this.verify = new VerifyResource(http);
     this.forms = new FormsResource(http);
+    this.scheduling = new SchedulingResource(http);
   }
 
   /**

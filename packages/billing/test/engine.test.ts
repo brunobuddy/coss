@@ -128,7 +128,7 @@ describe("terms", () => {
       "forms.submissions": 1_000,
       "forms.file_uploads": 1_000,
       "video.participant_minutes": 0,
-      "scheduling.bookings": 0,
+      "scheduling.bookings": 100,
     });
     expect(free.fee).toBeNull();
   });

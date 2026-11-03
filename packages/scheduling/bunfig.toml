@@ -1,0 +1,3 @@
+[test]
+# Points the shared `db` singleton at TEST_DATABASE_URL before any test imports @coss/db.
+preload = ["./test/setup.ts"]
