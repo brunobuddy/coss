@@ -83,8 +83,8 @@ the macro API, `staticSource` and code-usage APIs are recent.
 - **Legal pages state facts about the product** (what is stored and for how long, content screening, reputation
   thresholds, subprocessors, cookies). Update them, and their `lastUpdated`, when that behaviour changes: adding a
   subprocessor, an analytics script or a cookie, or a new kind of personal data, is a Privacy Policy change, and
-  material changes need notice (Terms section 17). A new subprocessor of Customer Data also goes in the DPA's Annex 3
-  and needs 30 days' notice (DPA section 5.3); a new security measure or data category belongs in its Annexes 1–2.
+  material changes need notice (Terms section 17). A new subprocessor of Customer Data also goes in the DPA's Annex 3,
+  coss.com's only list (trust.cal.com is Cal.com's), and needs 30 days' notice by email (DPA section 5.3); a new security measure or data category belongs in its Annexes 1–2.
   Have legal review substantive edits.
 - **Third-party scripts need the same review as dashboard code.** The site is same-origin with the dashboard: any
   script here can call `/api/auth/*` and the dashboard's server actions as the signed-in user. The CSP
