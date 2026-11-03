@@ -27,7 +27,7 @@ export type DomainConnectGroup = (typeof DOMAIN_CONNECT_GROUPS)[number];
 
 /** Easy DKIM's CNAME target zone, fixed in the template. */
 const DKIM_ZONE = "dkim.amazonses.com";
-/** The tracking CNAME target fixed in the template (production's `TRACKING_CNAME_TARGET`). */
+/** The tracking CNAME target fixed in the template; any other target skips the tracking group. */
 const TRACKING_TARGET = "track.cosslinks.com";
 
 export type DomainConnectHttp = (url: string) => Promise<{ status: number; body: string }>;

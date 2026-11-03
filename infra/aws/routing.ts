@@ -35,15 +35,14 @@ export const DASHBOARD_HOST = "coss.com";
 export const API_HOST = "api.coss.com";
 
 /**
- * Tracking links live on their own domain, `cosslinks.com` (a self-serve Cloudflare account
- * separate from coss.com's), so a sender's abuse flagged by URL blocklists never lands on
- * coss.com. This host is both the default tracking URL (`TRACKING_PUBLIC_URL`) and the Cloudflare
- * for SaaS fallback origin customers CNAME their tracking domains (e.g. `links.acme.com`) to: a
- * proxied record pointing at the ALB, which gets every request with the caller's hostname as
- * `Host`. The default for `TRACKING_CNAME_TARGET`.
+ * Tracking links live on their own domain, `cosslinks.com` (a self-serve Cloudflare account for its
+ * DNS, separate from coss.com's), so a sender's abuse flagged by URL blocklists never lands on
+ * coss.com. This host is the default tracking URL (`TRACKING_PUBLIC_URL`). Customers' tracking
+ * domains (e.g. `links.acme.com`) are tenants of a CloudFront multi-tenant distribution instead, and
+ * CNAME to its connection group's routing endpoint (`TRACKING_CNAME_TARGET`), not to this host.
  */
 export const TRACKING_HOST = "track.cosslinks.com";
-/** Added to every request by a Cloudflare request header transform rule (its own secret). */
+/** Added to every origin request by the tracking distributions (its own secret). */
 export const TRACKING_ORIGIN_VERIFY_HEADER = "X-Tracking-Origin-Verify";
 export const TRACKING_ORIGIN_VERIFY_PLACEHOLDER = "<tracking-origin-verify-secret>";
 /**
@@ -183,9 +182,9 @@ export type ListenerRule = {
 
 /**
  * The HTTPS listener's rules, in priority order. The listener's default action is a fixed 403:
- * a request without CloudFront's (or, for tracking, Cloudflare's) origin header matches no rule.
+ * a request without one of CloudFront's origin headers matches no rule.
  * api.coss.com goes first, so the coss.com rules don't need a host condition; then the tracking
- * routes on any host (customer tracking domains, from Cloudflare), the Hooks portal and Sign's
+ * routes on any host (customer tracking domains, from CloudFront), the Hooks portal and Sign's
  * signing app (each with its own header); then the dashboard (default zone) and, after it, Forms'
  * and Scheduling's hosts (each with its own header).
  */

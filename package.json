@@ -21,6 +21,7 @@
       "@aws-sdk/client-accessanalyzer": "3.1141.0",
       "@aws-sdk/client-acm": "3.1141.0",
       "@aws-sdk/client-artifact": "3.1141.0",
+      "@aws-sdk/client-cloudfront": "3.1141.0",
       "@aws-sdk/client-cloudtrail": "3.1141.0",
       "@aws-sdk/client-cloudwatch": "3.1141.0",
       "@aws-sdk/client-cloudwatch-logs": "3.1141.0",

@@ -26,7 +26,6 @@ import {
   FORMS_ORIGIN_VERIFY_HEADER,
   HOSTED_REDIRECTS,
   type HostedDistribution,
-  TRACKING_HOST,
   TRACKING_ORIGIN_VERIFY_HEADER,
 } from "../aws/routing.ts";
 import { SERVICES, type ServiceName } from "../aws/services.ts";
@@ -249,7 +248,7 @@ describe("routing", () => {
     expect(sitePaths).not.toContain("/api/*");
   });
 
-  test("tracking routes on customer hostnames reach the API only with Cloudflare's header", () => {
+  test("tracking routes on customer hostnames reach the API only with CloudFront's header", () => {
     const tracking = rules.find((rule) =>
       rule.conditions.some(
         (condition) =>
@@ -269,7 +268,9 @@ describe("routing", () => {
     // Before the coss.com path rules and the dashboard.
     expect(rules.indexOf(tracking as (typeof rules)[number])).toBe(1);
     const worker = SERVICES.find((service) => service.name === "worker");
-    expect(worker?.env.find((v) => v.name === "TRACKING_CNAME_TARGET")?.value).toBe(TRACKING_HOST);
+    const target = worker?.env.find((v) => v.name === "TRACKING_CNAME_TARGET");
+    expect(target).toMatchObject({ kind: "plain", required: true });
+    expect(target?.value).toBeUndefined();
   });
 
   test("the forms host reaches the API, only on /f/* and only with Cloudflare's header", () => {
