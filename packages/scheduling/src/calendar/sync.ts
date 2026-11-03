@@ -40,6 +40,7 @@ const MAX_BACKOFF_MS = 60 * 60_000;
 // Google channels last up to a month, Graph's about three days: renew well before either.
 const CHANNEL_TTL_SECONDS = 2 * 86_400;
 const CHANNEL_RENEW_BEFORE_MS = 86_400_000;
+const CHANNEL_CLAIM_MS = 5 * 60_000;
 
 type Scan = { limit?: number; scope?: { organizationIds: readonly string[] } };
 
@@ -380,6 +381,22 @@ export async function renewDueCalendarChannels(
     )
     .limit(opts.limit ?? 50);
   for (const { calendar, connection } of due) {
+    // Several workers may see the same row; a second subscribe would orphan the first channel.
+    const [claimed] = await db
+      .update(schedulingCalendar)
+      .set({
+        channelExpiresAt: new Date(now.getTime() + CHANNEL_RENEW_BEFORE_MS + CHANNEL_CLAIM_MS),
+      })
+      .where(
+        and(
+          eq(schedulingCalendar.id, calendar.id),
+          calendar.channelExpiresAt
+            ? eq(schedulingCalendar.channelExpiresAt, calendar.channelExpiresAt)
+            : isNull(schedulingCalendar.channelExpiresAt),
+        ),
+      )
+      .returning({ id: schedulingCalendar.id });
+    if (!claimed) continue;
     try {
       const client = await clientFor(connection, deps);
       if (!client.subscribe) continue;
@@ -404,6 +421,8 @@ export async function renewDueCalendarChannels(
           channelExpiresAt: channel.expiresAtMs
             ? new Date(channel.expiresAtMs)
             : new Date(now.getTime() + CHANNEL_TTL_SECONDS * 1000),
+          // Pushes only cover changes from here on: read whatever changed before the channel.
+          nextSyncAt: now,
         })
         .where(eq(schedulingCalendar.id, calendar.id));
     } catch (error) {

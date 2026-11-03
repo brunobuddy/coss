@@ -19,10 +19,10 @@ import type { WebhookManagementDeps } from "@coss/webhooks";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { honoMiddleware } from "@sentry/bun";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 import { BODY_LIMIT_BYTES, hasOwnBodyLimit, limitBody } from "./body-limit.ts";
 import { errorResponse, internalError, notFound, toApiError } from "./errors.ts";
+import { accessLog } from "./middleware/access-log.ts";
 import { apiVersion } from "./middleware/api-version.ts";
 import { requestId } from "./middleware/request-id.ts";
 import { requestLog } from "./middleware/request-log.ts";
@@ -234,7 +234,7 @@ export function createApp(opts: CreateAppOptions) {
   );
   const defaultBodyLimit = limitBody(BODY_LIMIT_BYTES);
   app.use((c, next) => (hasOwnBodyLimit(c) ? next() : defaultBodyLimit(c, next)));
-  if (process.env.NODE_ENV !== "test") app.use(logger());
+  if (process.env.NODE_ENV !== "test") app.use(accessLog);
 
   app.onError((error, c) => {
     const apiError = toApiError(error);
