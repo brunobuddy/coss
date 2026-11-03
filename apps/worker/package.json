@@ -10,7 +10,9 @@
     "test": "bun --env-file=../../.env test",
     "ses:bootstrap": "bun --env-file=../../.env scripts/ses-bootstrap.ts",
     "webhooks:reencrypt": "bun --env-file=../../.env scripts/webhooks-reencrypt.ts",
-    "hooks:load": "bun --env-file=../../.env scripts/hooks-load.ts"
+    "hooks:load": "bun --env-file=../../.env scripts/hooks-load.ts",
+    "scheduling:load": "bun --env-file=../../.env scripts/scheduling-load.ts",
+    "scheduling:reencrypt": "bun --env-file=../../.env scripts/scheduling-reencrypt.ts"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "catalog:",

@@ -20,6 +20,9 @@ it questions it would refuse.
   memberships, because the fairness counter's update would deadlock with `share`; a removal takes `update`.
 - Limits count live claims under a bucket's row lock, and capacity counts seats under the session's. No counters to
   drift. A hold is a `held` booking, so conversion is one compare-and-set on one row.
+- Anything that retries in a savepoint goes through `inSavepoint` (`claims.ts`), never drizzle's nested `transaction`:
+  that one rolls back without releasing, so each failed attempt nests deeper and keeps a transaction id lock until
+  commit. On a 500-host pool that ran Postgres out of lock table (`53200`), which is shared by the whole server.
 
 An audit in `test/bookings.test.ts` checks every live booking holds exactly one claim per host.
 
@@ -49,7 +52,9 @@ embeds the booker. Local dates (overrides, limits) never pass through `Date`.
   foreign event wholly inside a booking's written event can't be detected.
 - Host-supplied CalDAV URLs go through `pinnedDavTransport` (public addresses only, pinned against rebinding, redirects
   re-checked, the password never sent to another origin).
-- Credentials use `encryptSecret`; `reencryptWebhookSecrets` covers them. A refresh writes back with a compare-and-set.
+- Credentials use `encryptSecret` with `WEBHOOK_SECRETS_KEY`, never `SCHEDULING_DATA_KEYS`; `reencryptWebhookSecrets`
+  covers them. A refresh writes back with a compare-and-set. A consent's `encrypted_code_verifier` uses the same ring
+  and isn't covered: it lasts 10 minutes, so a consent in progress when an old key leaves just starts over.
 - Coss.com never auto-cancels: an external conflict or a host editing an event is flagged, with a webhook.
 
 ## Sessions and the client API
@@ -63,7 +68,9 @@ attendee sees times, never other hosts.
 
 ## Personal data
 
-- Attendee contact details and answers are encrypted with `SCHEDULING_DATA_KEYS`. Only `email_hmac` is searchable.
+- Attendee contact details and answers, and a booker session's fixed attendee, are encrypted with
+  `SCHEDULING_DATA_KEYS`. Only `email_hmac` is searchable. A new column on this ring goes in
+  `SCHEDULING_DATA_KEY_COLUMNS` and `reencryptSchedulingData` (a test compares the list with the database).
 - Answers come back only from `getBooking`: never lists, webhooks, logs, emails or calendars.
 - Webhooks and log lines carry ids, times and statuses. `request-log.ts` keeps no bodies of these routes.
 - Host calendar events are private, titled "Appointment", with no attendees.
@@ -91,11 +98,21 @@ aren't charged; reschedules are free; cancelled stays charged.
 fixtures generated from Cal.com's `buildDateRanges`; the one intended difference is that Cal.com's overrides can spill
 outside the requested window. `FakeGoogleCalendarApi` (`./testing`) echoes writes back as busy, as the real one does.
 
+`bun run --cwd apps/worker scheduling:load` (`--hosts 500 --days 14 --concurrency 32 --bookings 500 --existing 20 --busy
+10 --searches 30 --races 20 --big-table-rows 5000`, `--sandbox`, `--capped`) measures search, slots and booking on the
+test database: the package's own functions, in one process, with no API and no provider calls. By default a live
+environment on the Pro plan; `--capped` adds a usage cap, which makes every booking update one quota row. Pool size:
+`DATABASE_POOL_MAX`. It exits 1 if a race didn't have the winners it should or anything failed unexpectedly, and prints
+`EXPLAIN (ANALYZE, BUFFERS)` of the statements the hot paths really sent, flagging selective sequential scans of big
+tables. Booking at 500 hosts is limited by trying candidates one at a time: a pool booking took about 90
+ms with a 500-host pool in five time zones, and one nobody could take about 550 ms, holding a connection throughout.
+
 ## Going live
 
 Live in production at `cossbook.com` (README, "Scheduling's hosted pages"). Without `SCHEDULING_DATA_KEYS` in a stage
 secret, Scheduling is off there: the API answers 503 `scheduling_unavailable`, the worker's loops don't run and the
-dashboard's pages don't exist. Still to do:
+dashboard's pages don't exist. Rotating the key: README, "Rotating `SCHEDULING_DATA_KEYS`" (`bun run
+scheduling:reencrypt`). Still to do:
 
 1. Google OAuth verification (project `coss-scheduling` under coss.com's Google organization: submitted, under review)
    and Microsoft publisher verification (app "coss.com Scheduling" in Cal.com's Entra tenant, whose secret expires

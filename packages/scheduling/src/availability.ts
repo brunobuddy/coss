@@ -63,6 +63,16 @@ export function slotRuleOf(
 
 export type LoadedHost = HostInputs & { calendarReason: string | null };
 
+function groupedBy<T>(rows: readonly T[], key: (row: T) => string): Map<string, T[]> {
+  const groups = new Map<string, T[]>();
+  for (const row of rows) {
+    const group = groups.get(key(row));
+    if (group) group.push(row);
+    else groups.set(key(row), [row]);
+  }
+  return groups;
+}
+
 /** Everything the engine needs per host, in one pass. Never calls a calendar provider. */
 export async function loadHostInputs(
   executor: Executor,
@@ -217,8 +227,17 @@ export async function loadHostInputs(
       ),
     );
 
+  // Up to 500 hosts with thousands of rows each: filtering per host took more time than the queries.
+  const schedulesByHost = groupedBy(schedules, (row) => row.hostId);
+  const overridesBySchedule = groupedBy(overrides, (row) => row.scheduleId);
+  const claimsByHost = groupedBy(claims, (row) => row.hostId);
+  const ownEventsByHost = groupedBy(ownEvents, (row) => row.hostId);
+  const busyByHost = groupedBy(busy, (row) => row.hostId);
+  const sessionsByHost = groupedBy(sessions, (row) => row.hostId);
+  const calendarsByHost = groupedBy(calendars, (row) => row.hostId);
+
   for (const host of hosts) {
-    const hostSchedules = schedules.filter((schedule) => schedule.hostId === host.id);
+    const hostSchedules = schedulesByHost.get(host.id) ?? [];
     const schedule = host.scheduleId
       ? hostSchedules.find((candidate) => candidate.id === host.scheduleId)
       : hostSchedules.find((candidate) => candidate.isDefault);
@@ -226,29 +245,25 @@ export async function loadHostInputs(
       ? buildAvailability({
           timeZone: schedule.timeZone,
           rules: schedule.rules,
-          overrides: overrides.filter((override) => override.scheduleId === schedule.id),
+          overrides: overridesBySchedule.get(schedule.id) ?? [],
           // A wider range than asked for, so a slot's end can fall past the window's.
           fromMs: fromMs - DAY_MS,
           toMs: toMs + 2 * DAY_MS,
         })
       : [];
-    const hostClaims = claims.filter((claim) => claim.hostId === host.id);
+    const hostClaims = claimsByHost.get(host.id) ?? [];
     const own = normalizeIntervals(
-      ownEvents
-        .filter((event) => event.hostId === host.id)
-        .map((event) => ({
-          startMs: event.desiredStart.getTime(),
-          endMs: event.desiredEnd.getTime(),
-        })),
+      (ownEventsByHost.get(host.id) ?? []).map((event) => ({
+        startMs: event.desiredStart.getTime(),
+        endMs: event.desiredEnd.getTime(),
+      })),
     );
     const externalBusy = subtractIntervals(
       normalizeIntervals(
-        busy
-          .filter((interval) => interval.hostId === host.id)
-          .map((interval) => ({
-            startMs: interval.startAt.getTime(),
-            endMs: interval.endAt.getTime(),
-          })),
+        (busyByHost.get(host.id) ?? []).map((interval) => ({
+          startMs: interval.startAt.getTime(),
+          endMs: interval.endAt.getTime(),
+        })),
       ),
       own,
     );
@@ -262,7 +277,7 @@ export async function loadHostInputs(
         limitUsage[week] = (limitUsage[week] ?? 0) + 1;
       }
     }
-    const hostSessions = sessions.filter((session) => session.hostId === host.id);
+    const hostSessions = sessionsByHost.get(host.id) ?? [];
     const sessionClaims = new Map(
       hostClaims.flatMap((claim) =>
         claim.groupSessionId && hostSessions.some((session) => session.id === claim.groupSessionId)
@@ -277,9 +292,9 @@ export async function loadHostInputs(
         endMs: claim.occupiedEnd.getTime(),
       }));
     const verdict = calendarVerdict(
-      calendars
+      (calendarsByHost.get(host.id) ?? [])
         // Nobody hosts a simulated calendar, and nothing syncs it: its busy times are what's set.
-        .filter((calendar) => calendar.hostId === host.id && calendar.provider !== "simulated")
+        .filter((calendar) => calendar.provider !== "simulated")
         .map(
           (calendar): CalendarFreshness => ({
             connectionHealthy: calendar.status === "active",
