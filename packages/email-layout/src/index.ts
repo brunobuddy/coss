@@ -132,6 +132,7 @@ function toText(content: EmailContent): string {
 // apps/site/public/site-assets/email: cached by the CDN, so a changed file needs a new name.
 const ASSETS = "https://coss.com/site-assets/email";
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+// Set at 500: from 600, a single-weight Cal Sans installed locally gets a synthetic bold.
 const DISPLAY = `'Cal Sans',${FONT}`;
 const MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
 const INK = "#18181b";
@@ -225,7 +226,7 @@ function fieldsHtml(fields: { label: string; value: string }[]): string {
 
 function blockHtml(block: EmailBlock, accent: EmailAccent): string {
   if ("heading" in block) {
-    return `<h2 style="margin:30px 0 8px;font-family:${DISPLAY};font-size:17px;line-height:24px;font-weight:600;color:${INK}">${escapeHtml(block.heading)}</h2>`;
+    return `<h2 style="margin:30px 0 8px;font-family:${DISPLAY};font-size:17px;line-height:24px;font-weight:500;color:${INK}">${escapeHtml(block.heading)}</h2>`;
   }
   if ("paragraph" in block) return paragraph(escapeHtml(block.paragraph));
   if ("list" in block) {
@@ -313,7 +314,7 @@ function toHtml(subject: string, content: EmailContent): string {
     ? brandedHeader({ brand, logo: content.logo, title, subtitle: content.subtitle })
     : `<tr><td class="coss-plate" bgcolor="${PLATE}" style="padding:28px 40px 36px;border-radius:15px 15px 0 0;background-color:${PLATE};background-image:radial-gradient(circle at center,${PLATE_DOT} 1px,${PLATE} 1.2px);background-size:24px 24px;background-position:center;font-family:${FONT}">
 ${masthead}
-<h1${long ? "" : ' class="coss-title"'} style="margin:44px 0 0;font-family:${DISPLAY};${titleSize};font-weight:600;letter-spacing:-0.005em;color:#ffffff;word-break:break-word">${escapeHtml(title)}</h1>
+<h1${long ? "" : ' class="coss-title"'} style="margin:44px 0 0;font-family:${DISPLAY};${titleSize};font-weight:500;color:#ffffff;word-break:break-word">${escapeHtml(title)}</h1>
 ${subtitle}
 </td></tr>`;
   const footer = content.reason
