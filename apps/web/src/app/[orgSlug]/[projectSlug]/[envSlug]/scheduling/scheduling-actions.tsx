@@ -28,7 +28,7 @@ import { Label } from "@coss/ui/components/label";
 import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
 import { Textarea } from "@coss/ui/components/textarea";
 import { CalendarClockIcon, UserRoundIcon } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
@@ -59,8 +59,12 @@ export function NewHostDialog(props: EnvTarget) {
     success: "Host created",
   });
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
   return (
-    <Dialog>
+    <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger render={<Button size="sm" />}>New host</DialogTrigger>
       <DialogPopup>
         <form action={formAction} className="contents">
@@ -174,8 +178,12 @@ export function NewEventTypeDialog(props: EnvTarget & { hosts: { id: string; nam
   const [state, formAction, pending] = useActionToast(createEventTypeAction, {
     success: "Event type created",
   });
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
   return (
-    <Dialog>
+    <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger render={<Button size="sm" />}>New event type</DialogTrigger>
       <DialogPopup>
         <form action={formAction} className="contents">

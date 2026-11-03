@@ -1,16 +1,17 @@
 # One CLOUDFRONT web ACL per distribution: AWS managed rule groups plus a per-IP flood limit (the
 # apps rate-limit precisely in Valkey). Body rules that legitimate traffic trips are counted, not
-# blocked: API sends carry whole HTML emails (often > 8 KB, sometimes script-like markup) and SDKs
-# on some runtimes send no User-Agent.
+# blocked: API sends carry whole HTML emails (often > 8 KB, sometimes script-like markup), SDKs
+# on some runtimes send no User-Agent, and sandboxes allow localhost origins. Those last bodies trip
+# EC2MetaDataSSRF_BODY, which outbound delivery doesn't rely on: it refuses private addresses itself.
 locals {
   waf = {
     dashboard = {
       rate_limit      = var.waf_rate_limits.dashboard
-      count_overrides = ["SizeRestrictions_BODY"]
+      count_overrides = ["SizeRestrictions_BODY", "EC2MetaDataSSRF_BODY"]
     }
     api = {
       rate_limit      = var.waf_rate_limits.api
-      count_overrides = ["SizeRestrictions_BODY", "CrossSiteScripting_BODY", "NoUserAgent_HEADER"]
+      count_overrides = ["SizeRestrictions_BODY", "CrossSiteScripting_BODY", "NoUserAgent_HEADER", "EC2MetaDataSSRF_BODY"]
     }
   }
 }
