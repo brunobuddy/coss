@@ -136,8 +136,7 @@ When someone connects a Google Calendar, we use Google's APIs only to:
 coss.com's use and transfer of information received from Google APIs adheres to the
 [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including
 the Limited Use requirements. We don't use this data for advertising, don't sell it, don't use it to train AI models,
-and don't let people read it, except with the user's consent, for security or to comply with the law. We don't share it
-with anyone except the subprocessors that host the Services. Busy times are replaced as the calendar changes.
+and don't let people read it, except with the user's consent, for security or to comply with the law. We don't share it with anyone except the subprocessors that host the Services and the organization whose Scheduling the person connected it to, which can see the account and calendar identifiers and the times the person can be booked. Busy times are replaced as the calendar changes.
 Disconnecting a calendar, which can be done at any time, revokes our access and deletes its busy times and credentials.
 
 ## 3. Why we process it (legal bases)
@@ -193,7 +192,8 @@ We share personal data only as described here:
     data retention.
   - **Twilio Inc.** (United States): SMS delivery and receiving, phone numbers, carrier registration of the
     business details organizations submit to send SMS, and lookups of phone numbers organizations check with Risk.
-  - **Cloudflare, Inc.** (United States): DNS for coss.com.
+  - **Cloudflare, Inc.** (United States): DNS for coss.com, and the network in front of the separate domains that serve
+    hosted pages and tracking links.
   - **Functional Software, Inc. (Sentry)** (United States, with data stored in the European Union): error and crash
     reports from the dashboard, the API and the iOS app.
 
