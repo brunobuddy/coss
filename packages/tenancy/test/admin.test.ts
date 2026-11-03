@@ -9,12 +9,15 @@ import {
   findOrganizationForAdmin,
   getOrganizationForAdmin,
   getOrganizationSuspension,
+  getUserForAdmin,
   listAdminAuditEvents,
   listOrganizationApiKeysForAdmin,
   listOrganizationsForAdmin,
   listUserMembershipsForAdmin,
+  MAX_OWNED_ORGANIZATION_LIMIT,
   planOrganizationTakedown,
   revokeApiKeyAsAdmin,
+  setOwnedOrganizationLimit,
   suspendOrganization,
   unsuspendOrganization,
   usersByEmailForAdmin,
@@ -527,5 +530,60 @@ describe("sign-ups and takedowns", () => {
 
     await suspendOrganization({ organizationId: tenant.organization.id, reason: "x", actor });
     expect((await planOrganizationTakedown(tenant.organization.id)).suspended).toBe(true);
+  });
+});
+
+describe("setOwnedOrganizationLimit", () => {
+  const actor = { userId: "user_admin", email: "admin@coss.test" };
+
+  async function audit(userId: string) {
+    const { events } = await listAdminAuditEvents({ target: { type: "user", id: userId } });
+    return events;
+  }
+
+  test("sets and resets the limit, recording each change with the previous value", async () => {
+    const user = await createTestUser();
+    expect(
+      await setOwnedOrganizationLimit({
+        userId: user.id,
+        limit: 50,
+        reason: "Platform agreement",
+        actor,
+      }),
+    ).toBe(true);
+    expect((await getUserForAdmin(user.id))?.ownedOrganizationLimit).toBe(50);
+    expect(await setOwnedOrganizationLimit({ userId: user.id, limit: null, actor })).toBe(true);
+    expect((await getUserForAdmin(user.id))?.ownedOrganizationLimit).toBeNull();
+
+    const events = await audit(user.id);
+    expect(events.map((event) => [event.action, event.metadata])).toEqual([
+      ["user.reset_organization_limit", { previous: 50, limit: null }],
+      ["user.set_organization_limit", { previous: null, limit: 50 }],
+    ]);
+    expect(events[1]?.reason).toBe("Platform agreement");
+  });
+
+  test("records nothing when nothing changes", async () => {
+    const user = await createTestUser();
+    expect(await setOwnedOrganizationLimit({ userId: user.id, limit: null, actor })).toBe(false);
+    expect(await audit(user.id)).toEqual([]);
+  });
+
+  test("needs a reason, a whole number in range and an existing user", async () => {
+    const user = await createTestUser();
+    const set = (limit: number, reason: string | null = "Platform agreement") =>
+      setOwnedOrganizationLimit({ userId: user.id, limit, reason, actor });
+    await expect(set(10, null)).rejects.toThrow(/reason/);
+    for (const limit of [0, -1, 1.5, Number.NaN, MAX_OWNED_ORGANIZATION_LIMIT + 1]) {
+      await expect(set(limit)).rejects.toThrow(/whole number/);
+    }
+    await expect(
+      setOwnedOrganizationLimit({
+        userId: "user_missing",
+        limit: 10,
+        reason: "Platform agreement",
+        actor,
+      }),
+    ).rejects.toThrow(/not found/);
   });
 });

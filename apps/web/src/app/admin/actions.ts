@@ -24,6 +24,7 @@ import {
   recordAdminAction,
   resetUserTwoFactor,
   revokeApiKeyAsAdmin,
+  setOwnedOrganizationLimit,
   suspendOrganization,
   unlinkUserSso,
   unsuspendOrganization,
@@ -215,6 +216,42 @@ export async function unlinkUserSsoAction(
     const userId = formUserId(formData);
     assertNotSelf(actor, userId);
     await unlinkUserSso({ userId, reason: requiredReason(formData), actor });
+    refresh();
+    return null;
+  });
+}
+
+/** Lets a user own a different number of organizations than the default. */
+export async function setOwnedOrganizationLimitAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const { actor } = await requirePlatformAdminAction();
+    const userId = formUserId(formData);
+    assertNotSelf(actor, userId);
+    const limit = Number(formString(formData, "limit"));
+    await setOwnedOrganizationLimit({ userId, limit, reason: requiredReason(formData), actor });
+    refresh();
+    return null;
+  });
+}
+
+/** Puts a user back on the default limit of organizations. */
+export async function resetOwnedOrganizationLimitAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const { actor } = await requirePlatformAdminAction();
+    const userId = formUserId(formData);
+    assertNotSelf(actor, userId);
+    await setOwnedOrganizationLimit({
+      userId,
+      limit: null,
+      reason: optionalReason(formData),
+      actor,
+    });
     refresh();
     return null;
   });

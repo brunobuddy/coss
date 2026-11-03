@@ -22,7 +22,11 @@ needs a paid plan, which also sets how many numbers you can hold (see the [plans
 Search by area code (local) or for any toll-free number and buy one. A number is billed monthly,
 from the day you buy it until you release it ([pricing](/docs/sms/countries-and-pricing)).
 Releasing one stops it sending at once; messages still waiting for it fail with
-`sender_unavailable`.
+`sender_unavailable`. Deleting your organization releases all of its numbers.
+
+To move a number to another provider, [contact support](/docs/support) first: a port needs the
+number to stay active until it completes, so a released number can't be moved. The registration
+doesn't move with it, so the new provider registers the number again.
 
 Each number has a **receiving environment**: the live environment its replies go to
 ([receiving](/docs/sms/receiving)). Without one, replies are dropped, though STOP and START still

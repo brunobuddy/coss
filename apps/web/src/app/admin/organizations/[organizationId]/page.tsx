@@ -767,7 +767,7 @@ export default async function AdminOrganizationPage({
               <AdminActionDialog
                 icon="organization"
                 action={deleteOrganizationAdminAction}
-                description="This can't be undone. Its domains become available to other organizations once they are released."
+                description="This can't be undone. Its domains become available to other organizations once they are released, and its phone numbers go back to the carrier, so port any it wants to keep first."
                 destructive
                 fields={fields}
                 reason="required"

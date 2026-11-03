@@ -1,3 +1,4 @@
+import { listSmsNumbers } from "@coss/sms";
 import {
   getOrganizationLogoState,
   hasScimConnection,
@@ -42,12 +43,16 @@ export default async function OrganizationSettingsPage({
   const lastOwner = isOwner && owners <= 1;
   const withoutTwoFactor = members.filter((row) => !row.user.twoFactorEnabled).length;
   const hasTwoFactor = Boolean(session.user.twoFactorEnabled);
-  const [pinnedApiVersion, scimConnected, logoState, logoVersions] = await Promise.all([
+  const [pinnedApiVersion, scimConnected, logoState, logoVersions, smsNumbers] = await Promise.all([
     readOrganizationApiVersion({ organizationId: organization.id }),
     canReadScim ? hasScimConnection({ organizationId: organization.id }) : false,
     getOrganizationLogoState(organization.id),
     organizationLogoVersions([organization.id]),
+    canDelete ? listSmsNumbers(organization.id) : [],
   ]);
+  const phoneNumbers = smsNumbers
+    .filter(({ number }) => number.status !== "releasing")
+    .map(({ number }) => number.phoneNumber);
   const logoVersion = logoVersions.get(organization.id);
   const logo = logoVersion ? `/${organization.slug}/settings/logo?v=${logoVersion}` : null;
   const apiVersionChanges = pinnedApiVersion
@@ -236,13 +241,17 @@ export default async function OrganizationSettingsPage({
                   <SupportLink orgSlug={organization.slug} topic="account" />.
                 </>
               ) : (
-                "Permanently delete its projects, emails, domains, suppression lists and webhooks. Members lose access and API keys stop working at once."
+                "Permanently delete its projects, emails, domains, phone numbers, suppression lists and webhooks. Members lose access and API keys stop working at once."
               )
             }
             label="Delete organization"
           >
             {canDelete ? (
-              <DeleteOrganizationButton orgName={organization.name} orgSlug={organization.slug} />
+              <DeleteOrganizationButton
+                orgName={organization.name}
+                orgSlug={organization.slug}
+                phoneNumbers={phoneNumbers}
+              />
             ) : null}
           </SettingsRow>
         ) : null}
