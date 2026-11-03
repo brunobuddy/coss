@@ -187,6 +187,25 @@ resource "aws_guardduty_detector_feature" "main" {
   }
 }
 
+# Applying this needs the ProtectSecurityMonitoring SCP detached from production for a moment.
+resource "aws_guardduty_detector_feature" "runtime_monitoring" {
+  detector_id = aws_guardduty_detector.main.id
+  name        = "RUNTIME_MONITORING"
+  status      = "ENABLED"
+  additional_configuration {
+    name   = "ECS_FARGATE_AGENT_MANAGEMENT"
+    status = "ENABLED"
+  }
+  additional_configuration {
+    name   = "EC2_AGENT_MANAGEMENT"
+    status = "DISABLED"
+  }
+  additional_configuration {
+    name   = "EKS_ADDON_MANAGEMENT"
+    status = "DISABLED"
+  }
+}
+
 resource "aws_securityhub_account" "main" {
   enable_default_standards  = false
   control_finding_generator = "SECURITY_CONTROL"
@@ -454,6 +473,7 @@ resource "aws_iam_role_policy" "task_web_security" {
           "artifact:ListCustomerAgreements",
           "elasticloadbalancing:DescribeTargetGroups",
           "config:DescribeConfigurationRecorderStatus",
+          "guardduty:GetCoverageStatistics",
           "guardduty:GetDetector",
           "guardduty:GetFindings",
           "guardduty:ListDetectors",
@@ -605,6 +625,17 @@ resource "aws_cloudwatch_metric_alarm" "mask_access_logs" {
 }
 
 # --- Security Hub findings ------------------------------------------------------------------------
+
+resource "aws_s3_account_public_access_block" "main" {
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_ebs_encryption_by_default" "main" {
+  enabled = true
+}
 
 resource "aws_ssm_service_setting" "block_public_documents" {
   setting_id    = "/ssm/documents/console/public-sharing-permission"

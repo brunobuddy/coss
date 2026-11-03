@@ -22,6 +22,7 @@ export type Readings = {
   lastRootSignIn: Reading<Date | null>;
   trail: Reading<{ logging: boolean; latestDelivery: Date | null; error: string | null } | null>;
   threatDetection: Reading<{ production: boolean; management: boolean }>;
+  containerMonitoring: Reading<{ healthy: number; unhealthy: number }>;
   securityHub: Reading<{ enabled: boolean; standardStatuses: string[] }>;
   configRecording: Reading<boolean>;
   outsideAccess: Reading<boolean>;
@@ -130,6 +131,18 @@ export function postureChecks(readings: Readings, now: Date = new Date()): Postu
               .filter(Boolean)
               .join(" and ")}.`,
             fix: "Re-apply Terraform. Only the management account can remove the policy keeping it on.",
+          },
+    ),
+    check("container_monitoring", "Container monitoring", readings.containerMonitoring, (count) =>
+      count.unhealthy === 0 && count.healthy > 0
+        ? { state: "ok", summary: "GuardDuty watches what runs inside production's containers." }
+        : {
+            state: "warning",
+            summary:
+              count.healthy + count.unhealthy === 0
+                ? "GuardDuty isn't covering any container yet."
+                : "GuardDuty's agent isn't reporting from every cluster.",
+            fix: "Open GuardDuty's Runtime coverage in AWS: it names the cause. New tasks pick the agent up at the next deploy.",
           },
     ),
     check("security_hub", "Configuration checks", readings.securityHub, (hub) => {

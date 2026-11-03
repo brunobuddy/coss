@@ -53,6 +53,7 @@ build() {
     --file "apps/$service/Dockerfile" \
     --platform linux/arm64 \
     --build-arg "$release_arg" \
+    --build-arg "BASE_PATCH_WEEK=$(date -u +%G-W%V)" \
     --build-arg "BUN_IMAGE=$bun_image" \
     --build-arg NODE_IMAGE=public.ecr.aws/docker/library/node \
     --secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \

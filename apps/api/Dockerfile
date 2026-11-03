@@ -29,6 +29,12 @@ RUN bun install --frozen-lockfile --production
 COPY --from=prune /pruned/full/ .
 
 FROM bun AS runtime
+# Debian's security fixes, refreshed weekly by BASE_PATCH_WEEK; nothing here runs Perl.
+ARG BASE_PATCH_WEEK=""
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -qq \
+  && DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade \
+  && dpkg --purge --force-remove-essential --force-depends perl-base \
+  && rm -rf /var/lib/apt/lists/*
 # The commit: Sentry's release. Not stage-specific.
 ARG SENTRY_RELEASE=""
 # Postgres TLS: DATABASE_URL=…?sslmode=verify-full&sslrootcert=/etc/ssl/certs/rds-global-bundle.pem

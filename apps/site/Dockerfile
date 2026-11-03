@@ -44,6 +44,12 @@ RUN --mount=type=secret,id=sentry_auth_token,required=false \
 # Only the traced server (.next/standalone keeps Bun's isolated node_modules as relative symlinks)
 # and the static assets. No package manager, no sources.
 FROM ${NODE_IMAGE}:${NODE_VERSION}-slim AS runtime
+# Debian's security fixes, refreshed weekly by BASE_PATCH_WEEK; nothing here runs Perl.
+ARG BASE_PATCH_WEEK=""
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -qq \
+  && DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade \
+  && dpkg --purge --force-remove-essential --force-depends perl-base \
+  && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \

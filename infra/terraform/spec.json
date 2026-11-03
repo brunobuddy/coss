@@ -1226,7 +1226,7 @@
       "dockerfile": "apps/worker/Dockerfile",
       "stopTimeout": 120,
       "cpu": 256,
-      "memory": 512,
+      "memory": 1024,
       "minTasks": 1,
       "needsInternet": true,
       "taskRolePolicy": "worker",

@@ -25,6 +25,7 @@ import {
   ElasticLoadBalancingV2Client,
 } from "@aws-sdk/client-elastic-load-balancing-v2";
 import {
+  GetCoverageStatisticsCommand,
   GetDetectorCommand,
   GetFindingsCommand,
   GuardDutyClient,
@@ -492,6 +493,19 @@ export async function getSecurityPosture(): Promise<SecurityPosture> {
     analyzer,
   ]);
 
+  const containerMonitoring = await read(async () => {
+    if (!production.ok) throw new Error(production.error);
+    if (!production.value) return { healthy: 0, unhealthy: 0 };
+    const { CoverageStatistics } = await guardDuty.send(
+      new GetCoverageStatisticsCommand({
+        DetectorId: production.value,
+        StatisticsType: ["COUNT_BY_COVERAGE_STATUS"],
+      }),
+    );
+    const counts = CoverageStatistics?.CountByCoverageStatus;
+    return { healthy: counts?.HEALTHY ?? 0, unhealthy: counts?.UNHEALTHY ?? 0 };
+  });
+
   const threatDetection: Reading<{ production: boolean; management: boolean }> = !production.ok
     ? production
     : !managementId.ok
@@ -544,6 +558,7 @@ export async function getSecurityPosture(): Promise<SecurityPosture> {
     lastRootSignIn,
     trail,
     threatDetection,
+    containerMonitoring,
     securityHub,
     configRecording,
     outsideAccess: analyzerState.ok
