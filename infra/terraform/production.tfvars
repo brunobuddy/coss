@@ -52,7 +52,7 @@ autoscaling = {
   smtp       = { max = 4, cpu_target = 60 }
 }
 
-waf_rate_limits = { dashboard = 5000, api = 20000 }
+waf_rate_limits = { dashboard = 5000, api = 20000, hosted = 5000, tracking = 20000 }
 
 cloudflare_ipv4_ranges = [
   "173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "141.101.64.0/18",
