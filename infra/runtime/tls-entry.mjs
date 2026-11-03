@@ -77,6 +77,8 @@ export function startTerminator(tlsPort, targetPort) {
 
 const [, self, entry] = process.argv;
 if (entry && self && import.meta.url === pathToFileURL(resolve(self)).href) {
+  // Fargate overwrites the image's HOSTNAME with the task's name, and Next binds to whatever it says.
+  process.env.HOSTNAME = "0.0.0.0";
   const tlsPort = Number(process.env.TLS_PORT);
   if (tlsPort) startTerminator(tlsPort, Number(process.env.PORT ?? process.env.API_PORT ?? 3001));
   await import(pathToFileURL(resolve(entry)).href);

@@ -13,14 +13,14 @@ afterEach(() => {
   for (const process of running.splice(0)) process.kill("SIGKILL");
 });
 
-/** A plain HTTP app like the images run: echoes a forwarded header, exits on SIGTERM. */
+/** A plain HTTP app like Next's server: binds to HOSTNAME, echoes a header, exits on SIGTERM. */
 function fixtureApp(): string {
   const path = join(mkdtempSync(join(tmpdir(), "tls-entry-")), "app.mjs");
   writeFileSync(
     path,
     `import { createServer } from "node:http";
      const server = createServer((req, res) => res.end(JSON.stringify({ forwarded: req.headers["x-forwarded-for"] ?? null })));
-     server.listen(Number(process.env.PORT), "0.0.0.0");
+     server.listen(Number(process.env.PORT), process.env.HOSTNAME);
      process.on("SIGTERM", () => server.close(() => process.exit(0)));`,
   );
   return path;
@@ -86,7 +86,8 @@ for (const runtime of ["node", "bun"]) {
       const plain = nextPort++;
       const tls = nextPort++;
       const child = Bun.spawn([runtime, ENTRY, fixtureApp()], {
-        env: { ...process.env, PORT: String(plain), TLS_PORT: String(tls) },
+        // What Fargate does to every task: only the entry's override makes 127.0.0.1 reachable.
+        env: { ...process.env, PORT: String(plain), TLS_PORT: String(tls), HOSTNAME: "192.0.2.1" },
         stdout: "ignore",
         stderr: "inherit",
       });
@@ -104,7 +105,7 @@ for (const runtime of ["node", "bun"]) {
     test("without TLS_PORT it only runs the app", async () => {
       const plain = nextPort++;
       const { TLS_PORT: _unset, ...inherited } = process.env as Record<string, string>;
-      const env = { ...inherited, PORT: String(plain) };
+      const env = { ...inherited, PORT: String(plain), HOSTNAME: "192.0.2.1" };
       const child = Bun.spawn([runtime, ENTRY, fixtureApp()], {
         env,
         stdout: "ignore",
