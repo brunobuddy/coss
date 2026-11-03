@@ -30,8 +30,6 @@ unset_secrets = [
   "IPINFO_PRIVACY_TOKEN",
   # Sign's CSC sealer (SSL.com eSigner): until its account exists.
   "SIGN_CSC_CLIENT_SECRET", "SIGN_CSC_PASSWORD", "SIGN_CSC_TOTP_SECRET",
-  # Scheduling's Microsoft calendars: until its OAuth app exists.
-  "MICROSOFT_CALENDAR_CLIENT_SECRET",
 ]
 initial_image_tag  = "2a8195a759b0f11d430f3e9cebfcf535a99dbca7"
 log_retention_days = 30
@@ -141,13 +139,14 @@ plain_env = {
     SENTRY_TRACES_SAMPLE_RATE = "0.1"
   }
   api = {
-    BETTER_AUTH_URL           = "https://coss.com"
-    API_PUBLIC_URL            = "https://api.coss.com"
-    TRACKING_PUBLIC_URL       = "https://track.cosslinks.com"
-    PORTAL_PUBLIC_URL         = "https://portal.cosshooks.com"
-    SIGN_PUBLIC_URL           = "https://cosssign.com"
-    SCHEDULING_PUBLIC_URL     = "https://cossbook.com"
-    GOOGLE_CALENDAR_CLIENT_ID = "776019028945-dnuug57hi1tsjfdbu93evm8ggp1ge00q.apps.googleusercontent.com"
+    BETTER_AUTH_URL              = "https://coss.com"
+    API_PUBLIC_URL               = "https://api.coss.com"
+    TRACKING_PUBLIC_URL          = "https://track.cosslinks.com"
+    PORTAL_PUBLIC_URL            = "https://portal.cosshooks.com"
+    SIGN_PUBLIC_URL              = "https://cosssign.com"
+    SCHEDULING_PUBLIC_URL        = "https://cossbook.com"
+    GOOGLE_CALENDAR_CLIENT_ID    = "776019028945-dnuug57hi1tsjfdbu93evm8ggp1ge00q.apps.googleusercontent.com"
+    MICROSOFT_CALENDAR_CLIENT_ID = "e58a0c0d-e1bb-4aef-a861-43c755d96761"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
     FORMS_PUBLIC_URL   = "https://cossforms.com"
     FORMS_FILES_BUCKET = "coss-production-forms-files-294417174674"
@@ -196,6 +195,7 @@ plain_env = {
     SIGN_PUBLIC_URL                     = "https://cosssign.com"
     SCHEDULING_PUBLIC_URL               = "https://cossbook.com"
     GOOGLE_CALENDAR_CLIENT_ID           = "776019028945-dnuug57hi1tsjfdbu93evm8ggp1ge00q.apps.googleusercontent.com"
+    MICROSOFT_CALENDAR_CLIENT_ID        = "e58a0c0d-e1bb-4aef-a861-43c755d96761"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
     FORMS_PUBLIC_URL      = "https://cossforms.com"
     FORMS_FILES_BUCKET    = "coss-production-forms-files-294417174674"
