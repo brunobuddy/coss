@@ -356,8 +356,9 @@ resource "aws_cloudwatch_event_target" "security" {
   rule     = aws_cloudwatch_event_rule.security[each.key].name
   arn      = data.aws_sns_topic.alerts.arn
   input_transformer {
-    input_paths    = each.value.paths
-    input_template = jsonencode(each.value.message)
+    input_paths = each.value.paths
+    # jsonencode escapes < and >, and EventBridge only fills in the bare form.
+    input_template = replace(replace(jsonencode(each.value.message), "\\u003c", "<"), "\\u003e", ">")
   }
 }
 
