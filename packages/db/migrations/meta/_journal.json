@@ -806,6 +806,13 @@
       "when": 1793660796324,
       "tag": "0114_dark_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 115,
+      "version": "7",
+      "when": 1793719973815,
+      "tag": "0115_perpetual_king_cobra",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,2 @@
+ALTER TABLE "scheduling_session" ADD COLUMN "attendee_uid" text;--> statement-breakpoint
+CREATE INDEX "scheduling_session_attendee_uid_idx" ON "scheduling_session" USING btree ("environment_id","attendee_uid") WHERE "scheduling_session"."attendee_uid" IS NOT NULL;

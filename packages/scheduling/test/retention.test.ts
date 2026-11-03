@@ -4,6 +4,8 @@ import { RETENTION_DAYS } from "@coss/retention";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { eq } from "drizzle-orm";
 import {
+  authenticateSchedulingSession,
+  createBookerSession,
   createBooking,
   createEventType,
   createHost,
@@ -52,7 +54,12 @@ async function booked() {
     deps,
     actor,
   );
-  return { env, booking, scope: { organizationIds: [env.organizationId] } };
+  return {
+    env,
+    booking,
+    eventTypeId: eventType.id,
+    scope: { organizationIds: [env.organizationId] },
+  };
 }
 
 const END = START + 30 * 60_000;
@@ -99,4 +106,37 @@ test("erasing someone reaches only them, in this environment", async () => {
   expect((await getBooking(other.env, other.booking.id, deps)).attendees[0]?.email).toBe(
     "sam@example.com",
   );
+});
+
+test("erasing someone ends the booker sessions fixed to them, and only those", async () => {
+  const { env, eventTypeId } = await booked();
+  const mint = (uid: string) =>
+    createBookerSession(
+      env,
+      {
+        eventType: eventTypeId,
+        attendee: { uid, name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+        publicUrl: null,
+      },
+      deps,
+    );
+  const theirs = await mint("p");
+  const someoneElses = await mint("q");
+  const stored = async (id: string) => {
+    const [row] = await db
+      .select()
+      .from(schema.schedulingSession)
+      .where(eq(schema.schedulingSession.id, id));
+    return row;
+  };
+  expect((await stored(theirs.id))?.encryptedAttendee).not.toBeNull();
+  await eraseAttendee(env, { uid: "p" });
+  const erased = await stored(theirs.id);
+  expect(erased?.encryptedAttendee).toBeNull();
+  expect(erased?.attendeeUid).toBeNull();
+  expect(erased?.revokedAt).not.toBeNull();
+  await expect(authenticateSchedulingSession(theirs.token)).rejects.toThrow();
+  const kept = await stored(someoneElses.id);
+  expect(kept?.encryptedAttendee).not.toBeNull();
+  expect(kept?.revokedAt).toBeNull();
 });

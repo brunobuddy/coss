@@ -53,6 +53,7 @@ type MintInput = {
   eventTypeId?: string | null;
   bookingId?: string | null;
   encryptedAttendee?: string | null;
+  attendeeUid?: string | null;
   readOnly?: boolean;
   apiKeyId?: string | null;
   createdByUserId?: string | null;
@@ -74,6 +75,7 @@ async function mint(input: MintInput): Promise<Created> {
     eventTypeId: input.eventTypeId ?? null,
     bookingId: input.bookingId ?? null,
     encryptedAttendee: input.encryptedAttendee ?? null,
+    attendeeUid: input.attendeeUid ?? null,
     readOnly: input.readOnly ?? false,
     apiKeyId: input.apiKeyId ?? null,
     createdByUserId: input.createdByUserId ?? null,
@@ -147,6 +149,7 @@ export async function createBookerSession(
     encryptedAttendee: input.attendee
       ? encryptSecret(JSON.stringify(input.attendee), deps.dataKeys)
       : null,
+    attendeeUid: input.attendee?.uid ?? null,
     apiKeyId: input.apiKeyId ?? null,
     expiresAt: expiry(input.now ?? new Date(), input.expiresIn, BOOKER_DEFAULT_SECONDS),
     publicUrl: input.publicUrl,

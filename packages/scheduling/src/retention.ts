@@ -164,21 +164,41 @@ export async function purgeSchedulingLeftovers(opts: PurgeOptions = {}): Promise
   return 0;
 }
 
-/** An attendee's right to be forgotten: their details go from every booking now. */
+/**
+ * An attendee's right to be forgotten: their details go from every booking now, and any booker
+ * session fixed to them ends, since without its identity it would let the browser book as anyone.
+ */
 export async function eraseAttendee(
   scope: Pick<SchedulingEnvironment, "organizationId" | "environmentId">,
   input: { uid: string },
 ): Promise<number> {
-  const erased = await db
-    .update(schedulingAttendee)
-    .set({ ...REDACTED, redactedAt: new Date() })
-    .where(
-      and(
-        eq(schedulingAttendee.organizationId, scope.organizationId),
-        eq(schedulingAttendee.environmentId, scope.environmentId),
-        eq(schedulingAttendee.uid, input.uid),
-      ),
-    )
-    .returning({ id: schedulingAttendee.id });
-  return erased.length;
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const erased = await tx
+      .update(schedulingAttendee)
+      .set({ ...REDACTED, redactedAt: now })
+      .where(
+        and(
+          eq(schedulingAttendee.organizationId, scope.organizationId),
+          eq(schedulingAttendee.environmentId, scope.environmentId),
+          eq(schedulingAttendee.uid, input.uid),
+        ),
+      )
+      .returning({ id: schedulingAttendee.id });
+    await tx
+      .update(schedulingSession)
+      .set({
+        encryptedAttendee: null,
+        attendeeUid: null,
+        revokedAt: sql`coalesce(${schedulingSession.revokedAt}, ${now.toISOString()}::timestamptz)`,
+      })
+      .where(
+        and(
+          eq(schedulingSession.organizationId, scope.organizationId),
+          eq(schedulingSession.environmentId, scope.environmentId),
+          eq(schedulingSession.attendeeUid, input.uid),
+        ),
+      );
+    return erased.length;
+  });
 }

@@ -75,7 +75,8 @@ attendee sees times, never other hosts.
 - Webhooks and log lines carry ids, times and statuses. `request-log.ts` keeps no bodies of these routes.
 - Host calendar events are private, titled "Appointment", with no attendees.
 - `redactExpiredBookings` erases details 90 days after a booking ends, `purgeExpiredBookings` the row at 395;
-  `eraseAttendee` on request. Periods live in `@coss/retention`.
+  `eraseAttendee` on request, which also ends booker sessions fixed to them (found by `attendee_uid`). Periods live in
+  `@coss/retention`.
 
 ## Notifications
 
@@ -104,8 +105,8 @@ test database: the package's own functions, in one process, with no API and no p
 environment on the Pro plan; `--capped` adds a usage cap, which makes every booking update one quota row. Pool size:
 `DATABASE_POOL_MAX`. It exits 1 if a race didn't have the winners it should or anything failed unexpectedly, and prints
 `EXPLAIN (ANALYZE, BUFFERS)` of the statements the hot paths really sent, flagging selective sequential scans of big
-tables. Booking at 500 hosts is limited by trying candidates one at a time: a pool booking took about 90
-ms with a 500-host pool in five time zones, and one nobody could take about 550 ms, holding a connection throughout.
+tables. A pool tries its top candidate, then reads who could still take the slot and tries only them, so a slot nobody can
+take costs one attempt and one read rather than an attempt per host. `createSeries` still tries each host in turn.
 
 ## Going live
 
@@ -114,9 +115,7 @@ secret, Scheduling is off there: the API answers 503 `scheduling_unavailable`, t
 dashboard's pages don't exist. Rotating the key: README, "Rotating `SCHEDULING_DATA_KEYS`" (`bun run
 scheduling:reencrypt`). Still to do:
 
-1. Google OAuth verification (project `coss-scheduling` under coss.com's Google organization: submitted, under review)
-   and Microsoft publisher verification (app "coss.com Scheduling" in Cal.com's Entra tenant, whose secret expires
-   in 2028). Until Google's passes, its consent screen warns and caps the app at 100 users. Until Microsoft's passes,
-   users in other organizations may be refused consent.
-2. DPA annexes, subprocessors and the Privacy Policy (`apps/site/AGENTS.md`, 30 days' notice for a new subprocessor).
-3. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.
+1. Google OAuth verification (project `coss-scheduling` under coss.com's Google organization: submitted, under review).
+   Until it passes, Google's consent screen warns and caps the app at 100 users. Microsoft's app ("coss.com Scheduling"
+   in Cal.com's Entra tenant) is publisher-verified; its secret expires in 2028.
+2. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.

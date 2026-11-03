@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { db, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
-import { encryptSecret, isEncryptedWithPrimary, secretsKeyRing } from "@coss/webhooks";
+import {
+  decryptSecret,
+  encryptSecret,
+  isEncryptedWithPrimary,
+  secretsKeyRing,
+} from "@coss/webhooks";
 import { eq, sql } from "drizzle-orm";
 import {
   createBookerSession,
@@ -17,6 +22,7 @@ import {
   type SchedulingDeps,
   type SchedulingEnvironment,
 } from "../src/index.ts";
+import { schedulingDataKeysFromEnv } from "../src/runtime.ts";
 import { testSchedulingDeps } from "../src/testing.ts";
 
 const { schedulingAttendee, schedulingSession } = schema;
@@ -391,4 +397,15 @@ describe("reencryptSchedulingData", () => {
     });
     expect(await attendeeRow(booking.id)).toEqual(row);
   });
+});
+
+test("a missing key's error names the variable to look at", () => {
+  const ring = (key: Buffer) =>
+    schedulingDataKeysFromEnv({ SCHEDULING_DATA_KEYS: key.toString("base64") });
+  const oldRing = ring(OLD_KEY);
+  const newRing = ring(NEW_KEY);
+  if (!oldRing || !newRing) throw new Error("Expected key rings.");
+  expect(() => decryptSecret(encryptSecret("someone", oldRing), newRing)).toThrow(
+    "which is not in SCHEDULING_DATA_KEYS",
+  );
 });

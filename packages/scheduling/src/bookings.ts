@@ -276,6 +276,35 @@ type ClaimPlan = {
   ttlSeconds: number | null;
 };
 
+/** What's committed now says about each host. Null: not found. */
+async function verdictsOf(
+  executor: Executor,
+  plan: ClaimPlan,
+  hosts: readonly HostRow[],
+  schedules: ReadonlyMap<string, string | null>,
+) {
+  const { eventType, rule, scope, startMs, nowMs } = plan;
+  const loaded = await loadHostInputs(executor, {
+    scope,
+    hosts: hosts.map((host) => ({
+      id: host.id,
+      timeZone: host.timeZone,
+      scheduleId: schedules.get(host.id) ?? null,
+    })),
+    eventTypeId: eventType.id,
+    fromMs: startMs,
+    toMs: startMs + rule.durationMinutes * MINUTE_MS,
+    nowMs,
+    calendarFailureMode: plan.failureMode,
+  });
+  return new Map(
+    hosts.map((host) => {
+      const inputs = loaded.get(host.id);
+      return [host.id, inputs ? isBookable(startMs, { nowMs, rule, host: inputs }) : null];
+    }),
+  );
+}
+
 /** Claims every host for a non-group booking, or throws `LostSlot`. Runs inside a savepoint. */
 async function claimHosts(
   tx: Transaction,
@@ -284,7 +313,7 @@ async function claimHosts(
   bookingId: string,
   schedules: ReadonlyMap<string, string | null>,
 ): Promise<Date | null> {
-  const { eventType, rule, scope, startMs, nowMs } = plan;
+  const { eventType, rule, startMs } = plan;
   const sorted = [...hosts].sort((a, b) => (a.id < b.id ? -1 : 1));
   await lockHostsAndMemberships(
     tx,
@@ -292,23 +321,9 @@ async function claimHosts(
     sorted.map((host) => host.id),
   );
   await lockLimitBuckets(tx, eventType, rule, sorted, startMs);
-  const duration = rule.durationMinutes * MINUTE_MS;
-  const loaded = await loadHostInputs(tx, {
-    scope,
-    hosts: sorted.map((host) => ({
-      id: host.id,
-      timeZone: host.timeZone,
-      scheduleId: schedules.get(host.id) ?? null,
-    })),
-    eventTypeId: eventType.id,
-    fromMs: startMs,
-    toMs: startMs + duration,
-    nowMs,
-    calendarFailureMode: plan.failureMode,
-  });
+  const verdicts = await verdictsOf(tx, plan, sorted, schedules);
   for (const host of sorted) {
-    const inputs = loaded.get(host.id);
-    const verdict = inputs ? isBookable(startMs, { nowMs, rule, host: inputs }) : null;
+    const verdict = verdicts.get(host.id);
     if (!verdict?.ok) throw new LostSlot(verdict?.reason ?? "host_unavailable");
   }
   const occupied = occupiedRange(startMs, rule);
@@ -361,11 +376,14 @@ async function assignAndClaim(
 ): Promise<{ hosts: HostRow[]; liveUntil: Date | null }> {
   const required = candidates.required.map((entry) => entry.host);
   const schedules = schedulesOf(candidates);
-  const choices: (HostRow | null)[] =
+  let choices: (HostRow | null)[] =
     candidates.members.length > 0 ? ranked(candidates, seed) : [null];
   if (required.length === 0 && candidates.members.length === 0) throw slotLost("no_hosts");
   let lastReason: string | undefined;
-  for (const member of choices) {
+  let narrowed = false;
+  while (choices.length > 0) {
+    const [member, ...others] = choices as [HostRow | null, ...(HostRow | null)[]];
+    choices = others;
     const hosts = member ? [...required, member] : required;
     try {
       const liveUntil = await inSavepoint(tx, (savepoint) =>
@@ -375,6 +393,17 @@ async function assignAndClaim(
     } catch (error) {
       if (!(error instanceof LostSlot)) throw error;
       lastReason = error.reason;
+    }
+    // One read instead of an attempt per busy host. Each attempt still checks under its locks.
+    if (!narrowed && choices.length > 1) {
+      narrowed = true;
+      const members = choices.filter((choice) => choice !== null);
+      const verdicts = await verdictsOf(tx, plan, [...required, ...members], schedules);
+      for (const host of required) {
+        const verdict = verdicts.get(host.id);
+        if (!verdict?.ok) throw slotLost(verdict?.reason ?? "host_unavailable");
+      }
+      choices = members.filter((choice) => verdicts.get(choice.id)?.ok);
     }
   }
   throw slotLost(lastReason);
