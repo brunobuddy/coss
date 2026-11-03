@@ -273,7 +273,7 @@ describe("routing", () => {
     expect(target?.value).toBeUndefined();
   });
 
-  test("the forms host reaches the API, only on /f/* and only with Cloudflare's header", () => {
+  test("the forms host reaches the API, only on /f/* and only with its origin header", () => {
     const forms = rules.find((rule) =>
       rule.conditions.some(
         (condition) =>

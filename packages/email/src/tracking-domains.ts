@@ -475,9 +475,13 @@ export async function deleteTrackingDomain(
     try {
       await deps.tracking.delete(row.providerHostnameId);
     } catch (error) {
+      // The provider may have stopped serving it already: sends must not use it until a check says so.
       await db
         .update(trackingDomain)
-        .set({ status: row.status, nextCheckAt: row.nextCheckAt })
+        .set({
+          status: row.status === "active" ? "temporary_failure" : row.status,
+          nextCheckAt: new Date(),
+        })
         .where(scope);
       console.error(`[email:tracking-domains] deleting ${row.hostname} failed:`, error);
       throw new DomainError(

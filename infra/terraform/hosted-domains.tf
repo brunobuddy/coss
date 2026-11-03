@@ -326,3 +326,29 @@ output "tracking_tenants" {
     cname_target        = aws_cloudfront_connection_group.tracking.routing_endpoint
   }
 }
+
+resource "aws_iam_role_policy" "task_tracking_domains" {
+  for_each = toset(["web", "api", "worker"])
+  name     = "tracking-domains"
+  role     = aws_iam_role.task[each.key].id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["cloudfront:CreateDistributionTenant"]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudfront:GetDistributionTenant",
+          "cloudfront:GetManagedCertificateDetails",
+          "cloudfront:UpdateDistributionTenant",
+          "cloudfront:DeleteDistributionTenant",
+        ]
+        Resource = "arn:aws:cloudfront::${var.account_id}:distribution-tenant/*"
+      },
+    ]
+  })
+}
