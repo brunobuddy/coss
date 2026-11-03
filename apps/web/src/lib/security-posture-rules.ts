@@ -378,6 +378,23 @@ export type DatabaseAuditEntry = {
 
 const STATEMENT_LENGTH = 200;
 
+export type LogQueryRow = Record<string, string>;
+
+export function logQueryRows(
+  results: { field?: string | undefined; value?: string | undefined }[][],
+): LogQueryRow[] {
+  return results.map((row) =>
+    Object.fromEntries(row.map(({ field, value }) => [field ?? "", value ?? ""])),
+  );
+}
+
+/** Logs Insights writes `2026-11-03 14:06:29.000`, in UTC. A row it can't date fails the read. */
+export function logQueryTime(value: string): Date {
+  const at = new Date(`${value.replace(" ", "T")}Z`);
+  if (Number.isNaN(at.getTime())) throw new Error(`Unreadable log time: ${value}`);
+  return at;
+}
+
 /** One pgaudit log line: `… AUDIT: SESSION,1,1,DDL,CREATE TABLE,TABLE,public.x,create table x,<not logged>`. */
 export function parseAuditLine(message: string, at: Date): DatabaseAuditEntry | null {
   const start = message.indexOf("AUDIT: ");

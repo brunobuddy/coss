@@ -11,7 +11,11 @@ import {
   GetTrailStatusCommand,
   LookupEventsCommand,
 } from "@aws-sdk/client-cloudtrail";
-import { CloudWatchLogsClient, FilterLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
+import {
+  CloudWatchLogsClient,
+  GetQueryResultsCommand,
+  StartQueryCommand,
+} from "@aws-sdk/client-cloudwatch-logs";
 import {
   ConfigServiceClient,
   DescribeConfigurationRecorderStatusCommand,
@@ -48,6 +52,9 @@ import {
   type ControlFinding,
   type ControlScore,
   type DatabaseAuditEntry,
+  type LogQueryRow,
+  logQueryRows,
+  logQueryTime,
   type PostureCheck,
   parseAuditLine,
   postureChecks,
@@ -71,7 +78,8 @@ const REGION = "us-east-2";
 const GLOBAL_REGION = "us-east-1";
 const ROOT_LOOKUP_DAYS = 90;
 const MAX_HUB_PAGES = 10;
-const MAX_LOG_PAGES = 5;
+const LOG_QUERY_WAIT_MS = 20_000;
+const LOG_QUERY_POLL_MS = 500;
 const AUDIT_DAYS = 30;
 const AUDIT_SHOWN = 25;
 const TOPICS = ["coss-alerts", "coss-ses-events", "coss-ses-inbound"];
@@ -225,25 +233,31 @@ async function logsArrived(
   return false;
 }
 
-async function logLines(
+// FilterLogEvents answers with pages of nothing long before it reaches recent lines.
+async function queryLogs(
   client: CloudWatchLogsClient,
   logGroupName: string,
-  filterPattern: string,
-  startTime: number,
-): Promise<{ message: string; at: Date }[]> {
-  const lines: { message: string; at: Date }[] = [];
-  let nextToken: string | undefined;
-  for (let page = 0; page < MAX_LOG_PAGES; page += 1) {
-    const response = await client.send(
-      new FilterLogEventsCommand({ logGroupName, filterPattern, startTime, nextToken }),
-    );
-    for (const event of response.events ?? []) {
-      lines.push({ message: event.message ?? "", at: new Date(event.timestamp ?? 0) });
+  queryString: string,
+  days: number,
+): Promise<LogQueryRow[]> {
+  const now = Date.now();
+  const { queryId } = await client.send(
+    new StartQueryCommand({
+      logGroupName,
+      queryString,
+      startTime: Math.floor((now - days * 86_400_000) / 1000),
+      endTime: Math.ceil(now / 1000),
+    }),
+  );
+  while (Date.now() - now < LOG_QUERY_WAIT_MS) {
+    const { status, results } = await client.send(new GetQueryResultsCommand({ queryId }));
+    if (status === "Complete") return logQueryRows(results ?? []);
+    if (status !== "Scheduled" && status !== "Running") {
+      throw new Error(`Log query ended as ${status}`);
     }
-    nextToken = response.nextToken;
-    if (!nextToken) break;
+    await new Promise((resolve) => setTimeout(resolve, LOG_QUERY_POLL_MS));
   }
-  return lines;
+  throw new Error("Log query timed out");
 }
 
 export type DatabaseActivity = {
@@ -451,15 +465,25 @@ export async function getSecurityPosture(): Promise<SecurityPosture> {
       if (!group) throw new Error("SECURITY_DATABASE_LOG_GROUP is unset");
       const logs = new CloudWatchLogsClient(region);
       const [audit, failed] = await Promise.all([
-        logLines(logs, group, '"AUDIT: "', Date.now() - AUDIT_DAYS * 86_400_000),
-        logLines(logs, group, '"password authentication failed"', Date.now() - 86_400_000),
+        queryLogs(
+          logs,
+          group,
+          `filter @message like "AUDIT: " | fields @timestamp, @message | sort @timestamp desc | limit ${AUDIT_SHOWN}`,
+          AUDIT_DAYS,
+        ),
+        queryLogs(
+          logs,
+          group,
+          'filter @message like "password authentication failed" | stats count() as failed',
+          1,
+        ),
       ]);
       return {
-        entries: audit
-          .flatMap(({ message, at }) => parseAuditLine(message, at) ?? [])
-          .sort((a, b) => b.at.getTime() - a.at.getTime())
-          .slice(0, AUDIT_SHOWN),
-        failedLoginsToday: failed.length,
+        entries: audit.flatMap(
+          (row) =>
+            parseAuditLine(row["@message"] ?? "", logQueryTime(row["@timestamp"] ?? "")) ?? [],
+        ),
+        failedLoginsToday: Number(failed[0]?.failed ?? 0),
       };
     }),
     productionDetector,
