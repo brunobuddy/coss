@@ -36,6 +36,15 @@ const SECRET_VALUES: [RegExp, string][] = [
 ];
 
 /**
+ * Recipients' and users' addresses and numbers quoted in error messages. Bounded for linear time
+ * on long lines, and a domain must end in letters so `react@18.3.1` stays readable.
+ */
+const CONTACT_DETAILS: [RegExp, string][] = [
+  [/[A-Za-z0-9._%+-]{1,64}@(?:[A-Za-z0-9-]{1,63}\.){1,8}[A-Za-z]{2,63}/g, "[email]"],
+  [/\+\d[\d ().-]{5,18}\d/g, "[phone]"],
+];
+
+/**
  * Query strings and fragments of paths and URLs: tokens (`?token=`, OAuth `code`/`state`) and
  * search terms. A `?` not following a path ("why?") is kept.
  */
@@ -78,12 +87,16 @@ const DROPPED_ATTRIBUTE_PATTERN =
   /^(url\.path\.parameter\.|http\.request\.header\.(authorization|cookie|proxy-authorization|x-api-key|x-forwarded-for|x-real-ip|x-postmark-account-token|x-postmark-server-token)$|http\.response\.header\.set-cookie$)/;
 
 /**
- * A URL, path, span name or line of text with secret path segments and provider keys masked and
- * the query strings of its paths removed.
+ * A URL, path, span name or line of text with secret path segments, provider keys, email addresses
+ * and phone numbers masked and the query strings of its paths removed.
  */
 export function scrubUrl(value: string): string {
   let scrubbed = value.replace(WORD, withoutQuery);
-  for (const [pattern, replacement] of [...SECRET_PATH_SEGMENTS, ...SECRET_VALUES]) {
+  for (const [pattern, replacement] of [
+    ...SECRET_PATH_SEGMENTS,
+    ...SECRET_VALUES,
+    ...CONTACT_DETAILS,
+  ]) {
     scrubbed = scrubbed.replace(pattern, replacement);
   }
   return scrubbed;
