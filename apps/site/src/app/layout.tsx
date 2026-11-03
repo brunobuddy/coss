@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   // Pages that set their own `openGraph` replace this one, so they set `type` too: in-app browsers
   // read `og:type` and throw when it's missing.
   openGraph: { type: "website", siteName: SITE_NAME },
+  // Zoom's check that coss.com is ours, for the Marketplace listing.
+  verification: {
+    other: { "zoom-domain-verification": "ZOOM_verify_1ade02c565ca492891d9e2c5a2dc79c0" },
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

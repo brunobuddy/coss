@@ -149,7 +149,7 @@ plain_env = {
     SCHEDULING_PUBLIC_URL        = "https://cossbook.com"
     GOOGLE_CALENDAR_CLIENT_ID    = "776019028945-dnuug57hi1tsjfdbu93evm8ggp1ge00q.apps.googleusercontent.com"
     MICROSOFT_CALENDAR_CLIENT_ID = "e58a0c0d-e1bb-4aef-a861-43c755d96761"
-    ZOOM_CLIENT_ID               = "ipQnslr7RRGyv0tedOdTyg"
+    ZOOM_CLIENT_ID               = "o2o2uQQ0TqqHQSKrcHybEg"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
     FORMS_PUBLIC_URL   = "https://cossforms.com"
     FORMS_FILES_BUCKET = "coss-production-forms-files-294417174674"
@@ -200,7 +200,7 @@ plain_env = {
     SCHEDULING_PUBLIC_URL               = "https://cossbook.com"
     GOOGLE_CALENDAR_CLIENT_ID           = "776019028945-dnuug57hi1tsjfdbu93evm8ggp1ge00q.apps.googleusercontent.com"
     MICROSOFT_CALENDAR_CLIENT_ID        = "e58a0c0d-e1bb-4aef-a861-43c755d96761"
-    ZOOM_CLIENT_ID                      = "ipQnslr7RRGyv0tedOdTyg"
+    ZOOM_CLIENT_ID                      = "o2o2uQQ0TqqHQSKrcHybEg"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
     FORMS_PUBLIC_URL       = "https://cossforms.com"
     FORMS_FILES_BUCKET     = "coss-production-forms-files-294417174674"

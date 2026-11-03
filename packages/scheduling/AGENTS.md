@@ -124,7 +124,5 @@ dashboard's pages don't exist. Rotating the key: README, "Rotating `SCHEDULING_D
 scheduling:reencrypt`). Still to do:
 
 1. Zoom's app review. The app "coss.com" is in Cal.com's Zoom developer account, separate from Cal.com's own, and
-   production runs its Development credentials, which only work for users in that Zoom account. Zoom keeps separate
-   Production credentials: swap to them once the app's published. The deauthorization URL exists only on the Production
-   side, so that path hasn't run against Zoom. Only `FakeZoomApi` has run this code so far.
+   production runs its Production credentials. Until it's approved, only reviewers and that Zoom account can consent.
 2. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.
