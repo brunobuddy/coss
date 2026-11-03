@@ -1,8 +1,10 @@
 import { billingOverview } from "@coss/billing";
 import { formatSupportTarget, PLANS, supportResponseMinutes } from "@coss/billing/catalog";
+import { PRODUCTS } from "@coss/dashboard-routes";
 import { listDomains } from "@coss/email";
 import { listSendersForAdmin } from "@coss/email/admin";
 import { getOrganizationStanding } from "@coss/reputation";
+import { supportReferenceLabel } from "@coss/support";
 import { listSupportTicketsFor, type SupportTicketForRep } from "@coss/support/admin";
 import { getOrganizationForAdmin } from "@coss/tenancy/admin";
 import { Badge } from "@coss/ui/components/badge";
@@ -104,8 +106,52 @@ export async function TicketContextPanel(props: { data: SupportTicketForRep }) {
   );
   return (
     <div className="flex min-w-0 flex-col gap-4 2xl:w-80 2xl:shrink-0">
+      {context.path || context.projectName || context.product || context.resourceId ? (
+        <Panel title="About">
+          <PanelBody flush>
+            <SpecList>
+              {context.projectName ? (
+                <SpecItem label="Project">
+                  {context.projectName} / {context.environmentName}
+                </SpecItem>
+              ) : null}
+              {context.product ? (
+                <SpecItem label="Product">
+                  {PRODUCTS.find((product) => product.key === context.product)?.name ??
+                    context.product}
+                </SpecItem>
+              ) : null}
+              {context.resourceId ? (
+                <SpecItem label={supportReferenceLabel(context.resourceType ?? "")} mono>
+                  {context.resourceType === "email" ? (
+                    <Link
+                      className="underline underline-offset-2"
+                      href={`/admin/emails/${context.resourceId}`}
+                    >
+                      {context.resourceId}
+                    </Link>
+                  ) : (
+                    context.resourceId
+                  )}
+                </SpecItem>
+              ) : null}
+              {context.path ? (
+                <SpecItem label="Raised from">
+                  <Link
+                    className="underline underline-offset-2 [overflow-wrap:anywhere]"
+                    href={context.path}
+                  >
+                    {context.path}
+                  </Link>
+                </SpecItem>
+              ) : null}
+            </SpecList>
+          </PanelBody>
+        </Panel>
+      ) : null}
+
       <Panel title="Requester">
-        <PanelBody>
+        <PanelBody flush>
           <SpecList>
             <SpecItem label="Email">
               <span className="break-all">{ticket.requesterEmail}</span>
@@ -147,7 +193,7 @@ export async function TicketContextPanel(props: { data: SupportTicketForRep }) {
             ) : null}
           </SpecList>
           {ticket.suggestedCc.length > 0 ? (
-            <div className="mt-3 flex flex-col gap-1.5 border-t pt-3">
+            <div className="flex flex-col gap-1.5 border-t px-5 py-3">
               <p className="text-muted-foreground text-xs">
                 Copied on unverified mail. Add only if you trust them:
               </p>
@@ -183,9 +229,9 @@ export async function TicketContextPanel(props: { data: SupportTicketForRep }) {
         }
         title={organization?.name ?? "Organization"}
       >
-        <PanelBody className="flex flex-col gap-3">
+        <PanelBody flush>
           {!confirmedOrganization && suggestedOrganization ? (
-            <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3">
+            <div className="m-5 flex flex-col gap-2 rounded-lg border border-dashed p-3">
               <p className="text-sm">
                 Might be <strong>{suggestedOrganization.name}</strong>. It stays hidden from them
                 until you confirm.
@@ -202,11 +248,11 @@ export async function TicketContextPanel(props: { data: SupportTicketForRep }) {
           {organization ? (
             <OrganizationFacts now={now} organizationId={organization.id} />
           ) : (
-            <p className="text-muted-foreground text-sm">
+            <p className="p-5 text-muted-foreground text-sm">
               No match. This ticket follows Free's target.
             </p>
           )}
-          <div className="flex flex-col gap-2 border-t pt-3">
+          <div className="flex flex-col gap-2 border-t px-5 py-3">
             {candidates.map((candidate) => (
               <SupportActionButton
                 action={confirmTicketOrganizationAction}
@@ -223,16 +269,6 @@ export async function TicketContextPanel(props: { data: SupportTicketForRep }) {
           </div>
         </PanelBody>
       </Panel>
-
-      {context.path ? (
-        <Panel title="Raised from">
-          <PanelBody>
-            <Link className="break-all text-sm underline underline-offset-2" href={context.path}>
-              {context.path}
-            </Link>
-          </PanelBody>
-        </Panel>
-      ) : null}
 
       {others.length > 0 ? (
         <Panel title="Other tickets">

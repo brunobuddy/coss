@@ -26,6 +26,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
 import { SpecItem, SpecList } from "@/components/spec-list";
+import { newTicketHref } from "@/components/support/support-link";
 import { eventDetail } from "@/lib/email-events";
 import { PREVIEW_HEAD } from "@/lib/email-preview";
 import { formatBytes, formatDateTime } from "@/lib/format";
@@ -362,6 +363,21 @@ export default async function EmailPage({
       <PageHeader
         actions={
           <>
+            <Button
+              render={
+                <Link
+                  href={newTicketHref({
+                    orgSlug,
+                    from: `${base}/email/messages/${emailId}`,
+                    reference: emailId,
+                  })}
+                />
+              }
+              size="sm"
+              variant="outline"
+            >
+              Get help
+            </Button>
             {can({ log: ["read"] }) ? (
               <Button
                 render={

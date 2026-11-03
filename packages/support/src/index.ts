@@ -18,6 +18,13 @@ export {
   type SupportPlanFor,
 } from "./matching.ts";
 export {
+  recentEmailReferences,
+  recentSmsReferences,
+  resolveSupportReference,
+  type SupportReferenceOption,
+  supportReferenceLabel,
+} from "./references.ts";
+export {
   addBusinessMinutes,
   formatSupportTime,
   responseDueAt,

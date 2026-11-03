@@ -1,5 +1,6 @@
 import { getSms, listSmsEvents, SmsError } from "@coss/sms";
 import { getEnvironment } from "@coss/tenancy";
+import { Button } from "@coss/ui/components/button";
 import {
   Table,
   TableBody,
@@ -9,6 +10,7 @@ import {
   TableRow,
 } from "@coss/ui/components/table";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyValue } from "@/components/copy-value";
 import { SandboxBadge } from "@/components/email-badges";
@@ -16,6 +18,7 @@ import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/panel";
 import { SmsEventBadge, SmsStatusDot } from "@/components/sms-badges";
 import { SpecItem, SpecList } from "@/components/spec-list";
+import { newTicketHref } from "@/components/support/support-link";
 import { formatDateTime } from "@/lib/format";
 import { requireOrgMember } from "@/lib/session";
 
@@ -41,6 +44,23 @@ export default async function SmsDetailPage({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        actions={
+          <Button
+            render={
+              <Link
+                href={newTicketHref({
+                  orgSlug,
+                  from: `/${orgSlug}/${projectSlug}/${envSlug}/sms/${smsId}`,
+                  reference: smsId,
+                })}
+              />
+            }
+            size="sm"
+            variant="outline"
+          >
+            Get help
+          </Button>
+        }
         description={`From ${sms.from}`}
         meta={
           <>

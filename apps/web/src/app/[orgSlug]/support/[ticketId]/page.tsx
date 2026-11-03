@@ -1,3 +1,4 @@
+import { PRODUCTS } from "@coss/dashboard-routes";
 import { formatSupportTime, getCustomerTicket, markCustomerTicketRead } from "@coss/support";
 import {
   CUSTOMER_TICKET_STATE_LABELS,
@@ -43,6 +44,7 @@ export default async function SupportTicketPage({
   if (!session.session.impersonatedBy) await markCustomerTicketRead(scope, ticket.id);
 
   const state = customerTicketState(ticket.status);
+  const productName = PRODUCTS.find((product) => product.key === ticket.context.product)?.name;
   const now = new Date();
   const hidden = { orgSlug, ticketId: ticket.id };
   const items: ConversationItem[] = ticket.messages.map((message) => ({
@@ -88,6 +90,17 @@ export default async function SupportTicketPage({
             <StatusDot tone={STATE_TONE[state]}>{CUSTOMER_TICKET_STATE_LABELS[state]}</StatusDot>
             {ticket.severity === "urgent" ? <Badge variant="error">Urgent</Badge> : null}
             <span className="text-muted-foreground">{supportCategoryLabel(ticket.category)}</span>
+            {productName ? <span className="text-muted-foreground">{productName}</span> : null}
+            {ticket.context.projectName ? (
+              <span className="text-muted-foreground">
+                {ticket.context.projectName} / {ticket.context.environmentName}
+              </span>
+            ) : null}
+            {ticket.context.resourceId ? (
+              <span className="font-mono text-muted-foreground text-xs">
+                {ticket.context.resourceId}
+              </span>
+            ) : null}
             <span className="font-mono text-muted-foreground text-xs">#{ticket.number}</span>
           </span>
         }

@@ -271,6 +271,7 @@ export type CustomerMessage = {
 
 export type CustomerTicket = CustomerTicketSummary & {
   planLabel: string;
+  context: SupportTicketRow["context"];
   messages: CustomerMessage[];
 };
 
@@ -320,6 +321,7 @@ export async function getCustomerTicket(
     createdAt: ticket.createdAt,
     unread: false,
     planLabel: PLANS[ticket.plan as PlanKey]?.name ?? "Free",
+    context: ticket.context,
     messages: messages.flatMap((message): CustomerMessage[] => {
       if (message.kind === "note") return [];
       return [
