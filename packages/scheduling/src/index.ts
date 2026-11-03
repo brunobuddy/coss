@@ -8,6 +8,7 @@ export { buildIcs } from "./calendar/ical.ts";
 export * from "./calendar/oauth.ts";
 export * from "./calendar/sync.ts";
 export * from "./calendar/writes.ts";
+export * from "./calendar/zoom.ts";
 export { isDeadlock, isExclusionViolation } from "./claims.ts";
 export * from "./errors.ts";
 export * from "./event-types.ts";

@@ -27,6 +27,8 @@ github_repository = "cosscom/coss"
 deploy_actor_ids = ["2538462", "8019099", "25907159", "55134778", "343308169", "118344674"]
 # Optional secrets not stored in coss/production: take a name out once put-secret.sh has set it.
 unset_secrets = [
+  # Scheduling's Zoom app: until Zoom approves it.
+  "ZOOM_CLIENT_SECRET", "ZOOM_WEBHOOK_SECRET_TOKEN",
   "IPINFO_PRIVACY_TOKEN",
   # Sign's CSC sealer (SSL.com eSigner): until its account exists.
   "SIGN_CSC_CLIENT_SECRET", "SIGN_CSC_PASSWORD", "SIGN_CSC_TOTP_SECRET",

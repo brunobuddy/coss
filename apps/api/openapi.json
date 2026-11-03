@@ -18166,6 +18166,31 @@
               "type"
             ],
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "zoom"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 2000,
+                "format": "uri",
+                "default": null,
+                "description": "The meeting's link, once it's created on the host's Zoom account."
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
           }
         ]
       },
@@ -19269,6 +19294,31 @@
                   "type"
                 ],
                 "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "zoom"
+                    ]
+                  },
+                  "url": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 2000,
+                    "format": "uri",
+                    "default": null,
+                    "description": "The meeting's link, once it's created on the host's Zoom account."
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
               }
             ],
             "description": "One of the event type's `locations`, with your link filled in if it has none."
@@ -19627,6 +19677,31 @@
                   "type"
                 ],
                 "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "zoom"
+                    ]
+                  },
+                  "url": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 2000,
+                    "format": "uri",
+                    "default": null,
+                    "description": "The meeting's link, once it's created on the host's Zoom account."
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
               }
             ],
             "description": "One of the event type's `locations`, with your link filled in if it has none."
@@ -19930,6 +20005,31 @@
                   "type"
                 ],
                 "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "zoom"
+                    ]
+                  },
+                  "url": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 2000,
+                    "format": "uri",
+                    "default": null,
+                    "description": "The meeting's link, once it's created on the host's Zoom account."
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
               }
             ],
             "description": "One of the event type's `locations`, with your link filled in if it has none."
@@ -20223,7 +20323,8 @@
             "type": "string",
             "enum": [
               "google",
-              "microsoft"
+              "microsoft",
+              "zoom"
             ]
           },
           "return_url": {
@@ -20264,7 +20365,8 @@
               "google",
               "microsoft",
               "caldav",
-              "simulated"
+              "simulated",
+              "zoom"
             ]
           },
           "account": {

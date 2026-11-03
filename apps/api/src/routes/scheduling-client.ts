@@ -245,6 +245,7 @@ export function createSchedulingClientRoutes(opts: {
       return c.json({
         ...base,
         host: { id: host.id, name: host.name, time_zone: host.time_zone },
+        zoom_available: Boolean(deps.calendars?.apps.zoom),
       });
     }
     return c.json(base);

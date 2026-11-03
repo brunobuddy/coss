@@ -13,7 +13,7 @@ import {
   enqueueWebhookMessage,
   type SecretsKeyRing,
 } from "@coss/webhooks";
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, lt, ne, sql } from "drizzle-orm";
 import type { Interval } from "../engine/intervals.ts";
 import { SchedulingError } from "../errors.ts";
 import { resolveHost } from "../hosts.ts";
@@ -33,6 +33,7 @@ import {
   revokeToken,
 } from "./oauth.ts";
 import { simulatedCalendarClient } from "./simulated.ts";
+import { ZOOM_CALENDAR_ID, zoomCalendarClient, zoomUserId } from "./zoom.ts";
 
 const {
   schedulingBusyInterval,
@@ -52,7 +53,12 @@ type Env = Scope & { projectId: string; mode: "live" | "sandbox" };
 export type CalendarDeps = {
   secretsKeys: SecretsKeyRing;
   /** Coss.com's OAuth apps. A provider without one can't be connected. */
-  apps: { google: OAuthApp | null; microsoft: OAuthApp | null };
+  apps: {
+    google: OAuthApp | null;
+    microsoft: OAuthApp | null;
+    /** `webhookSecret` signs Zoom's deauthorization events. */
+    zoom?: (OAuthApp & { webhookSecret: string | null }) | null;
+  };
   /** `API_PUBLIC_URL`: where providers send consent back and push notifications to. */
   publicUrl: string;
   fetcher?: HttpFetch;
@@ -80,7 +86,7 @@ const appOf = (deps: CalendarDeps, provider: OAuthProvider): OAuthApp => {
   if (!app) {
     throw new SchedulingError(
       "calendar_unavailable",
-      `Connecting ${provider} calendars isn't set up in this deployment.`,
+      `Connecting ${provider} isn't set up in this deployment.`,
     );
   }
   return app;
@@ -316,6 +322,7 @@ async function oauthAccountId(
   client: CalendarClient,
   deps: CalendarDeps,
 ): Promise<string> {
+  if (provider === "zoom") return zoomUserId(accessToken, fetcherOf(deps));
   if (provider === "microsoft") {
     const res = await fetcherOf(deps)(
       "https://graph.microsoft.com/v1.0/me?$select=id,userPrincipalName",
@@ -338,6 +345,7 @@ function oauthClient(
   deps: CalendarDeps,
 ): CalendarClient {
   const fetcher = fetcherOf(deps);
+  if (provider === "zoom") return zoomCalendarClient({ accessToken, fetcher });
   return provider === "google"
     ? googleCalendarClient({ accessToken, fetcher })
     : microsoftCalendarClient({ accessToken, fetcher });
@@ -474,13 +482,30 @@ export async function clientFor(
     if (!tokens.refreshToken) {
       throw new CalendarError("auth", "no_refresh_token", "Calendar access has expired.");
     }
-    tokens = await refreshTokens({
-      provider,
-      app: appOf(deps, provider),
-      refreshToken: tokens.refreshToken,
-      fetcher: fetcherOf(deps),
-      nowMs: nowMs(deps),
-    });
+    try {
+      tokens = await refreshTokens({
+        provider,
+        app: appOf(deps, provider),
+        refreshToken: tokens.refreshToken,
+        fetcher: fetcherOf(deps),
+        nowMs: nowMs(deps),
+      });
+    } catch (error) {
+      // Zoom's refresh tokens work once, so another worker may just have used this one.
+      if (error instanceof CalendarError && error.kind === "auth") {
+        const [current] = await db
+          .select()
+          .from(schedulingCalendarConnection)
+          .where(eq(schedulingCalendarConnection.id, connection.id));
+        if (
+          current?.encryptedCredentials &&
+          current.encryptedCredentials !== connection.encryptedCredentials
+        ) {
+          return clientFor(current, deps);
+        }
+      }
+      throw error;
+    }
     // Whoever wrote since keeps their value; this refresh's tokens still work for this run.
     await db
       .update(schedulingCalendarConnection)
@@ -526,7 +551,7 @@ export async function markNeedsReauth(
         organizationId: connection.organizationId,
         environmentId: connection.environmentId,
         hostId: connection.hostId,
-        kind: "calendar_needs_reauth",
+        kind: connection.provider === "zoom" ? "zoom_needs_reauth" : "calendar_needs_reauth",
         channel: "email",
         recipient: "host",
         dedupeKey: `calendar_needs_reauth:${connection.id}:${now.getTime()}`,
@@ -576,7 +601,9 @@ async function toConnectionObjects(
     account: row.accountId,
     status: row.status,
     calendars: calendars
-      .filter((calendar) => calendar.connectionId === row.id)
+      .filter(
+        (calendar) => calendar.connectionId === row.id && calendar.externalId !== ZOOM_CALENDAR_ID,
+      )
       .map((calendar) => ({
         id: calendar.id,
         external_id: calendar.externalId,
@@ -641,6 +668,7 @@ export async function updateCalendar(
           eq(schedulingCalendar.id, calendarId),
           eq(schedulingCalendar.hostId, host.id),
           eq(schedulingCalendar.organizationId, host.organizationId),
+          ne(schedulingCalendar.externalId, ZOOM_CALENDAR_ID),
         ),
       )
       .for("update");
@@ -712,6 +740,75 @@ export async function disconnectCalendar(
   return { id: connection.id };
 }
 
+/** Someone removed the app in Zoom: every connection of that Zoom user goes, in any organization. */
+export async function handleZoomDeauthorization(
+  zoomUser: string,
+  deps: CalendarDeps,
+): Promise<number> {
+  const connections = await db
+    .select()
+    .from(schedulingCalendarConnection)
+    .where(
+      and(
+        eq(schedulingCalendarConnection.provider, "zoom"),
+        eq(schedulingCalendarConnection.accountId, zoomUser),
+      ),
+    );
+  for (const connection of connections) {
+    await releaseConnection(connection, deps);
+    await db.transaction(async (tx) => {
+      await recordCalendarEvent(
+        tx,
+        connection,
+        "scheduling.calendar.disconnected",
+        deps.now?.() ?? new Date(),
+      );
+      await tx
+        .delete(schedulingCalendarConnection)
+        .where(
+          and(
+            eq(schedulingCalendarConnection.id, connection.id),
+            eq(schedulingCalendarConnection.organizationId, connection.organizationId),
+          ),
+        );
+    });
+  }
+  return connections.length;
+}
+
+const ZOOM_IDLE_MS = 30 * 24 * 60 * 60_000;
+
+/** Zoom's refresh tokens expire when unused, and a host may go months between bookings. */
+export async function refreshIdleZoomConnections(
+  deps: CalendarDeps,
+  opts: { limit?: number; scope?: { organizationIds: readonly string[] } } = {},
+): Promise<number> {
+  const idleSince = new Date(nowMs(deps) - ZOOM_IDLE_MS);
+  const idle = await db
+    .select()
+    .from(schedulingCalendarConnection)
+    .where(
+      and(
+        eq(schedulingCalendarConnection.provider, "zoom"),
+        eq(schedulingCalendarConnection.status, "active"),
+        lt(schedulingCalendarConnection.updatedAt, idleSince),
+        opts.scope
+          ? inArray(schedulingCalendarConnection.organizationId, [...opts.scope.organizationIds])
+          : undefined,
+      ),
+    )
+    .limit(opts.limit ?? 50);
+  for (const connection of idle) {
+    try {
+      await clientFor(connection, deps);
+    } catch (error) {
+      if (!(error instanceof CalendarError)) throw error;
+      if (error.kind === "auth") await markNeedsReauth(connection, error.code, deps);
+    }
+  }
+  return idle.length;
+}
+
 /** Best effort at the provider: leaving is never blocked by one being down. */
 async function releaseConnection(connection: ConnectionRow, deps: CalendarDeps): Promise<void> {
   if (connection.provider === "simulated" || connection.provider === "caldav") return;
@@ -732,7 +829,12 @@ async function releaseConnection(connection: ConnectionRow, deps: CalendarDeps):
         decryptSecret(connection.encryptedCredentials, deps.secretsKeys),
       ) as OAuthTokens;
       if (tokens.refreshToken) {
-        await revokeToken(connection.provider, tokens.refreshToken, fetcherOf(deps));
+        await revokeToken(
+          connection.provider,
+          tokens.refreshToken,
+          fetcherOf(deps),
+          deps.apps[connection.provider],
+        );
       }
     }
   } catch (error) {

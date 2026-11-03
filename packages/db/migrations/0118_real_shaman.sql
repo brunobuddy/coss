@@ -1,0 +1,1 @@
+ALTER TYPE "public"."scheduling_calendar_provider" ADD VALUE 'zoom';

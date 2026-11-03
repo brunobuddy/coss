@@ -68,6 +68,7 @@ import {
   checkHostEditedEvents,
   expireDueBookings,
   type NotificationDeps,
+  refreshIdleZoomConnections,
   releaseOrganizationCalendars,
   renewDueCalendarChannels,
   runDueCalendarSyncs,
@@ -784,6 +785,7 @@ export function startJobs(deps: WorkerDeps): Loop[] {
           intervalMs: 5 * 60_000,
           run: async () => {
             await checkHostEditedEvents(calendars, { limit: SCHEDULING_BATCH });
+            await refreshIdleZoomConnections(calendars, { limit: SCHEDULING_BATCH });
             return false;
           },
         }),

@@ -79,6 +79,9 @@ export const env = createEnv({
     GOOGLE_CALENDAR_CLIENT_SECRET: schedulingEnvShape.GOOGLE_CALENDAR_CLIENT_SECRET,
     MICROSOFT_CALENDAR_CLIENT_ID: schedulingEnvShape.MICROSOFT_CALENDAR_CLIENT_ID,
     MICROSOFT_CALENDAR_CLIENT_SECRET: schedulingEnvShape.MICROSOFT_CALENDAR_CLIENT_SECRET,
+    ZOOM_CLIENT_ID: schedulingEnvShape.ZOOM_CLIENT_ID,
+    ZOOM_CLIENT_SECRET: schedulingEnvShape.ZOOM_CLIENT_SECRET,
+    ZOOM_WEBHOOK_SECRET_TOKEN: schedulingEnvShape.ZOOM_WEBHOOK_SECRET_TOKEN,
     SCHEDULING_DATA_KEYS: schedulingEnvShape.SCHEDULING_DATA_KEYS,
     // Keys what risk assessments remember (velocity, duplicates, fraud reports).
     RISK_HASH_KEY:

@@ -2,7 +2,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { CalendarError, type HttpFetch } from "./client.ts";
 
-export type OAuthProvider = "google" | "microsoft";
+export type OAuthProvider = "google" | "microsoft" | "zoom";
 
 export type OAuthApp = { clientId: string; clientSecret: string };
 
@@ -35,6 +35,13 @@ const ENDPOINTS = {
     revoke: null,
     scopes: MICROSOFT_SCOPES,
   },
+  // Zoom's scopes are set on the app itself, not asked for here.
+  zoom: {
+    authorize: "https://zoom.us/oauth/authorize",
+    token: "https://zoom.us/oauth/token",
+    revoke: "https://zoom.us/oauth/revoke",
+    scopes: [],
+  },
 } as const;
 
 export function pkcePair(): { verifier: string; challenge: string } {
@@ -54,22 +61,25 @@ export function authorizationUrl(input: {
     client_id: input.app.clientId,
     redirect_uri: input.redirectUri,
     response_type: "code",
-    scope: endpoints.scopes.join(" "),
     state: input.state,
     code_challenge: input.codeChallenge,
     code_challenge_method: "S256",
   });
+  if (endpoints.scopes.length > 0) params.set("scope", endpoints.scopes.join(" "));
   if (input.provider === "google") {
     params.set("access_type", "offline");
     // Without this Google omits the refresh token after the first consent.
     params.set("prompt", "consent");
     params.set("include_granted_scopes", "false");
-  } else {
+  } else if (input.provider === "microsoft") {
     params.set("response_mode", "query");
     params.set("prompt", "select_account");
   }
   return `${endpoints.authorize}?${params}`;
 }
+
+const basicAuth = (app: OAuthApp) =>
+  `Basic ${Buffer.from(`${app.clientId}:${app.clientSecret}`).toString("base64")}`;
 
 async function tokenRequest(
   provider: OAuthProvider,
@@ -80,12 +90,15 @@ async function tokenRequest(
 ): Promise<OAuthTokens> {
   const res = await fetcher(ENDPOINTS[provider].token, {
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: app.clientId,
-      client_secret: app.clientSecret,
-      ...body,
-    }).toString(),
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      ...(provider === "zoom" ? { authorization: basicAuth(app) } : {}),
+    },
+    body: new URLSearchParams(
+      provider === "zoom"
+        ? body
+        : { client_id: app.clientId, client_secret: app.clientSecret, ...body },
+    ).toString(),
   });
   const json = (await res.json().catch(() => ({}))) as {
     access_token?: string;
@@ -157,8 +170,12 @@ export async function revokeToken(
   provider: OAuthProvider,
   token: string,
   fetcher: HttpFetch,
+  app?: OAuthApp | null,
 ): Promise<void> {
   const url = ENDPOINTS[provider].revoke;
   if (!url) return;
-  await fetcher(`${url}?token=${encodeURIComponent(token)}`, { method: "POST" }).catch(() => {});
+  await fetcher(`${url}?token=${encodeURIComponent(token)}`, {
+    method: "POST",
+    ...(provider === "zoom" && app ? { headers: { authorization: basicAuth(app) } } : {}),
+  }).catch(() => {});
 }

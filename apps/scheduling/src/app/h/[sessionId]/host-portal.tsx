@@ -21,6 +21,7 @@ type Session = {
   read_only: boolean;
   sandbox: boolean;
   host: { id: string; name: string; time_zone: string };
+  zoom_available: boolean;
 };
 
 type Schedule = {
@@ -32,7 +33,7 @@ type Schedule = {
 
 type Connection = {
   id: string;
-  provider: "google" | "microsoft" | "caldav" | "simulated";
+  provider: "google" | "microsoft" | "caldav" | "simulated" | "zoom";
   account: string;
   status: "active" | "needs_reauth";
   calendars: { id: string; external_id: string; read_busy: boolean; write_target: boolean }[];
@@ -52,6 +53,7 @@ const PROVIDER_NAMES = {
   microsoft: "Microsoft",
   caldav: "CalDAV",
   simulated: "Simulated",
+  zoom: "Zoom",
 } as const;
 
 type HoursRange = { start: string; end: string };
@@ -266,7 +268,7 @@ function Calendars(props: { call: ClientCall; session: Session }) {
   }, [call]);
   useEffect(load, [load]);
 
-  const connect = async (provider: "google" | "microsoft") => {
+  const connect = async (provider: "google" | "microsoft" | "zoom") => {
     setProblem(null);
     // Opened before the call, or browsers treat it as a popup nobody asked for.
     const popup = window.open("about:blank", "coss-calendar", "width=520,height=680");
@@ -305,7 +307,9 @@ function Calendars(props: { call: ClientCall; session: Session }) {
     }
   };
 
-  const needsReauth = connections?.some((connection) => connection.status === "needs_reauth");
+  const lostAccess = connections?.filter((connection) => connection.status === "needs_reauth");
+  const needsReauth = lostAccess?.some((connection) => connection.provider !== "zoom");
+  const zoomNeedsReauth = lostAccess?.some((connection) => connection.provider === "zoom");
   return (
     <div className="flex flex-col gap-4">
       {needsReauth ? (
@@ -313,6 +317,14 @@ function Calendars(props: { call: ClientCall; session: Session }) {
           <AlertTitle>A calendar needs reconnecting</AlertTitle>
           <AlertDescription>
             We can't read it, so you aren't being offered for new bookings until it's back.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {zoomNeedsReauth ? (
+        <Alert variant="error">
+          <AlertTitle>Zoom needs reconnecting</AlertTitle>
+          <AlertDescription>
+            New bookings won't get a Zoom link until it's back. You're still being offered.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -338,6 +350,11 @@ function Calendars(props: { call: ClientCall; session: Session }) {
           <Button onClick={() => connect("microsoft")} variant="outline">
             Connect Microsoft
           </Button>
+          {session.zoom_available ? (
+            <Button onClick={() => connect("zoom")} variant="outline">
+              Connect Zoom
+            </Button>
+          ) : null}
           <Button onClick={() => setCaldavOpen((open) => !open)} variant="outline">
             Connect Apple or CalDAV
           </Button>
@@ -424,7 +441,9 @@ function Calendars(props: { call: ClientCall; session: Session }) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-sm">
               <span className="font-medium">{PROVIDER_NAMES[connection.provider]}</span>
-              <span className="break-all text-muted-foreground">{connection.account}</span>
+              {connection.provider === "zoom" ? null : (
+                <span className="break-all text-muted-foreground">{connection.account}</span>
+              )}
               {connection.status === "needs_reauth" ? (
                 <Badge variant="error">Needs reconnecting</Badge>
               ) : null}

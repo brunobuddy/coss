@@ -29,6 +29,8 @@ import {
   takeTurn,
 } from "./availability.ts";
 import { hostsBusyNow } from "./calendar/live-check.ts";
+import { announce } from "./calendar/writes.ts";
+import { ZOOM_CALENDAR_ID } from "./calendar/zoom.ts";
 import {
   inSavepoint,
   isDeadlock,
@@ -59,6 +61,7 @@ const {
   schedulingBookingEvent,
   schedulingBookingHost,
   schedulingCalendar,
+  schedulingCalendarConnection,
   schedulingCalendarEvent,
   schedulingClaim,
   schedulingEventTypeHost,
@@ -148,7 +151,12 @@ function checkAttendee(attendee: AttendeeInputOutput): void {
 }
 
 function chooseLocation(eventType: EventTypeRow, wanted: Location | undefined): Location | null {
-  if (!wanted) return eventType.locations[0] ?? null;
+  const location = wanted ?? eventType.locations[0] ?? null;
+  // Its link comes from the meeting we create, never from whoever's booking.
+  if (location?.type === "zoom" && eventType.locations.some((l) => l.type === "zoom")) {
+    return { type: "zoom", url: null };
+  }
+  if (!wanted) return location;
   const offered = eventType.locations.find((location) => location.type === wanted.type);
   if (!offered) {
     throw new SchedulingError(
@@ -619,16 +627,49 @@ async function setCalendarState(
   state: "present" | "absent",
 ): Promise<void> {
   if (hostIds.length === 0) return;
-  const targets = await tx
-    .select({ id: schedulingCalendar.id, hostId: schedulingCalendar.hostId })
+  const calendars = await tx
+    .select({
+      id: schedulingCalendar.id,
+      hostId: schedulingCalendar.hostId,
+      writeTarget: schedulingCalendar.writeTarget,
+      externalId: schedulingCalendar.externalId,
+      provider: schedulingCalendarConnection.provider,
+    })
     .from(schedulingCalendar)
+    .innerJoin(
+      schedulingCalendarConnection,
+      eq(schedulingCalendarConnection.id, schedulingCalendar.connectionId),
+    )
     .where(
       and(
         eq(schedulingCalendar.organizationId, booking.organizationId),
         inArray(schedulingCalendar.hostId, [...hostIds]),
-        eq(schedulingCalendar.writeTarget, true),
+        or(
+          eq(schedulingCalendar.writeTarget, true),
+          eq(schedulingCalendar.externalId, ZOOM_CALENDAR_ID),
+        ),
       ),
-    );
+    )
+    .orderBy(asc(schedulingCalendar.hostId));
+  const targets = calendars.filter((calendar) => calendar.writeTarget);
+  if (booking.location?.type === "zoom") {
+    // One meeting however many hosts there are: the first with Zoom connected runs it.
+    const meeting = calendars.find((calendar) => calendar.externalId === ZOOM_CALENDAR_ID);
+    if (meeting) targets.push(meeting);
+    else if (
+      state === "present" &&
+      !booking.location.url &&
+      !targets.some((target) => target.provider === "simulated")
+    ) {
+      await announce(
+        tx,
+        booking,
+        "scheduling.booking.calendar_write_failed",
+        "This booking's host has no Zoom account connected, so it has no meeting link",
+        new Date(),
+      );
+    }
+  }
   for (const target of targets) {
     await tx
       .insert(schedulingCalendarEvent)
@@ -1690,6 +1731,10 @@ export async function rescheduleBooking(
       startAt: new Date(input.startMs),
       endAt: new Date(input.startMs + durationMinutes * MINUTE_MS),
       externalConflictAt: null,
+      // The old host's meeting goes with them, so the new host's gets a new link.
+      ...(replacement && booking.location?.type === "zoom"
+        ? { location: { type: "zoom" as const, url: null } }
+        : {}),
     });
     const after = await participants(tx, updated);
     if (updated.status === "confirmed") {

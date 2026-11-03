@@ -4,13 +4,14 @@
  * can't arrive in the wrong order, and each key makes a retry after a lost answer harmless. A failed
  * write never touches the booking, which stays valid and is flagged for the customer.
  */
-import { db, schema } from "@coss/db";
+import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
-import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { CalendarError, type CalendarEventWrite } from "./client.ts";
 import { type CalendarDeps, clientFor, markNeedsReauth } from "./connections.ts";
+import { notZoomMeeting } from "./zoom.ts";
 
 const {
   schedulingBooking,
@@ -75,13 +76,13 @@ const eventKey = (row: LedgerRow) =>
 
 function conferenceOf(booking: BookingRow): CalendarEventWrite["conference"] {
   const type = booking.location?.type;
-  return type === "google_meet" || type === "microsoft_teams" ? type : null;
+  return type === "google_meet" || type === "microsoft_teams" || type === "zoom" ? type : null;
 }
 
 function locationText(booking: BookingRow): string | null {
   const location = booking.location;
   if (!location) return null;
-  if (location.type === "link") return location.url;
+  if (location.type === "link" || location.type === "zoom") return location.url;
   if (location.type === "phone") return location.number;
   if (location.type === "in_person") return location.address;
   return null;
@@ -108,11 +109,12 @@ async function finish(
 async function setMeetingLink(booking: BookingRow, url: string, now: Date): Promise<void> {
   const location = booking.location;
   if (!location || location.type === "link") return;
+  const zoom = location.type === "zoom";
   await db.transaction(async (tx) => {
     const [updated] = await tx
       .update(schedulingBooking)
       .set({
-        location: { type: "link", url },
+        location: zoom ? { type: "zoom", url } : { type: "link", url },
         version: sql`${schedulingBooking.version} + 1`,
       })
       .where(
@@ -123,6 +125,24 @@ async function setMeetingLink(booking: BookingRow, url: string, now: Date): Prom
       )
       .returning();
     if (!updated) return;
+    // The host's calendar event went out without the link.
+    if (zoom) {
+      await tx
+        .update(schedulingCalendarEvent)
+        .set({
+          desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
+          nextAttemptAt: now,
+          attempts: 0,
+        })
+        .where(
+          and(
+            eq(schedulingCalendarEvent.bookingId, booking.id),
+            eq(schedulingCalendarEvent.organizationId, booking.organizationId),
+            eq(schedulingCalendarEvent.desiredState, "present"),
+            notZoomMeeting(),
+          ),
+        );
+    }
     await announce(tx, updated, "scheduling.booking.location_ready", "Meeting link ready", now);
   });
 }
@@ -132,8 +152,8 @@ type WritableEvent =
   | "scheduling.booking.calendar_write_failed"
   | "scheduling.booking.external_conflict";
 
-async function announce(
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+export async function announce(
+  tx: Executor,
   booking: BookingRow,
   type: WritableEvent,
   message: string,
@@ -320,6 +340,7 @@ export async function checkHostEditedEvents(deps: CalendarDeps, opts: Scan = {})
         isNotNull(schedulingCalendarEvent.providerEventId),
         gt(schedulingCalendarEvent.desiredStart, now),
         eq(schedulingCalendarConnection.status, "active"),
+        ne(schedulingCalendarConnection.provider, "zoom"),
         sql`${schedulingCalendarEvent.appliedVersion} = ${schedulingCalendarEvent.desiredVersion}`,
         sql`${schedulingCalendarEvent.updatedAt} < ${new Date(now.getTime() - 3_600_000).toISOString()}::timestamptz`,
         opts.scope

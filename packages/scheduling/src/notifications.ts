@@ -187,7 +187,7 @@ const titleOf = (booking: BookingRow) => oneLine(booking.title);
 function locationLine(booking: BookingRow): string | null {
   const location = booking.location;
   if (!location) return null;
-  if (location.type === "link") return location.url;
+  if (location.type === "link" || location.type === "zoom") return location.url;
   if (location.type === "phone") return location.number;
   if (location.type === "in_person") return location.address;
   return null;
@@ -498,15 +498,24 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
   const session = deps.publicUrl
     ? await createHostInvitationSession(env, host.id, deps.publicUrl, now)
     : null;
+  const zoom = row.kind === "zoom_needs_reauth";
   const message = renderEmail({
-    subject: "Your calendar needs reconnecting",
+    subject: zoom ? "Your Zoom account needs reconnecting" : "Your calendar needs reconnecting",
     blocks: [
       {
-        paragraph:
-          "We can't read your calendar any more, so you aren't being offered for new bookings. Existing bookings stay as they are.",
+        paragraph: zoom
+          ? "We can't reach your Zoom account any more, so new bookings won't get a Zoom link. You're still being offered, and existing links keep working."
+          : "We can't read your calendar any more, so you aren't being offered for new bookings. Existing bookings stay as they are.",
       },
       ...(session?.url
-        ? [{ button: { label: "Reconnect your calendar", url: session.url } } as EmailBlock]
+        ? [
+            {
+              button: {
+                label: zoom ? "Reconnect Zoom" : "Reconnect your calendar",
+                url: session.url,
+              },
+            } as EmailBlock,
+          ]
         : [{ paragraph: `Please reconnect it through ${senderName}.` } as EmailBlock]),
     ],
     reason: `You're receiving this as a host with ${senderName}.`,
@@ -551,11 +560,12 @@ export async function runDueSchedulingNotifications(
         await finish(row, "stale", now);
         continue;
       }
-      // A Meet or Teams link appears only after the calendar write: a confirmation gives it a
-      // moment, then goes without. The manage page always shows the link once it exists.
+      // A Meet, Teams or Zoom link appears only after the write: a confirmation gives it a moment,
+      // then goes without. The manage page always shows the link once it exists.
       const waitingForLink =
         (booking.location?.type === "google_meet" ||
-          booking.location?.type === "microsoft_teams") &&
+          booking.location?.type === "microsoft_teams" ||
+          (booking.location?.type === "zoom" && !booking.location.url)) &&
         row.kind !== "cancelled" &&
         now.getTime() - booking.updatedAt.getTime() < MEETING_LINK_WAIT_MS;
       if (waitingForLink) {
