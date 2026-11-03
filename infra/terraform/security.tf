@@ -361,6 +361,83 @@ resource "aws_cloudwatch_event_target" "security" {
   }
 }
 
+# --- Encryption of what's left --------------------------------------------------------------------
+
+# SES events and inbound notifications name recipients. A customer key, because the AWS-managed SNS
+# key can't be used by the services that publish: a publisher missing here loses its messages silently.
+resource "aws_kms_key" "sns" {
+  description             = "${local.name}: SNS topics"
+  enable_key_rotation     = true
+  deletion_window_in_days = 30
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "Account"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${var.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid    = "Publishers"
+        Effect = "Allow"
+        Principal = {
+          Service = ["ses.amazonaws.com", "cloudwatch.amazonaws.com", "events.amazonaws.com"]
+        }
+        Action   = ["kms:GenerateDataKey*", "kms:Decrypt"]
+        Resource = "*"
+      },
+    ]
+  })
+}
+
+resource "aws_kms_alias" "sns" {
+  name          = "alias/${local.name}-sns"
+  target_key_id = aws_kms_key.sns.key_id
+}
+
+locals {
+  # Created by ses:bootstrap, which keeps their policies and subscriptions.
+  sns_topics = toset(["${var.ses_name}-alerts", "${var.ses_name}-ses-events", "${var.ses_name}-ses-inbound"])
+}
+
+import {
+  for_each = local.sns_topics
+  to       = aws_sns_topic.encrypted[each.key]
+  id       = "arn:aws:sns:${var.region}:${var.account_id}:${each.key}"
+}
+
+resource "aws_sns_topic" "encrypted" {
+  for_each          = local.sns_topics
+  name              = each.key
+  kms_master_key_id = aws_kms_key.sns.arn
+}
+
+locals {
+  tls_only_buckets = {
+    forms_files = aws_s3_bucket.forms_files.id
+    sign        = aws_s3_bucket.sign_documents.id
+    state       = "coss-tfstate-${var.account_id}"
+  }
+}
+
+resource "aws_s3_bucket_policy" "tls_only" {
+  for_each = local.tls_only_buckets
+  bucket   = each.value
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "TlsOnly"
+      Effect    = "Deny"
+      Principal = "*"
+      Action    = "s3:*"
+      Resource  = ["arn:aws:s3:::${each.value}", "arn:aws:s3:::${each.value}/*"]
+      Condition = { Bool = { "aws:SecureTransport" = "false" } }
+    }]
+  })
+}
+
 # --- What the admin console's security page reads --------------------------------------------------
 
 resource "aws_iam_role_policy" "task_web_security" {
@@ -374,6 +451,7 @@ resource "aws_iam_role_policy" "task_web_security" {
         Effect = "Allow"
         Action = [
           "artifact:ListCustomerAgreements",
+          "elasticloadbalancing:DescribeTargetGroups",
           "config:DescribeConfigurationRecorderStatus",
           "guardduty:GetDetector",
           "guardduty:GetFindings",
@@ -389,6 +467,18 @@ resource "aws_iam_role_policy" "task_web_security" {
         Effect   = "Allow"
         Action   = ["sns:ListSubscriptionsByTopic"]
         Resource = data.aws_sns_topic.alerts.arn
+      },
+      {
+        Sid      = "TopicEncryption"
+        Effect   = "Allow"
+        Action   = ["sns:GetTopicAttributes"]
+        Resource = [for topic in local.sns_topics : "arn:aws:sns:${var.region}:${var.account_id}:${topic}"]
+      },
+      {
+        Sid      = "DatabaseAudit"
+        Effect   = "Allow"
+        Action   = ["logs:FilterLogEvents"]
+        Resource = "${aws_cloudwatch_log_group.database.arn}:*"
       },
       {
         Sid      = "LogDelivery"

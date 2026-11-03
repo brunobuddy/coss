@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  parseAuditLine,
   postureChecks,
   postureVerdict,
   type Readings,
@@ -25,6 +26,11 @@ function healthy(): Readings {
     outsideAccess: { ok: true, value: true },
     alerts: { ok: true, value: { confirmed: 1, pending: 0 } },
     accessLogs: { ok: true, value: { loadBalancer: true, network: true } },
+    databaseAudit: { ok: true, value: { extension: true, classes: "ddl,role" } },
+    encryption: {
+      ok: true,
+      value: { targetGroups: { total: 6, encrypted: 6 }, topics: { total: 3, encrypted: 3 } },
+    },
   };
 }
 
@@ -165,5 +171,56 @@ describe("scoreControls", () => {
 
   test("no findings means no score", () => {
     expect(scoreControls([]).percent).toBeNull();
+  });
+});
+
+describe("parseAuditLine", () => {
+  const at = new Date("2026-11-03T00:00:00Z");
+
+  test("reads a line, keeping commas in the statement", () => {
+    expect(
+      parseAuditLine(
+        '2026-11-03 00:00:00 UTC:10.0.0.1(1):coss@coss:[1]:LOG:  AUDIT: SESSION,1,1,DDL,CREATE TABLE,TABLE,public.t,"create table t (a int, b int)",<not logged>',
+        at,
+      ),
+    ).toEqual({
+      at,
+      kind: "DDL",
+      command: "CREATE TABLE",
+      object: "public.t",
+      statement: '"create table t (a int, b int)"',
+    });
+  });
+
+  test("ignores other lines and cuts long statements", () => {
+    expect(parseAuditLine("LOG:  connection received", at)).toBeNull();
+    const line = `AUDIT: SESSION,1,1,ROLE,ALTER ROLE,,,${"x".repeat(300)},<not logged>`;
+    expect(parseAuditLine(line, at)?.statement).toHaveLength(201);
+  });
+});
+
+describe("encryption and audit checks", () => {
+  test("an unencrypted route or topic asks for a look, naming what's left", () => {
+    const readings = {
+      ...healthy(),
+      encryption: {
+        ok: true as const,
+        value: { targetGroups: { total: 6, encrypted: 0 }, topics: { total: 3, encrypted: 3 } },
+      },
+    };
+    const found = postureChecks(readings, NOW).find((c) => c.id === "encryption");
+    expect(found?.state).toBe("warning");
+    expect(found?.summary).toContain("6 of 6 load balancer routes");
+    expect(found?.summary).not.toContain("topics");
+  });
+
+  test("the audit log needs the extension and something to log", () => {
+    const audit = (extension: boolean, classes: string | null) => ({
+      ...healthy(),
+      databaseAudit: { ok: true as const, value: { extension, classes } },
+    });
+    expect(stateOf(audit(false, "ddl,role"), "database_audit")).toBe("warning");
+    expect(stateOf(audit(true, "none"), "database_audit")).toBe("warning");
+    expect(stateOf(audit(true, "ddl,role"), "database_audit")).toBe("ok");
   });
 });

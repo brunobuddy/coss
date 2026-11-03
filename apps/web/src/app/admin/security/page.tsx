@@ -231,6 +231,56 @@ function OutsideAccess({ outsideAccess }: Pick<SecurityPosture, "outsideAccess">
   );
 }
 
+function DatabaseActivity({ database }: Pick<SecurityPosture, "database">) {
+  if (!database.ok) return <Unreadable title="Couldn't read the database's logs" />;
+  const { entries, failedLoginsToday } = database.value;
+  return (
+    <>
+      <PanelBody>
+        <p className="text-sm">
+          {failedLoginsToday === 0
+            ? "No failed database logins in the last 24 hours."
+            : `${failedLoginsToday} failed database ${failedLoginsToday === 1 ? "login" : "logins"} in the last 24 hours. The database isn't public, so these come from inside the network: check them if they aren't from a deploy.`}
+        </p>
+      </PanelBody>
+      {entries.length === 0 ? (
+        <PanelBody flush>
+          <EmptyState
+            compact
+            description="Schema and role changes appear here. Migrations in a deploy are the usual reason for one."
+            icon={ShieldCheckIcon}
+            title="No changes in the last 30 days"
+          />
+        </PanelBody>
+      ) : (
+        <Table variant="card">
+          <TableHeader>
+            <TableRow>
+              <TableHead>When</TableHead>
+              <TableHead>Change</TableHead>
+              <TableHead>Statement</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {entries.map((entry) => (
+              <TableRow key={`${entry.at.toISOString()}-${entry.command}-${entry.statement}`}>
+                <TableCell title={formatDateTime(entry.at)}>{formatRelative(entry.at)}</TableCell>
+                <TableCell>
+                  <div>{entry.command}</div>
+                  <div className="font-mono text-muted-foreground text-xs">{entry.object}</div>
+                </TableCell>
+                <TableCell className="whitespace-normal break-all font-mono text-xs">
+                  {entry.statement}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </>
+  );
+}
+
 /**
  * AWS's security services in one place, in plain language. Read-only: fixes happen in Terraform or
  * the AWS console. `@/lib/security-posture` shows a failed read as unknown, never as fine.
@@ -332,6 +382,13 @@ export default async function AdminSecurityPage() {
         title="Outside access"
       >
         <OutsideAccess outsideAccess={posture.outsideAccess} />
+      </Panel>
+
+      <Panel
+        description="Who changed the database's structure or roles, from Postgres's own audit log. Customer data is never recorded here."
+        title="Database activity"
+      >
+        <DatabaseActivity database={posture.database} />
       </Panel>
     </div>
   );
