@@ -276,9 +276,9 @@ async function adoptProviderPicture(userId: string, picture: string): Promise<vo
 const dashboardUrl = process.env.BETTER_AUTH_URL ? new URL(process.env.BETTER_AUTH_URL) : undefined;
 
 /**
- * Better Auth's passkey plugin verifies assertions with `requireUserVerification: false`. A
- * passkey sign-in skips the TOTP challenge, so it must prove both possession and the user
- * (biometric or PIN) — reject any ceremony the authenticator didn't user-verify.
+ * A passkey sign-in skips the TOTP challenge, so it must prove both possession and the user
+ * (biometric or PIN). The plugin enforces this while `userVerification` is "required"; this keeps
+ * it true if that option ever changes.
  */
 function assertUserVerified(userVerified: boolean): void {
   if (!userVerified) {

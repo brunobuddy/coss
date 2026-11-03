@@ -66,7 +66,7 @@ describe("orgRoleCan", () => {
     expect(orgRoleCan(null, { project: ["read"] })).toBe(false);
   });
 
-  test("role names must match exactly (Better Auth does not trim them)", () => {
+  test("role names must match exactly", () => {
     expect(orgRoleCan(" owner", { apiKey: ["create"] })).toBe(false);
     expect(orgRoleCan("owner ", { apiKey: ["create"] })).toBe(false);
     expect(orgRoleCan("constructor", { project: ["read"] })).toBe(false);

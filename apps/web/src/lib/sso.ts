@@ -42,6 +42,29 @@ async function assertResolvesPublic(url: string): Promise<void> {
   }
 }
 
+const withoutTrailingSlash = (url: string) => url.replace(/\/$/, "");
+
+async function readOidcConfiguration(issuer: string) {
+  const read = (expected: string) =>
+    discoverOIDCConfig({ issuer: expected, isTrustedOrigin: isPublicHttpsUrl });
+  try {
+    return await read(issuer);
+  } catch (error) {
+    // Better Auth compares issuers exactly, and `new URL` adds a slash to a bare origin.
+    const discovered =
+      error instanceof DiscoveryError && error.code === "issuer_mismatch"
+        ? error.details?.discovered
+        : undefined;
+    if (
+      typeof discovered !== "string" ||
+      withoutTrailingSlash(discovered) !== withoutTrailingSlash(issuer)
+    ) {
+      throw error;
+    }
+    return read(discovered);
+  }
+}
+
 /**
  * Reads the IdP's OpenID configuration. Better Auth's own discovery only accepts IdPs listed in
  * `trustedOrigins` (which also allows redirects to them); we accept any public HTTPS issuer
@@ -54,7 +77,7 @@ export async function discoverOidcEndpoints(issuer: string) {
   }
   await assertResolvesPublic(issuer);
   try {
-    const config = await discoverOIDCConfig({ issuer, isTrustedOrigin: isPublicHttpsUrl });
+    const config = await readOidcConfiguration(issuer);
     return {
       issuer: config.issuer,
       discoveryEndpoint: config.discoveryEndpoint,
