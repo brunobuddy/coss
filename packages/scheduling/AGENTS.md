@@ -97,7 +97,8 @@ Live in production at `cossbook.com` (README, "Scheduling's hosted pages"). With
 secret, Scheduling is off there: the API answers 503 `scheduling_unavailable`, the worker's loops don't run and the
 dashboard's pages don't exist. Still to do:
 
-1. Google OAuth verification and Microsoft publisher verification; `GOOGLE_CALENDAR_*`, `MICROSOFT_CALENDAR_*`. Until
-   then hosts can only connect CalDAV calendars.
+1. Google OAuth verification (project `coss-scheduling` under coss.com's Google organization: scopes saved, unverified)
+   and Microsoft publisher verification with `MICROSOFT_CALENDAR_*`. Until Google's passes, its consent screen warns
+   and caps the app at 100 users.
 2. DPA annexes, subprocessors and the Privacy Policy (`apps/site/AGENTS.md`, 30 days' notice for a new subprocessor).
 3. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.
