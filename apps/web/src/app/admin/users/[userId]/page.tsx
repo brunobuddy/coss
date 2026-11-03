@@ -1,3 +1,4 @@
+import { MAX_OWNED_ORGANIZATIONS } from "@coss/auth/options";
 import { listRiskAssessmentsForEmail } from "@coss/risk";
 import {
   getUserForAdmin,
@@ -5,9 +6,11 @@ import {
   listUserMembershipsForAdmin,
   listUserSessionsForAdmin,
   listUserSsoAccountsForAdmin,
+  MAX_OWNED_ORGANIZATION_LIMIT,
 } from "@coss/tenancy/admin";
 import { Badge } from "@coss/ui/components/badge";
 import { Field, FieldLabel } from "@coss/ui/components/field";
+import { Input } from "@coss/ui/components/input";
 import {
   Select,
   SelectItem,
@@ -45,9 +48,11 @@ import {
   banUserAction,
   impersonateUserAction,
   markSignUpLegitimateAction,
+  resetOwnedOrganizationLimitAction,
   resetTwoFactorAction,
   revokeUserSessionAction,
   revokeUserSessionsAction,
+  setOwnedOrganizationLimitAction,
   setUserRoleAction,
   unbanUserAction,
   unlinkUserSsoAction,
@@ -86,6 +91,8 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
   const ownedOrganizations = memberships.filter(
     (m) => m.role.split(",").includes("owner") && !m.suspended,
   );
+  const ownedCount = memberships.filter((m) => m.role.split(",").includes("owner")).length;
+  const organizationLimit = user.ownedOrganizationLimit ?? MAX_OWNED_ORGANIZATIONS;
   const fields = { userId: user.id };
 
   return (
@@ -125,6 +132,11 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
             </SpecItem>
             <SpecItem label="Active sessions" mono>
               {sessions.length}
+            </SpecItem>
+            <SpecItem label="Organizations owned">
+              {isAdmin
+                ? `${ownedCount} (platform admins have no limit)`
+                : `${ownedCount} of ${organizationLimit}${user.ownedOrganizationLimit === null ? "" : " (custom limit)"}`}
             </SpecItem>
             {user.banned ? (
               <>
@@ -281,6 +293,43 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                 title={isAdmin ? "Remove platform admin?" : "Make platform admin?"}
                 triggerLabel={isAdmin ? "Remove admin" : "Make admin"}
               />
+              <AdminActionDialog
+                icon="organization"
+                action={setOwnedOrganizationLimitAction}
+                description={`Applies to the next organization ${user.email} creates. Organizations they already own are kept, even above the limit.`}
+                fields={fields}
+                reason="required"
+                reasonPlaceholder="e.g. Platform agreement, ticket #1234"
+                submitLabel="Set limit"
+                success="Organization limit changed"
+                title="Change the organization limit?"
+                triggerLabel="Change organization limit"
+              >
+                <Field>
+                  <FieldLabel>Organizations this user can own</FieldLabel>
+                  <Input
+                    defaultValue={organizationLimit}
+                    max={MAX_OWNED_ORGANIZATION_LIMIT}
+                    min={1}
+                    name="limit"
+                    required
+                    type="number"
+                  />
+                </Field>
+              </AdminActionDialog>
+              {user.ownedOrganizationLimit === null ? null : (
+                <AdminActionDialog
+                  icon="organization"
+                  action={resetOwnedOrganizationLimitAction}
+                  description={`${user.email} goes back to the default of ${MAX_OWNED_ORGANIZATIONS}. Organizations they already own are kept.`}
+                  fields={fields}
+                  reason="optional"
+                  submitLabel="Reset limit"
+                  success="Organization limit reset"
+                  title="Reset the organization limit?"
+                  triggerLabel="Reset organization limit"
+                />
+              )}
               <AdminActionDialog
                 icon="user"
                 action={impersonateUserAction}

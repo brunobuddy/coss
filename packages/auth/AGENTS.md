@@ -76,7 +76,8 @@ Better Auth (`packages/auth`) and the dashboard actions, mobile API routes, tena
     the organization and membership transaction (`serialized-endpoint.ts`). Invitations: inviter must have a verified email, no disposable
     invitees (both checked in middleware, including resends), at most `MAX_PENDING_INVITATIONS` pending per org, and the dashboard action charges the org's
     `dashboard.invitations` bucket (refunded when Better Auth refuses). Organizations: a user owns at most
-    `MAX_OWNED_ORGANIZATIONS` (platform admins exempt; memberships don't count), and `/organization/create` is
+    `MAX_OWNED_ORGANIZATIONS` (platform admins exempt; memberships don't count; `user.owned_organization_limit`
+    overrides it, set only by `setOwnedOrganizationLimit` from the admin console's user page), and `/organization/create` is
     limited per IP (`auth.org_create.ip`).
   - Password reset: `sendResetPassword` emails Better Auth's `/api/auth/reset-password/:token` link, which redirects to
     the dashboard's `/reset-password?token=…` (the client passes `redirectTo`); `revokeSessionsOnPasswordReset: true`.

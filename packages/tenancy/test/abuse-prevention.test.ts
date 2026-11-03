@@ -259,6 +259,39 @@ describe("organization limit", () => {
     expect(owned).toHaveLength(MAX_OWNED_ORGANIZATIONS);
   });
 
+  test("a user's own limit replaces the default, and applies to a session already open", async () => {
+    const user = await createTestUser();
+    const cookie = (await sessionHeaders(user.email, user.password)).get("cookie") ?? "";
+    const create = () => {
+      const suffix = uniqueSuffix();
+      return post(
+        "/organization/create",
+        { name: `Own ${suffix}`, slug: `own-${suffix}` },
+        { cookie },
+      );
+    };
+    for (let i = 0; i < MAX_OWNED_ORGANIZATIONS; i++) expect((await create()).ok).toBe(true);
+    expect((await create()).ok).toBe(false);
+
+    await db
+      .update(schema.user)
+      .set({ ownedOrganizationLimit: MAX_OWNED_ORGANIZATIONS + 1 })
+      .where(eq(schema.user.id, user.id));
+    expect((await create()).ok).toBe(true);
+    expect((await create()).ok).toBe(false);
+  });
+
+  test("the limit can't be set by the user", async () => {
+    const user = await createTestUser();
+    const cookie = (await sessionHeaders(user.email, user.password)).get("cookie") ?? "";
+    await post("/update-user", { ownedOrganizationLimit: 100 }, { cookie });
+    const [row] = await db
+      .select({ limit: schema.user.ownedOrganizationLimit })
+      .from(schema.user)
+      .where(eq(schema.user.id, user.id));
+    expect(row?.limit).toBeNull();
+  });
+
   test("platform admins are exempt", async () => {
     const admin = await createTestUser();
     await db.update(schema.user).set({ role: "admin" }).where(eq(schema.user.id, admin.id));

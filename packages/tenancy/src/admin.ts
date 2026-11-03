@@ -56,6 +56,8 @@ export const ADMIN_ACTIONS = [
   "user.revoke_sessions",
   "user.reset_two_factor",
   "user.unlink_sso",
+  "user.set_organization_limit",
+  "user.reset_organization_limit",
   "organization.suspend",
   "organization.unsuspend",
   "organization.disable_sso_requirement",
@@ -535,6 +537,7 @@ export type AdminUserRow = {
   banReason: string | null;
   banExpires: Date | null;
   twoFactorEnabled: boolean;
+  ownedOrganizationLimit: number | null;
   createdAt: Date;
 };
 
@@ -548,6 +551,7 @@ const userColumns = {
   banReason: user.banReason,
   banExpires: user.banExpires,
   twoFactorEnabled: sql<boolean>`coalesce(${user.twoFactorEnabled}, false)`,
+  ownedOrganizationLimit: user.ownedOrganizationLimit,
   createdAt: user.createdAt,
 };
 
@@ -595,6 +599,54 @@ export async function listUsersForAdmin(
 export async function getUserForAdmin(userId: string): Promise<AdminUserRow | null> {
   const [row] = await db.select(userColumns).from(user).where(eq(user.id, userId)).limit(1);
   return row ? toAdminUser(row) : null;
+}
+
+/** The most organizations an admin can let one user own. */
+export const MAX_OWNED_ORGANIZATION_LIMIT = 1_000;
+
+/**
+ * Sets (`limit`) or removes (`limit: null`) a user's own limit on the organizations they may own,
+ * recording the previous and new limits. Applies to their next organization. Removing a limit they
+ * don't have records nothing and returns false.
+ */
+export async function setOwnedOrganizationLimit(input: {
+  userId: string;
+  limit: number | null;
+  reason?: string | null;
+  actor: AdminActor;
+}): Promise<boolean> {
+  const { limit } = input;
+  if (
+    limit !== null &&
+    (!Number.isInteger(limit) || limit < 1 || limit > MAX_OWNED_ORGANIZATION_LIMIT)
+  ) {
+    throw new TenancyError(
+      "invalid",
+      `The limit must be a whole number between 1 and ${MAX_OWNED_ORGANIZATION_LIMIT}.`,
+    );
+  }
+  const reason = normalizeReason(input.reason, limit !== null);
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ previous: user.ownedOrganizationLimit })
+      .from(user)
+      .where(eq(user.id, input.userId))
+      .for("update");
+    if (!row) throw new TenancyError("not_found", "User not found.");
+    if (row.previous === limit) return false;
+    await tx.update(user).set({ ownedOrganizationLimit: limit }).where(eq(user.id, input.userId));
+    await recordAdminAction(
+      {
+        actor: input.actor,
+        action: limit === null ? "user.reset_organization_limit" : "user.set_organization_limit",
+        target: { type: "user", id: input.userId },
+        reason,
+        metadata: { previous: row.previous, limit },
+      },
+      tx,
+    );
+    return true;
+  });
 }
 
 /**
@@ -1089,6 +1141,7 @@ export async function usersByEmailForAdmin(
       role: null,
       banReason: null,
       twoFactorEnabled: false,
+      ownedOrganizationLimit: null,
     });
     result.set(row.email.toLowerCase(), {
       id: row.id,

@@ -25,6 +25,7 @@ mock.module("@coss/tenancy/admin", () => ({
   recordAdminAction: audit,
   resetUserTwoFactor: mock(async () => {}),
   revokeApiKeyAsAdmin: mock(),
+  setOwnedOrganizationLimit: mock(async () => true),
   suspendOrganization: mock(),
   unlinkUserSso: mock(async () => {}),
   unsuspendOrganization: mock(),
@@ -193,6 +194,44 @@ for (const [name, action, required] of cases) {
     });
   });
 }
+
+describe("organization limit", () => {
+  function form(userId: string, limit?: string) {
+    const data = new FormData();
+    data.set("userId", userId);
+    if (limit !== undefined) data.set("limit", limit);
+    data.set("reason", " Platform agreement ");
+    return data;
+  }
+
+  test("sets and resets a user's limit, naming the admin", async () => {
+    const { setOwnedOrganizationLimit } = (await import(
+      "@coss/tenancy/admin"
+    )) as unknown as Record<"setOwnedOrganizationLimit", ReturnType<typeof mock>>;
+    setOwnedOrganizationLimit.mockClear();
+    const userId = newId("user");
+    expect(await actions.setOwnedOrganizationLimitAction(null, form(userId, "50"))).toEqual({
+      ok: true,
+      data: null,
+    });
+    expect(setOwnedOrganizationLimit).toHaveBeenLastCalledWith(
+      expect.objectContaining({ userId, limit: 50, reason: "Platform agreement" }),
+    );
+    expect(await actions.resetOwnedOrganizationLimitAction(null, form(userId))).toEqual({
+      ok: true,
+      data: null,
+    });
+    expect(setOwnedOrganizationLimit).toHaveBeenLastCalledWith(
+      expect.objectContaining({ userId, limit: null }),
+    );
+  });
+
+  test("a limit needs a reason", async () => {
+    const data = form(newId("user"), "50");
+    data.set("reason", " ");
+    expect((await actions.setOwnedOrganizationLimitAction(null, data)).ok).toBe(false);
+  });
+});
 
 describe("reset two-factor", () => {
   function form(userId: string, reason: string) {

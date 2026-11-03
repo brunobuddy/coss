@@ -58,6 +58,12 @@ export function DeleteAccountButton(props: {
                 title="Deleted with your account, as you're their only member:"
               />
             ) : null}
+            {props.deleteOrganizations.length > 0 ? (
+              <p className="text-muted-foreground text-sm">
+                Their phone numbers go back to the carrier, and you may not be able to get them
+                again. To keep one, contact support before you delete your account.
+              </p>
+            ) : null}
             {props.leaveOrganizations.length > 0 ? (
               <OrganizationList
                 organizations={props.leaveOrganizations}

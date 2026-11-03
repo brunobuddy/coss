@@ -94,7 +94,7 @@ export default function DeleteAccountScreen() {
       ) : null}
       <Organizations
         organizations={plan.data.delete_organizations}
-        title="Deleted with your account"
+        title="Deleted with your account, phone numbers included"
       />
       <Organizations organizations={plan.data.leave_organizations} title="You leave" />
       {blocked ? null : (
