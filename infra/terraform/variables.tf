@@ -103,11 +103,6 @@ variable "db_password_version" {
   description = "Bump after changing the password in the stage secret's DATABASE_URL to apply it to RDS."
 }
 
-variable "cloudflare_ipv4_ranges" {
-  type        = list(string)
-  description = "https://www.cloudflare.com/ips-v4: Cloudflare for SaaS reaches the ALB from these (tracking domains)."
-}
-
 variable "waf_rate_limits" {
   type        = object({ dashboard = number, api = number, hosted = number, tracking = number })
   description = "Requests per IP per 5 minutes before WAF blocks (flood protection; the apps rate-limit precisely)."

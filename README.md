@@ -561,8 +561,7 @@ Cloudflare DNS (coss.com zone, DNS only)
 
 - **Network:** a VPC (`10.40.0.0/16`) over us-east-2a/b; public subnets for the ALB and one NAT gateway per AZ,
   private subnets for tasks, RDS and Valkey. Security groups: the ALB takes 443 only from the managed prefix list
-  `com.amazonaws.global.cloudfront.origin-facing` (its own group: the list weighs ~55 rules) and from Cloudflare's
-  IPv4 ranges (tracking domains); each service's tasks only from the ALB on their port (the SMTP relay's from
+  `com.amazonaws.global.cloudfront.origin-facing` (its own group: the list weighs ~55 rules); each service's tasks only from the ALB on their port (the SMTP relay's from
   the internet through the NLB); RDS 5432 and Valkey 6379 only from web, portal, api, worker and smtp.
 - **NAT gateways (required):** the worker delivers customer webhooks to arbitrary public URLs and ports, and domain
   verification in web, api and worker queries public DNS (1.1.1.1 / 8.8.8.8, port 53) directly. AWS traffic stays
@@ -622,6 +621,11 @@ Cloudflare DNS (coss.com zone, DNS only)
   private subnets with the `coss-production-valkey` security group.
 - **SES, SNS, SQS, EventBridge:** created by `ses:bootstrap` (see [Running on Amazon SES](#running-on-amazon-ses)),
   run as a one-off task (below).
+- **DNS, moving to Route 53:** `infra/terraform/dns.tf` holds the `coss.com` and `cosssign.com` zones (aliases to the
+  distributions, the rest in `dns-records.json`); each serves once its registrar points at `terraform output
+  route53_name_servers`. `cosshooks.com`, `cossbook.com`, `cossforms.com` and `cosslinks.com` are registered at
+  Cloudflare, which requires its nameservers, so they stay there as DNS-only records until they can be transferred
+  (ICANN's 60-day lock ends between 2026-12-11 and 2027-01-01). Until a zone moves, keep Route 53 and Cloudflare equal.
 - **DNS (Cloudflare, zone `coss.com`):** `coss.com` and `api.coss.com` are DNS-only CNAMEs (flattened at the apex)
   to their distributions; ACM validation CNAMEs; DKIM and MAIL FROM records of coss.com's own sending domain.
 - **Tracking links (`cosslinks.com`, DNS in a self-serve Cloudflare account, not the coss.com zone):** every tracking

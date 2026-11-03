@@ -3,7 +3,7 @@ resource "aws_lb" "main" {
   load_balancer_type         = "application"
   internal                   = false
   subnets                    = [for subnet in aws_subnet.public : subnet.id]
-  security_groups            = [aws_security_group.alb_cloudfront.id, aws_security_group.alb_cloudflare.id]
+  security_groups            = [aws_security_group.alb_cloudfront.id]
   idle_timeout               = local.spec.alb.idleTimeoutSeconds
   drop_invalid_header_fields = true
   enable_deletion_protection = true
@@ -37,7 +37,7 @@ resource "aws_lb_target_group" "tls" {
   }
 }
 
-# A request without CloudFront's (or Cloudflare's, for tracking) origin header matches no rule.
+# A request without a CloudFront distribution's origin header matches no rule.
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.main.arn
   port              = 443
@@ -105,8 +105,8 @@ resource "aws_lb_listener_rule" "spec" {
   }
 }
 
-# The Hooks portal's host, served by the same listener (SNI): Cloudflare connects with it and
-# validates this certificate (SSL mode Full (strict)).
+# The Hooks portal's host, served by the same listener (SNI): CloudFront connects with it and
+# validates this certificate.
 resource "aws_lb_listener_certificate" "portal" {
   listener_arn    = aws_lb_listener.https.arn
   certificate_arn = aws_acm_certificate_validation.portal.certificate_arn
