@@ -50,7 +50,7 @@ const CONTENT_RESPONSES = ["/v1/received_emails", "/v1/inboxes", "/v1/sms/receiv
 const FORM_SUBMISSIONS = /^\/v1\/forms\/[^/]+\/submissions(\/|$)/;
 /** Scheduling's attendee details and answers: these requests carry them both ways, always. */
 const SCHEDULING_PERSONAL =
-  /^\/v1\/scheduling\/((bookings|holds|series|attendees)(\/|$)|hosts\/[^/]+\/calendar_connections)/;
+  /^\/v1\/scheduling\/((bookings|holds|series|attendees|booker_sessions)(\/|$)|hosts\/[^/]+\/calendar_connections)/;
 /**
  * Responses that are capabilities: preference links change a contact's consent and need
  * `contact:update`, and Sign's session links (the token is in the URL's fragment too) sign as a
