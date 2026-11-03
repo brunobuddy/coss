@@ -1,10 +1,32 @@
 import "server-only";
-import type { ProductKey } from "@coss/dashboard-routes";
+import { type ProductKey, type ProductUse, productUseInProject } from "@coss/dashboard-routes";
 import { listProductPreferences, productActivityByEnvironment } from "@coss/tenancy";
 import { cache } from "react";
+import { listProjectsWithDefaultEnvironment } from "./projects";
 
 /** The products each environment of the organization uses (once per request: layout and page). */
 export const productActivity = cache(productActivityByEnvironment);
+
+/** Where the project's products are in use, seen from one of its environments. */
+export async function productUse(input: {
+  organizationId: string;
+  projectId: string;
+  environmentSlug: string;
+}): Promise<ProductUse> {
+  const [activity, projects] = await Promise.all([
+    productActivity(input.organizationId),
+    listProjectsWithDefaultEnvironment(input.organizationId),
+  ]);
+  const environments = projects.find((row) => row.project.id === input.projectId)?.environments;
+  return productUseInProject(
+    (environments ?? []).map((env) => ({
+      slug: env.slug,
+      name: env.name,
+      products: activity.get(env.id) ?? [],
+    })),
+    input.environmentSlug,
+  );
+}
 
 /** A member's pinned and hidden products (once per request). */
 export const productPreferences = cache((organizationId: string, userId: string) =>

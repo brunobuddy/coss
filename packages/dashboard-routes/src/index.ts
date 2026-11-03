@@ -240,8 +240,9 @@ export function isProductKey(value: string): value is ProductKey {
 export type ProductPreferences = Partial<Record<ProductKey, boolean>>;
 
 /**
- * The products a member sees in an environment, in catalog order: pinned ones and the ones in use
- * that they haven't hidden. With none, Email, where most start.
+ * The products a member sees, in catalog order: pinned ones and the ones in use (in any environment
+ * of the project: see `productUseInProject`) that they haven't hidden. With none, Email, where most
+ * start.
  */
 export function visibleProducts(
   inUse: readonly ProductKey[],
@@ -250,6 +251,46 @@ export function visibleProducts(
   const visible = PRODUCT_KEYS.filter((key) => preferences[key] ?? inUse.includes(key));
   if (visible.length > 0 || preferences.email === false) return visible;
   return ["email"];
+}
+
+/** One of a project's environments and the products in use in it. */
+export type EnvironmentUse = { slug: string; name: string; products: readonly ProductKey[] };
+
+export type ProductUse = {
+  /** In use in the current environment. */
+  here: readonly ProductKey[];
+  /** In use in any of the project's environments. */
+  inProject: readonly ProductKey[];
+  /** Products not in use here, with the other environments that use them. */
+  elsewhere: Partial<Record<ProductKey, EnvironmentUse[]>>;
+};
+
+/** Where a project's products are in use, seen from one of its environments. */
+export function productUseInProject(
+  environments: readonly EnvironmentUse[],
+  currentSlug: string,
+): ProductUse {
+  const here = environments.find((env) => env.slug === currentSlug)?.products ?? [];
+  const elsewhere: ProductUse["elsewhere"] = {};
+  for (const env of environments) {
+    if (env.slug === currentSlug) continue;
+    for (const product of env.products) {
+      if (!here.includes(product)) elsewhere[product] = [...(elsewhere[product] ?? []), env];
+    }
+  }
+  return {
+    here,
+    inProject: PRODUCT_KEYS.filter((key) => here.includes(key) || elsewhere[key]),
+    elsewhere,
+  };
+}
+
+/** `In use in Production`, or `In use in 2 other environments`. */
+export function inUseElsewhereLabel(environments: readonly EnvironmentUse[]): string {
+  const [only] = environments;
+  return only && environments.length === 1
+    ? `In use in ${only.name}`
+    : `In use in ${environments.length} other environments`;
 }
 
 /** The product or section a path below an environment belongs to (`/email/domains` → Email). */

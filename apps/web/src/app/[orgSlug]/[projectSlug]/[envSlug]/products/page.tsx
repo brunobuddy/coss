@@ -3,7 +3,7 @@ import { getEnvironment } from "@coss/tenancy";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
-import { productActivity, productPreferences } from "@/lib/products";
+import { productPreferences, productUse } from "@/lib/products";
 import { requireOrgMember } from "@/lib/session";
 import { ProductCatalog } from "./catalog";
 
@@ -16,11 +16,14 @@ export default async function ProductsPage({
   const { organization, session } = await requireOrgMember(orgSlug);
   const found = await getEnvironment({ organizationId: organization.id, projectSlug, envSlug });
   if (!found) notFound();
-  const [activity, preferences] = await Promise.all([
-    productActivity(organization.id),
+  const [use, preferences] = await Promise.all([
+    productUse({
+      organizationId: organization.id,
+      projectId: found.project.id,
+      environmentSlug: found.environment.slug,
+    }),
     productPreferences(organization.id, session.user.id),
   ]);
-  const inUse = activity.get(found.environment.id) ?? [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -34,10 +37,11 @@ export default async function ProductsPage({
           project: projectSlug,
           environment: envSlug,
         })}
-        inUse={inUse}
         orgSlug={organization.slug}
         preferences={preferences}
-        visible={visibleProducts(inUse, preferences)}
+        projectSlug={projectSlug}
+        use={use}
+        visible={visibleProducts(use.inProject, preferences)}
       />
     </div>
   );

@@ -2,9 +2,11 @@ import { describe, expect, test } from "bun:test";
 import {
   DEVELOPERS,
   environmentHref,
+  inUseElsewhereLabel,
   orgLinkHref,
   PRODUCTS,
   parseOrgLink,
+  productUseInProject,
   sectionOf,
   visibleProducts,
 } from "../src/index.ts";
@@ -76,5 +78,40 @@ describe("visibleProducts", () => {
   test("falls back to Email for a new environment", () => {
     expect(visibleProducts([], {})).toEqual(["email"]);
     expect(visibleProducts([], { email: false })).toEqual([]);
+  });
+});
+
+describe("productUseInProject", () => {
+  const production = {
+    slug: "production",
+    name: "Production",
+    products: ["email", "risk"],
+  } as const;
+  const development = { slug: "development", name: "Development", products: ["email"] } as const;
+
+  test("names the other environments of a product not in use here", () => {
+    expect(productUseInProject([production, development], "development")).toEqual({
+      here: ["email"],
+      inProject: ["email", "risk"],
+      elsewhere: { risk: [production] },
+    });
+  });
+
+  test("a product in use here isn't elsewhere, even when others use it too", () => {
+    const use = productUseInProject([production, development], "production");
+    expect(use.here).toEqual(["email", "risk"]);
+    expect(use.inProject).toEqual(["email", "risk"]);
+    expect(use.elsewhere).toEqual({});
+  });
+
+  test("lists several other environments in order", () => {
+    const staging = { slug: "staging", name: "Staging", products: ["risk"] } as const;
+    const use = productUseInProject([production, staging, development], "development");
+    expect(use.elsewhere.risk).toEqual([production, staging]);
+  });
+
+  test("labels one environment by name and several by count", () => {
+    expect(inUseElsewhereLabel([production])).toBe("In use in Production");
+    expect(inUseElsewhereLabel([production, development])).toBe("In use in 2 other environments");
   });
 });
