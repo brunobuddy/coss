@@ -458,6 +458,7 @@ resource "aws_iam_role_policy" "task_web_security" {
           "guardduty:ListDetectors",
           "guardduty:ListFindings",
           "securityhub:DescribeHub",
+          "securityhub:GetEnabledStandards",
           "securityhub:GetFindings",
         ]
         Resource = "*"
