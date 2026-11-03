@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from "@coss/ui/components/tabs";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { type ClientApiError, type ClientCall, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
+import { ContinueWithGoogle } from "./continue-with-google";
 
 type Session = {
   brand_name: string | null;
@@ -315,10 +316,23 @@ function Calendars(props: { call: ClientCall; session: Session }) {
       ) : null}
       {problem ? <p className="text-destructive-foreground text-sm">{problem}</p> : null}
       {session.read_only ? null : (
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => connect("google")} variant="outline">
-            Connect Google
-          </Button>
+        <p className="text-muted-foreground text-sm">
+          Connecting a calendar lets coss.com see when you're busy and which calendars you have, and
+          add, change and remove the events for your bookings. Your other events only count as busy
+          times: coss.com never keeps their titles or details, and you can disconnect at any time.{" "}
+          <a
+            className="underline"
+            href="https://coss.com/legal/privacy"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Privacy Policy
+          </a>
+        </p>
+      )}
+      {session.read_only ? null : (
+        <div className="flex flex-wrap items-center gap-2">
+          <ContinueWithGoogle onClick={() => connect("google")} />
           <Button onClick={() => connect("microsoft")} variant="outline">
             Connect Microsoft
           </Button>
