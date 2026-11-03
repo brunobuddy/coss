@@ -36,7 +36,8 @@ Data**: message content, attachments, recipient addresses and phone numbers, del
 the like. Your
 organization is the controller of Customer Data, and we process it only on its instructions, under the Terms and our
 [Data Processing Addendum](/legal/dpa) (DPA). If you received a message sent through coss.com and want to exercise your privacy rights,
-please contact the sender: they control that data. If you contact us instead, we will forward your request to them
+please contact the sender: they control that data. The same goes for a booking made through a service that uses
+coss.com: please contact that service. If you contact us instead, we will forward your request to them
 where we can, and help them respond.
 
 ## 2. What we collect
@@ -100,6 +101,12 @@ used.
   the number or the answer (we hold the answer in memory for up to an hour, so a repeated check isn't sent again).
 - **Rate limiting for your service:** the keys you check against your own rate limit buckets (for example a user's
   email address) are kept only as keyed hashes, in our cache, until their bucket refills.
+- **Bookings (Scheduling):** the names, email addresses, time zones and hours of the people who can be booked, and the
+  attributes your organization gives them; the attendee's name, email address, phone number, time zone and language,
+  your id for them and their answers to your questions (contact details and answers encrypted); and each booking's time,
+  event type title, location, metadata, status and history. Text you set that appears in booking emails (host names,
+  event type titles and questions, brand names) is checked for abuse by AI models through Vercel's AI Gateway when you
+  set it, with zero data retention; the emails themselves aren't screened.
 - **Domains and webhooks:** the sending domains you verify and their DNS records; your webhook endpoint URLs and
   signing secrets (encrypted at rest), and a record of each delivery attempt, including up to 1 KB of your endpoint's
   response.
@@ -129,8 +136,7 @@ When someone connects a Google Calendar, we use Google's APIs only to:
 coss.com's use and transfer of information received from Google APIs adheres to the
 [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including
 the Limited Use requirements. We don't use this data for advertising, don't sell it, don't use it to train AI models,
-and don't let people read it, except with the user's consent, for security or to comply with the law. We don't share it
-with anyone except the subprocessors that host the Services. Busy times are replaced as the calendar changes.
+and don't let people read it, except with the user's consent, for security or to comply with the law. We don't share it with anyone except the subprocessors that host the Services and the organization whose Scheduling the person connected it to, which can see the account and calendar identifiers and the times the person can be booked. Busy times are replaced as the calendar changes.
 Disconnecting a calendar, which can be done at any time, revokes our access and deletes its busy times and credentials.
 
 ## 3. Why we process it (legal bases)
@@ -181,11 +187,13 @@ We share personal data only as described here:
   services to us:
   - **Amazon Web Services, Inc.** (United States): hosting, databases, caching, queues and email delivery (Amazon
     SES).
-  - **Vercel, Inc.** (United States) and the model providers available through its AI Gateway: AI content screening
-    and the classification of content submitted for risk assessment, with zero data retention.
+  - **Vercel, Inc.** (United States) and the model providers available through its AI Gateway: AI content screening,
+    the classification of content submitted for risk assessment and the check of text set for booking emails, with zero
+    data retention.
   - **Twilio Inc.** (United States): SMS delivery and receiving, phone numbers, carrier registration of the
     business details organizations submit to send SMS, and lookups of phone numbers organizations check with Risk.
-  - **Cloudflare, Inc.** (United States): DNS for coss.com.
+  - **Cloudflare, Inc.** (United States): DNS for coss.com, and the network in front of the separate domains that serve
+    hosted pages and tracking links.
   - **Functional Software, Inc. (Sentry)** (United States, with data stored in the European Union): error and crash
     reports from the dashboard, the API and the iOS app.
 
@@ -203,7 +211,8 @@ We share personal data only as described here:
 - **Apple.** If you turn on notifications in the iOS app, Apple's push notification service delivers them. It receives
   your device's push token, each notification's text (organization, project and environment names and counts, never
   message content or addresses) and the path of the page it opens.
-- **Your webhook endpoints** receive event data about your messages (never message bodies, headers, cc or bcc).
+- **Your webhook endpoints** receive event data about your messages (never message bodies, headers, cc or bcc) and your
+  bookings (ids, times and statuses).
 - **Your organization.** Organization owners and administrators can see the members of the organization and the data
   in it.
 - **Legal and safety.** We may disclose data if we believe in good faith that the law requires it, or to protect the
@@ -229,6 +238,9 @@ We share personal data only as described here:
   <RetentionPeriod of="received_emails" /> and received text messages for <RetentionPeriod of="received_sms" />. Your
   organization can delete them sooner, or ask us to by writing to [privacy@cal.com](mailto:privacy@cal.com). Attachment
   contents are deleted automatically once a message is sent, canceled or fails.
+- **Bookings:** an attendee's details and answers, with the booking's metadata and location, for
+  <RetentionPeriod of="scheduling_personal_data" />, and the rest of the booking for
+  <RetentionPeriod of="scheduling_bookings" />. Your organization can erase an attendee's details and answers sooner.
 - **Suppression lists, domains and webhook endpoints:** until your organization removes them, or its account is
   closed.
 - **Sessions:** until they expire or are revoked.

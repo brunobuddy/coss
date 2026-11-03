@@ -1,7 +1,7 @@
 ---
 title: Data Processing Addendum
 description: How Cal.com processes personal data on your behalf as your processor, incorporated into the Terms of Service.
-lastUpdated: 2026-11-02
+lastUpdated: 2026-11-03
 ---
 
 This Data Processing Addendum ("**DPA**") forms part of, and is incorporated by reference into, the
@@ -67,8 +67,8 @@ written agreement. Cal.com will inform Customer if, in its opinion, an instructi
 4.2 **Platform protection.** Customer instructs Cal.com to process Customer Personal Data as needed to protect the
 Services, Customer and data subjects, as described in the Agreement and the
 [Acceptable Use Policy](/legal/acceptable-use). This includes maintaining suppression lists, screening a sample of
-messages for spam, phishing, malware and fraud with automated systems including AI models, and monitoring bounce and
-complaint rates.
+messages, and the text Customer sets for Scheduling's emails, for spam, phishing, malware and fraud with automated
+systems including AI models, and monitoring bounce and complaint rates.
 
 4.3 **Confidentiality.** Cal.com will ensure that the people it authorizes to process Customer Personal Data are bound
 by appropriate obligations of confidentiality and access it only as needed to provide, secure and support the Services.
@@ -227,8 +227,8 @@ Protection Laws require otherwise.
 **Parties.**
 
 - **Data exporter:** Customer, as identified in its account. Role: controller (or processor). Activities: use of the
-  Services to send and receive messages, verify, collect signatures and form submissions, assess risk and manage related
-  data. Contact: the organization owners on the account.
+  Services to send and receive messages, verify, collect signatures and form submissions, take bookings, assess risk and
+  manage related data. Contact: the organization owners on the account.
 - **Data importer:** Cal.com, Inc., 2261 Market Street #4382, San Francisco, CA 94114, United States. Role: processor
   (or subprocessor). Activities: providing the Services. Contact: [privacy@cal.com](mailto:privacy@cal.com).
 
@@ -238,7 +238,7 @@ phone numbers; people who send email to Customer's domains, receiving addresses 
 named in its SMS carrier registrations; users of Customer's own services whose events Customer submits for risk
 assessment, whose phone numbers Customer checks or to whom Customer sends one-time codes; Customer's end users whose
 email Customer sends through sub-accounts; signers of Customer's signature requests; people who submit Customer's
-forms; and any other individuals whose personal data Customer includes in messages, attachments, tags, metadata,
+forms; people Customer lets be booked (hosts) and the people who book them (attendees); and any other individuals whose personal data Customer includes in messages, attachments, tags, metadata,
 contacts, documents, Hooks messages, suppression lists, risk lists or webhook configuration.
 
 **Categories of personal data.** Email addresses and display names; phone numbers; the content of messages
@@ -262,8 +262,14 @@ their headers, attachments and spam and authentication verdicts; the phone numbe
 one-time codes to (the codes themselves are kept only as keyed hashes until they expire); documents Customer uploads for
 signing, and signers' names, email addresses, the fields they fill in, their typed or drawn signatures and the IP
 address and user agent of each signing action; form submissions, with the fields and files submitted, the submitter's
-email address, IP address and user agent, and the page the submission came from; the messages Customer sends through
-Hooks to its own users' endpoints; and keyed hashes of the keys Customer checks against its rate limit buckets.
+email address, IP address and user agent, and the page the submission came from; for Scheduling, hosts' names, email
+addresses, time zones and hours, and the attributes and metadata Customer gives them; the account and calendar
+identifiers of the calendars hosts connect, access credentials for them, the start and end of busy times (not the titles,
+descriptions or attendees of other events) and the events Cal.com creates for bookings; attendees' names, email addresses,
+phone numbers, time zones and languages, Customer's identifiers for them, keyed hashes of their email addresses and their
+answers to Customer's booking questions; each booking's time, hosts, event type title, location, metadata, status and
+history; and the IP addresses of people using Scheduling's hosted pages, used for rate limits and not kept with bookings;
+the messages Customer sends through Hooks to its own users' endpoints; and keyed hashes of the keys Customer checks against its rate limit buckets.
 
 **Special categories of data.** None intended. Customer will not submit special categories of data unless agreed in
 writing (see [section 3.2](#3-customers-obligations)).
@@ -275,7 +281,11 @@ writing (see [section 3.2](#3-customers-obligations)).
 honoring opt-out requests; registering Customer's SMS senders with mobile carriers and their registries; receiving email sent to Customer's domains,
 receiving addresses and inboxes and making it available to Customer and its agents; sending one-time codes and checking
 the codes data subjects enter; collecting signatures on Customer's documents, keeping a tamper-evident audit trail and
-sealing the completed documents; accepting, screening and forwarding submissions to Customer's forms; delivering
+sealing the completed documents; accepting, screening and forwarding submissions to Customer's forms; taking bookings
+for Customer's hosts, which includes working out when they are available, refusing overlapping bookings, reading busy
+times from and writing booking events to the calendars hosts connect (at Google, at Microsoft or on a CalDAV server the
+host names, with the access the host grants), and sending booking emails, calendar invitations and text messages;
+delivering
 Customer's Hooks messages to its users' endpoints;
 recording and reporting delivery events; maintaining suppression lists; measuring open and
 click tracking where enabled; assessing the fraud and abuse risk of events Customer submits and remembering, as keyed
@@ -293,7 +303,11 @@ canceled); received emails <RetentionPeriod of="received_emails" /> and received
 after they are created; webhook deliveries <RetentionPeriod of="webhook_deliveries" /> and Hooks messages
 <RetentionPeriod of="hook_messages" /> after they are created; and form submissions
 <RetentionPeriod of="form_submissions" /> after they are received (spam and unconfirmed ones
-<RetentionPeriod of="form_spam" />). Attachment contents are deleted once a message is sent, canceled or fails. Risk
+<RetentionPeriod of="form_spam" />). Attendees' details and answers, with a booking's metadata and location, are deleted
+<RetentionPeriod of="scheduling_personal_data" /> and the rest of the booking <RetentionPeriod of="scheduling_bookings" />,
+and Customer can erase an attendee's details and answers at any time through the API. Busy times are replaced as a
+calendar changes and deleted when it is disconnected. Emails and text messages about bookings are kept like any others,
+without their bodies once sent in live environments. Attachment contents are deleted once a message is sent, canceled or fails. Risk
 assessments are kept for <RetentionPeriod of="risk_assessments" />, their email addresses, IP addresses and user agents
 for <RetentionPeriod of="risk_personal_data" />, and keyed hashes until <RetentionPeriod of="risk_memory" /> after they
 were last seen; Customer can delete a user's data at any time through the API. Suppression lists, contacts, broadcasts,
@@ -307,7 +321,8 @@ there.
 ## Annex 2: Technical and organizational measures
 
 **Encryption.** Data is encrypted in transit using TLS, and at rest in Cal.com's databases and storage. Webhook signing
-secrets and SMS provider credentials are additionally encrypted with AES-256-GCM. Passwords and API keys are stored only as hashes.
+secrets, SMS provider credentials, calendar credentials and attendees' contact details and answers to booking questions
+are additionally encrypted with AES-256-GCM. Passwords and API keys are stored only as hashes.
 
 **Access control.** Access to production systems and Customer Personal Data is limited to personnel who need it, on a
 least-privilege basis, and is protected by strong authentication. Platform administrators' actions in the Services are
@@ -341,10 +356,17 @@ to 8,000 characters of the submitted text and link hosts and paths without query
 nothing, and keeps only the resulting scores; the text is never stored or logged. Rate limit keys are kept only as
 keyed hashes, in a cache, until their bucket refills. Phone checks send the phone data provider only the number,
 and only a well-formed one; neither the number nor the answer is stored or logged (answers are held in memory for up
-to an hour, so a repeated check isn't sent again).
+to an hour, so a repeated check isn't sent again). From connected calendars, Cal.com keeps only the start and end of
+busy times and the identifiers it needs to reach them; CalDAV servers return whole events, and everything but their times
+is discarded as they are read. Events written to a host's calendar are private, titled "Appointment" and have no
+attendees, and carry the booking's location if it has one. Attendees' answers are returned only when a single booking is
+retrieved, and never appear in lists, webhook events, emails or calendars. Webhook events about bookings carry ids,
+times and statuses. Booking emails use fixed templates and are not sent for content screening; instead, the text Customer
+sets for them (host names, event type titles and questions, brand names) goes to the content classification provider when
+it is set.
 
 **Network and application security.** Outbound webhook requests are restricted to public addresses, with protections
-against server-side request forgery. Rate limits protect authentication and the API from abuse. Customer-supplied HTML
+against server-side request forgery, and so are requests to the CalDAV servers hosts name. Rate limits protect authentication and the API from abuse. Customer-supplied HTML
 is displayed in the dashboard only in a sandboxed frame. A content security policy restricts the scripts the website
 and dashboard may load.
 
@@ -368,7 +390,10 @@ bound by written agreements (see [section 5](#5-subprocessors)).
 | --- | --- | --- |
 | Amazon Web Services, Inc. | Hosting, databases, storage, caching, queues, content delivery and email delivery (Amazon SES) | United States |
 | Twilio Inc. | SMS delivery and receiving; carrier registration; lookups of phone numbers Customer checks with Risk (line type, carrier, SIM changes) | United States |
-| Vercel, Inc. (AI Gateway) and the AI model providers available through it | Automated content screening of a sample of live messages, and classification of content Customer submits to Risk, with zero data retention | United States |
+| Vercel, Inc. (AI Gateway) and the AI model providers available through it | Automated content screening of a sample of live messages and of the text Customer sets for Scheduling's emails (which can include host names), and classification of content Customer submits to Risk, with zero data retention | United States |
+| Cloudflare, Inc. | DNS, TLS and request routing for the separate domains of hosted pages (Scheduling, Sign, Forms, the Hooks portal) and tracking links | United States |
+
+Google, Microsoft and the CalDAV servers hosts connect are chosen and authorized by each host, and Cal.com reaches them with the access the host grants. Cal.com does not engage them, and they are not Subprocessors.
 
 The current list, including any changes announced under [section 5.3](#5-subprocessors), is maintained at
 [trust.cal.com](https://trust.cal.com).
