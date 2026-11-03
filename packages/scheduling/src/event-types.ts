@@ -111,6 +111,7 @@ function checkShape(
     questions: readonly { key: string; type: string; options: readonly string[] }[];
     gridTimeZone: string | null;
     bookingWindow: EventTypeRow["bookingWindow"];
+    locations: readonly { type: string }[];
   },
   hosts: readonly HostInput[] | undefined,
 ): void {
@@ -138,6 +139,9 @@ function checkShape(
     if (choice && question.options.length === 0) {
       throw invalid("This question needs options.", `questions[${index}].options`);
     }
+  }
+  if (values.kind === "group" && values.locations.some((l) => l.type === "zoom")) {
+    throw invalid("A group event type can't use Zoom yet.", "locations");
   }
   if (!hosts) return;
   const refs = hosts.map((host) => host.host);
@@ -271,6 +275,7 @@ export async function createEventType(
       questions: params.questions ?? [],
       gridTimeZone: params.grid_time_zone ?? null,
       bookingWindow: params.booking_window ?? null,
+      locations: params.locations ?? [],
     },
     params.hosts,
   );

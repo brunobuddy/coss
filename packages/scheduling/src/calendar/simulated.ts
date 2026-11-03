@@ -25,7 +25,9 @@ export function simulatedCalendarClient(): CalendarClient {
           ? `https://meet.google.com/sim-${event.key.slice(0, 8)}`
           : event.conference === "microsoft_teams"
             ? `https://teams.microsoft.com/l/meetup-join/sim-${event.key.slice(0, 8)}`
-            : null,
+            : event.conference === "zoom"
+              ? `https://zoom.us/j/sim-${event.key.slice(0, 8)}`
+              : null,
     }),
     updateEvent: async (_calendarId, providerEventId) => ({ providerEventId, meetingUrl: null }),
     deleteEvent: async () => {},

@@ -7,6 +7,7 @@ import { db, schema } from "@coss/db";
 import { and, eq, inArray } from "drizzle-orm";
 import { normalizeIntervals, overlapsAny, subtractIntervals } from "../engine/intervals.ts";
 import { type CalendarDeps, clientFor } from "./connections.ts";
+import { notZoomMeeting } from "./zoom.ts";
 
 const { schedulingCalendar, schedulingCalendarConnection, schedulingCalendarEvent } = schema;
 
@@ -58,6 +59,7 @@ export async function hostsBusyNow(
         eq(schedulingCalendarEvent.organizationId, organizationId),
         inArray(schedulingCalendarEvent.hostId, [...hostIds]),
         eq(schedulingCalendarEvent.desiredState, "present"),
+        notZoomMeeting(),
       ),
     );
   await Promise.all(

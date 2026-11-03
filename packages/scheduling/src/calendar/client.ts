@@ -41,7 +41,7 @@ export type CalendarEventWrite = {
   title: string;
   startMs: number;
   endMs: number;
-  conference: "google_meet" | "microsoft_teams" | null;
+  conference: "google_meet" | "microsoft_teams" | "zoom" | null;
   location: string | null;
 };
 

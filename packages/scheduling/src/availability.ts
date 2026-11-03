@@ -4,6 +4,7 @@
  */
 import { db, type Executor, schema } from "@coss/db";
 import { and, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { notZoomMeeting } from "./calendar/zoom.ts";
 import { buildAvailability, overrideDateRange } from "./engine/availability.ts";
 import { type CalendarFreshness, calendarVerdict } from "./engine/calendar-verdict.ts";
 import { type Interval, normalizeIntervals, subtractIntervals } from "./engine/intervals.ts";
@@ -207,6 +208,7 @@ export async function loadHostInputs(
         inArray(schedulingCalendarEvent.hostId, hostIds),
         eq(schedulingCalendarEvent.desiredState, "present"),
         eq(schedulingCalendarEvent.externalState, "in_sync"),
+        notZoomMeeting(),
         sql`${schedulingCalendarEvent.desiredEnd} > ${fromDate.toISOString()}::timestamptz - interval '1 day'`,
         sql`${schedulingCalendarEvent.desiredStart} < ${toDate.toISOString()}::timestamptz + interval '1 day'`,
       ),

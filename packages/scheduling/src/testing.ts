@@ -140,3 +140,94 @@ export class FakeGoogleCalendarApi {
     return json(404, {});
   };
 }
+
+type FakeZoomMeeting = {
+  id: number;
+  topic: string;
+  start_time: string;
+  duration: number;
+  join_url: string;
+};
+
+/** Zoom's API and OAuth. Refresh tokens work once, as Zoom's do. */
+export class FakeZoomApi {
+  readonly meetings = new Map<number, FakeZoomMeeting>();
+  readonly bodies: Record<string, unknown>[] = [];
+  readonly requests: string[] = [];
+  readonly revoked: string[] = [];
+  userId = "zoom_user_1";
+  loseNextAnswer = false;
+  failNext: { path: RegExp; status: number } | null = null;
+  refreshToken = "zoom-refresh-0";
+  #nextId = 1000;
+  #refreshes = 0;
+
+  readonly fetch = async (url: string, init?: RequestInit): Promise<Response> => {
+    const method = init?.method ?? "GET";
+    const parsed = new URL(url);
+    this.requests.push(`${method} ${parsed.pathname}`);
+    const json = (status: number, body: unknown) =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { "content-type": "application/json" },
+      });
+    if (this.failNext?.path.test(parsed.pathname)) {
+      const { status } = this.failNext;
+      this.failNext = null;
+      return json(status, { message: "Refused." });
+    }
+    if (parsed.hostname === "zoom.us") {
+      if (parsed.pathname === "/oauth/revoke") {
+        this.revoked.push(parsed.searchParams.get("token") ?? "");
+        return json(200, { status: "success" });
+      }
+      const form = new URLSearchParams(String(init?.body));
+      if (form.get("grant_type") === "refresh_token") {
+        if (form.get("refresh_token") !== this.refreshToken) {
+          return json(400, { error: "invalid_grant" });
+        }
+      }
+      this.#refreshes++;
+      this.refreshToken = `zoom-refresh-${this.#refreshes}`;
+      return json(200, {
+        access_token: `zoom-access-${this.#refreshes}`,
+        refresh_token: this.refreshToken,
+        expires_in: 3600,
+      });
+    }
+    if (parsed.pathname === "/v2/users/me") return json(200, { id: this.userId });
+    if (parsed.pathname === "/v2/users/me/meetings" && method === "GET") {
+      return json(200, { meetings: [...this.meetings.values()] });
+    }
+    if (parsed.pathname === "/v2/users/me/meetings" && method === "POST") {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      this.bodies.push(body);
+      const id = this.#nextId++;
+      const meeting = {
+        id,
+        topic: String(body.topic),
+        start_time: String(body.start_time),
+        duration: Number(body.duration),
+        join_url: `https://zoom.us/j/${id}?pwd=secret`,
+      };
+      this.meetings.set(id, meeting);
+      if (this.loseNextAnswer) {
+        this.loseNextAnswer = false;
+        return json(503, {});
+      }
+      return json(201, meeting);
+    }
+    const id = Number(parsed.pathname.split("/").pop());
+    const meeting = this.meetings.get(id);
+    if (!meeting) return json(404, { code: 3001 });
+    if (method === "PATCH") {
+      Object.assign(meeting, JSON.parse(String(init?.body)));
+      return new Response(null, { status: 204 });
+    }
+    if (method === "DELETE") {
+      this.meetings.delete(id);
+      return new Response(null, { status: 204 });
+    }
+    return json(200, meeting);
+  };
+}

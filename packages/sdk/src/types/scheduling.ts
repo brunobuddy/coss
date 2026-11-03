@@ -149,14 +149,16 @@ export type SchedulingLocationInput =
   | { type: "phone"; number?: string | null }
   | { type: "in_person"; address?: string | null }
   | { type: "google_meet" }
-  | { type: "microsoft_teams" };
+  | { type: "microsoft_teams" }
+  | { type: "zoom"; url?: string | null };
 
 export type SchedulingLocation =
   | { type: "link"; url: string | null }
   | { type: "phone"; number: string | null }
   | { type: "in_person"; address: string | null }
   | { type: "google_meet" }
-  | { type: "microsoft_teams" };
+  | { type: "microsoft_teams" }
+  | { type: "zoom"; url: string | null };
 
 export interface SchedulingEventTypeHostInput {
   /** The host's id or uid. */
@@ -440,7 +442,7 @@ export interface UpdateSchedulingSettingsParams {
 }
 
 export interface AuthorizeSchedulingCalendarParams {
-  provider: "google" | "microsoft";
+  provider: "google" | "microsoft" | "zoom";
   /** Where to send the browser afterwards, on one of the environment's allowed origins. */
   return_url?: string;
 }
@@ -459,7 +461,7 @@ export interface SchedulingCalendarConnection {
   object: "scheduling.calendar_connection";
   id: string;
   host: string;
-  provider: "google" | "microsoft" | "caldav" | "simulated";
+  provider: "google" | "microsoft" | "caldav" | "simulated" | "zoom";
   account: string;
   /** `needs_reauth`: access was lost, and this host isn't offered until it's back. */
   status: "active" | "needs_reauth";

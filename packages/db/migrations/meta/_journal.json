@@ -827,6 +827,13 @@
       "when": 1793725297994,
       "tag": "0117_support",
       "breakpoints": true
+    },
+    {
+      "idx": 118,
+      "version": "7",
+      "when": 1793726853532,
+      "tag": "0118_real_shaman",
+      "breakpoints": true
     }
   ]
 }

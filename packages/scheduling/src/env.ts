@@ -36,6 +36,10 @@ export const schedulingEnvShape = {
   GOOGLE_CALENDAR_CLIENT_SECRET: z.string().min(1).optional(),
   MICROSOFT_CALENDAR_CLIENT_ID: z.string().min(1).optional(),
   MICROSOFT_CALENDAR_CLIENT_SECRET: z.string().min(1).optional(),
+  // Coss.com's Zoom app: meetings on hosts' accounts, and the secret token its events are signed with.
+  ZOOM_CLIENT_ID: z.string().min(1).optional(),
+  ZOOM_CLIENT_SECRET: z.string().min(1).optional(),
+  ZOOM_WEBHOOK_SECRET_TOKEN: z.string().min(1).optional(),
 };
 
 /** The keys of `SCHEDULING_DATA_KEYS`, newest first. */

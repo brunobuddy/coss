@@ -62,7 +62,7 @@ export type SchedulingLocation =
   | { type: "in_person"; address: string | null }
   | { type: "google_meet" }
   | { type: "microsoft_teams" }
-  | { type: "zoom" };
+  | { type: "zoom"; url: string | null };
 
 /** `true`/`false` per recipient and channel; absent events use the default policy. */
 export type SchedulingNotificationPolicy = Record<
@@ -95,6 +95,7 @@ export const schedulingCalendarProvider = pgEnum("scheduling_calendar_provider",
   "microsoft",
   "caldav",
   "simulated",
+  "zoom",
 ]);
 export const schedulingConnectionStatus = pgEnum("scheduling_connection_status", [
   "active",

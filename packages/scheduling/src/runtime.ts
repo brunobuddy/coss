@@ -30,10 +30,15 @@ export function schedulingCalendarAppsFromEnv(env: {
   GOOGLE_CALENDAR_CLIENT_SECRET?: string | undefined;
   MICROSOFT_CALENDAR_CLIENT_ID?: string | undefined;
   MICROSOFT_CALENDAR_CLIENT_SECRET?: string | undefined;
+  ZOOM_CLIENT_ID?: string | undefined;
+  ZOOM_CLIENT_SECRET?: string | undefined;
+  ZOOM_WEBHOOK_SECRET_TOKEN?: string | undefined;
 }): CalendarDeps["apps"] {
   const pair = (clientId: string | undefined, clientSecret: string | undefined) =>
     clientId && clientSecret ? { clientId, clientSecret } : null;
+  const zoom = pair(env.ZOOM_CLIENT_ID, env.ZOOM_CLIENT_SECRET);
   return {
+    zoom: zoom && { ...zoom, webhookSecret: env.ZOOM_WEBHOOK_SECRET_TOKEN ?? null },
     google: pair(env.GOOGLE_CALENDAR_CLIENT_ID, env.GOOGLE_CALENDAR_CLIENT_SECRET),
     microsoft: pair(env.MICROSOFT_CALENDAR_CLIENT_ID, env.MICROSOFT_CALENDAR_CLIENT_SECRET),
   };

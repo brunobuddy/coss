@@ -257,6 +257,26 @@ const schedulingEnv: EnvVar[] = [
     value: "From the Microsoft Entra admin center.",
     description: "Scheduling's Microsoft app for calendar access.",
   },
+  {
+    name: "ZOOM_CLIENT_ID",
+    kind: "plain",
+    required: false,
+    description: "Scheduling's Zoom app, which creates meetings on hosts' accounts.",
+  },
+  {
+    name: "ZOOM_CLIENT_SECRET",
+    kind: "secret",
+    required: false,
+    value: "From the Zoom App Marketplace.",
+    description: "Scheduling's Zoom app, which creates meetings on hosts' accounts.",
+  },
+  {
+    name: "ZOOM_WEBHOOK_SECRET_TOKEN",
+    kind: "secret",
+    required: false,
+    value: "The secret token on the Zoom app's Access page.",
+    description: "Verifies the Zoom app's deauthorization events.",
+  },
 ];
 
 const signPublicUrl: EnvVar = {

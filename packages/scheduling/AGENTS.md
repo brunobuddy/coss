@@ -56,6 +56,12 @@ embeds the booker. Local dates (overrides, limits) never pass through `Date`.
   covers them. A refresh writes back with a compare-and-set. A consent's `encrypted_code_verifier` uses the same ring
   and isn't covered: it lasts 10 minutes, so a consent in progress when an old key leaves just starts over.
 - Coss.com never auto-cancels: an external conflict or a host editing an event is flagged, with a webhook.
+- Zoom (`calendar/zoom.ts`) is a write-only calendar: a connection has one hidden calendar row, never read for busy
+  times and never a `write_target`, and a booking's meeting is a row in the same ledger, so retries, moves and cancels
+  are the same code. Zoom has no idempotency key, so `createEvent` looks for its own meeting first. Its refresh tokens
+  work once and expire unused, so `clientFor` re-reads after a refused refresh and `refreshIdleZoomConnections` keeps
+  idle ones alive. `notZoomMeeting()` keeps these rows out of what's subtracted from busy times. Losing Zoom never hides
+  a host. The app's deauthorization event comes to `POST /scheduling/zoom/events`.
 
 ## Sessions and the client API
 
@@ -117,7 +123,9 @@ secret, Scheduling is off there: the API answers 503 `scheduling_unavailable`, t
 dashboard's pages don't exist. Rotating the key: README, "Rotating `SCHEDULING_DATA_KEYS`" (`bun run
 scheduling:reencrypt`). Still to do:
 
-1. Google OAuth verification (project `coss-scheduling` under coss.com's Google organization: submitted, under review).
+1. Zoom's app review: until it's approved and `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET` and `ZOOM_WEBHOOK_SECRET_TOKEN` are
+   set, hosts aren't offered Zoom. Test against a real Zoom account first: only `FakeZoomApi` has run this code.
+2. Google OAuth verification (project `coss-scheduling` under coss.com's Google organization: submitted, under review).
    Until it passes, Google's consent screen warns and caps the app at 100 users. Microsoft's app ("coss.com Scheduling"
    in Cal.com's Entra tenant) is publisher-verified; its secret expires in 2028.
-2. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.
+3. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.

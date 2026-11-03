@@ -8,6 +8,9 @@ import {
   type CalendarDeps,
   completeCalendarAuthorization,
   handleCalendarPush,
+  handleZoomDeauthorization,
+  verifyZoomEvent,
+  zoomUrlValidation,
 } from "@coss/scheduling";
 import { Hono } from "hono";
 import type { AppEnv } from "../types.ts";
@@ -15,10 +18,10 @@ import type { AppEnv } from "../types.ts";
 export const SCHEDULING_CALLBACK_PATH = "/scheduling";
 
 const PAGE_TEXT = {
-  connected: "Your calendar is connected. You can close this window.",
-  denied: "Your calendar wasn't connected. You can close this window.",
-  invalid: "This link has expired. Please start connecting your calendar again.",
-  failed: "Your calendar couldn't be connected. Please try again.",
+  connected: "You're connected. You can close this window.",
+  denied: "Nothing was connected. You can close this window.",
+  invalid: "This link has expired. Please start connecting again.",
+  failed: "That couldn't be connected. Please try again.",
 } as const;
 
 export function createSchedulingCallbackRoutes(opts: { calendars: CalendarDeps }): Hono<AppEnv> {
@@ -36,7 +39,7 @@ export function createSchedulingCallbackRoutes(opts: { calendars: CalendarDeps }
   router.get("/oauth/:provider/callback", async (c) => {
     const provider = c.req.param("provider");
     const state = c.req.query("state");
-    if ((provider !== "google" && provider !== "microsoft") || !state) {
+    if ((provider !== "google" && provider !== "microsoft" && provider !== "zoom") || !state) {
       return c.text(PAGE_TEXT.invalid, 400);
     }
     let outcome: keyof typeof PAGE_TEXT = "failed";
@@ -62,6 +65,31 @@ export function createSchedulingCallbackRoutes(opts: { calendars: CalendarDeps }
       return c.redirect(url.toString(), 302);
     }
     return c.text(PAGE_TEXT[outcome], outcome === "connected" ? 200 : 400);
+  });
+
+  router.post("/zoom/events", async (c) => {
+    const secret = opts.calendars.apps.zoom?.webhookSecret;
+    if (!secret) return c.body(null, 404);
+    const body = await c.req.text();
+    const verified = verifyZoomEvent({
+      secret,
+      timestamp: c.req.header("x-zm-request-timestamp"),
+      signature: c.req.header("x-zm-signature"),
+      body,
+      nowMs: Date.now(),
+    });
+    if (!verified) return c.body(null, 401);
+    const event = JSON.parse(body) as {
+      event?: string;
+      payload?: { plainToken?: string; user_id?: string };
+    };
+    if (event.event === "endpoint.url_validation" && event.payload?.plainToken) {
+      return c.json(zoomUrlValidation(event.payload.plainToken, secret));
+    }
+    if (event.event === "app_deauthorized" && event.payload?.user_id) {
+      await handleZoomDeauthorization(event.payload.user_id, opts.calendars);
+    }
+    return c.body(null, 200);
   });
 
   router.post("/push/google", async (c) => {

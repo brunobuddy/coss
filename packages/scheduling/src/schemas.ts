@@ -313,6 +313,12 @@ export const Location = z
     }),
     z.strictObject({ type: z.literal("google_meet") }),
     z.strictObject({ type: z.literal("microsoft_teams") }),
+    z.strictObject({
+      type: z.literal("zoom"),
+      url: z.url().max(2000).nullable().default(null).meta({
+        description: "The meeting's link, once it's created on the host's Zoom account.",
+      }),
+    }),
   ])
   .meta({ id: "SchedulingLocation" });
 
@@ -1033,7 +1039,7 @@ export const CancelledSeries = z
 
 export const AuthorizeCalendarRequest = z
   .strictObject({
-    provider: z.enum(["google", "microsoft"]),
+    provider: z.enum(["google", "microsoft", "zoom"]),
     return_url: z.url().max(2000).optional().meta({
       description:
         "Where to send the browser afterwards, on one of the environment's allowed origins. `coss_calendar` says what happened: `connected`, `denied` or `invalid`.",
@@ -1109,7 +1115,7 @@ export const CalendarConnectionObject = z
     object: z.literal("scheduling.calendar_connection"),
     id: z.string(),
     host: z.string(),
-    provider: z.enum(["google", "microsoft", "caldav", "simulated"]),
+    provider: z.enum(["google", "microsoft", "caldav", "simulated", "zoom"]),
     account: z.string(),
     status: z.enum(["active", "needs_reauth"]).meta({
       description: "`needs_reauth`: access was lost, and this host isn't offered until it's back.",

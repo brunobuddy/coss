@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
+import { createHmac } from "node:crypto";
 import type { LogWriter } from "@coss/logs";
 import { memoryLogWriter } from "@coss/logs/testing";
+import { memoryLimiter } from "@coss/ratelimit/testing";
+import { testSchedulingDeps } from "@coss/scheduling/testing";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
+import { Hono } from "hono";
+import { createSchedulingCallbackRoutes } from "../src/routes/scheduling-callbacks.ts";
+import type { AppEnv } from "../src/types.ts";
 import { createTestApp, errorOf, type TestApp, waitForLogLines } from "./helpers.ts";
 
 const MONDAY = "2031-01-06";
@@ -435,5 +441,73 @@ describe("client API", () => {
     expect(logged).toContain("/v1/scheduling/booker_sessions");
     expect(logged).not.toContain(token);
     expect(logged).not.toContain("sam@example.com");
+  });
+});
+
+describe("Zoom's events", () => {
+  const SECRET = "zoom-secret-token";
+  const routes = () => {
+    const app = new Hono<AppEnv>();
+    app.use(async (c, next) => {
+      c.set("rateLimiter", memoryLimiter());
+      c.set("clientIp", null);
+      await next();
+    });
+    app.route(
+      "/",
+      createSchedulingCallbackRoutes({
+        calendars: {
+          secretsKeys: testSchedulingDeps().dataKeys,
+          apps: {
+            google: null,
+            microsoft: null,
+            zoom: { clientId: "id", clientSecret: "secret", webhookSecret: SECRET },
+          },
+          publicUrl: "https://api.example.test",
+        },
+      }),
+    );
+    return app;
+  };
+  const post = (
+    body: string,
+    signature: string,
+    timestamp = String(Math.floor(Date.now() / 1000)),
+  ) =>
+    routes().request("/zoom/events", {
+      method: "POST",
+      headers: { "x-zm-signature": signature, "x-zm-request-timestamp": timestamp },
+      body,
+    });
+  const sign = (body: string, secret = SECRET) => {
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const hash = createHmac("sha256", secret).update(`v0:${timestamp}:${body}`).digest("hex");
+    return { signature: `v0=${hash}`, timestamp };
+  };
+
+  test("answers Zoom's endpoint check", async () => {
+    const body = JSON.stringify({
+      event: "endpoint.url_validation",
+      payload: { plainToken: "plain" },
+    });
+    const { signature, timestamp } = sign(body);
+    const res = await post(body, signature, timestamp);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      plainToken: "plain",
+      encryptedToken: createHmac("sha256", SECRET).update("plain").digest("hex"),
+    });
+  });
+
+  test("refuses a bad signature, and acts on nothing it can't verify", async () => {
+    const body = JSON.stringify({ event: "app_deauthorized", payload: { user_id: "zoom_user" } });
+    const { signature, timestamp } = sign(body, "wrong");
+    expect((await post(body, signature, timestamp)).status).toBe(401);
+  });
+
+  test("accepts a signed deauthorization", async () => {
+    const body = JSON.stringify({ event: "app_deauthorized", payload: { user_id: "nobody_here" } });
+    const { signature, timestamp } = sign(body);
+    expect((await post(body, signature, timestamp)).status).toBe(200);
   });
 });
