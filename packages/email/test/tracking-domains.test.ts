@@ -434,7 +434,7 @@ describe("lifecycle with CloudFront", () => {
 
     const error = await expectDomainError(deleteTrackingDomain(input, deps), "provider_error");
     expect(error.message).toContain("Try again shortly");
-    expect((await domainObject(domain)).tracking?.status).toBe("active");
+    expect((await domainObject(domain)).tracking?.status).toBe("temporary_failure");
     expect(api.find(hostname)?.enabled).toBe(false);
 
     // Still deploying: refused again, without disabling twice.
