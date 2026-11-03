@@ -57,7 +57,7 @@ async function ticketContext(formData: FormData, organization: { id: string; slu
     : null;
   if (referenceId && !reference) {
     throw new ActionError(
-      "We couldn't find that ID in this organization. Check it, or leave it out.",
+      "We couldn't find that item in this organization. Check the ID, or leave it out.",
     );
   }
   return {

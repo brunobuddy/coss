@@ -1,11 +1,11 @@
 /**
  * The emails Forms sends: the owner's notification of an accepted submission and the
- * submitter's verification link. Plain, small HTML (every value escaped: it is the submitter's
- * text) and a text part. Sent through an injected `FormMailer`, so `@coss/forms` never imports
- * the email product; contacts go through an injected `FormContactSink` the same way.
+ * submitter's verification link, in the layout of every coss.com email. Sent through an injected
+ * `FormMailer`, so `@coss/forms` never imports the email product; contacts go through an injected
+ * `FormContactSink` the same way.
  */
 import type { FormFieldDefinition } from "@coss/db/schema";
-import { escapeHtml } from "./pages.ts";
+import { type EmailBlock, renderEmail } from "@coss/email-layout";
 
 export type FormEmailEnvironment = {
   organizationId: string;
@@ -90,33 +90,18 @@ export function notificationContent(input: {
     label: labels.get(name) ?? name,
     value: valueText(value),
   }));
-  const subject = oneLine(`New submission to ${input.formName}`);
-  const text =
-    `New submission to ${input.formName}\n\n` +
-    rows.map((row) => `${row.label}:\n${row.value}\n`).join("\n") +
-    (input.files.length > 0
-      ? `\nFiles:\n${input.files.map((file) => `- ${file.filename}`).join("\n")}\n`
-      : "") +
-    `\nView it on coss.com: ${input.submissionUrl}\n`;
-  const html =
-    '<div style="font:15px/1.5 system-ui,-apple-system,sans-serif;color:#111;max-width:36rem">' +
-    `<p style="color:#6b7280;margin:0 0 1rem">New submission to <strong>${escapeHtml(input.formName)}</strong></p>` +
-    '<table style="border-collapse:collapse;width:100%">' +
-    rows
-      .map(
-        (row) =>
-          '<tr><td style="padding:.5rem 0;border-top:1px solid #e5e7eb;vertical-align:top">' +
-          `<div style="color:#6b7280;font-size:13px">${escapeHtml(row.label)}</div>` +
-          `<div style="white-space:pre-wrap">${escapeHtml(row.value)}</div></td></tr>`,
-      )
-      .join("") +
-    "</table>" +
-    (input.files.length > 0
-      ? `<p style="margin:1rem 0 0">Files: ${input.files.map((file) => escapeHtml(file.filename)).join(", ")}</p>`
-      : "") +
-    `<p style="margin:1.5rem 0 0"><a href="${escapeHtml(input.submissionUrl)}">View it on coss.com</a></p>` +
-    "</div>";
-  return { subject, text, html };
+  const blocks: EmailBlock[] = [
+    ...(rows.length > 0 ? [{ fields: rows }] : []),
+    ...(input.files.length > 0
+      ? [{ heading: "Files" }, { list: input.files.map((file) => file.filename) }]
+      : []),
+    { button: { label: "View it on coss.com", url: input.submissionUrl } },
+  ];
+  return renderEmail({
+    subject: oneLine(`New submission to ${input.formName}`),
+    preview: `Someone filled in ${oneLine(input.formName, 100)}.`,
+    blocks,
+  });
 }
 
 /** The submitter's verification email: one link, which confirms nothing until they click. */
@@ -126,16 +111,15 @@ export function verificationContent(input: { formName: string; confirmUrl: strin
   html: string;
 } {
   const name = oneLine(input.formName, 100);
-  return {
+  // Only ever from the form's own sender (`customerOnly`), so it never carries coss.com's name.
+  return renderEmail({
     subject: oneLine(`Confirm your email for ${name}`),
-    text:
-      `Confirm your email address to send your submission to ${name}:\n\n${input.confirmUrl}\n\n` +
-      "The link works for 7 days. If you didn't fill in this form, ignore this email.\n",
-    html:
-      '<div style="font:15px/1.5 system-ui,-apple-system,sans-serif;color:#111;max-width:32rem">' +
-      `<p>Confirm your email address to send your submission to <strong>${escapeHtml(name)}</strong>.</p>` +
-      `<p><a href="${escapeHtml(input.confirmUrl)}" style="display:inline-block;padding:.5rem 1rem;border-radius:.5rem;background:#111;color:#fff;text-decoration:none">Confirm my email</a></p>` +
-      '<p style="color:#6b7280;font-size:13px">The link works for 7 days. If you didn\'t fill in this form, ignore this email.</p>' +
-      "</div>",
-  };
+    title: "Confirm your email",
+    brand: name,
+    blocks: [
+      { paragraph: `Confirm your email address to send your submission to ${name}.` },
+      { button: { label: "Confirm my email", url: input.confirmUrl } },
+      { note: "The link works for 7 days. If you didn't fill in this form, ignore this email." },
+    ],
+  });
 }

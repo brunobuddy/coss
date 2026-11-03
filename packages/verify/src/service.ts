@@ -149,6 +149,7 @@ export type VerifyEmailSender = (input: {
   subject: string;
   text: string;
   html: string;
+  cossHtml: string;
   idempotencyKey: string;
   /** `suppressed`: nothing was sent (`emailId` is then `null`). */
 }) => Promise<{ route: "email" | "coss_email"; emailId: string | null; suppressed: boolean }>;
@@ -414,7 +415,9 @@ export function createVerifyService(opts: VerifyServiceOptions): VerifyService {
         if (!opts.sendEmail) {
           throw new VerifyError("send_failed", "Email codes aren't available.");
         }
-        const content = verifyEmailContent(settings.appName, code, settings.ttlSeconds);
+        const content = verifyEmailContent(settings.appName, code, settings.ttlSeconds, {
+          ownSender: Boolean(settings.emailFrom),
+        });
         const email = await opts.sendEmail({
           environment: env,
           apiKeyId: source.apiKeyId,

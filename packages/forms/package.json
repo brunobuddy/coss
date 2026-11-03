@@ -19,6 +19,7 @@
     "@coss/billing": "workspace:*",
     "@coss/dashboard-routes": "workspace:*",
     "@coss/db": "workspace:*",
+    "@coss/email-layout": "workspace:*",
     "@coss/logs": "workspace:*",
     "@coss/retention": "workspace:*",
     "@coss/risk": "workspace:*",

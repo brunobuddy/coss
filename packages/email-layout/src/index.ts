@@ -27,6 +27,12 @@ export type EmailBlock =
   | { code: string }
   /** Label/value pairs (a number, a business, a date). */
   | { details: { label: string; value: string }[] }
+  /** Labels above values that may run long or over several lines (a form's answers). */
+  | { fields: { label: string; value: string }[] }
+  /** A one-time code, large. Never in a subject or preview: both outlive the body. */
+  | { passcode: string }
+  /** Someone's own words, set apart from ours. */
+  | { quote: string }
   | { steps: EmailStep[] }
   /** Small print under the main content. */
   | { note: string };
@@ -39,6 +45,8 @@ export type EmailContent = {
   title?: string;
   /** One line under the title: who it's from, which ticket. */
   subtitle?: string;
+  /** Replaces the wordmark and loads nothing from coss.com: only for a customer's own address. */
+  brand?: string | undefined;
   /** The inbox preview line (hidden in the body); defaults to the first paragraph. */
   preview?: string;
   blocks: EmailBlock[];
@@ -84,6 +92,11 @@ function blockText(block: EmailBlock): string {
   if ("details" in block) {
     return block.details.map((row) => `${row.label}: ${row.value}`).join("\n");
   }
+  if ("fields" in block) {
+    return block.fields.map((row) => `${row.label}:\n${row.value}`).join("\n\n");
+  }
+  if ("passcode" in block) return block.passcode;
+  if ("quote" in block) return block.quote;
   if ("steps" in block) {
     return block.steps
       .map(
@@ -105,10 +118,7 @@ function toText(content: EmailContent): string {
   return parts.join("\n\n");
 }
 
-// ---------------------------------------------------------------------------------------------
-// HTML: tables and inline styles, so every mail client gets the layout. The plate's dot grid, Cal
-// Sans, the wordmark image and the phone styles are extras: without them it still reads the same.
-// ---------------------------------------------------------------------------------------------
+// Tables and inline styles reach every client; the plate's dots, Cal Sans and phone styles are extras.
 
 // apps/site/public/site-assets/email: cached by the CDN, so a changed file needs a new name.
 const ASSETS = "https://coss.com/site-assets/email";
@@ -126,16 +136,17 @@ const FAILED = "#b91c1c";
 const LONG_TITLE = 60;
 
 // Separate tags: Gmail drops a whole <style> over a rule it refuses, and it refuses @font-face.
-const HEAD_STYLES = `<style>
+const FONT_STYLE = `<style>
 @font-face{font-family:'Cal Sans';src:url(${ASSETS}/cal-sans.woff2) format('woff2');font-weight:100 900;font-style:normal}
-</style>
-<style>
+</style>`;
+const PHONE_STYLE = `<style>
 @media (max-width:600px){
 .coss-outer{padding:16px 8px 24px !important}
 .coss-plate{padding:24px 24px 28px !important}
 .coss-title{font-size:26px !important;line-height:32px !important}
 .coss-content{padding:24px 24px 8px !important}
 .coss-footer{padding:20px 24px 0 !important}
+.coss-passcode{font-size:26px !important;line-height:34px !important;letter-spacing:4px !important}
 }
 </style>`;
 
@@ -171,6 +182,10 @@ function stepsHtml(steps: EmailStep[]): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 6px">${rows.join("")}</table>`;
 }
 
+function ruledTable(rows: string[]): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 24px;border-top:1px solid ${INK};border-bottom:1px solid ${BORDER}">${rows.join("")}</table>`;
+}
+
 function detailsHtml(details: { label: string; value: string }[]): string {
   const rows = details.map((row, index) => {
     const rule = index ? `border-top:1px solid ${BORDER};` : "";
@@ -179,7 +194,20 @@ function detailsHtml(details: { label: string; value: string }[]): string {
       `<td align="right" style="padding:12px 0;${rule}font-size:14px;line-height:20px;font-weight:500;color:${INK};text-align:right;vertical-align:top;word-break:break-word">${escapeHtml(row.value)}</td></tr>`
     );
   });
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 24px;border-top:1px solid ${INK};border-bottom:1px solid ${BORDER}">${rows.join("")}</table>`;
+  return ruledTable(rows);
+}
+
+function fieldsHtml(fields: { label: string; value: string }[]): string {
+  const rows = fields.map((row, index) => {
+    const rule = index ? `border-top:1px solid ${BORDER};` : "";
+    return (
+      `<tr><td style="padding:12px 0;${rule}">` +
+      `<div style="margin:0 0 2px;font-size:13px;line-height:20px;color:${MUTED}">${escapeHtml(row.label)}</div>` +
+      `<div style="font-size:15px;line-height:23px;color:${INK};white-space:pre-wrap;word-break:break-word">${escapeHtml(row.value)}</div>` +
+      `</td></tr>`
+    );
+  });
+  return ruledTable(rows);
 }
 
 function blockHtml(block: EmailBlock): string {
@@ -210,6 +238,17 @@ function blockHtml(block: EmailBlock): string {
     return `<pre style="margin:6px 0 22px;padding:16px 18px;border-radius:10px;background-color:${PLATE};font-family:${MONO};font-size:13px;line-height:21px;color:#fafafa;white-space:pre-wrap;word-break:break-all"><code style="font-family:${MONO};color:#fafafa">${escapeHtml(block.code)}</code></pre>`;
   }
   if ("details" in block) return detailsHtml(block.details);
+  if ("fields" in block) return fieldsHtml(block.fields);
+  if ("passcode" in block) {
+    return (
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 24px"><tr>` +
+      `<td class="coss-passcode" align="center" bgcolor="${PAPER}" style="padding:22px 12px;word-break:break-all;border-radius:10px;background-color:${PAPER};font-family:${MONO};font-size:36px;line-height:44px;font-weight:600;letter-spacing:8px;color:${INK}">${escapeHtml(block.passcode)}</td>` +
+      `</tr></table>`
+    );
+  }
+  if ("quote" in block) {
+    return `<div style="margin:6px 0 24px;padding:16px 18px;border-radius:10px;background-color:${PAPER};font-size:15px;line-height:24px;color:${INK};white-space:pre-wrap;word-break:break-word">${escapeHtml(block.quote)}</div>`;
+  }
   if ("steps" in block) return stepsHtml(block.steps);
   return paragraph(escapeHtml(block.note), `font-size:13px;line-height:20px;color:${MUTED}`);
 }
@@ -218,19 +257,22 @@ function toHtml(subject: string, content: EmailContent): string {
   const firstParagraph = content.blocks.find((block) => "paragraph" in block);
   const preview =
     content.preview ??
+    (firstParagraph && "paragraph" in firstParagraph ? firstParagraph.paragraph : undefined) ??
     content.subtitle ??
-    (firstParagraph && "paragraph" in firstParagraph ? firstParagraph.paragraph : "");
+    "";
   const title = content.title ?? subject;
-  const titleSize =
-    title.length > LONG_TITLE
-      ? "font-size:24px;line-height:30px"
-      : "font-size:32px;line-height:38px";
+  const long = title.length > LONG_TITLE;
+  const titleSize = long ? "font-size:24px;line-height:30px" : "font-size:32px;line-height:38px";
   const body = content.blocks.map(blockHtml).join("\n");
   const subtitle = content.subtitle
     ? `<p style="margin:10px 0 0;font-family:${FONT};font-size:14px;line-height:20px;color:${PLATE_MUTED}">${escapeHtml(content.subtitle)}</p>`
     : "";
-  const reason = content.reason
-    ? `<p style="margin:0;font-size:12px;line-height:18px;color:${MUTED}">${escapeHtml(content.reason)}</p>`
+  const brand = oneLine(content.brand ?? "");
+  const masthead = brand
+    ? `<p style="margin:0;font-family:${DISPLAY};font-size:18px;line-height:24px;font-weight:600;color:#ffffff;word-break:break-word">${escapeHtml(brand)}</p>`
+    : `<a href="https://coss.com" style="color:#ffffff;text-decoration:none"><img src="${ASSETS}/wordmark.png" width="95" height="24" alt="coss.com" style="display:block;width:95px;height:24px;border:0;font-family:${FONT};font-size:14px;line-height:24px;font-weight:700;color:#ffffff"></a>`;
+  const footer = content.reason
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px"><tr><td class="coss-footer" style="padding:20px 41px 0;font-family:${FONT}"><p style="margin:0;font-size:12px;line-height:18px;color:${MUTED}">${escapeHtml(content.reason)}</p></td></tr></table>`
     : "";
   return `<!doctype html>
 <html lang="en">
@@ -240,7 +282,7 @@ function toHtml(subject: string, content: EmailContent): string {
 <meta name="color-scheme" content="light">
 <meta name="supported-color-schemes" content="light">
 <title>${escapeHtml(subject)}</title>
-${HEAD_STYLES}
+${brand ? "" : `${FONT_STYLE}\n`}${PHONE_STYLE}
 </head>
 <body bgcolor="${PAPER}" style="margin:0;padding:0;background-color:${PAPER};font-family:${FONT};color:${INK}">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(preview)}</div>
@@ -249,20 +291,16 @@ ${HEAD_STYLES}
 <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;border-collapse:separate;border:1px solid ${BORDER};border-radius:16px;background-color:#ffffff">
 <tr><td class="coss-plate" bgcolor="${PLATE}" style="padding:28px 40px 36px;border-radius:15px 15px 0 0;background-color:${PLATE};background-image:radial-gradient(circle at center,${PLATE_DOT} 1px,${PLATE} 1.2px);background-size:24px 24px;background-position:center;font-family:${FONT}">
-<a href="https://coss.com" style="color:#ffffff;text-decoration:none"><img src="${ASSETS}/wordmark.png" width="95" height="24" alt="coss.com" style="display:block;width:95px;height:24px;border:0;font-family:${FONT};font-size:14px;line-height:24px;font-weight:700;color:#ffffff"></a>
-<h1 class="coss-title" style="margin:44px 0 0;font-family:${DISPLAY};${titleSize};font-weight:600;letter-spacing:-0.005em;color:#ffffff;word-break:break-word">${escapeHtml(title)}</h1>
+${masthead}
+<h1${long ? "" : ' class="coss-title"'} style="margin:44px 0 0;font-family:${DISPLAY};${titleSize};font-weight:600;letter-spacing:-0.005em;color:#ffffff;word-break:break-word">${escapeHtml(title)}</h1>
 ${subtitle}
 </td></tr>
 <tr><td class="coss-content" style="padding:32px 40px 14px;font-family:${FONT}">
 ${body}
 </td></tr>
 </table>
+${footer}
 <!--[if mso]></td></tr></table><![endif]-->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px">
-<tr><td class="coss-footer" style="padding:20px 41px 0;font-family:${FONT}">
-${reason}
-</td></tr>
-</table>
 </td></tr>
 </table>
 </body>

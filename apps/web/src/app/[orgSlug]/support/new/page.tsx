@@ -1,6 +1,6 @@
 import { supportPlanAt } from "@coss/billing";
 import { formatSupportTarget, SUPPORT_TIERS, supportResponseMinutes } from "@coss/billing/catalog";
-import { PRODUCTS } from "@coss/dashboard-routes";
+import { PRODUCTS, sectionOf } from "@coss/dashboard-routes";
 import { formatSupportTime, hasUrgentSupport, responseDueAt } from "@coss/support";
 import { SUPPORT_CATEGORIES, type SupportCategory } from "@coss/support/schemas";
 import { listProjectsWithEnvironments } from "@coss/tenancy";
@@ -44,12 +44,8 @@ export default async function NewTicketPage({
   const fromEnvironmentRow = fromProjectRow?.environments.find(
     (environment) => environment.slug === fromEnvironment,
   );
-  const restPath = `/${rest.join("/")}`;
-  const fromProduct = fromEnvironmentRow
-    ? PRODUCTS.find(
-        (product) => restPath === product.path || restPath.startsWith(`${product.path}/`),
-      )
-    : undefined;
+  const section = fromEnvironmentRow ? sectionOf(`/${rest.join("/")}`) : undefined;
+  const fromProduct = PRODUCTS.find((product) => product === section)?.key ?? null;
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -69,7 +65,7 @@ export default async function NewTicketPage({
             : "technical"
         }
         defaultEnvironmentId={fromEnvironmentRow?.id ?? null}
-        defaultProduct={fromProduct?.key ?? null}
+        defaultProduct={fromProduct}
         defaultReference={single(search.reference).slice(0, 80)}
         defaultSubject={single(search.subject).slice(0, 200)}
         environments={projects.flatMap(({ project, environments }) =>

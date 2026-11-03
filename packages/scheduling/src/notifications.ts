@@ -8,7 +8,7 @@
  * what a customer can put in them is screened when it's set up instead (`screening.ts`).
  */
 import { db, type Executor, schema } from "@coss/db";
-import { type EmailBlock, oneLine, renderEmail } from "@coss/email-layout";
+import { type EmailBlock, type EmailContent, oneLine, renderEmail } from "@coss/email-layout";
 import { and, asc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { decryptContact } from "./attendees.ts";
 import { buildIcs } from "./calendar/ical.ts";
@@ -59,6 +59,21 @@ export function resolvePolicy(
     ...DEFAULT_POLICY[event],
     ...environmentPolicy?.[event],
     ...eventTypePolicy?.[event],
+  };
+}
+
+/** The customer's name on top only under their own address; coss.com's sends `cossHtml`. */
+function renderMessage(
+  settings: { emailFrom: string | null; brandName: string | null } | null | undefined,
+  content: EmailContent,
+) {
+  const coss = renderEmail(content);
+  const brand = settings?.emailFrom ? settings.brandName : null;
+  return {
+    subject: coss.subject,
+    text: coss.text,
+    html: brand ? renderEmail({ ...content, brand }).html : coss.html,
+    cossHtml: coss.html,
   };
 }
 
@@ -139,6 +154,8 @@ export type SchedulingEmail = {
   subject: string;
   text: string;
   html: string;
+  /** What coss.com's address sends, including when the customer's stops being verified. */
+  cossHtml: string;
   ics: { filename: string; content: string; method: "REQUEST" | "CANCEL" } | null;
   idempotencyKey: string;
 };
@@ -375,7 +392,7 @@ async function sendBookingEmail(
           ? [{ button: { label: "Reschedule or cancel", url: manage.url } } as EmailBlock]
           : []),
       ];
-      const message = renderEmail({
+      const message = renderMessage(settings, {
         subject: SUBJECTS[event](titleOf(booking)),
         blocks,
         reason: `You're receiving this because of your booking with ${senderName}.`,
@@ -388,6 +405,7 @@ async function sendBookingEmail(
         subject: message.subject,
         text: message.text,
         html: message.html,
+        cossHtml: message.cossHtml,
         ics: withIcs ? ics({ name: contact.name, email: contact.email }) : null,
         idempotencyKey: `${key}:${attendee.id}`,
       });
@@ -426,7 +444,7 @@ async function sendBookingEmail(
         ],
       },
     ];
-    const message = renderEmail({
+    const message = renderMessage(settings, {
       subject: SUBJECTS[event](titleOf(booking)),
       blocks,
       reason: `You're receiving this as a host with ${senderName}.`,
@@ -439,6 +457,7 @@ async function sendBookingEmail(
       subject: message.subject,
       text: message.text,
       html: message.html,
+      cossHtml: message.cossHtml,
       ics: withIcs ? ics({ name: host.name, email: host.email }) : null,
       idempotencyKey: `${key}:${host.id}`,
     });
@@ -499,7 +518,7 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
     ? await createHostInvitationSession(env, host.id, deps.publicUrl, now)
     : null;
   const zoom = row.kind === "zoom_needs_reauth";
-  const message = renderEmail({
+  const message = renderMessage(settings, {
     subject: zoom ? "Your Zoom account needs reconnecting" : "Your calendar needs reconnecting",
     blocks: [
       {
@@ -528,6 +547,7 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
     subject: message.subject,
     text: message.text,
     html: message.html,
+    cossHtml: message.cossHtml,
     ics: null,
     idempotencyKey: `scheduling:${row.id}`,
   });
