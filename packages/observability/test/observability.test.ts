@@ -34,6 +34,42 @@ describe("sentryConfig", () => {
 });
 
 describe("scrubbing", () => {
+  test("masks email addresses and phone numbers in text", () => {
+    expect(scrubUrl("bounced for jane.doe+x@mail.example.co.uk today")).toBe(
+      "bounced for [email] today",
+    );
+    expect(scrubUrl("Twilio refused +14155550123: invalid")).toBe(
+      "Twilio refused [phone]: invalid",
+    );
+    expect(scrubUrl("call +1 (415) 555-0123 back")).toBe("call [phone] back");
+    const event = scrubEvent({
+      message: "no route for a@example.com",
+      exception: { values: [{ type: "Error", value: "send to b@example.com failed" }] },
+      breadcrumbs: [{ message: "retrying c@example.com" }],
+    } as Event);
+    expect(event.message).toBe("no route for [email]");
+    expect(event.exception?.values?.[0]?.value).toBe("send to [email] failed");
+    expect(event.breadcrumbs?.[0]?.message).toBe("retrying [email]");
+  });
+
+  test("keeps what only looks like an address or a number", () => {
+    for (const text of [
+      "react@18.3.1 failed to load",
+      "@coss/db@1.2.3",
+      "at 2026-11-03T23:17:22+00:00",
+      "email_01k8z0abc123 took 1234567 ms",
+    ]) {
+      expect(scrubUrl(text)).toBe(text);
+    }
+  });
+
+  test("stays fast on long lines without an address", () => {
+    const line = `${"a".repeat(200_000)}@`;
+    const started = performance.now();
+    scrubUrl(line);
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
   test("URLs lose query strings and secret path segments", () => {
     expect(scrubUrl("https://api.coss.com/t/o/tok_secret")).toBe(
       "https://api.coss.com/t/o/[token]",
