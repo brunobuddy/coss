@@ -52,7 +52,30 @@ export function schedulingNotifier(opts: {
     environment: SendEnvironment,
     from: string,
     html: string,
+    logo: SchedulingEmail["logo"] = null,
   ): Promise<void> {
+    const attachments = [
+      ...(email.ics
+        ? [
+            {
+              filename: email.ics.filename,
+              content: Buffer.from(email.ics.content, "utf8").toString("base64"),
+              // The schema takes no parameters: the METHOD inside the file is what mail clients read.
+              content_type: "text/calendar",
+            },
+          ]
+        : []),
+      ...(logo
+        ? [
+            {
+              filename: logo.filename,
+              content: logo.content,
+              content_type: logo.contentType,
+              content_id: logo.contentId,
+            },
+          ]
+        : []),
+    ];
     const params = SendEmailRequest.parse({
       from,
       to: email.to,
@@ -63,18 +86,7 @@ export function schedulingNotifier(opts: {
       // Manage links are secrets: never through click redirects, and in live environments never
       // kept after sending.
       tracking: { opens: false, clicks: false, unsubscribe: false },
-      ...(email.ics
-        ? {
-            attachments: [
-              {
-                filename: email.ics.filename,
-                content: Buffer.from(email.ics.content, "utf8").toString("base64"),
-                // The schema takes no parameters: the METHOD inside the file is what mail clients read.
-                content_type: "text/calendar",
-              },
-            ],
-          }
-        : {}),
+      ...(attachments.length > 0 ? { attachments } : {}),
     });
     const quota = emailSendQuota(environment, params.to.length);
     if (!(await opts.limiter.consume(quota)).allowed) {
@@ -106,12 +118,24 @@ export function schedulingNotifier(opts: {
       if (email.environment.mode === "sandbox") {
         const address = email.from ?? opts.fallback?.address ?? SANDBOX_FALLBACK_ADDRESS;
         const name = email.from ? email.senderName : `${email.senderName} via coss.com`;
-        await send(email, email.environment, named(name, address), email.html);
+        await send(
+          email,
+          email.environment,
+          named(name, address),
+          email.html,
+          email.from ? email.logo : null,
+        );
         return;
       }
       if (email.from) {
         try {
-          await send(email, email.environment, named(email.senderName, email.from), email.html);
+          await send(
+            email,
+            email.environment,
+            named(email.senderName, email.from),
+            email.html,
+            email.logo,
+          );
           return;
         } catch (error) {
           if (!(error instanceof EmailError && error.code === "domain_not_verified")) throw error;

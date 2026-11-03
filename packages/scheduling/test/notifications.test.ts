@@ -25,7 +25,7 @@ import {
   updateHost,
   updateSettings,
 } from "../src/index.ts";
-import { testSchedulingDeps } from "../src/testing.ts";
+import { TEST_PNG, testSchedulingDeps } from "../src/testing.ts";
 
 const ms = Date.parse;
 const at = (time: string, date = "2031-01-06") => ms(`${date}T${time}:00Z`);
@@ -350,6 +350,41 @@ describe("what's in them", () => {
     const viaCoss = notifier();
     await run(theirs.env, viaCoss.notification);
     for (const email of viaCoss.emails) expect(email.html).toContain("wordmark.png");
+  });
+
+  test("the logo and accent go only with the customer's own address, inside the message", async () => {
+    const own = await setUp();
+    await updateSettings(own.env, {
+      email_from: "bookings@acme.test",
+      brand_name: "Acme Health",
+      accent_color: "#2563eb",
+      logo: { content: TEST_PNG },
+    });
+    await book(own);
+    const branded = notifier();
+    await run(own.env, branded.notification);
+    expect(branded.emails.length).toBeGreaterThan(0);
+    for (const email of branded.emails) {
+      expect(email.logo?.contentType).toBe("image/png");
+      expect(email.logo?.content).toBe(TEST_PNG);
+      expect(email.html).toContain(`cid:${email.logo?.contentId}`);
+      // Only the attendee's has a button.
+      if (email.to === attendee.email) expect(email.html).toContain('bgcolor="#2563eb"');
+      expect(email.cossHtml).not.toContain("cid:");
+      expect(email.cossHtml).not.toContain("#2563eb");
+    }
+
+    const theirs = await setUp();
+    await updateSettings(theirs.env, { accent_color: "#2563eb", logo: { content: TEST_PNG } });
+    await book(theirs);
+    const viaCoss = notifier();
+    await run(theirs.env, viaCoss.notification);
+    expect(viaCoss.emails.length).toBeGreaterThan(0);
+    for (const email of viaCoss.emails) {
+      expect(email.logo).toBeNull();
+      expect(email.html).not.toContain("cid:");
+      expect(email.html).not.toContain("#2563eb");
+    }
   });
 
   test("no answers, ever", async () => {

@@ -5,11 +5,39 @@ import { Button } from "@coss/ui/components/button";
 import { Checkbox } from "@coss/ui/components/checkbox";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
+import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "@coss/ui/components/select";
 import { Spinner } from "@coss/ui/components/spinner";
 import { Textarea } from "@coss/ui/components/textarea";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { SlotPicker } from "@/components/slot-picker";
-import { useAccentColor } from "@/lib/branding";
+import {
+  ArrowLeftIcon,
+  CalendarIcon,
+  CheckIcon,
+  ClockIcon,
+  GlobeIcon,
+  MapPinIcon,
+  VideoIcon,
+} from "lucide-react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  BrandMark,
+  BrokenLink,
+  Detail,
+  DetailList,
+  LoadingPanel,
+  PageTitle,
+  Panel,
+  TestModeNotice,
+} from "@/components/page";
+import { type Slot, SlotPicker } from "@/components/slot-picker";
+import { TimeZonePicker, zoneLabel } from "@/components/time-zone-picker";
+import { type Branding, useAccentColor } from "@/lib/branding";
 import { browserTimeZone, ClientApiError, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
 
@@ -21,9 +49,7 @@ type Question = {
   options: string[];
 };
 
-type Session = {
-  brand_name: string | null;
-  accent_color: string | null;
+type Session = Branding & {
   sandbox: boolean;
   attendee_fixed: boolean;
   event_type: {
@@ -31,18 +57,44 @@ type Session = {
     duration_minutes: number;
     duration_options: number[];
     questions: Question[];
+    locations: { type: string }[];
     requires_approval: boolean;
   };
 };
 
-type Slot = { start: string; end: string };
+type Answer = string | string[];
+
+const LOCATION_LABELS: Record<string, { label: string; icon: typeof VideoIcon }> = {
+  link: { label: "Online", icon: VideoIcon },
+  google_meet: { label: "Google Meet", icon: VideoIcon },
+  microsoft_teams: { label: "Microsoft Teams", icon: VideoIcon },
+  zoom: { label: "Zoom", icon: VideoIcon },
+  phone: { label: "By phone", icon: MapPinIcon },
+  in_person: { label: "In person", icon: MapPinIcon },
+};
+
+/** What the browser's own validation can't see, since these controls aren't plain inputs. */
+export function unansweredQuestion(
+  questions: Question[],
+  answers: Record<string, Answer>,
+): Question | null {
+  return (
+    questions.find((question) => {
+      if (!question.required) return false;
+      const answer = answers[question.key];
+      return answer === undefined || answer.length === 0;
+    }) ?? null
+  );
+}
 
 function QuestionField(props: {
   question: Question;
-  onChange: (value: string | string[]) => void;
+  value: Answer | undefined;
+  onChange: (value: Answer) => void;
 }) {
-  const { question, onChange } = props;
+  const { question, value, onChange } = props;
   const id = `question-${question.key}`;
+  const single = typeof value === "string" ? value : null;
   if (question.type === "textarea") {
     return (
       <Textarea
@@ -52,36 +104,54 @@ function QuestionField(props: {
       />
     );
   }
-  if (question.type === "select" || question.type === "radio") {
+  if (question.type === "select") {
     return (
-      <select
-        className="h-9 w-full rounded-md border bg-background px-2 text-sm"
-        defaultValue=""
-        id={id}
-        onChange={(event) => onChange(event.target.value)}
-        required={question.required}
-      >
-        <option disabled value="">
-          Choose…
-        </option>
-        {question.options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+      <Select onValueChange={(next) => onChange(String(next))} value={single}>
+        <SelectTrigger aria-labelledby={`${id}-label`} id={id}>
+          <SelectValue placeholder="Choose one" />
+        </SelectTrigger>
+        <SelectPopup>
+          {question.options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectPopup>
+      </Select>
     );
   }
-  if (question.type === "checkbox") {
+  if (question.type === "radio") {
     return (
-      <div className="flex flex-col gap-2">
+      <RadioGroup
+        aria-labelledby={`${id}-label`}
+        onValueChange={(next) => onChange(String(next))}
+        value={single ?? ""}
+      >
         {question.options.map((option) => (
           <Label className="flex items-center gap-2 font-normal" key={option}>
-            <Checkbox onCheckedChange={(checked) => onChange(checked ? [option] : [])} />
+            <Radio value={option} />
             {option}
           </Label>
         ))}
-      </div>
+      </RadioGroup>
+    );
+  }
+  if (question.type === "checkbox") {
+    const chosen = Array.isArray(value) ? value : [];
+    return (
+      <fieldset aria-labelledby={`${id}-label`} className="flex flex-col gap-2">
+        {question.options.map((option) => (
+          <Label className="flex items-center gap-2 font-normal" key={option}>
+            <Checkbox
+              checked={chosen.includes(option)}
+              onCheckedChange={(checked) =>
+                onChange(checked ? [...chosen, option] : chosen.filter((other) => other !== option))
+              }
+            />
+            {option}
+          </Label>
+        ))}
+      </fieldset>
     );
   }
   const inputType =
@@ -102,21 +172,63 @@ function QuestionField(props: {
   );
 }
 
+function Confirmed(props: {
+  session: Session;
+  done: { status: string; start: string };
+  when: string;
+  timeZone: string;
+}) {
+  const { session, done, when, timeZone } = props;
+  const pending = done.status === "pending_approval";
+  return (
+    <main className="mx-auto flex max-w-lg flex-col gap-4 px-4 py-6 sm:py-12">
+      {session.sandbox ? <TestModeNotice /> : null}
+      <Panel className="flex flex-col gap-6 p-6 sm:p-8">
+        <BrandMark branding={session} />
+        <div className="flex flex-col gap-3">
+          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <CheckIcon aria-hidden="true" className="size-5" />
+          </span>
+          <PageTitle>{pending ? "Request sent" : "You're booked"}</PageTitle>
+          <p className="text-pretty text-muted-foreground text-sm">
+            {pending
+              ? "You'll get an email once it's approved."
+              : "A confirmation is on its way, with a link to reschedule or cancel."}
+          </p>
+        </div>
+        <DetailList>
+          <Detail icon={CalendarIcon} label="What">
+            {session.event_type.title}
+          </Detail>
+          <Detail icon={ClockIcon} label="When">
+            {when}
+          </Detail>
+          <Detail icon={GlobeIcon} label="Time zone">
+            {zoneLabel(timeZone)}
+          </Detail>
+        </DetailList>
+      </Panel>
+    </main>
+  );
+}
+
 export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: string }) {
   const call = useClientApi(sessionId, apiUrl);
   const [session, setSession] = useState<Session | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [formProblem, setFormProblem] = useState<string | null>(null);
   const [slot, setSlot] = useState<Slot | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+  const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [submitting, setSubmitting] = useState(false);
   const [lostSlot, setLostSlot] = useState(false);
   const [done, setDone] = useState<{ status: string; start: string } | null>(null);
-  const timeZone = useMemo(browserTimeZone, []);
+  const [timeZone, setTimeZone] = useState(browserTimeZone);
   // One attempt's key, new for each chosen time: a double click or a retry can't book twice.
   const [attemptKey, setAttemptKey] = useState(() => crypto.randomUUID());
+  const stepHeading = useRef<HTMLHeadingElement>(null);
 
   useAccentColor(session?.accent_color);
   useEffect(reportHeight, []);
@@ -137,16 +249,21 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
       });
   }, [call]);
 
-  const when = (iso: string) =>
-    new Intl.DateTimeFormat(undefined, { timeZone, dateStyle: "full", timeStyle: "short" }).format(
-      new Date(iso),
-    );
+  const whenFormat = useMemo(
+    () => new Intl.DateTimeFormat(undefined, { timeZone, dateStyle: "full", timeStyle: "short" }),
+    [timeZone],
+  );
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!slot || !session) return;
+    const unanswered = unansweredQuestion(session.event_type.questions, answers);
+    if (unanswered) {
+      setFormProblem(`Please answer "${unanswered.label}".`);
+      return;
+    }
     setSubmitting(true);
-    setProblem(null);
+    setFormProblem(null);
     try {
       const booking = await call<{ id: string; status: string; start: string }>("/bookings", {
         method: "POST",
@@ -167,150 +284,170 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
         setSlot(null);
         setLostSlot(true);
       } else {
-        setProblem((error as Error).message);
+        setFormProblem((error as Error).message);
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (problem && !session) {
-    return (
-      <main className="mx-auto max-w-lg p-6">
-        <Alert variant="error">
-          <AlertTitle>This link isn't working</AlertTitle>
-          <AlertDescription>{problem}</AlertDescription>
-        </Alert>
-      </main>
-    );
-  }
-  if (!session) {
-    return (
-      <main className="flex min-h-64 items-center justify-center" aria-busy>
-        <Spinner />
-      </main>
-    );
-  }
+  useEffect(() => {
+    if (slot) stepHeading.current?.focus();
+  }, [slot]);
+
+  if (problem) return <BrokenLink message={problem} title="This link isn't working" />;
+  if (!session) return <LoadingPanel className="max-w-5xl" />;
   if (done) {
     return (
-      <main className="mx-auto flex max-w-lg flex-col gap-2 p-6">
-        <h1 className="font-semibold text-xl">
-          {done.status === "pending_approval" ? "Request sent" : "You're booked"}
-        </h1>
-        <p className="text-sm">
-          {session.event_type.title}, {when(done.start)}.
-        </p>
-        <p className="text-muted-foreground text-sm">
-          {done.status === "pending_approval"
-            ? "You'll get an email once it's approved."
-            : "A confirmation is on its way, with a link to reschedule or cancel."}
-        </p>
-      </main>
+      <Confirmed
+        done={done}
+        session={session}
+        timeZone={timeZone}
+        when={whenFormat.format(new Date(done.start))}
+      />
     );
   }
+
   const durations = [session.event_type.duration_minutes, ...session.event_type.duration_options];
+  const onlyLocation =
+    session.event_type.locations.length === 1 ? session.event_type.locations[0] : undefined;
+  const place = onlyLocation ? LOCATION_LABELS[onlyLocation.type] : undefined;
   return (
-    <main className="mx-auto flex max-w-lg flex-col gap-6 p-6">
-      <header className="flex flex-col gap-1">
-        {session.brand_name ? (
-          <p className="text-muted-foreground text-sm">{session.brand_name}</p>
-        ) : null}
-        <h1 className="font-semibold text-xl">{session.event_type.title}</h1>
-        <p className="text-muted-foreground text-sm">{duration} minutes</p>
-      </header>
-      {session.sandbox ? (
-        <Alert variant="warning">
-          <AlertDescription>
-            Test mode: nothing here is real, and nobody's emailed.
-          </AlertDescription>
-        </Alert>
-      ) : null}
-      {durations.length > 1 && !slot ? (
-        <fieldset aria-label="Choose a length" className="flex gap-2">
-          {durations.map((minutes) => (
-            <Button
-              aria-pressed={duration === minutes}
-              key={minutes}
-              onClick={() => setDuration(minutes)}
-              size="sm"
-              variant={duration === minutes ? "default" : "outline"}
-            >
-              {minutes} min
-            </Button>
-          ))}
-        </fieldset>
-      ) : null}
-      {lostSlot && !slot ? (
-        <Alert variant="warning">
-          <AlertTitle>That time was just taken</AlertTitle>
-          <AlertDescription>Please choose another.</AlertDescription>
-        </Alert>
-      ) : null}
-      {slot ? (
-        <form className="flex flex-col gap-4" onSubmit={submit}>
-          <div className="flex items-center justify-between gap-2 rounded-md border p-3 text-sm">
-            <span>{when(slot.start)}</span>
-            <Button onClick={() => setSlot(null)} size="sm" type="button" variant="ghost">
-              Change
-            </Button>
-          </div>
-          {session.attendee_fixed ? null : (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="name">Your name</Label>
-                <Input
-                  autoComplete="name"
-                  id="name"
-                  maxLength={100}
-                  onChange={(event) => setName(event.target.value)}
-                  required
-                  value={name}
-                />
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 sm:py-12">
+      {session.sandbox ? <TestModeNotice /> : null}
+      <Panel className="grid md:grid-cols-[17rem_minmax(0,1fr)]">
+        <aside className="flex flex-col gap-5 border-b p-4 sm:p-6 md:border-e md:border-b-0">
+          <BrandMark branding={session} />
+          <PageTitle>{session.event_type.title}</PageTitle>
+          <DetailList>
+            {slot ? (
+              <Detail icon={CalendarIcon} label="When">
+                <span className="font-medium">{whenFormat.format(new Date(slot.start))}</span>
+              </Detail>
+            ) : null}
+            <Detail icon={ClockIcon} label="Length">
+              {durations.length > 1 && !slot ? (
+                <fieldset aria-label="Choose a length" className="flex flex-wrap gap-1.5">
+                  {durations.map((minutes) => (
+                    <Button
+                      aria-pressed={duration === minutes}
+                      key={minutes}
+                      onClick={() => setDuration(minutes)}
+                      size="xs"
+                      type="button"
+                      variant={duration === minutes ? "default" : "outline"}
+                    >
+                      {minutes} min
+                    </Button>
+                  ))}
+                </fieldset>
+              ) : (
+                `${duration} minutes`
+              )}
+            </Detail>
+            {place ? (
+              <Detail icon={place.icon} label="Where">
+                {place.label}
+              </Detail>
+            ) : null}
+            <Detail icon={GlobeIcon} label="Time zone">
+              <TimeZonePicker onChange={setTimeZone} value={timeZone} />
+            </Detail>
+          </DetailList>
+        </aside>
+        <section className="flex min-w-0 flex-col gap-4 p-4 sm:p-6">
+          {lostSlot && !slot ? (
+            <Alert variant="warning">
+              <AlertTitle>That time was just taken</AlertTitle>
+              <AlertDescription>Please choose another.</AlertDescription>
+            </Alert>
+          ) : null}
+          {slot ? (
+            <form className="flex max-w-md flex-col gap-4" onSubmit={submit}>
+              <div className="flex flex-col items-start gap-1">
+                <Button
+                  className="-ms-2"
+                  onClick={() => {
+                    setSlot(null);
+                    setFormProblem(null);
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <ArrowLeftIcon aria-hidden="true" />
+                  Choose another time
+                </Button>
+                <h2 className="font-medium outline-none" ref={stepHeading} tabIndex={-1}>
+                  Your details
+                </h2>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  autoComplete="email"
-                  id="email"
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
-                  type="email"
-                  value={email}
-                />
-              </div>
-            </>
+              {session.attendee_fixed ? null : (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="name">Your name</Label>
+                    <Input
+                      autoComplete="name"
+                      id="name"
+                      maxLength={100}
+                      onChange={(event) => setName(event.target.value)}
+                      required
+                      value={name}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      autoComplete="email"
+                      id="email"
+                      onChange={(event) => setEmail(event.target.value)}
+                      required
+                      type="email"
+                      value={email}
+                    />
+                  </div>
+                </>
+              )}
+              {session.event_type.questions.map((question) => (
+                <div className="flex flex-col gap-1.5" key={question.key}>
+                  <Label htmlFor={`question-${question.key}`} id={`question-${question.key}-label`}>
+                    {question.label}
+                    {question.required ? null : (
+                      <span className="font-normal text-muted-foreground"> (optional)</span>
+                    )}
+                  </Label>
+                  <QuestionField
+                    onChange={(value) => setAnswers((all) => ({ ...all, [question.key]: value }))}
+                    question={question}
+                    value={answers[question.key]}
+                  />
+                </div>
+              ))}
+              {formProblem ? (
+                <p className="text-destructive-foreground text-sm" role="alert">
+                  {formProblem}
+                </p>
+              ) : null}
+              <Button className="self-start max-sm:w-full" disabled={submitting} type="submit">
+                {submitting ? <Spinner /> : null}
+                {session.event_type.requires_approval ? "Request this time" : "Book this time"}
+              </Button>
+            </form>
+          ) : (
+            <SlotPicker
+              call={call}
+              durationMinutes={duration ?? undefined}
+              onPick={(picked) => {
+                setLostSlot(false);
+                setAttemptKey(crypto.randomUUID());
+                setSlot(picked);
+              }}
+              path="/slots"
+              timeZone={timeZone}
+            />
           )}
-          {session.event_type.questions.map((question) => (
-            <div className="flex flex-col gap-1.5" key={question.key}>
-              <Label htmlFor={`question-${question.key}`}>
-                {question.label}
-                {question.required ? "" : " (optional)"}
-              </Label>
-              <QuestionField
-                onChange={(value) => setAnswers((all) => ({ ...all, [question.key]: value }))}
-                question={question}
-              />
-            </div>
-          ))}
-          {problem ? <p className="text-destructive-foreground text-sm">{problem}</p> : null}
-          <Button disabled={submitting} type="submit">
-            {submitting ? <Spinner /> : null}
-            {session.event_type.requires_approval ? "Request this time" : "Book this time"}
-          </Button>
-        </form>
-      ) : (
-        <SlotPicker
-          call={call}
-          durationMinutes={duration ?? undefined}
-          onPick={(picked) => {
-            setLostSlot(false);
-            setAttemptKey(crypto.randomUUID());
-            setSlot(picked);
-          }}
-          path="/slots"
-          timeZone={timeZone}
-        />
-      )}
+        </section>
+      </Panel>
     </main>
   );
 }

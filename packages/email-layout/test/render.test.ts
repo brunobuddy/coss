@@ -70,6 +70,36 @@ describe("renderEmail", () => {
     );
   });
 
+  test("a customer's email drops coss.com's plate and takes their logo and colors", () => {
+    const branded = renderEmail({
+      subject: "Subject",
+      brand: "Acme",
+      logo: { src: "cid:logo@acme", width: 800, height: 200 },
+      accent: { background: "#2563eb", foreground: "#ffffff" },
+      blocks: [{ button: { label: "Go", url: "https://example.com" } }],
+    }).html;
+    expect(branded).not.toContain('class="coss-plate"');
+    expect(branded).not.toContain("radial-gradient");
+    expect(branded).toContain('src="cid:logo@acme"');
+    expect(branded).toContain('alt="Acme"');
+    // Scaled to fit, keeping its shape.
+    expect(branded).toContain('width="192" height="48"');
+    expect(branded).toContain('bgcolor="#2563eb"');
+    expect(branded).not.toContain("https://coss.com");
+  });
+
+  test("a logo and accent never reach coss.com's own emails", () => {
+    const html = renderEmail({
+      subject: "Subject",
+      logo: { src: "cid:logo@acme", width: 100, height: 100 },
+      accent: { background: "#2563eb", foreground: "#ffffff" },
+      blocks: [{ button: { label: "Go", url: "https://example.com" } }],
+    }).html;
+    expect(html).toContain("wordmark.png");
+    expect(html).not.toContain("cid:logo@acme");
+    expect(html).not.toContain("#2563eb");
+  });
+
   test("a passcode never reaches the preview, and the new blocks are escaped in both parts", () => {
     const message = renderEmail({
       subject: "Your code",

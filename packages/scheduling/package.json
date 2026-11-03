@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./branding": "./src/branding.ts",
     "./engine": "./src/engine/index.ts",
     "./schemas": "./src/schemas.ts",
     "./testing": "./src/testing.ts",

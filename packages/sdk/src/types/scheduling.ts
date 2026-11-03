@@ -420,11 +420,19 @@ export interface SchedulingNotificationSettings {
   sms_attendee?: boolean;
 }
 
+export interface SchedulingLogo {
+  content_type: "image/png" | "image/jpeg";
+  width: number;
+  height: number;
+  data_url: string;
+}
+
 export interface SchedulingSettings {
   object: "scheduling.settings";
   allowed_origins: string[];
   brand_name: string | null;
   accent_color: string | null;
+  logo: SchedulingLogo | null;
   email_from: string | null;
   sms_from: string | null;
   calendar_failure_mode: "hide" | "last_known";
@@ -435,6 +443,8 @@ export interface UpdateSchedulingSettingsParams {
   allowed_origins?: string[];
   brand_name?: string | null;
   accent_color?: string | null;
+  /** `content` is a PNG or JPEG's bytes, base64-encoded, 200 KB at most. */
+  logo?: { content: string } | null;
   email_from?: string | null;
   sms_from?: string | null;
   calendar_failure_mode?: "hide" | "last_known";

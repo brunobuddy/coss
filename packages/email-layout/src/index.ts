@@ -39,14 +39,23 @@ export type EmailBlock =
 
 export type EmailMessage = { subject: string; text: string; html: string };
 
+/** `src` is inline (`cid:…`), so opening the email tells nobody; width and height are the image's own. */
+export type EmailLogo = { src: string; width: number; height: number };
+
+export type EmailAccent = { background: string; foreground: string };
+
 export type EmailContent = {
   subject: string;
   /** The heading at the top of the email; defaults to the subject. */
   title?: string;
   /** One line under the title: who it's from, which ticket. */
   subtitle?: string;
-  /** Replaces the wordmark and loads nothing from coss.com: only for a customer's own address. */
+  /** Replaces the plate and wordmark and loads nothing from coss.com: only for a customer's own address. */
   brand?: string | undefined;
+  /** Shown instead of `brand`'s text, which becomes its alt text. Only with `brand`. */
+  logo?: EmailLogo | undefined;
+  /** The button's colors. Only with `brand`. */
+  accent?: EmailAccent | undefined;
   /** The inbox preview line (hidden in the body); defaults to the first paragraph. */
   preview?: string;
   blocks: EmailBlock[];
@@ -134,6 +143,9 @@ const BORDER = "#e4e4e7";
 const PAPER = "#f4f4f5";
 const FAILED = "#b91c1c";
 const LONG_TITLE = 60;
+const LOGO_MAX_WIDTH = 200;
+const LOGO_MAX_HEIGHT = 48;
+const DEFAULT_ACCENT: EmailAccent = { background: PLATE, foreground: "#ffffff" };
 
 // Separate tags: Gmail drops a whole <style> over a rule it refuses, and it refuses @font-face.
 const FONT_STYLE = `<style>
@@ -143,6 +155,7 @@ const PHONE_STYLE = `<style>
 @media (max-width:600px){
 .coss-outer{padding:16px 8px 24px !important}
 .coss-plate{padding:24px 24px 28px !important}
+.coss-brand{padding:24px 24px 0 !important}
 .coss-title{font-size:26px !important;line-height:32px !important}
 .coss-content{padding:24px 24px 8px !important}
 .coss-footer{padding:20px 24px 0 !important}
@@ -210,7 +223,7 @@ function fieldsHtml(fields: { label: string; value: string }[]): string {
   return ruledTable(rows);
 }
 
-function blockHtml(block: EmailBlock): string {
+function blockHtml(block: EmailBlock, accent: EmailAccent): string {
   if ("heading" in block) {
     return `<h2 style="margin:30px 0 8px;font-family:${DISPLAY};font-size:17px;line-height:24px;font-weight:600;color:${INK}">${escapeHtml(block.heading)}</h2>`;
   }
@@ -224,8 +237,8 @@ function blockHtml(block: EmailBlock): string {
   if ("button" in block) {
     return (
       `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:10px 0 28px"><tr>` +
-      `<td bgcolor="${PLATE}" style="border-radius:10px;background-color:${PLATE}">` +
-      `<a href="${escapeHtml(block.button.url)}" style="display:inline-block;padding:13px 24px;font-family:${FONT};font-size:15px;font-weight:600;line-height:20px;color:#ffffff;text-decoration:none;border-radius:10px">${escapeHtml(block.button.label)}</a>` +
+      `<td bgcolor="${escapeHtml(accent.background)}" style="border-radius:10px;background-color:${escapeHtml(accent.background)}">` +
+      `<a href="${escapeHtml(block.button.url)}" style="display:inline-block;padding:13px 24px;font-family:${FONT};font-size:15px;font-weight:600;line-height:20px;color:${escapeHtml(accent.foreground)};text-decoration:none;border-radius:10px">${escapeHtml(block.button.label)}</a>` +
       `</td></tr></table>`
     );
   }
@@ -253,6 +266,32 @@ function blockHtml(block: EmailBlock): string {
   return paragraph(escapeHtml(block.note), `font-size:13px;line-height:20px;color:${MUTED}`);
 }
 
+function logoHtml(logo: EmailLogo, alt: string): string {
+  const scale = Math.min(1, LOGO_MAX_WIDTH / logo.width, LOGO_MAX_HEIGHT / logo.height);
+  const width = Math.round(logo.width * scale);
+  const height = Math.round(logo.height * scale);
+  return `<img src="${escapeHtml(logo.src)}" width="${width}" height="${height}" alt="${escapeHtml(alt)}" style="display:block;width:${width}px;height:${height}px;max-width:100%;border:0;font-family:${FONT};font-size:18px;line-height:24px;font-weight:600;color:${INK}">`;
+}
+
+/** A customer's own email: their name or logo on white, and none of coss.com's plate. */
+function brandedHeader(input: {
+  brand: string;
+  logo: EmailLogo | undefined;
+  title: string;
+  subtitle: string | undefined;
+}): string {
+  const mark = input.logo
+    ? logoHtml(input.logo, input.brand)
+    : `<p style="margin:0;font-size:18px;line-height:24px;font-weight:600;color:${INK};word-break:break-word">${escapeHtml(input.brand)}</p>`;
+  const subtitle = input.subtitle
+    ? `<p style="margin:8px 0 0;font-size:14px;line-height:20px;color:${MUTED}">${escapeHtml(input.subtitle)}</p>`
+    : "";
+  return (
+    `<tr><td class="coss-brand" style="padding:32px 40px 0;font-family:${FONT}">\n${mark}\n` +
+    `<h1 style="margin:28px 0 0;font-size:24px;line-height:30px;font-weight:600;color:${INK};word-break:break-word">${escapeHtml(input.title)}</h1>\n${subtitle}\n</td></tr>`
+  );
+}
+
 function toHtml(subject: string, content: EmailContent): string {
   const firstParagraph = content.blocks.find((block) => "paragraph" in block);
   const preview =
@@ -263,14 +302,20 @@ function toHtml(subject: string, content: EmailContent): string {
   const title = content.title ?? subject;
   const long = title.length > LONG_TITLE;
   const titleSize = long ? "font-size:24px;line-height:30px" : "font-size:32px;line-height:38px";
-  const body = content.blocks.map(blockHtml).join("\n");
+  const brand = oneLine(content.brand ?? "");
+  const accent = (brand ? content.accent : undefined) ?? DEFAULT_ACCENT;
+  const body = content.blocks.map((block) => blockHtml(block, accent)).join("\n");
   const subtitle = content.subtitle
     ? `<p style="margin:10px 0 0;font-family:${FONT};font-size:14px;line-height:20px;color:${PLATE_MUTED}">${escapeHtml(content.subtitle)}</p>`
     : "";
-  const brand = oneLine(content.brand ?? "");
-  const masthead = brand
-    ? `<p style="margin:0;font-family:${DISPLAY};font-size:18px;line-height:24px;font-weight:600;color:#ffffff;word-break:break-word">${escapeHtml(brand)}</p>`
-    : `<a href="https://coss.com" style="color:#ffffff;text-decoration:none"><img src="${ASSETS}/wordmark.png" width="95" height="24" alt="coss.com" style="display:block;width:95px;height:24px;border:0;font-family:${FONT};font-size:14px;line-height:24px;font-weight:700;color:#ffffff"></a>`;
+  const masthead = `<a href="https://coss.com" style="color:#ffffff;text-decoration:none"><img src="${ASSETS}/wordmark.png" width="95" height="24" alt="coss.com" style="display:block;width:95px;height:24px;border:0;font-family:${FONT};font-size:14px;line-height:24px;font-weight:700;color:#ffffff"></a>`;
+  const header = brand
+    ? brandedHeader({ brand, logo: content.logo, title, subtitle: content.subtitle })
+    : `<tr><td class="coss-plate" bgcolor="${PLATE}" style="padding:28px 40px 36px;border-radius:15px 15px 0 0;background-color:${PLATE};background-image:radial-gradient(circle at center,${PLATE_DOT} 1px,${PLATE} 1.2px);background-size:24px 24px;background-position:center;font-family:${FONT}">
+${masthead}
+<h1${long ? "" : ' class="coss-title"'} style="margin:44px 0 0;font-family:${DISPLAY};${titleSize};font-weight:600;letter-spacing:-0.005em;color:#ffffff;word-break:break-word">${escapeHtml(title)}</h1>
+${subtitle}
+</td></tr>`;
   const footer = content.reason
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px"><tr><td class="coss-footer" style="padding:20px 41px 0;font-family:${FONT}"><p style="margin:0;font-size:12px;line-height:18px;color:${MUTED}">${escapeHtml(content.reason)}</p></td></tr></table>`
     : "";
@@ -290,11 +335,7 @@ ${brand ? "" : `${FONT_STYLE}\n`}${PHONE_STYLE}
 <tr><td class="coss-outer" align="center" style="padding:40px 16px">
 <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;border-collapse:separate;border:1px solid ${BORDER};border-radius:16px;background-color:#ffffff">
-<tr><td class="coss-plate" bgcolor="${PLATE}" style="padding:28px 40px 36px;border-radius:15px 15px 0 0;background-color:${PLATE};background-image:radial-gradient(circle at center,${PLATE_DOT} 1px,${PLATE} 1.2px);background-size:24px 24px;background-position:center;font-family:${FONT}">
-${masthead}
-<h1${long ? "" : ' class="coss-title"'} style="margin:44px 0 0;font-family:${DISPLAY};${titleSize};font-weight:600;letter-spacing:-0.005em;color:#ffffff;word-break:break-word">${escapeHtml(title)}</h1>
-${subtitle}
-</td></tr>
+${header}
 <tr><td class="coss-content" style="padding:32px 40px 14px;font-family:${FONT}">
 ${body}
 </td></tr>

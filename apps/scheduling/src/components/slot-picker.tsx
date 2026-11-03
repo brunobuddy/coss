@@ -1,18 +1,44 @@
 "use client";
 
 import { Button } from "@coss/ui/components/button";
+import { Calendar } from "@coss/ui/components/calendar";
 import { Skeleton } from "@coss/ui/components/skeleton";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClientCall } from "@/lib/client-api";
 
 const DAY_MS = 86_400_000;
-const WINDOW_DAYS = 14;
+// How far a page with nothing soon looks ahead on its own, before saying so.
+const EMPTY_MONTHS_TO_SKIP = 2;
 
-type Slot = { start: string; end: string };
+export type Slot = { start: string; end: string };
 
 /** A day in the attendee's own zone, as a stable key. */
 function dayKey(iso: string, timeZone: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date(iso));
+}
+
+/** The calendar's days are local dates with no zone of their own, so they're compared as keys. */
+function cellKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function cellOf(key: string): Date {
+  const [year = 0, month = 1, day = 1] = key.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function firstDayOfWeek(): 0 | 1 | 2 | 3 | 4 | 5 | 6 {
+  try {
+    const locale = new Intl.Locale(navigator.language) as Intl.Locale & {
+      getWeekInfo?: () => { firstDay: number };
+    };
+    const first = locale.getWeekInfo?.().firstDay ?? 7;
+    return (first % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  } catch {
+    return 0;
+  }
 }
 
 /** Slots are UTC instants from the API; only this component turns them into local times. */
@@ -26,31 +52,49 @@ export function SlotPicker(props: {
   busy?: boolean;
 }) {
   const { call, path, timeZone, durationMinutes, onPick, busy } = props;
-  const [offset, setOffset] = useState(0);
+  const [month, setMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [slots, setSlots] = useState<Slot[] | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [chosenDay, setChosenDay] = useState<string | null>(null);
-
-  const { start, end } = useMemo(() => {
-    const from = Date.now() + offset * WINDOW_DAYS * DAY_MS;
-    return {
-      start: new Date(from).toISOString(),
-      end: new Date(from + WINDOW_DAYS * DAY_MS).toISOString(),
-    };
-  }, [offset]);
+  const emptyMonthsSkipped = useRef(0);
+  const today = useMemo(() => new Date(), []);
 
   useEffect(() => {
+    // A retry is a new attempt at the same month.
+    void attempt;
     let cancelled = false;
     setSlots(null);
     setFailed(null);
-    const query = new URLSearchParams({ start, end });
+    // A day either side, since the attendee's zone can start or end a month away from UTC's.
+    const start = new Date(Math.max(month.getTime() - DAY_MS, Date.now()));
+    const end = new Date(new Date(month.getFullYear(), month.getMonth() + 1, 1).getTime() + DAY_MS);
+    const query = new URLSearchParams({ start: start.toISOString(), end: end.toISOString() });
     if (durationMinutes) query.set("duration_minutes", String(durationMinutes));
     call<{ data: Slot[] }>(`${path}?${query}`)
       .then((response) => {
         if (cancelled) return;
-        setSlots(response.data);
-        const first = response.data[0];
-        setChosenDay(first ? dayKey(first.start, timeZone) : null);
+        const inMonth = response.data.filter((slot) =>
+          dayKey(slot.start, timeZone).startsWith(cellKey(month).slice(0, 7)),
+        );
+        const first = inMonth[0];
+        if (!first && emptyMonthsSkipped.current < EMPTY_MONTHS_TO_SKIP) {
+          emptyMonthsSkipped.current += 1;
+          setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1));
+          return;
+        }
+        if (first) emptyMonthsSkipped.current = EMPTY_MONTHS_TO_SKIP;
+        setSlots(inMonth);
+        setChosenDay((current) =>
+          current && inMonth.some((slot) => dayKey(slot.start, timeZone) === current)
+            ? current
+            : first
+              ? dayKey(first.start, timeZone)
+              : null,
+        );
       })
       .catch((error: Error) => {
         if (!cancelled) setFailed(error.message);
@@ -58,7 +102,7 @@ export function SlotPicker(props: {
     return () => {
       cancelled = true;
     };
-  }, [call, path, start, end, durationMinutes, timeZone]);
+  }, [call, path, month, durationMinutes, timeZone, attempt]);
 
   const days = useMemo(() => {
     const byDay = new Map<string, Slot[]>();
@@ -74,74 +118,89 @@ export function SlotPicker(props: {
     [timeZone],
   );
   const dayFormat = useMemo(
-    () =>
-      new Intl.DateTimeFormat(undefined, {
-        timeZone: "UTC",
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      }),
+    () => new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }),
     [],
   );
+  const times = chosenDay ? (days.get(chosenDay) ?? []) : [];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <Button
-          disabled={offset === 0}
-          onClick={() => setOffset((value) => value - 1)}
-          size="sm"
-          variant="outline"
-        >
-          Earlier
-        </Button>
-        <span className="text-muted-foreground text-xs">Times shown in {timeZone}</span>
-        <Button onClick={() => setOffset((value) => value + 1)} size="sm" variant="outline">
-          Later
-        </Button>
-      </div>
-      {failed ? <p className="text-destructive-foreground text-sm">{failed}</p> : null}
-      {!slots && !failed ? (
-        <div aria-busy className="grid grid-cols-3 gap-2">
-          {[0, 1, 2, 3, 4, 5].map((key) => (
-            <Skeleton className="h-9" key={key} />
-          ))}
-        </div>
-      ) : null}
-      {slots && slots.length === 0 ? (
-        <p className="py-6 text-center text-muted-foreground text-sm">
-          Nothing available in these two weeks. Try later dates.
-        </p>
-      ) : null}
-      {days.size > 0 ? (
-        <>
-          <fieldset aria-label="Choose a day" className="flex flex-wrap gap-2">
-            {[...days.keys()].map((key) => (
+    <div className="@container">
+      <div className="grid @xl:grid-cols-[auto_minmax(0,1fr)] gap-x-8 gap-y-6">
+        <Calendar
+          classNames={{
+            day: "p-0.5",
+            day_button: "size-full in-data-disabled:no-underline tabular-nums",
+          }}
+          className="mx-auto @xl:mx-0 [--cell-size:--spacing(10)] sm:[--cell-size:--spacing(10)]"
+          disabled={(date) => !days.has(cellKey(date))}
+          mode="single"
+          modifiers={{ available: (date) => days.has(cellKey(date)) }}
+          modifiersClassNames={{
+            available:
+              "not-data-selected:*:bg-primary/10 *:font-medium not-data-selected:*:hover:bg-primary/20",
+          }}
+          month={month}
+          onMonthChange={setMonth}
+          onSelect={(date: Date | undefined) => {
+            if (date) setChosenDay(cellKey(date));
+          }}
+          required
+          selected={chosenDay ? cellOf(chosenDay) : undefined}
+          showOutsideDays={false}
+          startMonth={today}
+          weekStartsOn={firstDayOfWeek()}
+        />
+        <section aria-live="polite" className="flex min-w-0 flex-col gap-3">
+          {failed ? (
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-destructive-foreground text-sm">{failed}</p>
               <Button
-                aria-pressed={chosenDay === key}
-                key={key}
-                onClick={() => setChosenDay(key)}
+                onClick={() => setAttempt((value) => value + 1)}
                 size="sm"
-                variant={chosenDay === key ? "default" : "outline"}
-              >
-                {dayFormat.format(new Date(`${key}T00:00:00Z`))}
-              </Button>
-            ))}
-          </fieldset>
-          <fieldset aria-label="Choose a time" className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {(chosenDay ? (days.get(chosenDay) ?? []) : []).map((slot) => (
-              <Button
-                disabled={busy}
-                key={slot.start}
-                onClick={() => onPick(slot)}
+                type="button"
                 variant="outline"
               >
-                {timeFormat.format(new Date(slot.start))}
+                Try again
               </Button>
-            ))}
-          </fieldset>
-        </>
-      ) : null}
+            </div>
+          ) : null}
+          {!slots && !failed ? (
+            <div aria-busy="true" className="grid @xl:grid-cols-1 grid-cols-3 gap-2">
+              <span className="sr-only">Loading times</span>
+              {[0, 1, 2, 3, 4, 5].map((key) => (
+                <Skeleton className="h-9" key={key} />
+              ))}
+            </div>
+          ) : null}
+          {slots && slots.length === 0 ? (
+            <p className="text-pretty text-muted-foreground text-sm">
+              Nothing's available this month. Try the next one.
+            </p>
+          ) : null}
+          {slots && chosenDay ? (
+            <>
+              <h2 className="font-medium text-sm">{dayFormat.format(cellOf(chosenDay))}</h2>
+              <fieldset
+                aria-label="Choose a time"
+                className="grid @xl:max-h-80 @xl:grid-cols-1 grid-cols-3 gap-2 @xl:overflow-y-auto @xl:pe-1"
+              >
+                {times.map((slot) => (
+                  <Button
+                    className="px-1 tabular-nums"
+                    disabled={busy}
+                    key={slot.start}
+                    onClick={() => onPick(slot)}
+                    type="button"
+                    variant="outline"
+                  >
+                    {timeFormat.format(new Date(slot.start))}
+                  </Button>
+                ))}
+              </fieldset>
+            </>
+          ) : null}
+        </section>
+      </div>
     </div>
   );
 }

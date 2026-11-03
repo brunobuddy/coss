@@ -20829,6 +20829,38 @@
               "null"
             ]
           },
+          "logo": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "content_type": {
+                "type": "string",
+                "enum": [
+                  "image/png",
+                  "image/jpeg"
+                ]
+              },
+              "width": {
+                "type": "integer"
+              },
+              "height": {
+                "type": "integer"
+              },
+              "data_url": {
+                "type": "string",
+                "description": "The image, as a `data:` URL."
+              }
+            },
+            "required": [
+              "content_type",
+              "width",
+              "height",
+              "data_url"
+            ],
+            "description": "At the top of the hosted pages, and of emails sent from `email_from`."
+          },
           "email_from": {
             "type": [
               "string",
@@ -20878,6 +20910,7 @@
           "allowed_origins",
           "brand_name",
           "accent_color",
+          "logo",
           "email_from",
           "sms_from",
           "calendar_failure_mode",
@@ -20891,6 +20924,7 @@
             ],
             "brand_name": "Acme Health",
             "accent_color": null,
+            "logo": null,
             "email_from": "appointments@example.com",
             "sms_from": null,
             "calendar_failure_mode": "hide",
@@ -20927,6 +20961,23 @@
               "null"
             ],
             "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "logo": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "content": {
+                "type": "string",
+                "maxLength": 266668,
+                "description": "A PNG or JPEG's bytes, base64-encoded. 200 KB at most."
+              }
+            },
+            "required": [
+              "content"
+            ],
+            "additionalProperties": false
           },
           "email_from": {
             "type": [

@@ -3,7 +3,7 @@ import { createHmac } from "node:crypto";
 import type { LogWriter } from "@coss/logs";
 import { memoryLogWriter } from "@coss/logs/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
-import { testSchedulingDeps } from "@coss/scheduling/testing";
+import { testPng, testSchedulingDeps } from "@coss/scheduling/testing";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
 import { Hono } from "hono";
 import { createSchedulingCallbackRoutes } from "../src/routes/scheduling-callbacks.ts";
@@ -286,6 +286,32 @@ describe("client API", () => {
     expect(res.status).toBe(201);
     return (await res.json()) as { id: string; token: string };
   }
+
+  test("the logo a customer sets reaches every page through the session, and a bad one is refused", async () => {
+    const s = await setUp();
+    const refused = await call(s.app, s.key, "PATCH", "/settings", {
+      logo: { content: Buffer.from("<svg></svg>").toString("base64") },
+    });
+    expect(refused.status).toBe(422);
+    expect((await errorOf(refused)).code).toBe("invalid_logo");
+    const notBase64 = await call(s.app, s.key, "PATCH", "/settings", {
+      logo: { content: "<svg></svg>" },
+    });
+    expect(notBase64.status).toBe(422);
+
+    const png = testPng(400, 100);
+    const saved = await call(s.app, s.key, "PATCH", "/settings", { logo: { content: png } });
+    expect(saved.status).toBe(200);
+    const { token } = await bookerSession(s);
+    const session = (await (await client(s.app, token, "GET", "/session")).json()) as {
+      logo: { data_url: string; width: number; height: number } | null;
+    };
+    expect(session.logo).toEqual({
+      data_url: `data:image/png;base64,${png}`,
+      width: 400,
+      height: 100,
+    });
+  });
 
   test("a booker sees times and books, but not who else is in the pool", async () => {
     const s = await setUp();

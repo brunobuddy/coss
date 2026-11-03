@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -11,6 +12,7 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { Checkbox } from "@coss/ui/components/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -275,12 +277,92 @@ export function CancelBookingButton(props: EnvTarget & { bookingId: string }) {
   );
 }
 
+function LogoField(props: {
+  canEdit: boolean;
+  logo: { data_url: string; width: number; height: number } | null;
+}) {
+  const { canEdit, logo } = props;
+  const [problem, setProblem] = useState<string | null>(null);
+  return (
+    <div className="flex flex-col gap-2">
+      <Field>
+        <FieldLabel>Logo</FieldLabel>
+        {logo ? (
+          // A data URL we stored after checking its bytes: nothing for next/image to optimize.
+          // biome-ignore lint/performance/noImgElement: see above.
+          <img
+            alt=""
+            className="max-h-12 max-w-[200px] object-contain"
+            height={logo.height}
+            src={logo.data_url}
+            width={logo.width}
+          />
+        ) : null}
+        <Input
+          accept="image/png,image/jpeg"
+          name="logo"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            const tooBig = file !== undefined && file.size > LOGO_MAX_BYTES;
+            setProblem(tooBig ? "That file is over 200 KB. Export a smaller one." : null);
+            if (tooBig) event.target.value = "";
+          }}
+          type="file"
+        />
+        {problem ? <FormError message={problem} /> : null}
+        <FieldDescription>
+          A PNG or JPEG of 200 KB at most, at least 96 pixels tall so it stays sharp. On the hosted
+          pages, and on emails sent from your own address. Use one that reads on white.
+        </FieldDescription>
+      </Field>
+      {logo && canEdit ? (
+        <Label className="flex items-center gap-2 font-normal">
+          <Checkbox name="removeLogo" />
+          Remove the logo
+        </Label>
+      ) : null}
+    </div>
+  );
+}
+
+function AccentField(props: { color: string | null }) {
+  const [enabled, setEnabled] = useState(props.color !== null);
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="font-medium text-sm">Accent color</span>
+      <Label className="flex items-center gap-2 font-normal">
+        <Checkbox
+          checked={enabled}
+          name="useAccentColor"
+          onCheckedChange={(checked) => setEnabled(checked === true)}
+        />
+        Use my own color
+      </Label>
+      {enabled ? (
+        <Input
+          aria-label="Accent color"
+          className="h-9 w-16 p-1"
+          defaultValue={props.color ?? "#18181b"}
+          name="accentColor"
+          type="color"
+        />
+      ) : null}
+      <p className="text-muted-foreground text-xs">
+        On buttons and selected days in the hosted pages, and on the button in emails sent from your
+        own address. Text on it is black or white, whichever reads better.
+      </p>
+    </div>
+  );
+}
+
 export function SettingsForm(
   props: EnvTarget & {
     canEdit: boolean;
     settings: {
       allowed_origins: string[];
       brand_name: string | null;
+      accent_color: string | null;
+      logo: { data_url: string; width: number; height: number } | null;
       email_from: string | null;
       sms_from: string | null;
       calendar_failure_mode: "hide" | "last_known";
@@ -300,6 +382,8 @@ export function SettingsForm(
           <Input defaultValue={settings.brand_name ?? ""} maxLength={100} name="brandName" />
           <FieldDescription>Who booking emails and pages say they're from.</FieldDescription>
         </Field>
+        <LogoField canEdit={canEdit} logo={settings.logo} />
+        <AccentField color={settings.accent_color} />
         <Field>
           <FieldLabel>Email sender</FieldLabel>
           <Input defaultValue={settings.email_from ?? ""} name="emailFrom" type="email" />

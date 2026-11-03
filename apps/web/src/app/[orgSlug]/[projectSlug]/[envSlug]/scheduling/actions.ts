@@ -12,6 +12,7 @@ import {
   updateHost,
   updateSettings,
 } from "@coss/scheduling";
+import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import { getEnvironment } from "@coss/tenancy";
 import { refresh } from "next/cache";
 import type { ActionResult } from "@/lib/action-result";
@@ -212,10 +213,26 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
     const brandName = formString(formData, "brandName");
     const emailFrom = formString(formData, "emailFrom");
     const smsFrom = formString(formData, "smsFrom");
-    await friendly(() =>
+    const accentColor = formString(formData, "accentColor");
+    const useAccent = formString(formData, "useAccentColor") === "on";
+    if (useAccent && !/^#[0-9a-f]{6}$/i.test(accentColor)) {
+      throw new ActionError("Choose an accent color.");
+    }
+    const upload = formData.get("logo");
+    const newLogo = upload instanceof File && upload.size > 0 ? upload : null;
+    if (newLogo && newLogo.size > LOGO_MAX_BYTES) {
+      throw new ActionError("A logo can be 200 KB at most.");
+    }
+    await friendly(async () =>
       updateSettings(env, {
         allowed_origins: origins,
         brand_name: brandName || null,
+        accent_color: useAccent ? accentColor : null,
+        ...(newLogo
+          ? { logo: { content: Buffer.from(await newLogo.arrayBuffer()).toString("base64") } }
+          : formString(formData, "removeLogo") === "on"
+            ? { logo: null }
+            : {}),
         email_from: emailFrom || null,
         sms_from: smsFrom || null,
         calendar_failure_mode:

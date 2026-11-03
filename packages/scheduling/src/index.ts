@@ -13,6 +13,7 @@ export { isDeadlock, isExclusionViolation } from "./claims.ts";
 export * from "./errors.ts";
 export * from "./event-types.ts";
 export * from "./hosts.ts";
+export * from "./logo.ts";
 export * from "./notifications.ts";
 export * from "./reencrypt.ts";
 export * from "./retention.ts";

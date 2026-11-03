@@ -135,6 +135,7 @@
         "@coss/ui": "workspace:*",
         "@sentry/nextjs": "catalog:",
         "@t3-oss/env-nextjs": "catalog:",
+        "lucide-react": "catalog:",
         "next": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
