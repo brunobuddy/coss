@@ -97,3 +97,7 @@ output "bootstrap_role_arn" {
 output "image_tag_parameter" {
   value = aws_ssm_parameter.image_tag.name
 }
+
+output "access_logs_bucket" {
+  value = aws_s3_bucket.access_logs.id
+}

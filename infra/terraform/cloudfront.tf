@@ -61,6 +61,8 @@ resource "aws_cloudfront_response_headers_policy" "hsts" {
 # --- coss.com: dashboard + site (ALB), coss ui, Origin UI and qnot (their own origins) ---------
 
 resource "aws_cloudfront_distribution" "dashboard" {
+  depends_on = [aws_s3_bucket_acl.access_logs, aws_s3_bucket_policy.access_logs]
+
   enabled         = true
   is_ipv6_enabled = true
   http_version    = "http2and3"
@@ -133,6 +135,12 @@ resource "aws_cloudfront_distribution" "dashboard" {
     }
   }
 
+  logging_config {
+    bucket          = aws_s3_bucket.access_logs.bucket_domain_name
+    prefix          = "cloudfront/coss.com/"
+    include_cookies = false
+  }
+
   viewer_certificate {
     acm_certificate_arn      = aws_acm_certificate_validation.cloudfront.certificate_arn
     ssl_support_method       = "sni-only"
@@ -143,6 +151,8 @@ resource "aws_cloudfront_distribution" "dashboard" {
 # --- api.coss.com: never cached --------------------------------------------------------------
 
 resource "aws_cloudfront_distribution" "api" {
+  depends_on = [aws_s3_bucket_acl.access_logs, aws_s3_bucket_policy.access_logs]
+
   enabled         = true
   is_ipv6_enabled = true
   http_version    = "http2and3"
@@ -183,6 +193,12 @@ resource "aws_cloudfront_distribution" "api" {
     geo_restriction {
       restriction_type = "none"
     }
+  }
+
+  logging_config {
+    bucket          = aws_s3_bucket.access_logs.bucket_domain_name
+    prefix          = "cloudfront/api.coss.com/"
+    include_cookies = false
   }
 
   viewer_certificate {

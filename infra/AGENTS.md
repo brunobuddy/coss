@@ -9,6 +9,7 @@ README.md, "Deploying to AWS". `bun run --cwd infra aws:spec` prints the whole s
 | `aws/routing.ts` | ALB listener rules and CloudFront cached behaviours, generated from `ZONE_ROUTES` (`@coss/auth/slugs`). The external zones (the coss ui repository's `/ui` and `/origin`, the qnot repository's `/qnot`, all on Vercel) are CloudFront origins of their own, never ALB targets. |
 | `aws/spec.ts` | The whole spec as one object; `aws:spec:write` writes it to `terraform/spec.json`. |
 | `terraform/` | Production (account 294417174674, us-east-2): network, ECR, RDS, ECS, ALB, CloudFront + WAF, the NLB of plain-TCP services (`nlb.tf`), IAM, alarms and cost guardrails (`monitoring.tf`), the CodeBuild-hosted Actions runners of the deploy workflow. Reads `spec.json` for everything the spec owns (env names/kinds, sizes, rules, behaviours); `production.tfvars` holds the plain values. State in S3 (`coss-tfstate-294417174674`). |
+| `organization/` | The AWS Organization's management account (456651119109, us-east-2), a Terraform root of its own: the org-wide audit trail (`coss-organization`, in an Object Lock bucket for six years), GuardDuty, the org's Access Analyzer, the SCP keeping production's monitoring on, the read-only role the admin console assumes, and forwarding of security events to production's bus. See "Security monitoring". |
 | `terraform/scripts/put-secret.sh` | Sets one key of the stage secret (`coss/production`) from the clipboard, stdin or a random value, never printing it or passing it in a process's arguments (values travel through pipes). |
 | `scripts/build-images.sh` | Builds services' images for a commit (zstd layers) and pushes them to ECR, in parallel (the Deploy workflow's build jobs). |
 | `scripts/ecs-deploy.sh`, `scripts/ecs-task.sh` | Roll services out to an image tag (used by `.github/workflows/deploy.yml`); run one-off commands (migrate, ses-bootstrap, create-admin) in a service's task definition. |
@@ -28,3 +29,24 @@ admin credentials for the account and is run by a human or an agent they asked, 
 `task_definition` changes: after an environment change, run the Deploy workflow (it registers revisions from the
 latest task definition). Terraform's own task definitions use the deployed image tag (SSM `/coss/production/image-tag`),
 so a plan after a deploy shows them being replaced: harmless, it only re-registers them with the running image.
+
+## Security monitoring
+
+`/admin/security` (`apps/web/src/lib/security-posture.ts`) shows all of this in plain language; a read that fails is
+shown as unknown, never as fine. Production (`terraform/security.tf`): GuardDuty, Security Hub (AWS's foundational
+best practices), Config, VPC flow logs and load balancer and CloudFront logs in the access logs bucket
+(`RETENTION_DAYS.accessLogs`), the alerts below. These run only in `us-east-2`: the SCP
+`AdvancedModeRegionRestrictionSecurityControlPolicy` denies them in production's other regions, as it does anything
+else. The network load balancer's TCP listeners write no access logs (flow logs cover them).
+
+Alerts go to the `coss-alerts` email: GuardDuty severity 7 and up, any root use, changes to the audit trail, and
+resources newly reachable from outside the organization. The management account forwards its events to production's
+default bus, whose rules send them.
+
+`organization/` is applied by hand, by a human or an agent they asked, with management credentials
+(`aws login --profile coss-management --region us-east-2`, choosing the COSS Management Account;
+`AWS_PROFILE=coss-management terraform apply`). Its state bucket, `coss-org-tfstate-456651119109`, was created once by
+hand like production's. `aws_organizations_organization` lists every trusted service: enabling one elsewhere means
+adding it there, or the next apply turns it off. The `ProtectSecurityMonitoring` SCP denies changes to production's
+detector and recorder, so a Terraform change to them needs that SCP detached first (from the management account).
+A new AWS account in the organization is covered by the trail and Access Analyzer, but needs its own GuardDuty.

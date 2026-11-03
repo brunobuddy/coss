@@ -92,6 +92,10 @@ export const env = createEnv({
     GITHUB_CLIENT_SECRET: z.string().optional(),
     // The admin console's deploys page (src/lib/deploys.ts): the coss.com Deploy GitHub App's id and
     // private key (both or neither, src/instrumentation.ts). Unset: the page explains the setup.
+    // The admin console's security page (src/lib/security-posture.ts). Unset: it explains the setup.
+    SECURITY_MANAGEMENT_ROLE_ARN: z.string().startsWith("arn:aws:iam::").optional(),
+    SECURITY_ALERTS_TOPIC_ARN: z.string().startsWith("arn:aws:sns:").optional(),
+    SECURITY_ACCESS_LOGS_BUCKET: z.string().optional(),
     DEPLOY_GITHUB_APP_ID: z.string().regex(/^\d+$/, "The app's numeric id.").optional(),
     DEPLOY_GITHUB_APP_PRIVATE_KEY: z.string().includes("PRIVATE KEY").optional(),
     // Domain Connect (src/lib/domain-connect.ts): the RSA key apply links are signed with, and the

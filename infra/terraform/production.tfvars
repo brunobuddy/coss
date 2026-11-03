@@ -60,16 +60,21 @@ cloudflare_ipv4_ranges = [
   "162.158.0.0/15", "104.16.0.0/13", "104.24.0.0/14", "172.64.0.0/13", "131.0.72.0/22",
 ]
 
+management_account_id = "456651119109"
+
 plain_env = {
   web = {
-    BETTER_AUTH_URL       = "https://coss.com"
-    API_PUBLIC_URL        = "https://api.coss.com"
-    SMTP_PUBLIC_HOST      = "smtp.coss.com"
-    TRUSTED_PROXY_HOPS    = "2"
-    TURNSTILE_SITE_KEY    = "0x4AAAAAAFU8QY0DX4ZJGoSK"
-    PORTAL_PUBLIC_URL     = "https://portal.cosshooks.com"
-    SIGN_PUBLIC_URL       = "https://cosssign.com"
-    SCHEDULING_PUBLIC_URL = "https://cossbook.com"
+    SECURITY_MANAGEMENT_ROLE_ARN = "arn:aws:iam::456651119109:role/coss-security-read"
+    SECURITY_ALERTS_TOPIC_ARN    = "arn:aws:sns:us-east-2:294417174674:coss-alerts"
+    SECURITY_ACCESS_LOGS_BUCKET  = "coss-production-access-logs-294417174674"
+    BETTER_AUTH_URL              = "https://coss.com"
+    API_PUBLIC_URL               = "https://api.coss.com"
+    SMTP_PUBLIC_HOST             = "smtp.coss.com"
+    TRUSTED_PROXY_HOPS           = "2"
+    TURNSTILE_SITE_KEY           = "0x4AAAAAAFU8QY0DX4ZJGoSK"
+    PORTAL_PUBLIC_URL            = "https://portal.cosshooks.com"
+    SIGN_PUBLIC_URL              = "https://cosssign.com"
+    SCHEDULING_PUBLIC_URL        = "https://cossbook.com"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
     FORMS_PUBLIC_URL         = "https://cossforms.com"
     FORMS_FILES_BUCKET       = "coss-production-forms-files-294417174674"
