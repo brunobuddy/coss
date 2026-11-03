@@ -23,6 +23,10 @@ export const SOURCE_LABELS: Record<LogDrainSource, { label: string; description:
     label: "Form submissions",
     description: "Submissions received, flagged as spam, confirmed, released…",
   },
+  scheduling: {
+    label: "Scheduling events",
+    description: "Bookings created, rescheduled and cancelled, calendars connected or failing…",
+  },
   audit: {
     label: "Audit events",
     description: "Changes to this environment: keys, endpoints, drains, suppressions…",

@@ -20,6 +20,9 @@ const PUBLISHED_TRANSITIONS: readonly PublishedTransition[] = [
   { timeZone: "America/Edmonton", effectiveFrom: Date.UTC(2026, 10, 1, 8), offsetMinutes: -360 },
   { timeZone: "America/Inuvik", effectiveFrom: Date.UTC(2026, 10, 1, 8), offsetMinutes: -360 },
   { timeZone: "America/Winnipeg", effectiveFrom: Date.UTC(2026, 10, 1, 7), offsetMinutes: -300 },
+  // Cuba skips only this winter's change: the second entry hands back to the usual rules.
+  { timeZone: "America/Havana", effectiveFrom: Date.UTC(2026, 10, 1, 5), offsetMinutes: -240 },
+  { timeZone: "America/Havana", effectiveFrom: Date.UTC(2027, 10, 7, 5), offsetMinutes: -300 },
 ];
 
 const formatters = new Map<string, Intl.DateTimeFormat>();

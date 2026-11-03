@@ -13,6 +13,7 @@ export const TILE: Record<GlyphTone, string> = {
   verify: "bg-sky-500/12 text-sky-600 ring-sky-500/20 dark:text-sky-400",
   sign: "bg-indigo-500/12 text-indigo-600 ring-indigo-500/20 dark:text-indigo-400",
   forms: "bg-amber-500/14 text-amber-700 ring-amber-500/25 dark:text-amber-400",
+  scheduling: "bg-blue-500/12 text-blue-600 ring-blue-500/20 dark:text-blue-400",
   hooks: "bg-teal-500/12 text-teal-600 ring-teal-500/20 dark:text-teal-400",
   risk: "bg-rose-500/12 text-rose-600 ring-rose-500/20 dark:text-rose-400",
   neutral: "bg-muted text-muted-foreground ring-border",
@@ -26,6 +27,7 @@ export const PRODUCT_TEXT: Record<ProductKey, string> = {
   verify: "text-sky-600 dark:text-sky-400",
   sign: "text-indigo-600 dark:text-indigo-400",
   forms: "text-amber-700 dark:text-amber-400",
+  scheduling: "text-blue-600 dark:text-blue-400",
   hooks: "text-teal-600 dark:text-teal-400",
   risk: "text-rose-600 dark:text-rose-400",
 };
@@ -39,6 +41,7 @@ export const PRODUCT_WASH: Record<ProductKey, string> = {
   verify: "bg-sky-500/10",
   sign: "bg-indigo-500/10",
   forms: "bg-amber-500/12",
+  scheduling: "bg-blue-500/10",
   hooks: "bg-teal-500/10",
   risk: "bg-rose-500/10",
 };
@@ -52,6 +55,7 @@ export const PRODUCT_ACTIVE_TEXT: Record<ProductKey, string> = {
   verify: "data-[active=true]:text-sky-900 dark:data-[active=true]:text-sky-200",
   sign: "data-[active=true]:text-indigo-900 dark:data-[active=true]:text-indigo-200",
   forms: "data-[active=true]:text-amber-900 dark:data-[active=true]:text-amber-200",
+  scheduling: "data-[active=true]:text-blue-900 dark:data-[active=true]:text-blue-200",
   hooks: "data-[active=true]:text-teal-900 dark:data-[active=true]:text-teal-200",
   risk: "data-[active=true]:text-rose-900 dark:data-[active=true]:text-rose-200",
 };

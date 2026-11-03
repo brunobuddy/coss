@@ -191,6 +191,12 @@ describe("zones", () => {
     expect(
       new Date(wallClockMs("Africa/Casablanca", ms("2026-12-01T12:00:00Z"))).toISOString(),
     ).toBe("2026-12-01T12:00:00.000Z");
+    expect(new Date(wallClockMs("America/Havana", ms("2026-12-01T17:00:00Z"))).toISOString()).toBe(
+      "2026-12-01T13:00:00.000Z",
+    );
+    expect(new Date(wallClockMs("America/Havana", ms("2027-12-01T17:00:00Z"))).toISOString()).toBe(
+      "2027-12-01T12:00:00.000Z",
+    );
     // Before the change, the old rules still apply.
     expect(
       new Date(wallClockMs("America/Vancouver", ms("2026-01-15T17:00:00Z"))).toISOString(),
