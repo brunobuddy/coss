@@ -83,7 +83,7 @@ resource "aws_cloudfront_function" "redirects" {
       var request = event.request;
       var redirect = REDIRECTS[request.headers.host.value];
       if (!redirect) return { statusCode: 404, statusDescription: "Not Found" };
-      var location = redirect.to + "/";
+      var location = redirect.to;
       if (redirect.keepPath) {
         var query = Object.keys(request.querystring).map(function (name) {
           var value = request.querystring[name];
@@ -275,12 +275,10 @@ resource "aws_cloudfront_multitenant_distribution" "tracking" {
     id          = "alb"
     domain_name = aws_acm_certificate.tracking_origin.domain_name
     custom_origin_config {
-      http_port                = 80
-      https_port               = 443
-      origin_protocol_policy   = "https-only"
-      origin_ssl_protocols     = ["TLSv1.2"]
-      origin_read_timeout      = 60
-      origin_keepalive_timeout = 30
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
     }
     custom_header {
       header_name  = local.hosted.tracking.originVerifyHeader

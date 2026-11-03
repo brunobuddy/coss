@@ -125,7 +125,7 @@ data "aws_ec2_managed_prefix_list" "cloudfront" {
   name = "com.amazonaws.global.cloudfront.origin-facing"
 }
 
-# The CloudFront prefix list weighs ~55 rules of a group's 60, so Cloudflare gets its own group.
+# The CloudFront prefix list weighs ~55 rules of a group's 60, so it gets a group of its own.
 resource "aws_security_group" "alb_cloudfront" {
   name        = "${local.name}-alb-cloudfront"
   description = "ALB: HTTPS from CloudFront only"
@@ -136,22 +136,6 @@ resource "aws_security_group" "alb_cloudfront" {
 resource "aws_vpc_security_group_ingress_rule" "alb_cloudfront" {
   security_group_id = aws_security_group.alb_cloudfront.id
   prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront.id
-  ip_protocol       = "tcp"
-  from_port         = 443
-  to_port           = 443
-}
-
-resource "aws_security_group" "alb_cloudflare" {
-  name        = "${local.name}-alb-cloudflare"
-  description = "ALB: HTTPS from Cloudflare (custom tracking domains)"
-  vpc_id      = aws_vpc.main.id
-  tags        = { Name = "${local.name}-alb-cloudflare" }
-}
-
-resource "aws_vpc_security_group_ingress_rule" "alb_cloudflare" {
-  for_each          = toset(var.cloudflare_ipv4_ranges)
-  security_group_id = aws_security_group.alb_cloudflare.id
-  cidr_ipv4         = each.key
   ip_protocol       = "tcp"
   from_port         = 443
   to_port           = 443
