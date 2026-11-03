@@ -60,3 +60,5 @@ missing loses its messages silently.
 The load balancer reaches containers over TLS: `runtime/tls-entry.mjs`, copied into each image, terminates it on
 `tlsPort` with a certificate made at start (the load balancer doesn't validate target certificates) and pipes to the
 app's plain port. `tls-entry.mjs` runs the app in its own process, so SIGTERM and draining are the app's as before.
+It also sets `HOSTNAME=0.0.0.0` first: Fargate overwrites the image's value, and Next binds to whatever it says. The
+apps' plain ports are closed to the load balancer by the security groups.

@@ -138,16 +138,7 @@ resource "aws_ecs_service" "service" {
   }
 
   dynamic "load_balancer" {
-    for_each = contains(keys(local.alb_plain_targets), each.key) ? [each.value.port] : []
-    content {
-      target_group_arn = aws_lb_target_group.service[each.key].arn
-      container_name   = each.key
-      container_port   = load_balancer.value
-    }
-  }
-
-  dynamic "load_balancer" {
-    for_each = contains(keys(local.alb_tls_targets), each.key) ? [each.value.tlsPort] : []
+    for_each = contains(keys(local.lb_services), each.key) ? [each.value.tlsPort] : []
     content {
       target_group_arn = aws_lb_target_group.tls[each.key].arn
       container_name   = each.key

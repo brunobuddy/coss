@@ -16,21 +16,9 @@ resource "aws_lb" "main" {
   }
 }
 
-locals {
-  alb_plain_targets = { for name, service in local.lb_services : name => service if var.alb_tls_phase != "tls" }
-  alb_tls_targets   = { for name, service in local.lb_services : name => service if var.alb_tls_phase != "plain" }
-  alb_routes_to_tls = contains(["routed", "tls"], var.alb_tls_phase)
-  alb_routed_targets = {
-    for name in keys(local.lb_services) : name => {
-      arn        = local.alb_routes_to_tls ? aws_lb_target_group.tls[name].arn : aws_lb_target_group.service[name].arn
-      arn_suffix = local.alb_routes_to_tls ? aws_lb_target_group.tls[name].arn_suffix : aws_lb_target_group.service[name].arn_suffix
-    }
-  }
-}
-
 # The load balancer doesn't validate target certificates; each task makes its own.
 resource "aws_lb_target_group" "tls" {
-  for_each             = local.alb_tls_targets
+  for_each             = local.lb_services
   name                 = "${local.name}-${each.key}-tls"
   vpc_id               = aws_vpc.main.id
   target_type          = "ip"
@@ -40,27 +28,6 @@ resource "aws_lb_target_group" "tls" {
 
   health_check {
     protocol            = "HTTPS"
-    path                = each.value.healthCheckPath
-    matcher             = "200"
-    interval            = 5
-    timeout             = 4
-    healthy_threshold   = 2
-    unhealthy_threshold = 6
-  }
-}
-
-resource "aws_lb_target_group" "service" {
-  for_each             = local.alb_plain_targets
-  name                 = "${local.name}-${each.key}"
-  vpc_id               = aws_vpc.main.id
-  target_type          = "ip"
-  protocol             = "HTTP"
-  port                 = each.value.port
-  deregistration_delay = 30
-
-  # A new task serves after two passing checks (~10 s instead of ~30 s: rollouts wait for it); it
-  # still takes ~30 s of failing checks to take one out (the health routes touch no database).
-  health_check {
     path                = each.value.healthCheckPath
     matcher             = "200"
     interval            = 5
@@ -106,22 +73,7 @@ resource "aws_lb_listener_rule" "spec" {
 
   action {
     type             = "forward"
-    target_group_arn = var.alb_tls_phase == "both" ? null : local.alb_routed_targets[each.value.targetGroup].arn
-
-    # ECS only registers tasks in a target group that a rule uses: attached, but with no traffic.
-    dynamic "forward" {
-      for_each = var.alb_tls_phase == "both" ? [each.value.targetGroup] : []
-      content {
-        target_group {
-          arn    = aws_lb_target_group.service[forward.value].arn
-          weight = 100
-        }
-        target_group {
-          arn    = aws_lb_target_group.tls[forward.value].arn
-          weight = 0
-        }
-      }
-    }
+    target_group_arn = aws_lb_target_group.tls[each.value.targetGroup].arn
   }
 
   dynamic "condition" {
