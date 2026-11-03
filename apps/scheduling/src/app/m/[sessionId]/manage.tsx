@@ -1,11 +1,23 @@
 "use client";
 
-import { Alert, AlertDescription, AlertTitle } from "@coss/ui/components/alert";
+import { Badge } from "@coss/ui/components/badge";
 import { Button } from "@coss/ui/components/button";
 import { Spinner } from "@coss/ui/components/spinner";
+import { CalendarIcon, GlobeIcon, MapPinIcon, PhoneIcon, VideoIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import {
+  BrandMark,
+  BrokenLink,
+  Detail,
+  DetailList,
+  LoadingPanel,
+  PageTitle,
+  Panel,
+  TestModeNotice,
+} from "@/components/page";
 import { SlotPicker } from "@/components/slot-picker";
-import { useAccentColor } from "@/lib/branding";
+import { zoneLabel } from "@/components/time-zone-picker";
+import { type Branding, useAccentColor } from "@/lib/branding";
 import { browserTimeZone, type ClientApiError, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
 
@@ -24,28 +36,69 @@ type Booking = {
   attendees: { time_zone: string }[];
 };
 
-function whereText(location: Booking["location"]): string | null {
+type Session = Branding & { sandbox: boolean };
+
+function Where({ location }: { location: Booking["location"] }) {
   if (!location) return null;
-  return location.url ?? location.number ?? location.address ?? null;
+  if (location.url) {
+    return (
+      <Detail icon={VideoIcon} label="Where">
+        <a
+          className="underline underline-offset-3"
+          href={location.url}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Join the meeting
+        </a>
+      </Detail>
+    );
+  }
+  if (location.number) {
+    return (
+      <Detail icon={PhoneIcon} label="Where">
+        <a className="underline underline-offset-3" href={`tel:${location.number}`}>
+          {location.number}
+        </a>
+      </Detail>
+    );
+  }
+  if (location.address) {
+    return (
+      <Detail icon={MapPinIcon} label="Where">
+        {location.address}
+      </Detail>
+    );
+  }
+  return null;
 }
+
+const STATUS_BADGES: Record<string, { label: string; variant: "warning" | "error" }> = {
+  pending_approval: { label: "Waiting for approval", variant: "warning" },
+  held: { label: "Held", variant: "warning" },
+  cancelled: { label: "Cancelled", variant: "error" },
+  declined: { label: "Declined", variant: "error" },
+};
 
 export function Manage({ sessionId, apiUrl }: { sessionId: string; apiUrl: string }) {
   const call = useClientApi(sessionId, apiUrl);
   const [booking, setBooking] = useState<Booking | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [gone, setGone] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [moving, setMoving] = useState(false);
+  const [moved, setMoved] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [working, setWorking] = useState(false);
-  const [accentColor, setAccentColor] = useState<string | null>(null);
   const browserZone = useMemo(browserTimeZone, []);
   const timeZone = booking?.attendees[0]?.time_zone ?? browserZone;
 
-  useAccentColor(accentColor);
+  useAccentColor(session?.accent_color);
   useEffect(reportHeight, []);
   useEffect(() => {
-    call<{ accent_color: string | null }>("/session")
-      .then((value) => setAccentColor(value.accent_color))
+    // Branding only: the page still works without it.
+    call<Session>("/session")
+      .then(setSession)
       .catch(() => {});
   }, [call]);
   useEffect(() => {
@@ -71,100 +124,122 @@ export function Manage({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
     }
   };
 
-  if (gone) {
-    return (
-      <main className="mx-auto max-w-lg p-6">
-        <Alert variant="error">
-          <AlertTitle>This link isn't working any more</AlertTitle>
-          <AlertDescription>{gone}</AlertDescription>
-        </Alert>
-      </main>
-    );
-  }
-  if (!booking) {
-    return (
-      <main className="flex min-h-64 items-center justify-center" aria-busy>
-        <Spinner />
-      </main>
-    );
-  }
+  if (gone) return <BrokenLink message={gone} title="This link isn't working any more" />;
+  if (!booking) return <LoadingPanel className="max-w-lg" />;
+
   const when = new Intl.DateTimeFormat(undefined, {
     timeZone,
     dateStyle: "full",
     timeStyle: "short",
   }).format(new Date(booking.start));
-  const ended = booking.status === "cancelled" || booking.status === "declined";
-  const where = whereText(booking.location);
+  const closed = booking.status === "cancelled" || booking.status === "declined";
+  const over = Date.parse(booking.end) < Date.now();
+  const badge = STATUS_BADGES[booking.status];
+  const statusLine = moved ? "Your booking has moved." : null;
   return (
-    <main className="mx-auto flex max-w-lg flex-col gap-6 p-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl">{booking.title}</h1>
-        <p className="text-sm">{when}</p>
-        {where ? <p className="break-all text-muted-foreground text-sm">{where}</p> : null}
-        {ended ? <p className="font-medium text-sm">This booking is cancelled.</p> : null}
-      </header>
-      {problem ? <p className="text-destructive-foreground text-sm">{problem}</p> : null}
-      {moving ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="font-medium text-sm">Choose a new time</h2>
-          <SlotPicker
-            busy={working}
-            call={call}
-            onPick={(slot) =>
-              act(
-                () =>
-                  call<Booking>("/booking/reschedule", {
-                    method: "POST",
-                    body: { start: slot.start },
-                  }),
-                (value) => {
-                  setMoving(false);
-                  postToHost({ type: "rescheduled", booking_id: value.id });
-                },
-              )
-            }
-            path="/booking/slots"
-            timeZone={timeZone}
-          />
-          <Button onClick={() => setMoving(false)} variant="ghost">
-            Keep the current time
-          </Button>
-        </section>
-      ) : null}
-      {!ended && !moving ? (
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setMoving(true)} variant="outline">
-            Reschedule
-          </Button>
-          {confirmingCancel ? (
-            <>
-              <Button
-                disabled={working}
-                onClick={() =>
-                  act(
-                    () => call<Booking>("/booking/cancel", { method: "POST" }),
-                    (value) => {
-                      setConfirmingCancel(false);
-                      postToHost({ type: "cancelled", booking_id: value.id });
-                    },
-                  )
-                }
-                variant="destructive"
-              >
-                {working ? <Spinner /> : null}
-                Yes, cancel it
-              </Button>
-              <Button onClick={() => setConfirmingCancel(false)} variant="ghost">
-                No, keep it
-              </Button>
-            </>
-          ) : (
-            <Button onClick={() => setConfirmingCancel(true)} variant="ghost">
-              Cancel booking
+    <main
+      className={`mx-auto flex w-full flex-col gap-4 px-4 py-6 sm:py-12 ${moving ? "max-w-3xl" : "max-w-lg"}`}
+    >
+      {session?.sandbox ? <TestModeNotice /> : null}
+      <Panel className="flex flex-col gap-6 p-4 sm:p-8">
+        {session ? <BrandMark branding={session} /> : null}
+        <header className="flex flex-col items-start gap-2">
+          <PageTitle>{booking.title}</PageTitle>
+          {badge ? <Badge variant={badge.variant}>{badge.label}</Badge> : null}
+        </header>
+        <DetailList>
+          <Detail icon={CalendarIcon} label="When">
+            {when}
+          </Detail>
+          <Detail icon={GlobeIcon} label="Time zone">
+            {zoneLabel(timeZone)}
+          </Detail>
+          {closed ? null : <Where location={booking.location} />}
+        </DetailList>
+        {statusLine ? (
+          <p className="text-pretty text-sm" role="status">
+            {statusLine}
+          </p>
+        ) : null}
+        {problem ? (
+          <p className="text-destructive-foreground text-sm" role="alert">
+            {problem}
+          </p>
+        ) : null}
+        {moving ? (
+          <section className="flex flex-col gap-4 border-t pt-6">
+            <h2 className="font-medium">Choose a new time</h2>
+            <SlotPicker
+              busy={working}
+              call={call}
+              onPick={(slot) =>
+                act(
+                  () =>
+                    call<Booking>("/booking/reschedule", {
+                      method: "POST",
+                      body: { start: slot.start },
+                    }),
+                  (value) => {
+                    setMoving(false);
+                    setMoved(true);
+                    postToHost({ type: "rescheduled", booking_id: value.id });
+                  },
+                )
+              }
+              path="/booking/slots"
+              timeZone={timeZone}
+            />
+            <Button className="self-start" onClick={() => setMoving(false)} variant="outline">
+              Keep the current time
             </Button>
-          )}
-        </div>
-      ) : null}
+          </section>
+        ) : null}
+        {!closed && !over && !moving ? (
+          <div className="flex flex-wrap gap-2 border-t pt-6">
+            {confirmingCancel ? (
+              <div className="flex w-full flex-col gap-3">
+                <p className="font-medium text-sm">Cancel this booking?</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={working}
+                    onClick={() =>
+                      act(
+                        () => call<Booking>("/booking/cancel", { method: "POST" }),
+                        (value) => {
+                          setConfirmingCancel(false);
+                          setMoved(false);
+                          postToHost({ type: "cancelled", booking_id: value.id });
+                        },
+                      )
+                    }
+                    variant="destructive"
+                  >
+                    {working ? <Spinner /> : null}
+                    Yes, cancel it
+                  </Button>
+                  <Button onClick={() => setConfirmingCancel(false)} variant="ghost">
+                    No, keep it
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Button
+                  onClick={() => {
+                    setMoved(false);
+                    setMoving(true);
+                  }}
+                >
+                  Reschedule
+                </Button>
+                <Button onClick={() => setConfirmingCancel(true)} variant="ghost">
+                  Cancel booking
+                </Button>
+              </>
+            )}
+          </div>
+        ) : null}
+      </Panel>
     </main>
   );
 }

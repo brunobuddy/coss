@@ -13,6 +13,10 @@ would make it same-site with the dashboard). Product rules are in `packages/sche
 - Embedding pages get `postMessage`s (`src/lib/embed.ts`) with ids and statuses only. Keep them in step with
   `packages/sdk/src/scheduling.ts`.
 - Times are UTC instants from the API, shown in the browser's zone. This app never works out what's available.
+- A page is the customer's: their logo or name (`BrandMark`) and accent (`useAccentColor`, which also picks the text
+  color), and nothing of coss.com's. The logo arrives as a data URL in `/session`, so the CSP stays free of other hosts.
+- The Google button (`continue-with-google.tsx`) is Google's required design and passed its verification: don't restyle
+  it.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -1,5 +1,9 @@
 import { expect, test } from "bun:test";
-import { hoursFromRules, rulesFromHours } from "../src/app/h/[sessionId]/host-portal.tsx";
+import {
+  hoursFromRules,
+  hoursProblem,
+  rulesFromHours,
+} from "../src/app/h/[sessionId]/hours-rules.ts";
 
 test("saving keeps a lunch break and a day that runs to midnight", () => {
   const rules = [
@@ -12,4 +16,35 @@ test("saving keeps a lunch break and a day that runs to midnight", () => {
   expect(hours[2]?.ranges[0]?.end).toBe("23:59");
   expect(hours[0]?.enabled).toBe(false);
   expect(rulesFromHours(hours)).toEqual(rules);
+});
+
+test("hours that can't work are named by their day", () => {
+  const off = { enabled: false, ranges: [{ start: "17:00", end: "09:00" }] };
+  const week = (monday: { start: string; end: string }[]) => [
+    off,
+    { enabled: true, ranges: monday },
+    off,
+    off,
+    off,
+    off,
+    off,
+  ];
+  expect(hoursProblem(week([{ start: "09:00", end: "17:00" }]))).toBeNull();
+  expect(
+    hoursProblem(
+      week([
+        { start: "13:00", end: "17:00" },
+        { start: "09:00", end: "12:00" },
+      ]),
+    ),
+  ).toBeNull();
+  expect(hoursProblem(week([{ start: "17:00", end: "09:00" }]))).toContain("Monday");
+  expect(
+    hoursProblem(
+      week([
+        { start: "09:00", end: "13:00" },
+        { start: "12:00", end: "17:00" },
+      ]),
+    ),
+  ).toContain("overlap");
 });

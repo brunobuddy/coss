@@ -284,50 +284,52 @@ function LogoField(props: {
   const { canEdit, logo } = props;
   const [problem, setProblem] = useState<string | null>(null);
   return (
-    <Field>
-      <FieldLabel>Logo</FieldLabel>
-      {logo ? (
-        // A data URL we stored after checking its bytes: nothing for next/image to optimize.
-        // biome-ignore lint/performance/noImgElement: see above.
-        <img
-          alt=""
-          className="max-h-12 max-w-[200px] object-contain"
-          height={logo.height}
-          src={logo.data_url}
-          width={logo.width}
+    <div className="flex flex-col gap-2">
+      <Field>
+        <FieldLabel>Logo</FieldLabel>
+        {logo ? (
+          // A data URL we stored after checking its bytes: nothing for next/image to optimize.
+          // biome-ignore lint/performance/noImgElement: see above.
+          <img
+            alt=""
+            className="max-h-12 max-w-[200px] object-contain"
+            height={logo.height}
+            src={logo.data_url}
+            width={logo.width}
+          />
+        ) : null}
+        <Input
+          accept="image/png,image/jpeg"
+          name="logo"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            const tooBig = file !== undefined && file.size > LOGO_MAX_BYTES;
+            setProblem(tooBig ? "That file is over 200 KB. Export a smaller one." : null);
+            if (tooBig) event.target.value = "";
+          }}
+          type="file"
         />
-      ) : null}
-      <Input
-        accept="image/png,image/jpeg"
-        name="logo"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          const tooBig = file !== undefined && file.size > LOGO_MAX_BYTES;
-          setProblem(tooBig ? "That file is over 200 KB. Export a smaller one." : null);
-          if (tooBig) event.target.value = "";
-        }}
-        type="file"
-      />
-      {problem ? <FormError message={problem} /> : null}
-      <FieldDescription>
-        A PNG or JPEG of 200 KB at most, at least 96 pixels tall so it stays sharp. On the hosted
-        pages, and on emails sent from your own address. Use one that reads on white.
-      </FieldDescription>
+        {problem ? <FormError message={problem} /> : null}
+        <FieldDescription>
+          A PNG or JPEG of 200 KB at most, at least 96 pixels tall so it stays sharp. On the hosted
+          pages, and on emails sent from your own address. Use one that reads on white.
+        </FieldDescription>
+      </Field>
       {logo && canEdit ? (
         <Label className="flex items-center gap-2 font-normal">
           <Checkbox name="removeLogo" />
           Remove the logo
         </Label>
       ) : null}
-    </Field>
+    </div>
   );
 }
 
 function AccentField(props: { color: string | null }) {
   const [enabled, setEnabled] = useState(props.color !== null);
   return (
-    <Field>
-      <FieldLabel>Accent color</FieldLabel>
+    <div className="flex flex-col gap-2">
+      <span className="font-medium text-sm">Accent color</span>
       <Label className="flex items-center gap-2 font-normal">
         <Checkbox
           checked={enabled}
@@ -345,11 +347,11 @@ function AccentField(props: { color: string | null }) {
           type="color"
         />
       ) : null}
-      <FieldDescription>
+      <p className="text-muted-foreground text-xs">
         On buttons and selected days in the hosted pages, and on the button in emails sent from your
         own address. Text on it is black or white, whichever reads better.
-      </FieldDescription>
-    </Field>
+      </p>
+    </div>
   );
 }
 
