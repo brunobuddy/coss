@@ -35,8 +35,9 @@ await coss.scheduling.calendars.connect("doctor_482", {
 
 ## What coss.com reads and writes
 
-It reads **when a calendar is busy**, and nothing else: no titles, attendees or descriptions are read
-through Google or stored from any provider. A booking is added to the host's chosen calendar as a
+It keeps **when a calendar is busy**, and nothing else: no titles, attendees or descriptions are read
+through Google or Microsoft or stored from any provider. CalDAV servers send whole events, and everything
+but their times is discarded as they're read. A booking is added to the host's chosen calendar as a
 private event titled "Appointment", with no attendees, so the host's colleagues learn nothing from it
 and their calendar provider sends nobody an invitation.
 

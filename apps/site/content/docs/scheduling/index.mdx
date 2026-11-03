@@ -62,7 +62,7 @@ const { data: booking, error } = await coss.scheduling.bookings.create({
   a retry, a second tab or two people clicking at once. A time that's gone answers
   `slot_unavailable`.
 - **Calendars.** Google, Microsoft and CalDAV (Apple, Nextcloud, Fastmail). Coss.com reads when
-  they're busy and adds bookings to them. It never reads your hosts' event titles.
+  they're busy and adds bookings to them. It never keeps your hosts' event titles.
 - **Time zones.** Hours stay in the host's local time across daylight saving changes, and a recurring
   booking stays at the attendee's local time.
 - **Who gets told.** Confirmations, reminders and calendar invitations, from your domain. You can turn
