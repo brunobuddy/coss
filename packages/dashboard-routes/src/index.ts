@@ -224,7 +224,11 @@ export const ORGANIZATION_SETTINGS: readonly SettingsPage[] = [
 ];
 
 /** Project slugs that are taken by the organization's own pages (`/<org>/settings`). */
-export const RESERVED_PROJECT_SLUGS: ReadonlySet<string> = new Set(["settings"]);
+export const RESERVED_PROJECT_SLUGS: ReadonlySet<string> = new Set(["settings", "support"]);
+
+export function supportHref(organization: string, path = ""): string {
+  return `/${organization}/support${path}`;
+}
 
 export function getProduct(key: ProductKey): Product {
   const product = PRODUCTS.find((item) => item.key === key);

@@ -28,6 +28,7 @@ import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/panel";
 import { RegistrationStatusDot } from "@/components/sms-badges";
 import { StatusDot } from "@/components/status-dot";
+import { SupportLink } from "@/components/support/support-link";
 import { formatDateTime } from "@/lib/format";
 import { requireOrgMember } from "@/lib/session";
 import { smsProvisioningEnabled } from "@/lib/sms";
@@ -221,8 +222,9 @@ export default async function OrganizationSmsPage({
         <Alert>
           <AlertTitle>SMS senders aren't available yet</AlertTitle>
           <AlertDescription>
-            Sandbox environments already send simulated messages. Contact support to get started
-            with live SMS.
+            Sandbox environments already send simulated messages.{" "}
+            <SupportLink orgSlug={orgSlug} subject="Live SMS" topic="sales" /> to get started with
+            live SMS.
           </AlertDescription>
         </Alert>
       ) : prompt ? (

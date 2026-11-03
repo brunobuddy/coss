@@ -18,6 +18,7 @@ import {
   plansWithText,
   rateRows,
   rateText,
+  supportRows,
 } from "@/lib/billing-text";
 import { DocsTable, DocsTd, DocsTh, DocsTr } from "./docs-table";
 
@@ -35,6 +36,32 @@ export function PlanTable() {
       </thead>
       <tbody>
         {planRows().map((row) => (
+          <DocsTr key={row.label}>
+            <DocsTd>{row.label}</DocsTd>
+            {row.values.map((value, index) => (
+              <DocsTd key={PLAN_KEYS[index]}>{value}</DocsTd>
+            ))}
+          </DocsTr>
+        ))}
+      </tbody>
+    </DocsTable>
+  );
+}
+
+/** What support each plan gets (from `SUPPORT_TIERS`, which the desk's clock runs on). */
+export function SupportTable() {
+  return (
+    <DocsTable>
+      <thead>
+        <DocsTr>
+          <DocsTh />
+          {PLAN_KEYS.map((key) => (
+            <DocsTh key={key}>{PLANS[key].name}</DocsTh>
+          ))}
+        </DocsTr>
+      </thead>
+      <tbody>
+        {supportRows().map((row) => (
           <DocsTr key={row.label}>
             <DocsTd>{row.label}</DocsTd>
             {row.values.map((value, index) => (

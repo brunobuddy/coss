@@ -1,4 +1,5 @@
-import { usageByDay } from "@coss/billing";
+import { billingStateAt, usageByDay } from "@coss/billing";
+import { PLANS } from "@coss/billing/catalog";
 import {
   dedicatedIpCapacity,
   dedicatedIpPoolObject,
@@ -45,6 +46,7 @@ import { AuditLogTable } from "@/components/admin/audit-log-table";
 import { listHref } from "@/components/admin/list-controls";
 import { AdminOrganizationTabs } from "@/components/admin/organization-tabs";
 import { OrganizationStatusBadge } from "@/components/admin/status-badges";
+import { SupportTicketsPanel } from "@/components/admin/support-tickets-panel";
 import { StackedBars } from "@/components/charts/stacked-bars";
 import { DomainStatusBadge } from "@/components/domain-badges";
 import { PageHeader } from "@/components/page-header";
@@ -149,6 +151,7 @@ export default async function AdminOrganizationPage({
     dedicatedIpPoolObject(organization.id),
     dedicatedIpCapacity(),
   ]);
+  const billing = await billingStateAt(organization.id, now);
   const isSystem = await isSystemOrganization(organization.id);
   const banned = takedown.members.filter((member) => member.keptBecause === null);
   const kept = takedown.members.filter((member) => member.keptBecause !== null);
@@ -172,6 +175,9 @@ export default async function AdminOrganizationPage({
                 deleting={deletion !== null}
                 suspended={suspension !== null}
               />
+              <Badge variant={billing.terms.plan === "free" ? "outline" : "secondary"}>
+                {PLANS[billing.terms.plan].name}
+              </Badge>
               <code className="font-mono text-xs">/{organization.slug}</code>
               <code className="font-mono text-xs">{organization.id}</code>
             </>
@@ -350,6 +356,8 @@ export default async function AdminOrganizationPage({
           </AlertDescription>
         </Alert>
       ) : null}
+
+      <SupportTicketsPanel organizationId={organization.id} />
 
       <Panel
         action={

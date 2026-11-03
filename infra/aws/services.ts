@@ -167,6 +167,37 @@ const formsFilesBucket: EnvVar = {
     "Forms' bucket of uploaded files (Terraform output forms_files_bucket), with AWS_REGION. Unset: forms refuse uploads in production.",
 };
 
+const supportFilesBucket: EnvVar = {
+  name: "SUPPORT_FILES_BUCKET",
+  kind: "plain",
+  required: false,
+  description:
+    "Support's bucket of ticket attachments (Terraform output support_files_bucket), with AWS_REGION. Unset: tickets take no attachments in production.",
+};
+
+const supportMail: EnvVar[] = [
+  {
+    name: "SUPPORT_ENVIRONMENT_ID",
+    kind: "plain",
+    required: false,
+    description:
+      "A live environment of coss.com's own organization whose received mail becomes tickets. All three SUPPORT_* mail variables or none; unset, support emails wait.",
+  },
+  {
+    name: "SUPPORT_FROM_ADDRESS",
+    kind: "plain",
+    required: false,
+    description:
+      "The address customers see (support@coss.com), on a verified domain of that organization.",
+  },
+  {
+    name: "SUPPORT_REPLY_DOMAIN",
+    kind: "plain",
+    required: false,
+    description: "That environment's receiving domain (reply.coss.com), where replies go.",
+  },
+];
+
 const formsPublicUrl: EnvVar = {
   name: "FORMS_PUBLIC_URL",
   kind: "plain",
@@ -684,6 +715,7 @@ export const SERVICES: Service[] = [
       signDocumentsBucket,
       formsPublicUrl,
       formsFilesBucket,
+      supportFilesBucket,
       riskHashKey,
       // Screens live hosted form pages published from the dashboard.
       ...riskClassifier,
@@ -1027,6 +1059,8 @@ export const SERVICES: Service[] = [
       apiPublicUrl,
       trackingPublicUrl,
       signDocumentsBucket,
+      supportFilesBucket,
+      ...supportMail,
       formsFilesBucket,
       formsPublicUrl,
       {

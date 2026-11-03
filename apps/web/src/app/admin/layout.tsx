@@ -1,4 +1,5 @@
 import { DASHBOARD_PATH } from "@coss/auth/slugs";
+import { countOpenSupportTickets } from "@coss/support/admin";
 import { AppShell } from "@/components/shell/app-shell";
 import { AreaSidebar } from "@/components/shell/area-sidebar";
 import { avatarUrl } from "@/lib/avatars";
@@ -26,6 +27,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
         <AreaSidebar
           area="admin"
           back={{ href: DASHBOARD_PATH, label: "Dashboard" }}
+          badges={{ "/support": await countOpenSupportTickets() }}
           label="admin"
           user={user}
         />

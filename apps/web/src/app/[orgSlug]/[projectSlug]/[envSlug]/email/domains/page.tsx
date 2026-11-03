@@ -52,7 +52,7 @@ export default async function DomainsPage({
       />
 
       {tenant?.sendingStatus === "disabled" ? (
-        <SendingPausedAlert cause={tenant.statusCause} />
+        <SendingPausedAlert cause={tenant.statusCause} orgSlug={orgSlug} />
       ) : null}
 
       <Panel>

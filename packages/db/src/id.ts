@@ -171,6 +171,11 @@ export const ID_PREFIXES = {
   // Imports from another email provider (Resend, SendGrid, Postmark), `@coss/migrate`.
   migration: "mig",
   migrationItem: "migitem",
+  // coss.com's support desk (`@coss/support`).
+  supportTicket: "ticket",
+  supportMessage: "tmsg",
+  supportAttachment: "tatt",
+  supportSavedReply: "tsaved",
   // A member's pinned or hidden dashboard products.
   productPreference: "prodpref",
 } as const;

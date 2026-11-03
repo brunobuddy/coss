@@ -79,6 +79,7 @@ plain_env = {
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
     FORMS_PUBLIC_URL         = "https://cossforms.com"
     FORMS_FILES_BUCKET       = "coss-production-forms-files-294417174674"
+    SUPPORT_FILES_BUCKET     = "coss-production-support-files-294417174674"
     GOOGLE_CLIENT_ID         = "204721091156-k33omqkstijuaari06eidtlefif81p9m.apps.googleusercontent.com"
     GITHUB_CLIENT_ID         = "Ov23liYEf7MwkA26M9Ul"
     DEPLOY_GITHUB_APP_ID     = "5340076"
@@ -205,6 +206,7 @@ plain_env = {
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
     FORMS_PUBLIC_URL      = "https://cossforms.com"
     FORMS_FILES_BUCKET    = "coss-production-forms-files-294417174674"
+    SUPPORT_FILES_BUCKET  = "coss-production-support-files-294417174674"
     EMAIL_PROVIDER        = "ses"
     AWS_REGION            = "us-east-2"
     SES_CONFIGURATION_SET = "coss"

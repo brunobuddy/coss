@@ -1,6 +1,7 @@
 /** What applies to an organization at a moment: its contract, resolved terms and entitlements. */
 import { db, type Executor } from "@coss/db";
 import { type Entitlements, lowerEntitlements } from "./catalog/entitlements.ts";
+import type { PlanKey } from "./catalog/plans.ts";
 import { rateCardAt } from "./catalog/rates.ts";
 import {
   type Contract,
@@ -109,4 +110,13 @@ export function contractSegment(
     superseded,
     billable: contract.kind !== "internal",
   };
+}
+
+/** The plan and support clock in effect: what `@coss/support` takes injected. */
+export async function supportPlanAt(
+  organizationId: string,
+  at: Date,
+): Promise<{ plan: PlanKey; allHours: boolean }> {
+  const { terms } = await billingStateAt(organizationId, at);
+  return { plan: terms.plan, allHours: terms.support.allHours };
 }

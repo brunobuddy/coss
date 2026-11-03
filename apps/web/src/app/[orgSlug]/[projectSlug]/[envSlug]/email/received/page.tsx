@@ -28,6 +28,7 @@ import { ModeBadge, ReceivedStatusBadge } from "@/components/email-badges";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
+import { SupportLink } from "@/components/support/support-link";
 import { emailRuntime } from "@/lib/email-runtime";
 import { formatBytes, formatDateTime, formatRelative } from "@/lib/format";
 import { requireOrgMember } from "@/lib/session";
@@ -100,7 +101,15 @@ export default async function ReceivedEmailsPage({
           <AlertDescription>
             {dropped} {dropped === 1 ? "email was" : "emails were"} dropped today because the
             organization reached its daily limit of received emails, or the Free plan's monthly
-            allowance. Upgrade your plan, or contact support to raise the daily limit.
+            allowance. Upgrade your plan, or{" "}
+            <SupportLink
+              orgSlug={organization.slug}
+              subject="Raise the daily inbound limit"
+              topic="sales"
+            >
+              contact support
+            </SupportLink>{" "}
+            to raise the daily limit.
           </AlertDescription>
         </Alert>
       ) : null}

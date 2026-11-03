@@ -56,6 +56,17 @@ const ACTION_LABELS: Record<string, { label: string; variant: "error" | "success
   "billing.hold_lifted": { label: "Resumed live sending (billing)", variant: "success" },
   "deploy.started": { label: "Deployed main", variant: "info" },
   "deploy.redeployed": { label: "Redeployed an earlier commit", variant: "error" },
+  "support.replied": { label: "Replied to a ticket", variant: "info" },
+  "support.note_added": { label: "Added a ticket note", variant: "info" },
+  "support.assigned": { label: "Assigned a ticket", variant: "info" },
+  "support.severity_changed": { label: "Changed a ticket's severity", variant: "info" },
+  "support.status_changed": { label: "Changed a ticket's status", variant: "info" },
+  "support.spam_changed": { label: "Changed a ticket's spam status", variant: "info" },
+  "support.organization_confirmed": { label: "Confirmed a ticket's organization", variant: "info" },
+  "support.message_revealed": { label: "Showed a message to a customer", variant: "info" },
+  "support.cc_added": { label: "Added someone to a ticket", variant: "info" },
+  "support.attachment_downloaded": { label: "Downloaded a ticket's file", variant: "info" },
+  "support.saved_reply_changed": { label: "Changed a saved reply", variant: "info" },
 };
 
 function targetHref(event: AdminAuditEvent): string | null {

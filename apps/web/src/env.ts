@@ -9,6 +9,7 @@ import { schedulingEnvShape } from "@coss/scheduling/env";
 import { screeningEnvShape } from "@coss/screening/env";
 import { signStoreEnvShape } from "@coss/sign/env";
 import { smsEnvShape } from "@coss/sms/env";
+import { supportStoreEnvShape } from "@coss/support/env";
 import { webhookEnvShape } from "@coss/webhooks/env";
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
@@ -59,6 +60,8 @@ export const env = createEnv({
     // and their uploads (S3, with AWS_REGION).
     ...formsPublicEnvShape,
     FORMS_FILES_BUCKET: formsStoreEnvShape.FORMS_FILES_BUCKET,
+    // Support: attachments of tickets (S3, with AWS_REGION).
+    ...supportStoreEnvShape,
     // Keys risk's memory; the dashboard hashes identifiers when it records feedback. Required in
     // production (src/instrumentation.ts).
     ...riskEnvShape,

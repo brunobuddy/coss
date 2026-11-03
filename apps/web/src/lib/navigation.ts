@@ -18,6 +18,7 @@ import {
   GlobeIcon,
   HistoryIcon,
   LayoutDashboardIcon,
+  LifeBuoyIcon,
   type LucideIcon,
   MailIcon,
   MegaphoneIcon,
@@ -109,6 +110,7 @@ export const ACCOUNT_NAV: NavItem[] = [
 /** The platform admin console (under `/admin`). */
 export const ADMIN_NAV: NavItem[] = [
   { label: "Overview", path: "", icon: LayoutDashboardIcon, exact: true },
+  { label: "Support", path: "/support", icon: LifeBuoyIcon },
   { label: "Users", path: "/users", icon: UserIcon },
   { label: "Organizations", path: "/organizations", icon: BuildingIcon },
   { label: "Sign-ups", path: "/signups", icon: UserPlusIcon },
@@ -152,11 +154,14 @@ export function environmentPath(orgSlug: string, projectSlug: string, envSlug: s
  * (ids, slugs) have none and are named by the caller.
  */
 export function segmentLabel(segment: string): string | undefined {
+  if (segment.startsWith("ticket_")) return "Ticket";
   return SEGMENT_LABELS[segment];
 }
 
 const SEGMENT_LABELS: Record<string, string> = {
   email: "Email",
+  support: "Support",
+  "saved-replies": "Saved replies",
   messages: "Emails",
   storage: "Content storage",
   numbers: "Phone numbers",

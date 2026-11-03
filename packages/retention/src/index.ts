@@ -38,6 +38,10 @@ export const RETENTION_DAYS = {
   reputationNotifications: 90,
   /** Standing changes (an organization's latest one is always kept). */
   reputationHistory: 730,
+  /** Support conversations, counted from when the ticket was resolved. */
+  supportTickets: 730,
+  /** Mail filed as spam or automated, never answered. */
+  supportSpam: 30,
   /** Platform admin actions. */
   adminAuditLog: 730,
   /** Load balancer, CDN and network flow logs, expired by their bucket's lifecycle rule. */
@@ -93,7 +97,7 @@ export const RETENTION_DAYS = {
 } as const satisfies Record<string, number>;
 
 export type RetentionPeriod =
-  | { days: number; after: "creation" | "expiry" | "booking_end" }
+  | { days: number; after: "creation" | "expiry" | "booking_end" | "resolved" }
   | { until: "sent" | "deleted" | "closed" };
 
 export type RetentionRule = {
@@ -303,6 +307,19 @@ export const RETENTION_POLICY: readonly RetentionRule[] = [
     period: { days: RETENTION_DAYS.billingNotifications, after: "creation" },
   },
   {
+    id: "support_tickets",
+    label: "Support conversations",
+    description:
+      "Your support tickets: what you and our team wrote, attachments, and who wrote them. They're kept after your account or organization is deleted, until this period ends.",
+    period: { days: RETENTION_DAYS.supportTickets, after: "resolved" },
+  },
+  {
+    id: "support_spam",
+    label: "Filtered support mail",
+    description: "Mail to our support address that was spam or automated, and never answered.",
+    period: { days: RETENTION_DAYS.supportSpam, after: "creation" },
+  },
+  {
     id: "notifications",
     label: "Notification emails",
     description:
@@ -434,5 +451,6 @@ export function formatRetentionPeriod(period: RetentionPeriod): string {
   }
   const duration = formatRetentionDays(period.days);
   if (period.after === "booking_end") return `${duration} after the booking ends`;
+  if (period.after === "resolved") return `${duration} after it's resolved`;
   return period.after === "expiry" ? `${duration} after expiry` : duration;
 }

@@ -7,3 +7,4 @@ export * from "./entitlements.ts";
 export * from "./meters.ts";
 export * from "./plans.ts";
 export * from "./rates.ts";
+export * from "./support.ts";

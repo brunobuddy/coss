@@ -197,6 +197,12 @@
           "description": "Forms' bucket of uploaded files (Terraform output forms_files_bucket), with AWS_REGION. Unset: forms refuse uploads in production."
         },
         {
+          "name": "SUPPORT_FILES_BUCKET",
+          "kind": "plain",
+          "required": false,
+          "description": "Support's bucket of ticket attachments (Terraform output support_files_bucket), with AWS_REGION. Unset: tickets take no attachments in production."
+        },
+        {
           "name": "RISK_HASH_KEY",
           "kind": "secret",
           "required": true,
@@ -1328,6 +1334,30 @@
           "kind": "plain",
           "required": false,
           "description": "Sign's documents bucket (Terraform output sign_documents_bucket), with AWS_REGION. Unset: Sign is off in production."
+        },
+        {
+          "name": "SUPPORT_FILES_BUCKET",
+          "kind": "plain",
+          "required": false,
+          "description": "Support's bucket of ticket attachments (Terraform output support_files_bucket), with AWS_REGION. Unset: tickets take no attachments in production."
+        },
+        {
+          "name": "SUPPORT_ENVIRONMENT_ID",
+          "kind": "plain",
+          "required": false,
+          "description": "A live environment of coss.com's own organization whose received mail becomes tickets. All three SUPPORT_* mail variables or none; unset, support emails wait."
+        },
+        {
+          "name": "SUPPORT_FROM_ADDRESS",
+          "kind": "plain",
+          "required": false,
+          "description": "The address customers see (support@coss.com), on a verified domain of that organization."
+        },
+        {
+          "name": "SUPPORT_REPLY_DOMAIN",
+          "kind": "plain",
+          "required": false,
+          "description": "That environment's receiving domain (reply.coss.com), where replies go."
         },
         {
           "name": "FORMS_FILES_BUCKET",

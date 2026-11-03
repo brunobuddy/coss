@@ -5,6 +5,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -21,6 +22,8 @@ export function NavGroup(props: {
   base: string;
   items: NavItem[];
   active: NavItem | undefined;
+  /** A count beside a page, by its path. */
+  badges?: Record<string, number>;
 }) {
   const { setOpenMobile } = useSidebar();
   return (
@@ -42,6 +45,9 @@ export function NavGroup(props: {
                   {Icon ? <Icon /> : null}
                   <span>{item.label}</span>
                 </SidebarMenuButton>
+                {props.badges?.[item.path] ? (
+                  <SidebarMenuBadge>{props.badges[item.path]}</SidebarMenuBadge>
+                ) : null}
               </SidebarMenuItem>
             );
           })}

@@ -1,0 +1,36 @@
+{
+  "name": "@coss/support",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./admin": "./src/admin.ts",
+    "./env": "./src/env.ts",
+    "./format": "./src/format.ts",
+    "./schemas": "./src/schemas.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun --env-file=../../.env test"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
+    "@coss/billing": "workspace:*",
+    "@coss/db": "workspace:*",
+    "@coss/email-layout": "workspace:*",
+    "@coss/notifications": "workspace:*",
+    "@coss/retention": "workspace:*",
+    "@coss/signals": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@coss/email": "workspace:*",
+    "@coss/tenancy": "workspace:*",
+    "@coss/tsconfig": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

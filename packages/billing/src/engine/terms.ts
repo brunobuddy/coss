@@ -29,6 +29,7 @@ export type EffectiveTerms = {
   entitlements: Entitlements;
   /** Hard per-period limits (`undefined`: none). */
   usageCaps: Partial<Record<MeterKey, number>>;
+  support: { allHours: boolean };
 };
 
 const DEFAULT_FEE_CREDIT: FeeCredit = { spendable: true, pool: "month" };
@@ -87,6 +88,7 @@ export function resolveTerms(terms: ContractTerms, rateCard: RateCard): Effectiv
       terms.addOns ?? [],
     ),
     usageCaps,
+    support: { allHours: terms.support?.allHours ?? false },
   };
 }
 

@@ -1,9 +1,10 @@
 import { Alert, AlertDescription, AlertTitle } from "@coss/ui/components/alert";
 import Link from "next/link";
+import { SupportLink } from "@/components/support/support-link";
 import type { BillingBannerState } from "@/lib/billing";
 
 /** Org-wide banner (layout) for billing readers: holds, overdue invoices, a used-up allowance. */
-export function BillingBanner(props: { state: BillingBannerState; href: string }) {
+export function BillingBanner(props: { state: BillingBannerState; href: string; orgSlug: string }) {
   const { held, pastDue, allowance } = props.state;
   const link = (
     <Link className="underline" href={props.href}>
@@ -19,7 +20,12 @@ export function BillingBanner(props: { state: BillingBannerState; href: string }
             ? "An invoice is overdue. Sending resumes as soon as it is paid."
             : held === "spend_limit"
               ? "This month's usage reached your spend limit. Raise it, or sending resumes next month."
-              : "coss.com paused live sending for billing reasons. Contact support."}{" "}
+              : "coss.com paused live sending for billing reasons."}{" "}
+          {held !== "delinquent" && held !== "spend_limit" ? (
+            <>
+              <SupportLink orgSlug={props.orgSlug} subject="Billing hold" topic="billing" />.{" "}
+            </>
+          ) : null}
           Sandbox keys still work. {link}
         </AlertDescription>
       </Alert>

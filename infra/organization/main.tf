@@ -15,6 +15,7 @@ locals {
     "coss-inbound-${local.production_account_id}",
     "coss-production-forms-files-${local.production_account_id}",
     "coss-production-sign-documents-${local.production_account_id}",
+    "coss-production-support-files-${local.production_account_id}",
   ]
 }
 

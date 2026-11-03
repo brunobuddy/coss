@@ -243,6 +243,7 @@ export {
   ingestProviderEvents,
   recordProviderEvent,
 } from "./events.ts";
+export { htmlToText } from "./html-text.ts";
 export {
   fakeVerdicts,
   type InboundDeps,

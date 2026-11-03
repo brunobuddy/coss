@@ -301,6 +301,7 @@
         "@coss/screening": "workspace:*",
         "@coss/sign": "workspace:*",
         "@coss/sms": "workspace:*",
+        "@coss/support": "workspace:*",
         "@coss/tenancy": "workspace:*",
         "@coss/ui": "workspace:*",
         "@coss/verify": "workspace:*",
@@ -365,6 +366,7 @@
         "@coss/screening": "workspace:*",
         "@coss/sign": "workspace:*",
         "@coss/sms": "workspace:*",
+        "@coss/support": "workspace:*",
         "@coss/tenancy": "workspace:*",
         "@coss/verify": "workspace:*",
         "@coss/webhooks": "workspace:*",
@@ -922,6 +924,28 @@
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@coss/tenancy": "workspace:*",
+        "@coss/tsconfig": "workspace:*",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/support": {
+      "name": "@coss/support",
+      "version": "0.0.0",
+      "dependencies": {
+        "@aws-sdk/client-s3": "catalog:",
+        "@coss/billing": "workspace:*",
+        "@coss/db": "workspace:*",
+        "@coss/email-layout": "workspace:*",
+        "@coss/notifications": "workspace:*",
+        "@coss/retention": "workspace:*",
+        "@coss/signals": "workspace:*",
+        "drizzle-orm": "catalog:",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@coss/email": "workspace:*",
         "@coss/tenancy": "workspace:*",
         "@coss/tsconfig": "workspace:*",
         "@types/bun": "catalog:",
@@ -1514,6 +1538,8 @@
     "@coss/sms": ["@coss/sms@workspace:packages/sms"],
 
     "@coss/smtp": ["@coss/smtp@workspace:apps/smtp"],
+
+    "@coss/support": ["@coss/support@workspace:packages/support"],
 
     "@coss/tenancy": ["@coss/tenancy@workspace:packages/tenancy"],
 

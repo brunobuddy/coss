@@ -13,6 +13,7 @@ import {
   createUsageGate,
   logBillingNotifier,
   planRateLimits,
+  supportPlanAt,
 } from "@coss/billing";
 import { createBillingRuntime } from "@coss/billing/runtime";
 import { closeDb } from "@coss/db";
@@ -22,6 +23,8 @@ import {
   createEmailService,
   EmailError,
   emailNotifier,
+  extractReplyText,
+  htmlToText,
   notificationEnvironment,
 } from "@coss/email";
 import {
@@ -48,6 +51,7 @@ import {
   workSmsDispatchQueue,
 } from "@coss/sms/dispatch";
 import { createSmsRuntime } from "@coss/sms/runtime";
+import { logSupportMailer, supportStoreFromEnv } from "@coss/support";
 import { createWebhookSender, parseSecretsKeys } from "@coss/webhooks";
 import * as Sentry from "@sentry/bun";
 import {
@@ -60,12 +64,13 @@ import { formContactSink } from "./form-contacts.ts";
 import { formMailer, formVerificationQuota } from "./form-mailer.ts";
 import { hookThrottle } from "./hooks-throttle.ts";
 import { dmarcReportQuota, inboundQuota, type SesInboundDeps } from "./inbound.ts";
-import { startJobs, WORKER_LOOP_NAMES } from "./jobs.ts";
+import { type SupportWorkerDeps, startJobs, WORKER_LOOP_NAMES } from "./jobs.ts";
 import { monitoredDispatch } from "./monitoring.ts";
 import { schedulingNotifier } from "./scheduling-notifier.ts";
 import { createShutdown } from "./shutdown.ts";
 import { addressOf, signMailer } from "./sign-mailer.ts";
 import { createSqsApi } from "./sqs.ts";
+import { supportMailer } from "./support-mailer.ts";
 
 const unknownLoops = [...(env.WORKER_LOOPS ?? [])].filter(
   (name) => !(WORKER_LOOP_NAMES as readonly string[]).includes(name),
@@ -272,6 +277,64 @@ const schedulingDataKeys = schedulingDataKeysFromEnv({
 
 // Forms: files of deleted and purged submissions, and organization deletion; notifications,
 // contacts and verification emails through the email product (form-mailer.ts, form-contacts.ts).
+const supportStore = supportStoreFromEnv(env);
+const supportMail = [
+  env.SUPPORT_ENVIRONMENT_ID,
+  env.SUPPORT_FROM_ADDRESS,
+  env.SUPPORT_REPLY_DOMAIN,
+].filter(Boolean).length;
+if (supportMail !== 0 && supportMail !== 3) {
+  throw new Error(
+    "Set SUPPORT_ENVIRONMENT_ID, SUPPORT_FROM_ADDRESS and SUPPORT_REPLY_DOMAIN together, or none.",
+  );
+}
+const supportEnvironment = env.SUPPORT_ENVIRONMENT_ID
+  ? await notificationEnvironment(env.SUPPORT_ENVIRONMENT_ID)
+  : null;
+const support: SupportWorkerDeps = {
+  intake:
+    supportEnvironment && env.SUPPORT_FROM_ADDRESS
+      ? {
+          environmentId: supportEnvironment.environmentId,
+          planFor: supportPlanAt,
+          ownAddresses: [
+            env.SUPPORT_FROM_ADDRESS,
+            ...(env.NOTIFICATIONS_FROM ? [addressOf(env.NOTIFICATIONS_FROM)] : []),
+          ],
+          extractReplyText: (text) => extractReplyText(text) ?? "",
+          htmlToText,
+        }
+      : null,
+  delivery:
+    supportEnvironment && env.SUPPORT_FROM_ADDRESS && env.SUPPORT_REPLY_DOMAIN
+      ? {
+          mailer: supportMailer({
+            service: emailService,
+            environment: supportEnvironment,
+            fromAddress: env.SUPPORT_FROM_ADDRESS,
+          }),
+          store: supportStore,
+          replyDomain: env.SUPPORT_REPLY_DOMAIN,
+          dashboardUrl: env.BETTER_AUTH_URL ?? "http://localhost:3000",
+        }
+      : process.env.NODE_ENV === "production"
+        ? null
+        : {
+            mailer: logSupportMailer,
+            store: supportStore,
+            replyDomain: "reply.coss.test",
+            dashboardUrl: env.BETTER_AUTH_URL ?? "http://localhost:3000",
+          },
+  inbound: email.inbound?.store ?? null,
+  store: supportStore,
+  alertsOrganizationId: systemOrganizationId,
+};
+if (!support.delivery) {
+  console.warn(
+    "[worker] SUPPORT_ENVIRONMENT_ID, SUPPORT_FROM_ADDRESS and SUPPORT_REPLY_DOMAIN are unset: " +
+      "support emails wait until they are configured.",
+  );
+}
 const formsStore = formsStoreFromEnv(env);
 const formsFallbackAddress =
   env.FORMS_NOTIFICATIONS_FROM ??
@@ -363,6 +426,7 @@ const loops = startJobs({
   signStore,
   formsStore,
   formDeliveries,
+  support,
   schedulingNotifications: schedulingDataKeys && {
     dataKeys: schedulingDataKeys,
     publicUrl: env.SCHEDULING_PUBLIC_URL ?? null,

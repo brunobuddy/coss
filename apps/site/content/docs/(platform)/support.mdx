@@ -1,0 +1,53 @@
+---
+title: Support
+description: How to reach a person at coss.com, what each plan gets, and how tickets work.
+icon: LifeBuoy
+---
+
+Every ticket is read and answered by a person. You can reach us two ways, and they're the same
+conversation: a reply in one shows up in the other.
+
+- **From the dashboard:** open **Support** in your organization's sidebar, or press <kbd>⌘K</kbd>
+  and search for it.
+- **By email:** write to [support@coss.com](mailto:support@coss.com).
+
+## What each plan gets
+
+<SupportTable />
+
+These are the times we aim to send a first response, counted only during support hours: they are
+targets, not guarantees. Enterprise contracts can make them commitments, with service credits and
+support outside these hours.
+
+**Urgent** means production is down. We may reclassify a ticket when we read it, and a ticket from
+a plan without urgent support follows that plan's normal target.
+
+## Raising a ticket
+
+Say what happened, what you expected, and any ids or error messages you saw (an email id or a
+request's `X-Request-Id` is the fastest way for us to find it). Please leave out passwords and API
+keys. The form tells you when to expect a reply before you send it.
+
+A ticket raised from the dashboard belongs to that organization. Owners and admins see all of an
+organization's tickets; other members see their own.
+
+## Emailing us
+
+Email us from the address on your coss.com account. If we can prove the message really came from
+that address and you belong to one organization, the ticket appears in that organization's
+dashboard and follows its plan. Your domain needs to publish a DMARC policy for us to prove that.
+
+Otherwise we can't tell who sent it, since anyone can put any address in the From line. We still
+read and answer it, but a person checks who you are before it joins your organization, and we won't
+share account details until then. A ticket raised from the dashboard never has this problem.
+
+## What happens next
+
+You get a confirmation with your ticket number and when to expect a reply. Replies arrive by email
+and in the dashboard, and you can answer in either. Replying to a resolved ticket opens it again.
+
+If we ask you something and don't hear back for a week, we close the ticket with a note; replying
+opens it again. You can also mark a ticket as resolved yourself.
+
+A support conversation is kept for <RetentionPeriod of="support_tickets" />; see
+[data retention](/docs/data-retention).

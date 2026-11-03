@@ -226,7 +226,7 @@ export default async function DomainPage({
       <SubNav base={`${envBase}/email/domains/${domain.id}`} className="border-b" nav="domain" />
 
       {tenant?.sendingStatus === "disabled" ? (
-        <SendingPausedAlert cause={tenant.statusCause} />
+        <SendingPausedAlert cause={tenant.statusCause} orgSlug={orgSlug} />
       ) : null}
 
       {domain.provider === "fake" ? (

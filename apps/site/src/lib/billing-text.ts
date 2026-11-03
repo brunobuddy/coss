@@ -7,6 +7,7 @@ import {
   FEATURE_LABELS,
   type FeatureKey,
   formatDimension,
+  formatSupportTarget,
   LIMIT_KEYS,
   LIMIT_LABELS,
   type LimitKey,
@@ -20,6 +21,8 @@ import {
   type Product,
   RATE_CARDS,
   type Rate,
+  SUPPORT_HOURS,
+  SUPPORT_TIERS,
 } from "@coss/billing/catalog";
 import { formatCents, formatUnitPrice } from "@coss/billing/money";
 import { emailTierCharges, formatPrice, METER_NOTES } from "./pricing";
@@ -29,6 +32,43 @@ function includedText(meter: MeterKey, n: number): string {
   if (meter === "email.inboxes") return `${Math.floor(n / 31).toLocaleString("en-US")} inboxes`;
   if (meter === "email.received") return `${n.toLocaleString("en-US")} received emails a month`;
   return `${meterAmount(meter, n)} a month`;
+}
+
+/** What support each plan gets, as rows (`<SupportTable />`, and the first two in `planRows`). */
+export function supportRows(): { label: string; values: string[] }[] {
+  return [
+    {
+      label: "Support response target",
+      values: PLAN_KEYS.map((key) =>
+        formatSupportTarget(SUPPORT_TIERS[key].responseMinutes.normal),
+      ),
+    },
+    {
+      label: "Urgent issues",
+      values: PLAN_KEYS.map((key) => {
+        const urgent = SUPPORT_TIERS[key].responseMinutes.urgent;
+        return urgent === null ? "Not included" : formatSupportTarget(urgent);
+      }),
+    },
+    {
+      label: "Front of the queue",
+      values: PLAN_KEYS.map((key) => (SUPPORT_TIERS[key].frontOfQueue ? "Yes" : "No")),
+    },
+    {
+      label: "Channels",
+      values: PLAN_KEYS.map((key) => SUPPORT_TIERS[key].channels.join(", ")),
+    },
+    {
+      label: "Contractual SLA with credits",
+      values: PLAN_KEYS.map((key) => (key === "enterprise" ? "By contract" : "No")),
+    },
+    {
+      label: "Hours",
+      values: PLAN_KEYS.map((key) =>
+        key === "enterprise" ? `${SUPPORT_HOURS.label}; 24x7 by contract` : SUPPORT_HOURS.label,
+      ),
+    },
+  ];
 }
 
 /** The plans and their features, as rows (shared by the MDX table and the Markdown for /llms*.txt). */
@@ -55,6 +95,7 @@ export function planRows(): { label: string; values: string[] }[] {
       ),
     },
     { label: "Included", values: PLAN_KEYS.map(included) },
+    ...supportRows().slice(0, 2),
     {
       label: "Usage beyond it",
       values: plans.map((plan) =>
@@ -240,6 +281,11 @@ export function renderBillingComponents(markdown: string): string {
       (row) => `| ${row.name} | ${row.price} | ${row.plans} | ${row.description} |`,
     ),
   ].join("\n");
+  const supportTable = [
+    `| | ${PLAN_KEYS.map((key) => PLANS[key].name).join(" | ")} |`,
+    `| --- | ${PLAN_KEYS.map(() => "---").join(" | ")} |`,
+    ...supportRows().map((row) => `| ${row.label} | ${row.values.join(" | ")} |`),
+  ].join("\n");
   return renderInlineBillingComponents(markdown)
     .replaceAll("<PlanTable />", planTable)
     .replaceAll("<UsageRates />", rateTable())
@@ -247,7 +293,8 @@ export function renderBillingComponents(markdown: string): string {
     .replace(/<UsageRates meters="([a-z_.,]+)" \/>/g, (_, meters: string) =>
       rateTable(meters.split(",") as MeterKey[]),
     )
-    .replaceAll("<AddOns />", addOnTable);
+    .replaceAll("<AddOns />", addOnTable)
+    .replaceAll("<SupportTable />", supportTable);
 }
 
 /*
