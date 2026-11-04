@@ -174,6 +174,7 @@ export const getSmsRoute = createRoute({
   operationId: "getSms",
   tags: ["SMS"],
   summary: "Retrieve an SMS",
+  description: "One message sent from the API key's environment, with its current status.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ sms: ["read"] }), rateLimit("api.read")],
   request: { params: SmsIdParams },
@@ -278,6 +279,8 @@ export const checkSmsSuppressionRoute = createRoute({
   operationId: "checkSmsSuppression",
   tags: ["SMS"],
   summary: "Check whether a number is suppressed",
+  description:
+    "Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ smsSuppression: ["read"] }), rateLimit("api.read")],
   request: { query: CheckSmsSuppressionQuery },
@@ -294,6 +297,7 @@ export const getSmsSuppressionRoute = createRoute({
   operationId: "getSmsSuppression",
   tags: ["SMS"],
   summary: "Retrieve an SMS suppression",
+  description: "One entry of the SMS suppression list of the API key's environment.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ smsSuppression: ["read"] }), rateLimit("api.read")],
   request: { params: SuppressionIdParams },
@@ -348,6 +352,8 @@ export const getReceivedSmsRoute = createRoute({
   operationId: "getReceivedSms",
   tags: ["SMS"],
   summary: "Retrieve a received SMS",
+  description:
+    "One message received on a number of the organization and routed to the API key's environment.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ sms: ["read"] }), rateLimit("api.read")],
   request: { params: ReceivedIdParams },

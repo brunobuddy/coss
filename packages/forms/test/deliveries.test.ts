@@ -37,6 +37,9 @@ beforeAll(async () => {
   scope = { organizationIds: [tenant.organization.id] };
 });
 
+/** `next_attempt_at` has microseconds and a Date doesn't: a row made this millisecond is after it. */
+const rightNow = () => new Date(Date.now() + 1);
+
 function recorder() {
   const emails: FormEmail[] = [];
   const contacts: FormContactInput[] = [];
@@ -115,8 +118,8 @@ describe("runDueFormDeliveries", () => {
       company: "<b>Analytical</b>",
     });
     const { emails, contacts, deps } = recorder();
-    expect(await runDueFormDeliveries({ scope }, deps)).toBe(2);
-    expect(await runDueFormDeliveries({ scope }, deps)).toBe(0);
+    expect(await runDueFormDeliveries({ scope, now: rightNow() }, deps)).toBe(2);
+    expect(await runDueFormDeliveries({ scope, now: rightNow() }, deps)).toBe(0);
     expect(emails).toHaveLength(1);
     expect(emails[0]).toMatchObject({
       to: [tenant.owner.email.toLowerCase()],
@@ -140,7 +143,7 @@ describe("runDueFormDeliveries", () => {
     const { submissionId } = await submit(form.id, { email: "ada@example.com" });
     const { emails, deps, fail } = recorder();
     fail(true);
-    await runDueFormDeliveries({ scope }, deps);
+    await runDueFormDeliveries({ scope, now: rightNow() }, deps);
     const failed = await delivery(submissionId, "notification");
     expect(failed).toMatchObject({ state: "pending", attempts: 1, lastError: "SES is down" });
     expect(failed?.nextAttemptAt.getTime()).toBeGreaterThan(Date.now());
@@ -176,7 +179,7 @@ test("a worker that lost its lease writes nothing over the newer attempt", async
       },
     },
   };
-  await runDueFormDeliveries({ scope }, slow);
+  await runDueFormDeliveries({ scope, now: rightNow() }, slow);
   expect(await delivery(submissionId, "notification")).toMatchObject({
     state: "pending",
     attempts: 5,
@@ -196,7 +199,7 @@ test("live notifications go only to recipients still allowed", async () => {
   await submit(form.id, { email: "fay@example.com" });
   const { emails, deps } = recorder();
   // acme.test is no longer verified: only the member is still notified.
-  await runDueFormDeliveries({ scope }, deps);
+  await runDueFormDeliveries({ scope, now: rightNow() }, deps);
   const sent = emails.find((email) => email.replyTo === "fay@example.com");
   expect(sent?.to).toEqual([tenant.owner.email.toLowerCase()]);
 });
@@ -210,7 +213,7 @@ describe("verifying submitters", () => {
     const { submissionId, outcome } = await submit(form.id, { email: "ada@example.com" });
     expect(outcome).toBe("pending_confirmation");
     const { emails, deps } = recorder();
-    await runDueFormDeliveries({ scope }, deps);
+    await runDueFormDeliveries({ scope, now: rightNow() }, deps);
     expect(emails).toHaveLength(1);
     const verification = emails[0];
     expect(verification).toMatchObject({
@@ -227,7 +230,7 @@ describe("verifying submitters", () => {
     expect(await confirmFormSubmission(token)).toMatchObject({ outcome: "already_confirmed" });
     expect(await confirmFormSubmission("cossf_nope")).toBeNull();
 
-    await runDueFormDeliveries({ scope }, deps);
+    await runDueFormDeliveries({ scope, now: rightNow() }, deps);
     expect(emails.map((email) => email.category)).toEqual([
       "form_verification",
       "form_notification",
@@ -244,7 +247,7 @@ describe("verifying submitters", () => {
     const form = await newForm({ submitter: { verify: true } });
     const { submissionId } = await submit(form.id, { email: "dee@example.com" });
     const { emails, deps } = recorder();
-    await runDueFormDeliveries({ scope }, deps);
+    await runDueFormDeliveries({ scope, now: rightNow() }, deps);
     const token = /\/f\/c\/(cossf_[A-Za-z0-9_-]+)/.exec(emails[0]?.text ?? "")?.[1] ?? "";
     await db
       .insert(schema.organizationSuspension)
@@ -279,7 +282,7 @@ describe("verifying submitters", () => {
         return { refund: async () => {} };
       },
     };
-    await runDueFormDeliveries({ scope }, overtaken);
+    await runDueFormDeliveries({ scope, now: rightNow() }, overtaken);
     expect(emails.filter((email) => email.to[0] === "gus@example.com")).toEqual([]);
     const [row] = await db
       .select()
@@ -292,7 +295,7 @@ describe("verifying submitters", () => {
     const form = await newForm({ submitter: { verify: true } });
     const { submissionId } = await submit(form.id, { email: "hal@example.com" });
     const { emails, deps, fail } = recorder();
-    await runDueFormDeliveries({ scope }, deps);
+    await runDueFormDeliveries({ scope, now: rightNow() }, deps);
     const token =
       /\/f\/c\/(cossf_[A-Za-z0-9_-]+)/.exec(
         emails.find((email) => email.to[0] === "hal@example.com")?.text ?? "",
@@ -303,7 +306,7 @@ describe("verifying submitters", () => {
       .set({ state: "pending", nextAttemptAt: new Date(0) })
       .where(eq(schema.formDelivery.submissionId, submissionId));
     fail(true);
-    await runDueFormDeliveries({ scope }, deps);
+    await runDueFormDeliveries({ scope, now: rightNow() }, deps);
     expect(await findConfirmation(token)).toMatchObject({ confirmed: false });
   });
 
@@ -311,7 +314,7 @@ describe("verifying submitters", () => {
     const form = await newForm({ submitter: { verify: true } });
     await submit(form.id, { email: "ada@example.com" });
     const { emails, deps } = recorder();
-    await runDueFormDeliveries({ scope }, deps);
+    await runDueFormDeliveries({ scope, now: rightNow() }, deps);
     const token = /\/f\/c\/(cossf_[A-Za-z0-9_-]+)/.exec(emails[0]?.text ?? "")?.[1] ?? "";
     const later = new Date(Date.now() + 8 * 24 * 60 * 60_000);
     expect(await confirmFormSubmission(token, later)).toBeNull();
@@ -324,7 +327,9 @@ describe("verifying submitters", () => {
     const { emails, deps, fail } = recorder();
     const admitted = {
       ...deps,
-      admitVerification: async () => {
+      // Three hours on, other tests' rows in this organization are due too: only this address counts.
+      admitVerification: async ({ address }: { address: string }) => {
+        if (address !== "cy@example.com") return { async refund() {} };
         if (budget === 0) return null;
         budget--;
         return {
@@ -335,7 +340,7 @@ describe("verifying submitters", () => {
       },
     };
     fail(true);
-    let now = new Date();
+    let now = rightNow();
     for (let attempt = 0; attempt < 3; attempt++) {
       await runDueFormDeliveries({ scope, now }, admitted);
       now = new Date(now.getTime() + 60 * 60_000);
@@ -343,7 +348,7 @@ describe("verifying submitters", () => {
     expect(budget).toBe(1);
     fail(false);
     await runDueFormDeliveries({ scope, now }, admitted);
-    expect(emails).toHaveLength(1);
+    expect(emails.filter((email) => email.to[0] === "cy@example.com")).toHaveLength(1);
     expect(await delivery(submissionId, "verification")).toMatchObject({ state: "delivered" });
   });
 });

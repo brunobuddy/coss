@@ -1,6 +1,7 @@
 # coss
 
-The official TypeScript SDK for coss.com: one API key for email, and soon SMS, video, scheduling and more.
+The official TypeScript SDK for coss.com: one API key for email, marketing, inboxes, SMS, Verify, Sign, Forms,
+Scheduling, Hooks and Risk.
 
 ```sh
 npm install coss
@@ -11,7 +12,9 @@ Published from [cosscom/coss](https://github.com/cosscom/coss) by CI, with
 are an earlier, unrelated package by a previous owner (deprecated).
 
 - Zero dependencies (React Email support is an optional peer), ESM-only, fully typed.
-- `coss.email`, `coss.domains`, `coss.webhookEndpoints` and `coss.reputation` behind one API key.
+- One client for every product: `coss.email`, `coss.inboxes`, `coss.sms`, `coss.verify`, `coss.sign`,
+  `coss.forms`, `coss.scheduling`, `coss.hooks` and `coss.risk`, plus `coss.domains`,
+  `coss.webhookEndpoints`, `coss.reputation`, `coss.logs` and `coss.billing`.
 - Every method returns `{ data, error }`. API and network failures are returned, never thrown.
 - Retries transient failures automatically, and sends are idempotent.
 
@@ -365,6 +368,160 @@ Guides: [contacts](https://coss.com/docs/email/contacts),
 [broadcasts](https://coss.com/docs/email/broadcasts) and
 [streams](https://coss.com/docs/email/streams).
 
+## Inboxes
+
+Give an AI agent its own email address. Mail to it arrives as threads, with an
+`inbox.message.received` webhook for each message, and the agent replies from the same address.
+
+```ts
+const { data: inbox } = await coss.inboxes.create({
+  username: "support-agent",
+  client_id: "agent-42", // your own id: creating it again returns this inbox
+});
+
+const { data: thread } = await coss.inboxes.threads.get(inbox!.id, "thread_01k…");
+await coss.inboxes.messages.reply(inbox!.id, "imsg_01k…", { text: "On it." });
+```
+
+Guide: [coss.com/docs/inboxes](https://coss.com/docs/inboxes).
+
+## SMS
+
+Text messages from your organization's registered numbers. Sandbox keys accept any `from` and
+simulate every outcome.
+
+```ts
+const { data: sms } = await coss.sms.send({
+  from: "+14155550123",
+  to: "+14155550199",
+  body: "Your order has shipped.",
+}); // { status: "queued", … }; follow it with coss.sms.get(id) or the sms.* webhooks
+
+await coss.sms.received.list(); // replies to your numbers
+```
+
+Guide: [coss.com/docs/sms](https://coss.com/docs/sms).
+
+## Verify
+
+One-time codes by SMS or email. coss.com makes the code, sends it, counts the attempts and expires it.
+
+```ts
+await coss.verify.start({ to: "+14155550123", ip: userIp }); // an address sends the code by email
+const { data: check } = await coss.verify.check({ to: "+14155550123", code: "482913" });
+if (check?.valid) {
+  // The number is theirs.
+}
+```
+
+Sandbox codes are always zeros. Live SMS codes need a sender while coss.com's shared numbers roll out:
+without one the call fails with `503 shared_sender_unavailable`, so set one of your registered numbers
+with `coss.verify.settings.update({ sms_from: "+14155550100" })`.
+
+Guide: [coss.com/docs/verify](https://coss.com/docs/verify).
+
+## Sign
+
+E-signatures on your PDFs. Signers sign from a link coss.com emails them or inside your app, and
+everyone signing produces a sealed PDF.
+
+```ts
+const { data: request } = await coss.sign.requests.create({
+  title: "Services agreement",
+  documents: [{ filename: "agreement.pdf", content: pdfBase64 }],
+  signers: [
+    {
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      fields: [{ type: "signature", anchor: "{{signature:signer_1}}" }],
+    },
+  ],
+});
+
+const { data: pdf } = await coss.sign.requests.signedDocument(request!.id); // once it has completed
+```
+
+Guide: [coss.com/docs/sign](https://coss.com/docs/sign). `coss/sign`'s `mountSigning` opens the
+signing page in your own page.
+
+## Forms
+
+An endpoint for each form on your site: every submission is screened, then goes to your webhooks,
+your team by email and your contacts.
+
+```ts
+const { data: form } = await coss.forms.create({
+  name: "Contact us",
+  allowed_origins: ["https://www.example.com"],
+  notifications: { recipients: ["support@example.com"] },
+});
+console.log(form?.endpoint); // point your <form action> at it
+
+await coss.forms.submissions.list(form!.id);
+```
+
+Guide: [coss.com/docs/forms](https://coss.com/docs/forms).
+
+## Scheduling
+
+Let your users be booked, with their calendars, time zones and double-booking handled.
+
+```ts
+const { data: slots } = await coss.scheduling.slots.list("evtype_01k…", {
+  start: "2027-01-04T00:00:00Z",
+  end: "2027-01-11T00:00:00Z",
+});
+
+const { data: booking, error } = await coss.scheduling.bookings.create({
+  event_type: "evtype_01k…",
+  start: slots!.data[0]!.start,
+  attendee: { name: "Sam Lee", email: "sam@example.com", time_zone: "America/Chicago" },
+}); // error?.code === "slot_unavailable" when the time has gone
+```
+
+Guide: [coss.com/docs/scheduling](https://coss.com/docs/scheduling).
+
+## Hooks
+
+Webhooks as a service: send a message to one of your customers, and coss.com delivers it to every
+endpoint they registered, signed and retried.
+
+```ts
+await coss.hooks.applications.create({ name: "Acme Corp", uid: "customer_8812" });
+await coss.hooks.endpoints.create("customer_8812", { url: "https://acme.example/webhooks" });
+
+await coss.hooks.messages.send({
+  application: "customer_8812",
+  event_type: "invoice.paid",
+  payload: { invoice_id: "in_1042", amount: 4200 },
+});
+
+const { data: portal } = await coss.hooks.portal.createSession({ application: "customer_8812" }); // portal.url: their own page
+```
+
+Guide: [coss.com/docs/hooks](https://coss.com/docs/hooks).
+
+## Risk
+
+Ask whether a sign-up, login or other event looks like abuse, and why. Each signal and a rate limiter
+are available on their own too.
+
+```ts
+const { data: assessment } = await coss.risk.assess({
+  event: "signup",
+  user: { email: "ada@example.com" },
+  ip: clientIp,
+});
+if (assessment?.decision === "block") {
+  // "allow", "review" or "block", with the score and reasons behind it.
+}
+
+await coss.risk.checkEmail("ada@example.com");
+await coss.risk.limit({ bucket: "signups", key: clientIp });
+```
+
+Guide: [coss.com/docs/risk](https://coss.com/docs/risk).
+
 ## Reputation
 
 coss.com watches your live bounce and complaint rates. When one gets too high your organization is
@@ -379,7 +536,9 @@ const { data } = await coss.reputation.get();
 
 ## Webhooks
 
-Webhook endpoints receive `email.sent`, `email.delivered`, `email.delivery_delayed`,
+Webhook endpoints receive each product's events (`sms.*`, `verification.*`, `sign_request.*`,
+`form.submission.*`, `scheduling.booking.*`, `inbox.message.received`, `risk.assessment.review`, …) and
+`email.sent`, `email.delivered`, `email.delivery_delayed`,
 `email.bounced`, `email.complained`, `email.failed`, `email.suppressed`, `email.opened` and
 `email.clicked` events, plus `account.reputation_warning`, `account.reputation_recovered`,
 `account.suspended`, `account.reinstated`, `account.marketing_paused` and
@@ -511,8 +670,8 @@ bun run --cwd packages/sdk build      # tsdown → dist/, then publint and attw
 `src/version.ts` must match `version` in `package.json`, and a test enforces it. Releases are
 prepared with [Changesets](https://github.com/changesets/changesets): add one with `bun run changeset`
 for every user-facing change. `bun run version-packages` bumps `package.json`, `src/version.ts` and
-`CHANGELOG.md` together, and on `main` CI opens a "Version packages" PR that does the same. Nothing
-is published to npm.
+`CHANGELOG.md` together, and on `main` CI opens a "Version packages" PR that does the same. Merging it
+publishes to npm from CI, never from a laptop.
 
 `src/api-version.ts` mirrors the API's versions. When the API adds one, add it there, move
 `API_VERSION` and update the wire types in the same change. The contract tests in `apps/api` check

@@ -1,6 +1,9 @@
 import type { CreateFormParams, Form, FormSubmission, UpdateFormParams } from "coss";
+import { fetchFormSubmissionDiagnosis } from "coss/diagnose";
 import { z } from "zod";
-import { failWith, ok, respond, run, truncate, unwrap } from "../result.ts";
+import { fail, failWith, ok, respond, run, truncate, unwrap } from "../result.ts";
+import { TOOL_REFERENCES } from "./diagnose-references.ts";
+import { FORM_DIAGNOSIS_OUTPUT } from "./output-schemas.ts";
 import {
   compact,
   cursorSchema,
@@ -168,6 +171,45 @@ export function registerFormTools(ctx: ToolContext): void {
           note: UNTRUSTED,
           submission: { ...submission, data: values(submission.data, text_limit) },
         });
+      }),
+  );
+
+  server.registerTool(
+    "diagnose_form_submission",
+    {
+      title: "Diagnose a form submission",
+      description:
+        'Answers "what happened to this submission?": accepted and sent on, held by Risk, marked ' +
+        "spam (and why), or waiting for the submitter to confirm; what the submitter saw, and " +
+        "where it goes from here. Spam is answered exactly like a success, so a submitter who saw " +
+        "a success proves nothing. Without `submission_id`, the form's newest. It leaves the " +
+        "submitted values out (get_form_submission has them).",
+      inputSchema: z.object({
+        form_id: z.string().describe("The form's id (form_…). list_forms finds it."),
+        submission_id: z.string().optional().describe("The submission's id (fsub_…)."),
+      }),
+      outputSchema: FORM_DIAGNOSIS_OUTPUT,
+      annotations: READ_ONLY,
+    },
+    ({ form_id, submission_id }) =>
+      run(async () => {
+        let target = submission_id;
+        if (!target) {
+          const [newest] = unwrap(await coss.forms.submissions.list(form_id, { limit: 1 })).data;
+          if (!newest) {
+            return failWith("This form has no submissions in this API key's environment.", {
+              hint:
+                "A refused post (a disallowed origin, a failed captcha, a disabled form) creates " +
+                'nothing; spam is kept, so it\'s listed. search_logs with source ["forms"] ' +
+                "shows what arrived.",
+            });
+          }
+          target = newest.id;
+        }
+        const { data, error } = await fetchFormSubmissionDiagnosis(coss, form_id, target, {
+          references: TOOL_REFERENCES,
+        });
+        return error ? fail(error) : ok(data);
       }),
   );
 

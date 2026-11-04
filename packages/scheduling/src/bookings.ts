@@ -39,7 +39,10 @@ import {
   type Candidates,
   calendarFailureModeOf,
   candidatesOf,
+  checkWindow,
+  combineSlots,
   loadHostInputs,
+  type SlotResult,
   slotRuleOf,
   takeTurn,
 } from "./availability.ts";
@@ -59,7 +62,13 @@ import {
 } from "./claims.ts";
 import { type PoolMember, rankCandidates } from "./engine/rank.ts";
 import { expandRecurrence } from "./engine/recurrence.ts";
-import { isBookable, limitUsageKey, occupiedRange, type SlotRule } from "./engine/slots.ts";
+import {
+  isBookable,
+  limitUsageKey,
+  listSlots,
+  occupiedRange,
+  type SlotRule,
+} from "./engine/slots.ts";
 import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { type EventTypeRow, resolveEventType } from "./event-types.ts";
@@ -118,6 +127,7 @@ export type BookingRequest = {
 
 const LIVE_CHECK_CANDIDATES = 3;
 const BOOKING_HISTORY_LIMIT = 100;
+const RECENT_HOST_BOOKINGS_MS = 30 * 86_400_000;
 
 /** Thrown inside a savepoint to undo a candidate's partial claims. Never leaves this file. */
 class LostSlot extends Error {
@@ -174,6 +184,61 @@ function checkAttendee(attendee: AttendeeInputOutput): void {
   }
 }
 
+/** The host a location came from, kept off the wire: it goes with them if they leave the booking. */
+const fromHostOf = (location: BookingRow["location"]): string | null =>
+  (location as { fromHost?: string } | null)?.fromHost ?? null;
+
+const isBlank = (location: Location): boolean =>
+  (location.type === "link" && !location.url) ||
+  (location.type === "phone" && !location.number) ||
+  (location.type === "in_person" && !location.address);
+
+/**
+ * A location that leaves its value open takes it from the first of these hosts who has one, by id,
+ * as with Zoom. Anything that names its own value keeps it, and with no host's value it stays blank.
+ */
+function withHostLocation(location: Location, hosts: readonly HostRow[]): Location {
+  if (!isBlank(location)) return location;
+  const sorted = [...hosts].sort((a, b) => (a.id < b.id ? -1 : 1));
+  for (const host of sorted) {
+    const own = host.locations.find((candidate) => candidate.type === location.type);
+    if (own) {
+      const filled = { ...own, fromHost: host.id };
+      return filled;
+    }
+  }
+  return location;
+}
+
+function blankOf(location: Location): Location {
+  if (location.type === "link") return { type: "link", url: null };
+  if (location.type === "phone") return { type: "phone", number: null };
+  if (location.type === "in_person") return { type: "in_person", address: null };
+  return location;
+}
+
+/**
+ * What a booking's location becomes when another host takes it, or `null` if it stays. A meeting
+ * made on the old host's account goes back to being made, and the old host's own office or link
+ * never stays: `leaving` had it, so the booking takes the hosts' it has now, or none.
+ */
+function locationForNewHost(
+  location: BookingRow["location"],
+  leaving: string | undefined,
+  hosts: readonly HostRow[],
+): BookingRow["location"] {
+  if (!location) return null;
+  if (location.type === "zoom") return { type: "zoom", url: null };
+  if (location.type === "link" && "conference" in location) {
+    return { type: location.conference as "google_meet" | "microsoft_teams" };
+  }
+  const fromHost = fromHostOf(location);
+  if (fromHost ? fromHost === leaving : isBlank(location)) {
+    return withHostLocation(blankOf(location), hosts);
+  }
+  return null;
+}
+
 /** Guests are emailed, so an event type has to allow them, and everyone is only told once. */
 function checkGuests(
   eventType: EventTypeRow,
@@ -204,19 +269,36 @@ function checkGuests(
   }
 }
 
-/** What a meeting created on a host's account reverts to when another host takes the booking. */
-function locationForNewHost(location: BookingRow["location"]): BookingRow["location"] {
-  if (location?.type === "zoom") return { type: "zoom", url: null };
-  if (location?.type !== "link" || !("conference" in location)) return null;
-  return { type: location.conference as "google_meet" | "microsoft_teams" };
+function wireLocation(location: BookingRow["location"]): BookingRow["location"] {
+  if (!location) return null;
+  if (!("conference" in location) && !fromHostOf(location)) return location;
+  const {
+    conference: _conference,
+    fromHost: _fromHost,
+    ...rest
+  } = location as typeof location & { conference?: string; fromHost?: string };
+  return rest as BookingRow["location"];
 }
 
-function wireLocation(location: BookingRow["location"]): BookingRow["location"] {
-  if (!location || !("conference" in location)) return location ?? null;
-  const { conference: _conference, ...rest } = location as typeof location & {
-    conference: string;
-  };
-  return rest as BookingRow["location"];
+/** Once hosts have won, a location left open takes the value of theirs. */
+async function settleHostLocation(
+  tx: Executor,
+  booking: BookingRow,
+  hosts: readonly HostRow[],
+): Promise<BookingRow> {
+  if (!booking.location) return booking;
+  const location = withHostLocation(booking.location, hosts);
+  if (location === booking.location) return booking;
+  await tx
+    .update(schedulingBooking)
+    .set({ location })
+    .where(
+      and(
+        eq(schedulingBooking.id, booking.id),
+        eq(schedulingBooking.organizationId, booking.organizationId),
+      ),
+    );
+  return { ...booking, location };
 }
 
 function chooseLocation(
@@ -1090,11 +1172,10 @@ async function settleSessionLocation(
 function sharedLocation(
   eventType: EventTypeRow,
   chosen: Location | null,
-  actor: BookingActor,
+  fromBrowser: boolean | undefined,
 ): Location | null {
   if (!chosen) return null;
-  const browser = actor.kind === "booker_session" || actor.kind === "manage_session";
-  if (!browser && chosen.type !== "phone") return chosen;
+  if (!fromBrowser && chosen.type !== "phone") return chosen;
   return eventType.locations.find((location) => location.type === chosen.type) ?? chosen;
 }
 
@@ -1175,7 +1256,12 @@ async function createOne(
   if (eventType.kind === "group") {
     const entry = candidates.members[0] ?? candidates.required[0];
     if (!entry) throw slotLost("no_hosts");
-    const chosen = sharedLocation(eventType, chooseLocation(eventType, request.location), actor);
+    const shared = sharedLocation(
+      eventType,
+      chooseLocation(eventType, request.location),
+      request.locationFromBrowser,
+    );
+    const chosen = shared && withHostLocation(shared, [entry.host]);
     try {
       const joined = await tx.transaction((savepoint) =>
         joinGroupSession(
@@ -1198,6 +1284,7 @@ async function createOne(
     }
   } else {
     won = await assignAndClaim(tx, plan, candidates, booking.id, booking.id);
+    current = await settleHostLocation(tx, current, won.hosts);
   }
   current = await finishBookingRow(tx, current, won.hosts, candidates, won.liveUntil);
   const memberIds = won.hosts
@@ -1901,6 +1988,81 @@ export async function approveBooking(
   return toBookingObject(db, row, deps);
 }
 
+/**
+ * Where a booking could move to, answered the way `rescheduleBooking` checks: its own hosts, none
+ * disabled or taken off the event type and all of them free, at its own length and buffers, with its own claims
+ * left out. Its current time isn't a move.
+ */
+export async function listRescheduleSlots(
+  scope: Scope,
+  id: string,
+  input: { fromMs: number; toMs: number; nowMs: number },
+): Promise<SlotResult[]> {
+  checkWindow(input.fromMs, input.toMs);
+  const booking = await bookingRow(scope, id);
+  if (booking.groupSessionId) return [];
+  if (booking.status === "cancelled" || booking.status === "declined") return [];
+  const eventType = await resolveEventType(db, scope, booking.eventTypeId);
+  if (eventType.status !== "active") return [];
+  const { hostIds } = await participants(db, booking);
+  const hosts = await hostsByIds(db, scope, hostIds);
+  if (hosts.length === 0 || hosts.some((host) => host.status !== "active")) return [];
+  const memberships = await db
+    .select({
+      hostId: schedulingEventTypeHost.hostId,
+      scheduleId: schedulingEventTypeHost.scheduleId,
+      removedAt: schedulingEventTypeHost.removedAt,
+    })
+    .from(schedulingEventTypeHost)
+    .where(
+      and(
+        eq(schedulingEventTypeHost.eventTypeId, eventType.id),
+        eq(schedulingEventTypeHost.organizationId, eventType.organizationId),
+        inArray(schedulingEventTypeHost.hostId, hostIds),
+      ),
+    );
+  // Taken off the event type, a host keeps the booking but can't be moved on it.
+  if (memberships.some((row) => row.removedAt)) return [];
+  const schedules = new Map(memberships.map((row) => [row.hostId, row.scheduleId]));
+  const durationMinutes = (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS;
+  const rule = {
+    ...slotRuleOf(eventType, durationMinutes),
+    bufferBeforeMinutes: booking.bufferBeforeMinutes,
+    bufferAfterMinutes: booking.bufferAfterMinutes,
+  };
+  const loaded = await loadHostInputs(db, {
+    scope,
+    hosts: hosts.map((host) => ({
+      id: host.id,
+      timeZone: host.timeZone,
+      scheduleId: schedules.get(host.id) ?? null,
+    })),
+    eventTypeId: eventType.id,
+    fromMs: input.fromMs,
+    toMs: input.toMs,
+    nowMs: input.nowMs,
+    calendarFailureMode: await calendarFailureModeOf(db, scope),
+    exceptBookingId: booking.id,
+  });
+  const perHost = new Map<string, number[]>();
+  for (const [index, [hostId, host]] of [...loaded].entries()) {
+    await takeTurn(index);
+    perHost.set(
+      hostId,
+      listSlots({
+        nowMs: input.nowMs,
+        rule,
+        host,
+        fromMs: input.fromMs,
+        toMs: input.toMs,
+      }),
+    );
+  }
+  return combineSlots(perHost, hostIds, [], durationMinutes * MINUTE_MS).filter(
+    (slot) => slot.startMs !== booking.startAt.getTime(),
+  );
+}
+
 /** Moves a booking, keeping its id. The old time stays claimed until the new one is won. */
 export async function rescheduleBooking(
   env: SchedulingEnvironment,
@@ -2017,12 +2179,16 @@ export async function rescheduleBooking(
         })
         .onConflictDoNothing();
     }
-    const newLocation = replacement ? locationForNewHost(booking.location) : null;
+    // Naming the host it already has changes nothing about where it happens.
+    const newLocation =
+      replacement && replacement.id !== member?.hostId
+        ? locationForNewHost(booking.location, member?.hostId, hosts)
+        : null;
     const updated = await bumped(tx, booking, {
       startAt: new Date(input.startMs),
       endAt: new Date(input.startMs + durationMinutes * MINUTE_MS),
       externalConflictAt: null,
-      // The old host's meeting goes with them, so the new host's gets a new link.
+      // The old host's meeting or office goes with them, so the new host's takes its place.
       ...(newLocation ? { location: newLocation } : {}),
     });
     const after = await participants(tx, updated);
@@ -2056,6 +2222,8 @@ export async function markNoShow(
   const row = await db.transaction(async (tx) => {
     const booking = await lockBooking(tx, env, id);
     if (booking.status !== "confirmed") throw notChangeable(booking);
+    // Marked already: a second click tells nobody anything new, and keeps the first time.
+    if (booking.noShowAt) return booking;
     const now = nowOf(deps);
     if (booking.startAt.getTime() > now.getTime()) {
       throw new SchedulingError("booking_not_changeable", "This booking hasn't started yet.");
@@ -2314,6 +2482,52 @@ export async function listUpcomingHostBookings(
       ),
     )
     .orderBy(asc(schedulingBooking.startAt), asc(schedulingBooking.id))
+    .limit(query.limit + 1);
+  const page = rows.slice(0, query.limit);
+  const last = page[page.length - 1];
+  return {
+    data: await Promise.all(page.map((row) => toBookingObject(db, row, deps))),
+    nextCursor:
+      rows.length > query.limit && last ? `${last.startAt.getTime()}_after_${last.id}` : null,
+  };
+}
+
+/**
+ * A host's confirmed bookings that have started, newest first: what can still be marked a no-show.
+ * Bounded, since the query walks the environment's bookings by start time.
+ */
+export async function listRecentHostBookings(
+  scope: Scope,
+  query: { hostId: string; now: Date; limit: number; cursor?: string | undefined },
+  deps: Pick<SchedulingDeps, "dataKeys">,
+): Promise<{ data: BookingObjectOutput[]; nextCursor: string | null }> {
+  const [cursorStart, cursorId] = query.cursor?.split("_after_") ?? [];
+  const cursorMs = cursorStart ? Number(cursorStart) : Number.NaN;
+  const rows = await db
+    .select()
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.organizationId, scope.organizationId),
+        eq(schedulingBooking.environmentId, scope.environmentId),
+        lt(schedulingBooking.startAt, query.now),
+        gte(schedulingBooking.startAt, new Date(query.now.getTime() - RECENT_HOST_BOOKINGS_MS)),
+        eq(schedulingBooking.status, "confirmed"),
+        sql`exists (select 1 from ${schedulingBookingHost}
+          where ${schedulingBookingHost.bookingId} = ${schedulingBooking.id}
+            and ${schedulingBookingHost.hostId} = ${query.hostId})`,
+        Number.isFinite(cursorMs) && cursorId
+          ? or(
+              lt(schedulingBooking.startAt, new Date(cursorMs)),
+              and(
+                eq(schedulingBooking.startAt, new Date(cursorMs)),
+                lt(schedulingBooking.id, cursorId),
+              ),
+            )
+          : undefined,
+      ),
+    )
+    .orderBy(desc(schedulingBooking.startAt), desc(schedulingBooking.id))
     .limit(query.limit + 1);
   const page = rows.slice(0, query.limit);
   const last = page[page.length - 1];

@@ -1,7 +1,7 @@
 {
   "name": "coss-cli",
   "version": "0.6.0",
-  "description": "The coss.com command line: sign in, send test emails and text messages, tail your environment's log, and forward webhook events to localhost with `coss listen`.",
+  "description": "The coss.com command line: sign in, tail your log, forward webhooks to localhost with `coss listen`, and use email, marketing, inboxes, SMS, Verify, Sign, Forms, Scheduling, Hooks and Risk.",
   "license": "MIT",
   "homepage": "https://coss.com/docs/cli",
   "repository": {
@@ -16,7 +16,15 @@
     "email",
     "sms",
     "webhooks",
-    "logs"
+    "logs",
+    "marketing",
+    "inboxes",
+    "verify",
+    "sign",
+    "forms",
+    "scheduling",
+    "hooks",
+    "risk"
   ],
   "type": "module",
   "sideEffects": false,

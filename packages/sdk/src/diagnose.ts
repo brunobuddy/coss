@@ -1,6 +1,8 @@
 /**
  * `coss/diagnose`: turns an email, its events and some account context into a plain-language
- * delivery verdict: what happened to each recipient, why, and what to do about it.
+ * delivery verdict: what happened to each recipient, why, and what to do about it. The other
+ * products' diagnoses (SMS, Verify, Sign, Forms, Hooks, Scheduling) live in `diagnose-*.ts` and are
+ * exported from here.
  *
  * ```ts
  * import { Coss } from "coss";
@@ -19,6 +21,63 @@ import type { CossResult } from "./core/errors.ts";
 import type { Email, EmailEvent, EmailRecipient, EmailSummary } from "./types/email.ts";
 import type { ReputationStatus } from "./types/reputation.ts";
 import type { Suppression } from "./types/suppression.ts";
+
+export {
+  diagnoseFormSubmission,
+  type FormSubmissionDiagnosis,
+  type FormSubmissionDiagnosisContext,
+  type FormSubmissionVerdict,
+  fetchFormSubmissionDiagnosis,
+} from "./diagnose-forms.ts";
+export {
+  diagnoseHookDelivery,
+  fetchHookDeliveryDiagnosis,
+  type HookDeliveryDiagnosis,
+  type HookDeliveryDiagnosisContext,
+  type HookDeliveryVerdict,
+} from "./diagnose-hooks.ts";
+export {
+  diagnoseSchedulingSlots,
+  fetchSchedulingSlotsDiagnosis,
+  type SchedulingSlotsDiagnosis,
+  type SchedulingSlotsFinding,
+  type SchedulingSlotsHostInput,
+  type SchedulingSlotsInput,
+  type SchedulingSlotsVerdict,
+} from "./diagnose-scheduling.ts";
+export {
+  PRODUCT_SDK_REFERENCES,
+  type ProductDiagnosis,
+  type ProductDiagnosisAction,
+  type ProductReferences,
+} from "./diagnose-shared.ts";
+export {
+  diagnoseSignRequest,
+  fetchSignRequestDiagnosis,
+  type SignRequestDiagnosis,
+  type SignRequestDiagnosisContext,
+  type SignRequestVerdict,
+  type SignSignerDiagnosis,
+  type SignSignerState,
+} from "./diagnose-sign.ts";
+export {
+  diagnoseSms,
+  fetchSmsDiagnosis,
+  SMS_FAILURES,
+  type SmsDiagnosis,
+  type SmsDiagnosisContext,
+  type SmsVerdict,
+  smsDiagnosisContext,
+  smsFailures,
+} from "./diagnose-sms.ts";
+export {
+  diagnoseVerification,
+  fetchVerificationDiagnosis,
+  VERIFICATION_REASON_EXPLANATIONS,
+  type VerificationDiagnosis,
+  type VerificationDiagnosisContext,
+  type VerificationVerdict,
+} from "./diagnose-verify.ts";
 
 export type RecipientOutcome =
   | "delivered"

@@ -13,7 +13,9 @@ names, error codes or webhook payloads.
 
 ## Read the docs first
 
-- https://coss.com/llms.txt opens with a short brief and lists every docs page.
+- https://coss.com/llms.txt opens with a short brief, then lists the guides and where each
+  product's API operations are (`https://coss.com/docs/<product>/llms.txt`, or all of them at
+  https://coss.com/docs/api-reference/llms.txt).
 - Every docs page is Markdown at its URL plus `.md`, e.g. https://coss.com/docs/email/sending.md.
   API reference pages (`https://coss.com/docs/api-reference/<resource>/<operation>.md`) give the
   method and URL, every parameter and body field, the responses and errors, and examples in
@@ -89,6 +91,12 @@ key) is the user's step, in the dashboard.
 
 - `npx coss-cli logs tail` follows the environment's API requests and events.
 - `npx coss-cli emails diagnose <email id>` (or `--to <address>`) explains a delivery.
-- The MCP server's `get_setup` says what to do next with this key. `diagnose_email`,
-  `diagnose_sms` and `search_logs` answer what happened. It reads a `coss_test_` key from the
-  project env file when `COSS_API_KEY` is unset, and never loads a `coss_live_` key from that file.
+- `npx coss-cli <sms|verify|sign|forms|hooks|scheduling> diagnose` does the same for the other
+  products: a verdict, what it means and what to do next.
+- The MCP server's `get_setup` says what to do next with this key; pass `product` before adding one
+  (`npx coss-cli init --product <product>` prints the same step). `diagnose_email`, `diagnose_sms`,
+  `diagnose_verification`, `diagnose_sign_request`, `diagnose_form_submission`,
+  `diagnose_hook_delivery`, `diagnose_scheduling_slots` and `search_logs` answer what happened. A
+  form's spam is answered like a success, so what a submitter saw proves nothing. `api_get` reads any
+  `/v1/` path no tool covers. It reads a `coss_test_` key from the project env file when
+  `COSS_API_KEY` is unset, and never loads a `coss_live_` key from that file.

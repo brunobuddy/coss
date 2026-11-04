@@ -1,13 +1,34 @@
 /** `coss sign …`: PDFs, signature requests and templates, on the public API. */
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
-import type { SignRequest, SignRequestStatus } from "coss";
+import type {
+  CreateSignTemplateParams,
+  SignRequest,
+  SignRequestStatus,
+  SignSettings,
+  SignSigningOrder,
+  SignTemplate,
+  SignTemplateRole,
+  SignTheme,
+  UpdateSignSettingsParams,
+} from "coss";
 import { type Flags, pairs, requireArgs } from "../args.ts";
 import { type Command, type CommandInput, defineCommand } from "../command.ts";
 import { printable } from "../emails/format.ts";
 import { apiError, UsageError } from "../errors.ts";
+import { jsonObject } from "../fields.ts";
 import type { Output, Style } from "../output.ts";
-import { client, LIMIT, limitOf, oneOf, printList, when } from "./list-output.ts";
+import {
+  client,
+  integerOf,
+  LIMIT,
+  limitOf,
+  oneOf,
+  orNull,
+  printList,
+  printOne,
+  when,
+} from "./list-output.ts";
 
 const STATUSES: readonly SignRequestStatus[] = [
   "draft",
@@ -342,7 +363,8 @@ const templates: Command = defineCommand({
   name: "sign templates",
   summary: "List signature templates and their roles",
   description:
-    "Lists reusable templates; ready ones can make requests (`coss sign create --template`).",
+    "Lists reusable templates; ready ones can make requests (`coss sign create --template`). " +
+    "`coss sign templates create` makes one.",
   flags: TEMPLATES_FLAGS,
   run: async ({ values, context }: CommandInput<typeof TEMPLATES_FLAGS>) => {
     const coss = await client(context);
@@ -365,6 +387,202 @@ const templates: Command = defineCommand({
   },
 });
 
+const SIGNING_ORDERS: readonly SignSigningOrder[] = ["parallel", "sequential"];
+
+function printTemplate(out: Output, template: SignTemplate): void {
+  out.line(
+    `${template.id} ${printable(template.name)}${template.ready ? "" : out.style("yellow", " (not ready)")}`,
+  );
+  if (template.roles.length > 0) {
+    out.line(`  Roles      ${printable(template.roles.map((role) => role.key).join(", "))}`);
+  }
+  for (const document of template.documents) {
+    out.line(`  Document   ${document.id} ${printable(document.filename)}`);
+  }
+  if (!template.ready) {
+    out.info(
+      out.style(
+        "dim",
+        "Requests need documents and a signature field for every role: `coss api` updates it, or use the embedded builder.",
+      ),
+    );
+  }
+}
+
+function parseRole(value: string): SignTemplateRole {
+  const index = value.indexOf(":");
+  if (index <= 0) throw new UsageError(`--role takes key:Name, got "${value}".`);
+  return { key: value.slice(0, index), name: value.slice(index + 1).trim() };
+}
+
+const TEMPLATES_CREATE_FLAGS = {
+  title: { type: "string", value: "<title>", description: "Requests' title (default: its name)" },
+  message: { type: "string", value: "<text>", description: "The invitation's message" },
+  "signing-order": {
+    type: "string",
+    value: "<order>",
+    choices: SIGNING_ORDERS,
+    description: "parallel or sequential",
+  },
+  document: {
+    type: "string",
+    multiple: true,
+    value: "<document>",
+    description: "An uploaded document's id (repeatable)",
+  },
+  role: {
+    type: "string",
+    multiple: true,
+    value: "<key:Name>",
+    description: "A signer's role: client:Client (repeatable)",
+  },
+  data: {
+    type: "string",
+    value: "<json>",
+    description:
+      "More of the request body (fields), as JSON: inline, @file or - for stdin; the flags above " +
+      "win over it",
+  },
+  json: { type: "boolean", description: "Print the template as JSON" },
+} as const satisfies Flags;
+
+const templatesCreate: Command = defineCommand({
+  name: "sign templates create",
+  summary: "Create a signature template",
+  usage: "<name> [options]",
+  description:
+    "Creates a template, which may start empty and be built in the embedded builder. Requests can " +
+    "be made from it once it has documents and a signature field for every role. Creation is " +
+    "never retried, since the API doesn't deduplicate it.",
+  flags: TEMPLATES_CREATE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof TEMPLATES_CREATE_FLAGS>) => {
+    const [name] = requireArgs(positionals, 1, "sign templates create <name>") as [string];
+    const order = oneOf("--signing-order", values["signing-order"], SIGNING_ORDERS);
+    const base = values.data === undefined ? {} : await jsonObject(context.io, values.data, "data");
+    const params = {
+      ...base,
+      name,
+      ...(values.title !== undefined && { title: values.title }),
+      ...(values.message !== undefined && { message: values.message }),
+      ...(order && { signing_order: order }),
+      ...(values.document && {
+        documents: values.document.map((document_id) => ({ document_id })),
+      }),
+      ...(values.role && { roles: values.role.map(parseRole) }),
+    } as CreateSignTemplateParams;
+    const coss = await client(context);
+    const { data, error } = await coss.sign.templates.create(params);
+    if (error) throw apiError("Couldn't create the template", error);
+    printOne(context.out, data, printTemplate);
+    return 0;
+  },
+});
+
+function printSettings(out: Output, settings: SignSettings): void {
+  out.line(`Display name  ${printable(settings.display_name ?? "the organization's name")}`);
+  out.line(`Email from    ${printable(settings.email_from ?? "coss.com's sender")}`);
+  out.line(`Theme         ${settings.theme}`);
+  out.line(`Accent color  ${printable(settings.accent_color ?? "the default")}`);
+  out.line(
+    `Reminders     ${settings.reminder_interval_days === null ? "none" : `every ${settings.reminder_interval_days} days`}`,
+  );
+  out.line(
+    `Origins       ${settings.allowed_origins.length > 0 ? printable(settings.allowed_origins.join(", ")) : "none"}`,
+  );
+  out.line(`Consent text  ${settings.disclosure ? printable(settings.disclosure) : "the default"}`);
+}
+
+const SETTINGS_FLAGS = {
+  json: { type: "boolean", description: "Print the settings as JSON" },
+} as const satisfies Flags;
+
+const settingsGet: Command = defineCommand({
+  name: "sign settings get",
+  summary: "Show the environment's Sign settings",
+  description: "Shows the name signers see, the sender, branding, reminders and embedding origins.",
+  flags: SETTINGS_FLAGS,
+  run: async ({ context }: CommandInput<typeof SETTINGS_FLAGS>) => {
+    const coss = await client(context);
+    const { data, error } = await coss.sign.settings.get();
+    if (error) throw apiError("Couldn't read the settings", error);
+    printOne(context.out, data, printSettings);
+    return 0;
+  },
+});
+
+const THEMES: readonly SignTheme[] = ["system", "light", "dark"];
+
+const SETTINGS_SET_FLAGS = {
+  "display-name": {
+    type: "string",
+    value: "<name>",
+    description: "The requester's name signers see (default: the organization's)",
+  },
+  "email-from": {
+    type: "string",
+    value: "<address>",
+    description: "The sender of signing emails, on a verified domain (default: coss.com's)",
+  },
+  "accent-color": { type: "string", value: "<#rrggbb>", description: "The signing page's accent" },
+  theme: {
+    type: "string",
+    value: "<theme>",
+    choices: THEMES,
+    description: "system, light or dark",
+  },
+  disclosure: {
+    type: "string",
+    value: "<text>",
+    description: "Your own consent text (default: coss.com's)",
+  },
+  "reminder-days": {
+    type: "string",
+    value: "<n>",
+    description: "Default days between reminders for new requests, 1-30 (default: none)",
+  },
+  origin: {
+    type: "string",
+    multiple: true,
+    value: "<origin>",
+    description: "An origin that may embed the signing page, replacing the list (repeatable)",
+  },
+  json: { type: "boolean", description: "Print the settings as JSON" },
+} as const satisfies Flags;
+
+const settingsSet: Command = defineCommand({
+  name: "sign settings set",
+  summary: "Change the environment's Sign settings",
+  description: "Changes the settings given; the word default goes back to the default value.",
+  flags: SETTINGS_SET_FLAGS,
+  run: async ({ values, context }: CommandInput<typeof SETTINGS_SET_FLAGS>) => {
+    const theme = oneOf("--theme", values.theme, THEMES);
+    const reminder = values["reminder-days"];
+    const params: UpdateSignSettingsParams = {
+      ...(values["display-name"] !== undefined && {
+        display_name: orNull(values["display-name"]),
+      }),
+      ...(values["email-from"] !== undefined && { email_from: orNull(values["email-from"]) }),
+      ...(values["accent-color"] !== undefined && { accent_color: orNull(values["accent-color"]) }),
+      ...(theme && { theme }),
+      ...(values.disclosure !== undefined && { disclosure: orNull(values.disclosure) }),
+      ...(reminder !== undefined && {
+        reminder_interval_days:
+          reminder === "default" ? null : integerOf("--reminder-days", reminder),
+      }),
+      ...(values.origin && { allowed_origins: values.origin }),
+    };
+    if (Object.keys(params).length === 0) {
+      throw new UsageError("Pass at least one setting to change (coss sign settings set --help).");
+    }
+    const coss = await client(context);
+    const { data, error } = await coss.sign.settings.update(params);
+    if (error) throw apiError("Couldn't change the settings", error);
+    printOne(context.out, data, printSettings);
+    return 0;
+  },
+});
+
 export const SIGN_COMMANDS: readonly Command[] = [
   list,
   get,
@@ -376,4 +594,8 @@ export const SIGN_COMMANDS: readonly Command[] = [
   download,
   audit,
   templates,
+  { ...templates, name: "sign templates list" },
+  templatesCreate,
+  settingsGet,
+  settingsSet,
 ];

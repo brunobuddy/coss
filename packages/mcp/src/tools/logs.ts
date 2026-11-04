@@ -45,7 +45,22 @@ export function registerLogTools(ctx: ToolContext): void {
       inputSchema: z.object({
         since: timeSchema("Start of the range (default: an hour before `until`)"),
         until: timeSchema("End of the range (default: now)"),
-        source: z.array(z.enum(["api", "email", "webhook", "risk"])).optional(),
+        source: z
+          .array(
+            z.enum([
+              "api",
+              "email",
+              "webhook",
+              "risk",
+              "smtp",
+              "sms",
+              "sign",
+              "verify",
+              "forms",
+              "scheduling",
+            ]),
+          )
+          .optional(),
         level: z.array(z.enum(["info", "warning", "error"])).optional(),
         type: z
           .array(z.string())

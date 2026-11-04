@@ -117,7 +117,9 @@ const ContactProperties = z.record(z.string(), ContactPropertyValue).meta({
 
 const TopicChoice = z.strictObject({
   topic: Category.meta({ description: "The topic's key." }),
-  status: z.enum(CONTACT_TOPIC_STATUSES),
+  status: z
+    .enum(CONTACT_TOPIC_STATUSES)
+    .meta({ description: "`opted_in` or `opted_out` of the topic." }),
 });
 
 const CONTACT_ID_EXAMPLE = "contact_01k7c8m4q2f3e9v6t5r1n0p8yz";
@@ -141,19 +143,27 @@ export const Contact = z
   .object({
     object: z.literal("contact"),
     id: z.string(),
-    email: z.string(),
-    first_name: z.string().nullable(),
-    last_name: z.string().nullable(),
+    email: z.string().meta({
+      description: "The contact's address. Unique in the environment, case-insensitively.",
+    }),
+    first_name: z.string().nullable().meta({ description: "Their first name. `null`: not set." }),
+    last_name: z.string().nullable().meta({ description: "Their last name. `null`: not set." }),
     status: z.enum(CONTACT_STATUSES).meta({
       description:
         "Consent to marketing email: `subscribed`, `unsubscribed` (never receives marketing " +
         "email; transactional email is unaffected) or `pending` (waiting for a double opt-in " +
         "confirmation).",
     }),
-    properties: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+    properties: z
+      .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+      .meta({ description: "Custom properties by key." }),
     source: z.enum(CONTACT_SOURCES).meta({ description: "How the contact was created." }),
-    subscribed_at: NullableTimestamp,
-    unsubscribed_at: NullableTimestamp,
+    subscribed_at: NullableTimestamp.meta({
+      description: "When it last became `subscribed`. `null`: it hasn't.",
+    }),
+    unsubscribed_at: NullableTimestamp.meta({
+      description: "When it became `unsubscribed`. `null` unless it is.",
+    }),
     confirmed_at: NullableTimestamp.meta({
       description: "When the contact confirmed a double opt-in.",
     }),
@@ -172,8 +182,12 @@ export const ContactList = z
 export type ContactListOutput = z.output<typeof ContactList>;
 
 const ContactFields = {
-  first_name: PersonName.nullable().optional(),
-  last_name: PersonName.nullable().optional(),
+  first_name: PersonName.nullable()
+    .optional()
+    .meta({ description: "Their first name. `null` removes it." }),
+  last_name: PersonName.nullable()
+    .optional()
+    .meta({ description: "Their last name. `null` removes it." }),
   properties: ContactProperties.optional(),
   status: z
     .enum(["subscribed", "unsubscribed"], {
@@ -268,8 +282,8 @@ export type ExportContactsQueryOutput = z.output<typeof ExportContactsQuery>;
  */
 export const ContactImportEntry = z.strictObject({
   email: z.string().meta({ description: "The contact's address (validated on its own)." }),
-  first_name: z.string().nullable().optional(),
-  last_name: z.string().nullable().optional(),
+  first_name: z.string().nullable().optional().meta({ description: "Their first name." }),
+  last_name: z.string().nullable().optional().meta({ description: "Their last name." }),
   properties: z
     .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
     .optional()
@@ -287,7 +301,11 @@ export type ContactImportEntryInput = z.input<typeof ContactImportEntry>;
 
 export const ImportContactsRequest = z
   .strictObject({
-    contacts: z.array(ContactImportEntry).min(1).max(MAX_CONTACT_IMPORT_ENTRIES),
+    contacts: z
+      .array(ContactImportEntry)
+      .min(1)
+      .max(MAX_CONTACT_IMPORT_ENTRIES)
+      .meta({ description: "The contacts to create or update, at most 1,000." }),
     audience_id: z
       .string()
       .optional()
@@ -308,14 +326,24 @@ export const ImportContactsRequest = z
 export const ContactImport = z
   .object({
     object: z.literal("contact_import"),
-    created: z.int(),
-    updated: z.int(),
+    created: z.int().meta({ description: "Contacts created." }),
+    updated: z.int().meta({ description: "Existing contacts updated." }),
     kept_unsubscribed: z.int().meta({
       description:
         "Existing contacts the import marked `subscribed` that stay `unsubscribed`: an import " +
         "never re-subscribes anyone.",
     }),
-    invalid: z.array(z.object({ index: z.int(), email: z.string(), message: z.string() })),
+    invalid: z
+      .array(
+        z.object({
+          index: z.int().meta({ description: "The entry's position in `contacts`, from 0." }),
+          email: z.string().meta({ description: "The address it gave." }),
+          message: z.string().meta({ description: "Why it was refused." }),
+        }),
+      )
+      .meta({
+        description: "Entries that were refused. The rest of the import still went through.",
+      }),
   })
   .meta({
     id: "ContactImport",
@@ -341,21 +369,23 @@ export const DeletedContact = z
 export const ContactTopics = z
   .object({
     object: z.literal("contact_topics"),
-    contact_id: z.string(),
-    topics: z.array(
-      z.object({
-        topic: z.string(),
-        name: z.string(),
-        subscribed: z.boolean().meta({
-          description:
-            "Whether emails about the topic reach the contact (its choice, else the topic's " +
-            "default; an unsubscribed contact gets no marketing email at all).",
+    contact_id: z.string().meta({ description: "The contact's id." }),
+    topics: z
+      .array(
+        z.object({
+          topic: z.string().meta({ description: "The topic's key." }),
+          name: z.string().meta({ description: "The topic's name." }),
+          subscribed: z.boolean().meta({
+            description:
+              "Whether emails about the topic reach the contact (its choice, else the topic's " +
+              "default; an unsubscribed contact gets no marketing email at all).",
+          }),
+          choice: z.enum(CONTACT_TOPIC_STATUSES).nullable().meta({
+            description: "The contact's explicit choice; `null`: the topic's default applies.",
+          }),
         }),
-        choice: z.enum(CONTACT_TOPIC_STATUSES).nullable().meta({
-          description: "The contact's explicit choice; `null`: the topic's default applies.",
-        }),
-      }),
-    ),
+      )
+      .meta({ description: "Every topic of the environment, with this contact's standing." }),
   })
   .meta({
     id: "ContactTopics",
@@ -373,7 +403,13 @@ export const ContactTopics = z
 export type ContactTopicsOutput = z.output<typeof ContactTopics>;
 
 export const UpdateContactTopicsRequest = z
-  .strictObject({ topics: z.array(TopicChoice).min(1).max(100) })
+  .strictObject({
+    topics: z
+      .array(TopicChoice)
+      .min(1)
+      .max(100)
+      .meta({ description: "The contact's choices per topic. Topics not listed keep theirs." }),
+  })
   .meta({
     id: "UpdateContactTopicsRequest",
     examples: [{ topics: [{ topic: "product", status: "opted_out" }] }],
@@ -382,7 +418,7 @@ export const UpdateContactTopicsRequest = z
 export const ContactConfirmation = z
   .object({
     object: z.literal("contact_confirmation"),
-    contact_id: z.string(),
+    contact_id: z.string().meta({ description: "The contact's id." }),
     status: z.enum(["sent", "cooldown", "limit_reached", "not_pending"]).meta({
       description:
         "`sent`; `cooldown` (one confirmation per contact per day); `limit_reached` (three " +
@@ -406,7 +442,7 @@ export const CreatePreferenceLinksRequest = z
 export const PreferenceLinksObject = z
   .object({
     object: z.literal("preference_links"),
-    contact_id: z.string(),
+    contact_id: z.string().meta({ description: "The contact's id." }),
     preferences_url: z.string().meta({ description: "The contact's preference center." }),
     unsubscribe_url: z.string().meta({ description: "A one-button unsubscribe page." }),
   })
@@ -441,7 +477,9 @@ export const ContactPropertyObject = z
   .object({
     object: z.literal("contact_property"),
     id: z.string(),
-    key: z.string(),
+    key: z.string().meta({
+      description: "How contacts and templates name it (`{{{contact.<key>}}}`). Can't change.",
+    }),
     type: z.enum(CONTACT_PROPERTY_TYPES).meta({
       description: "`date` values are ISO 8601 strings.",
     }),
@@ -467,9 +505,16 @@ export const ContactPropertyList = z
 
 export const CreateContactPropertyRequest = z
   .strictObject({
-    key: PropertyKey,
-    type: z.enum(CONTACT_PROPERTY_TYPES),
-    fallback: ContactPropertyValue.optional(),
+    key: PropertyKey.meta({
+      description:
+        "How contacts and templates name it. Lower-case letters, digits and `_`, starting with a letter. Can't change.",
+    }),
+    type: z.enum(CONTACT_PROPERTY_TYPES).meta({
+      description: "What values it takes. `date` values are ISO 8601 strings. Can't change.",
+    }),
+    fallback: ContactPropertyValue.optional().meta({
+      description: "Used in templates for contacts without a value.",
+    }),
   })
   .meta({
     id: "CreateContactPropertyRequest",
@@ -478,7 +523,11 @@ export const CreateContactPropertyRequest = z
 export type CreateContactPropertyRequestOutput = z.output<typeof CreateContactPropertyRequest>;
 
 export const UpdateContactPropertyRequest = z
-  .strictObject({ fallback: ContactPropertyValue })
+  .strictObject({
+    fallback: ContactPropertyValue.meta({
+      description: "Used in templates for contacts without a value. `null` removes it.",
+    }),
+  })
   .meta({ id: "UpdateContactPropertyRequest", examples: [{ fallback: "starter" }] });
 
 export const DeletedContactProperty = z
@@ -507,7 +556,7 @@ export const Audience = z
   .object({
     object: z.literal("audience"),
     id: z.string(),
-    name: z.string(),
+    name: z.string().meta({ description: "Your name for the list, unique in the environment." }),
     contact_count: z.int().meta({ description: "Members, whatever their status." }),
     created_at: Timestamp,
     updated_at: Timestamp,
@@ -532,7 +581,9 @@ export const ListQuery = z.strictObject({
 export type ListQueryOutput = z.output<typeof ListQuery>;
 
 export const CreateAudienceRequest = z
-  .strictObject({ name: ListName })
+  .strictObject({
+    name: ListName.meta({ description: "Your name for the list, unique in the environment." }),
+  })
   .meta({ id: "CreateAudienceRequest", examples: [{ name: "Beta testers" }] });
 
 export const UpdateAudienceRequest = CreateAudienceRequest.meta({
@@ -556,8 +607,8 @@ export const AddAudienceContactsRequest = z
 export const AudienceContactsAdded = z
   .object({
     object: z.literal("audience_contacts"),
-    added: z.int(),
-    existing: z.int(),
+    added: z.int().meta({ description: "Contacts newly added." }),
+    existing: z.int().meta({ description: "Contacts that were already members." }),
     missing: z.array(z.string()).meta({ description: "Ids or addresses of no contact." }),
   })
   .meta({
@@ -596,8 +647,11 @@ const Scalar = z.union([z.string().max(STRING_PROPERTY_MAX_LENGTH), z.number(), 
 
 const PropertyCondition = z.strictObject({
   field: z.literal("property"),
-  key: z.string(),
-  op: z.enum(PROPERTY_OPERATORS),
+  key: z.string().meta({ description: "The custom property to test." }),
+  op: z.enum(PROPERTY_OPERATORS).meta({
+    description:
+      "How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.",
+  }),
   value: z
     .union([Scalar, z.array(Scalar).min(1).max(100)])
     .optional()
@@ -606,25 +660,31 @@ const PropertyCondition = z.strictObject({
 
 const EmailCondition = z.strictObject({
   field: z.literal("email"),
-  op: z.enum(["eq", "ends_with", "contains"]),
-  value: z.string().min(1).max(254),
+  op: z
+    .enum(["eq", "ends_with", "contains"])
+    .meta({ description: "How to compare the contact's address." }),
+  value: z.string().min(1).max(254).meta({ description: "What to compare it with." }),
 });
 
 const AudienceCondition = z.strictObject({
   field: z.literal("audience"),
-  op: z.enum(["in", "not_in"]),
-  audience_id: z.string(),
+  op: z.enum(["in", "not_in"]).meta({ description: "Whether the contact is in the audience." }),
+  audience_id: z.string().meta({ description: "The audience's id." }),
 });
 
 const TopicCondition = z.strictObject({
   field: z.literal("topic"),
-  op: z.enum(["subscribed", "not_subscribed"]),
-  topic: Category,
+  op: z
+    .enum(["subscribed", "not_subscribed"])
+    .meta({ description: "Whether emails about the topic reach the contact." }),
+  topic: Category.meta({ description: "The topic's key." }),
 });
 
 const CreatedAtCondition = z.strictObject({
   field: z.literal("created_at"),
-  op: z.enum(["before", "after", "within_days"]),
+  op: z
+    .enum(["before", "after", "within_days"])
+    .meta({ description: "`before` or `after` a time, or created `within_days` the last days." }),
   value: z.union([Timestamp, z.int().min(1).max(3650)]).meta({
     description: "A timestamp for `before`/`after`, a number of days for `within_days`.",
   }),
@@ -642,15 +702,20 @@ export type SegmentConditionOutput = z.output<typeof SegmentCondition>;
 const Match = z.enum(["all", "any"]);
 
 const SegmentGroup = z.strictObject({
-  match: Match,
-  conditions: z.array(SegmentCondition).min(1),
+  match: Match.meta({ description: "`all`: every condition must hold; `any`: one is enough." }),
+  conditions: z.array(SegmentCondition).min(1).meta({ description: "The group's conditions." }),
 });
 
 export const SegmentFilter = z
   .strictObject({
-    version: z.literal(1),
+    version: z.literal(1).meta({ description: "The filter's format. Always 1." }),
     match: Match.meta({ description: "`all`: every condition must hold; `any`: one is enough." }),
-    conditions: z.array(z.union([SegmentCondition, SegmentGroup])).min(1),
+    conditions: z
+      .array(z.union([SegmentCondition, SegmentGroup]))
+      .min(1)
+      .meta({
+        description: "Conditions, or `{ match, conditions }` groups of them. At most 20 in all.",
+      }),
   })
   .refine(
     (filter) =>
@@ -697,7 +762,7 @@ export const Segment = z
   .object({
     object: z.literal("segment"),
     id: z.string(),
-    name: z.string(),
+    name: z.string().meta({ description: "Your name for the segment, unique in the environment." }),
     filter: SegmentFilter,
     created_at: Timestamp,
     updated_at: Timestamp,
@@ -712,13 +777,23 @@ export const SegmentList = z
     examples: [{ object: "list", data: [SEGMENT_EXAMPLE], has_more: false }],
   });
 
-export const CreateSegmentRequest = z.strictObject({ name: ListName, filter: SegmentFilter }).meta({
-  id: "CreateSegmentRequest",
-  examples: [{ name: "Pro customers", filter: SEGMENT_FILTER_EXAMPLE }],
-});
+export const CreateSegmentRequest = z
+  .strictObject({
+    name: ListName.meta({ description: "Your name for the segment, unique in the environment." }),
+    filter: SegmentFilter,
+  })
+  .meta({
+    id: "CreateSegmentRequest",
+    examples: [{ name: "Pro customers", filter: SEGMENT_FILTER_EXAMPLE }],
+  });
 
 export const UpdateSegmentRequest = z
-  .strictObject({ name: ListName.optional(), filter: SegmentFilter.optional() })
+  .strictObject({
+    name: ListName.optional().meta({
+      description: "Your name for the segment, unique in the environment.",
+    }),
+    filter: SegmentFilter.optional(),
+  })
   .meta({ id: "UpdateSegmentRequest", examples: [{ name: "Pro and Scale customers" }] });
 
 export const DeletedSegment = z
@@ -746,8 +821,14 @@ const TOPIC_EXAMPLE = {
 } as const;
 
 const TopicFields = {
-  name: ListName,
-  description: z.string().trim().max(TOPIC_DESCRIPTION_MAX_LENGTH).nullable().optional(),
+  name: ListName.meta({ description: "Shown in the preference center." }),
+  description: z
+    .string()
+    .trim()
+    .max(TOPIC_DESCRIPTION_MAX_LENGTH)
+    .nullable()
+    .optional()
+    .meta({ description: "Shown in the preference center under its name. `null`: none." }),
   default_subscription: z.enum(TOPIC_DEFAULT_SUBSCRIPTIONS).meta({
     description:
       "`opt_in`: every subscribed contact gets the topic's emails unless they opt out. " +
@@ -768,11 +849,19 @@ export const Topic = z
     key: z.string().meta({
       description: "The `category` of the emails about this topic. Can't change.",
     }),
-    name: z.string(),
-    description: z.string().nullable(),
-    default_subscription: z.enum(TOPIC_DEFAULT_SUBSCRIPTIONS),
-    visibility: z.enum(TOPIC_VISIBILITIES),
-    position: z.int(),
+    name: z.string().meta({ description: "Shown in the preference center." }),
+    description: z
+      .string()
+      .nullable()
+      .meta({ description: "Shown in the preference center under its name. `null`: none." }),
+    default_subscription: z.enum(TOPIC_DEFAULT_SUBSCRIPTIONS).meta({
+      description:
+        "`opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.",
+    }),
+    visibility: z
+      .enum(TOPIC_VISIBILITIES)
+      .meta({ description: "`private` topics never show in the preference center." }),
+    position: z.int().meta({ description: "Order in the preference center (ascending)." }),
     created_at: Timestamp,
     updated_at: Timestamp,
   })
@@ -786,10 +875,17 @@ export const TopicList = z
     examples: [{ object: "list", data: [TOPIC_EXAMPLE], has_more: false }],
   });
 
-export const CreateTopicRequest = z.strictObject({ key: Category, ...TopicFields }).meta({
-  id: "CreateTopicRequest",
-  examples: [{ key: "newsletter", name: "Newsletter", default_subscription: "opt_in" }],
-});
+export const CreateTopicRequest = z
+  .strictObject({
+    key: Category.meta({
+      description: "The `category` of the emails about this topic. Can't change.",
+    }),
+    ...TopicFields,
+  })
+  .meta({
+    id: "CreateTopicRequest",
+    examples: [{ key: "newsletter", name: "Newsletter", default_subscription: "opt_in" }],
+  });
 
 export const UpdateTopicRequest = z
   .strictObject({
@@ -867,7 +963,9 @@ export type MarketingSettingsOutput = z.output<typeof MarketingSettings>;
 
 export const UpdateMarketingSettingsRequest = z
   .strictObject({
-    display_name: z.string().trim().min(1).max(LIST_NAME_MAX_LENGTH).nullable().optional(),
+    display_name: z.string().trim().min(1).max(LIST_NAME_MAX_LENGTH).nullable().optional().meta({
+      description: "The sender's name in the preference center. `null`: the organization's.",
+    }),
     mailing_address: z
       .string()
       .trim()
@@ -877,8 +975,14 @@ export const UpdateMarketingSettingsRequest = z
         message: "Must not contain control or invisible formatting characters.",
       })
       .nullable()
-      .optional(),
-    double_opt_in_default: z.boolean().optional(),
+      .optional()
+      .meta({
+        description:
+          "The postal address every marketing email carries (CAN-SPAM). Marketing emails can't be sent without one.",
+      }),
+    double_opt_in_default: z.boolean().optional().meta({
+      description: "Whether contacts upserted without `double_opt_in` must confirm first.",
+    }),
     confirmation_from: z
       .string()
       .trim()
@@ -887,8 +991,19 @@ export const UpdateMarketingSettingsRequest = z
         if (problem) ctx.addIssue({ code: "custom", message: problem });
       })
       .nullable()
-      .optional(),
-    confirmation_subject: z.string().trim().min(1).max(998).nullable().optional(),
+      .optional()
+      .meta({
+        description:
+          "The sender of confirmation emails (a verified domain's address for live keys).",
+      }),
+    confirmation_subject: z
+      .string()
+      .trim()
+      .min(1)
+      .max(998)
+      .nullable()
+      .optional()
+      .meta({ description: "`null`: coss.com's default." }),
     confirmation_html: z
       .string()
       .max(200_000)
@@ -896,7 +1011,8 @@ export const UpdateMarketingSettingsRequest = z
         message: `Must contain ${CONFIRMATION_URL_PLACEHOLDER}.`,
       })
       .nullable()
-      .optional(),
+      .optional()
+      .meta({ description: "`null`: coss.com's default. Must contain `{{{confirmation_url}}}`." }),
     confirmation_text: z
       .string()
       .max(200_000)
@@ -904,12 +1020,17 @@ export const UpdateMarketingSettingsRequest = z
         message: `Must contain ${CONFIRMATION_URL_PLACEHOLDER}.`,
       })
       .nullable()
-      .optional(),
+      .optional()
+      .meta({ description: "`null`: coss.com's default. Must contain `{{{confirmation_url}}}`." }),
     confirmed_redirect_url: z
       .url({ protocol: /^https$/ })
       .max(2000)
       .nullable()
-      .optional(),
+      .optional()
+      .meta({
+        description:
+          "Where a confirmed contact is sent, an https URL. `null`: coss.com's own page.",
+      }),
   })
   .meta({
     id: "UpdateMarketingSettingsRequest",
@@ -928,26 +1049,28 @@ export const ContactWebhookEvent = z
       examples: ["evt_01k7c8m4r0c2b8w9y3d5f6g7h9"],
     }),
     object: z.literal("event"),
-    type: z.enum(CONTACT_EVENT_TYPES),
+    type: z.enum(CONTACT_EVENT_TYPES).meta({ description: "What happened to the contact." }),
     api_version: z.string().meta({
       description:
         "The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.",
       examples: [LATEST_API_VERSION],
     }),
-    created_at: Timestamp,
-    data: z.object({
-      contact: z.object({
-        id: z.string(),
-        email: z.string(),
-        status: z.enum(CONTACT_STATUSES),
-      }),
-      source: z.enum(CONTACT_SOURCES),
-      topic: z.string().nullable().meta({
-        description:
-          "`contact.unsubscribed` from one topic (its key); `null`: from marketing altogether.",
-      }),
-      occurred_at: Timestamp,
-    }),
+    created_at: Timestamp.meta({ description: "When the event was created." }),
+    data: z
+      .object({
+        contact: z.object({
+          id: z.string().meta({ description: "The contact's id." }),
+          email: z.string().meta({ description: "The contact's address." }),
+          status: z.enum(CONTACT_STATUSES).meta({ description: "Its consent after this event." }),
+        }),
+        source: z.enum(CONTACT_SOURCES).meta({ description: "How the contact was created." }),
+        topic: z.string().nullable().meta({
+          description:
+            "`contact.unsubscribed` from one topic (its key); `null`: from marketing altogether.",
+        }),
+        occurred_at: Timestamp.meta({ description: "When this happened." }),
+      })
+      .meta({ description: "The contact, without its properties." }),
   })
   .meta({
     id: "ContactWebhookEvent",

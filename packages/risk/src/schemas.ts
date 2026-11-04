@@ -578,7 +578,9 @@ export const RiskOutcomeEnum = z.enum(RISK_OUTCOMES).meta({
   description:
     "What really happened: `legitimate`, `fraud`, or `abuse` (spam, free-tier abuse and the like).",
 });
-export const RiskListEnum = z.enum(RISK_LISTS).meta({ id: "RiskList" });
+export const RiskListEnum = z
+  .enum(RISK_LISTS)
+  .meta({ description: "Which list: `allow` or `block`.", id: "RiskList" });
 export const RiskListEntryTypeEnum = z.enum(RISK_LIST_ENTRY_TYPES).meta({
   id: "RiskListEntryType",
   description:
@@ -724,8 +726,10 @@ export type CreateRiskAssessmentRequestOutput = z.output<typeof CreateRiskAssess
 
 export const RiskReason = z
   .object({
-    code: z.enum(RISK_REASON_CODES),
-    message: z.string(),
+    code: z
+      .enum(RISK_REASON_CODES)
+      .meta({ description: "The reason's code, listed under Risk's reasons in the docs." }),
+    message: z.string().meta({ description: "What it means, in words. May change." }),
     value: z.number().optional().meta({
       description: "The count behind a `velocity.*` reason, or the score behind a `content.*` one.",
     }),
@@ -733,7 +737,10 @@ export const RiskReason = z
       .number()
       .optional()
       .meta({ description: "What a `velocity.*` or `content.*` reason fires at." }),
-    window: z.enum(VELOCITY_WINDOWS).optional(),
+    window: z
+      .enum(VELOCITY_WINDOWS)
+      .optional()
+      .meta({ description: "`velocity.*`: the window it's counted over." }),
     suggestion: z.string().optional().meta({ description: "`email.typo`: the likely domain." }),
     provider: z.string().optional().meta({
       description:
@@ -760,35 +767,50 @@ export const RiskEmailSignals = z
     domain: z.string().nullable().meta({
       description: "`null` once the address is removed (90 days after the assessment).",
     }),
-    valid: z.boolean(),
-    disposable: z.boolean(),
+    valid: z.boolean().meta({ description: "Whether it's syntactically valid." }),
+    disposable: z.boolean().meta({ description: "Whether its domain is a known burner service." }),
     deliverability: z.enum(["deliverable", "undeliverable", "unknown"]).meta({
       description: "From DNS (MX, A, AAAA). `unknown` when the lookup failed or timed out.",
     }),
-    role_account: z.boolean(),
-    free_provider: z.boolean(),
-    suggestion: z.string().nullable(),
+    role_account: z.boolean().meta({ description: "Whether it's a role mailbox, like `info@`." }),
+    free_provider: z
+      .boolean()
+      .meta({ description: "Whether its domain is a free mailbox provider." }),
+    suggestion: z
+      .string()
+      .nullable()
+      .meta({ description: "`email.typo`: the likely intended domain. `null` otherwise." }),
     domain_age_days: z.number().int().nullable().meta({
       description:
         "Days since the domain was registered (RDAP); `null` when unknown or not looked up (free providers, disposable domains).",
     }),
   })
-  .meta({ id: "RiskEmailSignals" });
+  .meta({
+    description: "What the address says. `null` on an assessment with no email.",
+    id: "RiskEmailSignals",
+  });
 
 export const RiskCaptchaSignals = z
   .object({
-    provided: z.boolean(),
+    provided: z.boolean().meta({ description: "Whether the request carried a token." }),
     passed: z.boolean().nullable().meta({
       description:
         "`null` when it couldn't be checked (no captcha configured, or the provider was unreachable).",
     }),
   })
-  .meta({ id: "RiskCaptchaSignals" });
+  .meta({
+    description: "How the captcha went. `null` when no captcha applies.",
+    id: "RiskCaptchaSignals",
+  });
 
 export const RiskLoginSignals = z
   .object({
-    new_country: z.boolean(),
-    new_network: z.boolean(),
+    new_country: z.boolean().meta({
+      description: "Whether this user never logged in from this country in this environment.",
+    }),
+    new_network: z.boolean().meta({
+      description: "Whether this user never logged in from this network (ASN) in this environment.",
+    }),
   })
   .meta({
     id: "RiskLoginSignals",
@@ -797,22 +819,35 @@ export const RiskLoginSignals = z
 
 export const RiskIpSignals = z
   .object({
-    version: z.union([z.literal(4), z.literal(6)]),
-    private: z.boolean(),
-    tor: z.boolean(),
-    hosting: z.boolean(),
-    hosting_provider: z.string().nullable(),
-    hosting_kind: z.enum(["cloud", "hosting", "vpn"]).nullable(),
-    asn: z.number().int().nullable(),
-    as_name: z.string().nullable(),
+    version: z.union([z.literal(4), z.literal(6)]).meta({ description: "IPv4 or IPv6." }),
+    private: z.boolean().meta({ description: "Whether it's a private or reserved address." }),
+    tor: z.boolean().meta({ description: "Whether it's a Tor exit." }),
+    hosting: z.boolean().meta({ description: "Whether it's in a cloud, hosting or VPN network." }),
+    hosting_provider: z
+      .string()
+      .nullable()
+      .meta({ description: "That network's operator. `null` when it isn't one." }),
+    hosting_kind: z
+      .enum(["cloud", "hosting", "vpn"])
+      .nullable()
+      .meta({ description: "`cloud`, `hosting` or `vpn`. `null` when it isn't one." }),
+    asn: z
+      .number()
+      .int()
+      .nullable()
+      .meta({ description: "The network's autonomous system number. `null` when unknown." }),
+    as_name: z
+      .string()
+      .nullable()
+      .meta({ description: "The network's name. `null` when unknown." }),
     country: z.string().nullable().meta({ description: "ISO 3166-1 alpha-2." }),
     privacy: z
       .union([
         z
           .object({
-            vpn: z.boolean(),
-            proxy: z.boolean(),
-            relay: z.boolean(),
+            vpn: z.boolean().meta({ description: "Whether it's a VPN exit." }),
+            proxy: z.boolean().meta({ description: "Whether it's a proxy." }),
+            relay: z.boolean().meta({ description: "Whether it's a privacy relay." }),
             service: z.string().nullable().meta({ description: "The VPN or proxy service." }),
           })
           .meta({ id: "RiskIpPrivacy" }),
@@ -823,10 +858,20 @@ export const RiskIpSignals = z
           "From coss.com's IP privacy data provider (VPNs, proxies, relays). `null` when it isn't available or was not asked (private addresses).",
       }),
   })
-  .meta({ id: "RiskIpSignals" });
+  .meta({
+    description: "What the address says. `null` on an assessment with no IP.",
+    id: "RiskIpSignals",
+  });
 
 const ContentScores = Object.fromEntries(
-  CONTENT_CATEGORIES.map((category) => [category, z.number().min(0).max(1)]),
+  CONTENT_CATEGORIES.map((category) => [
+    category,
+    z
+      .number()
+      .min(0)
+      .max(1)
+      .meta({ description: `The model's probability (0-1) that it's ${category}.` }),
+  ]),
 ) as Record<ContentCategory, z.ZodNumber>;
 
 export const RiskContentSignals = z.object(ContentScores).meta({
@@ -837,12 +882,27 @@ export const RiskContentSignals = z.object(ContentScores).meta({
 
 export const RiskCheckoutSignals = z
   .object({
-    amount: z.number().int(),
-    currency: z.string(),
-    card_country: z.string().nullable(),
-    card_funding: z.enum(CARD_FUNDING).nullable(),
-    billing_country: z.string().nullable(),
-    shipping_country: z.string().nullable(),
+    amount: z
+      .number()
+      .int()
+      .meta({ description: "The amount you sent, in the currency's smallest unit." }),
+    currency: z.string().meta({ description: "The currency you sent." }),
+    card_country: z
+      .string()
+      .nullable()
+      .meta({ description: "The card's country. `null` when not given." }),
+    card_funding: z
+      .enum(CARD_FUNDING)
+      .nullable()
+      .meta({ description: "The card's funding type. `null` when not given." }),
+    billing_country: z
+      .string()
+      .nullable()
+      .meta({ description: "The billing country. `null` when not given." }),
+    shipping_country: z
+      .string()
+      .nullable()
+      .meta({ description: "The shipping country. `null` when not given." }),
   })
   .meta({
     id: "RiskCheckoutSignals",
@@ -855,9 +915,15 @@ export const RiskDeviceSignals = z
     automation: z.boolean().meta({ description: "WebDriver control or a headless browser." }),
     timezone: z.string().nullable().meta({ description: "IANA time zone (`Europe/London`)." }),
     language: z.string().nullable().meta({ description: "The browser's first language." }),
-    platform: z.string().nullable(),
+    platform: z
+      .string()
+      .nullable()
+      .meta({ description: "The browser's reported platform. `null` when it reported none." }),
     screen: z.string().nullable().meta({ description: "`<width>x<height>` in CSS pixels." }),
-    touch: z.boolean().nullable(),
+    touch: z
+      .boolean()
+      .nullable()
+      .meta({ description: "Whether the device has a touch screen. `null` when it didn't say." }),
   })
   .meta({
     id: "RiskDeviceSignals",
@@ -935,33 +1001,56 @@ export const RiskAssessment = z
     object: z.literal("risk_assessment"),
     id: z.string().meta({ examples: [ASSESSMENT_ID_EXAMPLE] }),
     event: RiskEventEnum,
-    event_name: z.string().nullable(),
+    event_name: z
+      .string()
+      .nullable()
+      .meta({ description: "Your name for a `custom` event. `null`: none." }),
     decision: RiskDecisionEnum,
     score: z.number().min(0).max(1).meta({
       description:
         "0-1: how risky the signals are together. Lists can decide regardless of the score.",
     }),
     reasons: z.array(RiskReason).meta({ description: "Why, most significant first." }),
-    signals: z.object({
-      email: z.union([RiskEmailSignals, z.null()]),
-      ip: z.union([RiskIpSignals, z.null()]),
-      velocity: z.union([RiskVelocitySignals, z.null()]).meta({
-        description: "`null` when velocity was unavailable (see `degraded`).",
+    signals: z
+      .object({
+        email: z
+          .union([RiskEmailSignals, z.null()])
+          .meta({ description: "What the address says. `null`: no email was given." }),
+        ip: z
+          .union([RiskIpSignals, z.null()])
+          .meta({ description: "What the IP address says. `null`: none was given." }),
+        velocity: z.union([RiskVelocitySignals, z.null()]).meta({
+          description: "`null` when velocity was unavailable (see `degraded`).",
+        }),
+        captcha: z
+          .union([RiskCaptchaSignals, z.null()])
+          .meta({ description: "How the captcha went. `null`: no captcha applied." }),
+        login: z.union([RiskLoginSignals, z.null()]).meta({
+          description:
+            "Whether a login is new for this user. `null`: not a login of a user with history.",
+        }),
+        content: z.union([RiskContentSignals, z.null()]).meta({
+          description: "`null` when no content was given or it couldn't be classified.",
+        }),
+        checkout: z
+          .union([RiskCheckoutSignals, z.null()])
+          .meta({ description: "What you sent in `checkout`. `null`: not given." }),
+        device: z
+          .union([RiskDeviceSignals, z.null()])
+          .meta({ description: "What the device token said. `null`: none was given." }),
+      })
+      .meta({
+        description:
+          "What the assessment saw, by group. A group is `null` when it had nothing to go on.",
       }),
-      captcha: z.union([RiskCaptchaSignals, z.null()]),
-      login: z.union([RiskLoginSignals, z.null()]),
-      content: z.union([RiskContentSignals, z.null()]).meta({
-        description: "`null` when no content was given or it couldn't be classified.",
-      }),
-      checkout: z.union([RiskCheckoutSignals, z.null()]),
-      device: z.union([RiskDeviceSignals, z.null()]),
-    }),
-    user: z.object({
-      id: z.string().nullable(),
-      email: z.string().nullable().meta({
-        description: "`null` once removed (90 days after the assessment) or when none was given.",
-      }),
-    }),
+    user: z
+      .object({
+        id: z.string().nullable().meta({ description: "Your user id. `null`: none given." }),
+        email: z.string().nullable().meta({
+          description: "`null` once removed (90 days after the assessment) or when none was given.",
+        }),
+      })
+      .meta({ description: "Who it's about." }),
     ip: z.string().nullable().meta({ description: "`null` once removed (90 days after)." }),
     degraded: z.array(z.enum(RISK_DEGRADED_SIGNALS)).meta({
       description:
@@ -1030,8 +1119,11 @@ export const CreateRiskListEntryRequest = z
   .strictObject({
     list: RiskListEnum,
     type: RiskListEntryTypeEnum,
-    value: z.string().min(1).max(320),
-    note: z.string().max(500).optional(),
+    value: z.string().min(1).max(320).meta({
+      description:
+        "What to match: the address, domain, IP, CIDR range, ASN or other value of its `type`.",
+    }),
+    note: z.string().max(500).optional().meta({ description: "Your note about it." }),
     expires_at: z.iso
       .datetime({ offset: true })
       .optional()
@@ -1063,8 +1155,11 @@ export const RiskListEntry = z
     value: z.string().meta({
       description: "Normalized: emails as their mailbox, CIDR ranges canonical, ASNs as numbers.",
     }),
-    note: z.string().nullable(),
-    expires_at: z.iso.datetime().nullable(),
+    note: z.string().nullable().meta({ description: "Your note about it. `null`: none." }),
+    expires_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it stops matching. `null`: never." }),
     created_at: z.iso.datetime(),
   })
   .meta({ id: "RiskListEntry", examples: [LIST_ENTRY_EXAMPLE] });
@@ -1108,25 +1203,30 @@ export const RiskWebhookEvent = z
       example: "evt_01k7c8m4q2f3e9v6t5r1n0p8yz",
     }),
     object: z.literal("event"),
-    type: z.enum(RISK_EVENT_TYPES),
+    type: z.enum(RISK_EVENT_TYPES).meta({ description: "What happened to the assessment." }),
     api_version: z.string().meta({
       description:
         "The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.",
     }),
     created_at: z.iso.datetime(),
-    data: z.object({
-      assessment_id: z.string(),
-      event: RiskEventEnum,
-      event_name: z.string().nullable(),
-      decision: RiskDecisionEnum,
-      score: z.number(),
-      reasons: z.array(RiskReason),
-      user_id: z.string().nullable(),
-      outcome: z.union([RiskOutcomeEnum, z.null()]).meta({
-        description: "`risk.assessment.reviewed`: the outcome that resolved the review.",
-      }),
-      occurred_at: z.iso.datetime(),
-    }),
+    data: z
+      .object({
+        assessment_id: z.string().meta({ description: "The assessment's id." }),
+        event: RiskEventEnum,
+        event_name: z
+          .string()
+          .nullable()
+          .meta({ description: "Your name for a `custom` event. `null`: none." }),
+        decision: RiskDecisionEnum,
+        score: z.number().meta({ description: "0-1: how risky the signals are together." }),
+        reasons: z.array(RiskReason).meta({ description: "Why, most significant first." }),
+        user_id: z.string().nullable().meta({ description: "Your user id. `null`: none given." }),
+        outcome: z.union([RiskOutcomeEnum, z.null()]).meta({
+          description: "`risk.assessment.reviewed`: the outcome that resolved the review.",
+        }),
+        occurred_at: z.iso.datetime().meta({ description: "When this happened." }),
+      })
+      .meta({ description: "The assessment, without its signals." }),
   })
   .meta({ id: "RiskWebhookEvent" });
 export type RiskWebhookEventOutput = z.output<typeof RiskWebhookEvent>;
@@ -1158,7 +1258,12 @@ const ReasonWeight = z.number().min(0).max(MAX_REASON_WEIGHT);
 const ContentThresholdsOutput = z
   .object(
     Object.fromEntries(
-      CONTENT_CATEGORIES.map((category) => [category, z.union([z.number(), z.null()])]),
+      CONTENT_CATEGORIES.map((category) => [
+        category,
+        z.union([z.number(), z.null()]).meta({
+          description: `The score at which \`content.${category}\` fires. \`null\`: never.`,
+        }),
+      ]),
     ) as Record<ContentCategory, z.ZodUnion<[z.ZodNumber, z.ZodNull]>>,
   )
   .meta({
@@ -1169,7 +1274,15 @@ const ContentThresholdsOutput = z
 const ContentThresholdsInput = z
   .strictObject(
     Object.fromEntries(
-      CONTENT_CATEGORIES.map((category) => [category, z.union([Threshold, z.null()]).optional()]),
+      CONTENT_CATEGORIES.map((category) => [
+        category,
+        z
+          .union([Threshold, z.null()])
+          .optional()
+          .meta({
+            description: `The score at which \`content.${category}\` fires. \`null\` removes it.`,
+          }),
+      ]),
     ) as Record<ContentCategory, z.ZodOptional<z.ZodUnion<[typeof Threshold, z.ZodNull]>>>,
   )
   .meta({
@@ -1187,17 +1300,27 @@ export const RiskSettings = z
     }),
     captcha: z
       .union([
-        z.object({ provider: z.enum(RISK_CAPTCHA_PROVIDERS), required: z.boolean() }),
+        z.object({
+          provider: z.enum(RISK_CAPTCHA_PROVIDERS).meta({ description: "The captcha provider." }),
+          required: z.boolean().meta({
+            description: "Whether assessments without a token get `captcha.missing`.",
+          }),
+        }),
         z.null(),
       ])
       .meta({
         description: "The captcha provider assessments verify tokens with (never the secret).",
       }),
     content_thresholds: ContentThresholdsOutput,
-    reason_weights: z.partialRecord(z.enum(WEIGHTABLE_REASON_CODES), z.number()).meta({
-      description:
-        "Reasons whose weight this environment changed (from calibration or by hand); the rest weigh what the reason catalog says.",
-    }),
+    reason_weights: z
+      .partialRecord(
+        z.enum(WEIGHTABLE_REASON_CODES),
+        z.number().meta({ description: "This reason's weight in this environment." }),
+      )
+      .meta({
+        description:
+          "Reasons whose weight this environment changed (from calibration or by hand); the rest weigh what the reason catalog says.",
+      }),
     updated_at: z.iso.datetime().nullable().meta({ description: "`null` while on the defaults." }),
   })
   .meta({ id: "RiskSettings", examples: [SETTINGS_EXAMPLE] });
@@ -1205,13 +1328,19 @@ export type RiskSettingsOutput = z.output<typeof RiskSettings>;
 
 export const UpdateRiskSettingsRequest = z
   .strictObject({
-    review_threshold: Threshold.optional(),
-    block_threshold: Threshold.optional(),
-    disabled_reasons: z.array(z.enum(DISABLEABLE_REASON_CODES)).max(100).optional(),
+    review_threshold: Threshold.optional().meta({
+      description: "Scores at or above it are `review`.",
+    }),
+    block_threshold: Threshold.optional().meta({
+      description: "Scores at or above it are `block`.",
+    }),
+    disabled_reasons: z.array(z.enum(DISABLEABLE_REASON_CODES)).max(100).optional().meta({
+      description: "Reasons that never fire in this environment. Replaces the list.",
+    }),
     captcha: z
       .union([
         z.strictObject({
-          provider: z.enum(RISK_CAPTCHA_PROVIDERS),
+          provider: z.enum(RISK_CAPTCHA_PROVIDERS).meta({ description: "The captcha provider." }),
           secret: z.string().min(1).max(1024).optional().meta({
             description:
               "The provider's secret key. Required when setting a provider for the first time or changing it; stored encrypted and never returned.",
@@ -1227,7 +1356,12 @@ export const UpdateRiskSettingsRequest = z
       .meta({ description: "`null` turns captcha verification off and deletes the secret." }),
     content_thresholds: ContentThresholdsInput.optional(),
     reason_weights: z
-      .partialRecord(z.enum(WEIGHTABLE_REASON_CODES), z.union([ReasonWeight, z.null()]))
+      .partialRecord(
+        z.enum(WEIGHTABLE_REASON_CODES),
+        z
+          .union([ReasonWeight, z.null()])
+          .meta({ description: "This reason's new weight. `null` restores its default." }),
+      )
       .optional()
       .meta({
         description: `Changes the reasons given: a weight in [0, ${MAX_REASON_WEIGHT}] replaces the default, \`null\` goes back to it.`,
@@ -1257,9 +1391,17 @@ const RuleValue = z.union([
 
 export const RiskRuleCondition = z
   .strictObject({
-    field: z.enum(RULE_FIELD_NAMES),
-    operator: z.enum(["is", "eq", "neq", "gt", "gte", "lt", "lte", "in", "not_in"]),
-    value: RuleValue,
+    field: z
+      .enum(RULE_FIELD_NAMES)
+      .meta({ description: "The signal to test, such as `email.disposable` or `ip.country`." }),
+    operator: z.enum(["is", "eq", "neq", "gt", "gte", "lt", "lte", "in", "not_in"]).meta({
+      description:
+        "How to compare. Booleans use `is`, numbers `eq` to `lte`, and strings `eq`, `neq`, `in` and `not_in`.",
+    }),
+    value: RuleValue.meta({
+      description:
+        "What to compare it with: its type follows the field, and `in` and `not_in` take a list of strings.",
+    }),
   })
   .superRefine((condition, ctx) => {
     const { type } = RULE_FIELDS[condition.field];
@@ -1323,8 +1465,10 @@ export const RiskRule = z
   .object({
     object: z.literal("risk_rule"),
     id: z.string(),
-    name: z.string(),
-    enabled: z.boolean(),
+    name: z
+      .string()
+      .meta({ description: "Your name for the rule, returned with reasons when it decides." }),
+    enabled: z.boolean().meta({ description: "`false`: it's kept, and no assessment applies it." }),
     position: z.number().int().meta({ description: "Rules are tried in ascending order." }),
     events: z
       .array(RiskEventEnum)
@@ -1332,7 +1476,7 @@ export const RiskRule = z
     match: z.enum(["all", "any"]).meta({
       description: "`all`: every condition must hold. `any`: one is enough.",
     }),
-    conditions: z.array(RiskRuleCondition),
+    conditions: z.array(RiskRuleCondition).meta({ description: "What must hold, by `match`." }),
     action: RiskDecisionEnum,
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
@@ -1342,12 +1486,22 @@ export type RiskRuleOutput = z.output<typeof RiskRule>;
 
 export const CreateRiskRuleRequest = z
   .strictObject({
-    name: RuleName,
-    enabled: z.boolean().optional(),
+    name: RuleName.meta({
+      description: "Your name for the rule, returned with reasons when it decides.",
+    }),
+    enabled: z.boolean().optional().meta({ description: "Default `true`." }),
     position: z.number().int().min(0).max(10_000).optional().meta({ description: "Default 0." }),
-    events: z.array(RiskEventEnum).max(RISK_EVENTS.length).optional(),
+    events: z
+      .array(RiskEventEnum)
+      .max(RISK_EVENTS.length)
+      .optional()
+      .meta({ description: "Events it applies to. Default: every event." }),
     match: z.enum(["all", "any"]).optional().meta({ description: "Default `all`." }),
-    conditions: z.array(RiskRuleCondition).min(1).max(MAX_RULE_CONDITIONS),
+    conditions: z
+      .array(RiskRuleCondition)
+      .min(1)
+      .max(MAX_RULE_CONDITIONS)
+      .meta({ description: "What must hold, by `match`." }),
     action: RiskDecisionEnum,
   })
   .meta({
@@ -1368,12 +1522,33 @@ export type CreateRiskRuleRequestOutput = z.output<typeof CreateRiskRuleRequest>
 
 export const UpdateRiskRuleRequest = z
   .strictObject({
-    name: RuleName.optional(),
-    enabled: z.boolean().optional(),
-    position: z.number().int().min(0).max(10_000).optional(),
-    events: z.array(RiskEventEnum).max(RISK_EVENTS.length).optional(),
-    match: z.enum(["all", "any"]).optional(),
-    conditions: z.array(RiskRuleCondition).min(1).max(MAX_RULE_CONDITIONS).optional(),
+    name: RuleName.optional().meta({ description: "Your name for the rule." }),
+    enabled: z
+      .boolean()
+      .optional()
+      .meta({ description: "`false` keeps it, and stops applying it." }),
+    position: z
+      .number()
+      .int()
+      .min(0)
+      .max(10_000)
+      .optional()
+      .meta({ description: "Rules are tried in ascending order." }),
+    events: z
+      .array(RiskEventEnum)
+      .max(RISK_EVENTS.length)
+      .optional()
+      .meta({ description: "Events it applies to. Empty: every event." }),
+    match: z
+      .enum(["all", "any"])
+      .optional()
+      .meta({ description: "`all`: every condition must hold. `any`: one is enough." }),
+    conditions: z
+      .array(RiskRuleCondition)
+      .min(1)
+      .max(MAX_RULE_CONDITIONS)
+      .optional()
+      .meta({ description: "What must hold, by `match`." }),
     action: RiskDecisionEnum.optional(),
   })
   .meta({ id: "UpdateRiskRuleRequest", examples: [{ enabled: false }] });
@@ -1406,19 +1581,21 @@ export type RiskEmailCheckRequestOutput = z.output<typeof RiskEmailCheckRequest>
 export const RiskEmailCheck = z
   .object({
     object: z.literal("risk_email_check"),
-    email: z.string(),
+    email: z.string().meta({ description: "The address checked." }),
     valid: z.boolean().meta({ description: "Syntactically valid (the rest assumes it is)." }),
-    domain: z.string().nullable(),
+    domain: z.string().nullable().meta({ description: "Its domain. `null` when it isn't valid." }),
     canonical: z.string().nullable().meta({
       description:
         "The mailbox with the provider's aliasing folded (dots and `+tags` at Gmail…): two addresses with the same canonical form reach one inbox.",
     }),
-    disposable: z.boolean(),
+    disposable: z.boolean().meta({ description: "Whether its domain is a known burner service." }),
     deliverability: z.enum(["deliverable", "undeliverable", "unknown"]).meta({
       description: "From DNS (MX, A, AAAA). `unknown` when the lookup failed or timed out.",
     }),
-    role_account: z.boolean(),
-    free_provider: z.boolean(),
+    role_account: z.boolean().meta({ description: "Whether it's a role mailbox, like `info@`." }),
+    free_provider: z
+      .boolean()
+      .meta({ description: "Whether its domain is a free mailbox provider." }),
     suggestion: z.string().nullable().meta({
       description: "The likely intended domain when this one looks like a typo of a popular one.",
     }),
@@ -1460,7 +1637,7 @@ export type RiskIpCheckRequestOutput = z.output<typeof RiskIpCheckRequest>;
 
 export const RiskIpCheck = RiskIpSignals.extend({
   object: z.literal("risk_ip_check"),
-  ip: z.string(),
+  ip: z.string().meta({ description: "The address checked." }),
   degraded: z.array(z.enum(["ip_data", "ip_privacy"])).meta({
     description:
       "`ip_data` when some IP data (Tor exits, cloud ranges, networks and countries) is unavailable at the moment; `ip_privacy` when the privacy data provider failed or timed out.",
@@ -1663,7 +1840,10 @@ export const RiskLimitBucket = z
     id: z.string().meta({ examples: [BUCKET_ID_EXAMPLE] }),
     name: z.string().meta({ description: "What `POST /v1/risk/limits` names it by." }),
     limit: z.number().int().meta({ description: "Tokens added per `period_seconds`." }),
-    period_seconds: z.number().int(),
+    period_seconds: z
+      .number()
+      .int()
+      .meta({ description: "How many seconds `limit` tokens take to be added." }),
     burst: z.number().int().meta({
       description: "The bucket's size: how many requests a key can make at once.",
     }),
@@ -1697,10 +1877,17 @@ export type CreateRiskLimitBucketRequestOutput = z.output<typeof CreateRiskLimit
 
 export const UpdateRiskLimitBucketRequest = z
   .strictObject({
-    limit: Tokens.optional(),
-    period_seconds: PeriodSeconds.optional(),
-    burst: Tokens.optional(),
-    on_failure: z.enum(RISK_LIMIT_FAILURE_MODES).optional(),
+    limit: Tokens.optional().meta({ description: "Tokens added per `period_seconds`." }),
+    period_seconds: PeriodSeconds.optional().meta({
+      description: "How many seconds `limit` tokens take to be added.",
+    }),
+    burst: Tokens.optional().meta({
+      description: "The bucket's size: how many requests a key can make at once.",
+    }),
+    on_failure: z
+      .enum(RISK_LIMIT_FAILURE_MODES)
+      .optional()
+      .meta({ description: "The answer while coss.com can't count: `allow` or `deny`." }),
   })
   .meta({ id: "UpdateRiskLimitBucketRequest", examples: [{ limit: 10, burst: 20 }] });
 export type UpdateRiskLimitBucketRequestOutput = z.output<typeof UpdateRiskLimitBucketRequest>;
@@ -1742,7 +1929,7 @@ export type CheckRiskLimitRequestOutput = z.output<typeof CheckRiskLimitRequest>
 export const RiskLimit = z
   .object({
     object: z.literal("risk_limit"),
-    bucket: z.string(),
+    bucket: z.string().meta({ description: "The bucket's name." }),
     allowed: z.boolean().meta({
       description: "Whether to let the request through. Denied requests take no tokens.",
     }),
@@ -1799,36 +1986,42 @@ const RiskCalibrationCounts = {
 export const RiskCalibration = z
   .object({
     object: z.literal("risk_calibration"),
-    window_days: z.number().int(),
+    window_days: z.number().int().meta({ description: "How many days back it looks." }),
     assessments: z.number().int().meta({ description: "Assessments in the window." }),
     labeled: z.number().int().meta({ description: "Of those, with feedback." }),
-    reasons: z.array(
-      z
-        .object({
-          code: z.enum(WEIGHTABLE_REASON_CODES),
-          fired: z.number().int().meta({ description: "Assessments it fired in." }),
-          ...RiskCalibrationCounts,
-          default_weight: z.number(),
-          weight: z.number().meta({ description: "Its weight in this environment now." }),
-          suggested_weight: z
-            .number()
-            .nullable()
-            .meta({
-              description: `The weight feedback supports: its precision, pulled toward the default while there is little feedback. \`null\` below ${MIN_CALIBRATION_FEEDBACK} assessments with feedback.`,
-            }),
-        })
-        .meta({ id: "RiskCalibrationReason" }),
-    ),
-    rules: z.array(
-      z
-        .object({
-          rule: z.string(),
-          name: z.string(),
-          matched: z.number().int().meta({ description: "Assessments it decided." }),
-          ...RiskCalibrationCounts,
-        })
-        .meta({ id: "RiskCalibrationRule" }),
-    ),
+    reasons: z
+      .array(
+        z
+          .object({
+            code: z.enum(WEIGHTABLE_REASON_CODES).meta({ description: "The reason's code." }),
+            fired: z.number().int().meta({ description: "Assessments it fired in." }),
+            ...RiskCalibrationCounts,
+            default_weight: z
+              .number()
+              .meta({ description: "Its weight unless this environment changes it." }),
+            weight: z.number().meta({ description: "Its weight in this environment now." }),
+            suggested_weight: z
+              .number()
+              .nullable()
+              .meta({
+                description: `The weight feedback supports: its precision, pulled toward the default while there is little feedback. \`null\` below ${MIN_CALIBRATION_FEEDBACK} assessments with feedback.`,
+              }),
+          })
+          .meta({ id: "RiskCalibrationReason" }),
+      )
+      .meta({ description: "How each reason did against your feedback." }),
+    rules: z
+      .array(
+        z
+          .object({
+            rule: z.string().meta({ description: "The rule's id." }),
+            name: z.string().meta({ description: "The rule's name." }),
+            matched: z.number().int().meta({ description: "Assessments it decided." }),
+            ...RiskCalibrationCounts,
+          })
+          .meta({ id: "RiskCalibrationRule" }),
+      )
+      .meta({ description: "How each rule did against your feedback." }),
   })
   .meta({
     id: "RiskCalibration",

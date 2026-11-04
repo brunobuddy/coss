@@ -1,7 +1,16 @@
 import type { EmailTemplateVersion, TemplateContent, TemplateContentParams } from "coss";
 import { z } from "zod";
-import { fail, ok, run, truncate, unwrap } from "../result.ts";
-import { compact, READ_ONLY, type ToolContext, WRITE } from "./shared.ts";
+import { fail, ok, respond, run, truncate, unwrap } from "../result.ts";
+import {
+  compact,
+  cursorSchema,
+  given,
+  limitSchema,
+  nextCursor,
+  READ_ONLY,
+  type ToolContext,
+  WRITE,
+} from "./shared.ts";
 
 function contentSummary(content: TemplateContent): object {
   return compact({
@@ -157,6 +166,34 @@ export function registerTemplateTools(ctx: ToolContext): void {
         );
         return ok({ created: false, draft: draftSummary(updated) });
       }),
+  );
+
+  server.registerTool(
+    "list_email_templates",
+    {
+      title: "List email templates",
+      description:
+        "The environment's email templates: their ids and aliases (what pull_email_template and " +
+        "a send's `template` take), the version sends use, and whether the draft has unpublished " +
+        "changes.",
+      inputSchema: z.object({ limit: limitSchema(50), cursor: cursorSchema }),
+      annotations: READ_ONLY,
+    },
+    ({ limit, cursor }) =>
+      respond(coss.email.templates.list(given({ limit, after: cursor })), (page) => ({
+        templates: page.data.map((template) =>
+          compact({
+            id: template.id,
+            alias: template.alias,
+            name: template.name,
+            description: template.description,
+            published_version: template.published_version,
+            published_at: template.published_at,
+            has_unpublished_changes: template.has_unpublished_changes,
+          }),
+        ),
+        next_cursor: nextCursor(page),
+      })),
   );
 
   server.registerTool(

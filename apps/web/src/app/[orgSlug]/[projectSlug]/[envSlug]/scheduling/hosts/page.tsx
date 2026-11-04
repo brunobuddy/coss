@@ -19,6 +19,7 @@ import { StatusDot } from "@/components/status-dot";
 import { schedulingPageContext } from "../page-context";
 import {
   DeleteHostButton,
+  HostLocationsDialog,
   HostStatusButton,
   NewHostDialog,
   OpenPortalButton,
@@ -91,7 +92,11 @@ export default async function HostsPage({
             <TableBody>
               {page.data.map((host) => (
                 <TableRow key={host.id}>
-                  <TableCell>{host.name}</TableCell>
+                  <TableCell>
+                    <Link className="font-medium hover:underline" href={`${hostsPath}/${host.id}`}>
+                      {host.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="font-mono text-xs">{host.uid ?? "—"}</TableCell>
                   <TableCell>{host.time_zone}</TableCell>
                   <TableCell>
@@ -103,6 +108,12 @@ export default async function HostsPage({
                     {canUpdate ? (
                       <div className="flex justify-end gap-1">
                         <OpenPortalButton {...target} hostId={host.id} />
+                        <HostLocationsDialog
+                          {...target}
+                          hostId={host.id}
+                          locations={host.locations}
+                          name={host.name}
+                        />
                         <HostStatusButton {...target} hostId={host.id} status={host.status} />
                         {can({ scheduling: ["delete"] }) ? (
                           <DeleteHostButton {...target} hostId={host.id} name={host.name} />

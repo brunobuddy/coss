@@ -162,6 +162,7 @@ describe("coss init", () => {
         mode: "sandbox",
         domains: [],
         webhookEndpoints: [],
+        productsInUse: [],
         warning:
           "Couldn't list domains (Not found.). Couldn't list webhook endpoints (Not found.).",
       }),

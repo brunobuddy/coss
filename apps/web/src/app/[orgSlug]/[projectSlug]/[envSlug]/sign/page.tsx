@@ -81,10 +81,9 @@ export default async function SignRequestsPage({
       />
       {signStore() ? null : (
         <Alert variant="warning">
-          <AlertTitle>Sign isn't available yet</AlertTitle>
+          <AlertTitle>Sign is temporarily unavailable</AlertTitle>
           <AlertDescription>
-            Sign isn't switched on at coss.com yet, so API calls answer 503 `sign_unavailable`, with
-            sandbox keys too.
+            API calls answer 503 `sign_unavailable` for now, with sandbox keys too.
           </AlertDescription>
         </Alert>
       )}
