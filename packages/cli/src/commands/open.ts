@@ -45,6 +45,7 @@ const ENVIRONMENT_PAGES: Record<string, string> = {
   "scheduling-holidays": "/scheduling/holidays",
   "scheduling-reassignments": "/scheduling/reassignments",
   "scheduling-event-types": "/scheduling/event-types",
+  "scheduling-calendar-delegation": "/scheduling/calendar-delegation",
   "scheduling-settings": "/scheduling/settings",
   hooks: "/hooks",
   "hooks-event-types": "/hooks/event-types",

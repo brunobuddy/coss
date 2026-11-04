@@ -231,6 +231,68 @@ A booking's ledger row can come back when a host leaves and returns, and its `ke
 so an event on a calendar that's stopped being one still goes. Slots for moving a booking come from the hosts it has
 (`listRescheduleSlots`), never `candidatesOf`, which answers who'd take a new one.
 
+### Delegation
+
+`calendar/delegation.ts`, `delegation-failures.ts`, `delegation-tokens.ts` (no database). An admin authorizes a domain
+once, and every host on it gets their calendar with no consent screen.
+
+- **Credentials are the customer's own**: a service account from their Cloud project, or a single-tenant Entra app. The
+  provider confines either to that Workspace or tenant, so there's no domain ownership check. That argument only holds
+  for customer-owned credentials: a coss.com-owned service account shared between customers would let any customer
+  claim another's domain, so that needs a client ID per delegation first. A pasted key's `token_uri` is ignored, since
+  it could send the signed assertion anywhere.
+- **A delegated connection is an ordinary connection** (`delegation_id` set), so sync, writes, channels and
+  availability don't branch: only `clientFor` does. `encrypted_credentials` caches its access token (`refreshToken:
+  null`), per mailbox. A delegation's credentials go only in `scheduling_calendar_delegation`, through `encryptSecret`.
+- **The mailbox is stamped when a host connects** (`accountId`), and `email` changing later moves nothing, since it's
+  "never an identity". Otherwise old events are orphaned, and a new connection has no write target. A host has one
+  delegated mailbox, even if their email moves to another delegation's domain. Only `calendar_account` moves it
+  (`releaseOldMailbox`, `hosts.ts`), refused while bookings are live or a write that may have reached the provider is still owed, under the host's lock. `hostStillWants` takes that
+  lock and the delegation's before anything fetched is committed, and re-reads both: a mailbox changed or
+  `match_host_email` turned off during the provider calls has to win. Locks: host, then delegation, then connections;
+  a bulk flip takes the delegation, then connections, so nothing may lock a delegation after a connection. `match_host_email`
+  trusts `host.email`, which the docs warn about: a customer taking emails from end users must turn it off.
+- **`runDueCalendarDelegations`** connects a batch per run. `connectHost` fetches everything first (calendars, a
+  channel, the first read) and commits it all in one transaction, so a host goes from no calendar to a verified one,
+  never hidden or empty. A push can't find a channel that isn't stored yet, so the calendar is read once more straight
+  after. Before activating it takes the delegation's row `FOR SHARE`, or it could land just after a bulk flip to
+  `delegation_failing` and escape the outage. Delegations are claimed one at a time, and a lease is fenced. A delegation with hosts left runs again at once, walking
+  them with a cursor that moves past every host it tried, however that went, so hosts that keep failing can't hold up
+  the ones behind them; `nudgeDelegations` asks for a run
+  when a host is created or changed.
+- **Taking over an OAuth row** matches only on the account, keeping calendars, write target and ledger. A calendar in
+  common proves nothing: a personal account can subscribe to a work calendar, and would get the wrong credentials. Never revoke the old token: Google's revoke drops all of the project's tokens for that person,
+  which could be another host's. `saveConnection` leaves a delegated row alone, or a host's consent would replace the
+  delegation's token, and its upsert checks that again under its own lock, since a takeover in progress isn't visible
+  before it. `markNeedsReauth` re-reads the row, so a late failure of the old tokens does nothing.
+- **Losing access**: every `auth` failure goes through `handleAccessLost`. Any refusal may be old, from a request already on its way,
+  so nothing acts on one without asking again: before anything flips the credentials stored now are tried, and the flip
+  is conditional on them still being stored; before a mailbox is marked, it's asked again too, and the same goes for
+  that mark.
+  Refused credentials flip every connection to `delegation_failing` in one update (compare-and-set on the delegation: one webhook, log line and owner email), so
+  every `status = 'active'` filter works with no join in the availability path, and one update brings them back. On
+  the wire that status is `needs_reauth`. One mailbox gone only marks that connection, with no email to the host, who
+  can't fix it, and only after that mailbox has been asked again with today's credentials. Graph's 403 can't say which,
+  so `probeDelegation` asks about up to three mailboxes: a person leaving
+  must not hide everyone, including when they're the verified one. With no other mailbox to ask it can't tell, and
+  counts as the delegation's, so someone hears. An inconclusive probe changes nothing and backs off.
+- **Tokens outlive a revocation** by up to an hour: Google's and Entra's tokens aren't recalled. A delegated client
+  raises `auth` for what a revocation looks like (Graph's inner `$batch` 401/403, Google's `insufficientPermissions`),
+  or it'd pass as a failed read or a permanent write failure.
+- **A mailbox never reached still hides its host**: its connection gets a stand-in calendar row, since availability reads
+  health through calendars and with none the host reads as free. `connectHost` replaces it, and gives it a write target
+  if it turns out to be the primary. An email correction releases such a connection (`releaseUnreachedMailbox`): it
+  has no events, and it's the only mailbox change that doesn't need `calendar_account`. `reached_at` is what says it was
+  never reached: `verified_at` isn't, since toggling `read_busy` clears it.
+  The same goes for hosts it hasn't connected when access is lost, or who are added during an outage
+  (`hideUnconnectedHosts`), who are tried again as soon as it's back. A stand-in isn't shown on the wire or selectable.
+- **Deleting** is `deleting`, then the worker, within a run's budget: each connection released (details scrubbed,
+  channels stopped), then removed with the host locked `FOR UPDATE`, or a booking reading its write target would hit a foreign key. Hosts stay bookable with no conflict
+  check (the dialog and docs say so), as with any disconnect.
+- Bookers' live check and sync need no changes. Provider behaviour the fakes can't prove (granular scopes under
+  domain-wide delegation, Graph ids matching between `/me` and `/users/{id}`, app-only subscriptions and Teams links)
+  needs checking against a real Workspace and tenant when any of this changes.
+
 ## Team pages
 
 `manager.ts`: a `manager` session reaches the hosts it names, or those matching `manager_host_filter` on every request
@@ -295,8 +357,9 @@ attendee sees times, never other hosts.
   backoff and reports to Sentry once, until the write lands or the provider says the event is gone. Never work out
   "is this a cleanup?" from what the event will say: erasing the attendee leaves a guest in the description.
 - `description` is left out of writes to an event that never held details, so what a host wrote there stays.
-- Known limit: disconnecting scrubs what it can within a budget before access goes (`scrubDetailedEvents`, which can't
-  stop the disconnect), and deleting a host or a host revoking access at the provider scrubs nothing. Those copies are
+- Known limit: disconnecting and deleting a delegation scrub what they can within a budget before access goes
+  (`scrubDetailedEvents`, which can't stop either), and deleting a host, moving a delegated host's `calendar_account`
+  or a host revoking access at the provider scrubs nothing. Those copies are
   out of reach, and the docs say so.
 - A guest is a `scheduling_attendee` with `role = 'guest'`, only an email and optional name, and the attendee's zone and
   locale; `participants` lists the attendee first. The event type's `max_guests` (default 0, never on `group`) allows
@@ -335,7 +398,8 @@ aren't charged; reschedules are free; cancelled stays charged.
 
 `test/bookings.test.ts` races on real Postgres. `test/engine-differential.test.ts` compares `buildAvailability` with
 fixtures generated from Cal.com's `buildDateRanges`; the one intended difference is that Cal.com's overrides can spill
-outside the requested window. `FakeGoogleCalendarApi` (`./testing`) echoes writes back as busy, as the real one does.
+outside the requested window. `FakeGoogleCalendarApi` (`./testing`) echoes writes back as busy, as the real one does, and checks a service account's
+signature (`testServiceAccount`); `FakeGraphApi` only answers `/users/{mailbox}` paths, so a client left on `/me` shows.
 
 `bun run --cwd apps/worker scheduling:load` (`--hosts 500 --days 14 --concurrency 32 --bookings 500 --existing 20 --busy
 10 --away 2 --searches 30 --races 20 --big-table-rows 5000`, `--sandbox`, `--capped`) measures search, slots and booking on the

@@ -429,6 +429,10 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.slots.list",
     args: (r) => [tsValue(r.path.event_type), queryParams(r)],
   },
+  "GET /v1/scheduling/event_types/{event_type}/slots/explain": {
+    method: "scheduling.slots.explain",
+    args: (r) => [tsValue(r.path.event_type), queryParams(r)],
+  },
   "POST /v1/scheduling/availability/search": {
     method: "scheduling.availability.search",
     args: (r) => [tsValue(r.body ?? {})],
@@ -524,6 +528,30 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
   "PUT /v1/scheduling/hosts/{host}/simulated_busy": {
     method: "scheduling.calendars.setSimulatedBusy",
     args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/calendar_delegations": {
+    method: "scheduling.calendarDelegations.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/calendar_delegations": {
+    method: "scheduling.calendarDelegations.list",
+    args: () => [],
+  },
+  "GET /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.get",
+    args: (r) => [pathId(r)],
+  },
+  "PATCH /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.update",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/calendar_delegations/{id}/verify": {
+    method: "scheduling.calendarDelegations.verify",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.delete",
+    args: (r) => [pathId(r)],
   },
   "POST /v1/scheduling/hosts/{host}/sessions": {
     method: "scheduling.sessions.createForHost",

@@ -65,6 +65,7 @@ export type {
   SchedulingAttendeesResource,
   SchedulingAvailabilityResource,
   SchedulingBookingsResource,
+  SchedulingCalendarDelegationsResource,
   SchedulingCalendarsResource,
   SchedulingEventTypesResource,
   SchedulingHoldsResource,

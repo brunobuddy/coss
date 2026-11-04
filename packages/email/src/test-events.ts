@@ -290,6 +290,15 @@ export function sampleWebhookEvent(type: TestWebhookEventType, now: Date): Store
       host_ids: [newId(ID_PREFIXES.schedulingHost)],
       occurred_at: at,
     };
+  } else if (type.startsWith("scheduling.calendar_delegation.")) {
+    data = {
+      ...base,
+      delegation_id: newId(ID_PREFIXES.schedulingCalendarDelegation),
+      provider: "google",
+      domain: "example.com",
+      code: type.endsWith(".failing") ? "unauthorized_client" : null,
+      occurred_at: at,
+    };
   } else if (type.startsWith("scheduling.calendar.")) {
     data = {
       ...base,

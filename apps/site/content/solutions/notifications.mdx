@@ -24,6 +24,29 @@ faq:
     answer: Yes. Use smtp.coss.com on port 465 or 587 with the username coss and an API key as the password. Each message gets the same sender checks, suppressions, quotas, webhooks and logs as the API.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// [!code word:coss.email.send]
+await coss.email.send({
+  from: "Acme <orders@acme.com>",
+  to: "ada@example.com",
+  template_id: "order-shipped",
+  variables: { first_name: "Ada" },
+});
+
+await coss.sms.send({
+  from: "+14155550123",
+  to: "+14155550199",
+  body: "Acme: your order 1042 arrives today.",
+});
+```
+
+</HeroSample>
+
 <Section title="The problem" lede="Notifications go out on several channels, and each channel usually means another provider, another key and another log.">
 
 Order confirmations, password resets, shipping updates and reminders go out by email and, increasingly, by SMS. With one provider per channel, each has its own API key, its own webhook format, its own suppression list and its own dashboard, and answering "did the customer get it?" means checking several places.

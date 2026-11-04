@@ -10,6 +10,7 @@ import {
   SCHEDULING_BOOKING_EVENT_TYPES,
   SCHEDULING_WEBHOOK_EVENT_TYPES,
   SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
   SchedulingOutOfOfficeWebhookEvent,
   SchedulingReassignmentWebhookEvent,
@@ -75,6 +76,9 @@ export function webhookEventSchema(type: TestWebhookEventType): z.ZodType {
   if (type === "email.received") return ReceivedEmailWebhookEvent;
   if ((SCHEDULING_BOOKING_EVENT_TYPES as readonly string[]).includes(type)) {
     return SchedulingBookingWebhookEvent;
+  }
+  if (type.startsWith("scheduling.calendar_delegation.")) {
+    return SchedulingCalendarDelegationWebhookEvent;
   }
   if (type.startsWith("scheduling.out_of_office.")) return SchedulingOutOfOfficeWebhookEvent;
   if (type.startsWith("scheduling.reassignment.")) return SchedulingReassignmentWebhookEvent;
@@ -161,6 +165,7 @@ export const WebhookTestEventObject = z
         FormSubmissionWebhookEvent,
         SchedulingBookingWebhookEvent,
         SchedulingCalendarWebhookEvent,
+        SchedulingCalendarDelegationWebhookEvent,
         SchedulingOutOfOfficeWebhookEvent,
         SchedulingReassignmentWebhookEvent,
       ])

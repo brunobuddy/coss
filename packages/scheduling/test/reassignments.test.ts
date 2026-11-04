@@ -10,6 +10,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import {
   cancelBooking,
   cancelReassignment,
+  completeCalendarAuthorization,
   createBooking,
   createEventType,
   createHost,
@@ -25,16 +26,19 @@ import {
   putOutOfOffice,
   reencryptSchedulingData,
   rescheduleBooking,
+  runDueCalendarSyncs,
   runDueReassignments,
   runDueSchedulingNotifications,
   type SchedulingEmail,
   type SchedulingEnvironment,
+  startCalendarAuthorization,
   undoReassignment,
   updateHost,
   updateOutOfOffice,
 } from "../src/index.ts";
+import { expand } from "../src/reassignments.ts";
 import type { CreateReassignmentRequestOutput } from "../src/schemas.ts";
-import { testSchedulingDeps } from "../src/testing.ts";
+import { FakeGoogleCalendarApi, testSchedulingDeps } from "../src/testing.ts";
 
 const ms = Date.parse;
 const MONDAY = "2031-01-06";
@@ -233,6 +237,54 @@ describe("what a run covers", () => {
     const theirs = await book(other, type.id, at("10:00"), a.id);
     const { items } = await previewReassignment(live, request({ booking_ids: [theirs.id] }), plain);
     expect(items).toEqual([]);
+  });
+
+  test("a calendar read only so far doesn't count against a booking before then", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const api = new FakeGoogleCalendarApi();
+    const calendars = {
+      dataKeys: plain.dataKeys,
+      secretsKeys: secretsKeyRing([createHash("sha256").update("previews").digest()]),
+      apps: {
+        google: { clientId: "google-client", clientSecret: "google-secret" },
+        microsoft: null,
+      },
+      publicUrl: "https://api.example.test",
+      fetcher: api.fetch,
+      now: () => NOW,
+    };
+    const { url } = await startCalendarAuthorization(
+      env,
+      b.id,
+      { provider: "google", returnUrl: null },
+      calendars,
+    );
+    await completeCalendarAuthorization(
+      {
+        provider: "google",
+        state: new URL(url).searchParams.get("state") as string,
+        code: "code",
+        error: null,
+      },
+      calendars,
+    );
+    await runDueCalendarSyncs(calendars, scopeOf(env));
+    const type = await pool(env, [a, b]);
+    const soon = await book(env, type.id, at("10:00"), a.id);
+    const later = await book(env, type.id, at("10:00") + 40 * 24 * 3_600_000, a.id);
+    await db
+      .update(schema.schedulingCalendar)
+      .set({ coveredUntil: new Date(at("10:00") + 7 * 24 * 3_600_000) })
+      .where(eq(schema.schedulingCalendar.hostId, b.id));
+    const { items } = await previewReassignment(
+      env,
+      request({ host: a.id }, { to_host: b.id }),
+      plain,
+    );
+    const of = (id: string) => items.find((item) => item.booking === id);
+    expect(of(soon.id)).toMatchObject({ to_host: b.id, reason: null });
+    expect(of(later.id)).toMatchObject({ to_host: null, reason: "calendar_unverified" });
   });
 
   test("a limit on an event type only counts what's proposed from it", async () => {
@@ -1027,6 +1079,28 @@ describe("running", () => {
       .where(eq(schema.schedulingBookingEvent.bookingId, booking.id));
     expect(events.length).toBeGreaterThan(0);
     expect(events.filter((event) => event.note !== null)).toEqual([]);
+  });
+
+  test("a run cancelled while it's being worked out gets no items", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const type = await pool(env, [a, b]);
+    await book(env, type.id, at("10:00"), a.id);
+    const created = await start(env, request({ host: a.id }, { to_host: b.id }));
+    // What a worker read when it claimed the run, before someone cancelled it.
+    const where = eq(schema.schedulingReassignment.id, created.reassignment.id);
+    const [claimed] = await db
+      .update(schema.schedulingReassignment)
+      .set({ status: "running", leaseUntil: new Date(NOW.getTime() + 60_000) })
+      .where(where)
+      .returning();
+    await cancelReassignment(env, created.reassignment.id, plain);
+    await expand(claimed as never, NOW);
+    const items = await db
+      .select({ id: schema.schedulingReassignmentItem.id })
+      .from(schema.schedulingReassignmentItem)
+      .where(eq(schema.schedulingReassignmentItem.reassignmentId, created.reassignment.id));
+    expect(items).toEqual([]);
   });
 
   test("a booking moved out of what was selected stays where it is", async () => {

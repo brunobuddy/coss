@@ -34,6 +34,30 @@ faq:
     answer: Yes. Sub-accounts are billed to you, your own reputation still counts everything they send, and if your organization is suspended all of them stop.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// [!code word:coss.email.subaccounts.create]
+await coss.email.subaccounts.create({
+  name: "Acme Bakery",
+  uid: "user_8812",
+  quotas: { recipients_per_day: 5000 },
+});
+
+await coss.email.send({
+  subaccount: "user_8812",
+  from: "Acme Bakery <orders@acmebakery.com>",
+  to: "customer@example.com",
+  subject: "Your order is ready",
+  html: "<p>Come and pick it up.</p>",
+});
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Create a sub-account per user, give it a domain, and name it on each send. coss.com keeps its reputation, quotas and suppressions apart from everyone else's.">
 
 ```ts twoslash

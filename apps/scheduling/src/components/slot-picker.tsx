@@ -10,9 +10,13 @@ const DAY_MS = 86_400_000;
 // How far a page with nothing soon looks ahead on its own, before saying so.
 const EMPTY_MONTHS_TO_SKIP = 2;
 
-export type Slot = { start: string; end: string };
+export type Slot = { start: string; end: string; seats_left?: number | null };
 /** The only person who could take this is away. Never says why. */
 type AwayNotice = { until: string; message: string | null; covered: boolean };
+
+function seatsLabel(seats: number): string {
+  return seats === 1 ? "1 seat left" : `${seats} seats left`;
+}
 
 /** A day in the attendee's own zone, as a stable key. */
 function dayKey(iso: string, timeZone: string): string {
@@ -204,14 +208,28 @@ export function SlotPicker(props: {
               >
                 {times.map((slot) => (
                   <Button
-                    className="px-1 tabular-nums"
+                    className={
+                      slot.seats_left != null
+                        ? "h-auto px-1 py-1.5 tabular-nums"
+                        : "px-1 tabular-nums"
+                    }
                     disabled={busy}
                     key={slot.start}
                     onClick={() => onPick(slot)}
                     type="button"
                     variant="outline"
                   >
-                    {timeFormat.format(new Date(slot.start))}
+                    {slot.seats_left != null ? (
+                      // Stacked: three columns on a phone leave no room for it beside the time.
+                      <span className="flex flex-col items-center leading-tight">
+                        {timeFormat.format(new Date(slot.start))}
+                        <span className="font-normal text-muted-foreground text-xs">
+                          {seatsLabel(slot.seats_left)}
+                        </span>
+                      </span>
+                    ) : (
+                      timeFormat.format(new Date(slot.start))
+                    )}
                   </Button>
                 ))}
               </fieldset>

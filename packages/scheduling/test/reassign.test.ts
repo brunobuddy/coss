@@ -763,6 +763,64 @@ describe("one that's already started", () => {
   });
 });
 
+describe("a pool's counts when a booking changes hands", () => {
+  const countsOf = async (eventTypeId: string) =>
+    new Map(
+      (
+        await db
+          .select({
+            hostId: schema.schedulingEventTypeHost.hostId,
+            units: schema.schedulingEventTypeHost.fairUnits,
+          })
+          .from(schema.schedulingEventTypeHost)
+          .where(eq(schema.schedulingEventTypeHost.eventTypeId, eventTypeId))
+      ).map((row) => [row.hostId, row.units]),
+    );
+
+  async function bookedThenReweighted() {
+    const env = await environment();
+    const [first, second] = [await host(env, "First"), await host(env, "Second")];
+    const pool = await eventTypeWith(env, "pool", [member(first), member(second)]);
+    const { booking } = await createBooking(
+      env,
+      { eventType: pool.id, startMs: at("10:00"), host: first.id, attendee },
+      plain,
+      actor,
+    );
+    // Counts scale with a weight, so what the booking added isn't one any more.
+    await updateEventType(env, pool.id, {
+      hosts: [{ ...member(first), weight: 200 }, member(second)],
+    } as never);
+    expect((await countsOf(pool.id)).get(first.id)).toBe(2);
+    return { env, first, second, pool, booking };
+  }
+
+  test("reassigning gives back what the booking added, at today's weight", async () => {
+    const { env, first, second, pool, booking } = await bookedThenReweighted();
+    await reassign(env, booking.id, change(second.id));
+    const counts = await countsOf(pool.id);
+    expect(counts.get(first.id)).toBe(0);
+    expect(counts.get(second.id)).toBe(1);
+    // And what it adds now is on its row, for when it goes.
+    await cancelBooking(env, booking.id, plain, actor);
+    expect((await countsOf(pool.id)).get(second.id)).toBe(0);
+  });
+
+  test("so does rescheduling to another host", async () => {
+    const { env, first, second, pool, booking } = await bookedThenReweighted();
+    await rescheduleBooking(
+      env,
+      booking.id,
+      { startMs: at("11:00"), host: second.id },
+      plain,
+      actor,
+    );
+    const counts = await countsOf(pool.id);
+    expect(counts.get(first.id)).toBe(0);
+    expect(counts.get(second.id)).toBe(1);
+  });
+});
+
 describe("a group session with nothing left holding it", () => {
   test("can't move, rather than getting a claim that never ends", async () => {
     const env = await environment();

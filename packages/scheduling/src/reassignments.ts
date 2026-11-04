@@ -790,6 +790,8 @@ export async function previewReassignment(
             rule,
             host: {
               ...inputs,
+              // Read for all of them at once: a far-off booking says nothing about a near one.
+              calendarVerified: inputs.calendarVerifiedUntil(booking.endAt.getTime()),
               onlyWithin: anyHost ? undefined : coverage.get(hostId),
               limitUsage,
               claims: normalizeIntervals([
@@ -917,10 +919,18 @@ async function claimDue(now: Date, opts: Scan): Promise<ReassignmentRow[]> {
 }
 
 /** Works out what a run covers, once, when it first runs. */
-async function expand(run: ReassignmentRow, now: Date): Promise<void> {
+export async function expand(run: ReassignmentRow, now: Date): Promise<void> {
   if (run.expandedAt) return;
   const scope = { organizationId: run.organizationId, environmentId: run.environmentId };
   await db.transaction(async (tx) => {
+    // Cancelling takes this lock too, and then cancels whatever's pending: either it's seen these
+    // items, or there's nothing to add them to.
+    const [held] = await tx
+      .select({ id: schedulingReassignment.id })
+      .from(schedulingReassignment)
+      .where(stillHeld(run))
+      .for("update");
+    if (!held) return;
     const bookings = await selectBookings(tx, scope, run.selection, now, MAX_REASSIGNMENT_BOOKINGS);
     const strategy = run.strategy;
     const wanted =

@@ -58,6 +58,7 @@ describe("coss-mcp server", () => {
       "diagnose_sign_request",
       "diagnose_sms",
       "diagnose_verification",
+      "explain_scheduling_slot",
       "find_emails",
       "find_sms",
       "get_account_status",

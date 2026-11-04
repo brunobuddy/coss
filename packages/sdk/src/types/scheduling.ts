@@ -14,6 +14,8 @@ export type SchedulingHostLocation =
 export type SchedulingHostStatus = "active" | "disabled";
 
 export interface CreateSchedulingHostParams {
+  /** The mailbox a calendar delegation connects, when it isn't `email`. */
+  calendar_account?: string | null;
   /** Your own id for this host, unique in the environment. */
   uid?: string;
   name: string;
@@ -34,6 +36,8 @@ export interface UpdateSchedulingHostParams {
   uid?: string | null;
   name?: string;
   email?: string | null;
+  /** Moves a delegated calendar to this mailbox. Refused while bookings are still to come. */
+  calendar_account?: string | null;
   time_zone?: string;
   attributes?: SchedulingAttributes;
   /** Replaces this host's own locations. Existing bookings keep the location they have. */
@@ -49,6 +53,7 @@ export interface SchedulingHost {
   uid: string | null;
   name: string;
   email: string | null;
+  calendar_account: string | null;
   time_zone: string;
   attributes: SchedulingAttributes;
   locations: SchedulingHostLocation[];
@@ -286,12 +291,42 @@ export interface SchedulingSlot {
   end: string;
   /** Who could take it. */
   hosts: string[];
+  /** Free seats at this start, for a `group` event type. `null` for the others. */
+  seats_left: number | null;
 }
 
 export interface SchedulingSlotList {
   object: "list";
   data: SchedulingSlot[];
   has_more: false;
+}
+
+export interface ExplainSchedulingSlotParams {
+  start: string;
+  /** Only this host (id or uid). */
+  host?: string;
+  duration_minutes?: number;
+  /** A JSON object narrowing a pool, such as `{"licensed_in":"CA"}`. */
+  attributes?: string;
+}
+
+export interface SchedulingSlotExplanation {
+  object: "scheduling.slot_explanation";
+  start: string;
+  end: string;
+  /** Whether it can be booked right now. */
+  available: boolean;
+  /** Why it can't, such as `host_busy` or `no_hosts`. With several hosts refused, the first one's reason. */
+  reason: string | null;
+  hosts: {
+    host: string;
+    /** `required` hosts must all be free. Only one `member` needs to be. */
+    role: "required" | "member";
+    available: boolean;
+    reason: string | null;
+    /** With `calendar_unverified`, why the calendars can't be trusted. */
+    calendar_reason: string | null;
+  }[];
 }
 
 export interface SearchSchedulingAvailabilityParams {
@@ -528,6 +563,8 @@ export interface SchedulingCalendarConnection {
   account: string;
   /** `needs_reauth`: access was lost, and this host isn't offered until it's back. */
   status: "active" | "needs_reauth";
+  /** The calendar delegation that manages it, which can't be disconnected or reconnected by itself. */
+  delegation: string | null;
   calendars: {
     id: string;
     external_id: string;
@@ -547,6 +584,73 @@ export interface DeletedSchedulingCalendarConnection {
 export interface UpdateSchedulingCalendarParams {
   read_busy?: boolean;
   write_target?: boolean;
+}
+
+export type CreateSchedulingCalendarDelegationParams =
+  | {
+      provider: "google";
+      domain: string;
+      /** Whether a host's `email` picks their mailbox when `calendar_account` isn't set. */
+      match_host_email?: boolean;
+      /** The whole JSON key of a service account in your Google Cloud project. */
+      service_account_key: string;
+    }
+  | {
+      provider: "microsoft";
+      domain: string;
+      /** Whether a host's `email` picks their mailbox when `calendar_account` isn't set. */
+      match_host_email?: boolean;
+      tenant_id: string;
+      client_id: string;
+      client_secret: string;
+      /** Owners and admins are warned 14 days before. */
+      secret_expires_at?: string;
+    };
+
+export interface UpdateSchedulingCalendarDelegationParams {
+  match_host_email?: boolean;
+  /** Tried on the verified mailbox before it replaces the old one. */
+  service_account_key?: string;
+  /** Tried on the verified mailbox before it replaces the old one. */
+  client_secret?: string;
+  secret_expires_at?: string | null;
+}
+
+export interface VerifySchedulingCalendarDelegationParams {
+  /** A real mailbox on the domain to try. */
+  account: string;
+}
+
+export interface SchedulingCalendarDelegation {
+  object: "scheduling.calendar_delegation";
+  id: string;
+  provider: "google" | "microsoft";
+  domain: string;
+  /**
+   * `pending`: not verified yet. `failing`: the provider refused access, and its hosts aren't offered
+   * until it's back. `deleting`: its connections are being removed.
+   */
+  status: "pending" | "active" | "failing" | "deleting";
+  match_host_email: boolean;
+  /** Google: the numeric client ID your Workspace admin authorizes. */
+  client_id: string;
+  tenant_id: string | null;
+  /** What to authorize: OAuth scopes in Google's Admin console, the permission in Entra. */
+  scopes: string[];
+  verified_account: string | null;
+  last_error_code: string | null;
+  failing_since: string | null;
+  secret_expires_at: string | null;
+  hosts_connected: number;
+  hosts_failed: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeletedSchedulingCalendarDelegation {
+  object: "scheduling.calendar_delegation";
+  id: string;
+  deleted: true;
 }
 
 export interface SetSchedulingSimulatedBusyParams {
@@ -663,6 +767,10 @@ export type SchedulingCalendarWebhookEventType =
   | "scheduling.calendar.needs_reauth"
   | "scheduling.calendar.disconnected";
 
+export type SchedulingCalendarDelegationWebhookEventType =
+  | "scheduling.calendar_delegation.failing"
+  | "scheduling.calendar_delegation.restored";
+
 export type SchedulingOutOfOfficeWebhookEventType =
   | "scheduling.out_of_office.created"
   | "scheduling.out_of_office.updated"
@@ -675,6 +783,7 @@ export type SchedulingReassignmentWebhookEventType = "scheduling.reassignment.co
 export type SchedulingWebhookEventType =
   | SchedulingBookingWebhookEventType
   | SchedulingCalendarWebhookEventType
+  | SchedulingCalendarDelegationWebhookEventType
   | SchedulingOutOfOfficeWebhookEventType
   | SchedulingReassignmentWebhookEventType;
 
@@ -712,6 +821,22 @@ export interface SchedulingCalendarWebhookEvent {
   api_version: string;
   created_at: string;
   data: { host_id: string; connection_id: string; provider: string; occurred_at: string };
+}
+
+export interface SchedulingCalendarDelegationWebhookEvent {
+  id: string;
+  object: "event";
+  type: SchedulingCalendarDelegationWebhookEventType;
+  api_version: string;
+  created_at: string;
+  data: {
+    delegation_id: string;
+    provider: string;
+    domain: string;
+    /** What the provider said, when it refused. */
+    code: string | null;
+    occurred_at: string;
+  };
 }
 
 /** Ids and times only: why someone's away is never in a webhook. */

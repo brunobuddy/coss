@@ -161,6 +161,7 @@ export const PRODUCTS: readonly Product[] = [
       { label: "Holidays", path: "/scheduling/holidays" },
       { label: "Reassignments", path: "/scheduling/reassignments" },
       { label: "Event types", path: "/scheduling/event-types" },
+      { label: "Calendar delegation", path: "/scheduling/calendar-delegation" },
       { label: "Settings", path: "/scheduling/settings" },
     ],
   },

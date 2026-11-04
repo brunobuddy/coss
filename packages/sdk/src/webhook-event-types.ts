@@ -89,6 +89,8 @@ export const WEBHOOK_EVENT_TYPES: readonly WebhookEventType[] = [
   "scheduling.calendar.connected",
   "scheduling.calendar.needs_reauth",
   "scheduling.calendar.disconnected",
+  "scheduling.calendar_delegation.failing",
+  "scheduling.calendar_delegation.restored",
   "scheduling.out_of_office.created",
   "scheduling.out_of_office.updated",
   "scheduling.out_of_office.deleted",

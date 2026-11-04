@@ -35,6 +35,28 @@ faq:
     answer: A paid plan's monthly fee becomes usage credit that pays for any product, so a month costs the larger of the fee and your usage. Every product is on one invoice, and owners can set a spend limit, budgets per member, project or API key, and usage alerts. The pricing page lists the plans.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss(); // COSS_API_KEY: one key for every product
+// ---cut---
+// [!code word:coss.environment.get]
+const { data: environment } = await coss.environment.get();
+
+await coss.webhookEndpoints.create({
+  url: "https://example.com/webhooks/coss",
+  event_types: ["email.bounced", "sms.failed"],
+});
+
+const { data: logs } = await coss.logs.list({
+  from: new Date(Date.now() - 24 * 60 * 60 * 1000),
+  level: ["warning", "error"],
+});
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Every product sits on the same environments, keys, webhooks, logs and bill. Learn them once and every new product works the same way.">
 
 ```ts twoslash

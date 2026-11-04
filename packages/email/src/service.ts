@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { UsageGate } from "@coss/billing/gate";
-import { billingHoldExists, budgetHoldExists } from "@coss/billing/metering";
+import {
+  billableEmailMegabytes,
+  billingHoldExists,
+  budgetHoldExists,
+} from "@coss/billing/metering";
 import { hipaaModeSql } from "@coss/compliance";
 import { db, schema, type Transaction } from "@coss/db";
 import { isId } from "@coss/db/id";
@@ -1446,7 +1450,7 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
       typeof email.$inferInsert,
       "idempotencyKey" | "requestHash" | "batchId" | "batchIndex" | "traceparent"
     >,
-  ): Promise<{ row: EmailRow; billable: number } | undefined> {
+  ): Promise<{ row: EmailRow; usage: SendUsage } | undefined> {
     const tracked =
       prepared.values.trackOpens || prepared.values.trackClicks || prepared.values.unsubscribe;
     const [row] = await tx
@@ -1489,17 +1493,32 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         stream: row.stream,
       });
     }
-    return { row, billable: recipients.length - suppressed.size };
+    const billable = recipients.length - suppressed.size;
+    const attachmentBytes = prepared.attachments.reduce((total, file) => total + file.size, 0);
+    return {
+      row,
+      usage: {
+        recipients: billable,
+        attachmentMegabytes: billableEmailMegabytes(attachmentBytes) * billable,
+      },
+    };
   }
 
-  /** Reserves capped usage (Free's allowance) as the transaction's last statement. */
-  async function reserveUsage(tx: Transaction, environment: SendEnvironment, recipients: number) {
+  /** Reserves capped usage (Free's allowance) as the transaction's last statements. */
+  async function reserveUsage(tx: Transaction, environment: SendEnvironment, usage: SendUsage) {
     if (environment.mode !== "live" || !opts.billing) return;
     await opts.billing.reserve(tx, {
       organizationId: environment.organizationId,
       meter: "email.recipients",
-      quantity: recipients,
+      quantity: usage.recipients,
     });
+    if (usage.attachmentMegabytes > 0) {
+      await opts.billing.reserve(tx, {
+        organizationId: environment.organizationId,
+        meter: "email.attachment_data",
+        quantity: usage.attachmentMegabytes,
+      });
+    }
   }
 
   async function send(
@@ -1570,7 +1589,7 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
       });
       if (!inserted) return undefined;
       await input.afterInsert?.(tx, inserted.row);
-      await reserveUsage(tx, environment, inserted.billable);
+      await reserveUsage(tx, environment, inserted.usage);
       return inserted.row;
     };
     const stored = async (row: EmailRow, replayed: boolean) => {
@@ -1694,7 +1713,7 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         .onConflictDoNothing({ target: [emailBatch.environmentId, emailBatch.idempotencyKey] })
         .returning();
       if (!batch) return batch;
-      let billable = 0;
+      const usage: SendUsage = { recipients: 0, attachmentMegabytes: 0 };
       for (const [batchIndex, item] of prepared.entries()) {
         const inserted = await insertPrepared(tx, environment, item, {
           batchId: batch.id,
@@ -1702,10 +1721,11 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
           traceparent: input.traceparent ?? null,
         });
         if (!inserted) throw new Error("Batch email insert returned no row.");
-        billable += inserted.billable;
+        usage.recipients += inserted.usage.recipients;
+        usage.attachmentMegabytes += inserted.usage.attachmentMegabytes;
       }
       // One reservation for the whole batch: it is accepted or refused as a whole.
-      await reserveUsage(tx, environment, billable);
+      await reserveUsage(tx, environment, usage);
       return batch;
     };
 
@@ -1777,6 +1797,9 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
 }
 
 type EmailBatchRow = typeof emailBatch.$inferSelect;
+
+/** What an accepted send reserves of capped meters. */
+type SendUsage = { recipients: number; attachmentMegabytes: number };
 
 type PreparedSend = {
   values: Omit<

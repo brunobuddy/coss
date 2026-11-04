@@ -15,6 +15,7 @@ import type { MarketingStanding, ReputationCheck, ReputationStatus } from "./rep
 import type { RiskDecision, RiskEvent, RiskOutcome, RiskReason } from "./risk.ts";
 import type {
   SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
   SchedulingOutOfOfficeWebhookEvent,
   SchedulingReassignmentWebhookEvent,
@@ -491,5 +492,6 @@ export type WebhookEvent =
   | FormSubmissionWebhookEvent
   | SchedulingBookingWebhookEvent
   | SchedulingCalendarWebhookEvent
+  | SchedulingCalendarDelegationWebhookEvent
   | SchedulingOutOfOfficeWebhookEvent
   | SchedulingReassignmentWebhookEvent;

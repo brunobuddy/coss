@@ -18,6 +18,7 @@ const {
   migration,
   riskSettings,
   schedulingCalendarConnection,
+  schedulingCalendarDelegation,
   schedulingHolidayCalendar,
   smsAccount,
   webhookEndpoint,
@@ -74,6 +75,7 @@ export async function reencryptWebhookSecrets(opts: {
   await reencryptSmsAuthTokens({ ...opts, batchSize }, result);
   await reencryptMigrationCredentials({ ...opts, batchSize }, result);
   await reencryptCalendarCredentials({ ...opts, batchSize }, result);
+  await reencryptCalendarDelegations({ ...opts, batchSize }, result);
   await reencryptHolidayFeeds({ ...opts, batchSize }, result);
   return result;
 }
@@ -437,6 +439,78 @@ async function reencryptCalendarCredentials(
           ),
         )
         .returning({ id: schedulingCalendarConnection.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < opts.batchSize) break;
+    after = last.id;
+  }
+}
+
+/** Scheduling's calendar delegations: a customer's service account key or client secret. */
+async function reencryptCalendarDelegations(
+  opts: {
+    keys: SecretsKeyRing;
+    dryRun?: boolean;
+    batchSize: number;
+    scope?: { organizationIds: string[] };
+  },
+  result: ReencryptResult,
+): Promise<void> {
+  const { keys } = opts;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingCalendarDelegation.id,
+        organizationId: schedulingCalendarDelegation.organizationId,
+        stored: schedulingCalendarDelegation.encryptedCredentials,
+      })
+      .from(schedulingCalendarDelegation)
+      .where(
+        and(
+          gt(schedulingCalendarDelegation.id, after),
+          opts.scope
+            ? inArray(schedulingCalendarDelegation.organizationId, opts.scope.organizationIds)
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingCalendarDelegation.id))
+      .limit(opts.batchSize);
+    for (const row of rows) {
+      const { stored } = row;
+      result.checked++;
+      if (isEncryptedWithPrimary(stored, keys)) continue;
+      let encryptedCredentials: string;
+      try {
+        encryptedCredentials = encryptSecret(decryptSecret(stored, keys), keys);
+      } catch (error) {
+        result.unreadable.push({
+          id: row.id,
+          organizationId: row.organizationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        continue;
+      }
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      const [updated] = await db
+        .update(schedulingCalendarDelegation)
+        .set({
+          encryptedCredentials,
+          updatedAt: sql`${schedulingCalendarDelegation.updatedAt}`,
+        })
+        .where(
+          and(
+            eq(schedulingCalendarDelegation.id, row.id),
+            eq(schedulingCalendarDelegation.organizationId, row.organizationId),
+            eq(schedulingCalendarDelegation.encryptedCredentials, stored),
+          ),
+        )
+        .returning({ id: schedulingCalendarDelegation.id });
       if (updated) result.reencrypted++;
       else result.conflicts++;
     }

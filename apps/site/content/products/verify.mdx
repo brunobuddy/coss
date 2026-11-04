@@ -37,6 +37,31 @@ faq:
     answer: Use a sandbox key. The code is always zeros, such as 000000 with the default length, SMS go to the SMS simulator and emails to the sandbox's fake provider, and nothing is billed. The fraud guard still runs, so a premium-rate test number is blocked as in live environments.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const userIp: string;
+declare const typedCode: string;
+// ---cut---
+// [!code word:coss.verify.start]
+// The user typed their number: send them a code.
+const { error } = await coss.verify.start({
+  to: "+14155550123", // or an email address
+  ip: userIp,
+  user_id: "user_42",
+});
+
+// They typed the code they got: check it.
+const { data: check } = await coss.verify.check({
+  to: "+14155550123",
+  code: typedCode,
+});
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Your backend makes two calls. coss.com makes the code, sends it, counts the attempts and expires it.">
 
 ```ts twoslash

@@ -34,6 +34,27 @@ faq:
     answer: Yes. Rate limiting is one of Risk's building blocks, on the same API key and SDK. Buckets are managed under Risk in the dashboard or with coss.risk.limitBuckets.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const form: { email: string };
+// ---cut---
+// [!code word:coss.risk.limit]
+const { data } = await coss.risk.limit({
+  bucket: "password_reset",
+  key: form.email,
+});
+
+if (data && !data.allowed) {
+  const seconds = Math.ceil((data.retry_after_ms ?? 0) / 1000);
+  throw new Error(`Try again in ${seconds} seconds.`);
+}
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Define a bucket once, then check a key against it on every request. A denied check is an answer, not an error.">
 
 ```ts twoslash

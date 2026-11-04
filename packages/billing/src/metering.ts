@@ -6,6 +6,8 @@ import { db, type Executor, schema } from "@coss/db";
 import { type AnyColumn, and, eq, exists, inArray, or, type SQL, sql } from "drizzle-orm";
 import type { MeterKey } from "./catalog/meters.ts";
 
+export { billableEmailMegabytes } from "./catalog/meters.ts";
+
 const { billingBudgetHold, billingHold, billingUsage, billingUsageAttribution } = schema;
 
 /** Rows per organization, hour and meter that concurrent writers spread over. */

@@ -284,7 +284,16 @@ function expiryOf(booking: BookingRow, liveUntil: Date | null) {
   return {};
 }
 
-async function swapHostRow(tx: Executor, booking: BookingRow, swap: Swap): Promise<void> {
+async function joinHostRow(tx: Executor, booking: BookingRow, swap: Swap): Promise<void> {
+  await tx.insert(schedulingBookingHost).values({
+    bookingId: booking.id,
+    hostId: swap.to.id,
+    organizationId: booking.organizationId,
+    role: swap.from.role,
+  });
+}
+
+async function leaveHostRow(tx: Executor, booking: BookingRow, swap: Swap): Promise<void> {
   await tx
     .delete(schedulingBookingHost)
     .where(
@@ -294,12 +303,11 @@ async function swapHostRow(tx: Executor, booking: BookingRow, swap: Swap): Promi
         eq(schedulingBookingHost.hostId, swap.from.hostId),
       ),
     );
-  await tx.insert(schedulingBookingHost).values({
-    bookingId: booking.id,
-    hostId: swap.to.id,
-    organizationId: booking.organizationId,
-    role: swap.from.role,
-  });
+}
+
+async function swapHostRow(tx: Executor, booking: BookingRow, swap: Swap): Promise<void> {
+  await joinHostRow(tx, booking, swap);
+  await leaveHostRow(tx, booking, swap);
 }
 
 /** The pool's count follows the booking, one row at a time and in order, as bookers take them. */
@@ -566,8 +574,11 @@ async function reassignOne(
       organizationId: booking.organizationId,
       hostId: swap.from.hostId,
     });
-    await swapHostRow(tx, booking, swap);
+    await joinHostRow(tx, booking, swap);
   }
+  // With both on the booking: what comes back is the share it added, and that's on the row leaving.
+  if (!started && eventType.kind === "pool") await moveFairness(tx, booking, swaps);
+  for (const swap of swaps) await leaveHostRow(tx, booking, swap);
   current = await bumped(tx, booking, {
     ...expiryOf(booking, liveUntil),
     externalConflictAt: null,
@@ -584,7 +595,6 @@ async function reassignOne(
     const after = await participants(tx, current);
     await setCalendarState(tx, current, after.hostIds, "present");
   }
-  if (!started && eventType.kind === "pool") await moveFairness(tx, booking, swaps);
   await recordChange(tx, current, {
     type: "scheduling.booking.reassigned",
     webhook: "scheduling.booking.reassigned",

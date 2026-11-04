@@ -4,10 +4,12 @@
  */
 import {
   ADD_ONS,
+  EMAIL_DATA_INCLUDED_MB,
   formatDimension,
   METER_KEYS,
   METERS,
   type MeterKey,
+  PLANS,
   type PlanKey,
   planDefinition,
   RATE_CARDS,
@@ -125,6 +127,11 @@ export type RateTable = {
   per: string;
   /** e.g. "United States" for a dimension's own rate. */
   scope: string | null;
+  /**
+   * How the bands read: one `flat` price, `graduated` volume bands (each at its own rate), or a
+   * price per `value` (number types, registration fees).
+   */
+  kind: "flat" | "graduated" | "value";
   bands: { range: string; price: string }[];
   note: string | null;
 };
@@ -166,7 +173,9 @@ function bandsOf(rate: Rate, per: number): RateTable["bands"] {
 
 /** What a meter's rate card doesn't say on its own. */
 export const METER_NOTES: Partial<Record<MeterKey, string>> = {
+  "email.attachment_data": `Attachments past each email's first ${EMAIL_DATA_INCLUDED_MB} MB, per recipient; rounded up to the MB per email`,
   "email.received": "Mail flagged as spam or carrying a virus is free",
+  "email.received_data": `Received messages past their first ${EMAIL_DATA_INCLUDED_MB} MB, with the same mail free; rounded up to the MB per email`,
   "email.inboxes":
     "30 inbox-days are an inbox for a month, charged by the day; every plan includes 3 inboxes",
   "hooks.messages":
@@ -191,7 +200,7 @@ export function rateTables(): RateTable[] {
         : `per ${definition.displayPer.toLocaleString("en-US")} ${definition.units}`;
     const note =
       meter === "email.dedicated_ip"
-        ? `With the ${ADD_ONS.dedicated_ips.name} add-on (${formatPrice(ADD_ONS.dedicated_ips.unitAmountCents)}/month), on top of email`
+        ? `With the ${ADD_ONS.dedicated_ips.name} add-on (${formatPrice(ADD_ONS.dedicated_ips.unitAmountCents)}/month, on ${ADD_ONS.dedicated_ips.plans.map((plan) => PLANS[plan].name).join(" and ")}), on top of email`
         : byCountry(meter)
           ? "Other countries in the SMS rates below"
           : (METER_NOTES[meter] ?? null);
@@ -202,13 +211,27 @@ export function rateTables(): RateTable[] {
       note,
     };
     if (rates.default) {
-      return [{ ...base, scope: null, bands: bandsOf(rates.default, definition.displayPer) }];
+      return [
+        {
+          ...base,
+          scope: null,
+          kind: rates.default.tiers.length > 1 ? "graduated" : "flat",
+          bands: bandsOf(rates.default, definition.displayPer),
+        },
+      ];
     }
     const entries = Object.entries(rates.byDimension ?? {});
     if (byCountry(meter)) {
       const us = rates.byDimension?.["country=US"];
       return us
-        ? [{ ...base, scope: countryName("US"), bands: bandsOf(us, definition.displayPer) }]
+        ? [
+            {
+              ...base,
+              scope: countryName("US"),
+              kind: "flat",
+              bands: bandsOf(us, definition.displayPer),
+            },
+          ]
         : [];
     }
     // Flat prices per value (number types, registration fees): one card, a line per value.
@@ -216,6 +239,7 @@ export function rateTables(): RateTable[] {
       {
         ...base,
         scope: null,
+        kind: "value",
         bands: entries.flatMap(([dimension, rate]) => {
           const [only] = rate.tiers;
           if (!only) return [];
