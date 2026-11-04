@@ -250,16 +250,19 @@
                       "permanent",
                       "transient",
                       "undetermined"
-                    ]
+                    ],
+                    "description": "`permanent`, `transient` or `undetermined`."
                   },
                   "sub_type": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The provider's finer classification of the bounce."
                   },
                   "diagnostic_code": {
                     "type": [
                       "string",
                       "null"
-                    ]
+                    ],
+                    "description": "What the receiving server answered. `null`: not reported."
                   }
                 },
                 "required": [
@@ -275,13 +278,15 @@
                     "type": [
                       "string",
                       "null"
-                    ]
+                    ],
+                    "description": "The kind of complaint the mailbox provider reported. `null`: not reported."
                   },
                   "sub_type": {
                     "type": [
                       "string",
                       "null"
-                    ]
+                    ],
+                    "description": "The provider's finer classification. `null`: not reported."
                   }
                 },
                 "required": [
@@ -293,20 +298,23 @@
                 "type": "object",
                 "properties": {
                   "type": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The provider's reason for the delay."
                   },
                   "expires_at": {
                     "type": [
                       "string",
                       "null"
                     ],
-                    "format": "date-time"
+                    "format": "date-time",
+                    "description": "When the provider stops trying. `null`: not reported."
                   },
                   "diagnostic_code": {
                     "type": [
                       "string",
                       "null"
-                    ]
+                    ],
+                    "description": "What the receiving server answered. `null`: not reported."
                   }
                 },
                 "required": [
@@ -322,7 +330,8 @@
                     "type": [
                       "string",
                       "null"
-                    ]
+                    ],
+                    "description": "What the receiving server answered. `null`: not reported."
                   }
                 },
                 "required": [
@@ -333,10 +342,12 @@
                 "type": "object",
                 "properties": {
                   "code": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Machine-readable reason."
                   },
                   "message": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Human-readable explanation."
                   }
                 },
                 "required": [
@@ -348,10 +359,12 @@
                 "type": "object",
                 "properties": {
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The suppression's id."
                   },
                   "scope": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "What it covers: every email, every marketing email, or one category."
                   },
                   "reason": {
                     "type": "string",
@@ -379,13 +392,15 @@
                     "type": [
                       "string",
                       "null"
-                    ]
+                    ],
+                    "description": "The contact who unsubscribed. `null`: none."
                   },
                   "topic": {
                     "type": [
                       "string",
                       "null"
-                    ]
+                    ],
+                    "description": "The topic they left. `null`: marketing altogether."
                   }
                 },
                 "required": [
@@ -401,7 +416,8 @@
                     "type": [
                       "string",
                       "null"
-                    ]
+                    ],
+                    "description": "The client's `User-Agent`. `null`: not sent."
                   }
                 },
                 "required": [
@@ -424,7 +440,8 @@
                     "type": [
                       "string",
                       "null"
-                    ]
+                    ],
+                    "description": "The client's `User-Agent`. `null`: not sent."
                   }
                 },
                 "required": [
@@ -736,7 +753,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The spam verdict."
           },
           "virus": {
             "anyOf": [
@@ -752,7 +770,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The virus verdict."
           },
           "spf": {
             "anyOf": [
@@ -768,7 +787,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The SPF verdict."
           },
           "dkim": {
             "anyOf": [
@@ -784,7 +804,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The DKIM verdict."
           },
           "dmarc": {
             "anyOf": [
@@ -800,7 +821,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The DMARC verdict."
           },
           "dmarc_policy": {
             "type": [
@@ -1160,7 +1182,8 @@
               "subaccount.reputation_recovered",
               "subaccount.paused",
               "subaccount.reinstated"
-            ]
+            ],
+            "description": "What changed for the sub-account."
           },
           "api_version": {
             "type": "string",
@@ -1168,19 +1191,22 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the event was created."
           },
           "data": {
             "type": "object",
             "properties": {
               "subaccount_id": {
-                "type": "string"
+                "type": "string",
+                "description": "The sub-account's id."
               },
               "uid": {
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "Your own id for it. `null`: none."
               },
               "status": {
                 "type": "string",
@@ -1188,7 +1214,8 @@
                   "good",
                   "warning",
                   "paused"
-                ]
+                ],
+                "description": "Its status after this event."
               },
               "previous_status": {
                 "type": "string",
@@ -1196,7 +1223,8 @@
                   "good",
                   "warning",
                   "paused"
-                ]
+                ],
+                "description": "Its status before."
               },
               "trigger": {
                 "type": [
@@ -1207,7 +1235,8 @@
               },
               "occurred_at": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When this happened."
               },
               "checks": {
                 "type": "array",
@@ -1225,7 +1254,8 @@
               "trigger",
               "occurred_at",
               "checks"
-            ]
+            ],
+            "description": "The sub-account's standing."
           }
         },
         "required": [
@@ -1308,7 +1338,8 @@
                 "type": "object",
                 "properties": {
                   "organization_id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The organization's id."
                   },
                   "occurred_at": {
                     "type": "string",
@@ -1372,7 +1403,8 @@
                 "type": "object",
                 "properties": {
                   "organization_id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The organization's id."
                   },
                   "occurred_at": {
                     "type": "string",
@@ -1448,7 +1480,8 @@
                 "type": "object",
                 "properties": {
                   "organization_id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The organization's id."
                   },
                   "occurred_at": {
                     "type": "string",
@@ -1546,7 +1579,8 @@
                 "type": "object",
                 "properties": {
                   "organization_id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The organization's id."
                   },
                   "occurred_at": {
                     "type": "string",
@@ -1597,11 +1631,13 @@
                     "properties": {
                       "start": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "description": "When the period starts (inclusive)."
                       },
                       "end": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "description": "When the period ends (exclusive)."
                       }
                     },
                     "required": [
@@ -1667,7 +1703,8 @@
                 "type": "object",
                 "properties": {
                   "organization_id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The organization's id."
                   },
                   "occurred_at": {
                     "type": "string",
@@ -1736,7 +1773,8 @@
                 "type": "object",
                 "properties": {
                   "organization_id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The organization's id."
                   },
                   "occurred_at": {
                     "type": "string",
@@ -1800,7 +1838,8 @@
                 "type": "object",
                 "properties": {
                   "organization_id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The organization's id."
                   },
                   "occurred_at": {
                     "type": "string",
@@ -1837,11 +1876,13 @@
                     "properties": {
                       "start": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "description": "When the period starts (inclusive)."
                       },
                       "end": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "description": "When the period ends (exclusive)."
                       }
                     },
                     "required": [
@@ -1909,7 +1950,8 @@
                 "type": "object",
                 "properties": {
                   "organization_id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The organization's id."
                   },
                   "occurred_at": {
                     "type": "string",
@@ -2004,7 +2046,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The invoice number. `null` until it's finalized."
           },
           "kind": {
             "type": "string",
@@ -2013,7 +2056,8 @@
               "plan_change",
               "one_off",
               "final"
-            ]
+            ],
+            "description": "`period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account."
           },
           "status": {
             "type": "string",
@@ -2022,30 +2066,35 @@
               "paid",
               "void",
               "uncollectible"
-            ]
+            ],
+            "description": "`open`: not paid yet. `paid`: settled. `void`: canceled. `uncollectible`: written off."
           },
           "currency": {
             "type": "string",
             "enum": [
               "usd"
-            ]
+            ],
+            "description": "Always `usd`."
           },
           "period": {
             "type": "object",
             "properties": {
               "start": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period starts (inclusive)."
               },
               "end": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period ends (exclusive)."
               }
             },
             "required": [
               "start",
               "end"
-            ]
+            ],
+            "description": "What period it covers."
           },
           "subtotal": {
             "type": "integer",
@@ -2080,35 +2129,40 @@
             "enum": [
               "charge_automatically",
               "send_invoice"
-            ]
+            ],
+            "description": "`charge_automatically`: charged to the payment method. `send_invoice`: paid by `due_at`."
           },
           "due_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When payment is due. `null`: not set."
           },
           "finalized_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was finalized. `null`: not yet."
           },
           "paid_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was paid. `null`: not paid."
           },
           "voided_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was voided. `null`: it wasn't."
           },
           "hosted_url": {
             "type": [
@@ -2121,7 +2175,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The invoice as a PDF. `null`: not available."
           }
         },
         "required": [
@@ -2197,10 +2252,12 @@
             "description": "`amount`: dollars (`amount` and `remaining` in cents); `units`: free units of `meter`."
           },
           "amount": {
-            "type": "integer"
+            "type": "integer",
+            "description": "How much was granted: cents, or units for a `units` credit."
           },
           "remaining": {
-            "type": "integer"
+            "type": "integer",
+            "description": "How much is left, in the same unit as `amount`."
           },
           "meter": {
             "type": [
@@ -2276,28 +2333,33 @@
               "promotion",
               "refund",
               "sla"
-            ]
+            ],
+            "description": "Where it came from: `fee`, `commitment`, `support`, `promotion`, `refund` or `sla`."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "What it's for."
           },
           "effective_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it can start being used."
           },
           "expires_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When what's left expires. `null`: never."
           },
           "voided_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was voided. `null`: it wasn't."
           },
           "created_at": {
             "type": "string",
@@ -2358,7 +2420,8 @@
             "enum": [
               "risk.assessment.review",
               "risk.assessment.reviewed"
-            ]
+            ],
+            "description": "What happened to the assessment."
           },
           "api_version": {
             "type": "string",
@@ -2372,7 +2435,8 @@
             "type": "object",
             "properties": {
               "assessment_id": {
-                "type": "string"
+                "type": "string",
+                "description": "The assessment's id."
               },
               "event": {
                 "$ref": "#/components/schemas/RiskEvent"
@@ -2381,25 +2445,29 @@
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "Your name for a `custom` event. `null`: none."
               },
               "decision": {
                 "$ref": "#/components/schemas/RiskDecision"
               },
               "score": {
-                "type": "number"
+                "type": "number",
+                "description": "0-1: how risky the signals are together."
               },
               "reasons": {
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/RiskReason"
-                }
+                },
+                "description": "Why, most significant first."
               },
               "user_id": {
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "Your user id. `null`: none given."
               },
               "outcome": {
                 "anyOf": [
@@ -2414,7 +2482,8 @@
               },
               "occurred_at": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When this happened."
               }
             },
             "required": [
@@ -2427,7 +2496,8 @@
               "user_id",
               "outcome",
               "occurred_at"
-            ]
+            ],
+            "description": "The assessment, without its signals."
           }
         },
         "required": [
@@ -2515,10 +2585,12 @@
               "rule.matched",
               "list.blocked",
               "list.allowed"
-            ]
+            ],
+            "description": "The reason's code, listed under Risk's reasons in the docs."
           },
           "message": {
-            "type": "string"
+            "type": "string",
+            "description": "What it means, in words. May change."
           },
           "value": {
             "type": "number",
@@ -2533,7 +2605,8 @@
             "enum": [
               "1h",
               "24h"
-            ]
+            ],
+            "description": "`velocity.*`: the window it's counted over."
           },
           "suggestion": {
             "type": "string",
@@ -3097,7 +3170,8 @@
                 "type": "object",
                 "properties": {
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The suppression's id."
                   },
                   "reason": {
                     "type": "string",
@@ -3105,7 +3179,8 @@
                       "opt_out",
                       "manual",
                       "invalid_number"
-                    ]
+                    ],
+                    "description": "Why the number is suppressed."
                   }
                 },
                 "required": [
@@ -3951,10 +4026,12 @@
             "description": "The environment's id."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "The environment's name."
           },
           "slug": {
-            "type": "string"
+            "type": "string",
+            "description": "The environment's slug, as in dashboard URLs."
           },
           "mode": {
             "type": "string",
@@ -3985,7 +4062,8 @@
               "name",
               "slug"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "The project it belongs to."
           },
           "organization": {
             "type": "object",
@@ -4018,7 +4096,8 @@
               "api_version",
               "hipaa_mode"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "The organization it belongs to."
           },
           "api_key": {
             "type": "object",
@@ -4031,7 +4110,8 @@
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "The key's name. `null`: none."
               },
               "start": {
                 "type": [
@@ -4233,52 +4313,61 @@
             ]
           },
           "from": {
-            "type": "string"
+            "type": "string",
+            "description": "Who it's sent from."
           },
           "to": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The `To` addresses."
           },
           "cc": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The `Cc` addresses."
           },
           "bcc": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The `Bcc` addresses."
           },
           "reply_to": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The `Reply-To` addresses."
           },
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "The subject, rendered if it came from a template."
           },
           "html": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The HTML part. `null`: none, or the body was discarded."
           },
           "text": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The plain text part. `null`: none, or the body was discarded."
           },
           "headers": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
-            }
+            },
+            "description": "The custom headers it was sent with."
           },
           "tags": {
             "type": "array",
@@ -4286,30 +4375,35 @@
               "type": "object",
               "properties": {
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The tag's name."
                 },
                 "value": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The tag's value."
                 }
               },
               "required": [
                 "name",
                 "value"
               ]
-            }
+            },
+            "description": "Your tags on the email."
           },
           "category": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The email's category, which suppressions and tracking rules can scope to. `null`: none."
           },
           "stream": {
             "type": "string",
             "enum": [
               "transactional",
               "marketing"
-            ]
+            ],
+            "description": "`transactional` or `marketing`."
           },
           "status": {
             "type": "string",
@@ -4337,7 +4431,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EmailRecipient"
-            }
+            },
+            "description": "Each recipient, with how delivery to them went."
           },
           "attachments": {
             "type": "array",
@@ -4362,7 +4457,8 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was handed to the provider. `null`: not yet."
           },
           "scheduled_at": {
             "type": [
@@ -4536,7 +4632,8 @@
               "to",
               "cc",
               "bcc"
-            ]
+            ],
+            "description": "Which list it's on: `to`, `cc` or `bcc`."
           },
           "status": {
             "type": "string",
@@ -4558,7 +4655,8 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When its latest delivery event happened. `null`: none yet."
           }
         },
         "required": [
@@ -4567,6 +4665,7 @@
           "status",
           "last_event_at"
         ],
+        "description": "One recipient of an email and how delivery to them went.",
         "examples": [
           {
             "address": "user@example.com",
@@ -4625,38 +4724,44 @@
             "description": "Whether the email carries one-click unsubscribe headers (RFC 8058)."
           },
           "open_count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Times opened. Mail clients that prefetch images inflate it."
           },
           "first_opened_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was first opened. `null`: not yet."
           },
           "last_opened_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was last opened. `null`: not yet."
           },
           "click_count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Link clicks. Link scanners inflate it."
           },
           "first_clicked_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When a link was first clicked. `null`: not yet."
           },
           "last_clicked_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When a link was last clicked. `null`: not yet."
           }
         },
         "required": [
@@ -4771,7 +4876,8 @@
                 "minItems": 1,
                 "maxItems": 50
               }
-            ]
+            ],
+            "description": "Who it goes to."
           },
           "cc": {
             "anyOf": [
@@ -4788,7 +4894,8 @@
                 "minItems": 0,
                 "maxItems": 50
               }
-            ]
+            ],
+            "description": "Who it's copied to."
           },
           "bcc": {
             "anyOf": [
@@ -4805,7 +4912,8 @@
                 "minItems": 0,
                 "maxItems": 50
               }
-            ]
+            ],
+            "description": "Who it's blind copied to."
           },
           "reply_to": {
             "anyOf": [
@@ -4822,7 +4930,8 @@
                 "minItems": 0,
                 "maxItems": 50
               }
-            ]
+            ],
+            "description": "Where replies go."
           },
           "subject": {
             "type": "string",
@@ -4884,11 +4993,13 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "pattern": "^[A-Za-z0-9_-]{1,256}$"
+                  "pattern": "^[A-Za-z0-9_-]{1,256}$",
+                  "description": "The tag's name, unique on the email."
                 },
                 "value": {
                   "type": "string",
-                  "pattern": "^[A-Za-z0-9_-]{1,256}$"
+                  "pattern": "^[A-Za-z0-9_-]{1,256}$",
+                  "description": "The tag's value."
                 }
               },
               "required": [
@@ -4897,7 +5008,8 @@
               ],
               "additionalProperties": false
             },
-            "maxItems": 50
+            "maxItems": 50,
+            "description": "Your tags on the email."
           },
           "category": {
             "type": "string",
@@ -5251,34 +5363,40 @@
             ]
           },
           "from": {
-            "type": "string"
+            "type": "string",
+            "description": "Who it's sent from."
           },
           "to": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The `To` addresses."
           },
           "cc": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The `Cc` addresses."
           },
           "bcc": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The `Bcc` addresses."
           },
           "reply_to": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The `Reply-To` addresses."
           },
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "The subject, rendered if it came from a template."
           },
           "tags": {
             "type": "array",
@@ -5286,30 +5404,35 @@
               "type": "object",
               "properties": {
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The tag's name."
                 },
                 "value": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The tag's value."
                 }
               },
               "required": [
                 "name",
                 "value"
               ]
-            }
+            },
+            "description": "Your tags on the email."
           },
           "category": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The email's category, which suppressions and tracking rules can scope to. `null`: none."
           },
           "stream": {
             "type": "string",
             "enum": [
               "transactional",
               "marketing"
-            ]
+            ],
+            "description": "`transactional` or `marketing`."
           },
           "status": {
             "type": "string",
@@ -5337,7 +5460,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EmailRecipient"
-            }
+            },
+            "description": "Each recipient, with how delivery to them went."
           },
           "sandbox": {
             "type": "boolean",
@@ -5355,7 +5479,8 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was handed to the provider. `null`: not yet."
           },
           "scheduled_at": {
             "type": [
@@ -5573,7 +5698,8 @@
             ]
           },
           "email_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The email's id."
           },
           "type": {
             "type": "string",
@@ -5591,7 +5717,8 @@
               "email.clicked",
               "email.rescheduled",
               "email.unsubscribed"
-            ]
+            ],
+            "description": "What happened, such as `email.delivered` or `email.bounced`."
           },
           "recipient": {
             "type": [
@@ -5602,7 +5729,8 @@
           },
           "occurred_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it happened."
           },
           "data": {
             "$ref": "#/components/schemas/EmailEventData"
@@ -5645,16 +5773,19 @@
                   "permanent",
                   "transient",
                   "undetermined"
-                ]
+                ],
+                "description": "`permanent`, `transient` or `undetermined`."
               },
               "sub_type": {
-                "type": "string"
+                "type": "string",
+                "description": "The provider's finer classification of the bounce."
               },
               "diagnostic_code": {
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "What the receiving server answered. `null`: not reported."
               }
             },
             "required": [
@@ -5670,13 +5801,15 @@
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "The kind of complaint the mailbox provider reported. `null`: not reported."
               },
               "sub_type": {
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "The provider's finer classification. `null`: not reported."
               }
             },
             "required": [
@@ -5688,20 +5821,23 @@
             "type": "object",
             "properties": {
               "type": {
-                "type": "string"
+                "type": "string",
+                "description": "The provider's reason for the delay."
               },
               "expires_at": {
                 "type": [
                   "string",
                   "null"
                 ],
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the provider stops trying. `null`: not reported."
               },
               "diagnostic_code": {
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "What the receiving server answered. `null`: not reported."
               }
             },
             "required": [
@@ -5717,7 +5853,8 @@
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "What the receiving server answered. `null`: not reported."
               }
             },
             "required": [
@@ -5728,10 +5865,12 @@
             "type": "object",
             "properties": {
               "code": {
-                "type": "string"
+                "type": "string",
+                "description": "Machine-readable reason."
               },
               "message": {
-                "type": "string"
+                "type": "string",
+                "description": "Human-readable explanation."
               }
             },
             "required": [
@@ -5743,10 +5882,12 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "string"
+                "type": "string",
+                "description": "The suppression's id."
               },
               "scope": {
-                "type": "string"
+                "type": "string",
+                "description": "What it covers: every email, every marketing email, or one category."
               },
               "reason": {
                 "type": "string",
@@ -5774,13 +5915,15 @@
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "The contact who unsubscribed. `null`: none."
               },
               "topic": {
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "The topic they left. `null`: marketing altogether."
               }
             },
             "required": [
@@ -5796,7 +5939,8 @@
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "The client's `User-Agent`. `null`: not sent."
               }
             },
             "required": [
@@ -5819,7 +5963,8 @@
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "The client's `User-Agent`. `null`: not sent."
               }
             },
             "required": [
@@ -5850,6 +5995,7 @@
             "description": "Only for `email.rescheduled`."
           }
         },
+        "description": "Details of the event: only what its `type` has.",
         "examples": [
           {
             "delivery": {
@@ -5917,31 +6063,36 @@
             ]
           },
           "email_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The email's id."
           },
           "position": {
             "type": "integer",
             "description": "Index of the link among the tracked links."
           },
           "url": {
-            "type": "string"
+            "type": "string",
+            "description": "The original link."
           },
           "click_count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Times it was clicked. Link scanners inflate it."
           },
           "first_clicked_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was first clicked. `null`: not yet."
           },
           "last_clicked_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was last clicked. `null`: not yet."
           }
         },
         "required": [
@@ -6968,7 +7119,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The provider region it sends from. `null`: not set up there."
           },
           "mail_from_domain": {
             "type": "string",
@@ -6981,7 +7133,8 @@
               "success",
               "temporary_failure",
               "failed"
-            ]
+            ],
+            "description": "How setting up its bounce-handling `MAIL FROM` domain went."
           },
           "records": {
             "type": "array",
@@ -6999,21 +7152,24 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When DNS was last checked. `null`: not yet."
           },
           "verified_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was verified. `null`: it isn't."
           },
           "failed_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When verification failed. `null`: it hasn't."
           },
           "tracking": {
             "anyOf": [
@@ -7265,7 +7421,8 @@
                 "type": "string",
                 "enum": [
                   "CNAME"
-                ]
+                ],
+                "description": "The record's type."
               },
               "name": {
                 "type": "string",
@@ -7318,21 +7475,24 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was last checked. `null`: not yet."
           },
           "activated_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it became active. `null`: it isn't."
           },
           "failed_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it failed. `null`: it hasn't."
           }
         },
         "required": [
@@ -7389,7 +7549,8 @@
                 "type": "string",
                 "enum": [
                   "MX"
-                ]
+                ],
+                "description": "The record's type."
               },
               "name": {
                 "type": "string",
@@ -7400,7 +7561,8 @@
                 "description": "The mail exchange the record must point at."
               },
               "priority": {
-                "type": "integer"
+                "type": "integer",
+                "description": "The MX record's priority."
               },
               "status": {
                 "type": "string",
@@ -7439,7 +7601,8 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was last checked. `null`: not yet."
           }
         },
         "required": [
@@ -7826,7 +7989,8 @@
             ]
           },
           "domain_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The domain's id."
           },
           "report_address": {
             "anyOf": [
@@ -7923,7 +8087,8 @@
                       "add_reporting",
                       "complete_rollout",
                       "tighten"
-                    ]
+                    ],
+                    "description": "The kind of step this is."
                   },
                   "policy": {
                     "type": "string",
@@ -7931,7 +8096,8 @@
                       "none",
                       "quarantine",
                       "reject"
-                    ]
+                    ],
+                    "description": "The policy that step gets to."
                   },
                   "record": {
                     "type": "string",
@@ -7965,13 +8131,16 @@
                     "coss_pass_rate",
                     "pass_rate",
                     "sources"
-                  ]
+                  ],
+                  "description": "Which check this is."
                 },
                 "ok": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "description": "Whether it passes."
                 },
                 "message": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "What it found."
                 }
               },
               "required": [
@@ -7986,33 +8155,41 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Things to look at before tightening the policy."
           },
           "report_summary": {
             "type": "object",
             "properties": {
               "period_start": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period starts."
               },
               "period_end": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period ends."
               },
               "reports": {
-                "type": "integer"
+                "type": "integer",
+                "description": "Reports received."
               },
               "messages": {
-                "type": "integer"
+                "type": "integer",
+                "description": "Messages they cover."
               },
               "passing": {
-                "type": "integer"
+                "type": "integer",
+                "description": "Of those, how many passed DMARC."
               },
               "coss_messages": {
-                "type": "integer"
+                "type": "integer",
+                "description": "Of those, how many were sent through coss.com."
               },
               "coss_passing": {
-                "type": "integer"
+                "type": "integer",
+                "description": "Of those, how many passed DMARC."
               },
               "first_report_at": {
                 "anyOf": [
@@ -8023,7 +8200,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "When the first report arrived. `null`: none yet."
               },
               "last_report_at": {
                 "anyOf": [
@@ -8034,7 +8212,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "When the latest report arrived. `null`: none yet."
               },
               "sources": {
                 "type": "array",
@@ -8055,7 +8234,8 @@
               "first_report_at",
               "last_report_at",
               "sources"
-            ]
+            ],
+            "description": "What the aggregate reports of this period say."
           }
         },
         "required": [
@@ -8156,7 +8336,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The domain's policy tag."
           },
           "sp": {
             "anyOf": [
@@ -8171,7 +8352,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The subdomain policy tag. `null`: not published."
           },
           "np": {
             "anyOf": [
@@ -8186,7 +8368,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The policy tag for non-existent subdomains. `null`: not published."
           },
           "adkim": {
             "anyOf": [
@@ -8200,7 +8383,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The DKIM alignment tag. `null`: not published."
           },
           "aspf": {
             "anyOf": [
@@ -8214,7 +8398,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The SPF alignment tag. `null`: not published."
           },
           "pct": {
             "anyOf": [
@@ -8239,7 +8424,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The testing tag. `null`: not published."
           },
           "rua": {
             "type": "array",
@@ -8388,13 +8574,15 @@
             "type": "string"
           },
           "domain_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The domain's id."
           },
           "reporter": {
             "type": "object",
             "properties": {
               "org_name": {
-                "type": "string"
+                "type": "string",
+                "description": "The reporting organization."
               },
               "email": {
                 "anyOf": [
@@ -8404,13 +8592,15 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "Its contact address."
               }
             },
             "required": [
               "org_name",
               "email"
-            ]
+            ],
+            "description": "Who sent the report."
           },
           "report_id": {
             "type": "string",
@@ -8418,17 +8608,20 @@
           },
           "period_start": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the period it covers starts."
           },
           "period_end": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the period it covers ends."
           },
           "policy_published": {
             "type": "object",
             "properties": {
               "domain": {
-                "type": "string"
+                "type": "string",
+                "description": "The domain the policy was published for."
               },
               "p": {
                 "anyOf": [
@@ -8438,7 +8631,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The domain's policy tag."
               },
               "sp": {
                 "anyOf": [
@@ -8448,7 +8642,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The subdomain policy tag."
               },
               "np": {
                 "anyOf": [
@@ -8458,7 +8653,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The policy tag for non-existent subdomains."
               },
               "adkim": {
                 "anyOf": [
@@ -8468,7 +8664,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The DKIM alignment tag."
               },
               "aspf": {
                 "anyOf": [
@@ -8478,7 +8675,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The SPF alignment tag."
               },
               "pct": {
                 "anyOf": [
@@ -8488,7 +8686,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The percentage tag."
               },
               "testing": {
                 "anyOf": [
@@ -8498,7 +8697,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The testing tag."
               }
             },
             "required": [
@@ -8514,10 +8714,12 @@
             "description": "The policy the reporter found when it evaluated the mail."
           },
           "messages": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Messages the report covers."
           },
           "passing": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Of those, how many passed DMARC."
           },
           "truncated": {
             "type": "boolean",
@@ -8525,7 +8727,8 @@
           },
           "received_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When coss.com received it."
           }
         },
         "required": [
@@ -8584,13 +8787,15 @@
             "type": "string"
           },
           "domain_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The domain's id."
           },
           "reporter": {
             "type": "object",
             "properties": {
               "org_name": {
-                "type": "string"
+                "type": "string",
+                "description": "The reporting organization."
               },
               "email": {
                 "anyOf": [
@@ -8600,13 +8805,15 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "Its contact address."
               }
             },
             "required": [
               "org_name",
               "email"
-            ]
+            ],
+            "description": "Who sent the report."
           },
           "report_id": {
             "type": "string",
@@ -8614,17 +8821,20 @@
           },
           "period_start": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the period it covers starts."
           },
           "period_end": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the period it covers ends."
           },
           "policy_published": {
             "type": "object",
             "properties": {
               "domain": {
-                "type": "string"
+                "type": "string",
+                "description": "The domain the policy was published for."
               },
               "p": {
                 "anyOf": [
@@ -8634,7 +8844,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The domain's policy tag."
               },
               "sp": {
                 "anyOf": [
@@ -8644,7 +8855,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The subdomain policy tag."
               },
               "np": {
                 "anyOf": [
@@ -8654,7 +8866,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The policy tag for non-existent subdomains."
               },
               "adkim": {
                 "anyOf": [
@@ -8664,7 +8877,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The DKIM alignment tag."
               },
               "aspf": {
                 "anyOf": [
@@ -8674,7 +8888,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The SPF alignment tag."
               },
               "pct": {
                 "anyOf": [
@@ -8684,7 +8899,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The percentage tag."
               },
               "testing": {
                 "anyOf": [
@@ -8694,7 +8910,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The testing tag."
               }
             },
             "required": [
@@ -8710,10 +8927,12 @@
             "description": "The policy the reporter found when it evaluated the mail."
           },
           "messages": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Messages the report covers."
           },
           "passing": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Of those, how many passed DMARC."
           },
           "truncated": {
             "type": "boolean",
@@ -8721,7 +8940,8 @@
           },
           "received_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When coss.com received it."
           },
           "records": {
             "type": "array",
@@ -8808,10 +9028,12 @@
         "type": "object",
         "properties": {
           "source_ip": {
-            "type": "string"
+            "type": "string",
+            "description": "The address the messages came from."
           },
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "How many messages this line covers."
           },
           "disposition": {
             "type": "string",
@@ -8839,10 +9061,12 @@
             "description": "Aligned SPF result."
           },
           "dmarc_pass": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether they passed DMARC."
           },
           "header_from": {
-            "type": "string"
+            "type": "string",
+            "description": "The domain in their `From` header."
           },
           "envelope_from": {
             "anyOf": [
@@ -8852,10 +9076,12 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The domain in their envelope sender."
           },
           "via_coss": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether they were sent through coss.com, by its DKIM selectors or bounce domain."
           },
           "auth_results": {
             "type": "object",
@@ -8866,7 +9092,8 @@
                   "type": "object",
                   "properties": {
                     "domain": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The signing domain."
                     },
                     "selector": {
                       "anyOf": [
@@ -8876,10 +9103,12 @@
                         {
                           "type": "null"
                         }
-                      ]
+                      ],
+                      "description": "The selector."
                     },
                     "result": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The result."
                     }
                   },
                   "required": [
@@ -8887,7 +9116,8 @@
                     "selector",
                     "result"
                   ]
-                }
+                },
+                "description": "Each DKIM signature's result."
               },
               "spf": {
                 "type": "array",
@@ -8895,7 +9125,8 @@
                   "type": "object",
                   "properties": {
                     "domain": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The checked domain."
                     },
                     "scope": {
                       "anyOf": [
@@ -8905,10 +9136,12 @@
                         {
                           "type": "null"
                         }
-                      ]
+                      ],
+                      "description": "What it was checked against."
                     },
                     "result": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The result."
                     }
                   },
                   "required": [
@@ -8916,13 +9149,15 @@
                     "scope",
                     "result"
                   ]
-                }
+                },
+                "description": "Each SPF check's result."
               }
             },
             "required": [
               "dkim",
               "spf"
-            ]
+            ],
+            "description": "What receivers saw for DKIM and SPF."
           },
           "reasons": {
             "type": "array",
@@ -8930,7 +9165,8 @@
               "type": "object",
               "properties": {
                 "type": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The kind of override."
                 },
                 "comment": {
                   "anyOf": [
@@ -8940,14 +9176,16 @@
                     {
                       "type": "null"
                     }
-                  ]
+                  ],
+                  "description": "The receiver's comment."
                 }
               },
               "required": [
                 "type",
                 "comment"
               ]
-            }
+            },
+            "description": "Why receivers overrode the policy."
           }
         },
         "required": [
@@ -10770,7 +11008,8 @@
               "verification.approved",
               "verification.failed",
               "verification.blocked"
-            ]
+            ],
+            "description": "What happened to the verification."
           },
           "api_version": {
             "type": "string",
@@ -10781,23 +11020,27 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the event was created."
           },
           "data": {
             "type": "object",
             "properties": {
               "verification_id": {
-                "type": "string"
+                "type": "string",
+                "description": "The verification's id."
               },
               "channel": {
                 "type": "string",
                 "enum": [
                   "sms",
                   "email"
-                ]
+                ],
+                "description": "`sms` or `email`."
               },
               "to": {
-                "type": "string"
+                "type": "string",
+                "description": "The phone number (E.164) or address the code goes to."
               },
               "status": {
                 "type": "string",
@@ -10808,7 +11051,8 @@
                   "canceled",
                   "failed",
                   "blocked"
-                ]
+                ],
+                "description": "Its status after this event."
               },
               "failure": {
                 "type": [
@@ -10817,16 +11061,19 @@
                 ],
                 "properties": {
                   "code": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Machine-readable reason."
                   },
                   "message": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Human-readable explanation."
                   }
                 },
                 "required": [
                   "code",
                   "message"
-                ]
+                ],
+                "description": "Why it `failed`. `null` otherwise."
               },
               "reasons": {
                 "type": "array",
@@ -10844,7 +11091,8 @@
                     "code"
                   ],
                   "description": "A fraud guard reason (see the docs' list)."
-                }
+                },
+                "description": "Why it was `blocked`. Empty otherwise."
               },
               "tags": {
                 "type": "array",
@@ -10852,24 +11100,29 @@
                   "type": "object",
                   "properties": {
                     "name": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The tag's name."
                     },
                     "value": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The tag's value."
                     }
                   },
                   "required": [
                     "name",
                     "value"
                   ]
-                }
+                },
+                "description": "Your tags on the verification."
               },
               "sandbox": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Whether it's made in a sandbox environment: simulated."
               },
               "occurred_at": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When this happened."
               }
             },
             "required": [
@@ -10882,7 +11135,8 @@
               "tags",
               "sandbox",
               "occurred_at"
-            ]
+            ],
+            "description": "The verification. Never its code."
           }
         },
         "required": [
@@ -11206,7 +11460,8 @@
             ]
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "description": "The address checked."
           },
           "suppressed": {
             "type": "boolean",
@@ -11412,13 +11667,15 @@
             "description": "Your own id for it (e.g. your user's id), unique in the environment. Every path and send that takes a sub-account accepts its `id` or its `uid`."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Your name for it."
           },
           "metadata": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
-            }
+            },
+            "description": "Your own key-value pairs."
           },
           "status": {
             "type": "string",
@@ -11518,6 +11775,7 @@
           "recipients_per_second",
           "burst"
         ],
+        "description": "Its own sending limits.",
         "examples": [
           {
             "recipients_per_day": 5000,
@@ -11550,14 +11808,16 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When its status last changed. `null`: never."
           },
           "reinstated_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was last reinstated. `null`: never."
           }
         },
         "required": [
@@ -11566,6 +11826,7 @@
           "changed_at",
           "reinstated_at"
         ],
+        "description": "Its own sending standing.",
         "examples": [
           {
             "status": "good",
@@ -11616,7 +11877,8 @@
                   "null"
                 ],
                 "minimum": 1,
-                "maximum": 100000000
+                "maximum": 100000000,
+                "description": "Most recipients a day. `null` removes the limit."
               },
               "recipients_per_second": {
                 "type": [
@@ -11624,7 +11886,8 @@
                   "null"
                 ],
                 "minimum": 1,
-                "maximum": 100000000
+                "maximum": 100000000,
+                "description": "Most recipients a second. `null` removes the limit."
               },
               "burst": {
                 "type": [
@@ -11632,7 +11895,8 @@
                   "null"
                 ],
                 "minimum": 1,
-                "maximum": 100000000
+                "maximum": 100000000,
+                "description": "How many recipients a moment may take before the per-second rate applies. `null` removes it."
               }
             },
             "additionalProperties": false,
@@ -11726,15 +11990,18 @@
             ]
           },
           "subaccount_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The sub-account's id."
           },
           "from": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "The first date included."
           },
           "to": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "The last date included."
           },
           "data": {
             "type": "array",
@@ -11777,7 +12044,8 @@
         "properties": {
           "date": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "The UTC date."
           },
           "recipients": {
             "type": "integer",
@@ -11788,16 +12056,20 @@
             "description": "Handed to the provider (delivered or not)."
           },
           "delivered": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Deliveries that day."
           },
           "bounced": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Bounces that day."
           },
           "complained": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Complaints that day."
           },
           "failed": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Failures that day."
           },
           "suppressed": {
             "type": "integer",
@@ -11833,7 +12105,8 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 256
+            "maxLength": 256,
+            "description": "Your name for it."
           },
           "uid": {
             "type": [
@@ -11872,7 +12145,8 @@
                   "null"
                 ],
                 "minimum": 1,
-                "maximum": 100000000
+                "maximum": 100000000,
+                "description": "Most recipients a day. `null` removes the limit."
               },
               "recipients_per_second": {
                 "type": [
@@ -11880,7 +12154,8 @@
                   "null"
                 ],
                 "minimum": 1,
-                "maximum": 100000000
+                "maximum": 100000000,
+                "description": "Most recipients a second. `null` removes the limit."
               },
               "burst": {
                 "type": [
@@ -11888,7 +12163,8 @@
                   "null"
                 ],
                 "minimum": 1,
-                "maximum": 100000000
+                "maximum": 100000000,
+                "description": "How many recipients a moment may take before the per-second rate applies. `null` removes it."
               }
             },
             "additionalProperties": false,
@@ -12756,7 +13032,8 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "string"
+                "type": "string",
+                "description": "The suppression's id."
               },
               "reason": {
                 "type": "string",
@@ -12764,7 +13041,8 @@
                   "opt_out",
                   "manual",
                   "invalid_number"
-                ]
+                ],
+                "description": "Why the number is suppressed."
               }
             },
             "required": [
@@ -15489,10 +15767,12 @@
             "enum": [
               "sms",
               "email"
-            ]
+            ],
+            "description": "`sms` or `email`."
           },
           "to": {
-            "type": "string"
+            "type": "string",
+            "description": "The phone number (E.164) or address the code goes to."
           },
           "country": {
             "type": [
@@ -15520,10 +15800,12 @@
             ],
             "properties": {
               "code": {
-                "type": "string"
+                "type": "string",
+                "description": "Machine-readable reason."
               },
               "message": {
-                "type": "string"
+                "type": "string",
+                "description": "Human-readable explanation."
               }
             },
             "required": [
@@ -15556,7 +15838,8 @@
             "description": "Wrong codes checked so far."
           },
           "max_attempts": {
-            "type": "integer"
+            "type": "integer",
+            "description": "How many wrong codes end it."
           },
           "sends": {
             "type": "array",
@@ -15571,17 +15854,20 @@
               "type": "object",
               "properties": {
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The tag's name."
                 },
                 "value": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The tag's value."
                 }
               },
               "required": [
                 "name",
                 "value"
               ]
-            }
+            },
+            "description": "Your tags on the verification."
           },
           "sandbox": {
             "type": "boolean",
@@ -15589,14 +15875,16 @@
           },
           "expires_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the code stops working."
           },
           "approved_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the right code was checked. `null`: it wasn't."
           },
           "created_at": {
             "type": "string",
@@ -15658,7 +15946,8 @@
             "enum": [
               "sms",
               "email"
-            ]
+            ],
+            "description": "`sms` or `email`."
           },
           "route": {
             "type": "string",
@@ -17550,7 +17839,8 @@
             "description": "Your own id for this host, unique in the environment, accepted wherever a host id is. `null` when none is set."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "The host's name."
           },
           "email": {
             "type": [
@@ -17648,7 +17938,8 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "The host's name."
           },
           "email": {
             "type": "string",
@@ -17780,7 +18071,8 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "The host's name."
           },
           "email": {
             "type": [
@@ -17788,7 +18080,8 @@
               "null"
             ],
             "maxLength": 320,
-            "format": "email"
+            "format": "email",
+            "description": "Where this host's notifications go. `null` removes it."
           },
           "time_zone": {
             "type": "string",
@@ -21575,7 +21868,8 @@
             "description": "Seconds until it stops working. At most a day."
           },
           "read_only": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "The host can look but not change anything."
           }
         },
         "additionalProperties": false,
@@ -21951,7 +22245,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The environment's tracking default. `null`: none is set."
           },
           "categories": {
             "type": "array",
@@ -22719,7 +23014,8 @@
               "additionalProperties": false
             },
             "minItems": 1,
-            "maxItems": 1000
+            "maxItems": 1000,
+            "description": "The contacts to create or update, at most 1,000."
           },
           "audience_id": {
             "type": "string",
@@ -22982,7 +23278,8 @@
               "additionalProperties": false
             },
             "minItems": 1,
-            "maxItems": 100
+            "maxItems": 100,
+            "description": "The contact's choices per topic. Topics not listed keep theirs."
           }
         },
         "required": [
@@ -24981,7 +25278,8 @@
         "properties": {
           "key": {
             "type": "string",
-            "pattern": "^[A-Za-z0-9_-]{1,256}$"
+            "pattern": "^[A-Za-z0-9_-]{1,256}$",
+            "description": "The `category` of the emails about this topic. Can't change."
           },
           "name": {
             "type": "string",
@@ -25264,7 +25562,8 @@
               "null"
             ],
             "maxLength": 2000,
-            "format": "uri"
+            "format": "uri",
+            "description": "Where a confirmed contact is sent, an https URL. `null`: coss.com's own page."
           }
         },
         "additionalProperties": false,
@@ -25305,7 +25604,8 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When `status` last changed. `null`: it never has."
           },
           "evaluated_at": {
             "type": [
@@ -25323,11 +25623,13 @@
             "properties": {
               "start": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period starts."
               },
               "end": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period ends."
               }
             },
             "required": [
@@ -25340,7 +25642,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ReputationCheck"
-            }
+            },
+            "description": "The measurements behind `status`."
           },
           "marketing": {
             "$ref": "#/components/schemas/MarketingStanding"
@@ -25446,7 +25749,8 @@
           },
           "occurred_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it happened."
           },
           "source": {
             "$ref": "#/components/schemas/LogSource"
@@ -25473,19 +25777,22 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The API key that made the request. `null`: not an API request."
           },
           "method": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The HTTP method. `null`: not an HTTP line."
           },
           "path": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The request's path. `null`: not an API request."
           },
           "route": {
             "type": [
@@ -25505,25 +25812,29 @@
             "type": [
               "integer",
               "null"
-            ]
+            ],
+            "description": "How long it took, in milliseconds. `null`: not timed."
           },
           "client_ip": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The caller's address. `null`: not an API request."
           },
           "user_agent": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The caller's `User-Agent`. `null`: not sent."
           },
           "error_code": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The error's `code`. `null`: no error."
           },
           "resource_type": {
             "type": [
@@ -25536,13 +25847,15 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The id of what it's about. `null`: nothing in particular."
           },
           "recipient": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The recipient an email event is about. `null`: none."
           },
           "attributes": {
             "type": "object",
@@ -25741,7 +26054,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The id of what it acted on. `null`: nothing in particular."
           },
           "target_label": {
             "type": [
@@ -25773,13 +26087,15 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The actor's address. `null`: unknown."
           },
           "user_agent": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The actor's `User-Agent`. `null`: unknown."
           }
         },
         "required": [
@@ -25841,7 +26157,8 @@
             ]
           },
           "organization_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The organization's id."
           },
           "plan": {
             "type": "string",
@@ -25860,7 +26177,8 @@
             ],
             "properties": {
               "id": {
-                "type": "string"
+                "type": "string",
+                "description": "The contract's id."
               },
               "kind": {
                 "type": "string",
@@ -25868,18 +26186,21 @@
                   "self_serve",
                   "sales",
                   "internal"
-                ]
+                ],
+                "description": "`self_serve`: chosen in the dashboard. `sales`: agreed with coss.com. `internal`: coss.com's own."
               },
               "effective_from": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When it took effect."
               },
               "effective_until": {
                 "type": [
                   "string",
                   "null"
                 ],
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When it ends. `null`: no end is set."
               },
               "term_end": {
                 "type": [
@@ -25890,7 +26211,8 @@
                 "description": "End of a committed term."
               },
               "auto_renew": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Whether a committed term renews when it ends."
               }
             },
             "required": [
@@ -25911,7 +26233,8 @@
             "properties": {
               "effective_at": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When it takes effect."
               },
               "plan": {
                 "type": "string",
@@ -25920,7 +26243,8 @@
                   "pro",
                   "scale",
                   "enterprise"
-                ]
+                ],
+                "description": "The plan it changes to."
               }
             },
             "required": [
@@ -25949,11 +26273,13 @@
                     "delinquent",
                     "spend_limit",
                     "admin"
-                  ]
+                  ],
+                  "description": "`delinquent`: an invoice is past its grace period. `spend_limit`: the spend limit was reached. `admin`: placed by coss.com."
                 },
                 "since": {
                   "type": "string",
-                  "format": "date-time"
+                  "format": "date-time",
+                  "description": "When the hold began."
                 }
               },
               "required": [
@@ -25967,18 +26293,21 @@
             "type": "string",
             "enum": [
               "usd"
-            ]
+            ],
+            "description": "Always `usd`."
           },
           "period": {
             "type": "object",
             "properties": {
               "start": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period starts (inclusive)."
               },
               "end": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period ends (exclusive)."
               }
             },
             "required": [
@@ -26017,7 +26346,8 @@
                 },
                 "quantity": {
                   "type": "integer",
-                  "minimum": 0
+                  "minimum": 0,
+                  "description": "Units used so far this month."
                 },
                 "included": {
                   "type": [
@@ -26033,7 +26363,8 @@
                 "quantity",
                 "included"
               ]
-            }
+            },
+            "description": "This month's usage per meter."
           },
           "estimate": {
             "type": "object",
@@ -26081,26 +26412,30 @@
             ],
             "properties": {
               "type": {
-                "type": "string"
+                "type": "string",
+                "description": "Its type, such as `card`."
               },
               "brand": {
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "The card's brand. `null` for other types."
               },
               "last4": {
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "The card's last four digits. `null` for other types."
               }
             },
             "required": [
               "type",
               "brand",
               "last4"
-            ]
+            ],
+            "description": "The payment method on file. `null`: none."
           },
           "add_ons": {
             "type": "array",
@@ -26112,10 +26447,12 @@
                   "description": "e.g. `dedicated_ips`."
                 },
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The add-on's name."
                 },
                 "quantity": {
-                  "type": "integer"
+                  "type": "integer",
+                  "description": "How many units are on the contract."
                 },
                 "unit_amount": {
                   "type": "integer",
@@ -26127,7 +26464,8 @@
                     "month",
                     "quarter",
                     "year"
-                  ]
+                  ],
+                  "description": "How often it's charged."
                 }
               },
               "required": [
@@ -26144,22 +26482,28 @@
             "type": "object",
             "properties": {
               "tracking_domains": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Custom tracking domains."
               },
               "audit_log": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "The organization's audit log."
               },
               "log_drains": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Log drains."
               },
               "sso": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Single sign-on."
               },
               "scim": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Directory sync (SCIM)."
               },
               "dedicated_ips": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Dedicated IP pools."
               }
             },
             "required": [
@@ -26169,7 +26513,8 @@
               "sso",
               "scim",
               "dedicated_ips"
-            ]
+            ],
+            "description": "Which features the plan includes."
           },
           "limits": {
             "type": "object",
@@ -26178,31 +26523,36 @@
                 "type": [
                   "integer",
                   "null"
-                ]
+                ],
+                "description": "Sending domains. `null`: unlimited."
               },
               "members": {
                 "type": [
                   "integer",
                   "null"
-                ]
+                ],
+                "description": "Members of the organization. `null`: unlimited."
               },
               "webhook_endpoints_per_environment": {
                 "type": [
                   "integer",
                   "null"
-                ]
+                ],
+                "description": "Webhook endpoints per environment. `null`: unlimited."
               },
               "contacts_per_environment": {
                 "type": [
                   "integer",
                   "null"
-                ]
+                ],
+                "description": "Contacts per environment. `null`: unlimited."
               },
               "inboxes": {
                 "type": [
                   "integer",
                   "null"
-                ]
+                ],
+                "description": "Inboxes. `null`: unlimited."
               }
             },
             "required": [
@@ -26411,15 +26761,18 @@
           },
           "start": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When this bucket starts (inclusive)."
           },
           "end": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When this bucket ends (exclusive)."
           },
           "quantity": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Units used in this bucket."
           }
         },
         "required": [
@@ -26524,7 +26877,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The invoice number. `null` until it's finalized."
           },
           "kind": {
             "type": "string",
@@ -26533,7 +26887,8 @@
               "plan_change",
               "one_off",
               "final"
-            ]
+            ],
+            "description": "`period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account."
           },
           "status": {
             "type": "string",
@@ -26542,30 +26897,35 @@
               "paid",
               "void",
               "uncollectible"
-            ]
+            ],
+            "description": "`open`: not paid yet. `paid`: settled. `void`: canceled. `uncollectible`: written off."
           },
           "currency": {
             "type": "string",
             "enum": [
               "usd"
-            ]
+            ],
+            "description": "Always `usd`."
           },
           "period": {
             "type": "object",
             "properties": {
               "start": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period starts (inclusive)."
               },
               "end": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period ends (exclusive)."
               }
             },
             "required": [
               "start",
               "end"
-            ]
+            ],
+            "description": "What period it covers."
           },
           "subtotal": {
             "type": "integer",
@@ -26600,35 +26960,40 @@
             "enum": [
               "charge_automatically",
               "send_invoice"
-            ]
+            ],
+            "description": "`charge_automatically`: charged to the payment method. `send_invoice`: paid by `due_at`."
           },
           "due_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When payment is due. `null`: not set."
           },
           "finalized_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was finalized. `null`: not yet."
           },
           "paid_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was paid. `null`: not paid."
           },
           "voided_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was voided. `null`: it wasn't."
           },
           "hosted_url": {
             "type": [
@@ -26641,7 +27006,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The invoice as a PDF. `null`: not available."
           },
           "lines": {
             "type": "array",
@@ -26746,10 +27112,12 @@
               "add_on",
               "adjustment",
               "write_off"
-            ]
+            ],
+            "description": "What it's for: `plan_fee`, `proration`, `usage`, `credit`, `discount`, `commitment_fee`, `commitment_shortfall`, `add_on`, `adjustment` or `write_off`."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "The line as it reads on the invoice."
           },
           "meter": {
             "type": [
@@ -26776,19 +27144,21 @@
               "hooks.messages",
               null
             ],
-            "description": "What is counted, e.g. `email.recipients`."
+            "description": "The meter of a `usage` line. `null` for other lines."
           },
           "dimension": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "What the meter is split by, such as `country=US`. `null`: not split."
           },
           "quantity": {
             "type": [
               "integer",
               "null"
-            ]
+            ],
+            "description": "Units on this line. `null` when it isn't priced by the unit."
           },
           "included_quantity": {
             "type": [
@@ -26813,17 +27183,20 @@
             "properties": {
               "start": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period starts (inclusive)."
               },
               "end": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "When the period ends (exclusive)."
               }
             },
             "required": [
               "start",
               "end"
-            ]
+            ],
+            "description": "What period it covers."
           }
         },
         "required": [
@@ -26924,6 +27297,7 @@
           },
           "url": {
             "type": "string",
+            "description": "Where batches are posted.",
             "examples": [
               "https://logs.example.com/coss"
             ]
@@ -26932,7 +27306,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Your note about it. `null`: none."
           },
           "sources": {
             "type": "array",
@@ -26975,7 +27350,8 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was disabled. `null` while enabled."
           },
           "created_at": {
             "type": "string",
@@ -27132,6 +27508,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 128,
+            "description": "The header's name.",
             "examples": [
               "Authorization"
             ]
@@ -27141,6 +27518,7 @@
             "minLength": 1,
             "maxLength": 4096,
             "pattern": "^[\\t\\x20-\\x7e]+$",
+            "description": "The header's value. Encrypted, and never returned.",
             "examples": [
               "Bearer <token>"
             ]
@@ -27220,6 +27598,7 @@
           },
           "url": {
             "type": "string",
+            "description": "Where batches are posted.",
             "examples": [
               "https://logs.example.com/coss"
             ]
@@ -27228,7 +27607,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Your note about it. `null`: none."
           },
           "sources": {
             "type": "array",
@@ -27271,7 +27651,8 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it was disabled. `null` while enabled."
           },
           "created_at": {
             "type": "string",
@@ -27351,7 +27732,8 @@
             "$ref": "#/components/schemas/LogDrainAuthHeader"
           },
           "enabled": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "`false` disables it, and `true` enables it again."
           }
         },
         "additionalProperties": false,
@@ -27468,7 +27850,8 @@
             ]
           },
           "drain_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The id of the drain it's posted to."
           },
           "status": {
             "$ref": "#/components/schemas/LogDrainBatchStatus"
@@ -27482,7 +27865,8 @@
             "description": "Size of the request body in bytes."
           },
           "attempt_count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "How many attempts were made so far."
           },
           "next_attempt_at": {
             "type": [
@@ -27496,13 +27880,15 @@
             "type": [
               "integer",
               "null"
-            ]
+            ],
+            "description": "The drain's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet."
           },
           "last_error": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Why the latest attempt failed. `null`: it didn't, or no attempt yet."
           },
           "attempts": {
             "type": "array",
@@ -27586,7 +27972,8 @@
           },
           "attempted_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the attempt ran."
           },
           "status_code": {
             "type": [
@@ -27596,7 +27983,8 @@
             "description": "The drain's HTTP status; `null` when no response arrived."
           },
           "duration_ms": {
-            "type": "integer"
+            "type": "integer",
+            "description": "How long it took, in milliseconds."
           },
           "error": {
             "type": [
@@ -28811,6 +29199,7 @@
           "event_type": {
             "type": "string",
             "pattern": "^[A-Za-z0-9_.-]{1,64}$",
+            "description": "The event type to send as.",
             "examples": [
               "invoice.paid"
             ]
@@ -29377,7 +29766,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Why it's `blocked`. `null`: it isn't."
           },
           "mail_from": {
             "type": "string",
@@ -29415,7 +29805,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The `Subject` header. `null`: none."
           },
           "message_id": {
             "type": [
@@ -29428,7 +29819,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ReceivedEmailAttachment"
-            }
+            },
+            "description": "Its attachments, without their bytes."
           },
           "size": {
             "type": "integer",
@@ -29447,7 +29839,8 @@
           },
           "received_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it arrived."
           }
         },
         "required": [
@@ -29629,7 +30022,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Why it's `blocked`. `null`: it isn't."
           },
           "mail_from": {
             "type": "string",
@@ -29667,7 +30061,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The `Subject` header. `null`: none."
           },
           "message_id": {
             "type": [
@@ -29680,7 +30075,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ReceivedEmailAttachment"
-            }
+            },
+            "description": "Its attachments, without their bytes."
           },
           "size": {
             "type": "integer",
@@ -29699,19 +30095,22 @@
           },
           "received_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it arrived."
           },
           "reply_to": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The `Reply-To` header's addresses."
           },
           "in_reply_to": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The `In-Reply-To` header. `null`: none."
           },
           "references": {
             "type": "array",
@@ -29734,10 +30133,12 @@
               "type": "object",
               "properties": {
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The header's name."
                 },
                 "value": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The header's value."
                 }
               },
               "required": [
@@ -29751,13 +30152,15 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The plain text body. `null`: none, or it's `blocked`."
           },
           "html": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The HTML body. `null`: none, or it's `blocked`."
           },
           "truncated": {
             "type": "boolean",
@@ -29905,10 +30308,12 @@
             "description": "The inbox's email address (`username@domain`)."
           },
           "username": {
-            "type": "string"
+            "type": "string",
+            "description": "The part of the address before the `@`."
           },
           "domain": {
-            "type": "string"
+            "type": "string",
+            "description": "The part of the address after the `@`."
           },
           "kind": {
             "type": "string",
@@ -30191,7 +30596,8 @@
             "type": "string"
           },
           "inbox_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The inbox's id."
           },
           "subject": {
             "type": [
@@ -30208,7 +30614,8 @@
             "description": "Addresses of everyone in the conversation but the inbox (Bcc'd ones never)."
           },
           "message_count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Messages in the thread."
           },
           "preview": {
             "type": [
@@ -30219,7 +30626,8 @@
           },
           "last_message_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When its latest message was received or sent."
           },
           "last_inbound_at": {
             "type": [
@@ -30276,7 +30684,8 @@
             "type": "string"
           },
           "inbox_id": {
-            "type": "string"
+            "type": "string",
+            "description": "The inbox's id."
           },
           "subject": {
             "type": [
@@ -30293,7 +30702,8 @@
             "description": "Addresses of everyone in the conversation but the inbox (Bcc'd ones never)."
           },
           "message_count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Messages in the thread."
           },
           "preview": {
             "type": [
@@ -30304,7 +30714,8 @@
           },
           "last_message_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When its latest message was received or sent."
           },
           "last_inbound_at": {
             "type": [
@@ -30474,19 +30885,22 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Addresses in the `To` header."
           },
           "cc": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Addresses in the `Cc` header."
           },
           "subject": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The subject. `null`: none."
           },
           "preview": {
             "type": [
@@ -30529,7 +30943,8 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Addresses in the `Reply-To` header."
           },
           "message_id": {
             "type": [
@@ -30542,19 +30957,22 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The message it answers, by `Message-ID`. `null`: none."
           },
           "references": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "The `Message-ID`s of the conversation so far."
           },
           "text": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The plain text part. `null`: none."
           },
           "extracted_text": {
             "type": [
@@ -30814,19 +31232,22 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Addresses in the `To` header."
           },
           "cc": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Addresses in the `Cc` header."
           },
           "subject": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The subject. `null`: none."
           },
           "preview": {
             "type": [
@@ -30934,7 +31355,8 @@
                 "minItems": 1,
                 "maxItems": 50
               }
-            ]
+            ],
+            "description": "Who it goes to."
           },
           "cc": {
             "anyOf": [
@@ -30951,7 +31373,8 @@
                 "minItems": 0,
                 "maxItems": 50
               }
-            ]
+            ],
+            "description": "Who it's copied to."
           },
           "bcc": {
             "anyOf": [
@@ -30968,7 +31391,8 @@
                 "minItems": 0,
                 "maxItems": 50
               }
-            ]
+            ],
+            "description": "Who it's blind copied to."
           },
           "subject": {
             "type": "string",
@@ -30999,11 +31423,13 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "pattern": "^[A-Za-z0-9_-]{1,256}$"
+                  "pattern": "^[A-Za-z0-9_-]{1,256}$",
+                  "description": "The tag's name, unique on the email."
                 },
                 "value": {
                   "type": "string",
-                  "pattern": "^[A-Za-z0-9_-]{1,256}$"
+                  "pattern": "^[A-Za-z0-9_-]{1,256}$",
+                  "description": "The tag's value."
                 }
               },
               "required": [
@@ -31012,7 +31438,8 @@
               ],
               "additionalProperties": false
             },
-            "maxItems": 50
+            "maxItems": 50,
+            "description": "Your tags on the email."
           }
         },
         "required": [
@@ -31051,7 +31478,8 @@
                 "minItems": 0,
                 "maxItems": 50
               }
-            ]
+            ],
+            "description": "Who it's copied to."
           },
           "bcc": {
             "anyOf": [
@@ -31068,7 +31496,8 @@
                 "minItems": 0,
                 "maxItems": 50
               }
-            ]
+            ],
+            "description": "Who it's blind copied to."
           },
           "text": {
             "type": "string",
@@ -31093,11 +31522,13 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "pattern": "^[A-Za-z0-9_-]{1,256}$"
+                  "pattern": "^[A-Za-z0-9_-]{1,256}$",
+                  "description": "The tag's name, unique on the email."
                 },
                 "value": {
                   "type": "string",
-                  "pattern": "^[A-Za-z0-9_-]{1,256}$"
+                  "pattern": "^[A-Za-z0-9_-]{1,256}$",
+                  "description": "The tag's value."
                 }
               },
               "required": [
@@ -31106,7 +31537,8 @@
               ],
               "additionalProperties": false
             },
-            "maxItems": 50
+            "maxItems": 50,
+            "description": "Your tags on the email."
           }
         },
         "additionalProperties": false,
@@ -31139,7 +31571,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Your name for a `custom` event. `null`: none."
           },
           "decision": {
             "$ref": "#/components/schemas/RiskDecision"
@@ -31168,7 +31601,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "What the address says. `null`: no email was given."
               },
               "ip": {
                 "anyOf": [
@@ -31178,7 +31612,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "What the IP address says. `null`: none was given."
               },
               "velocity": {
                 "anyOf": [
@@ -31199,7 +31634,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "How the captcha went. `null`: no captcha applied."
               },
               "login": {
                 "anyOf": [
@@ -31209,7 +31645,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "Whether a login is new for this user. `null`: not a login of a user with history."
               },
               "content": {
                 "anyOf": [
@@ -31230,7 +31667,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "What you sent in `checkout`. `null`: not given."
               },
               "device": {
                 "anyOf": [
@@ -31240,7 +31678,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "What the device token said. `null`: none was given."
               }
             },
             "required": [
@@ -31252,7 +31691,8 @@
               "content",
               "checkout",
               "device"
-            ]
+            ],
+            "description": "What the assessment saw, by group. A group is `null` when it had nothing to go on."
           },
           "user": {
             "type": "object",
@@ -31261,7 +31701,8 @@
                 "type": [
                   "string",
                   "null"
-                ]
+                ],
+                "description": "Your user id. `null`: none given."
               },
               "email": {
                 "type": [
@@ -31274,7 +31715,8 @@
             "required": [
               "id",
               "email"
-            ]
+            ],
+            "description": "Who it's about."
           },
           "ip": {
             "type": [
@@ -31429,10 +31871,12 @@
             "description": "`null` once the address is removed (90 days after the assessment)."
           },
           "valid": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's syntactically valid."
           },
           "disposable": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether its domain is a known burner service."
           },
           "deliverability": {
             "type": "string",
@@ -31444,16 +31888,19 @@
             "description": "From DNS (MX, A, AAAA). `unknown` when the lookup failed or timed out."
           },
           "role_account": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's a role mailbox, like `info@`."
           },
           "free_provider": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether its domain is a free mailbox provider."
           },
           "suggestion": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "`email.typo`: the likely intended domain. `null` otherwise."
           },
           "domain_age_days": {
             "type": [
@@ -31472,7 +31919,8 @@
           "free_provider",
           "suggestion",
           "domain_age_days"
-        ]
+        ],
+        "description": "What the address says. `null` on an assessment with no email."
       },
       "RiskIpSignals": {
         "type": "object",
@@ -31491,22 +31939,27 @@
                   6
                 ]
               }
-            ]
+            ],
+            "description": "IPv4 or IPv6."
           },
           "private": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's a private or reserved address."
           },
           "tor": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's a Tor exit."
           },
           "hosting": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's in a cloud, hosting or VPN network."
           },
           "hosting_provider": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "That network's operator. `null` when it isn't one."
           },
           "hosting_kind": {
             "type": [
@@ -31518,19 +31971,22 @@
               "hosting",
               "vpn",
               null
-            ]
+            ],
+            "description": "`cloud`, `hosting` or `vpn`. `null` when it isn't one."
           },
           "asn": {
             "type": [
               "integer",
               "null"
-            ]
+            ],
+            "description": "The network's autonomous system number. `null` when unknown."
           },
           "as_name": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The network's name. `null` when unknown."
           },
           "country": {
             "type": [
@@ -31562,19 +32018,23 @@
           "as_name",
           "country",
           "privacy"
-        ]
+        ],
+        "description": "What the address says. `null` on an assessment with no IP."
       },
       "RiskIpPrivacy": {
         "type": "object",
         "properties": {
           "vpn": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's a VPN exit."
           },
           "proxy": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's a proxy."
           },
           "relay": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's a privacy relay."
           },
           "service": {
             "type": [
@@ -31602,7 +32062,8 @@
         "type": "object",
         "properties": {
           "provided": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request carried a token."
           },
           "passed": {
             "type": [
@@ -31615,16 +32076,19 @@
         "required": [
           "provided",
           "passed"
-        ]
+        ],
+        "description": "How the captcha went. `null` when no captcha applies."
       },
       "RiskLoginSignals": {
         "type": "object",
         "properties": {
           "new_country": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether this user never logged in from this country in this environment."
           },
           "new_network": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether this user never logged in from this network (ASN) in this environment."
           }
         },
         "required": [
@@ -31639,22 +32103,26 @@
           "spam": {
             "type": "number",
             "minimum": 0,
-            "maximum": 1
+            "maximum": 1,
+            "description": "The model's probability (0-1) that it's spam."
           },
           "phishing": {
             "type": "number",
             "minimum": 0,
-            "maximum": 1
+            "maximum": 1,
+            "description": "The model's probability (0-1) that it's phishing."
           },
           "malware": {
             "type": "number",
             "minimum": 0,
-            "maximum": 1
+            "maximum": 1,
+            "description": "The model's probability (0-1) that it's malware."
           },
           "fraud": {
             "type": "number",
             "minimum": 0,
-            "maximum": 1
+            "maximum": 1,
+            "description": "The model's probability (0-1) that it's fraud."
           }
         },
         "required": [
@@ -31669,16 +32137,19 @@
         "type": "object",
         "properties": {
           "amount": {
-            "type": "integer"
+            "type": "integer",
+            "description": "The amount you sent, in the currency's smallest unit."
           },
           "currency": {
-            "type": "string"
+            "type": "string",
+            "description": "The currency you sent."
           },
           "card_country": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The card's country. `null` when not given."
           },
           "card_funding": {
             "type": [
@@ -31691,19 +32162,22 @@
               "prepaid",
               "unknown",
               null
-            ]
+            ],
+            "description": "The card's funding type. `null` when not given."
           },
           "billing_country": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The billing country. `null` when not given."
           },
           "shipping_country": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The shipping country. `null` when not given."
           }
         },
         "required": [
@@ -31745,7 +32219,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The browser's reported platform. `null` when it reported none."
           },
           "screen": {
             "type": [
@@ -31758,7 +32233,8 @@
             "type": [
               "boolean",
               "null"
-            ]
+            ],
+            "description": "Whether the device has a touch screen. `null` when it didn't say."
           }
         },
         "required": [
@@ -32094,14 +32570,16 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Your note about it. `null`: none."
           },
           "expires_at": {
             "type": [
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When it stops matching. `null`: never."
           },
           "created_at": {
             "type": "string",
@@ -32136,7 +32614,8 @@
         "enum": [
           "allow",
           "block"
-        ]
+        ],
+        "description": "Which list: `allow` or `block`."
       },
       "RiskListEntryType": {
         "type": "string",
@@ -32162,11 +32641,13 @@
           "value": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 320
+            "maxLength": 320,
+            "description": "What to match: the address, domain, IP, CIDR range, ASN or other value of its `type`."
           },
           "note": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Your note about it."
           },
           "expires_at": {
             "type": "string",
@@ -32369,10 +32850,12 @@
                     "enum": [
                       "turnstile",
                       "hcaptcha"
-                    ]
+                    ],
+                    "description": "The captcha provider."
                   },
                   "required": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Whether assessments without a token get `captcha.missing`."
                   }
                 },
                 "required": [
@@ -32397,7 +32880,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The score at which `content.spam` fires. `null`: never."
               },
               "phishing": {
                 "anyOf": [
@@ -32407,7 +32891,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The score at which `content.phishing` fires. `null`: never."
               },
               "malware": {
                 "anyOf": [
@@ -32417,7 +32902,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The score at which `content.malware` fires. `null`: never."
               },
               "fraud": {
                 "anyOf": [
@@ -32427,7 +32913,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The score at which `content.fraud` fires. `null`: never."
               }
             },
             "required": [
@@ -32442,145 +32929,192 @@
             "type": "object",
             "properties": {
               "email.invalid": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "email.disposable": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "email.undeliverable": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "email.role_account": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "email.typo": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "email.domain_new": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "ip.tor": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "ip.vpn_network": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "ip.hosting_provider": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "ip.vpn": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "ip.proxy": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "ip.relay": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "ip.private": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.signups_per_ip_1h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.signups_per_ip_24h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.signups_per_subnet_1h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.signups_per_email_domain_1h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.signups_per_mailbox_24h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.signups_per_device_24h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.checkouts_per_ip_1h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.checkouts_per_user_1h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.checkouts_per_card_24h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.logins_per_ip_1h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.logins_per_user_1h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.events_per_ip_1h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "velocity.events_per_user_1h": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "duplicate.canonical_mailbox": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "duplicate.device": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "history.fraud_mailbox": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "history.fraud_user": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "history.fraud_ip": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "history.fraud_subnet": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "history.fraud_card": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "history.fraud_device": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "checkout.card_country_mismatch": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "checkout.billing_country_mismatch": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "checkout.prepaid_card": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "device.automation": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "device.invalid": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "login.new_country": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "login.new_network": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "captcha.failed": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "captcha.missing": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "content.spam": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "content.phishing": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "content.malware": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               },
               "content.fraud": {
-                "type": "number"
+                "type": "number",
+                "description": "This reason's weight in this environment."
               }
             },
             "description": "Reasons whose weight this environment changed (from calibration or by hand); the rest weigh what the reason catalog says."
@@ -32635,12 +33169,14 @@
           "review_threshold": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 1
+            "maximum": 1,
+            "description": "Scores at or above it are `review`."
           },
           "block_threshold": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 1
+            "maximum": 1,
+            "description": "Scores at or above it are `block`."
           },
           "disabled_reasons": {
             "type": "array",
@@ -32692,7 +33228,8 @@
                 "captcha.missing"
               ]
             },
-            "maxItems": 100
+            "maxItems": 100,
+            "description": "Reasons that never fire in this environment. Replaces the list."
           },
           "captcha": {
             "anyOf": [
@@ -32704,7 +33241,8 @@
                     "enum": [
                       "turnstile",
                       "hcaptcha"
-                    ]
+                    ],
+                    "description": "The captcha provider."
                   },
                   "secret": {
                     "type": "string",
@@ -32741,7 +33279,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The score at which `content.spam` fires. `null` removes it."
               },
               "phishing": {
                 "anyOf": [
@@ -32753,7 +33292,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The score at which `content.phishing` fires. `null` removes it."
               },
               "malware": {
                 "anyOf": [
@@ -32765,7 +33305,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The score at which `content.malware` fires. `null` removes it."
               },
               "fraud": {
                 "anyOf": [
@@ -32777,7 +33318,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "The score at which `content.fraud` fires. `null` removes it."
               }
             },
             "additionalProperties": false,
@@ -32796,7 +33338,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "email.disposable": {
                 "anyOf": [
@@ -32808,7 +33351,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "email.undeliverable": {
                 "anyOf": [
@@ -32820,7 +33364,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "email.role_account": {
                 "anyOf": [
@@ -32832,7 +33377,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "email.typo": {
                 "anyOf": [
@@ -32844,7 +33390,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "email.domain_new": {
                 "anyOf": [
@@ -32856,7 +33403,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "ip.tor": {
                 "anyOf": [
@@ -32868,7 +33416,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "ip.vpn_network": {
                 "anyOf": [
@@ -32880,7 +33429,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "ip.hosting_provider": {
                 "anyOf": [
@@ -32892,7 +33442,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "ip.vpn": {
                 "anyOf": [
@@ -32904,7 +33455,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "ip.proxy": {
                 "anyOf": [
@@ -32916,7 +33468,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "ip.relay": {
                 "anyOf": [
@@ -32928,7 +33481,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "ip.private": {
                 "anyOf": [
@@ -32940,7 +33494,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.signups_per_ip_1h": {
                 "anyOf": [
@@ -32952,7 +33507,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.signups_per_ip_24h": {
                 "anyOf": [
@@ -32964,7 +33520,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.signups_per_subnet_1h": {
                 "anyOf": [
@@ -32976,7 +33533,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.signups_per_email_domain_1h": {
                 "anyOf": [
@@ -32988,7 +33546,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.signups_per_mailbox_24h": {
                 "anyOf": [
@@ -33000,7 +33559,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.signups_per_device_24h": {
                 "anyOf": [
@@ -33012,7 +33572,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.checkouts_per_ip_1h": {
                 "anyOf": [
@@ -33024,7 +33585,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.checkouts_per_user_1h": {
                 "anyOf": [
@@ -33036,7 +33598,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.checkouts_per_card_24h": {
                 "anyOf": [
@@ -33048,7 +33611,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.logins_per_ip_1h": {
                 "anyOf": [
@@ -33060,7 +33624,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.logins_per_user_1h": {
                 "anyOf": [
@@ -33072,7 +33637,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.events_per_ip_1h": {
                 "anyOf": [
@@ -33084,7 +33650,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "velocity.events_per_user_1h": {
                 "anyOf": [
@@ -33096,7 +33663,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "duplicate.canonical_mailbox": {
                 "anyOf": [
@@ -33108,7 +33676,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "duplicate.device": {
                 "anyOf": [
@@ -33120,7 +33689,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "history.fraud_mailbox": {
                 "anyOf": [
@@ -33132,7 +33702,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "history.fraud_user": {
                 "anyOf": [
@@ -33144,7 +33715,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "history.fraud_ip": {
                 "anyOf": [
@@ -33156,7 +33728,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "history.fraud_subnet": {
                 "anyOf": [
@@ -33168,7 +33741,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "history.fraud_card": {
                 "anyOf": [
@@ -33180,7 +33754,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "history.fraud_device": {
                 "anyOf": [
@@ -33192,7 +33767,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "checkout.card_country_mismatch": {
                 "anyOf": [
@@ -33204,7 +33780,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "checkout.billing_country_mismatch": {
                 "anyOf": [
@@ -33216,7 +33793,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "checkout.prepaid_card": {
                 "anyOf": [
@@ -33228,7 +33806,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "device.automation": {
                 "anyOf": [
@@ -33240,7 +33819,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "device.invalid": {
                 "anyOf": [
@@ -33252,7 +33832,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "login.new_country": {
                 "anyOf": [
@@ -33264,7 +33845,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "login.new_network": {
                 "anyOf": [
@@ -33276,7 +33858,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "captcha.failed": {
                 "anyOf": [
@@ -33288,7 +33871,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "captcha.missing": {
                 "anyOf": [
@@ -33300,7 +33884,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "content.spam": {
                 "anyOf": [
@@ -33312,7 +33897,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "content.phishing": {
                 "anyOf": [
@@ -33324,7 +33910,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "content.malware": {
                 "anyOf": [
@@ -33336,7 +33923,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               },
               "content.fraud": {
                 "anyOf": [
@@ -33348,7 +33936,8 @@
                   {
                     "type": "null"
                   }
-                ]
+                ],
+                "description": "This reason's new weight. `null` restores its default."
               }
             },
             "description": "Changes the reasons given: a weight in [0, 0.99] replaces the default, `null` goes back to it."
@@ -33376,7 +33965,8 @@
             ]
           },
           "window_days": {
-            "type": "integer"
+            "type": "integer",
+            "description": "How many days back it looks."
           },
           "assessments": {
             "type": "integer",
@@ -33390,13 +33980,15 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RiskCalibrationReason"
-            }
+            },
+            "description": "How each reason did against your feedback."
           },
           "rules": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RiskCalibrationRule"
-            }
+            },
+            "description": "How each rule did against your feedback."
           }
         },
         "required": [
@@ -33492,7 +34084,8 @@
               "content.phishing",
               "content.malware",
               "content.fraud"
-            ]
+            ],
+            "description": "The reason's code."
           },
           "fired": {
             "type": "integer",
@@ -33514,7 +34107,8 @@
             "description": "`fraud / (fraud + legitimate)`: how often it was right when you told coss.com. `null` without feedback."
           },
           "default_weight": {
-            "type": "number"
+            "type": "number",
+            "description": "Its weight unless this environment changes it."
           },
           "weight": {
             "type": "number",
@@ -33543,10 +34137,12 @@
         "type": "object",
         "properties": {
           "rule": {
-            "type": "string"
+            "type": "string",
+            "description": "The rule's id."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "The rule's name."
           },
           "matched": {
             "type": "integer",
@@ -33590,10 +34186,12 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Your name for the rule, returned with reasons when it decides."
           },
           "enabled": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "`false`: it's kept, and no assessment applies it."
           },
           "position": {
             "type": "integer",
@@ -33618,7 +34216,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RiskRuleCondition"
-            }
+            },
+            "description": "What must hold, by `match`."
           },
           "action": {
             "$ref": "#/components/schemas/RiskDecision"
@@ -33732,7 +34331,8 @@
               "velocity.card_24h",
               "velocity.device_1h",
               "velocity.device_24h"
-            ]
+            ],
+            "description": "The signal to test, such as `email.disposable` or `ip.country`."
           },
           "operator": {
             "type": "string",
@@ -33746,7 +34346,8 @@
               "lte",
               "in",
               "not_in"
-            ]
+            ],
+            "description": "How to compare. Booleans use `is`, numbers `eq` to `lte`, and strings `eq`, `neq`, `in` and `not_in`."
           },
           "value": {
             "anyOf": [
@@ -33769,7 +34370,8 @@
                 "minItems": 1,
                 "maxItems": 100
               }
-            ]
+            ],
+            "description": "What to compare it with: its type follows the field, and `in` and `not_in` take a list of strings."
           }
         },
         "required": [
@@ -33786,10 +34388,12 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Your name for the rule, returned with reasons when it decides."
           },
           "enabled": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Default `true`."
           },
           "position": {
             "type": "integer",
@@ -33802,7 +34406,8 @@
             "items": {
               "$ref": "#/components/schemas/RiskEvent"
             },
-            "maxItems": 5
+            "maxItems": 5,
+            "description": "Events it applies to. Default: every event."
           },
           "match": {
             "type": "string",
@@ -33818,7 +34423,8 @@
               "$ref": "#/components/schemas/RiskRuleCondition"
             },
             "minItems": 1,
-            "maxItems": 20
+            "maxItems": 20,
+            "description": "What must hold, by `match`."
           },
           "action": {
             "$ref": "#/components/schemas/RiskDecision"
@@ -33921,29 +34527,34 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Your name for the rule."
           },
           "enabled": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "`false` keeps it, and stops applying it."
           },
           "position": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 10000
+            "maximum": 10000,
+            "description": "Rules are tried in ascending order."
           },
           "events": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RiskEvent"
             },
-            "maxItems": 5
+            "maxItems": 5,
+            "description": "Events it applies to. Empty: every event."
           },
           "match": {
             "type": "string",
             "enum": [
               "all",
               "any"
-            ]
+            ],
+            "description": "`all`: every condition must hold. `any`: one is enough."
           },
           "conditions": {
             "type": "array",
@@ -33951,7 +34562,8 @@
               "$ref": "#/components/schemas/RiskRuleCondition"
             },
             "minItems": 1,
-            "maxItems": 20
+            "maxItems": 20,
+            "description": "What must hold, by `match`."
           },
           "action": {
             "$ref": "#/components/schemas/RiskDecision"
@@ -33999,7 +34611,8 @@
             ]
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "description": "The address checked."
           },
           "valid": {
             "type": "boolean",
@@ -34009,7 +34622,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Its domain. `null` when it isn't valid."
           },
           "canonical": {
             "type": [
@@ -34019,7 +34633,8 @@
             "description": "The mailbox with the provider's aliasing folded (dots and `+tags` at Gmail…): two addresses with the same canonical form reach one inbox."
           },
           "disposable": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether its domain is a known burner service."
           },
           "deliverability": {
             "type": "string",
@@ -34031,10 +34646,12 @@
             "description": "From DNS (MX, A, AAAA). `unknown` when the lookup failed or timed out."
           },
           "role_account": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's a role mailbox, like `info@`."
           },
           "free_provider": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether its domain is a free mailbox provider."
           },
           "suggestion": {
             "type": [
@@ -34130,22 +34747,27 @@
                   6
                 ]
               }
-            ]
+            ],
+            "description": "IPv4 or IPv6."
           },
           "private": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's a private or reserved address."
           },
           "tor": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's a Tor exit."
           },
           "hosting": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether it's in a cloud, hosting or VPN network."
           },
           "hosting_provider": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "That network's operator. `null` when it isn't one."
           },
           "hosting_kind": {
             "type": [
@@ -34157,19 +34779,22 @@
               "hosting",
               "vpn",
               null
-            ]
+            ],
+            "description": "`cloud`, `hosting` or `vpn`. `null` when it isn't one."
           },
           "asn": {
             "type": [
               "integer",
               "null"
-            ]
+            ],
+            "description": "The network's autonomous system number. `null` when unknown."
           },
           "as_name": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "The network's name. `null` when unknown."
           },
           "country": {
             "type": [
@@ -34196,7 +34821,8 @@
             ]
           },
           "ip": {
-            "type": "string"
+            "type": "string",
+            "description": "The address checked."
           },
           "degraded": {
             "type": "array",
@@ -34520,7 +35146,8 @@
             ]
           },
           "bucket": {
-            "type": "string"
+            "type": "string",
+            "description": "The bucket's name."
           },
           "allowed": {
             "type": "boolean",
@@ -34630,7 +35257,8 @@
             "description": "Tokens added per `period_seconds`."
           },
           "period_seconds": {
-            "type": "integer"
+            "type": "integer",
+            "description": "How many seconds `limit` tokens take to be added."
           },
           "burst": {
             "type": "integer",
@@ -34781,24 +35409,28 @@
           "limit": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 1000000
+            "maximum": 1000000,
+            "description": "Tokens added per `period_seconds`."
           },
           "period_seconds": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 86400
+            "maximum": 86400,
+            "description": "How many seconds `limit` tokens take to be added."
           },
           "burst": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 1000000
+            "maximum": 1000000,
+            "description": "The bucket's size: how many requests a key can make at once."
           },
           "on_failure": {
             "type": "string",
             "enum": [
               "allow",
               "deny"
-            ]
+            ],
+            "description": "The answer while coss.com can't count: `allow` or `deny`."
           }
         },
         "additionalProperties": false,
@@ -106007,6 +106639,7 @@
               "$ref": "#/components/schemas/RiskList"
             },
             "required": false,
+            "description": "Which list: `allow` or `block`.",
             "name": "list",
             "in": "query"
           },
