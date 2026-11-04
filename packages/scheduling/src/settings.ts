@@ -1,11 +1,12 @@
 /** An environment's scheduling settings; a row exists once something is changed. */
 import { db, schema } from "@coss/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { SchedulingError } from "./errors.ts";
 import { getLogoRow, logoDataUrl, removeLogo, type SchedulingLogoRow, saveLogo } from "./logo.ts";
 import { policyFromWire, policyToWire } from "./notification-policy.ts";
 import {
   checkReminders,
+  checkRemindersWithoutSender,
   normalizeReminders,
   queueReminderSync,
   type ReminderChecks,
@@ -14,7 +15,7 @@ import type { SettingsObjectOutput, UpdateSettingsRequestOutput } from "./schema
 import { refuseLinks, screenSetup } from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
-const { schedulingSettings } = schema;
+const { schedulingEventType, schedulingSettings } = schema;
 
 type SettingsRow = typeof schedulingSettings.$inferSelect;
 type Scope = Pick<SchedulingEnvironment, "organizationId" | "environmentId">;
@@ -98,6 +99,31 @@ export async function updateSettings(
     reminders ??
     (reminders === undefined && emailFrom !== existing?.emailFrom ? existing?.reminders : null);
   if (list) await checkReminders(env, list, emailFrom, opts);
+  // An event type's own list counts on the same sender.
+  if (params.email_from === null && existing?.emailFrom) {
+    const eventTypes = await db
+      .select({ title: schedulingEventType.title, reminders: schedulingEventType.reminders })
+      .from(schedulingEventType)
+      .where(
+        and(
+          eq(schedulingEventType.organizationId, env.organizationId),
+          eq(schedulingEventType.environmentId, env.environmentId),
+          isNotNull(schedulingEventType.reminders),
+        ),
+      );
+    for (const eventType of eventTypes) {
+      try {
+        checkRemindersWithoutSender(eventType.reminders ?? [], "email_from");
+      } catch (error) {
+        if (!(error instanceof SchedulingError)) throw error;
+        throw new SchedulingError(
+          "invalid_reminder",
+          `"${eventType.title}" has reminders that need email_from. ${error.message}`,
+          { param: "email_from" },
+        );
+      }
+    }
+  }
   if (params.logo) await saveLogo(env, params.logo.content);
   else if (params.logo === null) await removeLogo(env);
   const values = {

@@ -848,6 +848,19 @@ describe("the customer's own words", () => {
     await expect(updateSettings(s.env, { email_from: null })).rejects.toThrow(/email_from/);
   });
 
+  test("an event type's own list keeps `email_from` from being taken away too", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, { email_from: "appointments@example.com" });
+    await updateEventType(s.env, s.eventType.id, { reminders: [rule(own)] });
+    await expect(updateSettings(s.env, { email_from: null })).rejects.toThrow(
+      /"Consultation" has reminders that need email_from/,
+    );
+    // Moving to another address of theirs is fine, and so is removing it once nothing needs it.
+    await updateSettings(s.env, { email_from: "bookings@example.com" });
+    await updateEventType(s.env, s.eventType.id, { reminders: null });
+    await updateSettings(s.env, { email_from: null });
+  });
+
   test("can't hold a link, however it's written", async () => {
     const s = await setUp();
     await updateSettings(s.env, { email_from: "appointments@example.com" });

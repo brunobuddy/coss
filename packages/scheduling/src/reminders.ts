@@ -416,6 +416,19 @@ async function memberAddresses(organizationId: string, addresses: string[]): Pro
  * What a list may do, checked when it's saved. Reminder text goes out unscreened to patients, so it's
  * screened here. Words of the customer's own go out only under the customer's own address.
  */
+/** Taking `email_from` away is refused while a list needs it: reminders would change or stop. */
+export function checkRemindersWithoutSender(rules: readonly ReminderRule[], param: string): void {
+  const refuse = (message: string) => new SchedulingError("invalid_reminder", message, { param });
+  if (rules.filter(emailsAnyone).length > MAX_REMINDER_EMAILS_FROM_COSS) {
+    throw refuse(
+      `Without email_from, at most ${MAX_REMINDER_EMAILS_FROM_COSS} reminders can send email.`,
+    );
+  }
+  if (rules.some(hasCustomEmail)) {
+    throw refuse("Your own words and buttons only go out from your own address: set email_from.");
+  }
+}
+
 export async function checkReminders(
   env: Pick<SchedulingEnvironment, "organizationId" | "mode">,
   rules: readonly ReminderRule[],

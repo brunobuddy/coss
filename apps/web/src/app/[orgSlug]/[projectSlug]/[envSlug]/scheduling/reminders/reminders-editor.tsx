@@ -58,15 +58,22 @@ import { FormError } from "@/components/form-error";
 import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/panel";
 import { PREVIEW_HEAD } from "@/lib/email-preview";
+import {
+  type Anchor,
+  bestUnit,
+  type Draft,
+  draftOf,
+  isTimed,
+  NEW_DRAFT,
+  ruleOf,
+  supportsInvite,
+  type Unit,
+} from "@/lib/scheduling-reminder-draft";
 import { useActionToast } from "@/lib/toast";
 import { saveRemindersAction } from "../actions";
 import type { EnvTarget } from "../scheduling-actions";
 
-type Anchor = ReminderRule["anchor"];
 type Send = ReminderRule["send"][number];
-type Unit = "minutes" | "hours" | "days";
-
-const UNIT_MINUTES: Record<Unit, number> = { minutes: 1, hours: 60, days: 1440 };
 
 const ANCHORS: { value: Anchor; label: string }[] = [
   { value: "start", label: "the start" },
@@ -101,14 +108,6 @@ const LOCATION_TYPES = [
   { value: "zoom", label: "Zoom" },
 ];
 
-const isTimed = (anchor: Anchor) => anchor === "start" || anchor === "end";
-
-function bestUnit(minutes: number): { amount: number; unit: Unit } {
-  if (minutes > 0 && minutes % 1440 === 0) return { amount: minutes / 1440, unit: "days" };
-  if (minutes > 0 && minutes % 60 === 0) return { amount: minutes / 60, unit: "hours" };
-  return { amount: minutes, unit: "minutes" };
-}
-
 function duration(minutes: number): string {
   const { amount, unit } = bestUnit(minutes);
   return `${amount} ${amount === 1 ? unit.slice(0, -1) : unit}`;
@@ -128,117 +127,6 @@ export function describeTiming(
   const after = rule.after_minutes ?? 0;
   if (after === 0) return timed ? `At ${anchor}` : `When ${anchor}`;
   return `${duration(after)} after ${anchor}`;
-}
-
-type Draft = {
-  key: string;
-  anchor: Anchor;
-  direction: "before" | "after";
-  amount: string;
-  unit: Unit;
-  send: Send[];
-  emailTo: string;
-  subject: string;
-  message: string;
-  smsMessage: string;
-  buttonLabel: string;
-  buttonUrl: string;
-  includeInvite: boolean;
-  sendIfLate: boolean;
-  skipNoShow: boolean | null;
-  metadata: string;
-  locationTypes: string[];
-};
-
-const NEW_DRAFT: Draft = {
-  key: "",
-  anchor: "start",
-  direction: "before",
-  amount: "1",
-  unit: "hours",
-  send: ["email_attendee"],
-  emailTo: "",
-  subject: "",
-  message: "",
-  smsMessage: "",
-  buttonLabel: "",
-  buttonUrl: "",
-  includeInvite: false,
-  sendIfLate: false,
-  skipNoShow: null,
-  metadata: "",
-  locationTypes: [],
-};
-
-function draftOf(rule: ReminderRule): Draft {
-  const before = rule.before_minutes !== null;
-  const { amount, unit } = bestUnit(rule.before_minutes ?? rule.after_minutes ?? 0);
-  return {
-    // A key made from the timing is made again from the new timing, or it'd say the wrong thing.
-    key: rule.key === reminderKeyOf({ ...rule, key: undefined }) ? "" : rule.key,
-    anchor: rule.anchor,
-    direction: before ? "before" : "after",
-    amount: String(amount),
-    unit,
-    send: rule.send,
-    emailTo: rule.email_to.join(", "),
-    subject: rule.subject ?? "",
-    message: rule.message ?? "",
-    smsMessage: rule.sms_message ?? "",
-    buttonLabel: rule.button?.label ?? "",
-    buttonUrl: rule.button?.url ?? "",
-    includeInvite: rule.include_invite,
-    sendIfLate: rule.send_if_late,
-    skipNoShow: rule.skip_no_show,
-    metadata: Object.entries(rule.only_if?.metadata ?? {})
-      .map(([key, value]) => `${key}=${value}`)
-      .join("\n"),
-    locationTypes: rule.only_if?.location_types ?? [],
-  };
-}
-
-function ruleOf(draft: Draft): ReminderRule {
-  const minutes = Math.round(Number(draft.amount || 0) * UNIT_MINUTES[draft.unit]);
-  const before = isTimed(draft.anchor) && draft.direction === "before";
-  const metadata = Object.fromEntries(
-    draft.metadata
-      .split("\n")
-      .map((line) => line.split("="))
-      .filter((parts) => parts.length >= 2 && parts[0]?.trim())
-      .map((parts) => [(parts[0] as string).trim(), parts.slice(1).join("=").trim()]),
-  );
-  const hasMetadata = Object.keys(metadata).length > 0;
-  const timing = {
-    before_minutes: before ? minutes : null,
-    after_minutes: before ? null : minutes,
-  };
-  return {
-    key: reminderKeyOf({ key: draft.key.trim() || undefined, anchor: draft.anchor, ...timing }),
-    anchor: draft.anchor,
-    ...timing,
-    send: draft.send,
-    email_to: draft.emailTo
-      .split(/[\s,]+/)
-      .map((address) => address.trim())
-      .filter(Boolean),
-    subject: draft.subject.trim() || null,
-    message: draft.message.trim() || null,
-    sms_message: draft.smsMessage.trim() || null,
-    button:
-      draft.buttonLabel.trim() && draft.buttonUrl.trim()
-        ? { label: draft.buttonLabel.trim(), url: draft.buttonUrl.trim() }
-        : null,
-    include_invite: draft.includeInvite,
-    send_if_late: draft.sendIfLate && before && draft.anchor === "start",
-    skip_no_show: draft.skipNoShow ?? draft.anchor === "end",
-    only_if:
-      hasMetadata || draft.locationTypes.length > 0
-        ? {
-            metadata: hasMetadata ? metadata : null,
-            location_types: draft.locationTypes.length > 0 ? draft.locationTypes : null,
-          }
-        : null,
-  };
 }
 
 function Hidden(
@@ -650,8 +538,7 @@ function ReminderDialog(
                         If it's booked after this moment, send it right away
                       </Label>
                     ) : null}
-                    {(rule.before_minutes !== null && draft.anchor === "start") ||
-                    ["confirmed", "rescheduled", "cancelled", "declined"].includes(draft.anchor) ? (
+                    {supportsInvite(rule) ? (
                       <Label className="flex items-center gap-2 font-normal">
                         <Checkbox
                           checked={draft.includeInvite}
