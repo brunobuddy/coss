@@ -9,7 +9,20 @@
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
 import { enqueueNotification } from "@coss/notifications";
-import { and, asc, eq, inArray, isNotNull, isNull, lt, lte, notExists, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  notExists,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import { SchedulingError } from "../errors.ts";
 import type {
   CalendarDelegationObjectOutput,
@@ -48,7 +61,7 @@ import {
   parseMicrosoftCredentials,
   parseServiceAccountKey,
 } from "./delegation-tokens.ts";
-import { insertBusyIntervals, nextReadAt, openChannel } from "./sync.ts";
+import { insertBusyIntervals, openChannel } from "./sync.ts";
 
 const {
   schedulingBusyInterval,
@@ -68,7 +81,8 @@ const MINUTE_MS = 60_000;
 const HOSTS_PER_RUN = 20;
 const REMOVALS_PER_RUN = 50;
 const RUN_BUDGET_MS = 2 * MINUTE_MS;
-const LEASE_MS = 5 * MINUTE_MS;
+// Past the budget by one host's slowest calls, each up to `requestTimeoutMs`.
+const LEASE_MS = 10 * MINUTE_MS;
 const IDLE_MS = 5 * MINUTE_MS;
 const BACKOFF_MS = 5 * MINUTE_MS;
 const MAILBOX_RETRY_MS = 60 * MINUTE_MS;
@@ -480,9 +494,42 @@ async function connectionToUpgrade(
 }
 
 /**
+ * Provider calls take time. `updateHost` changes a mailbox under this same lock, so what's asked for
+ * now is settled: a connection to a mailbox nobody wants any more would never be looked at again.
+ */
+async function hostStillWants(
+  tx: Executor,
+  delegation: DelegationRow,
+  host: Host,
+): Promise<boolean> {
+  const [current] = await tx
+    .select({ mailbox: hostMailbox(delegation) })
+    .from(schedulingHost)
+    .where(
+      and(
+        eq(schedulingHost.id, host.id),
+        eq(schedulingHost.organizationId, delegation.organizationId),
+      ),
+    )
+    .for("update");
+  if (!current) return false;
+  if (!host.existing) return current.mailbox === host.mailbox;
+  const [stillThere] = await tx
+    .select({ id: schedulingCalendarConnection.id })
+    .from(schedulingCalendarConnection)
+    .where(
+      and(
+        eq(schedulingCalendarConnection.id, host.existing.id),
+        eq(schedulingCalendarConnection.organizationId, delegation.organizationId),
+      ),
+    );
+  return Boolean(stillThere);
+}
+
+/**
  * Everything is fetched before anything's committed, so a host goes straight from having no calendar
- * to having a verified one, without being hidden in between or adding to the queue of reads. The
- * channel opens before the read, so nothing that changes in between is missed.
+ * to having a verified one, without being hidden in between. The channel opens before the read, but
+ * a push can't find a channel that isn't stored yet, so the calendar is read once more straight after.
  */
 async function connectHost(
   delegation: DelegationRow,
@@ -524,33 +571,20 @@ async function connectHost(
     throw new CalendarError("transient", "read_failed", "Couldn't read the calendar.");
   const now = deps.now?.() ?? new Date();
   await db.transaction(async (tx) => {
-    // All of that took time. `updateHost` changes a mailbox under this same lock, so what's asked for
-    // now is settled: a connection to a mailbox nobody wants any more would never be looked at again.
-    const [current] = await tx
-      .select({ mailbox: hostMailbox(delegation) })
-      .from(schedulingHost)
+    if (!(await hostStillWants(tx, delegation, host))) return;
+    // Waits out a bulk flip in progress, and holds off the next: a connection activated after one
+    // has finished would escape the outage, since nothing would flip it again.
+    const [state] = await tx
+      .select({ status: schedulingCalendarDelegation.status })
+      .from(schedulingCalendarDelegation)
       .where(
         and(
-          eq(schedulingHost.id, host.id),
-          eq(schedulingHost.organizationId, delegation.organizationId),
+          eq(schedulingCalendarDelegation.id, delegation.id),
+          eq(schedulingCalendarDelegation.organizationId, delegation.organizationId),
         ),
       )
-      .for("update");
-    if (!current) return;
-    if (host.existing) {
-      const [stillThere] = await tx
-        .select({ id: schedulingCalendarConnection.id })
-        .from(schedulingCalendarConnection)
-        .where(
-          and(
-            eq(schedulingCalendarConnection.id, host.existing.id),
-            eq(schedulingCalendarConnection.organizationId, delegation.organizationId),
-          ),
-        );
-      if (!stillThere) return;
-    } else if (current.mailbox !== host.mailbox) {
-      return;
-    }
+      .for("share");
+    if (state?.status !== "active") return;
     const upgraded = host.existing ? null : await connectionToUpgrade(tx, delegation, host);
     const fields = {
       delegationId: delegation.id,
@@ -626,7 +660,6 @@ async function connectHost(
         .delete(schedulingBusyInterval)
         .where(eq(schedulingBusyInterval.calendarId, calendar.id));
       await insertBusyIntervals(tx, calendar, intervals);
-      const hasChannel = channel !== null;
       await tx
         .update(schedulingCalendar)
         .set({
@@ -636,7 +669,7 @@ async function connectHost(
           dirtyAt: null,
           syncFailures: 0,
           leaseUntil: null,
-          nextSyncAt: nextReadAt({ channelId: hasChannel ? channel.channelId : null }, now),
+          nextSyncAt: now,
           ...(channel ?? {}),
         })
         .where(eq(schedulingCalendar.id, calendar.id));
@@ -660,6 +693,7 @@ async function recordMailboxFailure(
     return;
   }
   await db.transaction(async (tx) => {
+    if (!(await hostStillWants(tx, delegation, host))) return;
     const [row] = await tx
       .insert(schedulingCalendarConnection)
       .values({
@@ -786,15 +820,21 @@ async function reconcile(delegation: DelegationRow, deps: CalendarDeps): Promise
   return connectHosts(delegation, deps);
 }
 
-async function claimDue(now: Date, opts: Scan): Promise<DelegationRow[]> {
+/** One at a time: a batch's lease would be running out on the last by the time it's reached. */
+async function claimNext(
+  now: Date,
+  opts: Scan,
+  done: readonly string[],
+): Promise<{ delegation: DelegationRow; lease: Date } | null> {
   return db.transaction(async (tx) => {
-    const due = await tx
+    const [delegation] = await tx
       .select()
       .from(schedulingCalendarDelegation)
       .where(
         and(
           inArray(schedulingCalendarDelegation.status, ["active", "failing", "deleting"]),
           lte(schedulingCalendarDelegation.nextReconcileAt, now),
+          done.length > 0 ? notInArray(schedulingCalendarDelegation.id, [...done]) : undefined,
           or(
             isNull(schedulingCalendarDelegation.leaseUntil),
             lt(schedulingCalendarDelegation.leaseUntil, now),
@@ -805,19 +845,15 @@ async function claimDue(now: Date, opts: Scan): Promise<DelegationRow[]> {
         ),
       )
       .orderBy(asc(schedulingCalendarDelegation.nextReconcileAt))
-      .limit(opts.limit ?? 5)
+      .limit(1)
       .for("update", { skipLocked: true });
-    if (due.length === 0) return [];
+    if (!delegation) return null;
+    const lease = new Date(now.getTime() + LEASE_MS);
     await tx
       .update(schedulingCalendarDelegation)
-      .set({ leaseUntil: new Date(now.getTime() + LEASE_MS) })
-      .where(
-        inArray(
-          schedulingCalendarDelegation.id,
-          due.map((row) => row.id),
-        ),
-      );
-    return due;
+      .set({ leaseUntil: lease })
+      .where(eq(schedulingCalendarDelegation.id, delegation.id));
+    return { delegation, lease };
   });
 }
 
@@ -829,23 +865,35 @@ export async function runDueCalendarDelegations(
   deps: CalendarDeps,
   opts: Scan = {},
 ): Promise<number> {
-  const due = await claimDue(new Date(nowMs(deps)), opts);
-  for (const delegation of due) {
-    let next = new Date(nowMs(deps) + BACKOFF_MS);
+  const limit = opts.limit ?? 5;
+  // Once each per run, however much it has left: that's what paces a big domain.
+  const done: string[] = [];
+  while (done.length < limit) {
+    const next = await claimNext(new Date(nowMs(deps)), opts, done);
+    if (!next) break;
+    const { delegation, lease } = next;
+    done.push(delegation.id);
+    let after = new Date(nowMs(deps) + BACKOFF_MS);
     try {
-      next = await reconcile(delegation, deps);
+      after = await reconcile(delegation, deps);
     } finally {
+      // Fenced on the lease: a worker that took this over after it expired keeps what it wrote.
       // A nudge that came in during the run stands: it may be about a host this run didn't see.
       await db
         .update(schedulingCalendarDelegation)
         .set({
           leaseUntil: null,
-          nextReconcileAt: sql`case when ${schedulingCalendarDelegation.nextReconcileAt} > ${delegation.nextReconcileAt.toISOString()}::timestamptz then ${schedulingCalendarDelegation.nextReconcileAt} else ${next.toISOString()}::timestamptz end`,
+          nextReconcileAt: sql`case when ${schedulingCalendarDelegation.nextReconcileAt} > ${delegation.nextReconcileAt.toISOString()}::timestamptz then ${schedulingCalendarDelegation.nextReconcileAt} else ${after.toISOString()}::timestamptz end`,
         })
-        .where(eq(schedulingCalendarDelegation.id, delegation.id));
+        .where(
+          and(
+            eq(schedulingCalendarDelegation.id, delegation.id),
+            eq(schedulingCalendarDelegation.leaseUntil, lease),
+          ),
+        );
     }
   }
-  return due.length;
+  return done.length;
 }
 
 /** For the dashboard's banner: which delegations are refused right now. */

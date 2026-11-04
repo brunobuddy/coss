@@ -306,6 +306,22 @@ describe("connecting hosts", () => {
     expect(await logCount(env, "scheduling.calendar.connected")).toBe(2);
   });
 
+  test("a new connection is read once more, for what changed before its channel was stored", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    const eventType = await eventTypeFor(env, [ana.id]);
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    expect(await slotStarts(env, eventType.id)).toContain("09:00");
+    api.busy.set(`ana@${DOMAIN}`, [
+      { start: new Date(at("09:00")).toISOString(), end: new Date(at("09:30")).toISOString() },
+    ]);
+    await runDueCalendarSyncs(deps, { scope: scope(env) });
+    expect(await slotStarts(env, eventType.id)).toEqual(["09:30", "10:00"]);
+  });
+
   test("a big domain arrives in batches, and a run with hosts left comes straight back", async () => {
     const env = await environment();
     const api = new FakeGoogleCalendarApi();
@@ -489,6 +505,26 @@ describe("a host's mailbox changing under a connection being made", () => {
     await running;
     expect(await listConnections(env, ana.id)).toEqual([]);
     // The run's clock is pinned ahead of the nudge's, which in production comes after the claim.
+    await dueNow(delegation.id);
+    await run(env, deps);
+    expect(await listConnections(env, ana.id)).toMatchObject([{ account: `ana.new@${DOMAIN}` }]);
+  });
+
+  test("a failure of the old mailbox during the move isn't recorded against the host", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    const delegation = await activeGoogle(env, deps);
+    const held = api.hold("POST", /freeBusy$/);
+    api.failNext = null;
+    const running = run(env, deps);
+    await held.arrived;
+    await updateHost(env, ana.id, { calendar_account: `ana.new@${DOMAIN}` });
+    api.failNext = { path: /freeBusy$/, status: 404, body: {} };
+    held.release();
+    await running;
+    expect(await listConnections(env, ana.id)).toEqual([]);
     await dueNow(delegation.id);
     await run(env, deps);
     expect(await listConnections(env, ana.id)).toMatchObject([{ account: `ana.new@${DOMAIN}` }]);
@@ -768,6 +804,28 @@ describe("losing access", () => {
     expect(await slotStarts(env, eventType.id)).not.toEqual([]);
   });
 
+  test("a host being connected as access is lost doesn't escape the outage", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    const delegation = await activeGoogle(env, deps);
+    const held = api.hold("POST", /freeBusy$/);
+    const running = run(env, deps);
+    await held.arrived;
+    await markDelegationFailing(
+      { id: delegation.id, organizationId: env.organizationId },
+      "unauthorized_client",
+      { now: () => NOW },
+    );
+    held.release();
+    await running;
+    expect(await listConnections(env, ana.id)).toEqual([]);
+    await verifyCalendarDelegation(env, delegation.id, { account: `boss@${DOMAIN}` }, deps);
+    await run(env, deps);
+    expect(await listConnections(env, ana.id)).toMatchObject([{ status: "active" }]);
+  });
+
   test("a failure while it's already failing doesn't announce again", async () => {
     const { env, delegation } = await connected();
     const row = { id: delegation.id, organizationId: env.organizationId };
@@ -839,6 +897,46 @@ describe("what a host can do", () => {
     expect(await code(disconnectCalendar(env, ana.id, connection?.id as string, deps))).toBe(
       "calendar_managed",
     );
+  });
+});
+
+describe("the worker's lease", () => {
+  test("several due delegations are all handled in one run", async () => {
+    const env = await environment();
+    const deps = googleDeps(new FakeGoogleCalendarApi());
+    for (const domain of ["one.example", "two.example", "three.example"]) {
+      const delegation = await createCalendarDelegation(
+        env,
+        { provider: "google", domain, service_account_key: account.key },
+        deps,
+      );
+      await verifyCalendarDelegation(env, delegation.id, { account: `boss@${domain}` }, deps);
+    }
+    expect(await runDueCalendarDelegations(deps, { scope: scope(env) })).toBe(3);
+    expect(await runDueCalendarDelegations(deps, { scope: scope(env) })).toBe(0);
+  });
+
+  test("a worker that lost its lease leaves the new holder's alone", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    await hostOn(env, "ana");
+    const delegation = await activeGoogle(env, deps);
+    const held = api.hold("POST", /freeBusy$/);
+    const running = run(env, deps);
+    await held.arrived;
+    const theirs = new Date(NOW.getTime() + 3_600_000);
+    await db
+      .update(schema.schedulingCalendarDelegation)
+      .set({ leaseUntil: theirs })
+      .where(eq(schema.schedulingCalendarDelegation.id, delegation.id));
+    held.release();
+    await running;
+    const [row] = await db
+      .select()
+      .from(schema.schedulingCalendarDelegation)
+      .where(eq(schema.schedulingCalendarDelegation.id, delegation.id));
+    expect(row?.leaseUntil?.getTime()).toBe(theirs.getTime());
   });
 });
 
