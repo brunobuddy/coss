@@ -143,12 +143,10 @@ export const TemplateVariableInput = z
 export const TemplateVariableObject = z
   .object({
     name: z.string().meta({ description: "Used in the template as `{{name}}`." }),
-    type: z
-      .enum(TEMPLATE_VARIABLE_TYPES)
-      .meta({
-        description:
-          "`string`, `number`, `boolean`, or `list` (an array of objects with the declared `fields`).",
-      }),
+    type: z.enum(TEMPLATE_VARIABLE_TYPES).meta({
+      description:
+        "`string`, `number`, `boolean`, or `list` (an array of objects with the declared `fields`).",
+    }),
     required: z
       .boolean()
       .meta({ description: "Whether sends must pass it, unless it has a `default`." }),
@@ -591,12 +589,10 @@ export const EmailTemplateVersionObject = z
       description:
         "Counts the draft's saves. A published version keeps the revision it was published from.",
     }),
-    default_locale: z
-      .string()
-      .meta({
-        description:
-          "The locale sends fall back to when they ask for none, or for one without content.",
-      }),
+    default_locale: z.string().meta({
+      description:
+        "The locale sends fall back to when they ask for none, or for one without content.",
+    }),
     variables: z
       .array(TemplateVariableObject)
       .meta({ description: "The variables the template uses, with their types." }),

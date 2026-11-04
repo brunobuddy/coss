@@ -302,12 +302,9 @@ export const Broadcast = z
       .string()
       .nullable()
       .meta({ description: "The segment it goes to. `null`: an audience." }),
-    topic: z
-      .string()
-      .nullable()
-      .meta({
-        description: "The topic it's about (its key), and its emails' `category`. `null`: none.",
-      }),
+    topic: z.string().nullable().meta({
+      description: "The topic it's about (its key), and its emails' `category`. `null`: none.",
+    }),
     from: z.string().meta({ description: "Who it's sent from." }),
     reply_to: z.array(z.string()).meta({ description: "Addresses replies go to." }),
     subject: z.string().meta({ description: "The subject, before contact fields are filled in." }),
@@ -315,12 +312,9 @@ export const Broadcast = z
       .string()
       .nullable()
       .meta({ description: "The inbox preview line. `null`: none." }),
-    html: z
-      .string()
-      .nullable()
-      .meta({
-        description: "The HTML part, before contact fields are filled in. `null`: text only.",
-      }),
+    html: z.string().nullable().meta({
+      description: "The HTML part, before contact fields are filled in. `null`: text only.",
+    }),
     text: z.string().nullable().meta({ description: "The plain text part. `null`: HTML only." }),
     tracking: z
       .object({

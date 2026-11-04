@@ -55,12 +55,10 @@ export const WebhookEndpointObject = z
   .object({
     object: z.literal("webhook_endpoint"),
     id: z.string().meta({ examples: [ENDPOINT_ID_EXAMPLE] }),
-    url: z
-      .string()
-      .meta({
-        description: "Where events are posted.",
-        examples: ["https://example.com/webhooks/coss"],
-      }),
+    url: z.string().meta({
+      description: "Where events are posted.",
+      examples: ["https://example.com/webhooks/coss"],
+    }),
     description: z.string().nullable().meta({ description: "Your note about it. `null`: none." }),
     event_types: z.array(z.string()).meta({ description: EVENT_TYPES_DESCRIPTION }),
     api_version: z
@@ -367,20 +365,13 @@ export const WebhookDeliveryObject = z
       .datetime()
       .nullable()
       .meta({ description: "When the next attempt is due; `null` once the delivery is finished." }),
-    last_status_code: z
-      .number()
-      .int()
-      .nullable()
-      .meta({
-        description:
-          "The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.",
-      }),
-    last_error: z
-      .string()
-      .nullable()
-      .meta({
-        description: "Why the latest attempt failed. `null`: it didn't, or no attempt yet.",
-      }),
+    last_status_code: z.number().int().nullable().meta({
+      description:
+        "The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.",
+    }),
+    last_error: z.string().nullable().meta({
+      description: "Why the latest attempt failed. `null`: it didn't, or no attempt yet.",
+    }),
     payload: z
       .record(z.string(), z.unknown())
       .meta({ description: "The event body, exactly as posted to the endpoint." }),

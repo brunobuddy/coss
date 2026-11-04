@@ -143,11 +143,9 @@ export const Contact = z
   .object({
     object: z.literal("contact"),
     id: z.string(),
-    email: z
-      .string()
-      .meta({
-        description: "The contact's address. Unique in the environment, case-insensitively.",
-      }),
+    email: z.string().meta({
+      description: "The contact's address. Unique in the environment, case-insensitively.",
+    }),
     first_name: z.string().nullable().meta({ description: "Their first name. `null`: not set." }),
     last_name: z.string().nullable().meta({ description: "Their last name. `null`: not set." }),
     status: z.enum(CONTACT_STATUSES).meta({
@@ -469,11 +467,9 @@ export const ContactPropertyObject = z
   .object({
     object: z.literal("contact_property"),
     id: z.string(),
-    key: z
-      .string()
-      .meta({
-        description: "How contacts and templates name it (`{{{contact.<key>}}}`). Can't change.",
-      }),
+    key: z.string().meta({
+      description: "How contacts and templates name it (`{{{contact.<key>}}}`). Can't change.",
+    }),
     type: z.enum(CONTACT_PROPERTY_TYPES).meta({
       description: "`date` values are ISO 8601 strings.",
     }),
@@ -503,11 +499,9 @@ export const CreateContactPropertyRequest = z
       description:
         "How contacts and templates name it. Lower-case letters, digits and `_`, starting with a letter. Can't change.",
     }),
-    type: z
-      .enum(CONTACT_PROPERTY_TYPES)
-      .meta({
-        description: "What values it takes. `date` values are ISO 8601 strings. Can't change.",
-      }),
+    type: z.enum(CONTACT_PROPERTY_TYPES).meta({
+      description: "What values it takes. `date` values are ISO 8601 strings. Can't change.",
+    }),
     fallback: ContactPropertyValue.optional().meta({
       description: "Used in templates for contacts without a value.",
     }),
@@ -644,12 +638,10 @@ const Scalar = z.union([z.string().max(STRING_PROPERTY_MAX_LENGTH), z.number(), 
 const PropertyCondition = z.strictObject({
   field: z.literal("property"),
   key: z.string().meta({ description: "The custom property to test." }),
-  op: z
-    .enum(PROPERTY_OPERATORS)
-    .meta({
-      description:
-        "How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.",
-    }),
+  op: z.enum(PROPERTY_OPERATORS).meta({
+    description:
+      "How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.",
+  }),
   value: z
     .union([Scalar, z.array(Scalar).min(1).max(100)])
     .optional()
@@ -852,12 +844,10 @@ export const Topic = z
       .string()
       .nullable()
       .meta({ description: "Shown in the preference center under its name. `null`: none." }),
-    default_subscription: z
-      .enum(TOPIC_DEFAULT_SUBSCRIPTIONS)
-      .meta({
-        description:
-          "`opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.",
-      }),
+    default_subscription: z.enum(TOPIC_DEFAULT_SUBSCRIPTIONS).meta({
+      description:
+        "`opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.",
+    }),
     visibility: z
       .enum(TOPIC_VISIBILITIES)
       .meta({ description: "`private` topics never show in the preference center." }),
@@ -956,16 +946,9 @@ export type MarketingSettingsOutput = z.output<typeof MarketingSettings>;
 
 export const UpdateMarketingSettingsRequest = z
   .strictObject({
-    display_name: z
-      .string()
-      .trim()
-      .min(1)
-      .max(LIST_NAME_MAX_LENGTH)
-      .nullable()
-      .optional()
-      .meta({
-        description: "The sender's name in the preference center. `null`: the organization's.",
-      }),
+    display_name: z.string().trim().min(1).max(LIST_NAME_MAX_LENGTH).nullable().optional().meta({
+      description: "The sender's name in the preference center. `null`: the organization's.",
+    }),
     mailing_address: z
       .string()
       .trim()
@@ -980,12 +963,9 @@ export const UpdateMarketingSettingsRequest = z
         description:
           "The postal address every marketing email carries (CAN-SPAM). Marketing emails can't be sent without one.",
       }),
-    double_opt_in_default: z
-      .boolean()
-      .optional()
-      .meta({
-        description: "Whether contacts upserted without `double_opt_in` must confirm first.",
-      }),
+    double_opt_in_default: z.boolean().optional().meta({
+      description: "Whether contacts upserted without `double_opt_in` must confirm first.",
+    }),
     confirmation_from: z
       .string()
       .trim()
