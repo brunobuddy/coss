@@ -1,38 +1,48 @@
 import * as Haptics from "expo-haptics";
 import { Pressable, ScrollView, StyleSheet } from "react-native";
-import { colors, radius, type Tone } from "../lib/theme";
-import { StatusDot } from "./badge";
+import Animated from "react-native-reanimated";
+import { colors, radius, space, type Tone, useFinish } from "../lib/theme";
+import { useSlidingIndicator } from "./sliding";
 import { Text } from "./text";
 
 export type Filter<T extends string> = { value: T | null; label: string; tone?: Tone };
 
-/** The dashboard's filter links, as a scrolling row of chips. */
+/** The dashboard's filter links: a recessed track with a raised pill sliding along it. */
 export function FilterChips<T extends string>(props: {
   items: Filter<T>[];
   value: T | null;
   onChange: (value: T | null) => void;
 }) {
+  const finish = useFinish();
+  const indicator = useSlidingIndicator(props.value ?? "all");
   return (
     <ScrollView
       contentContainerStyle={styles.row}
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={[styles.track, { experimental_backgroundImage: finish.wellGradient }]}
     >
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.pill, { boxShadow: finish.raised }, indicator.style]}
+      />
       {props.items.map((item) => {
         const selected = item.value === props.value;
+        const key = item.value ?? "all";
         return (
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected }}
-            key={item.value ?? "all"}
+            key={key}
+            onLayout={indicator.onItemLayout(key)}
             onPress={() => {
+              if (selected) return;
               void Haptics.selectionAsync();
               props.onChange(item.value);
             }}
-            style={[styles.chip, selected && styles.selected]}
+            style={styles.chip}
           >
-            {item.tone ? <StatusDot tone={item.tone} /> : null}
-            <Text style={selected && { color: colors.primaryForeground }} variant="smallMedium">
+            <Text muted={!selected} variant="smallMedium">
               {item.label}
             </Text>
           </Pressable>
@@ -43,17 +53,26 @@ export function FilterChips<T extends string>(props: {
 }
 
 const styles = StyleSheet.create({
-  row: { gap: 8, paddingHorizontal: 2 },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    height: 32,
-    paddingHorizontal: 12,
-    borderRadius: radius.md,
+  track: {
+    flexGrow: 0,
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.input,
-    backgroundColor: colors.background,
+    borderColor: colors.border,
+    backgroundColor: colors.muted,
   },
-  selected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  row: { padding: 3 },
+  pill: {
+    position: "absolute",
+    left: 0,
+    top: 3,
+    bottom: 3,
+    borderRadius: radius.md,
+    backgroundColor: colors.raised,
+  },
+  chip: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 34,
+    paddingHorizontal: space.md,
+  },
 });

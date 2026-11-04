@@ -24,7 +24,11 @@ import { BOOKING_STATUS_LABEL, BookingStatusDot } from "@/components/scheduling-
 import { SearchForm } from "@/components/search-form";
 import { formatDateTime } from "@/lib/format";
 import { schedulingPageContext } from "./page-context";
-import { CancelBookingButton } from "./scheduling-actions";
+import {
+  ApproveBookingButton,
+  CancelBookingButton,
+  DeclineBookingButton,
+} from "./scheduling-actions";
 
 export const metadata: Metadata = { title: "Bookings" };
 
@@ -163,7 +167,12 @@ export default async function BookingsPage({
                       ) : null}
                     </TableCell>
                     <TableCell className="text-right">
-                      {!ended && can({ scheduling: ["update"] }) ? (
+                      {can({ scheduling: ["update"] }) && booking.status === "pending_approval" ? (
+                        <>
+                          <ApproveBookingButton {...target} bookingId={booking.id} />
+                          <DeclineBookingButton {...target} bookingId={booking.id} />
+                        </>
+                      ) : !ended && can({ scheduling: ["update"] }) ? (
                         <CancelBookingButton {...target} bookingId={booking.id} />
                       ) : null}
                     </TableCell>

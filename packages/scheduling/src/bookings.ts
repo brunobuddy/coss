@@ -2170,10 +2170,15 @@ export async function listBookings(
     hostRef?: string | undefined;
     eventTypeRef?: string | undefined;
     status?: BookingRow["status"] | undefined;
+    statuses?: BookingRow["status"][] | undefined;
     attendeeUid?: string | undefined;
     attendeeEmail?: string | undefined;
     startAfter?: Date | undefined;
     startBefore?: Date | undefined;
+    endAfter?: Date | undefined;
+    endBefore?: Date | undefined;
+    /** Newest first by default; by start time for an agenda (`after` is still a booking id). */
+    order?: "start_asc" | "start_desc" | undefined;
   },
   deps: Pick<SchedulingDeps, "dataKeys" | "lookupKey">,
 ): Promise<{ data: BookingObjectOutput[]; hasMore: boolean }> {
@@ -2188,11 +2193,14 @@ export async function listBookings(
       and(
         eq(schedulingBooking.organizationId, scope.organizationId),
         eq(schedulingBooking.environmentId, scope.environmentId),
-        query.after ? lt(schedulingBooking.id, query.after) : undefined,
+        query.after ? afterCursor(scope, query.after, query.order) : undefined,
         eventTypeId ? eq(schedulingBooking.eventTypeId, eventTypeId) : undefined,
         query.status ? eq(schedulingBooking.status, query.status) : undefined,
+        query.statuses ? inArray(schedulingBooking.status, query.statuses) : undefined,
         query.startAfter ? gte(schedulingBooking.startAt, query.startAfter) : undefined,
         query.startBefore ? lte(schedulingBooking.startAt, query.startBefore) : undefined,
+        query.endAfter ? gte(schedulingBooking.endAt, query.endAfter) : undefined,
+        query.endBefore ? lt(schedulingBooking.endAt, query.endBefore) : undefined,
         hostId
           ? sql`exists (select 1 from ${schedulingBookingHost}
               where ${schedulingBookingHost.bookingId} = ${schedulingBooking.id}
@@ -2212,7 +2220,13 @@ export async function listBookings(
           : undefined,
       ),
     )
-    .orderBy(desc(schedulingBooking.id))
+    .orderBy(
+      ...(query.order === "start_asc"
+        ? [asc(schedulingBooking.startAt), asc(schedulingBooking.id)]
+        : query.order === "start_desc"
+          ? [desc(schedulingBooking.startAt), desc(schedulingBooking.id)]
+          : [desc(schedulingBooking.id)]),
+    )
     .limit(query.limit + 1);
   const page = rows.slice(0, query.limit);
   return {
@@ -2261,6 +2275,18 @@ export async function listUpcomingHostBookings(
     nextCursor:
       rows.length > query.limit && last ? `${last.startAt.getTime()}_after_${last.id}` : null,
   };
+}
+
+function afterCursor(scope: Scope, after: string, order: "start_asc" | "start_desc" | undefined) {
+  if (!order) return lt(schedulingBooking.id, after);
+  const position = sql`(select ${schedulingBooking.startAt}, ${schedulingBooking.id}
+    from ${schedulingBooking}
+    where ${schedulingBooking.id} = ${after}
+      and ${schedulingBooking.organizationId} = ${scope.organizationId}
+      and ${schedulingBooking.environmentId} = ${scope.environmentId})`;
+  return order === "start_asc"
+    ? sql`(${schedulingBooking.startAt}, ${schedulingBooking.id}) > ${position}`
+    : sql`(${schedulingBooking.startAt}, ${schedulingBooking.id}) < ${position}`;
 }
 
 export type SeriesRequest = Omit<BookingRequest, "startMs"> & {

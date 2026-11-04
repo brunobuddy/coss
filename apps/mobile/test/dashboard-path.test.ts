@@ -2,6 +2,15 @@ import { describe, expect, test } from "bun:test";
 import { dashboardPath } from "../src/lib/dashboard-path";
 
 describe("dashboardPath", () => {
+  test("a product's hub opens its page, and Scheduling's own paths are the dashboard's", () => {
+    expect(dashboardPath("/acme/projects/web/production/products/sms")).toBe(
+      "/acme/web/production/sms",
+    );
+    expect(dashboardPath("/acme/projects/web/production/scheduling/hosts")).toBe(
+      "/acme/web/production/scheduling/hosts",
+    );
+  });
+
   test("moves environment pages into their product", () => {
     expect(dashboardPath("/acme/projects/web/production")).toBe("/acme/web/production");
     expect(dashboardPath("/acme/projects/web/production/emails/email_1")).toBe(

@@ -1,9 +1,12 @@
 import type { EnvironmentResponse } from "@coss/companion";
 import * as Haptics from "expo-haptics";
-import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useRef, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, { cubicBezier, useReducedMotion } from "react-native-reanimated";
 import { formatCount, formatDay } from "../lib/format";
-import { type ColorToken, colors } from "../lib/theme";
+import { type ColorToken, colors, space } from "../lib/theme";
+import { useArrival } from "./screen";
 import { Text } from "./text";
 
 type Day = EnvironmentResponse["activity"]["days"][number];
@@ -27,6 +30,17 @@ const SERIES: BarSeries<Day>[] = [
   },
   { key: "canceled", label: "Canceled", color: "chartCanceled", value: (day) => day.canceled },
 ];
+
+// Bars rise once when a chart replaces a skeleton; at rest nothing is left animated.
+const GROW = {
+  animationName: {
+    from: { transform: [{ scaleY: 0 }] },
+    to: { transform: [{ scaleY: 1 }] },
+  },
+  animationDuration: 460,
+  animationDelay: 60,
+  animationTimingFunction: cubicBezier(0.2, 0.8, 0.2, 1),
+} as const;
 
 const DASHES = Array.from({ length: 64 }, (_, n) => `dash-${n}`);
 
@@ -53,7 +67,7 @@ export function ActivityChart({ days }: { days: Day[] }) {
   );
 }
 
-/** The dashboard's stacked daily bars: tap a day for its numbers (the web shows them on hover). */
+/** The dashboard's stacked daily bars: drag along them for each day's numbers (hover on the web). */
 export function StackedBars<D extends { date: string }>({
   days,
   series: SERIES,
@@ -71,6 +85,45 @@ export function StackedBars<D extends { date: string }>({
   const totals = days.map((day) => SERIES.reduce((sum, series) => sum + series.value(day), 0));
   const max = Math.max(1, ...totals);
   const focus = selected === null ? null : days[selected];
+
+  const arrived = useArrival();
+  const reduced = useReducedMotion();
+  const growStyle = arrived && !reduced ? GROW : null;
+
+  const plotWidth = useRef(0);
+  const scrubbing = useRef(false);
+  const dayAt = (x: number) => {
+    if (plotWidth.current === 0 || days.length === 0) return null;
+    const ratio = Math.min(0.999, Math.max(0, x / plotWidth.current));
+    return Math.floor(ratio * days.length);
+  };
+  const scrubTo = (x: number) => {
+    const day = dayAt(x);
+    setSelected((current) => {
+      if (day !== current) void Haptics.selectionAsync();
+      return day;
+    });
+  };
+  const gesture = Gesture.Race(
+    Gesture.Pan()
+      .runOnJS(true)
+      .activeOffsetX([-6, 6])
+      .failOffsetY([-14, 14])
+      .onBegin(() => {
+        scrubbing.current = true;
+      })
+      .onUpdate((event) => scrubTo(event.x))
+      .onFinalize(() => {
+        scrubbing.current = false;
+      }),
+    Gesture.Tap()
+      .runOnJS(true)
+      .onEnd((event) => {
+        const day = dayAt(event.x);
+        void Haptics.selectionAsync();
+        setSelected((current) => (current === day ? null : day));
+      }),
+  );
 
   return (
     <View style={styles.chart}>
@@ -100,43 +153,47 @@ export function StackedBars<D extends { date: string }>({
       </View>
       <View>
         <Dashes />
-        <View style={styles.plot}>
-          {days.map((day, index) => (
-            <Pressable
-              accessibilityLabel={`${formatDay(day.date)}: ${describe(totals[index] ?? 0)}`}
-              key={day.date}
-              onPress={() => {
-                void Haptics.selectionAsync();
-                setSelected(selected === index ? null : index);
-              }}
-              style={[styles.column, selected !== null && selected !== index && styles.dimmed]}
-            >
-              {totals[index] === 0 ? (
-                <View style={styles.empty} />
-              ) : (
-                SERIES.map((series, position) => {
-                  const value = series.value(day);
-                  if (value === 0) return null;
-                  const top = SERIES.slice(position + 1).every((above) => above.value(day) === 0);
-                  return (
-                    <View
-                      key={series.key}
-                      style={[
-                        styles.segment,
-                        position === 0 && styles.bottom,
-                        top && styles.top,
-                        {
-                          height: `${(value / max) * 100}%`,
-                          backgroundColor: colors[series.color],
-                        },
-                      ]}
-                    />
-                  );
-                })
-              )}
-            </Pressable>
-          ))}
-        </View>
+        <GestureDetector gesture={gesture}>
+          <Animated.View
+            onLayout={(event) => {
+              plotWidth.current = event.nativeEvent.layout.width;
+            }}
+            style={[styles.plot, growStyle]}
+          >
+            {days.map((day, index) => (
+              <View
+                accessible
+                accessibilityLabel={`${formatDay(day.date)}: ${describe(totals[index] ?? 0)}`}
+                key={day.date}
+                style={[styles.column, selected !== null && selected !== index && styles.dimmed]}
+              >
+                {totals[index] === 0 ? (
+                  <View style={styles.empty} />
+                ) : (
+                  SERIES.map((series, position) => {
+                    const value = series.value(day);
+                    if (value === 0) return null;
+                    const top = SERIES.slice(position + 1).every((above) => above.value(day) === 0);
+                    return (
+                      <View
+                        key={series.key}
+                        style={[
+                          styles.segment,
+                          position === 0 && styles.bottom,
+                          top && styles.top,
+                          {
+                            height: `${(value / max) * 100}%`,
+                            backgroundColor: colors[series.color],
+                          },
+                        ]}
+                      />
+                    );
+                  })
+                )}
+              </View>
+            ))}
+          </Animated.View>
+        </GestureDetector>
         <Dashes />
       </View>
       <View style={styles.axis}>
@@ -155,19 +212,26 @@ export function StackedBars<D extends { date: string }>({
 }
 
 const styles = StyleSheet.create({
-  chart: { gap: 12 },
+  chart: { gap: space.md },
   legend: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
-    columnGap: 12,
-    rowGap: 4,
+    columnGap: space.md,
+    rowGap: space.xs,
     minHeight: 18,
   },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendLabel: { fontSize: 12 },
   swatch: { width: 8, height: 8, borderRadius: 2 },
-  plot: { height: 128, flexDirection: "row", alignItems: "flex-end", gap: 3, paddingTop: 1 },
+  plot: {
+    height: 128,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+    paddingTop: 1,
+    transformOrigin: "bottom",
+  },
   dashes: { flexDirection: "row", gap: 3, overflow: "hidden", height: 1 },
   dash: { width: 4, height: 1, backgroundColor: colors.border },
   column: { flex: 1, height: "100%", flexDirection: "column-reverse" },

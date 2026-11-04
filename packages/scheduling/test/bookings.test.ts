@@ -339,6 +339,93 @@ describe("the dashboard's reads", () => {
   });
 });
 
+describe("listing by start time", () => {
+  async function agenda() {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    const eventType = await eventTypeFor(env, [{ host: host.id }]);
+    const times = ["13:00", "09:00", "11:00", "15:00", "10:00"];
+    const booked = [];
+    for (const time of times) {
+      booked.push((await createBooking(env, request(eventType.id, at(time)), deps, actor)).booking);
+    }
+    return { env, booked };
+  }
+  const starts = (rows: { start: string }[]) => rows.map((row) => row.start.slice(11, 16));
+
+  test("pages forward and backward by start, not by when it was made", async () => {
+    const { env } = await agenda();
+    const first = await listBookings(env, { limit: 2, order: "start_asc" }, deps);
+    expect(starts(first.data)).toEqual(["09:00", "10:00"]);
+    expect(first.hasMore).toBe(true);
+    const second = await listBookings(
+      env,
+      { limit: 2, order: "start_asc", after: first.data.at(-1)?.id },
+      deps,
+    );
+    expect(starts(second.data)).toEqual(["11:00", "13:00"]);
+    const third = await listBookings(
+      env,
+      { limit: 2, order: "start_asc", after: second.data.at(-1)?.id },
+      deps,
+    );
+    expect(starts(third.data)).toEqual(["15:00"]);
+    expect(third.hasMore).toBe(false);
+
+    const backwards = await listBookings(env, { limit: 2, order: "start_desc" }, deps);
+    expect(starts(backwards.data)).toEqual(["15:00", "13:00"]);
+    const rest = await listBookings(
+      env,
+      { limit: 5, order: "start_desc", after: backwards.data.at(-1)?.id },
+      deps,
+    );
+    expect(starts(rest.data)).toEqual(["11:00", "10:00", "09:00"]);
+  });
+
+  test("the default stays newest first", async () => {
+    const { env, booked } = await agenda();
+    const { data } = await listBookings(env, { limit: 5 }, deps);
+    expect(data.map((row) => row.id)).toEqual(booked.map((row) => row.id).reverse());
+  });
+
+  test("filters by end time and several statuses", async () => {
+    const { env, booked } = await agenda();
+    const cancelled = booked[0];
+    if (!cancelled) throw new Error("no booking");
+    await cancelBooking(env, cancelled.id, deps, actor);
+    const live = await listBookings(
+      env,
+      { limit: 10, order: "start_asc", statuses: ["confirmed", "held"] },
+      deps,
+    );
+    expect(starts(live.data)).toEqual(["09:00", "10:00", "11:00", "15:00"]);
+    const after = await listBookings(
+      env,
+      { limit: 10, order: "start_asc", endAfter: new Date(at("11:15")) },
+      deps,
+    );
+    expect(starts(after.data)).toEqual(["11:00", "13:00", "15:00"]);
+    const before = await listBookings(
+      env,
+      { limit: 10, order: "start_desc", endBefore: new Date(at("11:00")) },
+      deps,
+    );
+    expect(starts(before.data)).toEqual(["10:00", "09:00"]);
+  });
+
+  test("another environment's booking is no cursor", async () => {
+    const { env } = await agenda();
+    const other = await agenda();
+    const foreign = other.booked[0];
+    const { data } = await listBookings(
+      env,
+      { limit: 5, order: "start_asc", after: foreign?.id },
+      deps,
+    );
+    expect(data).toEqual([]);
+  });
+});
+
 describe("races", () => {
   test("N parallel bookings for one slot: exactly one wins", async () => {
     const env = await tenantEnv();

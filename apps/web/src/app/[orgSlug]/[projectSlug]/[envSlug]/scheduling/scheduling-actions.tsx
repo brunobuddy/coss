@@ -35,9 +35,11 @@ import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
+  approveBookingAction,
   cancelBookingAction,
   createEventTypeAction,
   createHostAction,
+  declineBookingAction,
   deleteHostAction,
   openHostPortalAction,
   saveSettingsAction,
@@ -243,6 +245,52 @@ export function NewEventTypeDialog(props: EnvTarget & { hosts: { id: string; nam
         </form>
       </DialogPopup>
     </Dialog>
+  );
+}
+
+export function ApproveBookingButton(props: EnvTarget & { bookingId: string }) {
+  const [, formAction, pending] = useActionToast(approveBookingAction, {
+    success: "Booking approved",
+    errors: "toast",
+  });
+  return (
+    <form action={formAction} className="contents">
+      <Hidden {...props} />
+      <Button disabled={pending} size="sm" type="submit" variant="ghost">
+        Approve
+      </Button>
+    </form>
+  );
+}
+
+export function DeclineBookingButton(props: EnvTarget & { bookingId: string }) {
+  const [state, formAction, pending] = useActionToast(declineBookingAction, {
+    success: "Booking declined",
+  });
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button size="sm" variant="ghost" />}>Decline</AlertDialogTrigger>
+      <AlertDialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...props} />
+          <AlertDialogHeader>
+            <AlertDialogTitle>Decline this booking?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The time is freed and the attendee told. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6">
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogClose render={<Button variant="ghost" />}>Keep it</AlertDialogClose>
+            <Button disabled={pending} type="submit" variant="destructive">
+              Decline booking
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </AlertDialogPopup>
+    </AlertDialog>
   );
 }
 

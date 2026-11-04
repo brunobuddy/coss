@@ -1,27 +1,22 @@
-import { router } from "expo-router";
-import { Tabs } from "./tabs";
-
-type DomainTab = "overview" | "dmarc";
+import { RouteTabs } from "./route-tabs";
 
 // The dashboard's domain tabs (`DOMAIN_NAV` in apps/web/src/lib/navigation.ts).
-const ITEMS: { value: DomainTab; label: string }[] = [
-  { value: "overview", label: "Overview" },
-  { value: "dmarc", label: "DMARC" },
-];
-
-/** Overview / DMARC: switching replaces the screen, so Back still returns to the domains list. */
-export function DomainTabs(props: { org: string; domainId: string; value: DomainTab }) {
+export function DomainTabs(props: { org: string; domainId: string; value: "overview" | "dmarc" }) {
+  const params = { org: props.org, domainId: props.domainId };
   return (
-    <Tabs
-      items={ITEMS}
-      onChange={(value) => {
-        if (value === props.value) return;
-        router.replace({
-          pathname:
-            value === "dmarc" ? "/[org]/domains/[domainId]/dmarc" : "/[org]/domains/[domainId]",
-          params: { org: props.org, domainId: props.domainId },
-        });
-      }}
+    <RouteTabs
+      items={[
+        {
+          value: "overview",
+          label: "Overview",
+          href: { pathname: "/[org]/domains/[domainId]", params },
+        },
+        {
+          value: "dmarc",
+          label: "DMARC",
+          href: { pathname: "/[org]/domains/[domainId]/dmarc", params },
+        },
+      ]}
       value={props.value}
     />
   );

@@ -186,7 +186,7 @@ Better Auth (`packages/auth`) and the dashboard actions, mobile API routes, tena
   notes (like the customer page), sent/received email detail never includes the HTML body, and Hooks endpoints
   and log drains never include secrets. The app's only changes (POST: retry a webhook delivery, recover an
   endpoint's failed deliveries, enable or disable an endpoint, cancel or reschedule a scheduled email,
-  report a risk outcome, also from the review queue) repeat the dashboard action's
+  report a risk outcome, also from the review queue, approve, decline or cancel a booking) repeat the dashboard action's
   checks (`requireMobileWrite`: role, then suspension; the environment owns the endpoint) and record the same audit
   event with `recordAudit`; a new one must too. Deleting the account (`POST /api/mobile/v1/account/deletion`) is
   `deleteAccountAction`'s twin: the typed address, a session younger than Better Auth's `freshAge` (else 403

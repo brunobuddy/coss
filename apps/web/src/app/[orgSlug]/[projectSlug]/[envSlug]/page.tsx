@@ -1,25 +1,8 @@
 import { API_KEY_PREFIX } from "@coss/auth/constants";
-import {
-  environmentHref,
-  PRODUCTS,
-  type ProductKey,
-  settingsHref,
-  visibleProducts,
-} from "@coss/dashboard-routes";
-import { emailActivity, listDomains } from "@coss/email";
-import { queryLogs } from "@coss/logs";
+import { environmentHref, PRODUCTS, type ProductKey, settingsHref } from "@coss/dashboard-routes";
 import type { LogEntryOutput } from "@coss/logs/schemas";
-import { listRiskAssessments } from "@coss/risk";
-import { ListRiskAssessmentsQuery } from "@coss/risk/schemas";
-import { listSignRequests } from "@coss/sign";
-import {
-  getEnvironment,
-  listEnvironmentApiKeys,
-  productDailyActivity,
-  productFigures,
-} from "@coss/tenancy";
+import { getEnvironment } from "@coss/tenancy";
 import { Button } from "@coss/ui/components/button";
-import { listWebhookEndpoints } from "@coss/webhooks";
 import {
   ArrowRightIcon,
   BookOpenIcon,
@@ -39,36 +22,29 @@ import { CountUp } from "@/components/count-up";
 import { ModeBadge } from "@/components/email-badges";
 import { Panel, PanelBody } from "@/components/panel";
 import { ProductElsewhere } from "@/components/product-elsewhere";
-import { type GlyphTone, PRODUCT_TEXT, ProductGlyph } from "@/components/product-glyph";
+import { PRODUCT_TEXT, ProductGlyph } from "@/components/product-glyph";
 import { ProductCell, ProductGrid } from "@/components/product-grid";
 import { SectionHeading } from "@/components/section-heading";
 import { SetupSteps } from "@/components/setup-steps";
 import { Sparkline } from "@/components/sparkline";
-import { StatusDot, type StatusTone } from "@/components/status-dot";
+import { StatusDot } from "@/components/status-dot";
+import {
+  activityTitle,
+  groupActivity,
+  HOME_DAYS,
+  type HomeAttentionItem,
+  LEVEL_SEVERITY,
+  loadEnvironmentHome,
+  SOURCE_PRODUCT,
+} from "@/lib/environment-home";
 import { formatCompact, formatRelative } from "@/lib/format";
-import { environmentSetupSteps, isFirstVisit } from "@/lib/home-setup";
+import { environmentSetupSteps } from "@/lib/home-setup";
 import { DEVELOPERS_ICON, PRODUCT_ICONS } from "@/lib/navigation";
-import { PRODUCT_FIGURES, productPreferences, productUse } from "@/lib/products";
+import { PRODUCT_FIGURES } from "@/lib/products";
 import { listProjectsWithDefaultEnvironment } from "@/lib/projects";
 import { requireOrgMember } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Home" };
-
-/** The window of the figures and sparklines. */
-const DAYS = 14;
-const DAY_MS = 86_400_000;
-/** Attention counts stop here ("20+"). */
-const COUNT_CAP = 20;
-
-type Attention = {
-  key: string;
-  tone: GlyphTone;
-  icon: LucideIcon;
-  severity: StatusTone;
-  title: string;
-  description: string;
-  href: string;
-};
 
 /**
  * An environment's home: a welcome with what happened lately, what needs attention, each product
@@ -83,7 +59,6 @@ export default async function EnvironmentHomePage({
   if (!found) notFound();
   const { project, environment } = found;
   const live = environment.mode === "live";
-  const scope = { organizationId: organization.id, environmentId: environment.id };
   const now = new Date();
   const base = environmentHref({
     organization: organization.slug,
@@ -91,112 +66,32 @@ export default async function EnvironmentHomePage({
     environment: environment.slug,
   });
 
-  const [use, preferences, projects] = await Promise.all([
-    productUse({
+  const [home, projects] = await Promise.all([
+    loadEnvironmentHome({
       organizationId: organization.id,
       projectId: project.id,
-      environmentSlug: environment.slug,
+      userId: session.user.id,
+      environment,
+      can,
+      now,
     }),
-    productPreferences(organization.id, session.user.id),
     listProjectsWithDefaultEnvironment(organization.id),
   ]);
-  const yours = visibleProducts(use.inProject, preferences);
+  const { use, yours, figures, daily, domains, logs, attention, yourProducts, summary } = home;
+  const { hasKey, hasActivity, firstVisit } = home;
   const uses = (key: ProductKey) => use.here.includes(key);
-
-  const [figures, daily, keys, domains, endpoints, reviews, awaiting, email, logs] =
-    await Promise.all([
-      productFigures({ ...scope, since: new Date(now.getTime() - DAYS * DAY_MS) }),
-      productDailyActivity({ ...scope, days: DAYS, now }),
-      listEnvironmentApiKeys(scope),
-      can({ domain: ["read"] }) ? listDomains({ organizationId: organization.id }) : null,
-      can({ webhook: ["read"] }) ? listWebhookEndpoints(scope) : null,
-      uses("risk") && can({ risk: ["read"] })
-        ? listRiskAssessments(
-            scope,
-            ListRiskAssessmentsQuery.parse({ review_status: "open", limit: COUNT_CAP }),
-          )
-        : null,
-      uses("sign") && can({ sign: ["read"] })
-        ? listSignRequests({ ...scope, status: ["sent"], limit: COUNT_CAP })
-        : null,
-      uses("email") && can({ email: ["read"] })
-        ? emailActivity({ ...scope, since: new Date(now.getTime() - 6 * DAY_MS), now })
-        : null,
-      can({ log: ["read"] })
-        ? queryLogs({ ...scope, from: new Date(now.getTime() - 7 * DAY_MS), to: now, limit: 200 })
-        : null,
-    ]);
-
-  const attention: Attention[] = [];
-  if (reviews && reviews.data.length > 0) {
-    const count = countLabel(reviews.data.length, reviews.has_more);
-    attention.push({
-      key: "risk",
-      tone: "risk",
-      icon: PRODUCT_ICONS.risk,
-      severity: "warning",
-      title: `${count} ${reviews.data.length === 1 ? "assessment needs" : "assessments need"} a review`,
-      description: "Allow or block them, and report the outcome to sharpen future scores.",
-      href: `${base}/risk?view=review`,
-    });
-  }
-  if (awaiting && awaiting.data.length > 0) {
-    const count = countLabel(awaiting.data.length, awaiting.hasMore);
-    attention.push({
-      key: "sign",
-      tone: "sign",
-      icon: PRODUCT_ICONS.sign,
-      severity: "info",
-      title: `${count} signature ${awaiting.data.length === 1 ? "request is" : "requests are"} waiting on signers`,
-      description: "Sent and not yet completed. Reminders go out on their own.",
-      href: `${base}/sign`,
-    });
-  }
-  if (email && email.totals.failed > 0) {
-    attention.push({
-      key: "email",
-      tone: "email",
-      icon: PRODUCT_ICONS.email,
-      severity: "error",
-      title: `${formatCompact(email.totals.failed)} ${email.totals.failed === 1 ? "email" : "emails"} failed this week`,
-      description: "See why each one failed: a bounce, a suppression or a rejected sender.",
-      href: `${base}/email/messages?status=failed`,
-    });
-  }
-  const failingEndpoints = (endpoints ?? []).filter(
-    (endpoint) => endpoint.failingSince !== null || endpoint.disabledReason === "failing",
-  );
-  if (failingEndpoints.length > 0) {
-    attention.push({
-      key: "webhooks",
-      tone: "neutral",
-      icon: WebhookIcon,
-      severity: "error",
-      title: `${failingEndpoints.length} webhook ${failingEndpoints.length === 1 ? "endpoint is" : "endpoints are"} failing`,
-      description: "Deliveries keep failing; failing endpoints are turned off after a while.",
-      href: `${base}/developers/webhooks`,
-    });
-  }
-  const brokenDomains = (live ? (domains ?? []) : []).filter((domain) =>
-    ["failed", "temporary_failure"].includes(domain.status),
-  );
-  if (brokenDomains.length > 0) {
-    attention.push({
-      key: "domains",
-      tone: "email",
-      icon: GlobeIcon,
-      severity: "error",
-      title: `${brokenDomains.length === 1 ? brokenDomains[0]?.name : `${brokenDomains.length} domains`} can't be verified`,
-      description: "Their DNS records are missing or changed, so live email can't use them.",
-      href: `${base}/email/domains`,
-    });
-  }
+  const attentionLinks: Record<HomeAttentionItem["key"], { icon: LucideIcon; href: string }> = {
+    risk: { icon: PRODUCT_ICONS.risk, href: `${base}/risk?view=review` },
+    scheduling: { icon: PRODUCT_ICONS.scheduling, href: `${base}/scheduling` },
+    sign: { icon: PRODUCT_ICONS.sign, href: `${base}/sign` },
+    email: { icon: PRODUCT_ICONS.email, href: `${base}/email/messages?status=failed` },
+    webhooks: { icon: WebhookIcon, href: `${base}/developers/webhooks` },
+    domains: { icon: GlobeIcon, href: `${base}/email/domains` },
+  };
 
   const liveEnvironment = projects
     .find((row) => row.project.id === project.id)
     ?.environments.find((env) => env.mode === "live");
-  const hasKey = keys.length > 0;
-  const hasActivity = Object.values(figures).some((count) => count > 0);
   const steps = environmentSetupSteps({
     base,
     keyPrefix: API_KEY_PREFIX[environment.mode],
@@ -213,7 +108,6 @@ export default async function EnvironmentHomePage({
       : null,
   });
   const remaining = steps.filter((step) => !step.done).length;
-  const firstVisit = isFirstVisit({ hasKey, hasActivity });
   // Nothing has happened yet, so "all clear" would mean nothing: what to do first takes its place.
   const startHere = attention.length === 0 && !hasActivity && remaining > 0;
   const setup =
@@ -232,17 +126,9 @@ export default async function EnvironmentHomePage({
       </Panel>
     ) : null;
 
-  const yourProducts = PRODUCTS.filter((product) => yours.includes(product.key));
   const inUseHere = PRODUCTS.filter((product) => uses(product.key));
   const discover = PRODUCTS.filter((product) => !yours.includes(product.key));
   const firstName = session.user.name?.trim().split(/\s+/)[0];
-  const summary = yourProducts
-    .filter((product) => PRODUCT_FIGURES[product.key].recent && figures[product.key] > 0)
-    .map((product) => {
-      const figure = PRODUCT_FIGURES[product.key];
-      const count = figures[product.key];
-      return `${formatCompact(count)} ${count === 1 ? figure.one : figure.many}`;
-    });
 
   return (
     <div className="flex flex-col gap-8">
@@ -263,15 +149,7 @@ export default async function EnvironmentHomePage({
               {firstVisit ? "Welcome" : "Welcome back"}
               {firstName ? `, ${firstName}` : ""}
             </h1>
-            <p className="text-pretty text-muted-foreground">
-              {summary.length > 0
-                ? `In the last ${DAYS} days: ${listOf(summary)}.`
-                : live
-                  ? firstVisit
-                    ? "Nothing has gone out from here yet."
-                    : "Nothing has gone out from here in the last two weeks."
-                  : "A sandbox: everything runs through every check, but nothing is delivered."}
-            </p>
+            <p className="text-pretty text-muted-foreground">{summary}</p>
             <div className="mt-1 flex flex-wrap gap-2">
               <Button
                 render={<Link href={`${base}/developers/api-keys`} />}
@@ -341,10 +219,14 @@ export default async function EnvironmentHomePage({
               {attention.map((item) => (
                 <Link
                   className="group/row flex items-center gap-4 border-t px-5 py-4 transition-colors first:border-t-0 hover:bg-accent/40"
-                  href={item.href}
+                  href={attentionLinks[item.key].href}
                   key={item.key}
                 >
-                  <ProductGlyph className="size-9 rounded-xl" icon={item.icon} tone={item.tone} />
+                  <ProductGlyph
+                    className="size-9 rounded-xl"
+                    icon={attentionLinks[item.key].icon}
+                    tone={item.tone}
+                  />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <StatusDot className="font-medium text-sm" tone={item.severity}>
                       {item.title}
@@ -382,7 +264,7 @@ export default async function EnvironmentHomePage({
                 All products
               </Button>
             }
-            description={`The last ${DAYS} days of the products this project uses, and the ones you pinned.`}
+            description={`The last ${HOME_DAYS} days of the products this project uses, and the ones you pinned.`}
             title="Your products"
           />
           <ProductGrid>
@@ -408,7 +290,7 @@ export default async function EnvironmentHomePage({
                           </span>
                           <span className="text-muted-foreground">
                             {count === 1 ? figure.one : figure.many}
-                            {figure.recent ? ` in ${DAYS} days` : ""}
+                            {figure.recent ? ` in ${HOME_DAYS} days` : ""}
                           </span>
                         </span>
                         <Sparkline
@@ -507,45 +389,6 @@ export default async function EnvironmentHomePage({
   );
 }
 
-/** Log sources by the product they belong to (the rest are Developers' own). */
-const SOURCE_PRODUCT: Partial<Record<string, ProductKey>> = {
-  email: "email",
-  smtp: "email",
-  sms: "sms",
-  sign: "sign",
-  verify: "verify",
-  risk: "risk",
-  forms: "forms",
-  hooks: "hooks",
-};
-
-const LEVEL_TONE: Record<LogEntryOutput["level"], StatusTone> = {
-  info: "neutral",
-  warning: "warning",
-  error: "error",
-};
-
-/**
- * The week's lines by kind (source, event and level), newest kind first, each shown by its latest
- * line with how many there were: a burst of webhook attempts doesn't push everything else out.
- */
-function groupActivity(lines: LogEntryOutput[]): { line: LogEntryOutput; count: number }[] {
-  const groups = new Map<string, { line: LogEntryOutput; count: number }>();
-  for (const line of lines) {
-    const kind = `${line.source}|${line.type}|${line.level}|${line.method ? activityTitle(line) : ""}`;
-    const group = groups.get(kind);
-    if (group) group.count++;
-    else groups.set(kind, { line, count: 1 });
-  }
-  return [...groups.values()];
-}
-
-/** An API line by its route, anything else by its message with URLs cut to their host. */
-function activityTitle(line: LogEntryOutput): string {
-  if (line.method && line.path) return `${line.method} ${line.route ?? line.path}`;
-  return line.message.replace(/https?:\/\/([^/\s]+)\S*/g, "$1");
-}
-
 function ActivityLine(props: { line: LogEntryOutput; count: number; now: Date }) {
   const product = SOURCE_PRODUCT[props.line.source];
   const icon = product
@@ -557,7 +400,7 @@ function ActivityLine(props: { line: LogEntryOutput; count: number; now: Date })
     <li className="flex items-center gap-3 border-t px-5 py-3 first:border-t-0">
       <ProductGlyph icon={icon} tone={product ?? "neutral"} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <StatusDot className="min-w-0 text-sm" tone={LEVEL_TONE[props.line.level]}>
+        <StatusDot className="min-w-0 text-sm" tone={LEVEL_SEVERITY[props.line.level]}>
           <span className="truncate">{activityTitle(props.line)}</span>
           {props.count > 1 ? (
             <span className="shrink-0 rounded-full bg-muted px-1.5 font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
@@ -576,14 +419,4 @@ function ActivityLine(props: { line: LogEntryOutput; count: number; now: Date })
       </span>
     </li>
   );
-}
-
-function countLabel(count: number, more: boolean): string {
-  return more ? `${count}+` : String(count);
-}
-
-/** `["a", "b", "c"]` → `"a, b and c"`. */
-function listOf(items: string[]): string {
-  if (items.length <= 1) return items.join("");
-  return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
 }
