@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BrandMark,
   BrokenLink,
+  CossAttribution,
   Detail,
   DetailList,
   LoadingPanel,
@@ -217,6 +218,7 @@ export function Manage({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
           </div>
         ) : null}
       </Panel>
+      <CossAttribution branding={session} />
     </main>
   );
 }

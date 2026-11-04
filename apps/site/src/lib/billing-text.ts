@@ -26,11 +26,14 @@ import {
   SUPPORT_TIERS,
 } from "@coss/billing/catalog";
 import { formatCents, formatUnitPrice } from "@coss/billing/money";
-import { emailTierCharges, formatPrice, METER_NOTES, UNRELEASED_METERS } from "./pricing";
+import { emailTierCharges, formatPrice, METER_NOTES } from "./pricing";
 
 /** "3,000 email recipients a month"; inbox-days read as the inboxes they cover. */
 function includedText(meter: MeterKey, n: number): string {
   if (meter === "email.inboxes") return `${Math.floor(n / 31).toLocaleString("en-US")} inboxes`;
+  if (meter === "scheduling.hosts") {
+    return `${Math.floor(n / 31).toLocaleString("en-US")} Scheduling hosts`;
+  }
   if (meter === "email.received") return `${n.toLocaleString("en-US")} received emails a month`;
   return `${meterAmount(meter, n)} a month`;
 }
@@ -139,6 +142,14 @@ export function planRows(): { label: string; values: string[] }[] {
         return `${limit.toLocaleString("en-US")} marketing emails a second`;
       }),
     },
+    {
+      label: "Scheduling slot rate",
+      values: plans.map((plan) => {
+        if (plan.key === "enterprise") return "Custom";
+        const { limit } = plan.entitlements.rateLimits["scheduling.slots.second"];
+        return `${limit.toLocaleString("en-US")} slot lists or searches a second`;
+      }),
+    },
     ...LIMIT_KEYS.map((key) => ({
       label: LIMIT_LABELS[key],
       values: plans.map((plan) =>
@@ -157,6 +168,10 @@ export function planRows(): { label: string; values: string[] }[] {
             : "—",
       ),
     })),
+    {
+      label: "HIPAA mode with a BAA",
+      values: plans.map((plan) => (plan.key === "enterprise" ? "By contract" : "—")),
+    },
   ];
 }
 
@@ -191,7 +206,6 @@ export function rateRows(
   const card = RATE_CARDS.at(-1);
   if (!card) return [];
   return METER_KEYS.flatMap((meter) => {
-    if (UNRELEASED_METERS.has(meter)) return [];
     const definition = METERS[meter];
     if (typeof only === "string" && definition.product !== only) return [];
     if (Array.isArray(only) && !only.includes(meter)) return [];

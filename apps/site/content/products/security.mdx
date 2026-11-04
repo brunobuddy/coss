@@ -15,6 +15,7 @@ features:
   - An audit log of every change
   - Reputation guard and content screening
   - A published data retention policy
+  - HIPAA mode with a signed BAA, by contract
 related:
   - platform
   - risk
@@ -114,6 +115,20 @@ Every kind of data has a published retention period, enforced by the worker's pu
 - **Less to keep**: an environment can [discard email content](/docs/email/content-storage) once it is sent. Risk remembers identifiers only as keyed hashes, and rate limit keys are stored hashed.
 - **Clean logs**: request logs never keep the `Authorization` header, secrets or attachment bytes, and error reports are scrubbed of bodies, IP addresses, cookies and query strings.
 - **Isolation**: every query is scoped to its organization, API keys are bound to one environment, and outbound webhooks reach public addresses only.
+
+</Section>
+
+<Section title="HIPAA" lede="For organizations that handle protected health information: a signed Business Associate Agreement, and one switch that narrows where the data can go.">
+
+HIPAA mode comes with an Enterprise contract and is turned on by coss.com once the BAA is signed. It isn't available on self-serve plans. The safeguards support your HIPAA compliance, which also depends on how you use coss.com, and the Terms don't allow protected health information without a signed agreement.
+
+- **No AI on your content**: messages are never sampled or sent to a model, and forms, Risk and Scheduling skip content scores.
+- **Less kept**: email content is deleted once each email is finished, SMS bodies aren't kept, tracking is off and request logs keep no bodies.
+- **Tighter access**: two-factor is required, idle dashboard sessions end after 15 minutes, and coss.com staff can't view content or impersonate your members.
+- **Encrypted delivery**: email goes out only over TLS. A message is dropped rather than delivered unencrypted.
+- **What's covered**: **Settings → Compliance** shows the mode's status, your BAA and each vendor's BAA status.
+
+See [HIPAA mode](/docs/hipaa) for every control, what it refuses and what stays up to you.
 
 </Section>
 

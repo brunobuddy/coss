@@ -10,6 +10,8 @@ export type SignErrorCode =
   | "request_not_draft"
   | "request_not_cancelable"
   | "account_suspended"
+  | "billing_hold"
+  | "budget_exceeded"
   | "invalid_origin"
   | "request_not_signable"
   | "signer_not_embedded"
@@ -39,6 +41,8 @@ const STATUS_BY_CODE = {
   request_not_draft: 422,
   request_not_cancelable: 422,
   account_suspended: 403,
+  billing_hold: 402,
+  budget_exceeded: 402,
   // An origin allowed to embed the signing page that isn't `https://host[:port]`.
   invalid_origin: 422,
   // Signing needs a `sent` request that hasn't expired.

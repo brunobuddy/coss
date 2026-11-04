@@ -23,6 +23,8 @@ export type SchedulingErrorCode =
   | "calendar_delegation_refused"
   | "scheduling_unavailable"
   | "account_suspended"
+  | "billing_hold"
+  | "budget_exceeded"
   | "idempotency_in_progress"
   | "idempotency_key_reused";
 
@@ -52,6 +54,8 @@ const STATUS_BY_CODE = {
   calendar_delegation_refused: 422,
   scheduling_unavailable: 503,
   account_suspended: 403,
+  billing_hold: 402,
+  budget_exceeded: 402,
   idempotency_in_progress: 409,
   idempotency_key_reused: 422,
 } as const satisfies Record<SchedulingErrorCode, number>;

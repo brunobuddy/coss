@@ -155,7 +155,7 @@ mock.module("@coss/sms", () => ({
   }),
 }));
 const billingBannerState = mock(async () => ({ held: null, pastDue: true, allowance: null }));
-mock.module("@/lib/billing", () => ({ billingBannerState }));
+mock.module("@/lib/billing", () => ({ billingBannerState, planGate: () => ({}) }));
 let budgetHolds: { scope: string; targetId: string }[] = [];
 const billingModule = await import("@coss/billing");
 mock.module("@coss/billing", () => ({

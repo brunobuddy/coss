@@ -10,8 +10,9 @@ where PHI can go and who at coss.com can reach it, and shows the customer what t
   `enableHipaaMode`/`disableHipaaMode` (`@coss/tenancy/admin`, from the admin console's organization
   page, audited in `admin_audit_event` and through `supportAudit` in the customer's own log). It is
   **never a billing entitlement**: a contract ending or a scheduled downgrade must not lift
-  safeguards with nobody deciding to. Sales bills it as a custom add-on on the contract. Turning it
-  on needs the plan's `auditLog`, the BAA's date and reference, and a reason; it also sets
+  safeguards with nobody deciding to. It is **contract-only**: `enableHipaaModeAction` refuses without a
+  `sales` or `internal` contract in effect (`hasManagedContract`), and sales bills it as a custom add-on on that
+  contract. Turning it on needs the plan's `auditLog`, the BAA's date and reference, and a reason; it also sets
   `requireTwoFactor` and updates what's waiting to go out (emails' snapshots, SMS bodies, pending
   pushes) in the same transaction.
 - **The catalog** (`./catalog`, client-safe, no imports): `HIPAA_CONTROLS`, `HIPAA_VENDORS`,

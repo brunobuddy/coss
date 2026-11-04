@@ -12,6 +12,10 @@ thing, with its token in the URL's fragment, which never reaches a server.
 | `createForBooker` | Book one event type | 30 minutes by default, up to a day |
 | `createForBooking` | Reschedule or cancel one booking | Until a day after it ends. Stops when it's cancelled |
 
+In live environments, `createForHost` needs <PlansWith feature="schedulingHostPortal" />. On other plans, connect
+a host's calendars and set their hours through the API. Live pages show "Scheduling by coss.com" below them, except on
+<PlansWith feature="schedulingWhiteLabel" />.
+
 ```ts twoslash
 import { Coss } from "coss";
 const coss = new Coss();

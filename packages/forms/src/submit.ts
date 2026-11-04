@@ -9,6 +9,7 @@
 
 import { createHash } from "node:crypto";
 import type { UsageGate } from "@coss/billing/gate";
+import { budgetHoldFor, isOnBillingHold } from "@coss/billing/metering";
 import { db, schema } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { assessRisk, type RiskDeps } from "@coss/risk";
@@ -77,7 +78,7 @@ export type SubmittedForm = {
 };
 
 export type SubmitFormResult =
-  /** Unknown, disabled, or its organization suspended or being deleted. */
+  /** Unknown, disabled, or its organization suspended, being deleted or on a billing hold. */
   | { outcome: "unavailable" }
   | { outcome: "origin_refused"; form: SubmittedForm }
   | { outcome: "rate_limited"; form: SubmittedForm }
@@ -251,6 +252,15 @@ export async function submitForm(
 ): Promise<SubmitFormResult> {
   const row = await acceptingForm(input.formId);
   if (!row) return { outcome: "unavailable" };
+  // A live submission is usage. The submitter sees what a closed form shows, nothing of the
+  // customer's billing.
+  if (
+    row.mode === "live" &&
+    ((await isOnBillingHold(row.organizationId)) ||
+      (await budgetHoldFor({ organizationId: row.organizationId, projectId: row.projectId })))
+  ) {
+    return { outcome: "unavailable" };
+  }
   const shown: SubmittedForm = {
     id: row.id,
     name: row.name,

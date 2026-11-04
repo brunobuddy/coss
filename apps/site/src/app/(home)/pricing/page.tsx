@@ -114,7 +114,8 @@ export default function PricingPage() {
           </h2>
           <p className="relative max-w-xl text-pretty text-lg text-muted-foreground leading-snug">
             Annual contracts from {formatPrice(PLANS.enterprise.feeCents)} a month: volume rates and
-            committed spend, directory sync, invoicing with payment terms and direct debit.
+            committed spend, directory sync, HIPAA mode with a signed BAA, invoicing with payment
+            terms and direct debit.
           </p>
           <div className="relative flex flex-wrap justify-center gap-2.5">
             <Button className="px-5" render={<a href={`mailto:${SALES_EMAIL}`} />} size="lg">

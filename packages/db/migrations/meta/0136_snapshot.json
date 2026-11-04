@@ -1,5 +1,5 @@
 {
-  "id": "e1ccd054-395e-440e-856c-456c12aba31c",
+  "id": "36d2ddc7-5c99-47e2-8e85-77f6398e5d4f",
   "prevId": "d8546727-50d2-4b17-baf2-f02a5519c1b5",
   "version": "7",
   "dialect": "postgresql",
@@ -23132,12 +23132,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "reminders": {
-          "name": "reminders",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "metadata": {
           "name": "metadata",
           "type": "jsonb",
@@ -23590,12 +23584,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "phone": {
-          "name": "phone",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "calendar_account": {
           "name": "calendar_account",
           "type": "text",
@@ -23645,6 +23633,12 @@
         },
         "screened_at": {
           "name": "screened_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "next_fee_at": {
+          "name": "next_fee_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -23706,6 +23700,38 @@
           "isUnique": false,
           "concurrently": false,
           "method": "gin",
+          "with": {}
+        },
+        "scheduling_host_next_fee_at_idx": {
+          "name": "scheduling_host_next_fee_at_idx",
+          "columns": [
+            {
+              "expression": "next_fee_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"scheduling_host\".\"next_fee_at\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scheduling_host_live_organization_idx": {
+          "name": "scheduling_host_live_organization_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"scheduling_host\".\"next_fee_at\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
           "with": {}
         }
       },
@@ -23986,30 +24012,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "reminder_key": {
-          "name": "reminder_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reminder_anchor": {
-          "name": "reminder_anchor",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reminder_offset_minutes": {
-          "name": "reminder_offset_minutes",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "anchor_at": {
-          "name": "anchor_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "dedupe_key": {
           "name": "dedupe_key",
           "type": "text",
@@ -24246,115 +24248,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.scheduling_reminder_sync": {
-      "name": "scheduling_reminder_sync",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "organization_id": {
-          "name": "organization_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "environment_id": {
-          "name": "environment_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "event_type_id": {
-          "name": "event_type_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cursor_start_at": {
-          "name": "cursor_start_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cursor_booking_id": {
-          "name": "cursor_booking_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "lease_until": {
-          "name": "lease_until",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "scheduling_reminder_sync_environment_idx": {
-          "name": "scheduling_reminder_sync_environment_idx",
-          "columns": [
-            {
-              "expression": "environment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "scheduling_reminder_sync_environment_fk": {
-          "name": "scheduling_reminder_sync_environment_fk",
-          "tableFrom": "scheduling_reminder_sync",
-          "tableTo": "environment",
-          "columnsFrom": [
-            "environment_id",
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id",
-            "organization_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "scheduling_reminder_sync_event_type_fk": {
-          "name": "scheduling_reminder_sync_event_type_fk",
-          "tableFrom": "scheduling_reminder_sync",
-          "tableTo": "scheduling_event_type",
-          "columnsFrom": [
-            "event_type_id",
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id",
-            "organization_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -25031,12 +24924,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "email_reply_to": {
-          "name": "email_reply_to",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "sms_from": {
           "name": "sms_from",
           "type": "text",
@@ -25045,12 +24932,6 @@
         },
         "notifications": {
           "name": "notifications",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reminders": {
-          "name": "reminders",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -31325,8 +31206,7 @@
       "schema": "public",
       "values": [
         "email",
-        "sms",
-        "webhook"
+        "sms"
       ]
     },
     "public.scheduling_notification_recipient": {
@@ -31334,9 +31214,7 @@
       "schema": "public",
       "values": [
         "attendee",
-        "host",
-        "endpoint",
-        "address"
+        "host"
       ]
     },
     "public.scheduling_session_kind": {
