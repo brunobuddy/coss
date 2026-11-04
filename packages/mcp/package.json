@@ -1,6 +1,7 @@
 {
   "name": "coss-mcp",
   "version": "0.6.0",
+  "mcpName": "com.coss/mcp",
   "description": "MCP server for coss.com: lets coding agents look up emails and SMS, diagnose delivery, and manage domains, suppressions and webhooks.",
   "license": "MIT",
   "homepage": "https://coss.com/docs/mcp",
@@ -35,6 +36,7 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
+    "./http": "./dist/http.js",
     "./package.json": "./package.json"
   },
   "scripts": {

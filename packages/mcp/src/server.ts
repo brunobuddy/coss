@@ -83,6 +83,11 @@ export interface CossMcpServerOptions {
    * when an editor starts this server.
    */
   projectDir?: string;
+  /**
+   * `hosted` (`https://api.coss.com/mcp`, `src/http.ts`) serves callers who aren't on this machine:
+   * there is no project, `projectDir` is ignored, and no tool touches the disk. Default `stdio`.
+   */
+  transport?: "stdio" | "hosted";
 }
 
 const DOCS_INSTRUCTIONS =
@@ -101,7 +106,7 @@ const NO_KEY_INSTRUCTIONS = [
     "coss_live_ key in the file is never loaded.",
 ].join("\n");
 
-function instructions(mode: KeyMode): string {
+function instructions(mode: KeyMode, hosted: boolean): string {
   return [
     "Tools for coss.com, the developer platform whose APIs this application uses: email and marketing, inboxes, SMS, Verify (one-time codes), Sign, Forms, Scheduling, Hooks and Risk.",
     "Everything is scoped to the API key's environment: what belongs to another environment " +
@@ -114,9 +119,11 @@ function instructions(mode: KeyMode): string {
     "Call get_setup before writing send code: it returns a from address that will succeed, DNS " +
       "still missing, and one `next` step.",
     "publish_email_template publishes the draft at the revision you read, which sends use from " +
-      "then on. create_webhook_endpoint registers an https URL once and writes its signing " +
-      "secret to the project env file as COSS_WEBHOOK_SECRET (a repeat for the same URL does " +
-      "not create another endpoint).",
+      "then on. create_webhook_endpoint registers an https URL once and " +
+      (hosted
+        ? "returns its signing secret, only then: have the user store it as COSS_WEBHOOK_SECRET "
+        : "writes its signing secret to the project env file as COSS_WEBHOOK_SECRET ") +
+      "(a repeat for the same URL does not create another endpoint).",
     'To answer "did my email get delivered?": diagnose_email with the email id, or with the ' +
       "recipient address (and some subject text). find_emails searches; get_email shows content " +
       "and raw events. If no email exists, the API may have refused the send: search_logs. " +
@@ -127,7 +134,10 @@ function instructions(mode: KeyMode): string {
       "numbers can send.",
     "To send codes: start_verification then check_verification; get_verify_settings shows the " +
       "senders. A marketing send: save_broadcast, send_test_broadcast, then send_broadcast after " +
-      "the user confirms the audience. To collect signatures: upload_sign_document, " +
+      "the user confirms the audience. To collect signatures: " +
+      (hosted
+        ? "upload the PDF with the API or an SDK (this server can't read files), then "
+        : "upload_sign_document, ") +
       "create_sign_request, send_sign_request; a 503 `sign_unavailable` means Sign isn't on in " +
       "this deployment yet. Forms: save_form returns the endpoint a site posts to. Scheduling: " +
       "save_scheduling_host, save_scheduling_schedule, save_scheduling_event_type, then " +
@@ -144,11 +154,12 @@ function instructions(mode: KeyMode): string {
 /** An MCP server exposing coss.com's tools over any transport (`coss-mcp` uses stdio). */
 export function createCossMcpServer(options: CossMcpServerOptions): McpServer {
   const mode = keyMode(options.apiKey);
+  const hosted = options.transport === "hosted";
   const server = new McpServer(
     { name: "coss", title: "coss.com", version: VERSION, websiteUrl: "https://coss.com/docs/mcp" },
     {
       capabilities: { tools: {} },
-      instructions: options.coss ? instructions(mode) : NO_KEY_INSTRUCTIONS,
+      instructions: options.coss ? instructions(mode, hosted) : NO_KEY_INSTRUCTIONS,
     },
   );
   registerDocsTools(server, options.docs);
@@ -158,7 +169,7 @@ export function createCossMcpServer(options: CossMcpServerOptions): McpServer {
     coss: options.coss,
     mode,
     now: options.now ?? (() => new Date()),
-    projectDir: options.projectDir ?? process.cwd(),
+    projectDir: hosted ? null : (options.projectDir ?? process.cwd()),
   };
   registerSetupTools(ctx);
   for (const name of options.toolsets ?? TOOLSET_NAMES) {
