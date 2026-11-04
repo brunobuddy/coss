@@ -171,6 +171,7 @@ export const ID_PREFIXES = {
   schedulingLogo: "schlogo",
   schedulingOutOfOffice: "ooo",
   schedulingOutOfOfficeGroup: "ooogrp",
+  schedulingHolidayCalendar: "hcal",
   schedulingReassignment: "reasn",
   schedulingReassignmentItem: "reasi",
   // Imports from another email provider (Resend, SendGrid, Postmark), `@coss/migrate`.

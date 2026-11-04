@@ -68,6 +68,7 @@ export type {
   SchedulingCalendarsResource,
   SchedulingEventTypesResource,
   SchedulingHoldsResource,
+  SchedulingHolidayCalendarsResource,
   SchedulingHostsResource,
   SchedulingOutOfOfficeResource,
   SchedulingReassignmentsResource,

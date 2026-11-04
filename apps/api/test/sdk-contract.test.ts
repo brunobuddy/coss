@@ -1969,6 +1969,49 @@ describe("coss.risk checkouts, devices and calibration against the API", () => {
   });
 });
 
+describe("coss.scheduling.holidayCalendars against the API", () => {
+  test("creates, reads, changes and removes one", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const host = must(
+      (await scheduling.hosts.create({ uid: "first", name: "First", time_zone: "UTC" })).data,
+    );
+    const created = await scheduling.holidayCalendars.create({
+      name: "UK",
+      country: "GB",
+      hosts: ["first"],
+      regions: ["England"],
+    });
+    const calendar = must(created.data);
+    expect(calendar).toMatchObject({
+      object: "scheduling.holiday_calendar",
+      source: "country",
+      country: "GB",
+      hosts: [host.id],
+      regions: ["England"],
+    });
+    const list = must((await scheduling.holidayCalendars.list()).data);
+    expect(list.data.map((row) => row.id)).toContain(calendar.id);
+    expect(must((await scheduling.holidayCalendars.get(calendar.id)).data).name).toBe("UK");
+    expect(must((await scheduling.holidayCalendars.holidays(calendar.id)).data).object).toBe(
+      "list",
+    );
+    const renamed = must(
+      (await scheduling.holidayCalendars.update(calendar.id, { name: "London" })).data,
+    );
+    expect(renamed.name).toBe("London");
+    const sandboxFeed = await scheduling.holidayCalendars.create({
+      name: "Feed",
+      ics_url: "https://example.com/holidays.ics",
+      hosts: ["first"],
+    });
+    expect(sandboxFeed.error?.code).toBe("invalid_holiday_calendar");
+    expect(must((await scheduling.holidayCalendars.remove(calendar.id)).data).deleted).toBe(true);
+    expect((await scheduling.holidayCalendars.get(calendar.id)).error?.code).toBe("not_found");
+  });
+});
+
 describe("coss.scheduling.reassignments against the API", () => {
   test("previews, runs, reports, undoes and cancels", async () => {
     const tenant = await createTestTenant();

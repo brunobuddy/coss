@@ -172,6 +172,118 @@ export function busyFromIcs(
   }
 }
 
+const MAX_FEED_EVENTS = 5000;
+const MAX_HOLIDAY_DAYS = 400;
+const MAX_HOLIDAY_SPAN_DAYS = 60;
+const MAX_NAME_LENGTH = 200;
+const DAY = 86_400_000;
+
+/** A local date, as written: holidays are days, in nobody's time zone. */
+function shiftDate(date: string, days: number): string {
+  return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY).toISOString().slice(0, 10);
+}
+
+/**
+ * Whole days in `[from, to)`, with names. A feed may mix in other things, and timed events aren't
+ * holidays, so those are left out; what can't be understood at all is a failed read, and keeps what's
+ * there. Google's feeds mark days nobody gets off as "Observance", which don't take anyone away.
+ */
+export function holidaysFromIcs(
+  ics: string,
+  from: string,
+  to: string,
+  budget: ExpansionBudget = newExpansionBudget(),
+): { date: string; name: string; region: string | null }[] {
+  const found = new Map<string, { name: string; region: string | null }>();
+  const add = (first: string, last: string, name: string, region: string | null) => {
+    for (let date = first; date < last; date = shiftDate(date, 1)) {
+      if (date < from || date >= to) continue;
+      const earlier = found.get(date);
+      if (earlier) {
+        // Nationwide wins, and two regions' holidays on one day apply to both.
+        earlier.region = earlier.region && region ? `${earlier.region}, ${region}` : null;
+        continue;
+      }
+      if (found.size >= MAX_HOLIDAY_DAYS) throw new UnreadableCalendarData();
+      found.set(date, { name, region });
+    }
+  };
+  try {
+    const root = new ICAL.Component(ICAL.parse(ics));
+    if (root.name !== "vcalendar") throw new UnreadableCalendarData();
+    const vevents = root.getAllSubcomponents("vevent");
+    if (vevents.length > MAX_FEED_EVENTS) throw new UnreadableCalendarData();
+    const nameOf = (vevent: ICAL.Component) =>
+      String(vevent.getFirstPropertyValue("summary") ?? "Holiday").slice(0, MAX_NAME_LENGTH);
+    // Not `countsAsBusy`: holiday feeds mark every event `TRANSP:TRANSPARENT`, since a holiday
+    // doesn't block anyone's calendar by itself.
+    const isDayOff = (vevent: ICAL.Component) =>
+      String(vevent.getFirstPropertyValue("status") ?? "CONFIRMED").toUpperCase() !== "CANCELLED" &&
+      !/observance/i.test(String(vevent.getFirstPropertyValue("description") ?? ""));
+    // "Public holiday in Scotland": only some of a country's people have it off.
+    const regionOf = (vevent: ICAL.Component) => {
+      const text = String(vevent.getFirstPropertyValue("description") ?? "");
+      return (
+        /^Public holiday in ([^\n]+)/i.exec(text)?.[1]?.trim().slice(0, MAX_NAME_LENGTH) ?? null
+      );
+    };
+    const addEvent = (vevent: ICAL.Component) => {
+      if (!isDayOff(vevent)) return;
+      const event = new ICAL.Event(vevent);
+      if (!event.startDate?.isDate) return;
+      const first = event.startDate.toString();
+      const end = event.endDate?.isDate ? event.endDate.toString() : shiftDate(first, 1);
+      if (end > shiftDate(first, MAX_HOLIDAY_SPAN_DAYS)) throw new UnreadableCalendarData();
+      add(first, end > first ? end : shiftDate(first, 1), nameOf(vevent), regionOf(vevent));
+    };
+    const masters = vevents.filter((vevent) => !vevent.hasProperty("recurrence-id"));
+    const overridesOf = new Map<string, ICAL.Component[]>();
+    for (const vevent of vevents) {
+      if (!vevent.hasProperty("recurrence-id")) continue;
+      addEvent(vevent);
+      const uid = String(vevent.getFirstPropertyValue("uid"));
+      overridesOf.set(uid, [...(overridesOf.get(uid) ?? []), vevent]);
+    }
+    for (const master of masters) {
+      const event = new ICAL.Event(master);
+      if (!event.isRecurring()) {
+        addEvent(master);
+        continue;
+      }
+      if (!isDayOff(master) || !event.startDate?.isDate) continue;
+      const moved = new Set(
+        (overridesOf.get(event.uid) ?? []).map((vevent) =>
+          String(vevent.getFirstPropertyValue("recurrence-id")),
+        ),
+      );
+      const iterator = event.iterator();
+      cyclesLeft = budget.cycles;
+      try {
+        for (let next = iterator.next(), count = 0; next; next = iterator.next(), count++) {
+          if (count > MAX_OCCURRENCES_PER_EVENT) break;
+          const date = next.toString();
+          if (date >= to) break;
+          if (!moved.has(date)) {
+            add(date, shiftDate(date, 1), nameOf(master), regionOf(master));
+          }
+        }
+      } catch (error) {
+        if (error instanceof RuleTooExpensive) throw new UnreadableCalendarData();
+        throw error;
+      } finally {
+        budget.cycles = Math.max(cyclesLeft, 0);
+        cyclesLeft = Number.POSITIVE_INFINITY;
+      }
+    }
+  } catch (error) {
+    if (error instanceof UnreadableCalendarData) throw error;
+    throw new UnreadableCalendarData();
+  }
+  return [...found.entries()]
+    .map(([date, holiday]) => ({ date, ...holiday }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 const ICS_DATE = (ms: number) =>
   new Date(ms)
     .toISOString()

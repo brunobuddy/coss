@@ -1517,6 +1517,117 @@ export const ReassignmentPreview = z
   });
 export type ReassignmentPreviewOutput = z.output<typeof ReassignmentPreview>;
 
+const HOLIDAY_CALENDAR_EXAMPLE = {
+  object: "scheduling.holiday_calendar" as const,
+  id: "hcal_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  name: "UK team",
+  source: "country" as const,
+  country: "GB",
+  hosts: null,
+  host_filter: { team: "london" },
+  regions: ["England"],
+  delegates: [],
+  existing_bookings: "leave" as const,
+  last_read_at: "2027-01-01T10:00:00.000Z",
+  last_error: null,
+  created_at: "2027-01-01T10:00:00.000Z",
+  updated_at: "2027-01-01T10:00:00.000Z",
+};
+
+const holidayWho = {
+  hosts: z.array(z.string()).max(1000).optional().meta({
+    description: "These hosts, by id or uid.",
+  }),
+  host_filter: z
+    .record(z.string(), z.union([z.string(), z.array(z.string())]))
+    .optional()
+    .meta({ description: "Everyone matching these attributes, asked again at every sync." }),
+  regions: z.array(z.string().min(1).max(100)).max(50).optional().meta({
+    description:
+      "Which regional holidays apply, matched against how the calendar names them, such as `England`. Without this, all of them do; empty, only nationwide ones.",
+  }),
+  delegates: z.array(z.string()).max(10).optional().meta({
+    description: "Who can be booked in their place on those days, by id or uid, in order.",
+  }),
+  existing_bookings: z.enum(["leave", "reassign"]).optional().meta({
+    description:
+      "What happens to bookings already on a holiday. `leave` (the default) only reports them. `reassign` moves them.",
+  }),
+};
+
+export const CreateHolidayCalendarRequest = z
+  .strictObject({
+    name: z.string().min(1).max(200),
+    country: z.string().optional().meta({
+      description: "A code from the list of holiday calendars, such as `GB`.",
+    }),
+    ics_url: z.string().url().max(2000).optional().meta({
+      description: "Your own feed, https or webcal, read in live environments. Stored encrypted.",
+    }),
+    ...holidayWho,
+  })
+  .meta({
+    id: "CreateSchedulingHolidayCalendarRequest",
+    examples: [{ name: "UK team", country: "GB", host_filter: { team: "london" } }],
+  });
+export type CreateHolidayCalendarRequestOutput = z.output<typeof CreateHolidayCalendarRequest>;
+
+export const UpdateHolidayCalendarRequest = z
+  .strictObject({ name: z.string().min(1).max(200).optional(), ...holidayWho })
+  .meta({
+    id: "UpdateSchedulingHolidayCalendarRequest",
+    examples: [{ host_filter: { team: "london" } }],
+  });
+export type UpdateHolidayCalendarRequestOutput = z.output<typeof UpdateHolidayCalendarRequest>;
+
+export const HolidayCalendarObject = z
+  .object({
+    object: z.literal("scheduling.holiday_calendar"),
+    id: z.string(),
+    name: z.string(),
+    source: z.enum(["country", "ics"]),
+    country: z.string().nullable(),
+    hosts: z.array(z.string()).nullable(),
+    host_filter: z.record(z.string(), z.union([z.string(), z.array(z.string())])).nullable(),
+    regions: z.array(z.string()).nullable(),
+    delegates: z.array(z.string()),
+    existing_bookings: z.enum(["leave", "reassign"]),
+    last_read_at: z.string().nullable(),
+    last_error: z.string().nullable().meta({ description: "Why its feed couldn't be read." }),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .meta({ id: "SchedulingHolidayCalendar", examples: [HOLIDAY_CALENDAR_EXAMPLE] });
+export type HolidayCalendarObjectOutput = z.output<typeof HolidayCalendarObject>;
+
+export const HolidayCalendarList = listOf(
+  HolidayCalendarObject,
+  "SchedulingHolidayCalendarList",
+  HOLIDAY_CALENDAR_EXAMPLE,
+);
+
+export const DeletedHolidayCalendar = z.object({ id: z.string(), deleted: z.literal(true) }).meta({
+  id: "DeletedSchedulingHolidayCalendar",
+  examples: [{ id: "hcal_01kd2m9a0b1c2d3e4f5g6h7j8m", deleted: true }],
+});
+
+export const HolidayList = z
+  .object({
+    object: z.literal("list"),
+    data: z.array(z.object({ date: z.string(), name: z.string(), region: z.string().nullable() })),
+    has_more: z.boolean(),
+  })
+  .meta({
+    id: "SchedulingHolidayList",
+    examples: [
+      {
+        object: "list",
+        data: [{ date: "2027-12-25", name: "Christmas Day", region: null }],
+        has_more: false,
+      },
+    ],
+  });
+
 export const ReassignCandidatesQuery = z.object({
   from_host: z.string().optional().meta({
     description: "The host who'd leave, when it could be several.",

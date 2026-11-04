@@ -49,9 +49,11 @@ import {
   cancelBookingAction,
   cancelReassignmentAction,
   createEventTypeAction,
+  createHolidayCalendarAction,
   createHostAction,
   createOutOfOfficeAction,
   declineBookingAction,
+  deleteHolidayCalendarAction,
   deleteHostAction,
   deleteOutOfOfficeAction,
   openHostPortalAction,
@@ -817,6 +819,145 @@ export function UndoReassignmentDialog(
             <AlertDialogClose render={<Button variant="ghost" />}>Keep them</AlertDialogClose>
             <Button disabled={pending} type="submit">
               Give them back
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </AlertDialogPopup>
+    </AlertDialog>
+  );
+}
+
+export function NewHolidayCalendarDialog(
+  props: EnvTarget & {
+    hosts: readonly { id: string; name: string }[];
+    countries: readonly { value: string; label: string }[];
+    feedsAllowed: boolean;
+  },
+) {
+  const { hosts, countries, feedsAllowed, ...target } = props;
+  const [state, formAction, pending] = useActionToast(createHolidayCalendarAction, {
+    success: "Holiday calendar added",
+  });
+  const [open, setOpen] = useState(false);
+  const [useFeed, setUseFeed] = useState(false);
+  useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button size="sm" />}>Add holidays</DialogTrigger>
+      <DialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...target} />
+          <DialogHeader>
+            <DialogIcon icon={PalmtreeIcon} />
+            <DialogTitle>Add a holiday calendar</DialogTitle>
+            <DialogDescription>
+              They won't be offered on those days, and it's kept up to date from now on.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogPanel className="flex flex-col gap-4">
+            <Field>
+              <FieldLabel>Name</FieldLabel>
+              <Input maxLength={200} name="name" required />
+            </Field>
+            {feedsAllowed ? (
+              <Label className="font-normal">
+                <Switch checked={useFeed} onCheckedChange={setUseFeed} />
+                Use my own feed
+              </Label>
+            ) : null}
+            {useFeed ? (
+              <Field>
+                <FieldLabel>Feed URL</FieldLabel>
+                <Input name="icsUrl" placeholder="https://example.com/holidays.ics" required />
+                <FieldDescription>
+                  Stored encrypted, and not shown again. Only whole-day events count.
+                </FieldDescription>
+              </Field>
+            ) : (
+              <Field>
+                <FieldLabel>Country</FieldLabel>
+                <Select items={[...countries]} name="country" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose one" />
+                  </SelectTrigger>
+                  <SelectPopup>
+                    {countries.map((country) => (
+                      <SelectItem key={country.value} value={country.value}>
+                        {country.label}
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </Select>
+              </Field>
+            )}
+            <Field>
+              <FieldLabel>Hosts</FieldLabel>
+              <div className="flex max-h-32 w-full flex-col gap-2 overflow-y-auto rounded-lg border p-3">
+                {hosts.map((host) => (
+                  <Label className="font-normal" key={host.id}>
+                    <Checkbox name="hostId" value={host.id} />
+                    {host.name}
+                  </Label>
+                ))}
+              </div>
+              <FieldDescription>
+                To apply it to everyone with some attribute, use the API.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel>Who covers</FieldLabel>
+              <div className="flex max-h-24 w-full flex-col gap-2 overflow-y-auto rounded-lg border p-3">
+                {hosts.map((host) => (
+                  <Label className="font-normal" key={host.id}>
+                    <Checkbox name="delegateId" value={host.id} />
+                    {host.name}
+                  </Label>
+                ))}
+              </div>
+            </Field>
+            <Label className="font-normal">
+              <Checkbox name="moveBookings" />
+              Move bookings already on those days to whoever's free
+            </Label>
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </DialogPanel>
+          <DialogFooter>
+            <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
+            <Button disabled={pending} type="submit">
+              Add
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+export function DeleteHolidayCalendarButton(props: EnvTarget & { calendarId: string }) {
+  const [state, formAction, pending] = useActionToast(deleteHolidayCalendarAction, {
+    success: "Holiday calendar removed",
+  });
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button size="sm" variant="ghost" />}>Remove</AlertDialogTrigger>
+      <AlertDialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...props} />
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this calendar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Its hosts can be booked on its days again, shortly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6">
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogClose render={<Button variant="ghost" />}>Keep it</AlertDialogClose>
+            <Button disabled={pending} type="submit" variant="destructive">
+              Remove
             </Button>
           </AlertDialogFooter>
         </form>

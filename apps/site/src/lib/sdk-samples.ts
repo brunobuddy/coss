@@ -525,6 +525,30 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.sessions.createForHost",
     args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
   },
+  "POST /v1/scheduling/holiday_calendars": {
+    method: "scheduling.holidayCalendars.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/holiday_calendars": {
+    method: "scheduling.holidayCalendars.list",
+    args: () => [],
+  },
+  "GET /v1/scheduling/holiday_calendars/{id}": {
+    method: "scheduling.holidayCalendars.get",
+    args: (r) => [pathId(r)],
+  },
+  "GET /v1/scheduling/holiday_calendars/{id}/holidays": {
+    method: "scheduling.holidayCalendars.holidays",
+    args: (r) => [pathId(r)],
+  },
+  "PATCH /v1/scheduling/holiday_calendars/{id}": {
+    method: "scheduling.holidayCalendars.update",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/holiday_calendars/{id}": {
+    method: "scheduling.holidayCalendars.remove",
+    args: (r) => [pathId(r)],
+  },
   "POST /v1/scheduling/manager_sessions": {
     method: "scheduling.sessions.createForManager",
     args: (r) => [tsValue(r.body ?? {})],

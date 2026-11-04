@@ -10,6 +10,7 @@ import type {
   CreateSchedulingCalendarConnectionParams,
   CreateSchedulingEventTypeParams,
   CreateSchedulingHoldParams,
+  CreateSchedulingHolidayCalendarParams,
   CreateSchedulingHostParams,
   CreateSchedulingHostSessionParams,
   CreateSchedulingManagerSessionParams,
@@ -34,6 +35,8 @@ import type {
   SchedulingCalendarConnection,
   SchedulingCancelledSeries,
   SchedulingEventType,
+  SchedulingHoliday,
+  SchedulingHolidayCalendar,
   SchedulingHost,
   SchedulingOutOfOffice,
   SchedulingOutOfOfficeConflict,
@@ -54,6 +57,7 @@ import type {
   UpdateSchedulingBookingLocationParams,
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
+  UpdateSchedulingHolidayCalendarParams,
   UpdateSchedulingHostParams,
   UpdateSchedulingOutOfOfficeParams,
   UpdateSchedulingSettingsParams,
@@ -730,6 +734,80 @@ export class SchedulingAttendeesResource {
   }
 }
 
+/** `coss.scheduling.holidayCalendars`: public holidays, or your own feed, as time away. */
+export class SchedulingHolidayCalendarsResource {
+  readonly #http: HttpClient;
+
+  /** @internal Use `new Coss().scheduling.holidayCalendars`. */
+  constructor(http: HttpClient) {
+    this.#http = http;
+  }
+
+  /** Applies a country's holidays or your feed to some hosts. Not retried: it would make another. */
+  create(
+    params: CreateSchedulingHolidayCalendarParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingHolidayCalendar>> {
+    return this.#http.request<SchedulingHolidayCalendar>({
+      method: "POST",
+      path: "/v1/scheduling/holiday_calendars",
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
+  /** Lists calendars, by name. */
+  list(options?: ReadOptions): Promise<CossResult<List<SchedulingHolidayCalendar>>> {
+    return this.#http.request<List<SchedulingHolidayCalendar>>({
+      method: "GET",
+      path: "/v1/scheduling/holiday_calendars",
+      signal: options?.signal,
+    });
+  }
+
+  /** Retrieves a calendar, with when it was last read. */
+  get(id: string, options?: ReadOptions): Promise<CossResult<SchedulingHolidayCalendar>> {
+    return this.#http.request<SchedulingHolidayCalendar>({
+      method: "GET",
+      path: `/v1/scheduling/holiday_calendars/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** What's coming, with names, as last read. */
+  holidays(id: string, options?: ReadOptions): Promise<CossResult<List<SchedulingHoliday>>> {
+    return this.#http.request<List<SchedulingHoliday>>({
+      method: "GET",
+      path: `/v1/scheduling/holiday_calendars/${part(id)}/holidays`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Changes who it applies to, who covers and what happens to bookings. */
+  update(
+    id: string,
+    params: UpdateSchedulingHolidayCalendarParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingHolidayCalendar>> {
+    return this.#http.request<SchedulingHolidayCalendar>({
+      method: "PATCH",
+      path: `/v1/scheduling/holiday_calendars/${part(id)}`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Hosts can be booked on its days again, shortly. */
+  remove(id: string, options?: ReadOptions): Promise<CossResult<{ id: string; deleted: true }>> {
+    return this.#http.request<{ id: string; deleted: true }>({
+      method: "DELETE",
+      path: `/v1/scheduling/holiday_calendars/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+}
+
 /** `coss.scheduling.reassignments`: moving many bookings at once. */
 export class SchedulingReassignmentsResource {
   readonly #http: HttpClient;
@@ -981,6 +1059,7 @@ export class SchedulingResource {
   readonly attendees: SchedulingAttendeesResource;
   readonly outOfOffice: SchedulingOutOfOfficeResource;
   readonly reassignments: SchedulingReassignmentsResource;
+  readonly holidayCalendars: SchedulingHolidayCalendarsResource;
   readonly settings: SchedulingSettingsResource;
 
   /** @internal Use `new Coss().scheduling`. */
@@ -988,6 +1067,7 @@ export class SchedulingResource {
     this.hosts = new SchedulingHostsResource(http);
     this.outOfOffice = new SchedulingOutOfOfficeResource(http);
     this.reassignments = new SchedulingReassignmentsResource(http);
+    this.holidayCalendars = new SchedulingHolidayCalendarsResource(http);
     this.schedules = new SchedulingSchedulesResource(http);
     this.eventTypes = new SchedulingEventTypesResource(http);
     this.slots = new SchedulingSlotsResource(http);

@@ -161,6 +161,7 @@ export function segmentLabel(segment: string): string | undefined {
 const SEGMENT_LABELS: Record<string, string> = {
   "out-of-office": "Out of office",
   reassignments: "Reassignments",
+  holidays: "Holidays",
   email: "Email",
   support: "Support",
   "saved-replies": "Saved replies",

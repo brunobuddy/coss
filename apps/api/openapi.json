@@ -19023,6 +19023,430 @@
           }
         ]
       },
+      "SchedulingHolidayCalendar": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "scheduling.holiday_calendar"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "country",
+              "ics"
+            ]
+          },
+          "country": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hosts": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "host_filter": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          },
+          "regions": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "delegates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "existing_bookings": {
+            "type": "string",
+            "enum": [
+              "leave",
+              "reassign"
+            ]
+          },
+          "last_read_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why its feed couldn't be read."
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "name",
+          "source",
+          "country",
+          "hosts",
+          "host_filter",
+          "regions",
+          "delegates",
+          "existing_bookings",
+          "last_read_at",
+          "last_error",
+          "created_at",
+          "updated_at"
+        ],
+        "examples": [
+          {
+            "object": "scheduling.holiday_calendar",
+            "id": "hcal_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            "name": "UK team",
+            "source": "country",
+            "country": "GB",
+            "hosts": null,
+            "host_filter": {
+              "team": "london"
+            },
+            "regions": [
+              "England"
+            ],
+            "delegates": [],
+            "existing_bookings": "leave",
+            "last_read_at": "2027-01-01T10:00:00.000Z",
+            "last_error": null,
+            "created_at": "2027-01-01T10:00:00.000Z",
+            "updated_at": "2027-01-01T10:00:00.000Z"
+          }
+        ]
+      },
+      "CreateSchedulingHolidayCalendarRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "country": {
+            "type": "string",
+            "description": "A code from the list of holiday calendars, such as `GB`."
+          },
+          "ics_url": {
+            "type": "string",
+            "maxLength": 2000,
+            "format": "uri",
+            "description": "Your own feed, https or webcal, read in live environments. Stored encrypted."
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "description": "These hosts, by id or uid."
+          },
+          "host_filter": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "description": "Everyone matching these attributes, asked again at every sync."
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "maxItems": 50,
+            "description": "Which regional holidays apply, matched against how the calendar names them, such as `England`. Without this, all of them do; empty, only nationwide ones."
+          },
+          "delegates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "description": "Who can be booked in their place on those days, by id or uid, in order."
+          },
+          "existing_bookings": {
+            "type": "string",
+            "enum": [
+              "leave",
+              "reassign"
+            ],
+            "description": "What happens to bookings already on a holiday. `leave` (the default) only reports them. `reassign` moves them."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "name": "UK team",
+            "country": "GB",
+            "host_filter": {
+              "team": "london"
+            }
+          }
+        ]
+      },
+      "SchedulingHolidayCalendarList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "list"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingHolidayCalendar"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "object",
+          "data",
+          "has_more"
+        ],
+        "examples": [
+          {
+            "object": "list",
+            "data": [
+              {
+                "object": "scheduling.holiday_calendar",
+                "id": "hcal_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                "name": "UK team",
+                "source": "country",
+                "country": "GB",
+                "hosts": null,
+                "host_filter": {
+                  "team": "london"
+                },
+                "regions": [
+                  "England"
+                ],
+                "delegates": [],
+                "existing_bookings": "leave",
+                "last_read_at": "2027-01-01T10:00:00.000Z",
+                "last_error": null,
+                "created_at": "2027-01-01T10:00:00.000Z",
+                "updated_at": "2027-01-01T10:00:00.000Z"
+              }
+            ],
+            "has_more": false
+          }
+        ]
+      },
+      "SchedulingHolidayList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "list"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "region": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "date",
+                "name",
+                "region"
+              ]
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "object",
+          "data",
+          "has_more"
+        ],
+        "examples": [
+          {
+            "object": "list",
+            "data": [
+              {
+                "date": "2027-12-25",
+                "name": "Christmas Day",
+                "region": null
+              }
+            ],
+            "has_more": false
+          }
+        ]
+      },
+      "UpdateSchedulingHolidayCalendarRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "description": "These hosts, by id or uid."
+          },
+          "host_filter": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "description": "Everyone matching these attributes, asked again at every sync."
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "maxItems": 50,
+            "description": "Which regional holidays apply, matched against how the calendar names them, such as `England`. Without this, all of them do; empty, only nationwide ones."
+          },
+          "delegates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "description": "Who can be booked in their place on those days, by id or uid, in order."
+          },
+          "existing_bookings": {
+            "type": "string",
+            "enum": [
+              "leave",
+              "reassign"
+            ],
+            "description": "What happens to bookings already on a holiday. `leave` (the default) only reports them. `reassign` moves them."
+          }
+        },
+        "additionalProperties": false,
+        "examples": [
+          {
+            "host_filter": {
+              "team": "london"
+            }
+          }
+        ]
+      },
+      "DeletedSchedulingHolidayCalendar": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "deleted"
+        ],
+        "examples": [
+          {
+            "id": "hcal_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            "deleted": true
+          }
+        ]
+      },
       "SchedulingOutOfOfficeList": {
         "type": "object",
         "properties": {
@@ -68390,6 +68814,1353 @@
           },
           "422": {
             "description": "It's still running (`reassignment_not_finished`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scheduling/holiday_calendars": {
+      "post": {
+        "operationId": "createSchedulingHolidayCalendar",
+        "tags": [
+          "Scheduling holiday calendars"
+        ],
+        "summary": "Create a holiday calendar",
+        "description": "Applies a country's public holidays, or your own feed, to some hosts as ordinary out of office entries, kept up to date by coss.com. A host who removes one keeps it removed.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSchedulingHolidayCalendarRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The calendar.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingHolidayCalendar"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not valid JSON (`invalid_json`). Also when the `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body is not sent as `application/json` (`unsupported_media_type`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "That isn't something to read (`invalid_holiday_calendar`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ]
+      },
+      "get": {
+        "operationId": "listSchedulingHolidayCalendars",
+        "tags": [
+          "Scheduling holiday calendars"
+        ],
+        "summary": "List holiday calendars",
+        "description": "By name. A feed's URL is never shown again.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The calendars.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingHolidayCalendarList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ]
+      }
+    },
+    "/v1/scheduling/holiday_calendars/{id}": {
+      "get": {
+        "operationId": "getSchedulingHolidayCalendar",
+        "tags": [
+          "Scheduling holiday calendars"
+        ],
+        "summary": "Retrieve a holiday calendar",
+        "description": "With when it was last read, and why not if it couldn't be.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The holiday calendar's id."
+            },
+            "required": true,
+            "description": "The holiday calendar's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The calendar.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingHolidayCalendar"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateSchedulingHolidayCalendar",
+        "tags": [
+          "Scheduling holiday calendars"
+        ],
+        "summary": "Update a holiday calendar",
+        "description": "Who it applies to, who covers and what happens to bookings. Takes effect shortly.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The holiday calendar's id."
+            },
+            "required": true,
+            "description": "The holiday calendar's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSchedulingHolidayCalendarRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The calendar.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingHolidayCalendar"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not valid JSON (`invalid_json`). Also when the `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body is not sent as `application/json` (`unsupported_media_type`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation (`validation_error`, see `issues`), or can't be done: see `code`.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSchedulingHolidayCalendar",
+        "tags": [
+          "Scheduling holiday calendars"
+        ],
+        "summary": "Delete a holiday calendar",
+        "description": "Hosts can be booked on its days again, shortly: past entries stay.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The holiday calendar's id."
+            },
+            "required": true,
+            "description": "The holiday calendar's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "It's going.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedSchedulingHolidayCalendar"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scheduling/holiday_calendars/{id}/holidays": {
+      "get": {
+        "operationId": "listSchedulingHolidays",
+        "tags": [
+          "Scheduling holiday calendars"
+        ],
+        "summary": "List a calendar's holidays",
+        "description": "What's coming, with names, as last read. Empty until its first read.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The holiday calendar's id."
+            },
+            "required": true,
+            "description": "The holiday calendar's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The holidays.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingHolidayList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",

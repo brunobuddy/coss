@@ -613,7 +613,11 @@ export async function createOutOfOffice(
   deps: Keys & Pick<SchedulingDeps, "now" | "screenSetup">,
   actor: Actor,
   source: Source,
-  opts: { allowedDelegates?: readonly string[] | undefined } = {},
+  opts: {
+    allowedDelegates?: readonly string[] | undefined;
+    /** A holiday calendar's, which a deleted row keeps. */
+    sourceKey?: string | undefined;
+  } = {},
 ): Promise<OutOfOfficeObjectOutput[]> {
   const hosts = await hostsOfRequest(env, params);
   if (params.external_id && hosts.length > 1) {
@@ -657,6 +661,7 @@ export async function createOutOfOffice(
             existingBookings: params.existing_bookings ?? "leave",
             reassignStrategy,
             source,
+            sourceKey: opts.sourceKey ?? null,
             externalId: params.external_id ?? null,
             groupId,
             actor,

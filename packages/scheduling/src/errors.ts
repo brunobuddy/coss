@@ -13,6 +13,7 @@ export type SchedulingErrorCode =
   | "reassign_target_unavailable"
   | "reassignment_not_finished"
   | "invalid_session"
+  | "invalid_holiday_calendar"
   | "uid_taken"
   | "slot_unavailable"
   | "booking_not_changeable"
@@ -43,6 +44,7 @@ const STATUS_BY_CODE = {
   reassign_target_unavailable: 422,
   reassignment_not_finished: 422,
   invalid_session: 422,
+  invalid_holiday_calendar: 422,
   uid_taken: 422,
   slot_unavailable: 422,
   booking_not_changeable: 422,

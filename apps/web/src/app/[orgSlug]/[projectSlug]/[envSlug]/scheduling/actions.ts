@@ -6,12 +6,14 @@ import {
   cancelBooking,
   cancelReassignment,
   createEventType,
+  createHolidayCalendar,
   createHost,
   createHostSession,
   createOutOfOffice,
   createReassignment,
   createSchedule,
   declineBooking,
+  deleteHolidayCalendar,
   deleteHost,
   deleteOutOfOffice,
   previewReassignment,
@@ -23,6 +25,7 @@ import {
 } from "@coss/scheduling";
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import {
+  CreateHolidayCalendarRequest,
   CreateReassignmentRequest,
   ReassignBookingRequest,
   type ReassignmentObjectOutput,
@@ -302,6 +305,48 @@ export async function undoReassignmentAction(
     });
     refresh();
     return row;
+  });
+}
+
+export async function createHolidayCalendarAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "create");
+    const hosts = formData.getAll("hostId").map(String);
+    if (hosts.length === 0) throw new ActionError("Choose at least one host.");
+    const country = formString(formData, "country");
+    const icsUrl = formString(formData, "icsUrl");
+    const parsed = CreateHolidayCalendarRequest.safeParse({
+      name: formString(formData, "name"),
+      ...(icsUrl ? { ics_url: icsUrl } : { country }),
+      hosts,
+      delegates: formData.getAll("delegateId").map(String),
+      existing_bookings: formData.get("moveBookings") === "on" ? "reassign" : "leave",
+    });
+    if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
+    const calendar = await friendly(() =>
+      createHolidayCalendar(env, parsed.data, configuredDeps()),
+    );
+    await audit(context, "scheduling_holiday_calendar.created", {
+      type: "scheduling_holiday_calendar",
+      id: calendar.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function deleteHolidayCalendarAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "delete");
+    const removed = await friendly(() =>
+      deleteHolidayCalendar(env, formString(formData, "calendarId"), configuredDeps()),
+    );
+    await audit(context, "scheduling_holiday_calendar.deleted", {
+      type: "scheduling_holiday_calendar",
+      id: removed.id,
+    });
+    refresh();
+    return null;
   });
 }
 

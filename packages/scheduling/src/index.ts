@@ -12,6 +12,8 @@ export * from "./calendar/zoom.ts";
 export { isDeadlock, isExclusionViolation } from "./claims.ts";
 export * from "./errors.ts";
 export * from "./event-types.ts";
+export * from "./holiday-countries.ts";
+export * from "./holidays.ts";
 export * from "./hosts.ts";
 export * from "./logo.ts";
 export * from "./manager.ts";

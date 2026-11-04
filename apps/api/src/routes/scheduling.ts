@@ -18,6 +18,7 @@ import {
   createBooking,
   createEventType,
   createHold,
+  createHolidayCalendar,
   createHost,
   createHostSession,
   createManagerSession,
@@ -28,6 +29,7 @@ import {
   createSeries,
   declineBooking,
   deleteHold,
+  deleteHolidayCalendar,
   deleteHost,
   deleteOutOfOffice,
   deleteSchedule,
@@ -35,6 +37,7 @@ import {
   eraseAttendee,
   getBooking,
   getEventType,
+  getHolidayCalendar,
   getHost,
   getOutOfOffice,
   getReassignment,
@@ -45,6 +48,8 @@ import {
   listConnections,
   listEventTypeSlots,
   listEventTypes,
+  listHolidayCalendars,
+  listHolidays,
   listHosts,
   listOutOfOffice,
   listOutOfOfficeConflicts,
@@ -69,6 +74,7 @@ import {
   updateBookingLocation,
   updateCalendar,
   updateEventType,
+  updateHolidayCalendar,
   updateHost,
   updateOutOfOffice,
   updateSchedule,
@@ -91,17 +97,22 @@ import {
   CreateCalendarConnectionRequest,
   CreateEventTypeRequest,
   CreateHoldRequest,
+  CreateHolidayCalendarRequest,
   CreateHostRequest,
   CreateOutOfOfficeRequest,
   CreateReassignmentRequest,
   CreateSeriesRequest,
   DeletedCalendarConnection,
+  DeletedHolidayCalendar,
   DeletedHost,
   DeletedOutOfOffice,
   DeletedSchedule,
   ErasedAttendee,
   EventTypeList,
   EventTypeObject,
+  HolidayCalendarList,
+  HolidayCalendarObject,
+  HolidayList,
   HostList,
   HostObject,
   ListBookingsQuery,
@@ -132,6 +143,7 @@ import {
   UpdateBookingLocationRequest,
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
+  UpdateHolidayCalendarRequest,
   UpdateHostRequest,
   UpdateOutOfOfficeRequest,
   UpdateSettingsRequest,
@@ -159,6 +171,7 @@ const TAG_SETTINGS = "Scheduling settings";
 const TAG_CALENDARS = "Scheduling calendars";
 const TAG_OUT_OF_OFFICE = "Scheduling out of office";
 const TAG_REASSIGNMENTS = "Scheduling reassignments";
+const TAG_HOLIDAY_CALENDARS = "Scheduling holiday calendars";
 
 const read = () => [requireApiKey({ scheduling: ["read"] }), rateLimit("api.read")];
 const writing = (
@@ -1361,6 +1374,119 @@ export const undoReassignmentRoute = createRoute({
   },
 });
 
+const HolidayCalendarParams = z.object({
+  id: z.string().meta({ description: "The holiday calendar's id." }),
+});
+
+export const createHolidayCalendarRoute = createRoute({
+  method: "post",
+  path: "/scheduling/holiday_calendars",
+  operationId: "createSchedulingHolidayCalendar",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "Create a holiday calendar",
+  description:
+    "Applies a country's public holidays, or your own feed, to some hosts as ordinary out of office entries, kept up to date by coss.com. A host who removes one keeps it removed.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("create", "POST /v1/scheduling/holiday_calendars"),
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: CreateHolidayCalendarRequest } },
+    },
+  },
+  responses: {
+    201: jsonDoc("The calendar.", HolidayCalendarObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: errorDoc("That isn't something to read (`invalid_holiday_calendar`)."),
+  },
+});
+
+export const listHolidayCalendarsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/holiday_calendars",
+  operationId: "listSchedulingHolidayCalendars",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "List holiday calendars",
+  description: "By name. A feed's URL is never shown again.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  responses: { 200: jsonDoc("The calendars.", HolidayCalendarList), ...commonErrors },
+});
+
+export const getHolidayCalendarRoute = createRoute({
+  method: "get",
+  path: "/scheduling/holiday_calendars/{id}",
+  operationId: "getSchedulingHolidayCalendar",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "Retrieve a holiday calendar",
+  description: "With when it was last read, and why not if it couldn't be.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: HolidayCalendarParams },
+  responses: {
+    200: jsonDoc("The calendar.", HolidayCalendarObject),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
+export const listHolidaysRoute = createRoute({
+  method: "get",
+  path: "/scheduling/holiday_calendars/{id}/holidays",
+  operationId: "listSchedulingHolidays",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "List a calendar's holidays",
+  description: "What's coming, with names, as last read. Empty until its first read.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: HolidayCalendarParams },
+  responses: { 200: jsonDoc("The holidays.", HolidayList), ...commonErrors, 404: notFound },
+});
+
+export const updateHolidayCalendarRoute = createRoute({
+  method: "patch",
+  path: "/scheduling/holiday_calendars/{id}",
+  operationId: "updateSchedulingHolidayCalendar",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "Update a holiday calendar",
+  description: "Who it applies to, who covers and what happens to bookings. Takes effect shortly.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "PATCH /v1/scheduling/holiday_calendars/{id}"),
+  request: {
+    params: HolidayCalendarParams,
+    body: {
+      required: true,
+      content: { "application/json": { schema: UpdateHolidayCalendarRequest } },
+    },
+  },
+  responses: {
+    200: jsonDoc("The calendar.", HolidayCalendarObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const deleteHolidayCalendarRoute = createRoute({
+  method: "delete",
+  path: "/scheduling/holiday_calendars/{id}",
+  operationId: "deleteSchedulingHolidayCalendar",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "Delete a holiday calendar",
+  description: "Hosts can be booked on its days again, shortly: past entries stay.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("delete", "DELETE /v1/scheduling/holiday_calendars/{id}"),
+  request: { params: HolidayCalendarParams },
+  responses: {
+    200: jsonDoc("It's going.", DeletedHolidayCalendar),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
 export const createOutOfOfficeRoute = createRoute({
   method: "post",
   path: "/scheduling/out_of_office",
@@ -1729,6 +1855,58 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       target: { type: "scheduling_reassignment", id: reassignment.id },
     });
     return c.json(reassignment, 202);
+  });
+
+  router.openapi(createHolidayCalendarRoute, async (c) => {
+    const calendar = await createHolidayCalendar(c.var.auth, c.req.valid("json"), deps);
+    await recordApiAudit(c, {
+      action: "scheduling_holiday_calendar.created",
+      target: { type: "scheduling_holiday_calendar", id: calendar.id },
+    });
+    return c.json(calendar, 201);
+  });
+
+  router.openapi(listHolidayCalendarsRoute, async (c) => {
+    const page = await listHolidayCalendars(c.var.auth);
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
+
+  router.openapi(getHolidayCalendarRoute, async (c) =>
+    c.json(await getHolidayCalendar(c.var.auth, c.req.valid("param").id), 200),
+  );
+
+  router.openapi(listHolidaysRoute, async (c) =>
+    c.json(
+      {
+        object: "list" as const,
+        data: await listHolidays(c.var.auth, c.req.valid("param").id, deps),
+        has_more: false,
+      },
+      200,
+    ),
+  );
+
+  router.openapi(updateHolidayCalendarRoute, async (c) => {
+    const calendar = await updateHolidayCalendar(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      deps,
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_holiday_calendar.updated",
+      target: { type: "scheduling_holiday_calendar", id: calendar.id },
+    });
+    return c.json(calendar, 200);
+  });
+
+  router.openapi(deleteHolidayCalendarRoute, async (c) => {
+    const removed = await deleteHolidayCalendar(c.var.auth, c.req.valid("param").id, deps);
+    await recordApiAudit(c, {
+      action: "scheduling_holiday_calendar.deleted",
+      target: { type: "scheduling_holiday_calendar", id: removed.id },
+    });
+    return c.json(removed, 200);
   });
 
   router.openapi(createOutOfOfficeRoute, async (c) => {

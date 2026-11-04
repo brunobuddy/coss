@@ -225,12 +225,14 @@ import type {
   CreateCalendarConnectionRequest,
   CreateEventTypeRequest,
   CreateHoldRequest,
+  CreateHolidayCalendarRequest,
   CreateHostRequest,
   CreateOutOfOfficeRequest,
   CreateReassignmentRequest,
   CreateSeriesRequest,
   ErasedAttendee,
   EventTypeObject,
+  HolidayCalendarObject,
   HostObject,
   ListOutOfOfficeQuery,
   OutOfOfficeConflict,
@@ -258,6 +260,7 @@ import type {
   UpdateBookingLocationRequest,
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
+  UpdateHolidayCalendarRequest,
   UpdateHostRequest,
   UpdateOutOfOfficeRequest,
   UpdateSettingsRequest,
@@ -321,6 +324,7 @@ import type {
   CreateSchedulingCalendarConnectionParams,
   CreateSchedulingEventTypeParams,
   CreateSchedulingHoldParams,
+  CreateSchedulingHolidayCalendarParams,
   CreateSchedulingHostParams,
   CreateSchedulingOutOfOfficeParams,
   CreateSchedulingReassignmentParams,
@@ -386,6 +390,7 @@ import type {
   SchedulingCalendarConnection,
   SchedulingCancelledSeries,
   SchedulingEventType,
+  SchedulingHolidayCalendar,
   SchedulingHost,
   SchedulingOutOfOffice,
   SchedulingOutOfOfficeConflict,
@@ -526,6 +531,7 @@ import type {
   UpdateSchedulingBookingLocationParams,
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
+  UpdateSchedulingHolidayCalendarParams,
   UpdateSchedulingHostParams,
   UpdateSchedulingOutOfOfficeParams,
   UpdateSchedulingSettingsParams,
@@ -1119,6 +1125,19 @@ export type SubaccountContract = [
     MutuallyAssignable<z.input<typeof UndoReassignmentRequest>, UndoSchedulingReassignmentParams>
   >,
   Assert<MutuallyAssignable<z.output<typeof ReassignmentObject>, SchedulingReassignment>>,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof CreateHolidayCalendarRequest>,
+      CreateSchedulingHolidayCalendarParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof UpdateHolidayCalendarRequest>,
+      UpdateSchedulingHolidayCalendarParams
+    >
+  >,
+  Assert<MutuallyAssignable<z.output<typeof HolidayCalendarObject>, SchedulingHolidayCalendar>>,
   Assert<MutuallyAssignable<z.output<typeof ReassignmentItemObject>, SchedulingReassignmentItem>>,
   Assert<MutuallyAssignable<z.output<typeof ReassignmentPreview>, SchedulingReassignmentPreview>>,
   Assert<

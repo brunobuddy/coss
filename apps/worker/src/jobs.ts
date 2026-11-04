@@ -69,11 +69,13 @@ import {
   checkHostEditedEvents,
   expireDueBookings,
   type NotificationDeps,
+  pinnedDavTransport,
   refreshIdleZoomConnections,
   releaseOrganizationCalendars,
   renewDueCalendarChannels,
   runDueCalendarSyncs,
   runDueCalendarWrites,
+  runDueHolidayCalendars,
   runDueReassignments,
   runDueSchedulingNotifications,
   type SchedulingWorkerDeps,
@@ -261,6 +263,7 @@ export const WORKER_LOOP_NAMES = [
   "scheduling-calendar-host-edits",
   "scheduling-out-of-office",
   "scheduling-reassignments",
+  "scheduling-holidays",
   "email-dispatch",
   "email-dispatch-marketing",
   "webhooks",
@@ -765,6 +768,16 @@ export function startJobs(deps: WorkerDeps): Loop[] {
         name: "scheduling-reassignments",
         intervalMs: 2000,
         run: async () => (await runDueReassignments(scheduling, { limit: 5 })) > 0,
+      }),
+      start({
+        // Feeds are read daily at most, and a pass does a little: nothing here's urgent.
+        name: "scheduling-holidays",
+        intervalMs: 60_000,
+        run: async () =>
+          (await runDueHolidayCalendars({
+            ...scheduling,
+            transport: pinnedDavTransport(),
+          })) > 0,
       }),
     );
     const notifications = deps.schedulingNotifications;

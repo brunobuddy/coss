@@ -518,6 +518,60 @@ export interface CreateSchedulingHostSessionParams {
   read_only?: boolean;
 }
 
+export interface SchedulingHolidayCalendarWho {
+  /** These hosts, by id or uid. */
+  hosts?: string[];
+  /** Everyone matching these attributes, asked again at every sync. */
+  host_filter?: Record<string, string | string[]>;
+  /**
+   * Which regional holidays apply, matched against how the calendar names them, such as `England`.
+   * Without this, all of them do; empty, only nationwide ones.
+   */
+  regions?: string[];
+  /** Who can be booked in their place on those days, in order. */
+  delegates?: string[];
+  /** Bookings already on a holiday: `leave` (the default) only reports them. */
+  existing_bookings?: "leave" | "reassign";
+}
+
+/** Give one of `country` and `ics_url`, and one of `hosts` and `host_filter`. */
+export interface CreateSchedulingHolidayCalendarParams extends SchedulingHolidayCalendarWho {
+  name: string;
+  /** A code from the list of holiday calendars, such as `GB`. */
+  country?: string;
+  /** Your own feed, https or webcal, read in live environments. Stored encrypted. */
+  ics_url?: string;
+}
+
+export interface UpdateSchedulingHolidayCalendarParams extends SchedulingHolidayCalendarWho {
+  name?: string;
+}
+
+export interface SchedulingHolidayCalendar {
+  object: "scheduling.holiday_calendar";
+  id: string;
+  name: string;
+  source: "country" | "ics";
+  country: string | null;
+  hosts: string[] | null;
+  host_filter: Record<string, string | string[]> | null;
+  regions: string[] | null;
+  delegates: string[];
+  existing_bookings: "leave" | "reassign";
+  last_read_at: string | null;
+  /** Why its feed couldn't be read. */
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SchedulingHoliday {
+  date: string;
+  name: string;
+  /** Who has it, when it's not everyone: as the calendar says it. */
+  region: string | null;
+}
+
 /** Give one of `hosts` and `host_filter`. */
 export interface CreateSchedulingManagerSessionParams {
   /** The hosts this page can reach, by id or uid. */

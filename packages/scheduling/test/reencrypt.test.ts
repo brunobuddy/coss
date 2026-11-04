@@ -122,9 +122,10 @@ describe("reencryptSchedulingData", () => {
         and column_name like 'encrypted\\_%'
       order by 1
     `);
-    // These two hold the webhook key ring's values (`CalendarDeps.secretsKeys`).
+    // These hold the webhook key ring's values (`CalendarDeps.secretsKeys`).
     const onWebhookKeys = [
       "scheduling_calendar_connection.encrypted_credentials",
+      "scheduling_holiday_calendar.encrypted_ics_url",
       "scheduling_oauth_state.encrypted_code_verifier",
     ];
     expect(rows.map((row) => row.name)).toEqual(

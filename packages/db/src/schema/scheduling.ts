@@ -253,6 +253,8 @@ export const schedulingOutOfOffice = pgTable(
     existingBookings: schedulingOutOfOfficeExisting("existing_bookings").notNull().default("leave"),
     reassignStrategy: jsonb("reassign_strategy").$type<SchedulingReassignmentStrategy | null>(),
     source: schedulingOutOfOfficeSource("source").notNull(),
+    // A holiday calendar's: `<calendar>:<host>:<date>`. A deleted row keeps it, as a tombstone.
+    sourceKey: text("source_key"),
     externalId: text("external_id"),
     // One request across several hosts.
     groupId: text("group_id"),
@@ -276,6 +278,9 @@ export const schedulingOutOfOffice = pgTable(
       foreignColumns: [environment.id, environment.organizationId],
     }).onDelete("cascade"),
     unique("scheduling_out_of_office_id_organization_unique").on(t.id, t.organizationId),
+    uniqueIndex("scheduling_out_of_office_source_key_idx")
+      .on(t.environmentId, t.sourceKey)
+      .where(sql`${t.sourceKey} IS NOT NULL`),
     uniqueIndex("scheduling_out_of_office_external_id_idx")
       .on(t.environmentId, t.externalId)
       .where(sql`${t.externalId} IS NOT NULL AND ${t.deletedAt} IS NULL`),
@@ -1086,6 +1091,71 @@ export const schedulingSession = pgTable(
     ),
   ],
 );
+
+/** A country's holidays, or a customer's feed, applied to some hosts as out of office entries. */
+export const schedulingHolidayCalendar = pgTable(
+  "scheduling_holiday_calendar",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.schedulingHolidayCalendar)),
+    organizationId: text("organization_id").notNull(),
+    projectId: text("project_id").notNull(),
+    environmentId: text("environment_id").notNull(),
+    name: text("name").notNull(),
+    countryCode: text("country_code"),
+    // May hold an access token: `WEBHOOK_SECRETS_KEY`, like calendar credentials.
+    encryptedIcsUrl: text("encrypted_ics_url"),
+    // A feed's last good read, since there's no shared table for one customer's.
+    holidays: jsonb("holidays").$type<{ date: string; name: string; region?: string | null }[]>(),
+    // Which of a country's regional holidays apply. Null: all of them. Empty: only nationwide ones.
+    regions: jsonb("regions").$type<string[]>(),
+    hostIds: jsonb("host_ids").$type<string[]>(),
+    hostFilter: jsonb("host_filter").$type<Record<string, string | string[]>>(),
+    delegateIds: jsonb("delegate_ids").$type<string[]>().notNull().default([]),
+    existingBookings: schedulingOutOfOfficeExisting("existing_bookings").notNull().default("leave"),
+    lastReadAt: instant("last_read_at"),
+    lastError: text("last_error"),
+    nextSyncAt: instant("next_sync_at").notNull().defaultNow(),
+    leaseUntil: instant("lease_until"),
+    deletedAt: instant("deleted_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    foreignKey({
+      name: "scheduling_holiday_calendar_environment_fk",
+      columns: [t.environmentId, t.organizationId],
+      foreignColumns: [environment.id, environment.organizationId],
+    }).onDelete("cascade"),
+    index("scheduling_holiday_calendar_environment_idx").on(t.environmentId, t.name),
+    index("scheduling_holiday_calendar_due_idx").on(t.nextSyncAt),
+  ],
+);
+
+/** Shared by everyone: requests for these carry nothing about anyone, and there's no organization. */
+export const schedulingPublicHoliday = pgTable(
+  "scheduling_public_holiday",
+  {
+    countryCode: text("country_code").notNull(),
+    date: text("date").notNull(),
+    name: text("name").notNull(),
+    // Who has it, when it's not everyone: as the feed says it, such as "England, Wales".
+    region: text("region"),
+  },
+  (t) => [
+    primaryKey({
+      name: "scheduling_public_holiday_pk",
+      columns: [t.countryCode, t.date],
+    }),
+  ],
+);
+
+export const schedulingPublicHolidaySource = pgTable("scheduling_public_holiday_source", {
+  countryCode: text("country_code").primaryKey(),
+  readAt: instant("read_at"),
+  nextReadAt: instant("next_read_at").notNull(),
+});
 
 /** Moving many bookings at once: what it covers, what to do with them, and how it went. */
 export const schedulingReassignment = pgTable(

@@ -79,6 +79,20 @@ so slots and booking can't disagree. Each caller of `loadHostInputs` passes it t
 - `levelReturningHost` raises a pool member's `fair_units` to the lowest peer's ratio when an entry ends, once
   (`fairness_leveled_at`), never downward, and not while another entry has them away.
 
+Holiday calendars (`holidays.ts`) turn a country's holidays or a customer's feed into ordinary entries, `source: holiday`,
+one per host and day, in the host's zone. `source_key` (`<calendar>:<host>:<date>`, unique per environment) is how a sync
+knows what's there; a deleted row keeps it as a tombstone, so someone opting out of a date isn't given it back. A date
+that's gone from the feed, or a host who's left, clears its key as well, since nobody chose that.
+
+- A failed, partial or empty read keeps what's there. `holidaysFromIcs` only takes whole days, and treats what it can't
+  understand as a failed read. A country's list is shared (`scheduling_public_holiday`, no organization), since requests
+  for it say nothing about anyone. It's read from Google's public ICS URL, which is unofficial.
+- A feed's URL can hold a token: `WEBHOOK_SECRETS_KEY` and `reencryptWebhookSecrets`, never a log or a response, and
+  `last_error` can't name it. It goes through `pinnedDavTransport` (public addresses, pinned), a 3xx is a failed read, and
+  sandbox environments don't read them.
+- Names are unscreened, so entries carry `public_holiday` and no name: never in an email, a calendar event, or anything
+  a booker sees.
+
 ## Reassigning
 
 `reassign.ts`: a booking goes to another host, keeping its id and time, for every kind. The target is claimed **before**
