@@ -126,7 +126,7 @@ export const PRODUCT_COLUMNS: readonly MenuColumn[] = [
     title: "Messaging and identity",
     links: [
       api("sms", {
-        description: "Text messages worldwide.",
+        description: "Text messages, US and Canada first.",
         icon: Message01Icon,
         href: "/products/sms",
       }),
@@ -430,6 +430,8 @@ export const FOOTER_COLUMNS: readonly { title: string; links: readonly [string, 
       ["Changelog", "/changelog"],
       ["Platform", "/products/platform"],
       ["Security", "/products/security"],
+      ["Status", "/status"],
+      ["Contact", "/contact"],
       ["GitHub", "https://github.com/cosscom/coss"],
       ["X", "https://x.com/coss_com"],
       ["LinkedIn", "https://www.linkedin.com/company/cosscom"],

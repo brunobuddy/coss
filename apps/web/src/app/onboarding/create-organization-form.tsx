@@ -17,8 +17,10 @@ import { FormError } from "@/components/form-error";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { toast } from "@/lib/toast";
+import { createFirstProjectAction } from "./actions";
 
-export function CreateOrganizationForm() {
+/** `next`: where to go once it exists (the CLI's approval page, the plans page), else its home. */
+export function CreateOrganizationForm({ next }: { next: string | null }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -43,7 +45,11 @@ export function CreateOrganizationForm() {
       return;
     }
     toast.success(`${name.trim()} created`);
-    router.push(`/${slug}`);
+    // A failure here isn't one for the user: `/<org>` offers to create the project instead.
+    const setup = new FormData();
+    setup.set("orgSlug", slug);
+    await createFirstProjectAction(null, setup).catch((failure) => console.error(failure));
+    router.push(next ?? `/${slug}`);
     router.refresh();
   }
 
@@ -51,7 +57,9 @@ export function CreateOrganizationForm() {
     <Card>
       <CardHeader>
         <CardTitle>Create an organization</CardTitle>
-        <CardDescription>Organizations own projects, API keys and members.</CardDescription>
+        <CardDescription>
+          Organizations own projects, API keys and members. Yours starts with a project.
+        </CardDescription>
       </CardHeader>
       <CardPanel>
         {/* method="post": a submit before hydration must never put credentials in the URL. */}

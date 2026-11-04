@@ -17,6 +17,7 @@ import { AuthFrame } from "@/components/auth-frame";
 import { SignOutButton } from "@/components/sign-out-button";
 import { getSession } from "@/lib/session";
 import { CliAuthorizeForm, type EnvironmentOption } from "./cli-authorize-form";
+import { CreateFirstProjectButton } from "./create-first-project-button";
 import { cliAuthorizePath, parseCliAuthorizeParams } from "./params";
 
 export const metadata: Metadata = { title: "Sign in to the coss.com CLI" };
@@ -73,11 +74,13 @@ export default async function AuthorizeCliPage({ searchParams }: PageProps<"/app
   // Only organizations where this member may create keys now: their role allows it, the
   // organization isn't suspended, and this session meets its SSO and two-factor requirements.
   // CLI keys are personal keys, so members see the environments open to theirs.
-  const candidates = (await listUserOrganizations({ userId: session.user.id })).filter((org) =>
-    orgRoleCan(org.role, { apiKey: ["create"] }),
-  );
+  const organizations = await listUserOrganizations({ userId: session.user.id });
+  // A new account: the approval page comes back once there is an organization.
+  if (organizations.length === 0) redirect(`/onboarding?next=${encodeURIComponent(here)}`);
+  const candidates = organizations.filter((org) => orgRoleCan(org.role, { apiKey: ["create"] }));
   const environments: EnvironmentOption[] = [];
   const blocked: string[] = [];
+  const withoutProject: { name: string; slug: string }[] = [];
   for (const org of candidates) {
     const membership = await getMembership({ userId: session.user.id, organizationSlug: org.slug });
     if (!membership || membership.suspended) continue;
@@ -85,9 +88,13 @@ export default async function AuthorizeCliPage({ searchParams }: PageProps<"/app
       blocked.push(org.name);
       continue;
     }
-    for (const { project, environments: envs } of await listProjectsWithEnvironments({
+    const projects = await listProjectsWithEnvironments({
       organizationId: membership.organization.id,
-    })) {
+    });
+    if (projects.length === 0 && orgRoleCan(org.role, { project: ["create"] })) {
+      withoutProject.push({ name: org.name, slug: org.slug });
+    }
+    for (const { project, environments: envs } of projects) {
       for (const env of envs) {
         // `coss init` writes the key into a project's files: never a live one.
         if (params.project && env.mode === "live") continue;
@@ -126,6 +133,26 @@ export default async function AuthorizeCliPage({ searchParams }: PageProps<"/app
     ) : null;
 
   const title = params.project ? `Create an API key for ${params.project}` : undefined;
+  if (environments.length === 0 && withoutProject.length > 0) {
+    return (
+      <AuthorizeCard
+        description={
+          <>
+            API keys belong to a project's environments, and{" "}
+            {withoutProject.map((org) => org.name).join(", ")}{" "}
+            {withoutProject.length === 1 ? "has" : "have"} no project yet. Create one to continue.
+          </>
+        }
+        title={title}
+      >
+        {withoutProject.map((org) => (
+          <CreateFirstProjectButton key={org.slug} name={org.name} orgSlug={org.slug} />
+        ))}
+        {blockedNote}
+        <SignOutButton redirectTo={next} />
+      </AuthorizeCard>
+    );
+  }
   if (environments.length === 0) {
     return (
       <AuthorizeCard

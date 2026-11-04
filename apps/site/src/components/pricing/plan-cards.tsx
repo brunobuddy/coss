@@ -2,7 +2,7 @@ import { PLAN_KEYS, PLANS, type PlanKey } from "@coss/billing/catalog";
 import { Button } from "@coss/ui/components/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@coss/ui/components/card";
 import { CheckIcon } from "lucide-react";
-import { formatPrice } from "@/lib/pricing";
+import { formatPrice, planSignUpPath } from "@/lib/pricing";
 import { dashboardUrl, SALES_EMAIL } from "@/lib/site";
 
 const TAGLINES: Record<PlanKey, string> = {
@@ -31,7 +31,7 @@ function PlanCta({ plan }: { plan: PlanKey }) {
   return (
     <Button
       className="w-full"
-      render={<a href={dashboardUrl("/sign-up")} />}
+      render={<a href={dashboardUrl(planSignUpPath(plan))} />}
       variant={plan === "pro" ? "default" : "outline"}
     >
       {plan === "free" ? "Start for free" : "Get started"}

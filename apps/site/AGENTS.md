@@ -99,6 +99,9 @@ the macro API, `staticSource` and code-usage APIs are recent.
 - **Static and cached.** Pages are static and served from CloudFront by their `Cache-Control` (docs:
   `s-maxage=31536000`; deploys invalidate `/*`). Don't read cookies, headers or env in pages: that makes them
   dynamic, and the image is shared by every stage.
+  The one exception is `/status` (`src/lib/status.ts`): dynamic, so never cached by CloudFront, and each task asks
+  the health endpoints at most every 30 seconds. It says what it is: no history, no uptime figure, no database check.
+  `/changelog` is `src/lib/changelog.ts`, written by hand for customers.
 
 Test: `bun run --cwd apps/site test` (DB-free). Build: `bun run --cwd apps/site build`.
 

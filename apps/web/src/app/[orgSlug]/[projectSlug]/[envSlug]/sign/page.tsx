@@ -1,5 +1,7 @@
 import { listSignRequests } from "@coss/sign";
 import { SIGN_REQUEST_STATUSES, type SignRequestStatus } from "@coss/sign/schemas";
+import { Alert, AlertDescription, AlertTitle } from "@coss/ui/components/alert";
+import { Button } from "@coss/ui/components/button";
 import {
   Table,
   TableBody,
@@ -19,6 +21,7 @@ import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
 import { SignRequestStatusDot } from "@/components/sign-badges";
 import { formatDateTime } from "@/lib/format";
+import { signStore } from "@/lib/sign";
 import { signPageContext } from "./page-context";
 
 export const metadata: Metadata = { title: "Signature requests" };
@@ -76,6 +79,15 @@ export default async function SignRequestsPage({
         meta={<ModeBadge mode={environment.mode} />}
         title="Signature requests"
       />
+      {signStore() ? null : (
+        <Alert variant="warning">
+          <AlertTitle>Sign isn't available yet</AlertTitle>
+          <AlertDescription>
+            Sign isn't switched on at coss.com yet, so API calls answer 503 `sign_unavailable`, with
+            sandbox keys too.
+          </AlertDescription>
+        </Alert>
+      )}
       <FilterLinks
         options={FILTERS.map((option) => ({
           value: option.value,
@@ -97,6 +109,13 @@ export default async function SignRequestsPage({
         {page.data.length === 0 ? (
           <PanelBody flush>
             <EmptyState
+              action={
+                after || filter?.statuses ? null : (
+                  <Button render={<a href="/docs/sign" />} size="sm" variant="outline">
+                    Read the docs
+                  </Button>
+                )
+              }
               compact
               description="Create one with coss.sign.requests.create() or POST /v1/sign/requests."
               icon={SignatureIcon}

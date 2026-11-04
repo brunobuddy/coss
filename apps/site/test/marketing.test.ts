@@ -85,9 +85,16 @@ function resolves(href: string): boolean {
   if (section === "legal") {
     return slug === undefined || existsSync(path.join(ROOT, "content/legal", `${slug}.mdx`));
   }
-  return ["/", "/pricing", "/about", "/changelog", "/llms.txt", "/llms-full.txt"].includes(
-    pathname,
-  );
+  return [
+    "/",
+    "/pricing",
+    "/about",
+    "/changelog",
+    "/status",
+    "/contact",
+    "/llms.txt",
+    "/llms-full.txt",
+  ].includes(pathname);
 }
 
 /** `$` and a digit: a typed-in price (prices come from the catalog's components). */

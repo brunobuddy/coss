@@ -38,6 +38,12 @@ export function formatPrice(cents: bigint): string {
   return `${negative ? "-" : ""}$${dollars}${rest === 0n ? "" : `.${rest.toString().padStart(2, "0")}`}`;
 }
 
+/** Sign-up from a plan's card: a paid plan's choice ends on the dashboard's plans page. */
+export function planSignUpPath(plan: PlanKey): string {
+  if (plan === "free" || plan === "enterprise") return "/sign-up";
+  return `/sign-up?next=${encodeURIComponent(`/dashboard?plan=${plan}`)}`;
+}
+
 function currentEmailRate(): Rate {
   const rate = RATE_CARDS.at(-1)?.rates[EMAIL]?.default;
   if (!rate) throw new Error("The rate card has no email rate.");
@@ -163,6 +169,8 @@ export const METER_NOTES: Partial<Record<MeterKey, string>> = {
   "email.received": "Mail flagged as spam or carrying a virus is free",
   "email.inboxes":
     "30 inbox-days are an inbox for a month, charged by the day; every plan includes 3 inboxes",
+  "hooks.messages":
+    "One per message whatever its fan-out; retries, recoveries and test sends are free",
   "forms.file_uploads": `The files of accepted submissions, kept ${RETENTION_DAYS.formSubmissions} days; rounded up to the MB per submission`,
 };
 
