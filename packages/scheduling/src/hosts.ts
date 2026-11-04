@@ -187,13 +187,13 @@ export async function createHost(
         })
         .returning();
       if (chargedNow) {
-        if (opts.billing) {
-          await countTowardAllowance(tx, opts.billing, {
-            organizationId: env.organizationId,
-            meter: HOST_FEE_METER,
-            days: 1,
-          });
-        }
+        // Past a capped plan's allowance a new host is refused, or deleting and creating would
+        // never run out. Hosts that already exist are only ever written off.
+        await opts.billing?.reserve(tx, {
+          organizationId: env.organizationId,
+          meter: HOST_FEE_METER,
+          quantity: 1,
+        });
         await recordUsage(tx, {
           organizationId: env.organizationId,
           environmentId: env.environmentId,

@@ -195,8 +195,9 @@ on `usage_recorded_at` (`recordUsage` doesn't dedupe). `reserve` runs after a ho
 aren't charged; reschedules are free; cancelled stays charged.
 
 `scheduling.hosts` is one unit per day a live host exists (`next_fee_at`, its presence is what makes a host live for
-the plan's count): on creation, then `chargeDueHostFees` (the worker's `scheduling-host-fees`), and `deleteHost` charges
-what's due. Nothing is recorded before `meterPricedFrom` (2027-01-01): hosts wait with `next_fee_at` at that date.
+the plan's count): on creation (reserved like a new inbox: past a capped plan's allowance it's refused), then
+`chargeDueHostFees` (the worker's `scheduling-host-fees`), and `deleteHost` charges what's due (those two only ever write
+off past the allowance). Nothing is recorded before `meterPricedFrom` (2027-01-01): hosts wait with `next_fee_at` at that date.
 
 ## Plans and holds
 
@@ -217,7 +218,8 @@ A person on a hosted page never meets a plan gate (Free's booking allowance asid
 checked again. Never gate the double-booking guarantee, calendars or series. A filter or a group size that exists keeps working whatever the plan; a downgrade is refused only for live
 `host_filter`s (the dashboard's preflight).
 
-`refuseNewBookingWhileHeld`: a billing hold or the project's budget stops new live bookings, holds and series (402), and
+`refuseNewBookingWhileHeld`, once the row is known to be new so a retry still answers with what it made: a billing hold
+or the project's budget stops new live bookings, holds and series (402), and
 the booker's page says only that the account can't take bookings. Confirming a hold and approving keep working: the
 customer may have taken payment for them.
 

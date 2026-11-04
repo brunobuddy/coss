@@ -12,7 +12,7 @@ export type { FeatureKey, LimitKey, MeterKey };
 export interface PlanGate {
   /** Throws a `BillingError` (`plan_feature_unavailable`) when the plan lacks the feature. */
   requireFeature(organizationId: string, feature: FeatureKey): Promise<void>;
-  /** Whether the plan has the feature, for what changes rather than refuses. */
+  /** Whether the plan in effect has the feature, for what changes rather than refuses. */
   hasFeature(organizationId: string, feature: FeatureKey): Promise<boolean>;
   /**
    * Throws a `BillingError` (`plan_limit_reached`) when `count` more would exceed the plan's

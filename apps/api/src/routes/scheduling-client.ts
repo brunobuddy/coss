@@ -248,10 +248,11 @@ export function createSchedulingClientRoutes(opts: {
       brand_name: settings?.brandName ?? null,
       accent_color: settings?.accentColor ?? null,
       logo: logo ? { data_url: logoDataUrl(logo), width: logo.width, height: logo.height } : null,
-      // "Scheduling by coss.com" on the page, on plans without the white label.
-      coss_attribution: deps.plans
-        ? !(await deps.plans.hasFeature(env.organizationId, "schedulingWhiteLabel"))
-        : false,
+      // "Scheduling by coss.com" on a live page, on plans without the white label.
+      coss_attribution:
+        env.mode === "live" && deps.plans
+          ? !(await deps.plans.hasFeature(env.organizationId, "schedulingWhiteLabel"))
+          : false,
     };
   };
 

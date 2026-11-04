@@ -6,6 +6,7 @@
  */
 import type { FeatureKey, PlanGate } from "@coss/billing/gate";
 import { BUDGET_EXCEEDED_MESSAGES, budgetHoldFor, isOnBillingHold } from "@coss/billing/metering";
+import type { Executor } from "@coss/db";
 import { SchedulingError } from "./errors.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
@@ -33,19 +34,25 @@ export async function requireRouting(
   }
 }
 
-/** A live new booking is usage: an overdue invoice, spend limit or project budget stops it. */
-export async function refuseNewBookingWhileHeld(env: SchedulingEnvironment): Promise<void> {
+/**
+ * A live new booking is usage: an overdue invoice, spend limit or project budget stops it. Called
+ * once the row is known to be new, so a retry of a booking already made still answers with it.
+ */
+export async function refuseNewBookingWhileHeld(
+  env: SchedulingEnvironment,
+  executor: Executor,
+): Promise<void> {
   if (env.mode !== "live") return;
-  if (await isOnBillingHold(env.organizationId)) {
+  if (await isOnBillingHold(env.organizationId, executor)) {
     throw new SchedulingError(
       "billing_hold",
       "New live bookings are paused: your organization has an overdue invoice or reached its " +
         "spend limit. Sandbox keys still work.",
     );
   }
-  const held = await budgetHoldFor({
-    organizationId: env.organizationId,
-    projectId: env.projectId,
-  });
+  const held = await budgetHoldFor(
+    { organizationId: env.organizationId, projectId: env.projectId },
+    executor,
+  );
   if (held) throw new SchedulingError("budget_exceeded", BUDGET_EXCEEDED_MESSAGES[held]);
 }

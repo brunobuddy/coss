@@ -4,7 +4,7 @@
  * Reads return the latest shape (`SignRequestObject`).
  */
 import { BUDGET_EXCEEDED_MESSAGES, budgetHoldFor, isOnBillingHold } from "@coss/billing/metering";
-import { db, schema, type Transaction } from "@coss/db";
+import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import {
   requestHash as hashRequest,
@@ -397,18 +397,18 @@ async function transition(
 }
 
 /** A live request is usage once sealed, and its emails cost before that. */
-async function refuseWhileHeld(source: {
-  organizationId: string;
-  projectId: string;
-}): Promise<void> {
-  if (await isOnBillingHold(source.organizationId)) {
+async function refuseWhileHeld(
+  source: { organizationId: string; projectId: string },
+  executor: Executor = db,
+): Promise<void> {
+  if (await isOnBillingHold(source.organizationId, executor)) {
     throw new SignError(
       "billing_hold",
       "New live signature requests are paused: your organization has an overdue invoice or " +
         "reached its spend limit. Sandbox keys still work.",
     );
   }
-  const held = await budgetHoldFor(source);
+  const held = await budgetHoldFor(source, executor);
   if (held) throw new SignError("budget_exceeded", BUDGET_EXCEEDED_MESSAGES[held]);
 }
 
@@ -417,13 +417,14 @@ export async function sendSignRequest(
   now: Date = new Date(),
 ): Promise<SignRequestObjectOutput> {
   if (!(await environmentIsSandbox(input))) {
-    const [draft] = await db
-      .select({ projectId: signRequest.projectId })
+    const [found] = await db
+      .select({ projectId: signRequest.projectId, status: signRequest.status })
       .from(signRequest)
       .where(requestScope(input))
       .limit(1);
-    if (draft) {
-      await refuseWhileHeld({ organizationId: input.organizationId, projectId: draft.projectId });
+    // A request already sent is returned as it is.
+    if (found?.status === "draft") {
+      await refuseWhileHeld({ organizationId: input.organizationId, projectId: found.projectId });
     }
   }
   return transition(
@@ -507,9 +508,6 @@ export function createSignService(opts: SignServiceOptions): SignService {
   ): Promise<{ request: SignRequestObjectOutput; replayed: boolean }> {
     const { environment: env, params } = input;
     const now = clock();
-    if (env.mode === "live") {
-      await refuseWhileHeld({ organizationId: env.organizationId, projectId: env.projectId });
-    }
     // `expires_at` is checked against the clock only for a new request (inside `insert`): a replay
     // of the same key and body returns the original even once that time has passed.
     const expiresAt = params.expires_at ? new Date(params.expires_at) : null;
@@ -609,6 +607,13 @@ export function createSignService(opts: SignServiceOptions): SignService {
           .returning();
         // A replay (the key's row exists) returns before this; a new request rolls back here.
         if (!row) return undefined;
+        // Only a new request: a replay of one already made (no row here) still answers with it.
+        if (env.mode === "live") {
+          await refuseWhileHeld(
+            { organizationId: env.organizationId, projectId: env.projectId },
+            tx,
+          );
+        }
         checkExpiry(params.expires_at, now);
         if (inline.length > 0) await tx.insert(signDocument).values(inline);
         await tx.insert(signRequestDocument).values(

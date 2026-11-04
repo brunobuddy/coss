@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import { createPlanGate, createUsageGate, placeHold } from "@coss/billing";
+import { BillingError, createPlanGate, createUsageGate, placeHold } from "@coss/billing";
+import type { UsageGate } from "@coss/billing/gate";
 import { createTestContract } from "@coss/billing/testing";
 import { db, pool } from "@coss/db";
 import { createForm, type FormEnvironment } from "@coss/forms";
 import { CreateFormRequest } from "@coss/forms/schemas";
 import { testFormChecks } from "@coss/forms/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
-import { chargeDueHostFees } from "@coss/scheduling";
+import { chargeDueHostFees, countLiveHosts, createHost } from "@coss/scheduling";
+import { buildTestPdfBase64 } from "@coss/sign/testing";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
 import { apiRequest, createTestApp, errorOf, type TestApp } from "./helpers.ts";
 
@@ -145,6 +147,14 @@ describe("Scheduling's plan gates", () => {
     const pro = await onPlan("pro");
     const app = enforced();
     const eventType = await bookable(app, pro.liveKey);
+    const onHold = await call(app, pro.liveKey, "POST", "/holds", {
+      event_type: eventType,
+      start: at("09:00"),
+      attendee,
+      attributes: { specialty: "dermatology" },
+    });
+    expect(onHold.status).toBe(402);
+    expect((await errorOf(onHold)).code).toBe("plan_feature_unavailable");
     const filtered = await call(app, pro.liveKey, "POST", "/event_types", {
       title: "Pool",
       kind: "pool",
@@ -249,9 +259,9 @@ describe("Scheduling's plan gates", () => {
 
   test("pages show the attribution below Scale, and not on it", async () => {
     const app = enforced();
-    const sessionOf = async (tenant: TestTenant) => {
-      const eventType = await bookable(app, tenant.liveKey);
-      const res = await call(app, tenant.liveKey, "POST", "/booker_sessions", {
+    const sessionOf = async (tenant: TestTenant, key = tenant.liveKey) => {
+      const eventType = await bookable(app, key);
+      const res = await call(app, key, "POST", "/booker_sessions", {
         event_type: eventType,
       });
       const { token } = (await res.json()) as { token: string };
@@ -262,10 +272,57 @@ describe("Scheduling's plan gates", () => {
     };
     expect((await sessionOf(await createTestTenant())).coss_attribution).toBe(true);
     expect((await sessionOf(await onPlan("scale"))).coss_attribution).toBe(false);
+    // A sandbox has everything on every plan.
+    const sandbox = await createTestTenant();
+    expect((await sessionOf(sandbox, sandbox.sandboxKey)).coss_attribution).toBe(false);
+  });
+
+  test("a scheduled downgrade keeps the attribution off until it applies", async () => {
+    const tenant = await createTestTenant();
+    await createTestContract(
+      tenant.organization.id,
+      { version: 1, plan: "scale" },
+      {
+        effectiveFrom: new Date("2026-01-01T00:00:00Z"),
+        effectiveUntil: new Date("2099-01-01T00:00:00Z"),
+      },
+    );
+    await createTestContract(
+      tenant.organization.id,
+      { version: 1, plan: "pro" },
+      { effectiveFrom: new Date("2099-01-01T00:00:00Z") },
+    );
+    expect(await createPlanGate().hasFeature(tenant.organization.id, "schedulingWhiteLabel")).toBe(
+      true,
+    );
   });
 });
 
 describe("the host fee", () => {
+  test("past a capped plan's allowance a new host is refused, an existing one written off", async () => {
+    const tenant = await createTestTenant();
+    const refusing: UsageGate = {
+      async reserve() {
+        throw new BillingError("usage_limit_exceeded", "Past the allowance.");
+      },
+    };
+    const env = {
+      organizationId: tenant.organization.id,
+      projectId: tenant.project.id,
+      environmentId: tenant.production.id,
+      mode: "live" as const,
+    };
+    const after = new Date("2027-02-01T00:00:00Z");
+    await expect(
+      createHost(
+        env,
+        { uid: "over", name: "Over", time_zone: "UTC" },
+        { billing: refusing, now: after },
+      ),
+    ).rejects.toMatchObject({ code: "usage_limit_exceeded" });
+    expect(await countLiveHosts(tenant.organization.id)).toBe(0);
+  });
+
   const usage = async (organizationId: string) => {
     const { rows } = await pool.query<{ quantity: string }>(
       "select coalesce(sum(quantity), 0) as quantity from billing_usage where organization_id = $1 and meter = 'scheduling.hosts'",
@@ -325,6 +382,43 @@ describe("holds reach every new live usage", () => {
       ).status,
     ).toBe(402);
     expect((await call(app, tenant.liveKey, "POST", `/holds/${id}/confirm`, {})).status).toBe(200);
+  });
+
+  test("a retry of what was already made still answers with it", async () => {
+    const tenant = await held();
+    const app = enforced();
+    const eventType = await bookable(app, tenant.liveKey);
+    const keyed = (path: string, body: object, key: string) =>
+      app.request(`/v1/scheduling${path}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tenant.liveKey}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": key,
+        },
+        body: JSON.stringify(body),
+      });
+    const booking = { event_type: eventType, start: at("09:00"), attendee };
+    const series = {
+      event_type: eventType,
+      start: at("12:00"),
+      attendee,
+      recurrence: { frequency: "weekly", interval: 1, count: 2 },
+    };
+    const made = await keyed("/bookings", booking, "booking-key");
+    expect(made.status).toBe(201);
+    const madeSeries = await keyed("/series", series, "series-key");
+    expect(madeSeries.status).toBe(201);
+    await hold(tenant);
+    const again = await keyed("/bookings", booking, "booking-key");
+    expect(again.status).toBe(201);
+    expect(again.headers.get("Idempotent-Replayed")).toBe("true");
+    const seriesAgain = await keyed("/series", series, "series-key");
+    expect(seriesAgain.status).toBe(201);
+    expect(seriesAgain.headers.get("Idempotent-Replayed")).toBe("true");
+    expect((await keyed("/bookings", { ...booking, start: at("10:00") }, "new-key")).status).toBe(
+      402,
+    );
   });
 
   test("the person on the booking page doesn't hear about the customer's billing", async () => {
@@ -407,6 +501,40 @@ describe("holds reach every new live usage", () => {
     expect((await errorOf(refused)).code).toBe("billing_hold");
   });
 
+  test("a retry of a signature request, and sending one already sent, still answer", async () => {
+    const tenant = await held();
+    const { app } = createTestApp();
+    const body = {
+      title: "NDA",
+      documents: [{ filename: "nda.pdf", content: await buildTestPdfBase64() }],
+      signers: [
+        {
+          name: "Ada Lovelace",
+          email: "ada@example.com",
+          fields: [{ type: "signature", anchor: "{{signature:signer_1}}" }],
+        },
+      ],
+    };
+    const send = () =>
+      apiRequest(app, "POST", "/v1/sign/requests", {
+        key: tenant.liveKey,
+        headers: { "Idempotency-Key": "sign-key" },
+        body,
+      });
+    const made = await send();
+    expect(made.status).toBe(201);
+    const { id } = (await made.json()) as { id: string };
+    await hold(tenant);
+    const again = await send();
+    expect(again.status).toBeLessThan(300);
+    expect(((await again.json()) as { id: string }).id).toBe(id);
+    const sentAgain = await apiRequest(app, "POST", `/v1/sign/requests/${id}/send`, {
+      key: tenant.liveKey,
+      body: {},
+    });
+    expect(sentAgain.status).toBe(200);
+  });
+
   test("new live signature requests are refused", async () => {
     const tenant = await held();
     const { app } = createTestApp();
@@ -415,7 +543,7 @@ describe("holds reach every new live usage", () => {
       key: tenant.liveKey,
       body: {
         title: "NDA",
-        documents: [{ filename: "nda.pdf", content: Buffer.from("%PDF").toString("base64") }],
+        documents: [{ filename: "nda.pdf", content: await buildTestPdfBase64() }],
         signers: [
           {
             name: "Ada Lovelace",

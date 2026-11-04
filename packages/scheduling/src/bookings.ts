@@ -1426,7 +1426,6 @@ async function book(
   actor: BookingActor,
   wantHold: boolean,
 ): Promise<{ booking: BookingObjectOutput; replayed: boolean }> {
-  await refuseNewBookingWhileHeld(env);
   checkStart(request.startMs);
   checkAttendee(request.attendee);
   const eventType = await resolveEventType(db, env, request.eventType);
@@ -1469,6 +1468,7 @@ async function book(
         idempotencyKey: key,
       });
       if (!inserted) return undefined;
+      await refuseNewBookingWhileHeld(env, tx);
       return createOne(tx, context, request, inserted, checked, plan);
     })();
 
@@ -2711,7 +2711,6 @@ export async function createSeries(
   deps: SchedulingDeps,
   actor: BookingActor,
 ): Promise<{ result: SeriesResult; replayed: boolean }> {
-  await refuseNewBookingWhileHeld(env);
   checkStart(request.startMs);
   checkAttendee(request.attendee);
   const eventType = await resolveEventType(db, env, request.eventType);
@@ -2815,6 +2814,7 @@ export async function createSeries(
       })
       .returning();
     if (!series) return undefined;
+    await refuseNewBookingWhileHeld(env, tx);
     let best: { chosen: Candidates; conflicts: number } | null = null;
     for (const chosen of choiceSets) {
       try {

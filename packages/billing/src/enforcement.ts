@@ -83,7 +83,10 @@ export function createPlanGate(opts: { systemOrganizationId?: string | null } = 
     },
     async hasFeature(organizationId, feature) {
       if (exempt(organizationId)) return true;
-      return (await entitlementsFor(organizationId)).features[feature];
+      // The plan in effect: a scheduled downgrade only narrows what can be created.
+      return (await billingStateAt(organizationId, new Date())).terms.entitlements.features[
+        feature
+      ];
     },
     async requireCapacity(organizationId, limit, current, count = 1) {
       if (exempt(organizationId)) return;

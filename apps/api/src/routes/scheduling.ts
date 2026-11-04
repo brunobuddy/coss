@@ -1536,6 +1536,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   router.openapi(
     createHoldRoute,
     async (c) => {
+      await requireRouting(c.var.auth, deps.plans, c.req.valid("json").attributes);
       const { booking, replayed } = await createHold(
         c.var.auth,
         bookingRequest(c.req.valid("json"), c.req.valid("header")["Idempotency-Key"]),
