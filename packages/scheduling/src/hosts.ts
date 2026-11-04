@@ -221,8 +221,10 @@ export async function updateHost(
     });
     // After the commit: this locks the delegation, and in that transaction it would be after the
     // connection, the opposite of a bulk flip's order, which deadlocks.
-    await nudgeDelegations(db, scope, [calendarAccount, params.email]);
-    return toHostObject(row as HostRow);
+    // From the saved row: clearing `calendar_account` falls back on an email this patch doesn't name.
+    const saved = row as HostRow;
+    await nudgeDelegations(db, scope, [saved.calendarAccount, saved.email]);
+    return toHostObject(saved);
   } catch (error) {
     if (isUniqueViolation(error)) throw uidTaken(params.uid);
     throw error;

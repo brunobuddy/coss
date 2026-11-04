@@ -546,6 +546,20 @@ describe("a host's email and mailbox", () => {
     expect(await listConnections(env, ana.id)).toEqual([]);
   });
 
+  test("clearing calendar_account falls back on the email, straight away", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    await updateHost(env, ana.id, { calendar_account: `ana.work@${DOMAIN}` });
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    expect(await listConnections(env, ana.id)).toMatchObject([{ account: `ana.work@${DOMAIN}` }]);
+    await updateHost(env, ana.id, { calendar_account: null });
+    await run(env, deps);
+    expect(await listConnections(env, ana.id)).toMatchObject([{ account: `ana@${DOMAIN}` }]);
+  });
+
   test("setting calendar_account to the mailbox already connected changes nothing", async () => {
     const env = await environment();
     const api = new FakeGoogleCalendarApi();
@@ -1250,6 +1264,27 @@ describe("deleting", () => {
     );
     await deleteCalendarDelegation(env, delegation.id, deps);
     expect(await code(getCalendarDelegation(env, delegation.id))).toBe("not_found");
+  });
+
+  test("a verify that was already running doesn't undo a deletion", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const delegation = await createCalendarDelegation(
+      env,
+      { provider: "google", domain: DOMAIN, service_account_key: account.key },
+      deps,
+    );
+    const held = api.hold("POST", /token$/, "after");
+    const slow = code(
+      verifyCalendarDelegation(env, delegation.id, { account: `boss@${DOMAIN}` }, deps),
+    );
+    await held.arrived;
+    await verifyCalendarDelegation(env, delegation.id, { account: `boss@${DOMAIN}` }, deps);
+    await deleteCalendarDelegation(env, delegation.id, deps);
+    held.release();
+    expect(await slow).toBe("not_found");
+    expect((await getCalendarDelegation(env, delegation.id)).status).toBe("deleting");
   });
 
   test("the worker stops each channel and removes each connection, then the delegation", async () => {

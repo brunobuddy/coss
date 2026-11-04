@@ -19,6 +19,7 @@ import {
   isNull,
   lt,
   lte,
+  ne,
   notExists,
   notInArray,
   or,
@@ -291,16 +292,24 @@ export async function verifyCalendarDelegation(
     }
     throw new SchedulingError("calendar_unavailable", "The provider didn't answer. Try again.");
   }
-  await db
+  // On the row as it is now: that check took a while, and it may have been deleted during it.
+  const [verified] = await db
     .update(schedulingCalendarDelegation)
     .set({
       verifyAccount: mailbox,
       lastErrorCode: null,
       nextReconcileAt: new Date(nowMs(deps)),
-      ...(delegation.status === "pending" ? { status: "active" as const } : {}),
+      status: sql`case when ${schedulingCalendarDelegation.status} = 'pending' then 'active'::scheduling_delegation_status else ${schedulingCalendarDelegation.status} end`,
     })
-    .where(eq(schedulingCalendarDelegation.id, delegation.id));
-  if (delegation.status === "failing") await restoreDelegation(delegation, deps);
+    .where(
+      and(
+        eq(schedulingCalendarDelegation.id, delegation.id),
+        ne(schedulingCalendarDelegation.status, "deleting"),
+      ),
+    )
+    .returning({ status: schedulingCalendarDelegation.status });
+  if (!verified) throw new SchedulingError("not_found", `No calendar delegation "${id}" here.`);
+  if (verified.status === "failing") await restoreDelegation(delegation, deps);
   await retryLostMailboxes(delegation);
   return getCalendarDelegation(scope, id);
 }
@@ -384,12 +393,17 @@ export async function deleteCalendarDelegation(
   deps: Pick<CalendarDeps, "now">,
 ): Promise<{ id: string }> {
   const delegation = await findDelegation(db, scope, id);
-  if (delegation.status === "pending") {
-    await db
-      .delete(schedulingCalendarDelegation)
-      .where(eq(schedulingCalendarDelegation.id, delegation.id));
-    return { id };
-  }
+  // Only if it's still pending: verified since, it may have connections for the worker to wind down.
+  const [gone] = await db
+    .delete(schedulingCalendarDelegation)
+    .where(
+      and(
+        eq(schedulingCalendarDelegation.id, delegation.id),
+        eq(schedulingCalendarDelegation.status, "pending"),
+      ),
+    )
+    .returning({ id: schedulingCalendarDelegation.id });
+  if (gone) return { id };
   await db
     .update(schedulingCalendarDelegation)
     .set({ status: "deleting", nextReconcileAt: deps.now?.() ?? new Date(), leaseUntil: null })
