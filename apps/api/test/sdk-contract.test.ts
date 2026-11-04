@@ -2004,6 +2004,16 @@ describe("coss.scheduling against the API", () => {
       end: "2031-01-07T00:00:00.000Z",
     });
     expect(slots.data?.data.map((slot) => slot.start)).toContain(start);
+    expect(slots.data?.data[0]?.seats_left).toBeNull();
+
+    const free = await scheduling.slots.explain(eventType.id, { start });
+    expect(free.data?.object).toBe("scheduling.slot_explanation");
+    expect(free.data?.available).toBe(true);
+    const offGrid = await scheduling.slots.explain(eventType.id, {
+      start: "2031-01-06T15:07:00.000Z",
+    });
+    expect(offGrid.data?.available).toBe(false);
+    expect(offGrid.data?.reason).toBe("not_on_grid");
 
     const attendee = { uid: "patient_1", name: "Sam Lee", time_zone: "UTC" };
     const booking = must(

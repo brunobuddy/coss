@@ -18,6 +18,7 @@ import type {
   DeletedSchedulingCalendarDelegation,
   DeletedSchedulingHost,
   DeletedSchedulingSchedule,
+  ExplainSchedulingSlotParams,
   ListSchedulingBookingsParams,
   ListSchedulingSlotsParams,
   RescheduleSchedulingBookingParams,
@@ -37,6 +38,7 @@ import type {
   SchedulingSeriesPreview,
   SchedulingSession,
   SchedulingSettings,
+  SchedulingSlotExplanation,
   SchedulingSlotList,
   SearchSchedulingAvailabilityParams,
   SetSchedulingSimulatedBusyParams,
@@ -274,6 +276,20 @@ export class SchedulingSlotsResource {
     return this.#http.request<SchedulingSlotList>({
       method: "GET",
       path: `/v1/scheduling/event_types/${part(eventType)}/slots`,
+      query: listQuery(params),
+      signal: options?.signal,
+    });
+  }
+
+  /** Why one start can or can't be booked, host by host. It says when a host is busy: not for attendees. */
+  explain(
+    eventType: string,
+    params: ExplainSchedulingSlotParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingSlotExplanation>> {
+    return this.#http.request<SchedulingSlotExplanation>({
+      method: "GET",
+      path: `/v1/scheduling/event_types/${part(eventType)}/slots/explain`,
       query: listQuery(params),
       signal: options?.signal,
     });

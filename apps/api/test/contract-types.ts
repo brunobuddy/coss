@@ -233,6 +233,7 @@ import type {
   ErasedAttendee,
   ErasedAttendeeByEmail,
   EventTypeObject,
+  ExplainSlotQuery,
   HostObject,
   RescheduleBookingRequest,
   ScheduleObject,
@@ -243,6 +244,7 @@ import type {
   SeriesResult,
   SetSimulatedBusyRequest,
   SettingsObject,
+  SlotExplanation,
   SlotList,
   SlotsQuery,
   UpdateBookingLocationRequest,
@@ -325,6 +327,7 @@ import type {
   Email,
   EmailBatch,
   EmailSummary,
+  ExplainSchedulingSlotParams,
   ExportContactsParams,
   ExportSuppressionsParams,
   ImportContactsParams,
@@ -379,6 +382,7 @@ import type {
   SchedulingSeries,
   SchedulingSeriesPreview,
   SchedulingSettings,
+  SchedulingSlotExplanation,
   SchedulingSlotList,
   AccountWebhookEvent as SdkAccountWebhookEvent,
   ApiVersion as SdkApiVersion,
@@ -1088,6 +1092,13 @@ export type SubaccountContract = [
     >
   >,
   Assert<MutuallyAssignable<z.output<typeof SlotList>, SchedulingSlotList>>,
+  Assert<
+    MutuallyAssignable<
+      Omit<z.output<typeof ExplainSlotQuery>, "duration_minutes">,
+      Omit<ExplainSchedulingSlotParams, "duration_minutes">
+    >
+  >,
+  Assert<MutuallyAssignable<z.output<typeof SlotExplanation>, SchedulingSlotExplanation>>,
   Assert<
     MutuallyAssignable<
       z.input<typeof AvailabilitySearchRequest>,
