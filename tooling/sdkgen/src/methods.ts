@@ -376,4 +376,5 @@ export const NO_RETRY: ReadonlySet<string> = new Set([
   "POST /v1/risk/limit_buckets",
   // Each live check that gets an answer is billed, and the API keeps nothing to deduplicate with.
   "POST /v1/risk/phone/check",
+  "POST /v1/risk/content/classify",
 ]);

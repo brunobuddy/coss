@@ -218,6 +218,15 @@ describe("coss.risk building blocks and rate limits", () => {
     ]);
   });
 
+  test("classify is billed, so a failure is never retried automatically", async () => {
+    const { risk, calls } = client(
+      apiError(503, { type: "api_error", code: "classification_unavailable", message: "Later." }),
+    );
+    const { error } = await risk.classify({ text: "Win a prize" });
+    expect(error?.code).toBe("classification_unavailable");
+    expect(calls).toHaveLength(1);
+  });
+
   test("calibration GETs the environment's calibration", async () => {
     const { risk, calls } = client(
       json(200, {
