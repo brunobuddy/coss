@@ -1,5 +1,11 @@
 import { describe, expect, spyOn, test } from "bun:test";
-import { loopMonitorConfig, startLoop } from "../src/loop.ts";
+import {
+  LOOPS_MONITOR_SLUG,
+  type Loop,
+  STUCK_AFTER_MS,
+  startLoop,
+  watchLoops,
+} from "../src/loop.ts";
 
 describe("startLoop", () => {
   test("runs immediately, repeats without overlapping, and stop waits for the current run", async () => {
@@ -52,60 +58,55 @@ describe("startLoop", () => {
     error.mockRestore();
   });
 
-  test("checks in with Sentry around a run, at most once a minute", async () => {
-    const calls: { status: string; monitorSlug: string; config: unknown }[] = [];
+  test("a run is stuck only once it has gone on for too long", async () => {
+    let finish = () => {};
     const loop = startLoop({
-      name: "monitored",
-      intervalMs: 1,
-      run: async () => {},
-      checkIn: ((checkIn: { status: string; monitorSlug: string }, config?: unknown) => {
-        calls.push({ status: checkIn.status, monitorSlug: checkIn.monitorSlug, config });
-        return "id-1";
-      }) as never,
-    });
-    await Bun.sleep(30);
-    await loop.stop();
-    expect(calls.map((call) => call.status)).toEqual(["in_progress", "ok"]);
-    expect(calls[0]?.monitorSlug).toBe("worker-monitored");
-    expect(calls[0]?.config).toEqual(loopMonitorConfig(1));
-  });
-
-  test("reports a failed run, and a failing check-in never affects the work", async () => {
-    const statuses: string[] = [];
-    const errors = spyOn(console, "error").mockImplementation(() => {});
-    let runs = 0;
-    const failing = startLoop({
-      name: "failing",
+      name: "slow",
       intervalMs: 60_000,
-      run: async () => {
-        throw new Error("boom");
-      },
-      checkIn: ((checkIn: { status: string }) => {
-        statuses.push(checkIn.status);
-        return "id-2";
-      }) as never,
+      run: () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
     });
-    const unreachable = startLoop({
-      name: "unreachable",
-      intervalMs: 1,
-      run: async () => {
-        runs++;
-      },
-      checkIn: (() => {
-        throw new Error("Sentry is down");
-      }) as never,
-    });
-    await Bun.sleep(20);
-    await failing.stop();
-    await unreachable.stop();
-    errors.mockRestore();
-    expect(statuses).toEqual(["in_progress", "error"]);
-    expect(runs).toBeGreaterThan(1);
+    expect(loop.stuck(Date.now())).toBe(false);
+    expect(loop.stuck(Date.now() + STUCK_AFTER_MS + 1000)).toBe(true);
+    finish();
+    await loop.stop();
+    expect(loop.stuck(Date.now() + STUCK_AFTER_MS + 1000)).toBe(false);
+  });
+});
+
+describe("watchLoops", () => {
+  const fake = (name: string, stuck: boolean): Loop => ({
+    name,
+    stop: async () => {},
+    stuck: () => stuck,
   });
 
-  test("a monitor's schedule follows the loop, never finer than a minute", () => {
-    expect(loopMonitorConfig(5000).schedule.value).toBe(1);
-    expect(loopMonitorConfig(60 * 60_000).schedule.value).toBe(60);
-    expect(loopMonitorConfig(60 * 60_000).checkinMargin).toBe(30);
+  test("checks in once on one monitor while every loop is healthy", async () => {
+    const calls: { monitorSlug: string; status: string }[] = [];
+    const watch = watchLoops([fake("a", false), fake("b", false)], ((checkIn: never) => {
+      calls.push(checkIn);
+      return "id";
+    }) as never);
+    await Bun.sleep(10);
+    await watch.stop();
+    expect(calls).toEqual([{ monitorSlug: LOOPS_MONITOR_SLUG, status: "ok" }]);
+  });
+
+  test("names what's stuck, and a failing check-in never affects the work", async () => {
+    const errors = spyOn(console, "error").mockImplementation(() => {});
+    const statuses: string[] = [];
+    const watch = watchLoops([fake("a", true), fake("b", false)], ((checkIn: {
+      status: string;
+    }) => {
+      statuses.push(checkIn.status);
+      throw new Error("Sentry is down");
+    }) as never);
+    await Bun.sleep(10);
+    await watch.stop();
+    expect(statuses).toEqual(["error"]);
+    expect(errors).toHaveBeenCalledWith("[worker] Loops stuck for over an hour: a");
+    errors.mockRestore();
   });
 });

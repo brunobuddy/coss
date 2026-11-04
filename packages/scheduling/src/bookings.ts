@@ -69,6 +69,7 @@ import { carryReminders, enqueueBookingNotifications } from "./notifications.ts"
 import {
   type AttendeeInputOutput,
   type BookingObjectOutput,
+  type GuestInputOutput,
   MAX_SERIES_OCCURRENCES,
   type SchedulingWebhookEventType,
 } from "./schemas.ts";
@@ -107,6 +108,7 @@ export type BookingRequest = {
   attributes?: Record<string, string | string[]> | undefined;
   durationMinutes?: number | undefined;
   attendee: AttendeeInputOutput;
+  guests?: readonly GuestInputOutput[] | undefined;
   answers?: Answers | undefined;
   location?: Location | undefined;
   locationFromBrowser?: boolean | undefined;
@@ -225,6 +227,36 @@ function locationForNewHost(
     return withHostLocation(blankOf(location), hosts);
   }
   return null;
+}
+
+/** Guests are emailed, so an event type has to allow them, and everyone is only told once. */
+function checkGuests(
+  eventType: EventTypeRow,
+  attendee: AttendeeInputOutput,
+  guests: readonly GuestInputOutput[] | undefined,
+): void {
+  if (!guests?.length) return;
+  const invalid = (message: string, param: string) =>
+    new SchedulingError("invalid_attendee", message, { param });
+  if (guests.length > eventType.maxGuests) {
+    throw invalid(
+      eventType.maxGuests === 0
+        ? "This event type doesn't allow guests."
+        : `This event type allows ${eventType.maxGuests} guests at most.`,
+      "guests",
+    );
+  }
+  const seen = new Set(attendee.email ? [attendee.email.trim().toLowerCase()] : []);
+  for (const [index, guest] of guests.entries()) {
+    if (guest.name && URL_LIKE.test(guest.name)) {
+      throw invalid("A name can't contain a link.", `guests[${index}].name`);
+    }
+    const email = guest.email.trim().toLowerCase();
+    if (seen.has(email)) {
+      throw invalid("Everyone on a booking needs their own email.", `guests[${index}].email`);
+    }
+    seen.add(email);
+  }
 }
 
 function wireLocation(location: BookingRow["location"]): BookingRow["location"] {
@@ -584,7 +616,7 @@ async function participants(
         eq(schedulingAttendee.organizationId, booking.organizationId),
       ),
     )
-    .orderBy(asc(schedulingAttendee.id));
+    .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id));
   return { hostIds: hosts.map((row) => row.hostId), attendees };
 }
 
@@ -916,6 +948,19 @@ async function insertAttendeeRow(
     timeZone: request.attendee.time_zone,
     locale: request.attendee.locale ?? null,
   });
+  if (!request.guests?.length) return;
+  // Shown the booking in the attendee's zone and language: nobody's asked for a guest's.
+  await tx.insert(schedulingAttendee).values(
+    request.guests.map((guest) => ({
+      organizationId: booking.organizationId,
+      environmentId: booking.environmentId,
+      bookingId: booking.id,
+      role: "guest" as const,
+      ...encryptContact({ ...guest, time_zone: request.attendee.time_zone }, deps),
+      timeZone: request.attendee.time_zone,
+      locale: request.attendee.locale ?? null,
+    })),
+  );
 }
 
 /** Sets the real expiry (from the claim's clock) and the hosts, once a host has won. */
@@ -1289,6 +1334,7 @@ export async function toBookingObject(
       const contact = decryptContact(attendee.encryptedContact, deps);
       return {
         id: attendee.id,
+        role: attendee.role,
         uid: attendee.uid,
         name: contact.name,
         email: contact.email,
@@ -1372,6 +1418,7 @@ async function book(
   const durationMinutes = request.durationMinutes ?? eventType.durationMinutes;
   checkBookableEventType(eventType, durationMinutes);
   checkAnswers(eventType, request.answers);
+  checkGuests(eventType, request.attendee, request.guests);
   const location = chooseLocation(eventType, request.location, request.locationFromBrowser);
   const status = chooseStatus(eventType, wantHold);
   const ttlSeconds = ttlFor(eventType, status);
@@ -2529,6 +2576,7 @@ export async function createSeries(
   const durationMinutes = request.durationMinutes ?? eventType.durationMinutes;
   checkBookableEventType(eventType, durationMinutes);
   checkAnswers(eventType, request.answers);
+  checkGuests(eventType, request.attendee, request.guests);
   const location = chooseLocation(eventType, request.location, request.locationFromBrowser);
   const anchor = request.attendee.time_zone;
   const starts = expandedStarts(request, anchor);

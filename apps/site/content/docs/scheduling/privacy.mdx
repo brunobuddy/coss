@@ -9,9 +9,11 @@ description: What's stored about attendees, for how long, and what to know about
 - **About attendees:** only what you send. A booking needs just a `time_zone`: without a name or email, an
   attendee simply isn't emailed. Contact details and answers are encrypted, and a `uid` of your own lets you
   find and erase someone.
+- **About guests:** the email and optional name given when booking, encrypted the same way.
 - **About hosts:** what you or they set, including any [locations](/docs/scheduling/hosts#locations). A
   booking keeps a copy of its location, shown to its attendees, until its details are erased.
 - **In logs and webhooks:** ids, times and statuses. Request bodies of bookings aren't logged.
+- **On hosts' calendars:** a neutral event, unless you ask for [more](/docs/scheduling/calendars#what-cosscom-reads-and-writes).
 
 ## How long
 
@@ -25,6 +27,17 @@ const coss = new Coss();
 // ---cut---
 await coss.scheduling.attendees.erase("patient_77");
 ```
+
+Guests have no `uid`, so erase them, or anyone else you only have an address for, by email:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.attendees.eraseByEmail("sam@example.com");
+```
+
+Either way the booking stands, and its other people keep hearing about it.
 
 Coss.com isn't a system of record. If you must keep a booking's details for longer, such as a clinical
 record, keep them in your own systems.

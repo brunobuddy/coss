@@ -216,6 +216,7 @@ export function createSchedulingClientRoutes(opts: {
       questions: eventType.questions,
       locations: eventType.locations.map((location) => ({ type: location.type })),
       requires_approval: eventType.requires_approval,
+      max_guests: eventType.max_guests,
     };
   };
 
@@ -314,6 +315,7 @@ export function createSchedulingClientRoutes(opts: {
         attributes: sessionAttributes(session, deps),
         durationMinutes: body.duration_minutes,
         attendee,
+        guests: body.guests,
         answers: body.answers,
         location: body.location,
         locationFromBrowser: true,
@@ -324,7 +326,7 @@ export function createSchedulingClientRoutes(opts: {
     );
     if (replayed) c.header("Idempotent-Replayed", "true");
     const emailed =
-      booking.attendees.some((person) => person.email) &&
+      booking.attendees.some((person) => person.role === "attendee" && person.email) &&
       (await attendeeEmailedOnConfirm(env, session.eventTypeId as string));
     return c.json({ ...clientBooking(booking), attendee_emailed: emailed }, 201);
   });
@@ -338,10 +340,9 @@ export function createSchedulingClientRoutes(opts: {
     start: booking.start,
     end: booking.end,
     location: booking.location,
-    attendees: booking.attendees.map((attendee) => ({
-      name: attendee.name,
-      time_zone: attendee.time_zone,
-    })),
+    attendees: booking.attendees
+      .filter((attendee) => attendee.role === "attendee")
+      .map((attendee) => ({ name: attendee.name, time_zone: attendee.time_zone })),
   });
 
   router.get("/booking", async (c) => {

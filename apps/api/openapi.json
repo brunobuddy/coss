@@ -18042,6 +18042,16 @@
           "reschedule_notice_minutes": {
             "type": "number"
           },
+          "max_guests": {
+            "type": "number"
+          },
+          "host_calendar_details": {
+            "type": "string",
+            "enum": [
+              "neutral",
+              "full"
+            ]
+          },
           "questions": {
             "type": "array",
             "items": {
@@ -18141,6 +18151,8 @@
           "hold_ttl_seconds",
           "cancel_notice_minutes",
           "reschedule_notice_minutes",
+          "max_guests",
+          "host_calendar_details",
           "questions",
           "locations",
           "host_filter",
@@ -18172,6 +18184,8 @@
             "hold_ttl_seconds": 600,
             "cancel_notice_minutes": 0,
             "reschedule_notice_minutes": 0,
+            "max_guests": 0,
+            "host_calendar_details": "neutral",
             "questions": [],
             "locations": [],
             "host_filter": null,
@@ -18573,6 +18587,20 @@
             "minimum": 0,
             "maximum": 525600
           },
+          "max_guests": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`."
+          },
+          "host_calendar_details": {
+            "type": "string",
+            "enum": [
+              "neutral",
+              "full"
+            ],
+            "description": "What hosts' calendars say about a booking. `neutral` (the default): a private event titled \"Appointment\". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode."
+          },
           "questions": {
             "type": "array",
             "items": {
@@ -18734,6 +18762,8 @@
                 "hold_ttl_seconds": 600,
                 "cancel_notice_minutes": 0,
                 "reschedule_notice_minutes": 0,
+                "max_guests": 0,
+                "host_calendar_details": "neutral",
                 "questions": [],
                 "locations": [],
                 "host_filter": null,
@@ -18860,6 +18890,20 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 525600
+          },
+          "max_guests": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`."
+          },
+          "host_calendar_details": {
+            "type": "string",
+            "enum": [
+              "neutral",
+              "full"
+            ],
+            "description": "What hosts' calendars say about a booking. `neutral` (the default): a private event titled \"Appointment\". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode."
           },
           "questions": {
             "type": "array",
@@ -19199,6 +19243,14 @@
                 "id": {
                   "type": "string"
                 },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "attendee",
+                    "guest"
+                  ],
+                  "description": "`attendee` booked it and comes first; a `guest` was added by them."
+                },
                 "uid": {
                   "type": [
                     "string",
@@ -19252,6 +19304,7 @@
               },
               "required": [
                 "id",
+                "role",
                 "uid",
                 "name",
                 "email",
@@ -19367,6 +19420,7 @@
             "attendees": [
               {
                 "id": "attn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                "role": "attendee",
                 "uid": "patient_77",
                 "name": "Sam Lee",
                 "email": "sam@example.com",
@@ -19437,6 +19491,14 @@
           },
           "attendee": {
             "$ref": "#/components/schemas/SchedulingAttendeeInput"
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingGuestInput"
+            },
+            "maxItems": 10,
+            "description": "Up to the event type's `max_guests`."
           },
           "answers": {
             "type": "object",
@@ -19660,6 +19722,26 @@
         "additionalProperties": false,
         "description": "Name and email are only needed if coss.com notifies this attendee."
       },
+      "SchedulingGuestInput": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false,
+        "description": "Someone else coming along. They're emailed about the booking, with no manage link."
+      },
       "SchedulingBookingList": {
         "type": "object",
         "properties": {
@@ -19702,6 +19784,7 @@
                 "attendees": [
                   {
                     "id": "attn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                    "role": "attendee",
                     "uid": "patient_77",
                     "name": "Sam Lee",
                     "email": "sam@example.com",
@@ -19820,6 +19903,14 @@
           },
           "attendee": {
             "$ref": "#/components/schemas/SchedulingAttendeeInput"
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingGuestInput"
+            },
+            "maxItems": 10,
+            "description": "Up to the event type's `max_guests`."
           },
           "answers": {
             "type": "object",
@@ -20075,6 +20166,7 @@
                 "attendees": [
                   {
                     "id": "attn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                    "role": "attendee",
                     "uid": "patient_77",
                     "name": "Sam Lee",
                     "email": "sam@example.com",
@@ -20148,6 +20240,14 @@
           },
           "attendee": {
             "$ref": "#/components/schemas/SchedulingAttendeeInput"
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingGuestInput"
+            },
+            "maxItems": 10,
+            "description": "Up to the event type's `max_guests`."
           },
           "answers": {
             "type": "object",
@@ -20483,6 +20583,7 @@
                 "attendees": [
                   {
                     "id": "attn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                    "role": "attendee",
                     "uid": "patient_77",
                     "name": "Sam Lee",
                     "email": "sam@example.com",
@@ -20553,6 +20654,49 @@
             "object": "scheduling.attendee_erasure",
             "uid": "patient_77",
             "erased": 3
+          }
+        ]
+      },
+      "SchedulingAttendeeErasureByEmail": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "scheduling.attendee_erasure"
+            ]
+          },
+          "erased": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "object",
+          "erased"
+        ],
+        "examples": [
+          {
+            "object": "scheduling.attendee_erasure",
+            "erased": 3
+          }
+        ]
+      },
+      "EraseSchedulingAttendeeByEmailRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "email": "sam@example.com"
           }
         ]
       },
@@ -71135,6 +71279,221 @@
         }
       }
     },
+    "/v1/scheduling/attendees/erase": {
+      "post": {
+        "operationId": "eraseSchedulingAttendeeByEmail",
+        "tags": [
+          "Scheduling bookings"
+        ],
+        "summary": "Erase an attendee or guest by email",
+        "description": "Removes this address's details and answers from every booking now, for someone you have no `uid` for, such as a guest. The bookings themselves stay.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EraseSchedulingAttendeeByEmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "How many were erased.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingAttendeeErasureByEmail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not valid JSON (`invalid_json`). Also when the `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body is not sent as `application/json` (`unsupported_media_type`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ]
+      }
+    },
     "/v1/scheduling/hosts/{host}/calendar_connections/authorize": {
       "post": {
         "operationId": "authorizeSchedulingCalendar",
@@ -71142,7 +71501,7 @@
           "Scheduling calendars"
         ],
         "summary": "Start connecting a calendar",
-        "description": "A URL for the host to give consent at Google or Microsoft. Open it in a new window: providers refuse to be framed. Coss.com reads only busy times, and writes events with a neutral title.",
+        "description": "A URL for the host to give consent at Google or Microsoft. Open it in a new window: providers refuse to be framed. Coss.com reads only busy times, and writes events with a neutral title unless the event type's `host_calendar_details` is `full`.",
         "security": [
           {
             "bearerAuth": []

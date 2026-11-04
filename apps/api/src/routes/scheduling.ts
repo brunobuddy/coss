@@ -26,6 +26,7 @@ import {
   deleteSchedule,
   disconnectCalendar,
   eraseAttendee,
+  eraseAttendeeByEmail,
   getBooking,
   getEventType,
   getHost,
@@ -75,7 +76,9 @@ import {
   DeletedCalendarConnection,
   DeletedHost,
   DeletedSchedule,
+  EraseAttendeeByEmailRequest,
   ErasedAttendee,
+  ErasedAttendeeByEmail,
   EventTypeList,
   EventTypeObject,
   HostList,
@@ -810,6 +813,29 @@ export const eraseAttendeeRoute = createRoute({
   responses: { 200: jsonDoc("How many were erased.", ErasedAttendee), ...commonErrors },
 });
 
+export const eraseAttendeeByEmailRoute = createRoute({
+  method: "post",
+  path: "/scheduling/attendees/erase",
+  operationId: "eraseSchedulingAttendeeByEmail",
+  tags: [TAG_BOOKINGS],
+  summary: "Erase an attendee or guest by email",
+  description:
+    "Removes this address's details and answers from every booking now, for someone you have no `uid` for, such as a guest. The bookings themselves stay.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("delete", "POST /v1/scheduling/attendees/erase"),
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: EraseAttendeeByEmailRequest } },
+    },
+  },
+  responses: {
+    200: jsonDoc("How many were erased.", ErasedAttendeeByEmail),
+    ...commonErrors,
+    ...bodyErrors,
+  },
+});
+
 export const authorizeCalendarRoute = createRoute({
   method: "post",
   path: "/scheduling/hosts/{host}/calendar_connections/authorize",
@@ -818,7 +844,7 @@ export const authorizeCalendarRoute = createRoute({
   summary: "Start connecting a calendar",
   description:
     "A URL for the host to give consent at Google or Microsoft. Open it in a new window: providers " +
-    "refuse to be framed. Coss.com reads only busy times, and writes events with a neutral title.",
+    "refuse to be framed. Coss.com reads only busy times, and writes events with a neutral title unless the event type's `host_calendar_details` is `full`.",
   security: [{ bearerAuth: [] }],
   middleware: writing("update", "POST /v1/scheduling/hosts/{host}/calendar_connections/authorize"),
   request: {
@@ -1325,6 +1351,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     attributes: body.attributes,
     durationMinutes: body.duration_minutes,
     attendee: body.attendee,
+    guests: body.guests,
     answers: body.answers,
     location: body.location,
     metadata: body.metadata,
@@ -1523,6 +1550,16 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       target: { type: "scheduling_attendee", id: uid },
     });
     return c.json({ object: "scheduling.attendee_erasure" as const, uid, erased }, 200);
+  });
+
+  router.openapi(eraseAttendeeByEmailRoute, async (c) => {
+    const erased = await eraseAttendeeByEmail(c.var.auth, c.req.valid("json"), deps);
+    // The address is what's being forgotten, so the audit log doesn't keep it.
+    await recordApiAudit(c, {
+      action: "scheduling_attendee.erased",
+      target: { type: "scheduling_attendee", id: "by_email" },
+    });
+    return c.json({ object: "scheduling.attendee_erasure" as const, erased }, 200);
   });
 
   const calendars = (): CalendarDeps => {

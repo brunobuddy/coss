@@ -41,6 +41,30 @@ but their times is discarded as they're read. A booking is added to the host's c
 private event titled "Appointment", with no attendees, so the host's colleagues learn nothing from it
 and their calendar provider sends nobody an invitation.
 
+If hosts need to see who they're meeting, set an event type's `host_calendar_details` to `full`:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.eventTypes.update("evtype_01kd2m9a0b1c2d3e4f5g6h7j8m", {
+  host_calendar_details: "full",
+});
+```
+
+The event is then titled "Intro call with Sam Lee", and its description lists the attendee and any guests with
+their names, emails and phone numbers. These details go to the host's calendar provider, so only turn this on if that
+suits your attendees. Events stay private, nobody is invited through the provider, and answers to your questions never
+go on them. A group session's event has just the event type's title, since its seats come and go. Zoom meetings stay
+neutral, since whoever joins sees their topic.
+
+Changing the setting rewrites upcoming events. Erasing someone takes their details off every event on a connected
+calendar, past ones included, and so does [retention](/docs/scheduling/privacy) once a booking's details expire. HIPAA
+mode refuses `full`, and takes details off events already written.
+
+Coss.com can only reach a calendar while it's connected. Disconnecting takes details off as many events as it can
+first, but copies on a calendar whose access was revoked at the provider, or whose host was deleted, stay there.
+
 A primary calendar counts by default. Choose others with `coss.scheduling.calendars.update`:
 `read_busy` for whether it blocks slots, and `write_target` for whether bookings go on it.
 

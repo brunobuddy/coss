@@ -80,6 +80,7 @@ const BOOKING = {
   attendees: [
     {
       id: "att_1",
+      role: "attendee",
       uid: "user_1",
       name: "Sam Lee",
       email: "sam@secret.example",
@@ -87,6 +88,17 @@ const BOOKING = {
       time_zone: "UTC",
       locale: null,
       answers: { allergies: "peanuts" },
+    },
+    // Someone the attendee added: the app shows only who booked.
+    {
+      id: "att_2",
+      role: "guest",
+      uid: null,
+      name: "Jo Park",
+      email: "jo@secret.example",
+      phone: null,
+      time_zone: "UTC",
+      locale: null,
     },
   ],
   location: { type: "phone" as const, number: "+15550199" },
@@ -220,6 +232,7 @@ describe("reading bookings", () => {
     const page = JSON.parse(body) as Page<SchedulingBooking>;
     expect(page.next_cursor).toBe("book_1");
     expect(page.data[0]?.attendees).toEqual([{ name: "Sam Lee", uid: "user_1", time_zone: "UTC" }]);
+    expect(body).not.toContain("Jo Park");
     expect(page.data[0]?.hosts).toEqual([
       { id: "host_1", name: "Dana" },
       { id: "host_gone", name: "Removed host" },

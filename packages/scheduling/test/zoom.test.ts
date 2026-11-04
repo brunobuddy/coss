@@ -12,6 +12,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import {
   type CalendarDeps,
+  type CalendarWriteDeps,
   cancelBooking,
   clientFor,
   completeCalendarAuthorization,
@@ -31,6 +32,7 @@ import {
   type SchedulingEnvironment,
   startCalendarAuthorization,
   updateCalendar,
+  updateEventType,
   verifyZoomEvent,
   zoomUrlValidation,
 } from "../src/index.ts";
@@ -44,8 +46,9 @@ const actor = { kind: "system" } as const;
 const attendee = { uid: "p", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" };
 const scopeOf = (env: SchedulingEnvironment) => ({ organizationIds: [env.organizationId] });
 
-function zoomDeps(api: FakeZoomApi, now: () => Date = () => NOW): CalendarDeps {
+function zoomDeps(api: FakeZoomApi, now: () => Date = () => NOW): CalendarWriteDeps {
   return {
+    dataKeys: testSchedulingDeps().dataKeys,
     secretsKeys: secretsKeyRing([createHash("sha256").update("zoom test").digest()]),
     apps: {
       google: null,
@@ -181,12 +184,24 @@ describe("meetings", () => {
     expect(await webhookTypes(env)).toContain("scheduling.booking.location_ready");
   });
 
+  test("a meeting stays neutral when the event type puts details on calendars", async () => {
+    const { env, host, eventType } = await setUp();
+    await updateEventType(env, eventType.id, { host_calendar_details: "full" });
+    const api = new FakeZoomApi();
+    const deps = zoomDeps(api);
+    await connectZoom(env, host.id, deps);
+    await book(env, eventType.id);
+    await runDueCalendarWrites(deps, { scope: scopeOf(env) });
+    expect(JSON.stringify(api.bodies)).not.toContain("Sam");
+    expect(api.bodies[0]).toMatchObject({ topic: "Appointment" });
+  });
+
   test("the host's calendar event gets the link once the meeting exists", async () => {
     const { env, host, eventType } = await setUp();
     const zoom = new FakeZoomApi();
     const google = new FakeGoogleCalendarApi();
     const googleWrites: string[] = [];
-    const deps: CalendarDeps = {
+    const deps: CalendarWriteDeps = {
       ...zoomDeps(zoom),
       apps: {
         ...zoomDeps(zoom).apps,
@@ -387,7 +402,7 @@ describe("meetings", () => {
       release = resolve;
     });
     let holding = true;
-    const stale: CalendarDeps = {
+    const stale: CalendarWriteDeps = {
       ...zoomDeps(api),
       fetcher: async (url, init) => {
         if (holding && init?.method === "POST" && url.endsWith("/users/me/meetings")) {

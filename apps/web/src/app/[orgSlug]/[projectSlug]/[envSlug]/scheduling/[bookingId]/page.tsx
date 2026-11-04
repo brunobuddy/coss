@@ -161,7 +161,12 @@ export default async function BookingPage({
           <TableBody>
             {booking.attendees.map((attendee) => (
               <TableRow key={attendee.id}>
-                <TableCell>{attendee.name ?? "—"}</TableCell>
+                <TableCell>
+                  {attendee.name ?? "—"}
+                  {attendee.role === "guest" ? (
+                    <span className="text-muted-foreground"> (guest)</span>
+                  ) : null}
+                </TableCell>
                 <TableCell>{attendee.email ?? "—"}</TableCell>
                 <TableCell>{attendee.phone ?? "—"}</TableCell>
                 <TableCell className="font-mono text-[0.8125rem]">{attendee.uid ?? "—"}</TableCell>
