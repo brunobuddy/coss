@@ -613,6 +613,9 @@ export const schedulingBookingHost = pgTable(
     hostId: text("host_id").notNull(),
     organizationId: text("organization_id").notNull(),
     role: schedulingHostRole("role").notNull().default("member"),
+    // What this booking added to a pool member's share (1 / weight at the time), so cancelling gives
+    // back what it took however the weight's changed since. Null: not a pool's, or from before this.
+    fairShare: doublePrecision("fair_share"),
   },
   (t) => [
     primaryKey({ columns: [t.bookingId, t.hostId] }),

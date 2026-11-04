@@ -1170,6 +1170,60 @@ describe("pools", () => {
       expect(await fairUnits(eventType.id, late)).toBe(50);
     });
 
+    test("cancelling after a weight change gives back what the booking took", async () => {
+      const env = await tenantEnv();
+      const [a, b] = await threeHosts(env);
+      const eventType = await poolOf(env, [a, b]);
+      await setUnits(eventType.id, 50);
+      await setUnits(eventType.id, 60, b);
+      const { booking } = await createBooking(env, request(eventType.id, at("09:00")), deps, actor);
+      expect(booking.hosts).toEqual([a]);
+      expect(await fairUnits(eventType.id, a)).toBe(51);
+
+      await updateEventType(env, eventType.id, { hosts: [member(a, 1), member(b)] });
+      expect(await fairUnits(eventType.id, a)).toBeCloseTo(0.51);
+      await cancelBooking(env, booking.id, deps, actor);
+      expect(await fairUnits(eventType.id, a)).toBeCloseTo(0.5);
+
+      await updateEventType(env, eventType.id, { hosts: [member(a), member(b)] });
+      expect(await fairUnits(eventType.id, a)).toBeCloseTo(50);
+    });
+
+    test("a booking from before this was recorded gives back one", async () => {
+      const env = await tenantEnv();
+      const [a] = await threeHosts(env);
+      const eventType = await poolOf(env, [a]);
+      await setUnits(eventType.id, 20);
+      const { booking } = await createBooking(env, request(eventType.id, at("09:00")), deps, actor);
+      await db
+        .update(schema.schedulingBookingHost)
+        .set({ fairShare: null })
+        .where(eq(schema.schedulingBookingHost.bookingId, booking.id));
+      await cancelBooking(env, booking.id, deps, actor);
+      expect(await fairUnits(eventType.id, a)).toBe(20);
+    });
+
+    test("adding a host a booker is just counting keeps their count", async () => {
+      const env = await tenantEnv();
+      const [a, found] = await threeHosts(env);
+      const eventType = await poolOf(env, [a]);
+      await setUnits(eventType.id, 50);
+      let added: Promise<unknown> = Promise.resolve();
+      await db.transaction(async (tx) => {
+        await tx.insert(schema.schedulingEventTypeHost).values({
+          eventTypeId: eventType.id,
+          hostId: found,
+          organizationId: env.organizationId,
+          assigned: false,
+          fairUnits: 51,
+        });
+        added = updateEventType(env, eventType.id, { hosts: [member(a), member(found, 200)] });
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      });
+      await added;
+      expect(await fairUnits(eventType.id, found)).toBe(102);
+    });
+
     test("a cancellation before the start gives the turn back", async () => {
       const env = await tenantEnv();
       const [a, late] = await threeHosts(env);

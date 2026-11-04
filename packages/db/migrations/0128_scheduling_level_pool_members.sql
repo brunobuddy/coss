@@ -1,5 +1,6 @@
 -- Fractional, so rescaling for a new weight can't round someone into a backlog.
 ALTER TABLE "scheduling_event_type_host" ALTER COLUMN "fair_units" SET DATA TYPE double precision;--> statement-breakpoint
+ALTER TABLE "scheduling_booking_host" ADD COLUMN "fair_share" double precision;--> statement-breakpoint
 -- Hosts who joined a running pool and haven't been booked yet, so their first booking doesn't start
 -- a run of every booking until they've caught up: see `startingUnits`.
 UPDATE "scheduling_event_type_host" AS "joining"

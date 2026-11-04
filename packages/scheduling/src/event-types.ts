@@ -291,7 +291,16 @@ async function replaceHosts(
       })
       .onConflictDoUpdate({
         target: [schedulingEventTypeHost.eventTypeId, schedulingEventTypeHost.hostId],
-        set: values,
+        set: {
+          ...values,
+          // Not there when this read: a booker just made it for a host its filter found, and it
+          // already holds their counter.
+          ...(existing
+            ? {}
+            : {
+                fairUnits: sql`scheduling_event_type_host.fair_units * ${input.weight}::double precision / scheduling_event_type_host.weight`,
+              }),
+        },
       });
   }
 }
