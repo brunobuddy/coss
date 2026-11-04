@@ -569,7 +569,7 @@ const ReminderButton = z
       .max(500)
       .meta({
         description:
-          "https, on one of your verified domains (live environments). May use `{{booking_id}}`.",
+          "https, on one of your verified domains (live environments). May use `{{booking_id}}` in its path or query.",
         examples: ["https://example.com/feedback?booking={{booking_id}}"],
       }),
   })
@@ -696,18 +696,27 @@ const ReminderInput = z
       const urlProblem = reminderCopyProblem(rule.button.url, REMINDER_URL_VARIABLES);
       if (urlProblem) issue("button", urlProblem);
       else if (!reminderUrlHost(rule.button.url))
-        issue("button", "The button's URL must be https.");
+        issue(
+          "button",
+          "The button's URL must be https, with `{{booking_id}}` only after its host.",
+        );
     }
   })
   .meta({ id: "SchedulingReminderInput" });
 export type ReminderInputOutput = z.output<typeof ReminderInput>;
 
-/** The host a button's URL points at, or `null` if it isn't a plain https URL. */
+/**
+ * The host a button's URL points at, or `null` if it isn't a plain https URL. The host has to be the
+ * same whichever booking it's for, or what was verified isn't what gets emailed.
+ */
 export function reminderUrlHost(url: string): string | null {
   try {
-    const parsed = new URL(url.replace(/\{\{\s*booking_id\s*\}\}/g, "x"));
-    if (parsed.protocol !== "https:" || parsed.username || parsed.password) return null;
-    return parsed.hostname.toLowerCase();
+    const [first, second] = ["x", "y"].map(
+      (value) => new URL(url.replace(/\{\{\s*booking_id\s*\}\}/g, value)),
+    ) as [URL, URL];
+    if (first.protocol !== "https:" || first.username || first.password) return null;
+    if (first.host !== second.host) return null;
+    return first.hostname.toLowerCase();
   } catch {
     return null;
   }

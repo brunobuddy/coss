@@ -232,7 +232,7 @@ export interface SchedulingReminderInput {
   message?: string | null;
   /** Your own text, with `{{variables}}` other than names, and no links. */
   sms_message?: string | null;
-  /** One button in the email: https, on one of your verified domains. May use `{{booking_id}}`. Needs `email_from`. */
+  /** One button in the email: https, on one of your verified domains. May use `{{booking_id}}` in its path or query. Needs `email_from`. */
   button?: { label: string; url: string } | null;
   /** Attach the calendar invitation to the emails. */
   include_invite?: boolean;

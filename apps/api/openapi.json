@@ -19873,7 +19873,7 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 500,
-                "description": "https, on one of your verified domains (live environments). May use `{{booking_id}}`.",
+                "description": "https, on one of your verified domains (live environments). May use `{{booking_id}}` in its path or query.",
                 "examples": [
                   "https://example.com/feedback?booking={{booking_id}}"
                 ]

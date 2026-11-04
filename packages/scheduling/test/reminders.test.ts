@@ -1173,6 +1173,19 @@ describe("what's accepted", () => {
     ).toBe(true);
   });
 
+  test("a button's host is the same for every booking", () => {
+    const base = { anchor: "start", before_minutes: 5, send: ["email_attendee"] };
+    const accepts = (url: string) => parse({ ...base, button: { label: "Go", url } }).success;
+    expect(accepts("https://x.test/{{booking_id}}")).toBe(true);
+    expect(accepts("https://x.test/f?b={{booking_id}}")).toBe(true);
+    expect(accepts("https://x.test/f#{{booking_id}}")).toBe(true);
+    expect(accepts("https://{{booking_id}}.x.test/f")).toBe(false);
+    expect(accepts("https://x{{booking_id}}.test/f")).toBe(false);
+    expect(accepts("https://x.test{{booking_id}}/f")).toBe(false);
+    expect(accepts("https://x.test:{{booking_id}}/f")).toBe(false);
+    expect(accepts("https://{{booking_id}}@x.test/f")).toBe(false);
+  });
+
   test("the list", () => {
     const one = { anchor: "start", before_minutes: 5, send: ["email_attendee"] };
     expect(UpdateSettingsRequest.safeParse({ reminders: [one, one] }).success).toBe(false);

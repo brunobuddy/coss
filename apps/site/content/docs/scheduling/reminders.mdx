@@ -149,8 +149,8 @@ when you save it, rather than each email being screened. So:
 
 - Your own words only go out from your own address. They need `email_from`, and if that domain stops being
   verified, coss.com sends its standard wording rather than yours.
-- `button` is the one link you can add, to an https address on one of your verified domains. Its URL can
-  use `{{booking_id}}`.
+- `button` is the one link you can add, to an https address on one of your verified domains. Its path or
+  query can use `{{booking_id}}`.
 - `sms_message` can't use names, since SMS is sampled by [content screening](/docs/content-screening). Your
   brand goes first and "Reply STOP to opt out." goes last.
 
