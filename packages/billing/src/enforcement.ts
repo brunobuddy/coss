@@ -131,6 +131,19 @@ export function createUsageGate(
         plan: state.terms.plan,
       });
     },
+    async exhausted(organizationId, meter) {
+      if (organizationId === opts.systemOrganizationId) return false;
+      const cacheKey = `${organizationId}:${meter}:`;
+      const cached = cache.get(cacheKey);
+      if (cached && !cached.capped && cached.expiresAt > Date.now()) return false;
+      const now = new Date();
+      const { terms } = await billingStateAt(organizationId, now);
+      if (meterAvailability(terms, meter) !== "available") return true;
+      const cap = terms.usageCaps[meter];
+      cache.set(cacheKey, { capped: cap !== undefined, expiresAt: Date.now() + ttlMs });
+      if (cap === undefined) return false;
+      return (await reservedThisPeriod(organizationId, meter, now)) >= cap;
+    },
     async release(tx, input) {
       if (input.quantity <= 0) return;
       await tx

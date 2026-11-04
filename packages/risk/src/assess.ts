@@ -25,10 +25,9 @@ import { enqueueWebhookMessage, type SecretsKeyRing } from "@coss/webhooks";
 import { and, eq, gte, isNotNull, lt, ne, or, type SQL, sql } from "drizzle-orm";
 import {
   type AssessmentBilling,
+  chargeAssessment,
   NOT_BILLED,
   openAssessmentBilling,
-  recordAssessmentUsage,
-  releaseAssessmentUnit,
 } from "./billing.ts";
 import type { IpIntelligenceSource } from "./datasets.ts";
 import { readDeviceToken } from "./device.ts";
@@ -188,17 +187,7 @@ export async function assessRisk(
           userId: input.userId ?? null,
         })
       : NOT_BILLED;
-  // Only a unit that was reserved and isn't owed goes back; never one a commit recorded.
-  try {
-    const result = await assessInTransaction(deps, input, billing, { idempotencyKey, hash });
-    if (result.replayed || result.assessment.decision === "block") {
-      await releaseAssessmentUnit(deps, environment.organizationId, billing);
-    }
-    return result;
-  } catch (error) {
-    await releaseAssessmentUnit(deps, environment.organizationId, billing);
-    throw error;
-  }
+  return assessInTransaction(deps, input, billing, { idempotencyKey, hash });
 }
 
 async function assessInTransaction(
@@ -846,17 +835,6 @@ async function insertAssessment(
     .returning();
   if (!row) return undefined;
 
-  // Blocked traffic is free: an attack mustn't use up an allowance or inflate a bill.
-  if (billing.billable && decision !== "block") {
-    await recordAssessmentUsage(tx, deps, {
-      organizationId: environment.organizationId,
-      environmentId: environment.environmentId,
-      projectId: environment.projectId,
-      apiKeyId: input.apiKeyId ?? null,
-      userId: input.userId ?? null,
-    });
-  }
-
   if (signup && decision !== "block") {
     const identities = [
       { kind: "mailbox" as const, valueHash: mailboxHash },
@@ -967,6 +945,16 @@ async function insertAssessment(
         now,
       });
     }
+  }
+  // Blocked traffic is free: an attack mustn't use up an allowance or inflate a bill.
+  if (billing.billable && decision !== "block") {
+    await chargeAssessment(tx, deps, {
+      organizationId: environment.organizationId,
+      environmentId: environment.environmentId,
+      projectId: environment.projectId,
+      apiKeyId: input.apiKeyId ?? null,
+      userId: input.userId ?? null,
+    });
   }
   return row;
 }

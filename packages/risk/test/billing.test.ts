@@ -79,7 +79,7 @@ describe("what is billed", () => {
     expect(await reserved(s.organizationId, NOW)).toBe(1);
   });
 
-  test("a blocked assessment is free and gives its unit back", async () => {
+  test("a blocked assessment is free and takes no unit", async () => {
     const s = await setup(gated());
     await addRiskListEntry(s.live, { list: "block", type: "email", value: "ada@example.com" });
     const { assessment } = await assessMetered(s, signup);
@@ -98,7 +98,7 @@ describe("what is billed", () => {
     expect(await reserved(s.organizationId, NOW)).toBe(1);
   });
 
-  test("a failed assessment gives its unit back", async () => {
+  test("a refused retry takes no unit", async () => {
     const s = await setup(gated());
     await assessMetered(s, signup, "key-2");
     await expect(
@@ -106,6 +106,40 @@ describe("what is billed", () => {
     ).rejects.toMatchObject({ code: "idempotency_key_reused" });
     expect(await metered(s.organizationId)).toBe(1);
     expect(await reserved(s.organizationId, NOW)).toBe(1);
+  });
+
+  test("retries racing for the last unit share it and run in full", async () => {
+    const s = await setup(gated());
+    await db.insert(schema.billingQuota).values({
+      organizationId: s.organizationId,
+      meter: "risk.assessments",
+      periodStart: periodOf(NOW).start,
+      reserved: 9_999,
+    });
+    const answers = await Promise.all([
+      assessMetered(s, signup, "last-unit"),
+      assessMetered(s, signup, "last-unit"),
+      assessMetered(s, signup, "last-unit"),
+    ]);
+    expect(new Set(answers.map((answer) => answer.assessment.id)).size).toBe(1);
+    for (const { assessment } of answers) {
+      expect(assessment.degraded).not.toContain("usage_limit");
+    }
+    expect(await metered(s.organizationId)).toBe(1);
+    expect(await reserved(s.organizationId, NOW)).toBe(10_000);
+  });
+
+  test("losing a race for the last unit makes the assessment free, not an error", async () => {
+    const s = await setup({
+      usage: {
+        exhausted: () => Promise.resolve(false),
+        reserve: () =>
+          Promise.reject(Object.assign(new Error("Used up."), { code: "usage_limit_exceeded" })),
+      },
+    });
+    const { assessment } = await assessMetered(s, signup);
+    expect(assessment.degraded).not.toContain("usage_limit");
+    expect(await metered(s.organizationId)).toBe(0);
   });
 
   test("a failed counter write loses the unit, never the assessment", async () => {
@@ -140,12 +174,13 @@ describe("what is billed", () => {
   test("unexpected billing trouble never fails or reduces an assessment", async () => {
     const s = await setup({
       usage: {
+        exhausted: () => Promise.reject(new Error("Billing is down.")),
         reserve: () => Promise.reject(new Error("Billing is down.")),
       },
     });
     const { assessment } = await assessMetered(s, signup);
     expect(assessment.degraded).not.toContain("usage_limit");
-    expect(await metered(s.organizationId)).toBe(1);
+    expect(await metered(s.organizationId)).toBe(0);
   });
 });
 
