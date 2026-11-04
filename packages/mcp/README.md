@@ -10,7 +10,8 @@ claude mcp add coss -e COSS_API_KEY=coss_test_… -- npx -y coss-mcp
 ```
 
 Any MCP client works the same way: run `npx -y coss-mcp` with `COSS_API_KEY` in its environment.
-Setup for Cursor, VS Code and Codex: [coss.com/docs/mcp](https://coss.com/docs/mcp).
+Setup for Cursor, VS Code and Codex: [coss.com/docs/mcp](https://coss.com/docs/mcp). A client that
+can't start a local process can use the [hosted server](#hosted-server).
 
 Published from [cosscom/coss](https://github.com/cosscom/coss) by CI, with
 [provenance](https://docs.npmjs.com/generating-provenance-statements).
@@ -29,6 +30,31 @@ local processes can read.
 API keys can do everything the API can: through this server the agent can also send email and SMS
 and change suppressions and domains. Tools are annotated (`readOnlyHint`, `destructiveHint`) so clients
 can ask before calling the ones that change something.
+
+## Hosted server
+
+The same tools at `https://api.coss.com/mcp`: Streamable HTTP, stateless, with nothing to install.
+Authenticate with `Authorization: Bearer <API key>`. There's no OAuth sign-in, so the client has to
+let you set a custom header.
+
+```sh
+claude mcp add --transport http coss https://api.coss.com/mcp \
+  --header "Authorization: Bearer coss_test_…"
+```
+
+Cursor, VS Code, Codex and others: [coss.com/docs/mcp](https://coss.com/docs/mcp#hosted-server). Use a
+development key (`coss_test_…`) unless you need production data.
+
+Each tool calls the public API with your key, so its permissions, rate limits and logs apply as usual.
+What's different from the local server:
+
+- It can't touch your files: it doesn't read a project's env file, and `upload_sign_document` doesn't
+  exist (upload the PDF with the API or an SDK, then use its id).
+- `create_webhook_endpoint` returns the signing secret instead of writing it to a file.
+- `COSS_MCP_TOOLSETS` and `COSS_BASE_URL` don't apply. Requests take at most 50 seconds and 1 MB, and
+  browsers' requests are refused.
+
+`server.json` describes both for the [MCP registry](https://registry.modelcontextprotocol.io).
 
 ## Tools
 

@@ -18,7 +18,10 @@ names, error codes or webhook payloads.
   API reference pages (`https://coss.com/docs/api-reference/<resource>/<operation>.md`) give the
   method and URL, every parameter and body field, the responses and errors, and examples in
   TypeScript, HTTP, Python, Go, Ruby, PHP, Java and .NET.
-- With the coss MCP server connected, `search_docs` finds the page and `read_docs` reads it.
+- With the coss MCP server connected, `search_docs` finds the page and `read_docs` reads it. Where
+  `npx coss-mcp` can't run, the same tools are hosted at `https://api.coss.com/mcp` (Streamable HTTP,
+  `Authorization: Bearer <key>`; no OAuth, so the client must allow a custom header). It reads no
+  files: `create_webhook_endpoint` returns the secret to store, and there's no `upload_sign_document`.
 
 ## Get a development key
 

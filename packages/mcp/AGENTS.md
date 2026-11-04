@@ -27,11 +27,24 @@ directory unless they name a workspace.
   env file (the same file the CLI uses; a repeat for that URL does not create another endpoint).
   Third-party text (email content, received mail, bounce and
   webhook responses) is labelled untrusted, and the server's `instructions` say so.
+- **Hosted server** (`https://api.coss.com/mcp`, `src/http.ts`, `coss-mcp/http`): `createHostedMcp` answers one
+  authenticated POST with a new server and a new SDK client holding that caller's key (stateless: no sessions, no
+  streams, `maxSubscriptions: 0`); 2026-07-28 and 2025-era clients both get one JSON body. `apps/api`'s
+  `src/routes/mcp.ts` authenticates, rate limits and says how the API is reached. `transport: "hosted"` makes
+  `ctx.projectDir` `null`: a tool that reads or writes files must check it and omit or adapt itself
+  (`upload_sign_document` is omitted; `create_webhook_endpoint` returns the secret), and `test/hosted.test.ts` calls
+  every hosted tool with paths for arguments and fails if `node:fs/promises` is touched, or if a file under
+  `src/tools/` starts importing the filesystem without being listed. Outgoing requests are pinned: the API's `/v1/*`
+  at the origin given at start, the docs' origin (redirects never followed). No request can name another. The
+  key goes no further than the SDK client: `onFailure` gets an error's name only, since messages can quote what
+  the caller sent. Don't log in here. `server.json` is for the MCP registry (not published yet: it needs
+  `com.coss`'s DNS verification); `version-packages` keeps its versions equal to `package.json`'s.
 - Delivery diagnosis is the SDK's `coss/diagnose` (`packages/sdk/src/diagnose.ts`, shared with `coss emails
   diagnose`): `diagnoseEmail` is pure (email + events + best-effort context → verdict), `diagnose` fetches first;
   next steps name the server's tools through `references`. Its explanations of failure codes and recipient
   statuses must match the email product's behaviour: change both together.
 - Dependencies are explicit versions (`npm publish` doesn't rewrite `workspace:`/`catalog:`); `coss` is a caret
   range that changesets moves when the SDK's version leaves it. The release job publishes it after `coss`.
-- Tests: `packages/mcp/test` (in-memory client, fake `fetch`) and `apps/api/test/mcp-contract.test.ts` (built
-  server against the in-process app; turbo builds it first).
+- Tests: `packages/mcp/test` (in-memory client, fake `fetch`), `apps/api/test/mcp-contract.test.ts` (built
+  server against the in-process app; turbo builds it first) and `apps/api/test/mcp-hosted.test.ts` (`POST /mcp`, the
+  built handler in the real app, a real Streamable HTTP client).
