@@ -643,6 +643,11 @@ coss scheduling bookings --host doctor_482 --status confirmed
 - `coss scheduling reassignments` lists runs (`--limit`). `coss scheduling reassignment <id>` shows one
   and what didn't move, `--cancel` stops what hasn't happened yet, and `--undo` gives back what it moved.
 - `coss scheduling ooo` lists time [hosts are away](/docs/scheduling/out-of-office) (`--host`, `--limit`).
+- `coss scheduling no-show <booking>` marks a booking as a no-show, once it has started.
+- `coss scheduling notifications <booking>` lists what was queued for a booking and what became of it,
+  newest first, including why a reminder wasn't sent (`--limit`).
+- `coss scheduling reminders` lists what goes out around a booking (`--event-type` for one event type's
+  own list). Change it with `coss api` or in the dashboard.
 - `coss scheduling calendars <host>` lists a host's calendar connections. `needs_reauth` means that
   calendar can't be read, so the host isn't offered.
 - `coss scheduling diagnose <event-type>` explains an empty list (`--start`, `--end`, `--host`), each

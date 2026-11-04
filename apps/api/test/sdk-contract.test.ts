@@ -2384,3 +2384,84 @@ describe("coss.scheduling against the API", () => {
     expect(erasedByEmail.data?.erased).toBe(0);
   });
 });
+
+describe("coss.scheduling reminders against the API", () => {
+  test("a list round-trips, and a booking says what it queued", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+
+    const settings = await scheduling.settings.update({
+      email_from: "appointments@example.com",
+      email_reply_to: "desk@example.com",
+      reminders: [
+        { anchor: "start", before_minutes: 60, send: ["email_attendee", "webhook"] },
+        {
+          key: "follow_up",
+          anchor: "end",
+          after_minutes: 120,
+          send: ["email_attendee"],
+          subject: "How did it go, {{attendee_first_name}}?",
+          button: { label: "Feedback", url: "https://example.com/f?b={{booking_id}}" },
+          only_if: { metadata: { plan: "pro" }, location_types: ["zoom"] },
+        },
+      ],
+    });
+    expect(settings.error).toBeNull();
+    expect(settings.data?.email_reply_to).toBe("desk@example.com");
+    expect(settings.data?.reminders?.map((reminder) => reminder.key)).toEqual([
+      "start-60",
+      "follow_up",
+    ]);
+    expect(settings.data?.reminders?.[1]?.skip_no_show).toBe(true);
+
+    const refused = await scheduling.settings.update({
+      reminders: [
+        {
+          anchor: "start",
+          before_minutes: 5,
+          send: ["sms_attendee"],
+          sms_message: "Hi {{attendee_name}}",
+        },
+      ],
+    });
+    expect(refused.error?.status).toBe(422);
+
+    const host = (
+      await scheduling.hosts.create({ name: "Dr. Reyes", phone: "+15550002222", time_zone: "UTC" })
+    ).data;
+    if (!host) throw new Error("no host");
+    expect(host.phone).toBe("+15550002222");
+    await scheduling.schedules.create(host.id, {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "00:00", end: "23:59" }],
+    });
+    const eventType = (
+      await scheduling.eventTypes.create({
+        title: "Consultation",
+        duration_minutes: 30,
+        hosts: [{ host: host.id }],
+        notifications: { confirmed: { email_host: false } },
+        reminders: [{ key: "own", anchor: "start", before_minutes: 30, send: ["email_host"] }],
+      })
+    ).data;
+    if (!eventType) throw new Error("no event type");
+    expect(eventType.notifications).toEqual({ confirmed: { email_host: false } });
+    expect(eventType.reminders?.[0]?.key).toBe("own");
+
+    const start = new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 4, 15));
+    const booking = (
+      await scheduling.bookings.create({
+        event_type: eventType.id,
+        start: start.toISOString(),
+        attendee: { name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+      })
+    ).data;
+    if (!booking) throw new Error("no booking");
+    const sends = await scheduling.bookings.notifications(booking.id);
+    expect(sends.error).toBeNull();
+    const kinds = sends.data?.data.map((row) => row.reminder_key ?? row.kind).sort();
+    expect(kinds).toEqual(["confirmed", "ended", "own", "started"]);
+    expect(JSON.stringify(sends.data)).not.toContain("sam@example.com");
+    expect((await scheduling.bookings.notifications("book_missing")).error?.status).toBe(404);
+  });
+});

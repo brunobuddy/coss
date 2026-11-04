@@ -158,7 +158,7 @@ function recordingDeps() {
     now: () => NOW,
     publicUrl: "https://book.example.test",
     notifier: {
-      email: async (message: SchedulingEmail) => {
+      email: async (message: SchedulingEmail): Promise<undefined> => {
         sent.push(message);
       },
     },
@@ -1772,6 +1772,30 @@ describe("going out of office", () => {
     );
     await drain(env);
     expect(await hostsOf(theirs.id)).not.toEqual([b.id]);
+  });
+
+  test("an entry given to another host before its run gets there leaves the first host's alone", async () => {
+    const env = await environment();
+    const [a, b, c] = await Promise.all([host(env, "A"), host(env, "B"), host(env, "C")]);
+    const type = await pool(env, [a, b, c]);
+    const mine = await book(env, type.id, at("10:00"), a.id);
+    const window = { start: iso("09:00"), end: iso("12:00") };
+    await putOutOfOffice(
+      env,
+      "given_away",
+      { host: a.id, ...window, existing_bookings: "reassign" } as never,
+      plain,
+      actor,
+    );
+    await putOutOfOffice(
+      env,
+      "given_away",
+      { host: b.id, ...window, existing_bookings: "reassign" } as never,
+      plain,
+      actor,
+    );
+    await drain(env);
+    expect(await hostsOf(mine.id)).toEqual([a.id]);
   });
 
   test("time away taken back before its run gets there moves nothing", async () => {

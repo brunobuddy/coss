@@ -5,6 +5,7 @@ import type {
   SchedulingBooking,
   SchedulingEventType,
   SchedulingHost,
+  SchedulingReminderInput,
   UpdateSchedulingEventTypeParams,
   UpsertSchedulingScheduleParams,
 } from "coss";
@@ -369,7 +370,8 @@ export function registerSchedulingTools(ctx: ToolContext): void {
       description:
         "With an id it updates that event type; without one it creates one (title and " +
         "duration_minutes needed). `settings` takes the rest (buffers, notice, limits, " +
-        "questions, locations): read_docs on /docs/scheduling has them.",
+        "questions, locations): read_docs on /docs/scheduling has them. Reminders are " +
+        "save_scheduling_reminders, since saving them can send messages.",
       inputSchema: z.object({
         id: z.string().optional().describe("The event type to update (id or uid)."),
         uid: z.string().optional(),
@@ -390,6 +392,12 @@ export function registerSchedulingTools(ctx: ToolContext): void {
       annotations: WRITE,
     },
     ({ id, settings, ...fields }) => {
+      // This tool doesn't say it reaches people, and these do, so they go through one that does.
+      if (settings && ("reminders" in settings || "notifications" in settings)) {
+        return failWith(
+          "Reminders and notifications can send messages: use save_scheduling_reminders, or coss.scheduling.eventTypes.update for notifications.",
+        );
+      }
       const body = { ...settings, ...given(fields) };
       if (id) {
         const { kind: _kind, ...update } = body as UpdateSchedulingEventTypeParams & {
@@ -809,6 +817,107 @@ export function registerSchedulingTools(ctx: ToolContext): void {
     },
     ({ id }) =>
       respond(coss.scheduling.outOfOffice.conflicts(id), (page) => ({ bookings: page.data })),
+  );
+
+  server.registerTool(
+    "list_scheduling_booking_notifications",
+    {
+      title: "List a booking's notifications",
+      description:
+        "What's been queued for a booking and what became of it. Use it to answer why someone " +
+        "did or didn't get a reminder: `outcome` is null while waiting, `sent`, or the reason not. " +
+        "Newest first. It never says who a notification went to.",
+      inputSchema: z.object({
+        booking_id: bookingId,
+        limit: limitSchema(50),
+        cursor: cursorSchema,
+      }),
+      annotations: READ_ONLY,
+    },
+    ({ booking_id, limit, cursor }) =>
+      respond(
+        coss.scheduling.bookings.notifications(booking_id, given({ limit, after: cursor })),
+        (page) => ({
+          next_cursor: nextCursor(page),
+          notifications: page.data.map((row) =>
+            compact({
+              kind: row.kind,
+              reminder_key: row.reminder_key,
+              channel: row.channel,
+              recipient: row.recipient,
+              due_at: row.due_at,
+              finished_at: row.finished_at,
+              outcome: row.outcome,
+            }),
+          ),
+        }),
+      ),
+  );
+
+  server.registerTool(
+    "mark_scheduling_no_show",
+    {
+      title: "Mark a booking as a no-show",
+      description:
+        "Records that the attendee didn't come, once the booking has started. Webhooks fire and " +
+        "any reminder timed from `no_show` is sent. It can't be undone; marking it again changes nothing.",
+      inputSchema: z.object({ booking_id: bookingId }),
+      annotations: SENDS,
+    },
+    ({ booking_id }) => respond(coss.scheduling.bookings.markNoShow(booking_id), bookingSummary),
+  );
+
+  server.registerTool(
+    "get_scheduling_reminders",
+    {
+      title: "Get scheduling reminders",
+      description:
+        "What goes out around a booking: the environment's list, or an event type's own with `event_type`. " +
+        "`reminders: null` on an event type means it inherits; on the environment, a reminder a day before.",
+      inputSchema: z.object({
+        event_type: z.string().optional().describe("An event type (id or uid)."),
+      }),
+      annotations: READ_ONLY,
+    },
+    ({ event_type }) =>
+      event_type
+        ? respond(coss.scheduling.eventTypes.get(event_type), (found) => ({
+            event_type: found.id,
+            reminders: found.reminders,
+          }))
+        : respond(coss.scheduling.settings.get(), (found) => ({ reminders: found.reminders })),
+  );
+
+  server.registerTool(
+    "save_scheduling_reminders",
+    {
+      title: "Save scheduling reminders",
+      description:
+        "Replaces the whole list, for the environment or one event type (`null` goes back to " +
+        "inheriting). Each entry says when (`anchor` with `before_minutes` or `after_minutes`) and who " +
+        "(`send`, `email_to`), and optionally its own `subject`, `message` or `sms_message` with " +
+        "{{variables}}, a `button` and `only_if`. Upcoming bookings pick it up, so reminders can reach " +
+        "people as a result. read_docs on /docs/scheduling/reminders has the details.",
+      inputSchema: z.object({
+        event_type: z
+          .string()
+          .optional()
+          .describe("An event type (id or uid). Default: all of them."),
+        reminders: z.array(z.record(z.string(), z.unknown())).nullable(),
+      }),
+      annotations: SENDS,
+    },
+    ({ event_type, reminders }) => {
+      const list = reminders as SchedulingReminderInput[] | null;
+      return event_type
+        ? respond(coss.scheduling.eventTypes.update(event_type, { reminders: list }), (found) => ({
+            event_type: found.id,
+            reminders: found.reminders,
+          }))
+        : respond(coss.scheduling.settings.update({ reminders: list }), (found) => ({
+            reminders: found.reminders,
+          }));
+    },
   );
 
   server.registerTool(

@@ -21,6 +21,8 @@ export interface CreateSchedulingHostParams {
   name: string;
   /** Where this host's notifications go. Not an identity, and need not be unique. */
   email?: string;
+  /** Where this host's SMS reminders go, in E.164. */
+  phone?: string;
   time_zone: string;
   /** What this host's notifications are written in, such as `de`. Default: English. */
   locale?: string | null;
@@ -38,6 +40,7 @@ export interface UpdateSchedulingHostParams {
   uid?: string | null;
   name?: string;
   email?: string | null;
+  phone?: string | null;
   /** Moves a delegated calendar to this mailbox. Refused while bookings are still to come. */
   calendar_account?: string | null;
   time_zone?: string;
@@ -57,6 +60,7 @@ export interface SchedulingHost {
   uid: string | null;
   name: string;
   email: string | null;
+  phone: string | null;
   calendar_account: string | null;
   time_zone: string;
   locale: string | null;
@@ -194,6 +198,100 @@ export interface SchedulingEventTypeHostInput {
   schedule?: string | null;
 }
 
+/** The moment a reminder is timed from. */
+export type SchedulingReminderAnchor =
+  | "start"
+  | "end"
+  | "confirmed"
+  | "rescheduled"
+  | "cancelled"
+  | "declined"
+  | "pending_approval"
+  | "no_show";
+
+export type SchedulingReminderSend =
+  | "email_attendee"
+  | "email_host"
+  | "sms_attendee"
+  | "sms_host"
+  | "webhook";
+
+export type SchedulingLocationType =
+  | "link"
+  | "phone"
+  | "in_person"
+  | "google_meet"
+  | "microsoft_teams"
+  | "zoom";
+
+export interface SchedulingReminderInput {
+  /** Names this reminder in webhooks and on the booking. Default: from its timing, like `start-1440`. */
+  key?: string;
+  anchor: SchedulingReminderAnchor;
+  /** How long before the anchor. Only for `start` and `end`. */
+  before_minutes?: number | null;
+  /** How long after the anchor, up to 60 days. Default for other anchors: 0. */
+  after_minutes?: number | null;
+  /** Who hears about it. `webhook` fires `scheduling.booking.reminder`. */
+  send?: SchedulingReminderSend[];
+  /** Fixed addresses to email as well: verified members, or addresses on your verified domains. */
+  email_to?: string[];
+  /** Your own subject, with `{{variables}}`. Needs `email_from`. */
+  subject?: string | null;
+  /** Your own words in place of the standard first line, with `{{variables}}` and no links. Needs `email_from`. */
+  message?: string | null;
+  /** Your own text, with `{{variables}}` other than names, and no links. */
+  sms_message?: string | null;
+  /** One button in the email: https, on one of your verified domains. May use `{{booking_id}}` in its path or query. Needs `email_from`. */
+  button?: { label: string; url: string } | null;
+  /** Attach the calendar invitation to the emails. */
+  include_invite?: boolean;
+  /** If it was booked after this reminder's moment, send it right away instead of skipping it. */
+  send_if_late?: boolean;
+  /** Don't send it once the booking is marked a no-show. Default: true on `end`. */
+  skip_no_show?: boolean;
+  /** Only for bookings matching all of this, checked when it's due. */
+  only_if?: {
+    metadata?: Record<string, string> | null;
+    location_types?: SchedulingLocationType[] | null;
+  } | null;
+}
+
+export interface SchedulingReminder {
+  key: string;
+  anchor: SchedulingReminderAnchor;
+  before_minutes: number | null;
+  after_minutes: number | null;
+  send: SchedulingReminderSend[];
+  email_to: string[];
+  subject: string | null;
+  message: string | null;
+  sms_message: string | null;
+  button: { label: string; url: string } | null;
+  include_invite: boolean;
+  send_if_late: boolean;
+  skip_no_show: boolean;
+  only_if: { metadata: Record<string, string> | null; location_types: string[] | null } | null;
+}
+
+/** What's been queued for a booking and what became of it. Never who it went to. */
+export interface SchedulingBookingNotification {
+  object: "scheduling.booking_notification";
+  id: string;
+  /** `reminder` for an entry of `reminders`; otherwise a standard notification, or `started`/`ended`. */
+  kind: string;
+  reminder_key: string | null;
+  channel: "email" | "sms" | "webhook";
+  recipient: "attendee" | "host" | "endpoint" | "address";
+  due_at: string;
+  finished_at: string | null;
+  /**
+   * `null` while it's waiting. `sent`, or why not: `too_late`, `filtered`, `no_show`, `no_address`,
+   * `no_sender`, `stale`, `superseded`, `failed`.
+   */
+  outcome: string | null;
+}
+
 interface SchedulingEventTypeFields {
   duration_options?: number[];
   step_minutes?: number;
@@ -232,6 +330,10 @@ interface SchedulingEventTypeFields {
   questions?: SchedulingQuestionInput[];
   locations?: SchedulingLocationInput[];
   host_filter?: SchedulingAttributes | null;
+  /** Per event, overriding your settings for this event type. */
+  notifications?: Record<string, SchedulingNotificationSettings> | null;
+  /** Replaces your settings' `reminders` for this event type. `null` inherits them; `[]` means none. */
+  reminders?: SchedulingReminderInput[] | null;
   metadata?: Record<string, string>;
 }
 
@@ -282,6 +384,8 @@ export interface SchedulingEventType {
   questions: SchedulingQuestion[];
   locations: SchedulingLocation[];
   host_filter: SchedulingAttributes | null;
+  notifications: Record<string, SchedulingNotificationSettings> | null;
+  reminders: SchedulingReminder[] | null;
   hosts: {
     host: string;
     role: "required" | "member";
@@ -582,6 +686,9 @@ export interface SchedulingSettings {
   out_of_office_reasons: { key: string; label: string }[];
   calendar_failure_mode: "hide" | "last_known";
   notifications: Record<string, SchedulingNotificationSettings> | null;
+  email_reply_to: string | null;
+  /** What goes out around a booking, unless an event type has its own. `null`: a reminder a day before. */
+  reminders: SchedulingReminder[] | null;
 }
 
 export interface UpdateSchedulingSettingsParams {
@@ -597,6 +704,10 @@ export interface UpdateSchedulingSettingsParams {
   out_of_office_reasons?: { key: string; label: string }[] | null;
   calendar_failure_mode?: "hide" | "last_known";
   notifications?: Record<string, SchedulingNotificationSettings> | null;
+  /** Where replies go, for emails from `email_from`. */
+  email_reply_to?: string | null;
+  /** What goes out around a booking, unless an event type has its own. `null` goes back to a reminder a day before. */
+  reminders?: SchedulingReminderInput[] | null;
 }
 
 export interface AuthorizeSchedulingCalendarParams {
@@ -820,7 +931,10 @@ export type SchedulingBookingWebhookEventType =
   | "scheduling.booking.external_conflict"
   | "scheduling.booking.calendar_write_failed"
   | "scheduling.booking.location_ready"
-  | "scheduling.booking.reassigned";
+  | "scheduling.booking.reassigned"
+  | "scheduling.booking.started"
+  | "scheduling.booking.ended"
+  | "scheduling.booking.reminder";
 
 export type SchedulingCalendarWebhookEventType =
   | "scheduling.calendar.connected"
@@ -862,6 +976,14 @@ export interface SchedulingBookingWebhookEventData {
   previous_host_ids?: string[];
   /** On `scheduling.booking.reassigned`: the bulk reassignment it was part of. */
   reassignment_id?: string;
+  /** Which reminder this is, on `scheduling.booking.reminder`. */
+  reminder?: {
+    key: string;
+    anchor: SchedulingReminderAnchor;
+    before_minutes: number | null;
+    after_minutes: number | null;
+    scheduled_for: string;
+  };
   occurred_at: string;
 }
 

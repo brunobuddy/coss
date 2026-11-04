@@ -3830,7 +3830,10 @@
               "scheduling.booking.external_conflict",
               "scheduling.booking.calendar_write_failed",
               "scheduling.booking.location_ready",
-              "scheduling.booking.reassigned"
+              "scheduling.booking.reassigned",
+              "scheduling.booking.started",
+              "scheduling.booking.ended",
+              "scheduling.booking.reminder"
             ],
             "description": "What happened to the booking."
           },
@@ -3936,6 +3939,55 @@
           "reassignment_id": {
             "type": "string",
             "description": "On `scheduling.booking.reassigned`: the bulk reassignment it was part of."
+          },
+          "reminder": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "Which reminder this is."
+              },
+              "anchor": {
+                "type": "string",
+                "enum": [
+                  "start",
+                  "end",
+                  "confirmed",
+                  "rescheduled",
+                  "cancelled",
+                  "declined",
+                  "pending_approval",
+                  "no_show"
+                ],
+                "description": "The moment it's timed from."
+              },
+              "before_minutes": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "How long before the anchor. `null` when it's after."
+              },
+              "after_minutes": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "How long after the anchor. `null` when it's before."
+              },
+              "scheduled_for": {
+                "type": "string",
+                "description": "When it was due."
+              }
+            },
+            "required": [
+              "key",
+              "anchor",
+              "before_minutes",
+              "after_minutes",
+              "scheduled_for"
+            ],
+            "description": "`scheduling.booking.reminder`: which reminder this is."
           },
           "occurred_at": {
             "type": "string",
@@ -9913,6 +9965,9 @@
                 "scheduling.booking.calendar_write_failed",
                 "scheduling.booking.location_ready",
                 "scheduling.booking.reassigned",
+                "scheduling.booking.started",
+                "scheduling.booking.ended",
+                "scheduling.booking.reminder",
                 "scheduling.calendar.connected",
                 "scheduling.calendar.needs_reauth",
                 "scheduling.calendar.disconnected",
@@ -9926,7 +9981,7 @@
                 "scheduling.reassignment.completed"
               ]
             },
-            "maxItems": 95,
+            "maxItems": 98,
             "description": "Event types delivered to this endpoint. An empty array means every event type, including ones added later. Defaults to every event type."
           },
           "api_version": {
@@ -10240,6 +10295,9 @@
                 "scheduling.booking.calendar_write_failed",
                 "scheduling.booking.location_ready",
                 "scheduling.booking.reassigned",
+                "scheduling.booking.started",
+                "scheduling.booking.ended",
+                "scheduling.booking.reminder",
                 "scheduling.calendar.connected",
                 "scheduling.calendar.needs_reauth",
                 "scheduling.calendar.disconnected",
@@ -10253,7 +10311,7 @@
                 "scheduling.reassignment.completed"
               ]
             },
-            "maxItems": 95,
+            "maxItems": 98,
             "description": "Event types delivered to this endpoint. An empty array means every event type, including ones added later."
           },
           "api_version": {
@@ -10820,6 +10878,9 @@
                 "scheduling.booking.calendar_write_failed",
                 "scheduling.booking.location_ready",
                 "scheduling.booking.reassigned",
+                "scheduling.booking.started",
+                "scheduling.booking.ended",
+                "scheduling.booking.reminder",
                 "scheduling.calendar.connected",
                 "scheduling.calendar.needs_reauth",
                 "scheduling.calendar.disconnected",
@@ -10833,7 +10894,7 @@
                 "scheduling.reassignment.completed"
               ]
             },
-            "maxItems": 95,
+            "maxItems": 98,
             "description": "Event types to receive. Defaults to every event type."
           },
           "api_version": {
@@ -11630,6 +11691,9 @@
               "scheduling.booking.calendar_write_failed",
               "scheduling.booking.location_ready",
               "scheduling.booking.reassigned",
+              "scheduling.booking.started",
+              "scheduling.booking.ended",
+              "scheduling.booking.reminder",
               "scheduling.calendar.connected",
               "scheduling.calendar.needs_reauth",
               "scheduling.calendar.disconnected",
@@ -18230,6 +18294,13 @@
             ],
             "description": "Where this host's notifications go. `null` when none is set. Not an identity, and need not be unique."
           },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where this host's SMS reminders go, in E.164. `null` when none is set."
+          },
           "calendar_account": {
             "type": [
               "string",
@@ -18300,6 +18371,7 @@
           "uid",
           "name",
           "email",
+          "phone",
           "calendar_account",
           "time_zone",
           "locale",
@@ -18317,6 +18389,7 @@
             "uid": "doctor_482",
             "name": "Dr. Ana Reyes",
             "email": "ana@example.com",
+            "phone": null,
             "calendar_account": null,
             "time_zone": "America/New_York",
             "locale": null,
@@ -18432,6 +18505,11 @@
             "maxLength": 320,
             "format": "email",
             "description": "Where this host's notifications go. Not an identity, and need not be unique."
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+[1-9]\\d{6,14}$",
+            "description": "Where this host's SMS reminders go, in E.164."
           },
           "calendar_account": {
             "type": [
@@ -18557,6 +18635,7 @@
                 "uid": "doctor_482",
                 "name": "Dr. Ana Reyes",
                 "email": "ana@example.com",
+                "phone": null,
                 "calendar_account": null,
                 "time_zone": "America/New_York",
                 "locale": null,
@@ -18608,6 +18687,14 @@
             "maxLength": 320,
             "format": "email",
             "description": "Where this host's notifications go. `null` removes it."
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\+[1-9]\\d{6,14}$",
+            "description": "Where this host's SMS reminders go, in E.164. `null` removes it."
           },
           "calendar_account": {
             "type": [
@@ -21825,6 +21912,37 @@
             },
             "description": "Pool members also include active hosts matching all of these attributes. `null`: only `hosts`."
           },
+          "notifications": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "email_attendee": {
+                  "type": "boolean"
+                },
+                "email_host": {
+                  "type": "boolean"
+                },
+                "sms_attendee": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "Per event, overriding your settings for this event type. `null`: only those."
+          },
+          "reminders": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SchedulingReminder"
+            },
+            "description": "What goes out around a booking, in place of your settings' list. `null` inherits it; an empty list means none."
+          },
           "hosts": {
             "type": "array",
             "items": {
@@ -21907,6 +22025,8 @@
           "questions",
           "locations",
           "host_filter",
+          "notifications",
+          "reminders",
           "hosts",
           "metadata",
           "created_at",
@@ -21943,6 +22063,8 @@
             "questions": [],
             "locations": [],
             "host_filter": null,
+            "notifications": null,
+            "reminders": null,
             "hosts": [
               {
                 "host": "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
@@ -22106,6 +22228,167 @@
         ],
         "additionalProperties": false,
         "description": "Something attendees are asked when booking. Answers are encrypted, and come back only when you retrieve one booking."
+      },
+      "SchedulingReminder": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "What webhooks and the booking call this reminder."
+          },
+          "anchor": {
+            "type": "string",
+            "enum": [
+              "start",
+              "end",
+              "confirmed",
+              "rescheduled",
+              "cancelled",
+              "declined",
+              "pending_approval",
+              "no_show"
+            ],
+            "description": "The moment this is timed from."
+          },
+          "before_minutes": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "How long before the anchor. `null` when it's after."
+          },
+          "after_minutes": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "How long after the anchor. `null` when it's before."
+          },
+          "send": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "email_attendee",
+                "email_host",
+                "sms_attendee",
+                "sms_host",
+                "webhook"
+              ]
+            },
+            "description": "Who hears about it. `webhook` fires `scheduling.booking.reminder`."
+          },
+          "email_to": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Fixed addresses that are emailed as well."
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Your own subject. `null`: the standard one."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Your own words in the email. `null`: the standard ones."
+          },
+          "sms_message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Your own text. `null`: the standard one."
+          },
+          "button": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "What the button says."
+              },
+              "url": {
+                "type": "string",
+                "description": "Where it goes."
+              }
+            },
+            "required": [
+              "label",
+              "url"
+            ],
+            "description": "One button in the email. `null`: none."
+          },
+          "include_invite": {
+            "type": "boolean",
+            "description": "Whether the emails carry the invitation."
+          },
+          "send_if_late": {
+            "type": "boolean",
+            "description": "Whether it goes right away if booked after its moment, instead of being skipped."
+          },
+          "skip_no_show": {
+            "type": "boolean",
+            "description": "Whether it's dropped once the booking is marked a no-show."
+          },
+          "only_if": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "metadata": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "The booking's metadata must have all of these. `null`: any."
+              },
+              "location_types": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "description": "The booking's location must be one of these. `null`: any."
+              }
+            },
+            "required": [
+              "metadata",
+              "location_types"
+            ],
+            "description": "Only for bookings matching all of this. `null`: every booking."
+          }
+        },
+        "required": [
+          "key",
+          "anchor",
+          "before_minutes",
+          "after_minutes",
+          "send",
+          "email_to",
+          "subject",
+          "message",
+          "sms_message",
+          "button",
+          "include_invite",
+          "send_if_late",
+          "skip_no_show",
+          "only_if"
+        ]
       },
       "CreateEventTypeRequest": {
         "type": "object",
@@ -22307,6 +22590,39 @@
             },
             "description": "Pool members also include active hosts matching all of these attributes."
           },
+          "notifications": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "email_attendee": {
+                  "type": "boolean"
+                },
+                "email_host": {
+                  "type": "boolean"
+                },
+                "sms_attendee": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            },
+            "description": "Per event, overriding your settings for this event type."
+          },
+          "reminders": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SchedulingReminderInput"
+            },
+            "maxItems": 10,
+            "description": "Replaces your settings' `reminders` for this event type. `null` inherits them; an empty list means none."
+          },
           "metadata": {
             "type": "object",
             "additionalProperties": {
@@ -22344,6 +22660,185 @@
             ]
           }
         ]
+      },
+      "SchedulingReminderInput": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]{1,64}$",
+            "description": "Names this reminder in webhooks and on the booking. Default: from its timing, like `start-1440`."
+          },
+          "anchor": {
+            "type": "string",
+            "enum": [
+              "start",
+              "end",
+              "confirmed",
+              "rescheduled",
+              "cancelled",
+              "declined",
+              "pending_approval",
+              "no_show"
+            ],
+            "description": "The moment this is timed from."
+          },
+          "before_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 525600,
+            "description": "How long before the anchor. Only for `start` and `end`."
+          },
+          "after_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 86400,
+            "description": "How long after the anchor, up to 60 days. Default for other anchors: 0."
+          },
+          "send": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "email_attendee",
+                "email_host",
+                "sms_attendee",
+                "sms_host",
+                "webhook"
+              ]
+            },
+            "maxItems": 5,
+            "description": "Who hears about it. `webhook` fires `scheduling.booking.reminder`."
+          },
+          "email_to": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 320,
+              "format": "email"
+            },
+            "maxItems": 5,
+            "description": "Fixed addresses to email as well: verified members of your organization, or addresses on your verified domains (live environments)."
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Your own subject, with `{{variables}}`. Needs `email_from`."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Your own words in place of the standard first line, with `{{variables}}` and no links. The booking's details stay below it. Needs `email_from`."
+          },
+          "sms_message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 320,
+            "description": "Your own text, with `{{variables}}` other than names, and no links. `Reply STOP to opt out.` is always added."
+          },
+          "button": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500,
+                "description": "https, on one of your verified domains (live environments). May use `{{booking_id}}` in its path or query.",
+                "examples": [
+                  "https://example.com/feedback?booking={{booking_id}}"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "url"
+            ],
+            "additionalProperties": false,
+            "description": "One button in the email. Needs `email_from`."
+          },
+          "include_invite": {
+            "type": "boolean",
+            "description": "Attach the calendar invitation to the emails."
+          },
+          "send_if_late": {
+            "type": "boolean",
+            "description": "If it was booked after this reminder's moment, send it right away instead of skipping it, as long as the meeting is still ahead. Only for `before_minutes` on `start`."
+          },
+          "skip_no_show": {
+            "type": "boolean",
+            "description": "Don't send it once the booking is marked a no-show. Default: true on `end`."
+          },
+          "only_if": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "metadata": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "description": "The booking's metadata must have all of these."
+              },
+              "location_types": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "link",
+                    "phone",
+                    "in_person",
+                    "google_meet",
+                    "microsoft_teams",
+                    "zoom"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 6,
+                "description": "The booking's location must be one of these."
+              }
+            },
+            "additionalProperties": false,
+            "description": "Only for bookings matching all of this, checked when it's due."
+          }
+        },
+        "required": [
+          "anchor"
+        ],
+        "additionalProperties": false
       },
       "SchedulingEventTypeHostInput": {
         "type": "object",
@@ -22440,6 +22935,8 @@
                 "questions": [],
                 "locations": [],
                 "host_filter": null,
+                "notifications": null,
+                "reminders": null,
                 "hosts": [
                   {
                     "host": "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
@@ -22648,6 +23145,39 @@
               ]
             },
             "description": "Pool members also include active hosts matching all of these attributes."
+          },
+          "notifications": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "email_attendee": {
+                  "type": "boolean"
+                },
+                "email_host": {
+                  "type": "boolean"
+                },
+                "sms_attendee": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            },
+            "description": "Per event, overriding your settings for this event type."
+          },
+          "reminders": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SchedulingReminderInput"
+            },
+            "maxItems": 10,
+            "description": "Replaces your settings' `reminders` for this event type. `null` inherits them; an empty list means none."
           },
           "metadata": {
             "type": "object",
@@ -23556,6 +24086,131 @@
           "actor",
           "details",
           "occurred_at"
+        ]
+      },
+      "SchedulingBookingNotificationList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "list"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingBookingNotification"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "object",
+          "data",
+          "has_more"
+        ],
+        "examples": [
+          {
+            "object": "list",
+            "data": [
+              {
+                "object": "scheduling.booking_notification",
+                "id": "sntf_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                "kind": "reminder",
+                "reminder_key": "start-1440",
+                "channel": "email",
+                "recipient": "attendee",
+                "due_at": "2027-01-03T15:00:00.000Z",
+                "finished_at": null,
+                "outcome": null
+              }
+            ],
+            "has_more": false
+          }
+        ]
+      },
+      "SchedulingBookingNotification": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "scheduling.booking_notification"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "description": "`reminder` for an entry of `reminders`; otherwise a standard notification, or `started`/`ended`."
+          },
+          "reminder_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms",
+              "webhook"
+            ]
+          },
+          "recipient": {
+            "type": "string",
+            "enum": [
+              "attendee",
+              "host",
+              "endpoint",
+              "address"
+            ]
+          },
+          "due_at": {
+            "type": "string"
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`null` while it's waiting. `sent`, or why not: `too_late`, `filtered`, `no_show`, `no_address`, `no_sender`, `stale`, `superseded`, `failed`."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "kind",
+          "reminder_key",
+          "channel",
+          "recipient",
+          "due_at",
+          "finished_at",
+          "outcome"
+        ],
+        "examples": [
+          {
+            "object": "scheduling.booking_notification",
+            "id": "sntf_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            "kind": "reminder",
+            "reminder_key": "start-1440",
+            "channel": "email",
+            "recipient": "attendee",
+            "due_at": "2027-01-03T15:00:00.000Z",
+            "finished_at": null,
+            "outcome": null
+          }
         ]
       },
       "UpdateBookingLocationRequest": {
@@ -25558,6 +26213,22 @@
               }
             },
             "description": "Per event, overriding the defaults."
+          },
+          "email_reply_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reminders": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SchedulingReminder"
+            },
+            "description": "What goes out around a booking, unless an event type has its own. `null`: a reminder a day before, on the channels `notifications.reminder` chooses."
           }
         },
         "required": [
@@ -25572,7 +26243,9 @@
           "host_reassignment",
           "out_of_office_reasons",
           "calendar_failure_mode",
-          "notifications"
+          "notifications",
+          "email_reply_to",
+          "reminders"
         ],
         "examples": [
           {
@@ -25593,7 +26266,9 @@
               "reminder": {
                 "sms_attendee": true
               }
-            }
+            },
+            "email_reply_to": null,
+            "reminders": null
           }
         ]
       },
@@ -25736,6 +26411,26 @@
               "additionalProperties": false
             },
             "description": "Per event (`confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined`, `reminder`), overriding the defaults. `null` restores them."
+          },
+          "email_reply_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 320,
+            "format": "email",
+            "description": "Where replies go, for emails from `email_from`."
+          },
+          "reminders": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SchedulingReminderInput"
+            },
+            "maxItems": 10,
+            "description": "What goes out around a booking, unless an event type has its own. `null` goes back to a reminder a day before."
           }
         },
         "additionalProperties": false,
@@ -79842,6 +80537,245 @@
           },
           "422": {
             "description": "The booking can't change that way (`booking_not_changeable`), the new time isn't available (`slot_unavailable`), or a hold expired (`hold_expired`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scheduling/bookings/{id}/notifications": {
+      "get": {
+        "operationId": "listSchedulingBookingNotifications",
+        "tags": [
+          "Scheduling bookings"
+        ],
+        "summary": "List a booking's notifications",
+        "description": "What's been queued for this booking and what became of it, newest first, including why something wasn't sent. It never says who it went to.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The booking's id.",
+              "examples": [
+                "book_01kd2m9a0b1c2d3e4f5g6h7j8m"
+              ]
+            },
+            "required": true,
+            "description": "The booking's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "The last id of the previous page."
+            },
+            "required": false,
+            "description": "The last id of the previous page.",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The notifications.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingBookingNotificationList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",

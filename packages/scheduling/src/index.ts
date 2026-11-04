@@ -26,6 +26,7 @@ export * from "./plan.ts";
 export * from "./reassign.ts";
 export * from "./reassignments.ts";
 export * from "./reencrypt.ts";
+export * from "./reminders.ts";
 export * from "./retention.ts";
 export * from "./schedules.ts";
 export * from "./screening.ts";

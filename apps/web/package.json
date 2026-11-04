@@ -34,6 +34,7 @@
     "@coss/compliance": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/email": "workspace:*",
+    "@coss/email-layout": "workspace:*",
     "@coss/forms": "workspace:*",
     "@coss/support": "workspace:*",
     "@coss/hooks": "workspace:*",

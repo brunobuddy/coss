@@ -72,6 +72,8 @@ const CURRENT: EventTypeObjectOutput = {
   questions: [],
   locations: [],
   host_filter: null,
+  notifications: null,
+  reminders: null,
   hosts: [],
   metadata: {},
   created_at: "2027-01-01T10:00:00.000Z",

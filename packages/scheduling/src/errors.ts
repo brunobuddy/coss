@@ -14,6 +14,7 @@ export type SchedulingErrorCode =
   | "reassignment_not_finished"
   | "invalid_session"
   | "invalid_holiday_calendar"
+  | "invalid_reminder"
   | "uid_taken"
   | "slot_unavailable"
   | "attendee_limit_reached"
@@ -40,6 +41,7 @@ const STATUS_BY_CODE = {
   invalid_time_zone: 422,
   invalid_schedule: 422,
   invalid_event_type: 422,
+  invalid_reminder: 422,
   invalid_attendee: 422,
   invalid_answers: 422,
   invalid_time: 422,

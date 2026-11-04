@@ -82,6 +82,9 @@ const secret = endpoint?.secret;
 | `scheduling.booking.location_ready` | A booking's meeting link is ready |
 | `scheduling.booking.reassigned` | A booking went to [another host](/docs/scheduling/reassigning) (`data.previous_host_ids`) |
 | `scheduling.reassignment.completed` | [Many bookings](/docs/scheduling/reassigning#many-at-once) finished moving, or that was cancelled (`data.counts`) |
+| `scheduling.booking.started` | A confirmed booking's start time arrived. It doesn't mean anyone joined |
+| `scheduling.booking.ended` | A confirmed booking's end time arrived |
+| `scheduling.booking.reminder` | A [reminder](/docs/scheduling/reminders#webhooks-at-any-moment) you timed came due (`data.reminder`) |
 | `scheduling.calendar.connected` | A host [connected a calendar](/docs/scheduling/calendars) |
 | `scheduling.calendar.needs_reauth` | A host's calendar lost access: they aren't offered until it's back |
 | `scheduling.calendar.disconnected` | A host disconnected a calendar |

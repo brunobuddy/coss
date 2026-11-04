@@ -50,6 +50,8 @@ const EVENT_TYPE: EventTypeObjectOutput = {
     { type: "in_person", address: "1 Main St" },
   ],
   host_filter: { licensed_in: ["CA", "NY"] },
+  notifications: null,
+  reminders: null,
   hosts: [
     { host: "host_a", role: "required", weight: 100, schedule: null },
     { host: "host_b", role: "member", weight: 50, schedule: "sched_1" },

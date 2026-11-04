@@ -13,7 +13,7 @@ import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } fr
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { decryptContact } from "../attendees.ts";
 import { confirmedSeats, locationOfSession } from "../group-sessions.ts";
-import { carryReminders } from "../notifications.ts";
+import { carryAnchorlessReminders } from "../notifications.ts";
 import type { SchedulingDeps } from "../types.ts";
 import { type CalendarClient, CalendarError, type CalendarEventWrite } from "./client.ts";
 import { type CalendarDeps, clientFor } from "./connections.ts";
@@ -247,7 +247,7 @@ async function setMeetingLink(
       )
       .returning();
     if (!updated) return;
-    await carryReminders(tx, updated);
+    await carryAnchorlessReminders(tx, updated);
     // Other events went out without the link. A Meet's own event already shows it.
     await tx
       .update(schedulingCalendarEvent)

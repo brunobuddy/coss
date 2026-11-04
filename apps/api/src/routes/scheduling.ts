@@ -50,6 +50,7 @@ import {
   getSettings,
   getSettingsRow,
   listBookingEvents,
+  listBookingNotifications,
   listBookings,
   listCalendarDelegations,
   listConnections,
@@ -96,6 +97,7 @@ import {
   AvailabilitySearchResult,
   BookingEventList,
   BookingList,
+  BookingNotificationList,
   BookingObject,
   CalendarAuthorization,
   CalendarConnectionList,
@@ -847,6 +849,24 @@ export const noShowBookingRoute = createRoute({
     ...commonErrors,
     404: notFound,
     422: refusedChange,
+  },
+});
+
+export const listBookingNotificationsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/bookings/{id}/notifications",
+  operationId: "listSchedulingBookingNotifications",
+  tags: [TAG_BOOKINGS],
+  summary: "List a booking's notifications",
+  description:
+    "What's been queued for this booking and what became of it, newest first, including why something wasn't sent. It never says who it went to.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: BookingParams, query: PageQuery },
+  responses: {
+    200: jsonDoc("The notifications.", BookingNotificationList),
+    ...commonErrors,
+    404: notFound,
   },
 });
 
@@ -2367,6 +2387,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   router.openapi(createEventTypeRoute, async (c) => {
     const eventType = await createEventType(c.var.auth, c.req.valid("json"), {
       screen: deps.screenSetup,
+      verifiedAddress: deps.verifiedAddress,
       plans: deps.plans,
     });
     await recordApiAudit(c, {
@@ -2390,7 +2411,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       c.var.auth,
       c.req.valid("param").event_type,
       c.req.valid("json"),
-      { screen: deps.screenSetup, plans: deps.plans },
+      { screen: deps.screenSetup, verifiedAddress: deps.verifiedAddress, plans: deps.plans },
     );
     await recordApiAudit(c, {
       action: "scheduling_event_type.updated",
@@ -2599,6 +2620,15 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       200,
     ),
   );
+
+  router.openapi(listBookingNotificationsRoute, async (c) => {
+    const page = await listBookingNotifications(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("query"),
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
 
   router.openapi(noShowBookingRoute, async (c) =>
     c.json(await markNoShow(c.var.auth, c.req.valid("param").id, deps, actorOf(c.var.auth)), 200),
@@ -2965,6 +2995,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   router.openapi(updateSettingsRoute, async (c) => {
     const settings = await updateSettings(c.var.auth, c.req.valid("json"), {
       screen: deps.screenSetup,
+      verifiedAddress: deps.verifiedAddress,
     });
     await recordApiAudit(c, {
       action: "scheduling_settings.updated",

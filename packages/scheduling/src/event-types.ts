@@ -22,7 +22,14 @@ import { notZoomMeeting } from "./calendar/zoom.ts";
 import { startingUnits } from "./engine/rank.ts";
 import { SchedulingError } from "./errors.ts";
 import { attributesMatch, checkTimeZone, type HostRow, resolveHost } from "./hosts.ts";
+import { policyFromWire, policyToWire } from "./notification-policy.ts";
 import { requireLiveFeatureToCreate } from "./plan.ts";
+import {
+  checkReminders,
+  normalizeReminders,
+  queueReminderSync,
+  type ReminderChecks,
+} from "./reminders.ts";
 import type {
   CreateEventTypeRequestOutput,
   EventTypeObjectOutput,
@@ -34,7 +41,6 @@ import {
   locationText,
   refuseLinks,
   refuseLinksInAddresses,
-  type SetupScreening,
   screenSetup,
 } from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
@@ -46,6 +52,7 @@ const {
   schedulingEventTypeHost,
   schedulingGroupSession,
   schedulingSchedule,
+  schedulingSettings,
 } = schema;
 
 export type EventTypeRow = typeof schedulingEventType.$inferSelect;
@@ -86,6 +93,8 @@ export function toEventTypeObject(
     questions: row.questions,
     locations: row.locations as EventTypeObjectOutput["locations"],
     host_filter: row.hostFilter ?? null,
+    notifications: policyToWire(row.notifications),
+    reminders: row.reminders ?? null,
     hosts: hosts
       .filter((host) => host.assigned && !host.removedAt)
       .map((host) => ({
@@ -391,6 +400,19 @@ function setupText(values: {
   ].join("\n");
 }
 
+async function emailFromOf(scope: Scope): Promise<string | null> {
+  const [settings] = await db
+    .select({ emailFrom: schedulingSettings.emailFrom })
+    .from(schedulingSettings)
+    .where(
+      and(
+        eq(schedulingSettings.organizationId, scope.organizationId),
+        eq(schedulingSettings.environmentId, scope.environmentId),
+      ),
+    );
+  return settings?.emailFrom ?? null;
+}
+
 /** Attendees' details would reach hosts' calendar providers, which HIPAA mode doesn't allow. */
 async function checkHostCalendarDetails(
   environmentId: string,
@@ -488,7 +510,7 @@ async function checkGroupSeats(
 export async function createEventType(
   env: SchedulingEnvironment,
   params: CreateEventTypeRequestOutput,
-  opts: { screen?: SetupScreening | undefined; plans?: PlanGate | undefined } = {},
+  opts: ReminderChecks & { plans?: PlanGate | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
   // `{}` is a filter too: it matches every active host.
   if (params.host_filter != null)
@@ -498,6 +520,8 @@ export async function createEventType(
   await checkDescription(env.organizationId, params.description);
   refuseLinksInAddresses(params.locations);
   await screenSetup(env, setupText(params), opts.screen, "title");
+  const reminders = params.reminders ? normalizeReminders(params.reminders) : null;
+  if (reminders) await checkReminders(env, reminders, await emailFromOf(env), opts);
   await screenSetup(env, locationsText(params.locations), opts.screen, "locations");
   await checkHostCalendarDetails(env.environmentId, params.host_calendar_details);
   checkShape(
@@ -552,6 +576,8 @@ export async function createEventType(
           questions: params.questions ?? [],
           locations: (params.locations ?? []) as EventTypeRow["locations"],
           hostFilter: params.host_filter ?? null,
+          notifications: policyFromWire(params.notifications ?? null),
+          reminders,
           metadata: params.metadata ?? {},
         })
         .returning();
@@ -646,7 +672,7 @@ export async function updateEventType(
   scope: Scope & { mode?: "live" | "sandbox" },
   ref: string,
   params: UpdateEventTypeRequestOutput,
-  opts: { screen?: SetupScreening | undefined; plans?: PlanGate | undefined } = {},
+  opts: ReminderChecks & { plans?: PlanGate | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
   await checkDescription(scope.organizationId, params.description);
@@ -663,6 +689,16 @@ export async function updateEventType(
       setupText(params),
       opts.screen,
       "title",
+    );
+  }
+  const reminders = params.reminders ? normalizeReminders(params.reminders) : params.reminders;
+  if (reminders) {
+    // A caller with no mode is refused what it can't prove, as a live environment would be.
+    await checkReminders(
+      { organizationId: scope.organizationId, mode: scope.mode ?? "live" },
+      reminders,
+      await emailFromOf(scope),
+      opts,
     );
   }
   if (scope.mode) {
@@ -744,6 +780,10 @@ export async function updateEventType(
           ? { locations: params.locations as EventTypeRow["locations"] }
           : {}),
         ...(params.host_filter !== undefined ? { hostFilter: params.host_filter } : {}),
+        ...(params.notifications !== undefined
+          ? { notifications: policyFromWire(params.notifications) }
+          : {}),
+        ...(reminders !== undefined ? { reminders } : {}),
         ...(params.metadata !== undefined ? { metadata: params.metadata } : {}),
       };
       const merged = { ...existing, ...set };
@@ -760,6 +800,10 @@ export async function updateEventType(
         .returning();
       const row = updated as EventTypeRow;
       if (params.hosts) await replaceHosts(tx, scope, row, params.hosts);
+      // Clearing a policy can bring the default reminder back, as much as setting one can.
+      if (reminders !== undefined || params.notifications !== undefined) {
+        await queueReminderSync(tx, scope, row.id);
+      }
       if (row.hostCalendarDetails !== existing.hostCalendarDetails) {
         await rewriteUpcomingEvents(tx, row);
       }

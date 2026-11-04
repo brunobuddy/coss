@@ -29,7 +29,7 @@ import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
-import { carryReminders, enqueueReassignment } from "./notifications.ts";
+import { carryAnchorlessReminders, enqueueReassignment } from "./notifications.ts";
 import type { BookingObjectOutput, ReassignBookingRequestOutput } from "./schemas.ts";
 import { nowOf, type SchedulingDeps, type SchedulingEnvironment } from "./types.ts";
 
@@ -585,7 +585,7 @@ async function reassignOne(
     externalConflictAt: null,
     ...(location ? { location } : {}),
   });
-  await carryReminders(tx, current);
+  await carryAnchorlessReminders(tx, current);
   if (!started && current.status === "confirmed") {
     await setCalendarState(
       tx,
@@ -850,7 +850,7 @@ async function reassignSession(
       ...expiryOf(seat, liveUntil),
       externalConflictAt: null,
     });
-    await carryReminders(tx, updated);
+    await carryAnchorlessReminders(tx, updated);
     if (!calendarMoved && updated.status === "confirmed") {
       // One event for the session: `setCalendarState` goes by the session, not the seat.
       await setCalendarState(tx, updated, [previousHostId], "absent");
@@ -878,9 +878,10 @@ async function reassignSession(
         tx,
         updated,
         {
-          // The hosts hear once about the session, not per seat.
+          // The new host hears once about the session. The old one has an invitation per seat, each
+          // with its own UID, and only its own cancellation takes it off their calendar.
           added: hostsTold ? [] : [target.id],
-          removed: hostsTold ? [] : [previousHostId],
+          removed: opts.quietHosts ? [] : [previousHostId],
           attendee: input.notify?.attendee ?? true,
         },
         now,

@@ -159,7 +159,11 @@ async function selectionConditions(
 ) {
   const [entry] = selection.out_of_office_id
     ? await executor
-        .select({ startAt: schedulingOutOfOffice.startAt, endAt: schedulingOutOfOffice.endAt })
+        .select({
+          hostId: schedulingOutOfOffice.hostId,
+          startAt: schedulingOutOfOffice.startAt,
+          endAt: schedulingOutOfOffice.endAt,
+        })
         .from(schedulingOutOfOffice)
         .where(
           and(
@@ -171,6 +175,8 @@ async function selectionConditions(
         )
     : [];
   if (selection.out_of_office_id && !entry) return null;
+  // Given to someone else before a run got to it: this host isn't away then any more, so theirs stay.
+  if (selection.host_id && entry && entry.hostId !== selection.host_id) return null;
   return and(
     eq(schedulingBooking.organizationId, scope.organizationId),
     eq(schedulingBooking.environmentId, scope.environmentId),
