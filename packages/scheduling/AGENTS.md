@@ -247,7 +247,8 @@ won (`withHostLocation`), and stays blank if they have none: nobody loses availa
 `fromHost` (stripped from the wire, like `conference`), so a move to another host never keeps the old host's office. A
 booking is a snapshot: editing a host only reaches new bookings. Hosts set these themselves from their page, and they
 land in attendees' emails, so `hosts.ts` refuses links in addresses and screens new addresses and URLs; a phone number
-is E.164, with no room to say anything.
+is E.164, with no room to say anything. An event type's own locations get the same checks when set. Links must be
+https, but a booking can hold an older one, so `Where` (`apps/scheduling`) never puts anything but a web link in an `href`.
 
 ## Sessions and the client API
 

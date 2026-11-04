@@ -91,14 +91,14 @@ const HostUid = z
 
 export const HostStatus = z.enum(["active", "disabled"]);
 
+/** A link attendees are given to open, so never a `javascript:` or other non-web address. */
+const HttpsUrl = z.url({ protocol: /^https$/, error: "Use an https:// link." }).max(2000);
+
 export const HostLocation = z
   .discriminatedUnion("type", [
     z.strictObject({
       type: z.literal("link").meta({ description: "A meeting link of the host's own." }),
-      url: z
-        .url({ protocol: /^https$/, error: "Use an https:// link." })
-        .max(2000)
-        .meta({ description: "The link, which must be `https`." }),
+      url: HttpsUrl.meta({ description: "The link, which must be `https`." }),
     }),
     z.strictObject({
       type: z.literal("phone").meta({ description: "A phone number of the host's own." }),
@@ -717,7 +717,7 @@ export const Location = z
   .discriminatedUnion("type", [
     z.strictObject({
       type: z.literal("link"),
-      url: z.url().max(2000).nullable().default(null).meta({
+      url: HttpsUrl.nullable().default(null).meta({
         description:
           "The meeting link. `null` on an event type means the booking supplies its own.",
       }),
@@ -740,7 +740,7 @@ export const Location = z
     z.strictObject({ type: z.literal("microsoft_teams") }),
     z.strictObject({
       type: z.literal("zoom"),
-      url: z.url().max(2000).nullable().default(null).meta({
+      url: HttpsUrl.nullable().default(null).meta({
         description: "The meeting's link, once it's created on the host's Zoom account.",
       }),
     }),
