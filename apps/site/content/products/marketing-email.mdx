@@ -37,6 +37,26 @@ faq:
     answer: Every email a broadcast makes is billed per recipient like any other email, and how many contacts an environment can keep depends on the plan. The pricing page lists the rates and the contact limits.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// [!code word:coss.email.broadcasts.create]
+const { data } = await coss.email.broadcasts.create({
+  name: "October newsletter",
+  segment_id: "seg_01k7c8m4q2f3e9v6t5r1n0p8yz",
+  topic: "newsletter",
+  from: "Acme <news@acme.com>",
+  subject: "What's new, {{{contact.first_name|there}}}",
+  html: "<p>Here is what we shipped.</p>",
+  send: true,
+});
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Keep your contacts in coss.com, pick who gets an email with an audience or a segment, and send it as a broadcast.">
 
 ```ts twoslash

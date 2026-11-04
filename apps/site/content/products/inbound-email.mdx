@@ -34,6 +34,30 @@ faq:
     answer: Received email is billed per message and environment it is stored in, and the Free plan includes a monthly allowance. Mail flagged as spam or carrying a virus is free. The pricing page lists the current rates.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss, verifyWebhook } from "coss";
+const coss = new Coss();
+declare const request: Request;
+declare const secret: string;
+// ---cut---
+// [!code word:coss.email.received.get]
+const event = await verifyWebhook(
+  await request.text(),
+  request.headers,
+  secret,
+);
+
+if (event.type === "email.received" && !event.data.spam) {
+  const id = event.data.received_email_id;
+  const { data: email } = await coss.email.received.get(id);
+  console.log(email?.subject, email?.verdicts.dkim);
+}
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Mail arrives, coss.com stores and scans it, and your endpoint gets a signed webhook. Fetch what you need from the API.">
 
 ```ts twoslash
