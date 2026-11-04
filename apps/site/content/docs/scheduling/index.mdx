@@ -81,3 +81,13 @@ const { data: booking, error } = await coss.scheduling.bookings.create({
 Each booking is <Rate meter="scheduling.bookings" />, charged when it's confirmed. A group session is one booking however many
 attend, and each occurrence of a series is one. Rescheduling is free, and a cancelled booking stays
 charged. Free plans include 100 a month, and sandbox environments are free.
+
+## Tools
+
+- **CLI**: [`coss scheduling`](/docs/cli#scheduling) `hosts`, `event-types`, `slots`, `bookings`, `booking`, `cancel`
+  and `calendars`.
+- **MCP server**: [coding agents](/docs/mcp#tools) get `save_scheduling_host`, `save_scheduling_event_type`,
+  `list_scheduling_slots`, `create_scheduling_booking`, `reschedule_scheduling_booking`,
+  `cancel_scheduling_booking` and more.
+- **Other languages**: the [API reference](/docs/api-reference) shows every operation in Python, Go, Ruby,
+  PHP, Java and .NET.
