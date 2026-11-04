@@ -8,6 +8,7 @@ function environmentRest(rest: string): string {
   const [first = "", ...tail] = rest.split("/").filter(Boolean);
   const after = tail.length > 0 ? `/${tail.join("/")}` : "";
   if (first === "") return "";
+  if (first === "products") return tail[0] ? `/${tail[0]}` : "/products";
   if (first === "emails") return `/email/messages${after}`;
   if (first === "content-storage") return `/email/storage${after}`;
   if (EMAIL.includes(first)) return `/email/${first}${after}`;

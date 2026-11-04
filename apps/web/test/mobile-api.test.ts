@@ -335,6 +335,8 @@ describe("mobile organization access", () => {
       read_sms_sender: true,
       read_sso: false,
       read_scim: false,
+      read_scheduling: true,
+      update_scheduling: false,
     });
     expect(body.projects[0].environments[0]).toEqual({
       id: "env_1",

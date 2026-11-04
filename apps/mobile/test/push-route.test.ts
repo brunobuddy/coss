@@ -3,11 +3,18 @@ import { routeFromNotification } from "../src/lib/push-route";
 
 describe("routeFromNotification", () => {
   test("opens the pages notifications point at", () => {
+    for (const [path, route] of [
+      ["/acme/reputation", "/acme/(organization)/reputation"],
+      ["/acme/settings/billing", "/acme/(organization)/settings/billing"],
+      [
+        "/acme/settings/billing/invoices/inv_01k5f9",
+        "/acme/(organization)/settings/billing/invoices/inv_01k5f9",
+      ],
+      ["/acme/spend", "/acme/(organization)/spend"],
+    ]) {
+      expect(routeFromNotification({ path })).toBe(route as string);
+    }
     for (const path of [
-      "/acme/reputation",
-      "/acme/settings/billing",
-      "/acme/settings/billing/invoices/inv_01k5f9",
-      "/acme/spend",
       "/acme/projects/default/production/webhooks/whep_01k5f9",
       "/acme/projects/default/production/hooks/happ_1/endpoints/hep_1",
       "/acme/projects/default/production/log-drains/drain_1",
