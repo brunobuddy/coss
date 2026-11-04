@@ -138,8 +138,8 @@ export const InboxObject = z
     object: z.literal("inbox"),
     id: z.string(),
     address: z.string().meta({ description: "The inbox's email address (`username@domain`)." }),
-    username: z.string(),
-    domain: z.string(),
+    username: z.string().meta({ description: "The part of the address before the `@`." }),
+    domain: z.string().meta({ description: "The part of the address after the `@`." }),
     kind: z.enum(INBOX_KINDS).meta({
       description:
         "`managed`: at the environment's own domain under coss.com's inbound domain (no DNS " +
@@ -294,9 +294,9 @@ const messageSummaryShape = {
       "`failed`, …): its email has each recipient's delivery.",
   }),
   from: z.string().nullable().meta({ description: "The `From` header." }),
-  to: z.array(z.string()),
-  cc: z.array(z.string()),
-  subject: z.string().nullable(),
+  to: z.array(z.string()).meta({ description: "Addresses in the `To` header." }),
+  cc: z.array(z.string()).meta({ description: "Addresses in the `Cc` header." }),
+  subject: z.string().nullable().meta({ description: "The subject. `null`: none." }),
   preview: z.string().nullable().meta({
     description: "The start of the message's own text (without the quoted conversation).",
   }),
@@ -323,14 +323,19 @@ export type InboxMessageSummaryOutput = z.output<typeof InboxMessageSummary>;
 export const InboxMessageObject = z
   .object({
     ...messageSummaryShape,
-    reply_to: z.array(z.string()),
+    reply_to: z.array(z.string()).meta({ description: "Addresses in the `Reply-To` header." }),
     message_id: z.string().nullable().meta({
       description:
         "An inbound message's `Message-ID` header (outbound ones get theirs at sending).",
     }),
-    in_reply_to: z.string().nullable(),
-    references: z.array(z.string()),
-    text: z.string().nullable(),
+    in_reply_to: z
+      .string()
+      .nullable()
+      .meta({ description: "The message it answers, by `Message-ID`. `null`: none." }),
+    references: z
+      .array(z.string())
+      .meta({ description: "The `Message-ID`s of the conversation so far." }),
+    text: z.string().nullable().meta({ description: "The plain text part. `null`: none." }),
     extracted_text: z
       .string()
       .nullable()
@@ -380,9 +385,9 @@ const sendShape = {
 
 export const SendInboxMessageRequest = z
   .strictObject({
-    to: fields.to,
-    cc: fields.cc,
-    bcc: fields.bcc,
+    to: fields.to.meta({ description: "Who it goes to." }),
+    cc: fields.cc.meta({ description: "Who it's copied to." }),
+    bcc: fields.bcc.meta({ description: "Who it's blind copied to." }),
     subject: fields.subject.unwrap().meta({ description: "The new thread's subject." }),
     ...sendShape,
   })
@@ -410,8 +415,8 @@ export const ReplyInboxMessageRequest = z
           "Also reply to everyone else on the message (its `to` and `cc`, but the inbox). Default " +
           "`false`: only the sender (its `Reply-To`, when it has one).",
       }),
-    cc: fields.cc,
-    bcc: fields.bcc,
+    cc: fields.cc.meta({ description: "Who it's copied to." }),
+    bcc: fields.bcc.meta({ description: "Who it's blind copied to." }),
     ...sendShape,
   })
   .meta({
@@ -429,14 +434,16 @@ export type ReplyInboxMessageRequestOutput = z.output<typeof ReplyInboxMessageRe
 const threadSummaryShape = {
   object: z.literal("inbox_thread"),
   id: z.string(),
-  inbox_id: z.string(),
+  inbox_id: z.string().meta({ description: "The inbox's id." }),
   subject: z.string().nullable().meta({ description: "The first message's subject." }),
   participants: z.array(z.string()).meta({
     description: "Addresses of everyone in the conversation but the inbox (Bcc'd ones never).",
   }),
-  message_count: z.number().int(),
+  message_count: z.number().int().meta({ description: "Messages in the thread." }),
   preview: z.string().nullable().meta({ description: "The start of the latest message." }),
-  last_message_at: z.iso.datetime(),
+  last_message_at: z.iso
+    .datetime()
+    .meta({ description: "When its latest message was received or sent." }),
   last_inbound_at: z.iso
     .datetime()
     .nullable()

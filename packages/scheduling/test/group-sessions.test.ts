@@ -180,13 +180,23 @@ describe("converting a seat", () => {
       const inRound = (uid: string) => seat(eventType.id, uid, { startMs });
       const { booking: hold } = await createHold(env, inRound("h"), deps, actor);
       const { booking: firm } = await createBooking(env, inRound("f"), deps, actor);
-      const outcomes = await Promise.all([
+      const [converted, cancelled, ...joins] = await Promise.all([
         code(confirmHold(env, hold.id, {}, deps, actor)),
         code(cancelBooking(env, firm.id, deps, actor)),
         code(createBooking(env, inRound("j1"), deps, actor)),
         code(createBooking(env, inRound("j2"), deps, actor)),
       ]);
-      expect(outcomes).toEqual(["ok", "ok", "ok", "ok"]);
+      expect([converted, cancelled]).toEqual(["ok", "ok"]);
+      // Both joins can land before the cancel, and then the session is full for the second.
+      const joined = joins.filter((outcome) => outcome === "ok").length;
+      expect(joined).toBeGreaterThanOrEqual(1);
+      expect(joins.filter((outcome) => outcome !== "ok")).toEqual(
+        joined === 1 ? ["slot_unavailable"] : [],
+      );
+      const { rows } = await db.execute(sql`
+        select count(*)::int as seats from scheduling_booking
+        where group_session_id = ${hold.group_session} and status = 'confirmed'`);
+      expect((rows[0] as { seats: number }).seats).toBe(1 + joined);
       const claims = await claimsOf(hold.group_session);
       expect(claims.length).toBe(1);
       expect(claims[0]?.liveUntil).toBeNull();
@@ -433,12 +443,28 @@ describe("a group session on a calendar", () => {
       ...overrides,
     });
     const plain = testSchedulingDeps({ now: () => NOW });
-    const write = () => runDueCalendarWrites(calendars, { scope: scope(env) });
+    const write = () =>
+      runDueCalendarWrites({ ...calendars, dataKeys: deps.dataKeys }, { scope: scope(env) });
     const shown = () => [...api.events.values()].filter((event) => !event.deleted);
     return { env, host, api, calendars, eventType, plain, write, shown };
   }
 
   const MEET = { type: "link" as const, url: "https://meet.google.com/abc-defg-hij" };
+
+  test("with details on, a session's event has its title and nobody's name", async () => {
+    const c = await connected({ title: "Yoga", host_calendar_details: "full" });
+    await createBooking(c.env, seat(c.eventType.id, "a"), c.plain, actor);
+    await c.write();
+    const [event] = c.shown();
+    expect(event?.title).toBe("Yoga");
+    expect(event?.description).toBeUndefined();
+    // Marked all the same: HIPAA mode has to find a title like this to take it off.
+    const [row] = await db
+      .select({ detailsWritten: schema.schedulingCalendarEvent.detailsWritten })
+      .from(schema.schedulingCalendarEvent)
+      .where(eq(schema.schedulingCalendarEvent.hostId, c.host.id));
+    expect(row?.detailsWritten).toBe(true);
+  });
 
   test("direct seats share one event and one Meet link", async () => {
     const c = await connected();

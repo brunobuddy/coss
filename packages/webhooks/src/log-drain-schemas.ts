@@ -97,8 +97,11 @@ export const LogDrainObject = z
   .object({
     object: z.literal("log_drain"),
     id: z.string().meta({ examples: [DRAIN_ID_EXAMPLE] }),
-    url: z.string().meta({ examples: ["https://logs.example.com/coss"] }),
-    description: z.string().nullable(),
+    url: z.string().meta({
+      description: "Where batches are posted.",
+      examples: ["https://logs.example.com/coss"],
+    }),
+    description: z.string().nullable().meta({ description: "Your note about it. `null`: none." }),
     sources: z.array(LogDrainSourceEnum).meta({ description: SOURCES_DESCRIPTION }),
     format: LogDrainFormatEnum,
     auth_header_name: z
@@ -122,7 +125,10 @@ export const LogDrainObject = z
           "`manual`: someone disabled it. `failing`: a batch failed every attempt, so coss.com disabled " +
           "it. `null` while enabled.",
       }),
-    disabled_at: z.iso.datetime().nullable(),
+    disabled_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was disabled. `null` while enabled." }),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
   })
@@ -201,7 +207,7 @@ const AuthHeader = z
         const problem = logDrainAuthHeaderNameProblem(name);
         if (problem) ctx.addIssue({ code: "custom", message: problem });
       })
-      .meta({ examples: ["Authorization"] }),
+      .meta({ description: "The header's name.", examples: ["Authorization"] }),
     value: z
       .string()
       .trim()
@@ -212,7 +218,10 @@ const AuthHeader = z
       )
       // Visible ASCII, spaces and tabs: nothing that could end the header.
       .regex(/^[\t\x20-\x7e]+$/, "Header values can only hold printable ASCII characters.")
-      .meta({ examples: ["Bearer <token>"] }),
+      .meta({
+        description: "The header's value. Encrypted, and never returned.",
+        examples: ["Bearer <token>"],
+      }),
   })
   .meta({
     id: "LogDrainAuthHeader",
@@ -265,7 +274,10 @@ export const UpdateLogDrainRequest = z
     sources: Sources.optional(),
     format: LogDrainFormatEnum.optional(),
     auth_header: AuthHeader.nullish(),
-    enabled: z.boolean().optional(),
+    enabled: z
+      .boolean()
+      .optional()
+      .meta({ description: "`false` disables it, and `true` enables it again." }),
   })
   .refine((value) => Object.values(value).some((field) => field !== undefined), {
     error: "Provide at least one field to update.",
@@ -311,13 +323,13 @@ export const LogDrainAttemptObject = z
   .object({
     object: z.literal("log_drain_attempt"),
     id: z.string(),
-    attempted_at: z.iso.datetime(),
+    attempted_at: z.iso.datetime().meta({ description: "When the attempt ran." }),
     status_code: z
       .number()
       .int()
       .nullable()
       .meta({ description: "The drain's HTTP status; `null` when no response arrived." }),
-    duration_ms: z.number().int(),
+    duration_ms: z.number().int().meta({ description: "How long it took, in milliseconds." }),
     error: z.string().nullable().meta({
       description: "Why the attempt failed (e.g. `HTTP 500`, a timeout); `null` on success.",
     }),
@@ -337,17 +349,22 @@ export const LogDrainBatchObject = z
       description: "The batch's id: the `webhook-id` header, the same on every attempt.",
       examples: [BATCH_ID_EXAMPLE],
     }),
-    drain_id: z.string(),
+    drain_id: z.string().meta({ description: "The id of the drain it's posted to." }),
     status: LogDrainBatchStatusEnum,
     line_count: z.number().int().meta({ description: "Lines in the batch." }),
     byte_size: z.number().int().meta({ description: "Size of the request body in bytes." }),
-    attempt_count: z.number().int(),
+    attempt_count: z.number().int().meta({ description: "How many attempts were made so far." }),
     next_attempt_at: z.iso
       .datetime()
       .nullable()
       .meta({ description: "When the next attempt is due; `null` once the batch is finished." }),
-    last_status_code: z.number().int().nullable(),
-    last_error: z.string().nullable(),
+    last_status_code: z.number().int().nullable().meta({
+      description:
+        "The drain's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.",
+    }),
+    last_error: z.string().nullable().meta({
+      description: "Why the latest attempt failed. `null`: it didn't, or no attempt yet.",
+    }),
     attempts: z
       .array(LogDrainAttemptObject)
       .meta({ description: "Every HTTP attempt of this batch, oldest first." }),

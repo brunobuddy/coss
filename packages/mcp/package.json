@@ -1,7 +1,7 @@
 {
   "name": "coss-mcp",
   "version": "0.6.0",
-  "description": "MCP server for coss.com: lets coding agents look up emails and SMS, diagnose delivery, and manage domains, suppressions and webhooks.",
+  "description": "MCP server for coss.com: lets coding agents search the docs, diagnose delivery and use email, marketing, inboxes, SMS, Verify, Sign, Forms, Scheduling, Hooks and Risk.",
   "license": "MIT",
   "homepage": "https://coss.com/docs/mcp",
   "repository": {
@@ -17,7 +17,15 @@
     "email",
     "sms",
     "ai",
-    "agents"
+    "agents",
+    "marketing",
+    "inboxes",
+    "verify",
+    "sign",
+    "forms",
+    "scheduling",
+    "hooks",
+    "risk"
   ],
   "type": "module",
   "sideEffects": false,

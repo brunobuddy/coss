@@ -196,6 +196,7 @@ export const getSuppressionRoute = createRoute({
   operationId: "getSuppression",
   tags: ["Suppressions"],
   summary: "Retrieve a suppression",
+  description: "One entry of the suppression list of the API key's environment.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ suppression: ["read"] }), rateLimit("api.read")],
   request: { params: SuppressionIdParams },

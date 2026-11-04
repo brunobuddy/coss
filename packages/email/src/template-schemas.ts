@@ -55,9 +55,12 @@ const VariableName = z
 const Scalar = z.union([z.string(), z.number(), z.boolean()]);
 
 const TemplateListFieldInput = z.strictObject({
-  name: VariableName,
-  type: z.enum(TEMPLATE_SCALAR_TYPES),
-  required: z.boolean().default(true),
+  name: VariableName.meta({ description: "Used inside `{{#each}}` as `{{name}}`." }),
+  type: z.enum(TEMPLATE_SCALAR_TYPES).meta({ description: "The field's type." }),
+  required: z
+    .boolean()
+    .default(true)
+    .meta({ description: "Whether each item must have it. Defaults to true." }),
 });
 
 function matchesType(type: string, value: unknown): boolean {
@@ -100,7 +103,11 @@ export const TemplateVariableInput = z
     default: Scalar.optional().meta({
       description: "Used when a send leaves it out. Not for lists.",
     }),
-    description: z.string().max(TEMPLATE_DESCRIPTION_MAX_LENGTH).optional(),
+    description: z
+      .string()
+      .max(TEMPLATE_DESCRIPTION_MAX_LENGTH)
+      .optional()
+      .meta({ description: "What it's for, shown in the dashboard." }),
     fields: z
       .array(TemplateListFieldInput)
       .min(1)
@@ -135,16 +142,29 @@ export const TemplateVariableInput = z
 
 export const TemplateVariableObject = z
   .object({
-    name: z.string(),
-    type: z.enum(TEMPLATE_VARIABLE_TYPES),
-    required: z.boolean(),
-    default: Scalar.optional(),
-    description: z.string().optional(),
+    name: z.string().meta({ description: "Used in the template as `{{name}}`." }),
+    type: z.enum(TEMPLATE_VARIABLE_TYPES).meta({
+      description:
+        "`string`, `number`, `boolean`, or `list` (an array of objects with the declared `fields`).",
+    }),
+    required: z
+      .boolean()
+      .meta({ description: "Whether sends must pass it, unless it has a `default`." }),
+    default: Scalar.optional().meta({ description: "Used when a send leaves it out." }),
+    description: z
+      .string()
+      .optional()
+      .meta({ description: "What it's for, shown in the dashboard." }),
     fields: z
       .array(
-        z.object({ name: z.string(), type: z.enum(TEMPLATE_SCALAR_TYPES), required: z.boolean() }),
+        z.object({
+          name: z.string().meta({ description: "Used inside `{{#each}}` as `{{name}}`." }),
+          type: z.enum(TEMPLATE_SCALAR_TYPES).meta({ description: "The field's type." }),
+          required: z.boolean().meta({ description: "Whether each item must have it." }),
+        }),
       )
-      .optional(),
+      .optional()
+      .meta({ description: "A list's item fields." }),
   })
   .meta({
     id: "TemplateVariable",
@@ -181,7 +201,9 @@ export const TemplateVariableValues = z
 
 export const TemplateContentInput = z
   .strictObject({
-    locale: TemplateLocale,
+    locale: TemplateLocale.meta({
+      description: "The BCP 47 language tag this content is for, unique in `contents`.",
+    }),
     subject: z
       .string()
       .min(1, "Subject must not be empty.")
@@ -215,10 +237,13 @@ export const TemplateContentInput = z
 
 export const TemplateContentObject = z
   .object({
-    locale: z.string(),
-    subject: z.string(),
-    html: z.string().nullable(),
-    text: z.string().nullable(),
+    locale: z.string().meta({ description: "The BCP 47 language tag this content is for." }),
+    subject: z.string().meta({ description: "The subject template." }),
+    html: z.string().nullable().meta({ description: "The HTML template. `null`: text only." }),
+    text: z
+      .string()
+      .nullable()
+      .meta({ description: "The plain-text template. `null`: HTML only." }),
   })
   .meta({
     id: "TemplateContent",
@@ -339,7 +364,11 @@ export const CreateEmailTemplateRequest = z
   .strictObject({
     name: Name.meta({ description: "Shown in the dashboard." }),
     alias: Alias.optional(),
-    description: z.string().max(TEMPLATE_DESCRIPTION_MAX_LENGTH).optional(),
+    description: z
+      .string()
+      .max(TEMPLATE_DESCRIPTION_MAX_LENGTH)
+      .optional()
+      .meta({ description: "Your note about it, shown in the dashboard." }),
     ...draftShape,
   })
   .superRefine(checkDefaultLocale)
@@ -360,9 +389,12 @@ export type CreateEmailTemplateRequestOutput = z.output<typeof CreateEmailTempla
 
 export const UpdateEmailTemplateRequest = z
   .strictObject({
-    name: Name.optional(),
+    name: Name.optional().meta({ description: "Shown in the dashboard." }),
     alias: z.union([Alias, z.null()]).optional().meta({ description: "`null` removes the alias." }),
-    description: z.union([z.string().max(TEMPLATE_DESCRIPTION_MAX_LENGTH), z.null()]).optional(),
+    description: z
+      .union([z.string().max(TEMPLATE_DESCRIPTION_MAX_LENGTH), z.null()])
+      .optional()
+      .meta({ description: "Your note about it. `null` removes it." }),
   })
   .refine((value) => Object.keys(value).length > 0, { error: "Nothing to update." })
   .meta({
@@ -474,15 +506,21 @@ export const EmailTemplateObject = z
   .object({
     object: z.literal("email_template"),
     id: z.string().meta({ examples: [TEMPLATE_ID_EXAMPLE] }),
-    alias: z.string().nullable(),
-    name: z.string(),
-    description: z.string().nullable(),
+    alias: z
+      .string()
+      .nullable()
+      .meta({ description: "A name to send the template by instead of its id. `null`: none." }),
+    name: z.string().meta({ description: "Shown in the dashboard." }),
+    description: z.string().nullable().meta({ description: "Your note about it. `null`: none." }),
     published_version: z
       .number()
       .int()
       .nullable()
       .meta({ description: "The version sends use; `null` until the draft is first published." }),
-    published_at: z.iso.datetime().nullable(),
+    published_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When the published version was published. `null`: never." }),
     has_unpublished_changes: z
       .boolean()
       .meta({ description: "Whether the draft was changed since it was last published." }),
@@ -508,11 +546,11 @@ export type EmailTemplateListOutput = z.output<typeof EmailTemplateList>;
 
 export const TemplateProblemObject = z
   .object({
-    locale: z.string(),
-    field: z.enum(TEMPLATE_FIELDS),
-    message: z.string(),
-    line: z.number().int(),
-    column: z.number().int(),
+    locale: z.string().meta({ description: "The locale whose content it's in." }),
+    field: z.enum(TEMPLATE_FIELDS).meta({ description: "The part of the content it's in." }),
+    message: z.string().meta({ description: "What's wrong." }),
+    line: z.number().int().meta({ description: "The line it's on, from 1." }),
+    column: z.number().int().meta({ description: "The column it's at, from 1." }),
   })
   .meta({ id: "TemplateProblem" });
 
@@ -541,7 +579,7 @@ const VERSION_EXAMPLE = {
 export const EmailTemplateVersionObject = z
   .object({
     object: z.literal("email_template_version"),
-    template_id: z.string(),
+    template_id: z.string().meta({ description: "The template's id." }),
     version: z
       .number()
       .int()
@@ -551,16 +589,28 @@ export const EmailTemplateVersionObject = z
       description:
         "Counts the draft's saves. A published version keeps the revision it was published from.",
     }),
-    default_locale: z.string(),
-    variables: z.array(TemplateVariableObject),
-    sample_variables: z.record(z.string(), z.unknown()),
-    contents: z.array(TemplateContentObject),
+    default_locale: z.string().meta({
+      description:
+        "The locale sends fall back to when they ask for none, or for one without content.",
+    }),
+    variables: z
+      .array(TemplateVariableObject)
+      .meta({ description: "The variables the template uses, with their types." }),
+    sample_variables: z
+      .record(z.string(), z.unknown())
+      .meta({ description: "Example values for previews and test sends in the dashboard." }),
+    contents: z
+      .array(TemplateContentObject)
+      .meta({ description: "The subject, HTML and text per locale." }),
     problems: z.array(TemplateProblemObject).meta({
       description:
         "Syntax errors and undeclared variables per locale and field, which keep a draft from " +
         "being published. Always empty for published versions.",
     }),
-    published_at: z.iso.datetime().nullable(),
+    published_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When this version was published. `null` for the draft." }),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
   })
@@ -623,16 +673,22 @@ export type RenderEmailTemplateRequestInput = z.input<typeof RenderEmailTemplate
 export const RenderedEmailTemplateObject = z
   .object({
     object: z.literal("email_template_render"),
-    template_id: z.string(),
+    template_id: z.string().meta({ description: "The template's id." }),
     version: z
       .number()
       .int()
       .nullable()
       .meta({ description: "The version rendered; `null` for the draft." }),
     locale: z.string().meta({ description: "The locale rendered." }),
-    subject: z.string(),
-    html: z.string().nullable(),
-    text: z.string().nullable(),
+    subject: z.string().meta({ description: "The rendered subject." }),
+    html: z
+      .string()
+      .nullable()
+      .meta({ description: "The rendered HTML. `null`: the template has none." }),
+    text: z
+      .string()
+      .nullable()
+      .meta({ description: "The rendered plain text. `null`: the template has none." }),
   })
   .meta({
     id: "RenderedEmailTemplate",
@@ -654,13 +710,13 @@ export type RenderedEmailTemplateObjectOutput = z.output<typeof RenderedEmailTem
 /** The template an email was rendered from (`Email.template`). */
 export const EmailTemplateReference = z
   .object({
-    id: z.string(),
+    id: z.string().meta({ description: "The template's id." }),
     version: z
       .number()
       .int()
       .nullable()
       .meta({ description: "`null` for a dashboard test send of the draft." }),
-    locale: z.string(),
+    locale: z.string().meta({ description: "The locale the email was rendered in." }),
   })
   .meta({
     id: "EmailTemplateReference",

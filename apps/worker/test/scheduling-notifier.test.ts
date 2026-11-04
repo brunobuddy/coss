@@ -39,6 +39,7 @@ async function email(overrides: Partial<SchedulingEmail> = {}): Promise<Scheduli
     },
     logo: null,
     idempotencyKey: `scheduling:${crypto.randomUUID()}`,
+    ownSenderOnly: false,
     ...overrides,
   };
 }
@@ -242,4 +243,49 @@ test("the logo goes inline with the customer's copy, and never with coss.com's",
     { environmentId: tenant.production.id, attachments: ["logo@acme"] },
     { environmentId: coss.production.id, attachments: undefined },
   ]);
+});
+
+test("mail to a guest never falls back to coss.com's sender", async () => {
+  const tenant = await createTestTenant();
+  const fallbackTenant = await createTestTenant();
+  const fallbackDomain = await createVerifiedDomain(fallbackTenant.organization.id);
+  const environment = {
+    organizationId: tenant.organization.id,
+    projectId: tenant.project.id,
+    environmentId: tenant.production.id,
+    mode: "live" as const,
+  };
+  const notifier = schedulingNotifier({
+    service: service(),
+    limiter: memoryLimiter(),
+    fallback: {
+      environment: {
+        organizationId: fallbackTenant.organization.id,
+        projectId: fallbackTenant.project.id,
+        environmentId: fallbackTenant.production.id,
+        mode: "live",
+      },
+      address: `appointments@${fallbackDomain.name}`,
+    },
+  });
+  // An address on a domain nobody has verified, as when a customer's stops being verified.
+  const guest = await email({
+    environment,
+    from: "appointments@not-verified.example",
+    ownSenderOnly: true,
+  });
+  await notifier.email(guest);
+  const sent = await db
+    .select()
+    .from(schema.email)
+    .where(eq(schema.email.idempotencyKey, guest.idempotencyKey));
+  expect(sent).toEqual([]);
+  // Everyone else's still does.
+  const attendee = await email({ environment, from: "appointments@not-verified.example" });
+  await notifier.email(attendee);
+  const fellBack = await db
+    .select({ from: schema.email.from })
+    .from(schema.email)
+    .where(eq(schema.email.idempotencyKey, attendee.idempotencyKey));
+  expect(fellBack[0]?.from).toContain("via coss.com");
 });

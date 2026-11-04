@@ -18,6 +18,7 @@ const ENVIRONMENT_PAGES: Record<string, string> = {
   suppressions: "/email/suppressions",
   subaccounts: "/email/subaccounts",
   tracking: "/email/tracking",
+  storage: "/email/storage",
   domains: "/email/domains",
   "dedicated-ips": "/email/dedicated-ips",
   reputation: "/email/reputation",
@@ -29,16 +30,34 @@ const ENVIRONMENT_PAGES: Record<string, string> = {
   marketing: "/marketing/settings",
   inboxes: "/inboxes",
   sms: "/sms",
+  "sms-received": "/sms/received",
+  "sms-suppressions": "/sms/suppressions",
+  "sms-numbers": "/sms/numbers",
   verify: "/verify",
+  "verify-settings": "/verify/settings",
   sign: "/sign",
+  "sign-templates": "/sign/templates",
+  "sign-settings": "/sign/settings",
   forms: "/forms",
+  scheduling: "/scheduling",
+  "scheduling-hosts": "/scheduling/hosts",
+  "scheduling-event-types": "/scheduling/event-types",
+  "scheduling-settings": "/scheduling/settings",
   hooks: "/hooks",
+  "hooks-event-types": "/hooks/event-types",
+  "hooks-settings": "/hooks/settings",
   risk: "/risk",
+  "risk-rules": "/risk/rules",
+  "risk-lists": "/risk/lists",
+  "risk-limits": "/risk/limits",
+  "risk-calibration": "/risk/calibration",
+  "risk-settings": "/risk/settings",
   developers: "/developers",
   "api-keys": "/developers/api-keys",
   webhooks: "/developers/webhooks",
   logs: "/developers/logs",
   "log-drains": "/developers/log-drains",
+  import: "/developers/import",
 };
 
 const ORGANIZATION_PAGES: Record<string, string> = {
@@ -47,7 +66,11 @@ const ORGANIZATION_PAGES: Record<string, string> = {
   members: "/settings/members",
   billing: "/settings/billing",
   spend: "/settings/spend",
+  budgets: "/settings/spend/budgets",
+  sso: "/settings/sso",
+  scim: "/settings/scim",
   "audit-log": "/settings/audit",
+  compliance: "/settings/compliance",
 };
 
 export const PAGES: readonly string[] = [
@@ -107,10 +130,9 @@ export const openCommand: Command = defineCommand({
   usage: "[page] [options]",
   description:
     "Opens a page of the dashboard for the API key's environment in your browser: overview (the " +
-    "default), emails, templates, received, suppressions, tracking, broadcasts, contacts, " +
-    "audiences, segments, topics, marketing, risk, hooks, api-keys, webhooks, logs, log-drains, " +
-    "or one of its organization's: projects, domains, dedicated-ips, members, reputation, " +
-    "settings, billing, audit-log.",
+    `default), ${Object.keys(ENVIRONMENT_PAGES)
+      .filter((page) => page !== "overview")
+      .join(", ")}, or one of its organization's: ${Object.keys(ORGANIZATION_PAGES).join(", ")}.`,
   flags: FLAGS,
   positionals: true,
   positionalChoices: PAGES,

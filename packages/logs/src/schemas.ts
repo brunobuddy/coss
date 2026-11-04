@@ -81,7 +81,7 @@ export const LogEntry = z
   .object({
     object: z.literal("log"),
     id: z.string().meta({ examples: [LOG_ID_EXAMPLE] }),
-    occurred_at: z.iso.datetime(),
+    occurred_at: z.iso.datetime().meta({ description: "When it happened." }),
     source: LogSourceEnum,
     level: LogLevelEnum,
     type: z.string().meta({
@@ -94,25 +94,53 @@ export const LogEntry = z
       .string()
       .nullable()
       .meta({ description: "The `X-Request-Id` of the API request this line belongs to." }),
-    api_key_id: z.string().nullable(),
-    method: z.string().nullable(),
-    path: z.string().nullable(),
+    api_key_id: z
+      .string()
+      .nullable()
+      .meta({ description: "The API key that made the request. `null`: not an API request." }),
+    method: z
+      .string()
+      .nullable()
+      .meta({ description: "The HTTP method. `null`: not an HTTP line." }),
+    path: z
+      .string()
+      .nullable()
+      .meta({ description: "The request's path. `null`: not an API request." }),
     route: z.string().nullable().meta({ description: "The matched route, e.g. `/v1/emails/:id`." }),
     status_code: z
       .number()
       .int()
       .nullable()
       .meta({ description: "The API response status, or the webhook endpoint's response status." }),
-    duration_ms: z.number().int().nullable(),
-    client_ip: z.string().nullable(),
-    user_agent: z.string().nullable(),
-    error_code: z.string().nullable(),
+    duration_ms: z
+      .number()
+      .int()
+      .nullable()
+      .meta({ description: "How long it took, in milliseconds. `null`: not timed." }),
+    client_ip: z
+      .string()
+      .nullable()
+      .meta({ description: "The caller's address. `null`: not an API request." }),
+    user_agent: z
+      .string()
+      .nullable()
+      .meta({ description: "The caller's `User-Agent`. `null`: not sent." }),
+    error_code: z
+      .string()
+      .nullable()
+      .meta({ description: "The error's `code`. `null`: no error." }),
     resource_type: z
       .string()
       .nullable()
       .meta({ description: "What the line is about: `email`, `domain`, `webhook_endpoint`…" }),
-    resource_id: z.string().nullable(),
-    recipient: z.string().nullable(),
+    resource_id: z
+      .string()
+      .nullable()
+      .meta({ description: "The id of what it's about. `null`: nothing in particular." }),
+    recipient: z
+      .string()
+      .nullable()
+      .meta({ description: "The recipient an email event is about. `null`: none." }),
     attributes: z.record(z.string(), z.unknown()).meta({
       description:
         "Details: redacted request and response bodies for API requests (secrets, attachment " +
@@ -275,7 +303,10 @@ export const AuditEvent = z
       .string()
       .nullable()
       .meta({ description: "What was changed: `domain`, `api_key`, `member`…" }),
-    target_id: z.string().nullable(),
+    target_id: z
+      .string()
+      .nullable()
+      .meta({ description: "The id of what it acted on. `null`: nothing in particular." }),
     target_label: z
       .string()
       .nullable()
@@ -291,8 +322,11 @@ export const AuditEvent = z
     metadata: z
       .record(z.string(), z.unknown())
       .meta({ description: "Details of the change; API changes include their `request_id`." }),
-    client_ip: z.string().nullable(),
-    user_agent: z.string().nullable(),
+    client_ip: z.string().nullable().meta({ description: "The actor's address. `null`: unknown." }),
+    user_agent: z
+      .string()
+      .nullable()
+      .meta({ description: "The actor's `User-Agent`. `null`: unknown." }),
   })
   .meta({ id: "AuditEvent", examples: [AUDIT_EVENT_EXAMPLE] });
 

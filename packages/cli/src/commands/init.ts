@@ -123,8 +123,9 @@ Scheduling, Hooks, Risk and webhooks, on one key).
   <event type>\` sends a test event, and \`npx coss-cli logs tail\` follows the API requests and
   events. Send email tests to \`bounce@simulator.amazonses.com\` and run \`npx coss-cli emails diagnose <id>\`;
   each product has a testing page in the docs. \`npx coss-cli --help\` lists the commands for each
-  product (\`verify\`, \`contacts\`, \`broadcasts\`, \`sign\`, \`forms\`, \`scheduling\`, \`hooks\`, \`risk\`),
-  and \`npx coss-cli api\` calls any endpoint.
+  product (\`suppressions\`, \`subaccounts\`, \`contacts\`, \`audiences\`, \`segments\`, \`topics\`,
+  \`broadcasts\`, \`sms\`, \`verify\`, \`sign\`, \`forms\`, \`scheduling\`, \`hooks\`, \`risk\`,
+  \`log-drains\`), and \`npx coss-cli api\` calls any endpoint.
 - What happened to something: \`npx coss-cli <emails|sms|verify|sign|forms|hooks|scheduling> diagnose\`
   gives a verdict, what it means and what to do next. A form's spam is answered like a success, so
   what a submitter saw proves nothing. \`npx coss-cli init --product <product>\` prints what a

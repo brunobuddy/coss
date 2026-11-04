@@ -4,7 +4,7 @@ Every endpoint of the [coss.com](https://coss.com) API, typed, for Java 8+: emai
 webhooks and more, with retries, idempotency keys and webhook verification.
 
 ```kotlin
-implementation("com.coss:coss:0.1.0")
+implementation("com.coss:coss:latest.release")
 ```
 
 ```java

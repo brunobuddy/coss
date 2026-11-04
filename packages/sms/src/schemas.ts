@@ -121,7 +121,10 @@ const TagPart = z
   .string()
   .regex(TAG_PART, "Must be 1-256 characters: ASCII letters, numbers, underscores or dashes.");
 
-const Tag = z.strictObject({ name: TagPart, value: TagPart });
+const Tag = z.strictObject({
+  name: TagPart.meta({ description: "The tag's name, unique on the message." }),
+  value: TagPart.meta({ description: "The tag's value." }),
+});
 
 const Tags = z
   .array(Tag)
@@ -212,29 +215,50 @@ export const SendSmsRequest = z
 export type SendSmsRequestOutput = z.output<typeof SendSmsRequest>;
 
 const Failure = z
-  .object({ code: z.string(), message: z.string() })
+  .object({
+    code: z.string().meta({ description: "Machine-readable reason." }),
+    message: z.string().meta({ description: "Human-readable explanation." }),
+  })
   .meta({ description: "Why the message failed or wasn't delivered." });
 
 export const SmsObject = z
   .object({
     object: z.literal("sms"),
     id: z.string().meta({ examples: [ID_EXAMPLE] }),
-    from: z.string(),
-    to: z.string(),
-    body: z.string(),
+    from: z.string().meta({ description: "The number it's sent from, in E.164." }),
+    to: z.string().meta({ description: "The recipient's number, in E.164." }),
+    body: z.string().meta({ description: "The text. Empty once discarded." }),
     status: z.enum(SMS_STATUSES).meta({
       description:
         "`queued` until handed to the carrier (`sent`), then `delivered` or `undelivered` once the carrier reports. `failed`: never sent. `scheduled` and `canceled`: scheduled sends.",
     }),
     segments: z.number().int().meta({ description: "Segments the body takes (what is billed)." }),
-    encoding: z.enum(["gsm7", "ucs2"]),
+    encoding: z.enum(["gsm7", "ucs2"]).meta({
+      description:
+        "`gsm7` fits the basic alphabet; `ucs2` is used for anything else, with smaller segments.",
+    }),
     country: z.string().meta({ description: "ISO 3166 country of `to`.", examples: ["US"] }),
-    tags: z.array(z.object({ name: z.string(), value: z.string() })),
+    tags: z
+      .array(
+        z.object({
+          name: z.string().meta({ description: "The tag's name." }),
+          value: z.string().meta({ description: "The tag's value." }),
+        }),
+      )
+      .meta({ description: "Your tags on the message." }),
     failure: Failure.nullable(),
     sandbox: z.boolean().meta({ description: "Sent from a sandbox environment: simulated." }),
-    scheduled_at: z.iso.datetime().nullable(),
-    sent_at: z.iso.datetime().nullable(),
-    delivered_at: z.iso.datetime().nullable(),
+    scheduled_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it's set to send. `null`: it was sent at once." }),
+    sent_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was handed to the carrier. `null`: not yet." }),
+    delivered_at: z.iso.datetime().nullable().meta({
+      description: "When the carrier reported delivery. `null`: not delivered, or not reported.",
+    }),
     created_at: z.iso.datetime(),
   })
   .meta({
@@ -336,11 +360,16 @@ export const SmsEventData = z
       .optional()
       .meta({ description: "The provider's or carrier's own error code, e.g. `30007`." }),
     suppression: z
-      .object({ id: z.string(), reason: z.enum(SMS_SUPPRESSION_REASONS) })
+      .object({
+        id: z.string().meta({ description: "The suppression's id." }),
+        reason: z
+          .enum(SMS_SUPPRESSION_REASONS)
+          .meta({ description: "Why the number is suppressed." }),
+      })
       .optional()
       .meta({ description: "`sms.suppressed`: the entry that made coss.com skip the number." }),
   })
-  .meta({ id: "SmsEventData" });
+  .meta({ id: "SmsEventData", description: "Details of the event, where it has any." });
 
 export type SmsEventDataOutput = z.output<typeof SmsEventData>;
 
@@ -357,9 +386,12 @@ export const SmsEvent = z
   .object({
     object: z.literal("sms_event"),
     id: z.string(),
-    sms_id: z.string(),
-    type: z.enum(SMS_EVENT_TYPES),
-    occurred_at: z.iso.datetime(),
+    sms_id: z.string().meta({ description: "The id of the message." }),
+    type: z.enum(SMS_EVENT_TYPES).meta({
+      description:
+        "What happened: `sms.scheduled`, `sms.sent`, `sms.delivered`, `sms.undelivered`, `sms.failed`, `sms.suppressed` or `sms.canceled`.",
+    }),
+    occurred_at: z.iso.datetime().meta({ description: "When it happened." }),
     data: SmsEventData,
   })
   .meta({ id: "SmsEvent", examples: [DELIVERED_EVENT_EXAMPLE] });
@@ -390,18 +422,27 @@ export const SmsWebhookEvent = z
   .object({
     id: z.string().meta({ description: "The event id: the same as `SmsEvent.id`." }),
     object: z.literal("event"),
-    type: z.enum(SMS_EVENT_TYPES),
+    type: z.enum(SMS_EVENT_TYPES).meta({ description: "What happened to the message." }),
     api_version: ApiVersion,
-    created_at: z.iso.datetime(),
+    created_at: z.iso.datetime().meta({ description: "When the event was created." }),
     data: SmsEventData.extend({
-      sms_id: z.string(),
-      from: z.string(),
-      to: z.string(),
-      country: z.string(),
-      segments: z.number().int(),
-      tags: z.array(z.object({ name: z.string(), value: z.string() })),
-      sandbox: z.boolean(),
-      occurred_at: z.iso.datetime(),
+      sms_id: z.string().meta({ description: "The id of the message." }),
+      from: z.string().meta({ description: "The number it's sent from." }),
+      to: z.string().meta({ description: "The recipient's number." }),
+      country: z.string().meta({ description: "The recipient's country (ISO 3166-1 alpha-2)." }),
+      segments: z.number().int().meta({ description: "Segments the body takes (what is billed)." }),
+      tags: z
+        .array(
+          z.object({
+            name: z.string().meta({ description: "The tag's name." }),
+            value: z.string().meta({ description: "The tag's value." }),
+          }),
+        )
+        .meta({ description: "Your tags on the message." }),
+      sandbox: z
+        .boolean()
+        .meta({ description: "Whether it was sent from a sandbox environment: simulated." }),
+      occurred_at: z.iso.datetime().meta({ description: "When it happened." }),
       traceparent: z
         .string()
         .regex(TRACEPARENT_PATTERN)
@@ -448,13 +489,15 @@ export const ReceivedSmsObject = z
     id: z.string().meta({ examples: [RECEIVED_ID_EXAMPLE] }),
     from: z.string().meta({ description: "Who sent it." }),
     to: z.string().meta({ description: "Your number that received it." }),
-    body: z.string(),
-    segments: z.number().int(),
+    body: z.string().meta({ description: "The text." }),
+    segments: z.number().int().meta({ description: "Segments the text took." }),
     keyword: z.enum(["stop", "start", "help"]).nullable().meta({
       description:
         "`stop`: an opt-out (the sender is suppressed in every live environment), `start`: an opt-in again, `help`: a request for help. Twilio answers each.",
     }),
-    sandbox: z.boolean(),
+    sandbox: z
+      .boolean()
+      .meta({ description: "Whether it's a simulated message of a sandbox environment." }),
     created_at: z.iso.datetime(),
   })
   .meta({
@@ -502,21 +545,28 @@ export type ListReceivedSmsQueryOutput = z.output<typeof ListReceivedSmsQuery>;
 /** Body of `sms.received`, `sms.opted_out` and `sms.opted_in` webhooks. Never the text. */
 export const ReceivedSmsWebhookEvent = z
   .object({
-    id: z.string(),
+    id: z.string().meta({ description: "The event id." }),
     object: z.literal("event"),
-    type: z.enum(RECEIVED_SMS_EVENT_TYPES),
+    type: z.enum(RECEIVED_SMS_EVENT_TYPES).meta({
+      description:
+        "`sms.received`: a message arrived. `sms.opted_out`: the sender replied with an opt-out keyword. `sms.opted_in`: the sender replied with an opt-in keyword.",
+    }),
     api_version: ApiVersion,
-    created_at: z.iso.datetime(),
+    created_at: z.iso.datetime().meta({ description: "When the event was created." }),
     data: z.object({
       received_sms_id: z.string().nullable().meta({
         description:
           "The received message; `null` for an opt-out to a number whose replies go to no environment.",
       }),
-      from: z.string(),
-      to: z.string(),
-      keyword: z.enum(["stop", "start", "help"]).nullable(),
-      sandbox: z.boolean(),
-      occurred_at: z.iso.datetime(),
+      from: z.string().meta({ description: "Who sent it." }),
+      to: z.string().meta({ description: "Your number that received it." }),
+      keyword: z.enum(["stop", "start", "help"]).nullable().meta({
+        description: "The keyword it is, if any: `stop`, `start` or `help`. `null`: none.",
+      }),
+      sandbox: z
+        .boolean()
+        .meta({ description: "Whether it's a simulated message of a sandbox environment." }),
+      occurred_at: z.iso.datetime().meta({ description: "When it happened." }),
     }),
   })
   .meta({
@@ -549,7 +599,7 @@ export const SmsSuppression = z
   .object({
     object: z.literal("sms_suppression"),
     id: z.string().meta({ examples: [SUPPRESSION_ID_EXAMPLE] }),
-    phone_number: z.string(),
+    phone_number: z.string().meta({ description: "The suppressed number, in E.164." }),
     reason: z.enum(SMS_SUPPRESSION_REASONS).meta({
       description:
         "`opt_out`: the number replied STOP (or the carrier says it opted out). `invalid_number`: not a number that can receive SMS. `manual`: added by you.",
@@ -561,6 +611,7 @@ export const SmsSuppression = z
     created_at: z.iso.datetime(),
   })
   .meta({
+    description: "A number sends skip.",
     id: "SmsSuppression",
     examples: [
       {
@@ -587,7 +638,9 @@ export const SmsSuppressionList = z
 export type SmsSuppressionListOutput = z.output<typeof SmsSuppressionList>;
 
 export const CreateSmsSuppressionRequest = z
-  .strictObject({ phone_number: PhoneNumber })
+  .strictObject({
+    phone_number: PhoneNumber.meta({ description: "The number to suppress, in E.164." }),
+  })
   .meta({ id: "CreateSmsSuppressionRequest", examples: [{ phone_number: TO_EXAMPLE }] });
 
 export const ListSmsSuppressionsQuery = z.strictObject({
@@ -603,7 +656,7 @@ export const CheckSmsSuppressionQuery = z.strictObject({ phone_number: PhoneNumb
 export const SmsSuppressionCheck = z
   .object({
     object: z.literal("sms_suppression_check"),
-    phone_number: z.string(),
+    phone_number: z.string().meta({ description: "The number checked, in E.164." }),
     suppressed: z
       .boolean()
       .meta({ description: "Whether a send to this number would be skipped." }),
@@ -638,10 +691,16 @@ export const SmsNumberObject = z
   .object({
     object: z.literal("sms_number"),
     id: z.string().meta({ examples: ["num_01k7c8m4q2f3e9v6t5r1n0p8yz"] }),
-    phone_number: z.string(),
-    kind: z.enum(SMS_NUMBER_KINDS),
-    country: z.string(),
-    status: z.enum(SMS_NUMBER_STATUSES),
+    phone_number: z.string().meta({ description: "The number, in E.164." }),
+    kind: z.enum(SMS_NUMBER_KINDS).meta({
+      description:
+        "`local` (US A2P 10DLC) or `toll_free` (toll-free verification, and sends only to the US and Canada).",
+    }),
+    country: z.string().meta({ description: "Its country (ISO 3166-1 alpha-2)." }),
+    status: z.enum(SMS_NUMBER_STATUSES).meta({
+      description:
+        "`pending`: not ready yet. `active`: ready, once its registration is approved. `releasing`: being given up.",
+    }),
     registration_status: z.enum(SMS_REGISTRATION_STATUSES).nullable().meta({
       description: "Its carrier registration's status; live sends need `approved`.",
     }),

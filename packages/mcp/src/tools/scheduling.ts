@@ -413,7 +413,7 @@ export function registerSchedulingTools(ctx: ToolContext): void {
     {
       title: "Book a slot",
       description:
-        "Books a start from list_scheduling_slots. The attendee is told by email, and the booking " +
+        "Books a start from list_scheduling_slots. The attendee and any guests are told by email, and the booking " +
         "is billed on a live key: confirm it with the user first.",
       inputSchema: z.object({
         event_type: z.string(),
@@ -424,6 +424,10 @@ export function registerSchedulingTools(ctx: ToolContext): void {
         attendee: z
           .record(z.string(), z.unknown())
           .describe("{ name, email, time_zone, uid? }: read_docs on /docs/scheduling."),
+        guests: z
+          .array(z.object({ email: z.string(), name: z.string().optional() }))
+          .optional()
+          .describe("Up to the event type's max_guests. Each one is emailed."),
         answers: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
       }),
       annotations: SENDS,

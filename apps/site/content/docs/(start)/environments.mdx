@@ -82,5 +82,19 @@ the way the Amazon SES mailbox simulator behaves, so you can test failure handli
 
 Every sandbox email also gets `email.sent`.
 
-Sandbox [SMS](/docs/sms) is simulated too: any `from` number works, and the
-[SMS simulator's numbers](/docs/sms/testing) produce each delivery outcome.
+Every other product works in a sandbox too, and nothing is billed unless the table says so:
+
+| Product                         | In a sandbox                                                                                                              | Testing                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| [Marketing email](/docs/email/broadcasts) | Broadcasts and other marketing sends are simulated like any email above.                                        | The table above                          |
+| [Inboxes](/docs/inboxes)        | Every inbox can send, and nothing is delivered. Simulate received mail from the dashboard; real mail to one is received. | [Testing inboxes](/docs/inboxes/testing) |
+| [SMS](/docs/sms)                | Any `from` number works, nothing is sent, and the simulator's numbers produce each delivery outcome.                      | [SMS simulator](/docs/sms/testing)       |
+| [Verify](/docs/verify)          | The code is always zeros, and nothing reaches a phone or mailbox. The fraud guard still runs.                             | [Testing Verify](/docs/verify/testing)   |
+| [Sign](/docs/sign)              | Requests complete on the real signing page, which says it's a test. Emails go to the dashboard, not to signers.           | [Testing Sign](/docs/sign/testing)       |
+| [Forms](/docs/forms)            | Posts are screened, stored and delivered, and emails go to the dashboard. `http://localhost` is allowed while you develop. | [Testing Forms](/docs/forms/testing)     |
+| [Scheduling](/docs/scheduling)  | Everything works as live, with simulated calendars available. Nobody is emailed.                                         | [Testing Scheduling](/docs/scheduling/testing) |
+| [Hooks](/docs/hooks)            | Messages are delivered for real to your endpoints' URLs, under lower limits.                                              | [Testing Hooks](/docs/hooks/testing)     |
+| [Risk](/docs/risk)              | Assessments work as live with their own memory, and test inputs trigger each reason.                                      | [Testing Risk](/docs/risk/testing)       |
+
+Real mail a sandbox environment receives, at an inbox or any of its addresses, is billed as
+[received email](/docs/email/receiving#limits-and-retention).
