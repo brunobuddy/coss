@@ -331,7 +331,8 @@ What an agent pointed at coss.com reads, all describing the same facts — chang
   AGENTS.md (`agentNotes`, `packages/cli/src/commands/init.ts`) and the MCP server's instructions (`packages/mcp/src/server.ts`).
 - `claude plugin validate .` and `claude plugin validate plugins/coss` check the marketplace and the plugin. The
   plugin has no `version` on purpose: installs follow main. Its MCP server takes the key from the plugin's optional
-  `api_key` (`userConfig`); without one `coss-mcp` serves only the docs tools.
+  `api_key` (`userConfig`); without one `coss-mcp` serves only the docs tools. Its optional `toolsets` becomes
+  `COSS_MCP_TOOLSETS`, where empty means every tool.
 
 ## coss.com zones
 

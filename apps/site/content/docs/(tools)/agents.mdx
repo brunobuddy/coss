@@ -65,6 +65,10 @@ then `/plugin install coss@coss`.
 It asks for an API key for the MCP server. Use a development key (`coss_test_…`), or leave it
 empty: the server's docs tools work without one.
 
+Every product's tools together take up a lot of an agent's context. To offer only the ones you
+use, set the plugin's optional **MCP toolsets** to a comma-separated list such as `email,sms`
+([the toolsets](/docs/mcp)). Left empty, the server offers every tool.
+
 ## Cursor, Codex and other agents
 
 The same skill installs into Cursor, Codex, GitHub Copilot, Windsurf and other agents with the
