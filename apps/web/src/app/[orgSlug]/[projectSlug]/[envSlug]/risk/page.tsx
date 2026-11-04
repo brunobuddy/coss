@@ -1,6 +1,9 @@
+import { allowanceUsedUp } from "@coss/billing";
+import { settingsHref } from "@coss/dashboard-routes";
 import { listRiskAssessments } from "@coss/risk";
 import { ListRiskAssessmentsQuery } from "@coss/risk/schemas";
 import { getEnvironment } from "@coss/tenancy";
+import { Alert, AlertDescription } from "@coss/ui/components/alert";
 import { Button } from "@coss/ui/components/button";
 import {
   Table,
@@ -64,6 +67,9 @@ export default async function RiskPage({
       )
     : null;
 
+  const reduced =
+    environment.mode === "live" && (await allowanceUsedUp(organization.id, "risk.assessments"));
+
   const base = `/${organization.slug}/${project.slug}/${environment.slug}`;
   const resolving = view.id === "review" && can({ risk: ["feedback"] });
   const target = {
@@ -93,6 +99,19 @@ export default async function RiskPage({
         meta={<ModeBadge mode={environment.mode} />}
         title="Risk assessments"
       />
+
+      {reduced ? (
+        <Alert variant="warning">
+          <AlertDescription>
+            This month's included assessments are used up. Until next month, assessments are free
+            but made without velocity, memory of earlier events or content checks, so repeat abuse
+            can get through.{" "}
+            <Link className="underline" href={settingsHref(organization.slug, "/billing/plans")}>
+              Upgrade to keep them
+            </Link>
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <FilterLinks
         options={VIEWS.map((candidate) => ({
