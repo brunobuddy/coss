@@ -11,7 +11,7 @@ import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 const base = pageMetadata({
   title: "Changelog: what shipped on coss.com",
   description:
-    "New coss.com products and features, newest first: email, SMS, inboxes, scheduling, forms, one-time codes, webhooks and risk checks.",
+    "New coss.com products and features, newest first: email, SMS, inboxes, scheduling, forms, e-signatures, one-time codes, webhooks and risk checks.",
   path: CHANGELOG_ROUTE,
   markdown: `${CHANGELOG_ROUTE}/index.md`,
 });

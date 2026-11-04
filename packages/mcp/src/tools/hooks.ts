@@ -1,6 +1,9 @@
 import type { HookApplication, HookDelivery, HookMessage } from "coss";
+import { fetchHookDeliveryDiagnosis } from "coss/diagnose";
 import { z } from "zod";
-import { ok, respond, run, unwrap } from "../result.ts";
+import { fail, failWith, ok, respond, run, unwrap } from "../result.ts";
+import { TOOL_REFERENCES } from "./diagnose-references.ts";
+import { HOOK_DIAGNOSIS_OUTPUT } from "./output-schemas.ts";
 import {
   compact,
   cursorSchema,
@@ -287,6 +290,76 @@ export function registerHookTools(ctx: ToolContext): void {
         note: UNTRUSTED_RESPONSES,
         attempts: page.data,
       })),
+  );
+
+  server.registerTool(
+    "diagnose_hook_delivery",
+    {
+      title: "Diagnose a Hooks delivery",
+      description:
+        "Answers \"why isn't my customer's endpoint getting this?\": a verdict, what the endpoint " +
+        "answered on each attempt, when the next retry is, whether the endpoint is disabled or " +
+        "failing, and next steps. Give `delivery_id`, or `message_id` (its worst delivery) or " +
+        `\`endpoint_id\` (its newest delivery that didn't succeed). ${UNTRUSTED_RESPONSES}`,
+      inputSchema: z.object({
+        application: z.string().describe("The application's id or uid."),
+        delivery_id: z.string().optional(),
+        message_id: z.string().optional().describe("The message's id (hmsg_…)."),
+        endpoint_id: z.string().optional().describe("The endpoint's id (hep_…)."),
+      }),
+      outputSchema: HOOK_DIAGNOSIS_OUTPUT,
+      annotations: READ_ONLY,
+    },
+    ({ application, delivery_id, message_id, endpoint_id }) =>
+      run(async () => {
+        let target = delivery_id;
+        let others: object[] = [];
+        if (!target) {
+          let deliveries: HookDelivery[];
+          if (message_id) {
+            deliveries = unwrap(
+              await coss.hooks.messages.listDeliveries(application, message_id),
+            ).data;
+          } else if (endpoint_id) {
+            deliveries = unwrap(
+              await coss.hooks.endpoints.listDeliveries(application, endpoint_id, { limit: 20 }),
+            ).data;
+          } else {
+            return failWith("Pass `delivery_id`, `message_id` or `endpoint_id`.");
+          }
+          const worst =
+            deliveries.find((delivery) => delivery.status === "failed") ??
+            deliveries.find((delivery) => delivery.status === "pending") ??
+            deliveries[0];
+          if (!worst) {
+            return failWith(
+              message_id
+                ? "This message has no deliveries: when it was sent, no endpoint of the application was enabled and subscribed to its event type."
+                : "This endpoint has no deliveries.",
+              { hint: "list_hook_endpoints shows the application's endpoints and their filters." },
+            );
+          }
+          target = worst.id;
+          others = deliveries
+            .filter((delivery) => delivery.id !== worst.id)
+            .slice(0, 5)
+            .map(({ id, endpoint_id: endpoint, status }) => ({
+              id,
+              endpoint_id: endpoint,
+              status,
+            }));
+        }
+        const { data, error } = await fetchHookDeliveryDiagnosis(coss, application, target, {
+          now: ctx.now(),
+          references: TOOL_REFERENCES,
+        });
+        if (error) return fail(error);
+        return ok({
+          note: UNTRUSTED_RESPONSES,
+          ...data,
+          ...(others.length > 0 ? { other_deliveries: others } : {}),
+        });
+      }),
   );
 
   server.registerTool(

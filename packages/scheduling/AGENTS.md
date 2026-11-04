@@ -53,6 +53,14 @@ Time is computed **only in Bun services** (api, worker), with `engine/time.ts`: 
 when this was written. Never compute slots in the dashboard or with SQL's `AT TIME ZONE`: the dashboard's preview
 embeds the booker. Local dates (overrides, limits) never pass through `Date`.
 
+The booking path computes slots, so the dashboard (Node) never calls `createBooking` or `rescheduleBooking`. It opens the
+hosted page in a tab through a session with `createdByUserId` (`openBookerAction`, `openBookingManagerAction`), and that
+session acts as the member (`sessionActor`), past attendees' cutoffs. A manage session made this way lasts an hour.
+`listRescheduleSlots` answers where a booking can move the way `rescheduleBooking` checks it: its own hosts (none disabled
+or taken off the event type), length and buffers, with its own claims left out. Change them together.
+A new event type field goes in the dashboard's form too
+(`apps/web/src/lib/scheduling-edit.ts`, `event-type-form.tsx`), or typecheck fails on the test fixtures there.
+
 ## Calendars
 
 - `CalendarClient` can't return a title: no method reads anything but busy intervals, and `scheduling_busy_interval`
@@ -109,6 +117,14 @@ A Meet or Teams link becomes a `link` location on the booking, stored with `conf
 new host gets a meeting of their own (`locationForNewHost`). A browser only chooses among an event type's `locations`
 (`locationFromBrowser`): it can't supply its own link or address.
 
+A `link`, `phone` or `in_person` location left blank takes the value of the booked host's `locations`, once a host has
+won (`withHostLocation`), and stays blank if they have none: nobody loses availability over it. It's stored with
+`fromHost` (stripped from the wire, like `conference`), so a move to another host never keeps the old host's office. A
+booking is a snapshot: editing a host only reaches new bookings. Hosts set these themselves from their page, and they
+land in attendees' emails, so `hosts.ts` refuses links in addresses and screens new addresses and URLs; a phone number
+is E.164, with no room to say anything. An event type's own locations get the same checks when set. Links must be
+https, but a booking can hold an older one, so `Where` (`apps/scheduling`) never puts anything but a web link in an `href`.
+
 ## Sessions and the client API
 
 `sessions.ts`: a token (`cossch_`) stored only as a sha256, in the URL's fragment then an `Authorization` header, never
@@ -126,7 +142,32 @@ attendee sees times, never other hosts.
 - Answers come back only from `getBooking`: never lists, webhooks, logs, emails or calendars. The dashboard's iOS
   routes map bookings to name or uid only (`scheduling/wire.ts` under `apps/web/src/app/api/mobile/v1`).
 - Webhooks and log lines carry ids, times and statuses. `request-log.ts` keeps no bodies of these routes.
-- Host calendar events are private, titled "Appointment", with no attendees.
+- Host calendar events are private, titled "Appointment", with no attendees, unless the event type's
+  `host_calendar_details` is `full`: then `calendar/details.ts` adds its title, and who's coming to the title and
+  description. Nobody's ever invited through a provider (Graph can't be stopped from emailing them), answers never go
+  there, a group session's event has only the title, and Zoom stays neutral (`detailedEvent`, `writes.ts`). HIPAA mode
+  refuses `full` at setup, and is read again at each write.
+- A provider's copy of someone's details has to go when ours does. `details_written` marks a row whose event may say
+  more than "Appointment", and `scrub_pending` says details have to come off it.
+- `detailsToSend` takes `FOR SHARE` on the organization and the attendee rows, then sets the mark, in one transaction:
+  a plain read wouldn't wait for an uncommitted erasure or HIPAA enablement, and would send what they're removing. So
+  erasures and redaction change the attendee rows **before** calling `rewriteDetailedEvents`, in one transaction, and
+  `enableHipaaMode` updates the organization's row before its rewrite. The ledger row is locked last, or these deadlock.
+- A write clears both flags only if `desired_version` hasn't moved since it started (`clearedUnlessNewer`), and a stale
+  writer that sent details sets both again (`redrive`). A row with `scrub_pending` never gives up: it retries with capped
+  backoff and reports to Sentry once, until the write lands or the provider says the event is gone. Never work out
+  "is this a cleanup?" from what the event will say: erasing the attendee leaves a guest in the description.
+- `description` is left out of writes to an event that never held details, so what a host wrote there stays.
+- Known limit: disconnecting scrubs what it can within a budget before access goes (`scrubDetailedEvents`, which can't
+  stop the disconnect), and deleting a host or a host revoking access at the provider scrubs nothing. Those copies are
+  out of reach, and the docs say so.
+- A guest is a `scheduling_attendee` with `role = 'guest'`, only an email and optional name, and the attendee's zone and
+  locale; `participants` lists the attendee first. The event type's `max_guests` (default 0, never on `group`) allows
+  them, since each is an address someone typed that we then email. So in live environments they're only emailed from the
+  customer's own `email_from`, never coss.com's, even when it stops being verified (`ownSenderOnly`). They get no manage link and no SMS, and hear nothing until a booking's
+  confirmed (`guestsAreTold`, `notifications.ts`). Their emails say nothing the booker wrote. The booker
+  and manage pages and the iOS app see only the attendee; a host's portal sees everyone on their own bookings. With no `uid`, a guest is erased by address (`POST /scheduling/attendees/erase`):
+  never put the address in a path or the audit log.
 - `redactExpiredBookings` erases details 90 days after a booking ends, `purgeExpiredBookings` the row at 395;
   `eraseAttendee` on request, which also ends booker sessions fixed to them (found by `attendee_uid`). Periods live in
   `@coss/retention`.

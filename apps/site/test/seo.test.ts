@@ -155,6 +155,10 @@ describe("what the site says exists", () => {
     for (const product of CATALOG) expect(product.href).toStartWith("/products/");
   });
 
+  test("the site's description fits the default social card, which cuts it at 140 characters", () => {
+    expect(SITE_DESCRIPTION.length).toBeLessThanOrEqual(140);
+  });
+
   test("Video isn't sold until it ships", () => {
     const named = [
       SITE_DESCRIPTION,

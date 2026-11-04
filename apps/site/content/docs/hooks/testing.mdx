@@ -1,0 +1,61 @@
+---
+title: Testing
+description: "Test Hooks with a sandbox key: deliveries go to real URLs, signed and retried as live, with lower limits and nothing billed."
+---
+
+Hooks has no simulator. Messages sent with a sandbox (`coss_test_…`) key are delivered for real, so
+your test endpoint gets the same signed request, retries and attempts as a live one. What's
+different:
+
+- **Nothing is billed**, however many messages you send.
+- **The limits are lower**: 100 applications, 5 endpoints per application and 2,000 deliveries a day
+  per environment ([limits](/docs/hooks/delivery#limits)).
+- **The portal can be embedded from `http://localhost`** while you develop.
+- **Failing endpoints don't count against your [reputation](/docs/reputation).**
+
+## The whole loop
+
+Endpoints must be public `https://` URLs, so use a tunnel or a request inspector to reach your
+machine: `localhost` and private addresses are refused. `coss listen` doesn't help here, since it
+forwards the environment's own [webhooks](/docs/webhooks), not Hooks deliveries.
+
+```sh
+coss hooks event-types create invoice.paid --example '{"invoice_id":"in_1","amount":4200}'
+coss hooks apps create "Test customer" --uid test-customer
+coss hooks endpoints add test-customer --url https://your-tunnel.example/hooks
+coss hooks send test-customer invoice.paid
+coss hooks deliveries test-customer
+coss hooks attempts test-customer <delivery>
+```
+
+`coss hooks endpoints add` prints the endpoint's signing secret: give it to your receiver to
+[verify requests](/docs/hooks/receiving#verify-every-request). `coss hooks attempts` shows what each
+request got back, and `coss hooks portal test-customer --open` shows your customer's view of it all.
+
+To try one endpoint without reaching the application's others, send it a test message, which is
+free in live environments too:
+
+```ts twoslash
+import { Coss } from "coss";
+// A sandbox key: coss_test_…
+const coss = new Coss();
+declare const endpointId: string;
+// ---cut---
+const { data: message } = await coss.hooks.endpoints.sendTest("test-customer", endpointId, {
+  event_type: "invoice.paid",
+});
+// Without a `payload`, it uses the event type's first example.
+```
+
+## Failures
+
+Point an endpoint at a URL that answers `500` to watch the real [retry
+schedule](/docs/hooks/delivery#retries). `coss hooks deliveries test-customer --status failed` lists
+what gave up, and `coss hooks retry test-customer <delivery>` tries one again.
+
+Waiting 5 days for an endpoint to be disabled isn't practical, so test your handler for that event
+with a sample, which goes to your own [webhook endpoints](/docs/webhooks) and `coss listen`:
+
+```sh
+coss trigger hook_endpoint.disabled
+```

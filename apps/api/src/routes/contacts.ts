@@ -204,6 +204,7 @@ export const getContactRoute = createRoute({
   operationId: "getContact",
   tags: ["Contacts"],
   summary: "Retrieve a contact",
+  description: "One contact of the API key's environment.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ contact: ["read"] }), rateLimit("api.read")],
   request: { params: ContactParams },
@@ -351,6 +352,7 @@ export const getContactPropertyRoute = createRoute({
   operationId: "getContactProperty",
   tags: ["Contacts"],
   summary: "Retrieve a contact property",
+  description: "One contact property of the API key's environment: its key, type and fallback.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ contact: ["read"] }), rateLimit("api.read")],
   request: { params: PropertyParams },
@@ -367,6 +369,8 @@ export const updateContactPropertyRoute = createRoute({
   operationId: "updateContactProperty",
   tags: ["Contacts"],
   summary: "Update a contact property's fallback",
+  description:
+    "Changes the value used when a contact has none for this property. Its key and type can't change.",
   security: [{ bearerAuth: [] }],
   middleware: [
     requireApiKey({ contact: ["update"] }),

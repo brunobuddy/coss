@@ -9,7 +9,7 @@
     {
       "name": "coss",
       "source": "./plugins/coss",
-      "description": "Build with coss.com (email, SMS, webhooks): a skill for adding it to a project and the coss.com MCP server"
+      "description": "Build with coss.com (email, marketing, inboxes, SMS, Verify, Sign, Forms, Scheduling, Hooks, Risk): a skill for adding it to a project and the coss.com MCP server"
     }
   ]
 }

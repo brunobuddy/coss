@@ -32,7 +32,7 @@ faq:
   - question: What happens if a user asks for the code again?
     answer: Starting a verification for the same destination while one is pending sends a new code, the earlier one stops working and the expiry restarts. A verification can send at most 5 codes.
   - question: How is Verify priced?
-    answer: You pay per approved verification, plus the channel. An SMS from coss.com's shared numbers is billed at its country's SMS rate, one from your own number like any SMS, and email codes cost nothing extra. Blocked, failed and expired verifications cost only the messages actually sent. The pricing page lists the rates.
+    answer: You pay per approved verification, plus the channel. An SMS from your own number is billed like any SMS, one from coss.com's shared numbers at its country's SMS rate, and email codes cost nothing extra. Blocked, failed and expired verifications cost only the messages actually sent. The pricing page lists the rates.
   - question: How do I test Verify without sending real codes?
     answer: Use a sandbox key. The code is always zeros, such as 000000 with the default length, SMS go to the SMS simulator and emails to the sandbox's fake provider, and nothing is billed. The fraud guard still runs, so a premium-rate test number is blocked as in live environments.
 ---
@@ -96,7 +96,7 @@ A wrong code spends an attempt, and the last one fails the verification. Checkin
 <Features>
 
 <Feature title="SMS or email">
-A number in E.164 form gets an SMS, an email address an email. SMS go from coss.com's shared numbers or one of your own registered numbers; email from your verified domain or from coss.com's sender. See [SMS codes](/docs/verify/sms) and [email codes](/docs/verify/email).
+A number in E.164 form gets an SMS, an email address an email. SMS go from one of your own registered numbers, or from coss.com's shared numbers as they roll out; email from your verified domain or from coss.com's sender. See [SMS codes](/docs/verify/sms) and [email codes](/docs/verify/email).
 </Feature>
 
 <Feature title="Never stored, never logged">
@@ -151,6 +151,6 @@ It uses [Risk](/docs/risk)'s building blocks and your environment's Risk lists, 
 
 <UsageRates meters="verify.verifications,verify.sms" />
 
-An SMS from coss.com's shared numbers is billed at its country's SMS rate, one from your own number like any [SMS](/products/sms), and email codes cost nothing extra. Sandbox verifications are never billed. See [pricing](/pricing) for the plans.
+An SMS from your own number is billed like any [SMS](/products/sms), one from coss.com's shared numbers at its country's SMS rate, and email codes cost nothing extra. Sandbox verifications are never billed. See [pricing](/pricing) for the plans.
 
 </Section>

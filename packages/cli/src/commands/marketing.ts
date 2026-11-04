@@ -1,21 +1,43 @@
 /** `coss contacts …`, `coss broadcasts …`: marketing email's contacts and sends, on the public API. */
 
-import { readFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type {
   Broadcast,
   BroadcastStatus,
   Contact,
+  ContactPropertyType,
   ContactStatus,
   CreateBroadcastParams,
+  UpdateBroadcastParams,
+  UpdateContactParams,
 } from "coss";
-import { type Flags, requireArgs } from "../args.ts";
+import { type Flags, jsonOrString, pairs, requireArgs } from "../args.ts";
 import { type Command, type CommandInput, defineCommand } from "../command.ts";
-import { clientFor, resolveCredentials } from "../context.ts";
+import {
+  type ContactsFile,
+  contactsFromCsv,
+  contactsFromJson,
+  isJsonContacts,
+} from "../contacts-file.ts";
+import { type Context, clientFor, resolveCredentials } from "../context.ts";
 import { printable } from "../emails/format.ts";
-import { apiError, UsageError } from "../errors.ts";
+import { apiError, CliError, UsageError } from "../errors.ts";
+import { jsonObject } from "../fields.ts";
 import type { Output, Style } from "../output.ts";
-import { client, confirmLive, LIMIT, limitOf, oneOf, printList, when } from "./list-output.ts";
+import {
+  client,
+  confirmLive,
+  fileText,
+  LIMIT,
+  limitOf,
+  oneOf,
+  orNull,
+  printDeleted,
+  printList,
+  printOne,
+  when,
+} from "./list-output.ts";
 
 const CONTACT_STATUSES: readonly ContactStatus[] = ["subscribed", "unsubscribed", "pending"];
 const BROADCAST_STATUSES: readonly BroadcastStatus[] = [
@@ -28,7 +50,7 @@ const BROADCAST_STATUSES: readonly BroadcastStatus[] = [
   "failed",
 ];
 
-function contactStyle(status: ContactStatus): Style {
+export function contactStyle(status: ContactStatus): Style {
   if (status === "subscribed") return "green";
   return status === "pending" ? "yellow" : "dim";
 }
@@ -39,7 +61,7 @@ function broadcastStyle(status: BroadcastStatus): Style {
   return "yellow";
 }
 
-function contactName(contact: Contact): string {
+export function contactName(contact: Contact): string {
   return printable([contact.first_name, contact.last_name].filter(Boolean).join(" "));
 }
 
@@ -183,6 +205,177 @@ const contactsAdd: Command = defineCommand({
   },
 });
 
+const CONTACTS_UPDATE_FLAGS = {
+  "first-name": { type: "string", value: "<name>", description: 'Their first name ("" clears it)' },
+  "last-name": { type: "string", value: "<name>", description: 'Their last name ("" clears it)' },
+  status: {
+    type: "string",
+    value: "<status>",
+    choices: ["subscribed", "unsubscribed"],
+    description: "subscribed or unsubscribed; only resubscribe people who asked to be",
+  },
+  property: {
+    type: "string",
+    multiple: true,
+    value: "<name=value>",
+    description: "A custom property (repeatable; values are JSON when they parse; null removes it)",
+  },
+  data: {
+    type: "string",
+    value: "<json>",
+    description:
+      "More of the request body (topics), as JSON: inline, @file or - for stdin; the flags above " +
+      "win over it",
+  },
+  json: { type: "boolean", description: "Print the contact as JSON" },
+} as const satisfies Flags;
+
+const contactsUpdate: Command = defineCommand({
+  name: "contacts update",
+  summary: "Change a contact's name, status or properties",
+  usage: "<contact> [options]",
+  description: "Changes what is given on a contact, by id or address; the rest stays.",
+  flags: CONTACTS_UPDATE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof CONTACTS_UPDATE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "contacts update <contact> [options]") as [string];
+    const status = oneOf("--status", values.status, ["subscribed", "unsubscribed"] as const);
+    const base = values.data === undefined ? {} : await jsonObject(context.io, values.data, "data");
+    const properties = values.property && {
+      properties: {
+        ...(base.properties as Record<string, unknown> | undefined),
+        ...Object.fromEntries(
+          pairs(values.property, "property").map(([name, raw]) => [name, jsonOrString(raw)]),
+        ),
+      },
+    };
+    const params = {
+      ...base,
+      ...(values["first-name"] !== undefined && { first_name: orNull(values["first-name"], "") }),
+      ...(values["last-name"] !== undefined && { last_name: orNull(values["last-name"], "") }),
+      ...(status && { status }),
+      ...properties,
+    } as UpdateContactParams;
+    if (Object.keys(params).length === 0) {
+      throw new UsageError("Pass at least one thing to change (coss contacts update --help).");
+    }
+    const coss = await client(context);
+    const { data, error } = await coss.email.contacts.update(id, params);
+    if (error) throw apiError("Couldn't change the contact", error);
+    const { out } = context;
+    if (out.json) out.data(data);
+    else out.line(`${out.style("green", "✔")} ${data.id} ${printable(data.email)} ${data.status}`);
+    return 0;
+  },
+});
+
+const CONTACTS_IMPORT_FLAGS = {
+  audience: {
+    type: "string",
+    value: "<audience>",
+    description: "Add every imported contact to this audience",
+  },
+  json: { type: "boolean", description: "Print what the import did as JSON" },
+} as const satisfies Flags;
+
+/** The file's contacts; only a CSV asks for the properties its columns may name. */
+async function contactsFile(context: Context, file: string): Promise<ContactsFile> {
+  const text =
+    file === "-" ? await context.io.readStdin() : await fileText(context, "<file>", file);
+  if (isJsonContacts(text)) return contactsFromJson(text);
+  const coss = await client(context);
+  const { data, error } = await coss.email.contacts.properties.list();
+  if (error) throw apiError("Couldn't read the contact properties", error);
+  const types = new Map<string, ContactPropertyType>(
+    data.data.map((item) => [item.key, item.type]),
+  );
+  return contactsFromCsv(text, types);
+}
+
+const contactsImport: Command = defineCommand({
+  name: "contacts import",
+  summary: "Create or update contacts from a CSV or JSON file",
+  usage: "<file> [--audience <audience>]",
+  description:
+    "Creates or updates contacts from a CSV (what `coss contacts export` writes, or any file with " +
+    "an email column; columns named after custom properties set them) or a JSON array; - reads " +
+    "stdin. Only import people who agreed to hear from you. An import never resubscribes an " +
+    "unsubscribed contact, and running it again is safe. Rows it can't use are skipped and " +
+    "listed, and then it exits 1.",
+  flags: CONTACTS_IMPORT_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof CONTACTS_IMPORT_FLAGS>) => {
+    const [file] = requireArgs(positionals, 1, "contacts import <file>") as [string];
+    const { contacts, ignored } = await contactsFile(context, file);
+    const { out } = context;
+    if (ignored.length > 0) {
+      out.warn(`Not imported, no such property: ${printable(ignored.join(", "))}.`);
+    }
+    const coss = await client(context);
+    const { data, error } = await coss.email.contacts.import({
+      contacts,
+      ...(values.audience !== undefined && { audience_id: values.audience }),
+    });
+    if (error) throw apiError("Couldn't import the contacts", error);
+    if (out.json) out.data(data);
+    else {
+      out.line(
+        `${out.style("green", "✔")} ${data.created} created, ${data.updated} updated, ${data.kept_unsubscribed} kept unsubscribed`,
+      );
+      for (const entry of data.invalid) {
+        out.warn(`Skipped ${printable(entry.email)}: ${printable(entry.message)}`);
+      }
+    }
+    return data.invalid.length > 0 ? 1 : 0;
+  },
+});
+
+const CONTACTS_EXPORT_FLAGS = {
+  status: {
+    type: "string",
+    value: "<status>",
+    choices: CONTACT_STATUSES,
+    description: "subscribed, unsubscribed or pending",
+  },
+  audience: { type: "string", value: "<audience>", description: "Only members of this audience" },
+  out: { type: "string", value: "<file>", description: "Where to save it (default: stdout)" },
+  json: { type: "boolean", description: "Print where it was saved, or the CSV, as JSON" },
+} as const satisfies Flags;
+
+const contactsExport: Command = defineCommand({
+  name: "contacts export",
+  summary: "Print or save the contacts as CSV",
+  usage: "[--out <file>] [options]",
+  description:
+    "Prints the contacts as CSV, one column per custom property, or saves them with --out. " +
+    "`coss contacts import` takes the file again.",
+  flags: CONTACTS_EXPORT_FLAGS,
+  run: async ({ values, context }: CommandInput<typeof CONTACTS_EXPORT_FLAGS>) => {
+    const status = oneOf("--status", values.status, CONTACT_STATUSES);
+    const coss = await client(context);
+    const { data, error } = await coss.email.contacts.export({
+      ...(status && { status }),
+      ...(values.audience !== undefined && { audience_id: values.audience }),
+    });
+    if (error) throw apiError("Couldn't export the contacts", error);
+    const { io, out } = context;
+    if (values.out !== undefined) {
+      const file = resolve(io.cwd, values.out);
+      try {
+        await writeFile(file, data, { mode: 0o600 });
+      } catch (cause) {
+        throw new CliError(`Couldn't write ${file}: ${(cause as Error).message}`);
+      }
+      if (out.json) out.data({ file, size: Buffer.byteLength(data) });
+      else out.line(`${out.style("green", "✔")} Saved ${file}`);
+    } else if (out.json) out.data({ csv: data });
+    // People's names: a terminal gets them without escape sequences, a pipe byte for byte.
+    else if (io.stdout.isTTY) out.line(printable(data.trimEnd(), true));
+    else out.raw(data);
+    return 0;
+  },
+});
+
 const contactsRemove: Command = defineCommand({
   name: "contacts remove",
   summary: "Delete a contact",
@@ -288,20 +481,13 @@ const broadcastsCreate: Command = defineCommand({
       throw new UsageError("A broadcast needs --name, --from and --subject.");
     }
     if (!values.html && !values.text) throw new UsageError("Pass --html <file> or --text <file>.");
-    const read = async (flag: string, file: string) => {
-      try {
-        return await readFile(resolve(context.io.cwd, file), "utf8");
-      } catch {
-        throw new UsageError(`Couldn't read ${file} (${flag}).`);
-      }
-    };
     const params: CreateBroadcastParams = {
       name,
       from,
       subject,
       send: false,
-      ...(values.html && { html: await read("--html", values.html) }),
-      ...(values.text && { text: await read("--text", values.text) }),
+      ...(values.html && { html: await fileText(context, "--html", values.html) }),
+      ...(values.text && { text: await fileText(context, "--text", values.text) }),
       ...(values.audience && { audience_id: values.audience }),
       ...(values.segment && { segment_id: values.segment }),
       ...(values.topic && { topic: values.topic }),
@@ -396,6 +582,135 @@ const broadcastsSend: Command = defineCommand({
   },
 });
 
+const BROADCAST_UPDATE_FLAGS = {
+  name: { type: "string", value: "<name>", description: "Its name in the dashboard" },
+  from: { type: "string", value: "<address>", description: "Sender, on a verified domain" },
+  subject: { type: "string", value: "<subject>", description: "The subject" },
+  html: { type: "string", value: "<file>", description: "A file with the HTML" },
+  text: { type: "string", value: "<file>", description: "A file with the text" },
+  audience: { type: "string", value: "<audience>", description: "Send to this audience instead" },
+  segment: { type: "string", value: "<segment>", description: "Send to this segment instead" },
+  topic: {
+    type: "string",
+    value: "<topic>",
+    description: "Only contacts opted in to this topic (none: everyone)",
+  },
+  data: {
+    type: "string",
+    value: "<json>",
+    description:
+      "More of the request body (reply_to, preview_text, tracking, rate_per_second), as JSON: " +
+      "inline, @file or - for stdin; the flags above win over it",
+  },
+  json: { type: "boolean", description: "Print the broadcast as JSON" },
+} as const satisfies Flags;
+
+const broadcastsUpdate: Command = defineCommand({
+  name: "broadcasts update",
+  summary: "Change a draft broadcast",
+  usage: "<broadcast> [options]",
+  description: "Changes what is given on a draft. Nothing goes out.",
+  flags: BROADCAST_UPDATE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof BROADCAST_UPDATE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "broadcasts update <broadcast> [options]") as [string];
+    const base = values.data === undefined ? {} : await jsonObject(context.io, values.data, "data");
+    const params = {
+      ...base,
+      ...(values.name !== undefined && { name: values.name }),
+      ...(values.from !== undefined && { from: values.from }),
+      ...(values.subject !== undefined && { subject: values.subject }),
+      ...(values.html !== undefined && { html: await fileText(context, "--html", values.html) }),
+      ...(values.text !== undefined && { text: await fileText(context, "--text", values.text) }),
+      ...(values.audience !== undefined && { audience_id: values.audience }),
+      ...(values.segment !== undefined && { segment_id: values.segment }),
+      ...(values.topic !== undefined && { topic: orNull(values.topic, "none") }),
+    } as UpdateBroadcastParams;
+    if (Object.keys(params).length === 0) {
+      throw new UsageError("Pass at least one thing to change (coss broadcasts update --help).");
+    }
+    const coss = await client(context);
+    const { data, error } = await coss.email.broadcasts.update(id, params);
+    if (error) throw apiError("Couldn't change the broadcast", error);
+    printOne(context.out, data, printBroadcast);
+    return 0;
+  },
+});
+
+const broadcastsRemove: Command = defineCommand({
+  name: "broadcasts remove",
+  summary: "Delete a draft broadcast",
+  usage: "<broadcast>",
+  description: "Deletes a draft, or a broadcast canceled before it sent anything.",
+  flags: BROADCAST_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof BROADCAST_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "broadcasts remove <broadcast>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.email.broadcasts.remove(id);
+    if (error) throw apiError("Couldn't delete the broadcast", error);
+    printDeleted(context.out, data);
+    return 0;
+  },
+});
+
+const broadcastsPause: Command = defineCommand({
+  name: "broadcasts pause",
+  summary: "Pause a scheduled or sending broadcast",
+  usage: "<broadcast>",
+  description:
+    "Pauses a scheduled or sending broadcast; `coss broadcasts resume` picks it up again.",
+  flags: BROADCAST_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof BROADCAST_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "broadcasts pause <broadcast>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.email.broadcasts.pause(id);
+    if (error) throw apiError("Couldn't pause the broadcast", error);
+    printOne(context.out, data, printBroadcast);
+    return 0;
+  },
+});
+
+const RESUME_FLAGS = {
+  yes: { type: "boolean", description: "Don't ask before a live send" },
+  json: { type: "boolean", description: "Print the broadcast as JSON" },
+} as const satisfies Flags;
+
+const broadcastsResume: Command = defineCommand({
+  name: "broadcasts resume",
+  summary: "Resume a paused broadcast where it stopped",
+  usage: "<broadcast> [--yes]",
+  description:
+    "Sends the rest of a paused broadcast. With a live key it asks first; off a terminal it needs " +
+    "--yes.",
+  flags: RESUME_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof RESUME_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "broadcasts resume <broadcast>") as [string];
+    const credentials = await resolveCredentials(context);
+    const coss = clientFor(context.io, credentials);
+    const { out } = context;
+    if (credentials.apiKey.startsWith("coss_live_") && !values.yes && context.io.stdinIsTTY) {
+      const current = await coss.email.broadcasts.get(id);
+      if (current.error) throw apiError("Couldn't read the broadcast", current.error);
+      // With --json, stdout stays the result.
+      if (!out.json) printBroadcast(out, current.data);
+    }
+    const go = await confirmLive(
+      context,
+      credentials.apiKey,
+      values.yes,
+      `Send the rest of ${id} to its audience?`,
+    );
+    if (!go) return 1;
+    const { data, error } = await coss.email.broadcasts.resume(id);
+    if (error) throw apiError("Couldn't resume the broadcast", error);
+    printOne(context.out, data, printBroadcast);
+    return 0;
+  },
+});
+
 const broadcastsCancel: Command = defineCommand({
   name: "broadcasts cancel",
   summary: "Stop a scheduled or sending broadcast",
@@ -418,11 +733,18 @@ export const MARKETING_COMMANDS: readonly Command[] = [
   contactsList,
   contactsGet,
   contactsAdd,
+  contactsUpdate,
+  contactsImport,
+  contactsExport,
   contactsRemove,
   broadcastsList,
   broadcastsGet,
   broadcastsCreate,
+  broadcastsUpdate,
+  broadcastsRemove,
   broadcastsTest,
   broadcastsSend,
+  broadcastsPause,
+  broadcastsResume,
   broadcastsCancel,
 ];

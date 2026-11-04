@@ -426,13 +426,64 @@ export const smsSuppressionsRemoveCommand: Command = defineCommand({
   },
 });
 
+export const smsSuppressionsCheckCommand: Command = defineCommand({
+  name: "sms suppressions check",
+  summary: "Check whether a send to a number would be skipped",
+  usage: "<number>",
+  description: "Says whether a send to this number, in E.164 form, would be skipped, and why.",
+  flags: SUPPRESSION_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof SUPPRESSION_FLAGS>) => {
+    const [number] = requireArgs(positionals, 1, "sms suppressions check <number>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.sms.suppressions.check({ phone_number: number });
+    if (error) throw apiError("Couldn't check the number", error);
+    const { out } = context;
+    if (out.json) out.data(data);
+    else if (data.suppressed) {
+      out.line(`${data.phone_number} ${out.style("yellow", "is suppressed")}`);
+      if (data.suppression) {
+        out.line(
+          `  ${data.suppression.id}  ${data.suppression.reason}  ${when(data.suppression.created_at)}`,
+        );
+      }
+    } else out.line(`${data.phone_number} ${out.style("green", "isn't suppressed")}`);
+    return 0;
+  },
+});
+
+const CANCEL_FLAGS = {
+  json: { type: "boolean", description: "Print the message as JSON" },
+} as const satisfies Flags;
+
+export const smsCancelCommand: Command = defineCommand({
+  name: "sms cancel",
+  summary: "Cancel a scheduled text message",
+  usage: "<message>",
+  description: "Cancels a message scheduled for later; any other message fails.",
+  flags: CANCEL_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof CANCEL_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "sms cancel <message>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.sms.cancel(id);
+    if (error) throw apiError("Couldn't cancel the message", error);
+    const { out } = context;
+    if (out.json) out.data(data);
+    else out.line(`${data.id} ${out.style(statusStyle(data.status), data.status)} → ${data.to}`);
+    return 0;
+  },
+});
+
 export const SMS_COMMANDS: readonly Command[] = [
   smsSendCommand,
   smsListCommand,
   smsGetCommand,
+  smsCancelCommand,
   smsReceivedCommand,
   smsNumbersCommand,
   smsSuppressionsListCommand,
+  smsSuppressionsCheckCommand,
   smsSuppressionsAddCommand,
   smsSuppressionsRemoveCommand,
 ];

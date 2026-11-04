@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import type { Coss, Email, EmailEvent, EmailRecipientStatus, SendEmailParams } from "coss";
-import { addresses, type Flags, jsonOrString, pairs } from "../args.ts";
+import { addresses, type Flags, jsonOrString, pairs, requireArgs } from "../args.ts";
 import { type Command, type CommandInput, defineCommand } from "../command.ts";
 import { type Context, clientFor, resolveCredentials } from "../context.ts";
 import {
@@ -10,6 +10,7 @@ import {
 } from "../emails/simulate.ts";
 import { apiError, CliError, UsageError } from "../errors.ts";
 import type { Output } from "../output.ts";
+import { client, confirmLive, printOne, when } from "./list-output.ts";
 
 const SANDBOX_FROM = "coss.com CLI <cli@example.com>";
 const DEFAULT_SUBJECT = "Test email from the coss.com CLI";
@@ -263,3 +264,76 @@ async function emailsSend({ values, context }: CommandInput<typeof FLAGS>): Prom
   }
   return io.signal.aborted ? 130 : 0;
 }
+
+function printScheduled(out: Output, email: Email): void {
+  const at =
+    email.status === "scheduled" && email.scheduled_at ? ` ${when(email.scheduled_at)}` : "";
+  out.line(`${email.id} ${out.style(statusStyle(email.status), email.status)}${at}`);
+}
+
+const CANCEL_FLAGS = {
+  json: { type: "boolean", description: "Print the email as JSON" },
+} as const satisfies Flags;
+
+export const emailsCancelCommand: Command = defineCommand({
+  name: "emails cancel",
+  summary: "Cancel a scheduled email",
+  usage: "<email>",
+  description:
+    "Cancels an email scheduled for later. Canceling it again answers the same; any email that " +
+    "isn't scheduled any more fails.",
+  flags: CANCEL_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof CANCEL_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "emails cancel <email>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.email.cancel(id);
+    if (error) throw apiError("Couldn't cancel the email", error);
+    printOne(context.out, data, printScheduled);
+    return 0;
+  },
+});
+
+const RESCHEDULE_FLAGS = {
+  at: {
+    type: "string",
+    value: "<time>",
+    description: "The new time: ISO 8601 with an offset, at most 30 days ahead",
+  },
+  yes: { type: "boolean", description: "Don't ask before a live send right away" },
+  json: { type: "boolean", description: "Print the email as JSON" },
+} as const satisfies Flags;
+
+export const emailsRescheduleCommand: Command = defineCommand({
+  name: "emails reschedule",
+  summary: "Move a scheduled email to another time",
+  usage: "<email> --at <time>",
+  description:
+    "Moves a scheduled email. A time that isn't in the future sends it right away: with a live " +
+    "key that asks first, and off a terminal it needs --yes.",
+  flags: RESCHEDULE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof RESCHEDULE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "emails reschedule <email> --at <time>") as [string];
+    if (!values.at) throw new UsageError("Pass --at <time>, e.g. --at 2027-01-04T09:00:00Z.");
+    const at = Date.parse(values.at);
+    if (Number.isNaN(at)) {
+      throw new UsageError("--at takes an ISO 8601 time with an offset: 2027-01-04T09:00:00Z.");
+    }
+    const credentials = await resolveCredentials(context);
+    if (at <= context.io.now().getTime()) {
+      const go = await confirmLive(
+        context,
+        credentials.apiKey,
+        values.yes,
+        `That time has passed, so ${id} would go out right away. Send it?`,
+      );
+      if (!go) return 1;
+    }
+    const coss = clientFor(context.io, credentials);
+    const { data, error } = await coss.email.reschedule(id, { scheduled_at: values.at });
+    if (error) throw apiError("Couldn't reschedule the email", error);
+    printOne(context.out, data, printScheduled);
+    return 0;
+  },
+});

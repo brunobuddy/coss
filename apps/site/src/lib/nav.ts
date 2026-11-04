@@ -193,7 +193,7 @@ export const DEVELOPER_COLUMNS: readonly MenuColumn[] = [
       },
       {
         label: "llms.txt",
-        description: "Every docs page, indexed.",
+        description: "Where to start, and where everything is.",
         icon: TextIcon,
         href: "/llms.txt",
       },

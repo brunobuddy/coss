@@ -92,7 +92,7 @@ const documentNotFound = errorDoc(
 const requestNotFound = errorDoc(
   "No signature request with this id exists in the API key's environment (`not_found`).",
 );
-const unavailable = errorDoc("Sign isn't available in this deployment yet (`sign_unavailable`).");
+const unavailable = errorDoc("Sign is temporarily unavailable (`sign_unavailable`).");
 
 export const uploadSignDocumentRoute = createRoute({
   method: "post",
@@ -154,6 +154,8 @@ export const getSignDocumentRoute = createRoute({
   operationId: "getSignDocument",
   tags: [TAG_DOCUMENTS],
   summary: "Retrieve a document",
+  description:
+    "An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ sign: ["read"] }), rateLimit("api.read")],
   request: { params: DocumentIdParams },
@@ -262,6 +264,8 @@ export const getSignRequestRoute = createRoute({
   operationId: "getSignRequest",
   tags: [TAG_REQUESTS],
   summary: "Retrieve a signature request",
+  description:
+    "A signature request with its documents, signers and fields, and `signed_document` once it's sealed.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ sign: ["read"] }), rateLimit("api.read")],
   request: { params: RequestIdParams },
@@ -539,7 +543,7 @@ export function createSignRoutes({
       throw new ApiError(503, {
         type: "api_error",
         code: "sign_unavailable",
-        message: "Sign isn't available in this deployment yet.",
+        message: "Sign is temporarily unavailable.",
       });
     }
     return signService;
@@ -698,7 +702,7 @@ export function createSignRoutes({
       throw new ApiError(503, {
         type: "api_error",
         code: "sign_unavailable",
-        message: "Sign isn't available in this deployment yet.",
+        message: "Sign is temporarily unavailable.",
       });
     }
     const { id, signer_id } = c.req.valid("param");

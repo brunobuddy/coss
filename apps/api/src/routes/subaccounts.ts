@@ -79,7 +79,8 @@ export const createSubaccountRoute = createRoute({
       "Live sub-accounts need a plan with sub-accounts (`plan_feature_unavailable`), up to its limit (`plan_limit_reached`).",
     ),
     422: errorDoc(
-      "The body failed validation (`validation_error`), the `uid` is taken (`uid_taken`), the quotas " +
+      "The body failed validation (`validation_error`), the `uid` is invalid (`invalid_uid`) or " +
+        "taken (`uid_taken`), the quotas " +
         "don't fit together (`invalid_quotas`), or the sandbox environment has the most sub-accounts " +
         `it can (${MAX_SANDBOX_SUBACCOUNTS}: \`too_many_subaccounts\`).`,
     ),
@@ -145,7 +146,8 @@ export const updateSubaccountRoute = createRoute({
     ...commonErrors,
     404: subaccountNotFound,
     422: errorDoc(
-      "The body failed validation (`validation_error`), the uid is taken (`uid_taken`), the quotas " +
+      "The body failed validation (`validation_error`), the uid is invalid (`invalid_uid`) or taken " +
+        "(`uid_taken`), the quotas " +
         "don't fit together (`invalid_quotas`), or it is being deleted (`subaccount_deleting`).",
     ),
   },

@@ -33,7 +33,7 @@ const FAQ = [
   {
     question: "What is coss.com?",
     answer:
-      "coss.com is a developer platform: one API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, one-time codes, forms, scheduling, webhooks for your own users, and risk checks with rate limiting. It is built by the team behind Cal.com.",
+      "coss.com is a developer platform: one API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, one-time codes, e-signatures, forms, scheduling, webhooks for your own users, and risk checks with rate limiting. It is built by the team behind Cal.com.",
   },
   {
     question: "How much does coss.com cost?",
@@ -62,7 +62,7 @@ const FAQ = [
   {
     question: "Does coss.com work with coding agents?",
     answer:
-      "Yes. Every docs page is Markdown at its URL plus .md, /llms.txt indexes them, npx coss-cli init gets a development key approved in the browser, and an MCP server lets agents search the docs and explain deliveries.",
+      "Yes. Every docs page is Markdown at its URL plus .md, /llms.txt is the place to start, npx coss-cli init gets a development key approved in the browser, and an MCP server lets agents search the docs and explain deliveries.",
   },
 ];
 
@@ -298,7 +298,7 @@ const STEPS = [
 
 /** What makes the platform easy for an agent, each said in plain words and linked. */
 const FOR_AGENTS: readonly [name: string, what: string, href: string][] = [
-  ["/llms.txt", "An index of every docs page", "/llms.txt"],
+  ["/llms.txt", "Where to start, and where everything is", "/llms.txt"],
   ["OpenAPI 3.1", "The whole API as a schema", "/docs/api-reference"],
   ["{ data, error }", "Results it can't forget to check", "/docs/sdk/errors"],
   ["Idempotency-Key", "Retries that never send twice", "/docs/api-reference/idempotency"],
