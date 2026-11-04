@@ -67,6 +67,21 @@ export function activeRoot(tree: PageTree.Root, pathname: string): PageTree.Fold
   );
 }
 
+/**
+ * The tree without nested folders inside root folders: what the header needs outside the docs,
+ * where every API operation would otherwise be serialized into each page. Search still finds them.
+ */
+export function withoutNestedFolders(tree: PageTree.Root): PageTree.Root {
+  return {
+    ...tree,
+    children: tree.children.map((node) =>
+      node.type === "folder" && node.root
+        ? { ...node, children: node.children.filter((child) => child.type !== "folder") }
+        : node,
+    ),
+  };
+}
+
 /** The sections of the docs, in sidebar order: one per root folder. */
 export function sectionsOf(tree: PageTree.Root): DocsSection[] {
   return rootFolders(tree).map((root) => {

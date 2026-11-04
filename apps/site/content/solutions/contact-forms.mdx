@@ -1,0 +1,179 @@
+---
+title: Contact forms
+description: coss.com is a backend for contact and lead forms. Post plain HTML to an endpoint, and it screens spam, emails your team and adds leads to your contacts.
+seoTitle: "Contact form backend with spam filtering · coss.com"
+headline: Contact forms and lead capture, no backend needed.
+mark: forms
+products:
+  - forms
+  - email
+  - risk
+  - marketing-email
+faq:
+  - question: How do I add a contact form to a static site?
+    answer: Create a form with coss.forms.create() or in the dashboard, then set your HTML form's action to its endpoint. coss.com stores each submission, screens it for spam and sends accepted ones to your team's inbox, your webhooks and your contacts. You write no server code.
+  - question: How does coss.com keep spam out of a contact form?
+    answer: A hidden honeypot field catches simple bots at once. Every other submission is a Risk assessment of the submitter's email, IP address, browser and the text they wrote, with your own rules and lists, plus a content check for spam, phishing, malware and fraud and an optional Turnstile or hCaptcha. Spam is answered exactly like a success, so bots learn nothing.
+  - question: What if a real message is marked as spam?
+    answer: Find it on the form's Spam or Held tab and release it, in the dashboard or with coss.forms.submissions.release(). It is delivered as if it had been accepted, and Risk records the assessment as legitimate, so it learns from the mistake.
+  - question: Will I get an email for each submission?
+    answer: Yes. Up to 5 recipients get an email per accepted submission with every field, and a reply goes straight to the submitter. In live environments, recipients must be members of your organization or addresses on its verified domains.
+  - question: How do I send leads to my CRM?
+    answer: Subscribe a webhook endpoint to form.submission.received. Each one is signed and carries the submitted fields, so your handler can create the lead. Treat the values as untrusted input.
+  - question: Can submitters join my mailing list?
+    answer: Yes. With contacts turned on, the submitter becomes a contact of the environment, added to the audiences and topics you choose, with fields mapped to contact properties. Double opt-in can make new contacts confirm their address first.
+  - question: Do I have to write the HTML?
+    answer: No. Turn on a hosted page and coss.com renders the form from its field definitions, at a link you can share or embed in an iframe. Hosted pages are on coss.com's forms domain, since custom domains for them aren't available.
+  - question: Is there a drag-and-drop form builder?
+    answer: No. You define a form's fields in code or write your own HTML. Drag-and-drop building and conditional or multi-page forms aren't available.
+---
+
+<Section title="The problem" lede="A contact form is a few inputs on a page, and it still needs a server, a spam filter and somewhere for the messages to go.">
+
+Static sites have nowhere to post a form. Adding a function for it means parsing the post, validating fields, keeping bots out, emailing the right person and getting the lead into your CRM or mailing list, and every public form attracts spam the day it goes up.
+
+coss.com does this on one key: [Forms](/products/forms) gives each form an endpoint, [Risk](/products/risk) screens every submission, [email](/products/email) tells your team, and [contacts](/products/marketing-email) keep the leads you can write to later.
+
+</Section>
+
+<Section title="How it works" lede="Create a form, point your HTML at its endpoint, and accepted submissions come to you.">
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const leadsAudienceId: string;
+// ---cut---
+const { data: form } = await coss.forms.create({
+  name: "Contact us",
+  allowed_origins: ["https://www.example.com"],
+  fields: [
+    { name: "email", type: "email", required: true },
+    { name: "first_name", type: "text" },
+    { name: "company", type: "text", max_length: 100 },
+    { name: "message", type: "textarea", max_length: 5000 },
+  ],
+  // Your team gets an email, from your domain, and replies go to the submitter.
+  notifications: { recipients: ["sales@example.com"], from: "forms@example.com" },
+  // The submitter becomes a contact in your leads audience.
+  contacts: {
+    enabled: true,
+    audience_ids: [leadsAudienceId],
+    first_name_field: "first_name",
+    properties: { company: "company" },
+  },
+});
+// form?.endpoint: https://…/f/form_01k…
+```
+
+```html
+<form action="https://…/f/form_01k…" method="post">
+  <input type="email" name="email" required>
+  <input type="text" name="first_name">
+  <input type="text" name="company">
+  <textarea name="message"></textarea>
+  <input type="hidden" name="_next" value="https://www.example.com/thanks">
+  <!-- The honeypot: people leave it empty, bots fill it in. -->
+  <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off">
+  <button>Send</button>
+</form>
+```
+
+That's a working form with no JavaScript. To submit without a page load and show errors per field, add `attachForm`, which also sends a device token so Risk recognizes the browser:
+
+```ts twoslash
+import { attachForm } from "coss/forms";
+// ---cut---
+const form = document.querySelector<HTMLFormElement>("#contact");
+if (form) {
+  attachForm(form, {
+    onResult(result) {
+      if (result.ok) console.log("Thanks!");
+      else if (result.errors) for (const error of result.errors) console.log(error.field, error.message);
+    },
+  });
+}
+```
+
+To send leads to your CRM, handle the webhook:
+
+```ts twoslash
+import { verifyWebhook } from "coss";
+declare const secret: string;
+declare const request: Request;
+declare function createLead(email: string | null, fields: Record<string, string | string[]>): Promise<void>;
+// ---cut---
+const event = await verifyWebhook(await request.text(), request.headers, secret);
+if (event.type === "form.submission.received") {
+  // Submitted values are untrusted input.
+  await createLead(event.data.submitter_email, event.data.data);
+}
+```
+
+Read more in the [Forms guide](/docs/forms), [HTML forms](/docs/forms/html-forms) and [destinations](/docs/forms/destinations).
+
+</Section>
+
+<Section title="What you get" lede="Collect, screen and deliver submissions, from plain HTML, a script or a page coss.com hosts.">
+
+<Features>
+
+<Feature title="Any HTML form">
+The endpoint takes the URL-encoded and multipart posts browsers send, and JSON. Define `fields` to validate types and required values, or leave them out and take any field. See [HTML forms](/docs/forms/html-forms).
+</Feature>
+
+<Feature title="Spam stays out">
+A honeypot, then a Risk assessment with your own [rules](/docs/risk/rules) and [lists](/docs/risk/lists-and-feedback), a content check, and an optional Turnstile or hCaptcha. Spam is answered like a success, so bots learn nothing. See [spam filtering](/docs/forms/spam-filtering).
+</Feature>
+
+<Feature title="False positives come back">
+What Risk wants reviewed waits as `held`. Release it or anything marked `spam`, and it's delivered as if it had been accepted, and Risk learns from it. If Risk can't be reached, submissions are delivered rather than lost.
+</Feature>
+
+<Feature title="Notifications your team can answer">
+Up to 5 recipients get an email per accepted submission, with every field and a link to it in the dashboard, and a reply goes to the submitter. They come from your verified domain, or from coss.com as "form name via coss.com".
+</Feature>
+
+<Feature title="Leads in your contacts">
+Submitters become [contacts](/docs/email/contacts), with their audiences, topics and properties, ready for [broadcasts](/products/marketing-email). Double opt-in can make new contacts confirm first. See [double opt-in](/docs/forms/double-opt-in).
+</Feature>
+
+<Feature title="Webhooks for everything else">
+`form.submission.received` and `form.submission.flagged` reach your [webhooks](/docs/webhooks), signed, with what was submitted. Each destination retries on its own if it fails.
+</Feature>
+
+<Feature title="Hosted pages">
+Turn on `hosted` and the endpoint also serves the form as a page rendered from its fields, to link to or embed, with no JavaScript needed. See [hosted pages](/docs/forms/hosted-pages).
+</Feature>
+
+<Feature title="Confirmed addresses and attachments">
+`submitter.verify` holds a submission until the submitter clicks the link emailed to them. [File uploads](/docs/forms/file-uploads) take attachments, served only as downloads. They aren't scanned for malware, so treat them as untrusted.
+</Feature>
+
+</Features>
+
+</Section>
+
+<Section title="Specifications" lede="The limits a submission is checked against. The docs list each one in context.">
+
+<Specs>
+<Spec label="Encodings">URL-encoded, multipart, JSON</Spec>
+<Spec label="Fields per submission">100, 10,000 characters a value</Spec>
+<Spec label="Text per submission">64 KB</Spec>
+<Spec label="Notification recipients">up to 5</Spec>
+<Spec label="Allowed origins">up to 10, https</Spec>
+<Spec label="Submissions per form">10 a second, bursts of 50</Spec>
+<Spec label="Submissions per client IP">20 a minute</Spec>
+<Spec label="Files">3 by default, up to 10, 10 MB each</Spec>
+<Spec label="Accepted submissions kept"><RetentionPeriod of="form_submissions" /></Spec>
+<Spec label="Spam and unconfirmed kept"><RetentionPeriod of="form_spam" /></Spec>
+</Specs>
+
+</Section>
+
+<Section title="Pricing" lede="You pay per accepted live submission, and for the files it carries. Spam, held and unconfirmed submissions cost nothing unless you release them or the submitter confirms.">
+
+<UsageRates meters="forms.submissions,forms.file_uploads,email.recipients" />
+
+The Free plan includes <Included meter="forms.submissions" /> and <Included meter="forms.file_uploads" />. Notification emails sent from your own domain are billed like any email; notifications sent "via coss.com" are not. Sandbox forms are free. See [pricing](/pricing) for the plans.
+
+</Section>

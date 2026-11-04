@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { COMPETITORS, competitorBySlug } from "@/lib/compare";
 import { OG_CONTENT_TYPE, OG_SIZE, ogImage } from "@/lib/og";
 
+export const alt = "coss.com compared with another service";
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 

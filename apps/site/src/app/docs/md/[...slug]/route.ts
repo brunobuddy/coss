@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { markdownResponse } from "@/lib/llms";
+import { docsMarkdownResponse } from "@/lib/llms";
 import { source } from "@/lib/source";
 
 // `/docs/<page>.md` is rewritten here (next.config.ts); the docs home's is ../route.ts.
@@ -10,7 +10,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/docs/md/
   const { slug } = await params;
   const page = source.getPage(slug);
   if (!page) notFound();
-  return markdownResponse(page);
+  return docsMarkdownResponse(page);
 }
 
 export function generateStaticParams() {

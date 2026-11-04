@@ -38,7 +38,7 @@ describe("renderBillingComponents", () => {
     expect(text).toContain(
       "| SMS rate | Sandbox only | 10 SMS segments a second, 10,000 a day | 30 SMS segments a second, 100,000 a day | Custom |",
     );
-    expect(text).toContain("| Video | $1.50 per 1,000 participant-minutes | |");
+    expect(text).not.toContain("Video");
     expect(text).toContain("| Scheduling | $0.10 per booking | |");
     expect(text.split("\n")[0]?.split("|").length).toBe(PLAN_KEYS.length + 3);
   });

@@ -33,6 +33,9 @@ WORKDIR /repo
 COPY --from=prune /pruned/json/ .
 RUN bun install --frozen-lockfile
 COPY --from=prune /pruned/full/ .
+# The day each page last changed, when the build has it (infra/scripts/site-content-dates.sh): the
+# glob lets the file be missing, which a COPY of that file alone would not.
+COPY apps/site/package.json apps/site/content-dates.jso[n] apps/site/
 # The commit: Next's build id and version-skew protection (deploymentId). Not stage-specific.
 ARG NEXT_DEPLOYMENT_ID=""
 ENV NEXT_DEPLOYMENT_ID=${NEXT_DEPLOYMENT_ID} SKIP_ENV_VALIDATION=1

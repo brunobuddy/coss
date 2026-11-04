@@ -12,7 +12,8 @@ import { CODE_THEMES } from "./site.ts";
 export const docs = defineDocs({
   dir: "content/docs",
   docs: {
-    schema: pageSchema,
+    // `seoTitle`: the whole `<title>`, where the section's name wouldn't make it unique or clear.
+    schema: pageSchema.extend({ seoTitle: z.string().optional() }),
     // Markdown of each page for /llms-full.txt.
     postprocess: { includeProcessedMarkdown: true },
   },

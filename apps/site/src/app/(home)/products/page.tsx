@@ -3,13 +3,13 @@ import { LinkGrid, MarketingClose, Sheet } from "@/components/marketing-page";
 import { SectionHead } from "@/components/sheet";
 import { PRODUCTS_ROUTE, productPages } from "@/lib/marketing";
 import { PRODUCT_GROUPS } from "@/lib/marks";
-import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
+import { breadcrumbSchema, itemListSchema, pageMetadata } from "@/lib/seo";
 
 const DESCRIPTION =
   "Every coss.com product: email, inboxes for AI agents, SMS, one-time codes, e-signatures, forms, scheduling, webhooks and risk checks, on one API key and SDK.";
 
 export const metadata = pageMetadata({
-  title: "Products: one API for email, SMS, inboxes, signatures and more · coss.com",
+  title: "Products: email, SMS, AI agent inboxes and more · coss.com",
   description: DESCRIPTION,
   path: PRODUCTS_ROUTE,
   ownImage: true,
@@ -20,6 +20,7 @@ export default function ProductsPage() {
   return (
     <Sheet>
       <JsonLd data={breadcrumbSchema([["Products", PRODUCTS_ROUTE]])} />
+      <JsonLd data={itemListSchema(pages.map((page) => [page.data.title ?? "", page.url]))} />
       <section className="border-b">
         <SectionHead as="h1" id="products-title" title="Products">
           <p>

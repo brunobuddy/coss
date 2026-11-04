@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { COMPARE_ROUTE, COMPETITORS, compareMarkdown, competitorBySlug } from "@/lib/compare";
-import { markdownText } from "@/lib/marketing";
-import { SITE_URL } from "@/lib/site";
+import { markdownResponse, SITE_URL } from "@/lib/site";
 
 // `/compare/<slug>.md` is rewritten here (next.config.ts).
 export const revalidate = false;
@@ -11,7 +10,8 @@ export async function GET(_request: Request, { params }: RouteContext<"/compare/
   const { slug } = await params;
   const competitor = competitorBySlug(slug);
   if (!competitor) notFound();
-  return markdownText(compareMarkdown(competitor, `${SITE_URL}${COMPARE_ROUTE}/${slug}`));
+  const url = `${COMPARE_ROUTE}/${slug}`;
+  return markdownResponse(compareMarkdown(competitor, `${SITE_URL}${url}`), url);
 }
 
 export function generateStaticParams() {

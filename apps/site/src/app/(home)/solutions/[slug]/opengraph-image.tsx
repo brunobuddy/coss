@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { solutionBySlug, solutionPages } from "@/lib/marketing";
 import { OG_CONTENT_TYPE, OG_SIZE, ogImage } from "@/lib/og";
 
+export const alt = "A coss.com solution";
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 

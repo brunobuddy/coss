@@ -1,6 +1,7 @@
 import { cn } from "@coss/ui/lib/utils";
 import type * as PageTree from "fumadocs-core/page-tree";
 import Link from "next/link";
+import { withoutNestedFolders } from "@/lib/docs-tree";
 import { HEADER_BAR_ID } from "@/lib/nav";
 import { NAV_ITEMS, type NavItem, SEARCH_API } from "@/lib/site";
 import { source } from "@/lib/source";
@@ -20,7 +21,7 @@ const CELL = "flex h-full items-center border-border/64 border-s";
  */
 export function SiteHeader({
   items = NAV_ITEMS,
-  tree = source.getPageTree(),
+  tree = withoutNestedFolders(source.getPageTree()),
   searchApi = SEARCH_API,
   docsSidebar = false,
 }: {

@@ -42,18 +42,24 @@ export function DocsLayoutFrame({ tree, children }: { tree: PageTree.Root; child
 export function DocsPageFrame({
   title,
   description,
+  lastUpdated,
   markdown,
   toc,
   neighbours,
+  related,
   children,
 }: {
   title: ReactNode;
   description?: ReactNode;
+  /** YYYY-MM-DD, when known. */
+  lastUpdated?: string;
   /** The page as Markdown, for "Copy Markdown". */
   markdown: string;
   toc: TOCItemType[];
   /** The pages before and after this one in its section. */
   neighbours?: { previous?: NavPage; next?: NavPage };
+  /** Where to read about the page's product: its page, pricing, comparisons. */
+  related?: readonly { title: string; url: string }[];
   children: ReactNode;
 }) {
   return (
@@ -78,6 +84,30 @@ export function DocsPageFrame({
                     </div>
                   </div>
                   <div className="w-full flex-1 *:data-[slot=alert]:first:mt-0">{children}</div>
+                  {lastUpdated && (
+                    <p className="text-muted-foreground text-sm">
+                      Last updated{" "}
+                      <time dateTime={lastUpdated}>
+                        {new Date(`${lastUpdated}T00:00:00Z`).toLocaleDateString("en-US", {
+                          dateStyle: "long",
+                          timeZone: "UTC",
+                        })}
+                      </time>
+                    </p>
+                  )}
+                  {related && related.length > 0 && (
+                    <nav aria-label="Related" className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+                      {related.map((link) => (
+                        <Link
+                          className="text-muted-foreground underline decoration-border underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground"
+                          href={link.url}
+                          key={link.url}
+                        >
+                          {link.title}
+                        </Link>
+                      ))}
+                    </nav>
+                  )}
                   {(neighbours?.previous || neighbours?.next) && <PageNeighbours {...neighbours} />}
                 </div>
               </div>

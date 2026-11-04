@@ -65,7 +65,7 @@ export function SignUpForm({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Check your email</CardTitle>
+          <CardTitle render={<h1>Check your email</h1>} />
           <CardDescription>
             We sent a verification link to {createdEmail}. Verify your address before signing in and
             creating an organization.
@@ -81,7 +81,7 @@ export function SignUpForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create your coss.com account</CardTitle>
+        <CardTitle render={<h1>Create your coss.com account</h1>} />
         <CardDescription>Verify your email before creating your organization.</CardDescription>
       </CardHeader>
       <CardPanel className="flex flex-col gap-4">

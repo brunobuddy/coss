@@ -7,7 +7,6 @@
 export const MARKS = [
   "email",
   "sms",
-  "video",
   "scheduling",
   "webhooks",
   "logs",

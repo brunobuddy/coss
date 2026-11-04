@@ -43,7 +43,7 @@ directory unless they name a workspace.
   new page below an environment to its product in `@coss/dashboard-routes` (`test/dashboard-routes.test.ts`), signed-out pages to
   `PUBLIC_PATH_PREFIXES` (`src/proxy.ts`). The entry page is `/dashboard` (`DASHBOARD_PATH`), never `/` (the site's
   landing page): use it for every "go to the dashboard" link and as the post-sign-in default (`safeRedirectPath`).
-  The dashboard has no root files (icon, robots, sitemap): the site serves them.
+  The dashboard has no root files (icon, robots, sitemap): the site serves them. Its pages are noindex (the root layout) except `/sign-in` and `/sign-up` (`publicPageMetadata`, `src/lib/public-metadata.ts`), whose canonical folds the `?next=` redirects of every other signed-out path into one URL.
 - Domain management uses `emailRuntime().domainDeps` (`src/lib/email-runtime.ts`) and webhook management
   `webhookManagementDeps()` (`src/lib/webhooks.ts`); domain/webhook errors carry user-facing messages. Revealing a
   webhook secret needs `webhook:update` (members can read endpoints but never see secrets).

@@ -71,7 +71,3 @@ export async function marketingMarkdown(page: ProductPage | SolutionPage): Promi
     : "";
   return `# ${title} (${SITE_URL}${page.url})\n\n> ${description ?? ""}\n\n${body.trim()}${questions}\n`;
 }
-
-export function markdownText(markdown: string): Response {
-  return new Response(markdown, { headers: { "Content-Type": "text/markdown; charset=utf-8" } });
-}

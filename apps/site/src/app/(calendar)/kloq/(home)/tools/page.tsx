@@ -7,24 +7,45 @@ import { Reveal } from "@/components/calendar/landing/reveal";
 import { PageHero } from "@/components/calendar/site/page-hero";
 import { Section, SectionHead } from "@/components/calendar/site/section";
 import { ToolLinks } from "@/components/calendar/tools/tool-shell";
-import { abs, canonical } from "@/lib/calendar/site";
+import { JsonLd } from "@/components/json-ld";
+import { CALENDAR } from "@/lib/calendar";
+import { abs, canonical, OG_IMAGE } from "@/lib/calendar/site";
 import { TOOLS } from "@/lib/calendar/tools";
+import { breadcrumbSchema, itemListSchema } from "@/lib/seo";
 
-const TITLE = "Free calendar and date tools — RRULE, time zones, spring easing";
+const TITLE = "Free calendar and date tools: RRULE, time zones, easing";
 const DESCRIPTION =
-  "Five small tools built from the functions inside kloq: an RRULE explainer and builder, a time zone overlap map, a spring-to-CSS-linear() generator, and a natural-language date parser that shows its working.";
+  "Five tools built from kloq's internals: an RRULE explainer and builder, a time zone overlap map, a spring-to-CSS generator and a natural-language date parser.";
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   alternates: canonical("/kloq/tools"),
-  openGraph: { type: "website", title: TITLE, description: DESCRIPTION, url: abs("/kloq/tools") },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
+  openGraph: {
+    images: [OG_IMAGE],
+    type: "website",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: abs("/kloq/tools"),
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [OG_IMAGE],
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 export default function Tools() {
   return (
     <div className="flex flex-1 flex-col">
+      <JsonLd
+        data={breadcrumbSchema([
+          [CALENDAR.name, CALENDAR.path],
+          ["Tools", "/kloq/tools"],
+        ])}
+      />
+      <JsonLd data={itemListSchema(TOOLS.map((tool) => [tool.name, `/kloq/tools/${tool.slug}`]))} />
       <main className="flex flex-1 flex-col">
         <PageHero
           eyebrow={[

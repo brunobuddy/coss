@@ -1,0 +1,198 @@
+---
+title: Booking
+description: coss.com adds booking to your product. Hosts set hours and connect calendars, users book in your app, and the database refuses overlapping bookings.
+seoTitle: "In-app booking and scheduling API · coss.com"
+headline: Booking and scheduling inside your app.
+mark: scheduling
+products:
+  - scheduling
+  - email
+  - sms
+  - platform
+faq:
+  - question: How do I add booking to my app?
+    answer: Add each person who can be booked with coss.scheduling.hosts.create(), give them a schedule, and create an event type. Your users then book in a page you embed with mountBooker from coss/scheduling, or in your own UI with coss.scheduling.slots.list() and coss.scheduling.bookings.create().
+  - question: Does coss.com give hosts a public booking link?
+    answer: No. Public booking pages aren't built. Every booking page opens from a short-lived session your server creates, in an iframe in your app or on its own, so you decide who gets to book and when.
+  - question: How does coss.com prevent double-booking?
+    answer: Every booking takes a claim on its host's time, buffers included, and a Postgres exclusion constraint refuses two claims of one host that overlap. Two people clicking at once, a second tab or a retry can't both win. The one who loses gets slot_unavailable, and you show them the times again.
+  - question: Can coss.com take payment for a booking?
+    answer: Not itself. Built-in payments aren't available. Hold the slot with coss.scheduling.holds.create(), charge the customer with your own payment provider, then call coss.scheduling.holds.confirm(). A hold keeps the time for ten minutes by default, tells nobody and isn't charged.
+  - question: Which calendars can hosts connect?
+    answer: Google and Microsoft through their consent screens, and CalDAV servers such as Apple's with an app-specific password. coss.com stores when each calendar is busy and nothing else, and adds bookings to the calendar the host chooses as private events titled "Appointment".
+  - question: Can attendees get reminders by SMS?
+    answer: Yes. Attendees get an email reminder a day before by default. Set sms_from to one of your approved numbers and turn on sms_attendee for reminders, and attendees who gave a phone number get a text too. Getting their consent is yours to do, a STOP is always honored, and live SMS needs a paid plan.
+  - question: Can attendees reschedule or cancel on their own?
+    answer: Yes. Confirmation emails carry a manage link, and coss.scheduling.sessions.createForBooking() makes one for your app. It reaches only that booking, follows the notice periods you set on the event type, and stops working when the booking is cancelled.
+  - question: What counts as a billable booking?
+    answer: One per confirmed booking, per occurrence of a series and per group session, however many people attend. Holds and pending approvals aren't charged, rescheduling is free and a cancelled booking stays charged. Sandbox environments are free. The pricing page has the rate.
+---
+
+<Section title="The problem" lede="A booking looks like one form. Behind it are time zones, calendars, races between two people and the emails that tell everyone what happened.">
+
+If people book people in your product, such as tutors, advisers or service providers, you need weekly hours that survive a clock change, calendars that stay in sync, and a guarantee that one time can't be sold twice. Then everyone has to hear about it: confirmations, reminders and calendar invitations.
+
+coss.com does this on one API key. [Scheduling](/products/scheduling) holds the hosts, the availability and the bookings, [email](/products/email) and [SMS](/products/sms) tell people about them, and the same [webhooks and logs](/products/platform) cover all three.
+
+</Section>
+
+<Section title="How it works" lede="Set up hosts and event types on your server, then let people book in an embedded page or in your own UI.">
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// Who can be booked, when, and for what.
+await coss.scheduling.hosts.create({
+  uid: "tutor_482",
+  name: "Ana Reyes",
+  email: "ana@example.com",
+  time_zone: "America/New_York",
+});
+
+await coss.scheduling.schedules.create("tutor_482", {
+  rules: [{ days: [1, 2, 3, 4, 5], start: "09:00", end: "17:00" }],
+});
+
+const { data: eventType } = await coss.scheduling.eventTypes.create({
+  title: "Trial lesson",
+  duration_minutes: 30,
+  buffer_after_minutes: 10,
+  hosts: [{ host: "tutor_482" }],
+  locations: [{ type: "google_meet" }],
+});
+
+// Emails from your own domain, and an SMS reminder from your approved number.
+await coss.scheduling.settings.update({
+  allowed_origins: ["https://app.example.com"],
+  brand_name: "Acme Tutors",
+  email_from: "bookings@example.com",
+  sms_from: "+14155550123",
+  notifications: { reminder: { email_attendee: true, sms_attendee: true } },
+});
+```
+
+To use coss.com's booking page, your server creates a session for the signed-in user and the browser mounts it. Your API key stays on your server.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const eventTypeId: string;
+// ---cut---
+const { data: session } = await coss.scheduling.sessions.createForBooker({
+  event_type: eventTypeId,
+  attendee: { uid: "customer_77", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" },
+});
+// Hand session?.url to the browser.
+```
+
+```ts twoslash
+import { mountBooker } from "coss/scheduling";
+declare const sessionUrl: string;
+declare const container: HTMLElement;
+// ---cut---
+mountBooker({
+  url: sessionUrl,
+  container,
+  onEvent: (event) => {
+    if (event.type === "booked") console.log("Booked", event.booking_id);
+  },
+});
+```
+
+To build the page yourself, list the times and book one. A time someone else just took answers `slot_unavailable`.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const eventTypeId: string;
+// ---cut---
+const { data: slots } = await coss.scheduling.slots.list(eventTypeId, {
+  start: "2027-01-04T00:00:00Z",
+  end: "2027-01-11T00:00:00Z",
+});
+
+const { error } = await coss.scheduling.bookings.create({
+  event_type: eventTypeId,
+  start: slots!.data[0]!.start,
+  attendee: {
+    uid: "customer_77",
+    name: "Sam Lee",
+    email: "sam@example.com",
+    phone: "+14155550199",
+    time_zone: "America/Chicago",
+  },
+});
+if (error?.code === "slot_unavailable") {
+  // Someone else got there first: show the times again.
+}
+```
+
+Read more in the [Scheduling guide](/docs/scheduling), [embedding](/docs/scheduling/embedding) and [bookings](/docs/scheduling/bookings).
+
+</Section>
+
+<Section title="What you get" lede="Availability, calendars, the booking and telling people about it, on the key you use for the rest of coss.com.">
+
+<Features>
+
+<Feature title="No double-booking">
+A Postgres exclusion constraint refuses two overlapping claims of one host, buffers included. It holds under races, retries and second tabs, and the SDK's retries carry one `Idempotency-Key`, so a lost response can't book twice.
+</Feature>
+
+<Feature title="Calendars">
+Hosts connect [Google, Microsoft or CalDAV calendars](/docs/scheduling/calendars). Their busy times block slots and bookings go on the calendar they choose. A calendar that can't be read never counts as free.
+</Feature>
+
+<Feature title="Pages to embed, or your own UI">
+`mountBooker` and `mountHostPortal` open coss.com's pages in your app under your brand name. Or build your own on the API: coss.com's pages use the same [client API](/docs/scheduling/embedding) a session's token gives a browser.
+</Feature>
+
+<Feature title="Email from your domain">
+Attendees and hosts get [emails](/docs/scheduling/notifications) with calendar invitations when a booking is confirmed, moved or cancelled, from your verified domain or from coss.com on your behalf. You can turn any of them off.
+</Feature>
+
+<Feature title="SMS reminders">
+Attendees get a reminder a day before, by email and, if you turn it on, by text from your own approved [number](/docs/sms/senders). A reply of STOP is always honored.
+</Feature>
+
+<Feature title="Holds for your payment flow">
+Hold a slot while you take payment with your own provider, then confirm it. Or set `requires_approval`, and the time stays blocked until the host approves or declines. See [bookings](/docs/scheduling/bookings).
+</Feature>
+
+<Feature title="Pools, panels and classes">
+A `pool` books any available host, `collective` needs every required host free at once, and `group` sells seats in one session. Series book up to 52 occurrences at the attendee's local time. See [pools and groups](/docs/scheduling/pools-and-groups).
+</Feature>
+
+<Feature title="Webhooks and manage links">
+Bookings and calendars send [webhooks](/docs/webhooks) with ids, times and statuses, and attendees reschedule or cancel from a manage link that reaches only their booking.
+</Feature>
+
+</Features>
+
+</Section>
+
+<Section title="Specifications" lede="The limits of a booking. The docs list each one in context.">
+
+<Specs>
+<Spec label="Calendars">Google, Microsoft, CalDAV</Spec>
+<Spec label="Meeting links">Google Meet, Microsoft Teams, or your own link</Spec>
+<Spec label="Event type kinds">one-on-one, pool, collective, group</Spec>
+<Spec label="Duration">5 minutes to 24 hours</Spec>
+<Spec label="Holds">10 minutes by default, 1 minute to 24 hours</Spec>
+<Spec label="Series">up to 52 occurrences, weekly or monthly</Spec>
+<Spec label="Slots per request">up to 62 days</Spec>
+<Spec label="Booker session">30 minutes by default, at most 24 hours</Spec>
+<Spec label="Attendee details kept"><RetentionPeriod of="scheduling_personal_data" /></Spec>
+<Spec label="Bookings kept"><RetentionPeriod of="scheduling_bookings" /></Spec>
+</Specs>
+
+</Section>
+
+<Section title="Pricing" lede="You pay per confirmed booking. Holds and pending approvals cost nothing until they're confirmed.">
+
+<UsageRates meters="scheduling.bookings,email.recipients,sms.segments" />
+
+The Free plan includes <Included meter="scheduling.bookings" />. Booking emails sent from your own domain are billed like any email and SMS reminders like any text message, and live SMS needs a paid plan. Sandbox environments are free. See [pricing](/pricing) for the plans.
+
+</Section>

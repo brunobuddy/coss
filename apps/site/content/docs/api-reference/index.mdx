@@ -1,6 +1,7 @@
 ---
 title: Overview
-description: Base URL, authentication and conventions of the coss.com HTTP API.
+seoTitle: "API reference overview · coss.com"
+description: "Base URL, authentication and conventions of the coss.com HTTP API, with a list of every endpoint by product and resource."
 ---
 
 The coss.com API is a JSON API. Every endpoint page in this reference shows the request, every response,
@@ -39,3 +40,7 @@ The key decides the environment: requests only see data from the key's own envir
 - Every object has an `object` field naming its type (`"email"`, `"email_event"`, `"list"`).
 - Lists are `{ "object": "list", "data": [...], "has_more": false }`.
 - Every response carries an `X-Request-Id` header (`req_…`). Include it when contacting support.
+
+## All endpoints
+
+<ApiOperations />
