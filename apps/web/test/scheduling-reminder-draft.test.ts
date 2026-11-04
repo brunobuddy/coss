@@ -68,6 +68,19 @@ describe("what the reminder dialog saves", () => {
     expect(ruleOf(draftOf(rule))).toEqual(rule);
   });
 
+  test("conditions that lines can't hold survive being opened and saved", () => {
+    const metadata = { plan: " pro ", "a=b": "c", note: "two\nlines" };
+    const rule = ruleOf({ ...NEW_DRAFT, key: "named" });
+    const withThem = { ...rule, only_if: { metadata, location_types: null } };
+    expect(ruleOf(draftOf(withThem)).only_if?.metadata).toEqual(metadata);
+    // Editing them reads what's there now.
+    expect(ruleOf({ ...draftOf(withThem), metadata: "plan=free" }).only_if?.metadata).toEqual({
+      plan: "free",
+    });
+    // Clearing them means no condition.
+    expect(ruleOf({ ...draftOf(withThem), metadata: "" }).only_if).toBeNull();
+  });
+
   test("a key made from the timing follows the timing, and a chosen one stays", () => {
     const made = ruleOf({ ...NEW_DRAFT, amount: "2" });
     expect(made.key).toBe("start-120");

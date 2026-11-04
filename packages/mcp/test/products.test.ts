@@ -333,6 +333,18 @@ describe("Scheduling", () => {
     expect(requests.at(-1)?.body).toEqual({ event_type: "e_1" });
   });
 
+  test("save_scheduling_event_type refuses what can send messages", async () => {
+    const { call } = await connect({});
+    for (const settings of [{ reminders: [] }, { notifications: {} }]) {
+      const { isError, data } = await call("save_scheduling_event_type", {
+        id: "evtype_1",
+        settings,
+      });
+      expect(isError).toBe(true);
+      expect(data.error.message).toContain("save_scheduling_reminders");
+    }
+  });
+
   test("a new host needs a name and a time zone; an update doesn't", async () => {
     const host = { object: "scheduling.host", id: "h_1", name: "Ada", status: "active" };
     const { call, requests } = await connect({

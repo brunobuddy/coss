@@ -43,6 +43,8 @@ export type Draft = {
   sendIfLate: boolean;
   skipNoShow: boolean | null;
   metadata: string;
+  /** What `metadata` was opened from: lines can't hold every value, so unedited ones aren't reread. */
+  loadedMetadata: { text: string; value: Record<string, string> } | null;
   locationTypes: string[];
 };
 
@@ -63,11 +65,15 @@ export const NEW_DRAFT: Draft = {
   sendIfLate: false,
   skipNoShow: null,
   metadata: "",
+  loadedMetadata: null,
   locationTypes: [],
 };
 
 export function draftOf(rule: ReminderRule): Draft {
   const before = rule.before_minutes !== null;
+  const metadata = Object.entries(rule.only_if?.metadata ?? {})
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
   const { amount, unit } = bestUnit(rule.before_minutes ?? rule.after_minutes ?? 0);
   return {
     // A key made from the timing is made again from the new timing, or it'd say the wrong thing.
@@ -86,9 +92,10 @@ export function draftOf(rule: ReminderRule): Draft {
     includeInvite: rule.include_invite,
     sendIfLate: rule.send_if_late,
     skipNoShow: rule.skip_no_show,
-    metadata: Object.entries(rule.only_if?.metadata ?? {})
-      .map(([key, value]) => `${key}=${value}`)
-      .join("\n"),
+    metadata,
+    loadedMetadata: rule.only_if?.metadata
+      ? { text: metadata, value: rule.only_if.metadata }
+      : null,
     locationTypes: rule.only_if?.location_types ?? [],
   };
 }
@@ -96,13 +103,16 @@ export function draftOf(rule: ReminderRule): Draft {
 export function ruleOf(draft: Draft): ReminderRule {
   const minutes = Math.round(Number(draft.amount || 0) * UNIT_MINUTES[draft.unit]);
   const before = isTimed(draft.anchor) && draft.direction === "before";
-  const metadata = Object.fromEntries(
-    draft.metadata
-      .split("\n")
-      .map((line) => line.split("="))
-      .filter((parts) => parts.length >= 2 && parts[0]?.trim())
-      .map((parts) => [(parts[0] as string).trim(), parts.slice(1).join("=").trim()]),
-  );
+  const metadata =
+    draft.loadedMetadata?.text === draft.metadata
+      ? draft.loadedMetadata.value
+      : Object.fromEntries(
+          draft.metadata
+            .split("\n")
+            .map((line) => line.split("="))
+            .filter((parts) => parts.length >= 2 && parts[0]?.trim())
+            .map((parts) => [(parts[0] as string).trim(), parts.slice(1).join("=").trim()]),
+        );
   const hasMetadata = Object.keys(metadata).length > 0;
   const timing = {
     before_minutes: before ? minutes : null,

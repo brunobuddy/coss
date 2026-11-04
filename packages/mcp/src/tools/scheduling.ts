@@ -317,7 +317,8 @@ export function registerSchedulingTools(ctx: ToolContext): void {
       description:
         "With an id it updates that event type; without one it creates one (title and " +
         "duration_minutes needed). `settings` takes the rest (buffers, notice, limits, " +
-        "questions, locations, notifications, reminders): read_docs on /docs/scheduling has them.",
+        "questions, locations): read_docs on /docs/scheduling has them. Reminders are " +
+        "save_scheduling_reminders, since saving them can send messages.",
       inputSchema: z.object({
         id: z.string().optional().describe("The event type to update (id or uid)."),
         uid: z.string().optional(),
@@ -338,6 +339,12 @@ export function registerSchedulingTools(ctx: ToolContext): void {
       annotations: WRITE,
     },
     ({ id, settings, ...fields }) => {
+      // This tool doesn't say it reaches people, and these do, so they go through one that does.
+      if (settings && ("reminders" in settings || "notifications" in settings)) {
+        return failWith(
+          "Reminders and notifications can send messages: use save_scheduling_reminders, or coss.scheduling.eventTypes.update for notifications.",
+        );
+      }
       const body = { ...settings, ...given(fields) };
       if (id) {
         const { kind: _kind, ...update } = body as UpdateSchedulingEventTypeParams & {
