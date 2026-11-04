@@ -8,7 +8,7 @@ import { apiError, UsageError } from "../errors.ts";
 import { jsonObject } from "../fields.ts";
 import type { Style } from "../output.ts";
 import { table } from "../table.ts";
-import { eitherOf, orNull, printDeleted } from "./list-output.ts";
+import { confirmLive, eitherOf, orNull, printDeleted } from "./list-output.ts";
 
 const STATUSES: readonly FormSubmissionStatus[] = [
   "accepted",
@@ -338,19 +338,31 @@ const update: Command = defineCommand({
 });
 
 const REMOVE_FLAGS = {
+  yes: { type: "boolean", description: "Don't ask before deleting with a live key" },
   json: { type: "boolean", description: "Print the result as JSON" },
 } as const satisfies Flags;
 
 const remove: Command = defineCommand({
   name: "forms remove",
   summary: "Delete a form with its submissions and files",
-  usage: "<form>",
-  description: "Deletes a form with its submissions and files. It can't be undone.",
+  usage: "<form> [--yes]",
+  description:
+    "Deletes a form with its submissions and files. It can't be undone, so with a live key it " +
+    "asks first; off a terminal it needs --yes.",
   flags: REMOVE_FLAGS,
   positionals: true,
-  run: async ({ positionals, context }: CommandInput<typeof REMOVE_FLAGS>) => {
+  run: async ({ values, positionals, context }: CommandInput<typeof REMOVE_FLAGS>) => {
     const [id] = requireArgs(positionals, 1, "forms remove <form>") as [string];
-    const coss = await formsClient(context);
+    const credentials = await resolveCredentials(context);
+    const go = await confirmLive(
+      context,
+      credentials.apiKey,
+      values.yes,
+      `Delete ${id} with its submissions and files? It can't be undone.`,
+      "Nothing was deleted.",
+    );
+    if (!go) return 1;
+    const coss = clientFor(context.io, credentials);
     const { data, error } = await coss.forms.remove(id);
     if (error) throw apiError("Couldn't delete the form", error);
     printDeleted(context.out, data);

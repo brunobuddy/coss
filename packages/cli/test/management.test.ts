@@ -1229,14 +1229,59 @@ describe("live keys", () => {
     expect(await run(["emails", "reschedule", "email_1", "--at", later], io)).toBe(0);
   });
 
-  test("removes don't ask, like every remove before them", async () => {
-    const api = fakeFetch({
-      "DELETE /v1/forms/form_1": deleted("form_1"),
-      "DELETE /v1/subaccounts/acme": subaccount,
+  const IRREVERSIBLE: { argv: string[]; route: string; answer: object }[] = [
+    {
+      argv: ["forms", "remove", "form_1"],
+      route: "DELETE /v1/forms/form_1",
+      answer: deleted("form_1"),
+    },
+    {
+      argv: ["subaccounts", "delete", "acme"],
+      route: "DELETE /v1/subaccounts/acme",
+      answer: { ...subaccount, status: "deleting" },
+    },
+  ];
+
+  for (const { argv, route, answer } of IRREVERSIBLE) {
+    const name = argv.slice(0, 2).join(" ");
+
+    test(`${name}: off a terminal it needs --yes, and deletes nothing without it`, async () => {
+      const api = fakeFetch({ [route]: answer });
+      const io = testIo({ fetch: api.fetch, env: live });
+      expect(await run(argv, io)).toBe(2);
+      expect(io.errors()).toContain("This is a live key: pass --yes");
+      expect(api.requests).toEqual([]);
+
+      const yes = testIo({ fetch: api.fetch, env: live });
+      expect(await run([...argv, "--yes"], yes)).toBe(0);
+      expect(`${api.requests[0]?.method} ${api.requests[0]?.url.pathname}`).toBe(route);
     });
+
+    test(`${name}: on a terminal it asks`, async () => {
+      const refused = fakeFetch({ [route]: answer });
+      const no = testIo({ fetch: refused.fetch, env: live, stdinIsTTY: true, answers: ["no"] });
+      expect(await run(argv, no)).toBe(1);
+      expect(no.errors()).toContain("can't be undone");
+      expect(no.errors()).toContain("Nothing was deleted.");
+      expect(refused.requests).toEqual([]);
+
+      const agreed = fakeFetch({ [route]: answer });
+      const yes = testIo({ fetch: agreed.fetch, env: live, stdinIsTTY: true, answers: ["yes"] });
+      expect(await run(argv, yes)).toBe(0);
+      expect(agreed.requests).toHaveLength(1);
+    });
+
+    test(`${name}: a sandbox key doesn't ask`, async () => {
+      const api = fakeFetch({ [route]: answer });
+      expect(await run(argv, testIo({ fetch: api.fetch, env }))).toBe(0);
+      expect(api.requests).toHaveLength(1);
+    });
+  }
+
+  test("other removes don't ask, like every remove before them", async () => {
+    const api = fakeFetch({ "DELETE /v1/audiences/aud_1": deleted("aud_1") });
     const io = testIo({ fetch: api.fetch, env: live });
-    expect(await run(["forms", "remove", "form_1"], io)).toBe(0);
-    expect(await run(["subaccounts", "delete", "acme"], io)).toBe(0);
+    expect(await run(["audiences", "remove", "aud_1"], io)).toBe(0);
   });
 });
 

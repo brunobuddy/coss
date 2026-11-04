@@ -67,12 +67,16 @@ export function printList<T>(
   if (options.more) out.info(out.style("dim", options.more));
 }
 
-/** A key's live sends reach people: a terminal confirms, anything else must pass `--yes`. */
+/**
+ * A live key's sends reach people and some deletes can't be undone: a terminal confirms, anything
+ * else must pass `--yes`.
+ */
 export async function confirmLive(
   context: Context,
   apiKey: string,
   yes: boolean | undefined,
   question: string,
+  declined = "Nothing was sent.",
 ): Promise<boolean> {
   if (yes || !apiKey.startsWith("coss_live_")) return true;
   if (!context.io.stdinIsTTY) {
@@ -80,7 +84,7 @@ export async function confirmLive(
   }
   const answer = await context.io.prompt(`${question} This is a live key. Type yes to go ahead: `);
   if (answer.trim().toLowerCase() === "yes") return true;
-  context.out.info("Nothing was sent.");
+  context.out.info(declined);
   return false;
 }
 

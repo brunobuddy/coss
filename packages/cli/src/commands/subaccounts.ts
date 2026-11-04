@@ -8,11 +8,13 @@ import type {
 } from "coss";
 import { type Flags, requireArgs } from "../args.ts";
 import { type Command, type CommandInput, defineCommand } from "../command.ts";
+import { clientFor, resolveCredentials } from "../context.ts";
 import { printable } from "../emails/format.ts";
 import { apiError, UsageError } from "../errors.ts";
 import type { Output, Style } from "../output.ts";
 import {
   client,
+  confirmLive,
   integerOf,
   LIMIT,
   limitOf,
@@ -126,14 +128,39 @@ const get = oneCommand(
   (coss, id) => coss.email.subaccounts.get(id),
 );
 
-const remove = oneCommand(
-  "delete",
-  "Start deleting a sub-account",
-  "Starts deleting a sub-account: its sends are refused at once, then its domains are released " +
-    "and it is removed with its suppressions. It can't be undone.",
-  "Couldn't delete the sub-account",
-  (coss, id) => coss.email.subaccounts.delete(id),
-);
+const DELETE_FLAGS = {
+  yes: { type: "boolean", description: "Don't ask before deleting with a live key" },
+  json: { type: "boolean", description: "Print the sub-account as JSON" },
+} as const satisfies Flags;
+
+const remove: Command = defineCommand({
+  name: "subaccounts delete",
+  summary: "Start deleting a sub-account",
+  usage: "<subaccount> [--yes]",
+  description:
+    "Starts deleting a sub-account: its sends are refused at once, then its domains are released " +
+    "and it is removed with its suppressions. It can't be undone, so with a live key it asks " +
+    "first; off a terminal it needs --yes.",
+  flags: DELETE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof DELETE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "subaccounts delete <subaccount>") as [string];
+    const credentials = await resolveCredentials(context);
+    const go = await confirmLive(
+      context,
+      credentials.apiKey,
+      values.yes,
+      `Delete ${id} with its domains and suppressions? It can't be undone.`,
+      "Nothing was deleted.",
+    );
+    if (!go) return 1;
+    const coss = clientFor(context.io, credentials);
+    const { data, error } = await coss.email.subaccounts.delete(id);
+    if (error) throw apiError("Couldn't delete the sub-account", error);
+    printOne(context.out, data, printSubaccount);
+    return 0;
+  },
+});
 
 const reinstate = oneCommand(
   "reinstate",

@@ -1364,4 +1364,32 @@ describe("coss-cli against the API", () => {
     expect(await json(["suppressions", "list"])).toEqual([]);
     expect(await json(["subaccounts", "delete", "acme"])).toMatchObject([{ status: "deleting" }]);
   });
+
+  test("a live key's forms remove and subaccounts delete need --yes, and touch nothing without it", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const coss = await signedIn(app, tenant.liveKey);
+    const json = jsonOf(coss);
+
+    const [form] = await json(["forms", "create", "Contact"]);
+    const formId = String(form?.id);
+    const [subaccount] = await json(["subaccounts", "create", "Acme", "--uid", "acme"]);
+
+    const keptForm = coss(["forms", "remove", formId]);
+    expect(await keptForm.code).toBe(2);
+    expect(keptForm.cli.stderr()).toContain("pass --yes");
+    expect(await json(["forms", "get", formId])).toMatchObject([{ id: formId }]);
+
+    const keptSubaccount = coss(["subaccounts", "delete", "acme"]);
+    expect(await keptSubaccount.code).toBe(2);
+    expect(await json(["subaccounts", "get", "acme"])).toMatchObject([
+      { id: subaccount?.id, status: "active" },
+    ]);
+
+    await json(["forms", "remove", formId, "--yes"]);
+    expect(await coss(["forms", "get", formId]).code).toBe(1);
+    expect(await json(["subaccounts", "delete", "acme", "--yes"])).toMatchObject([
+      { status: "deleting" },
+    ]);
+  });
 });

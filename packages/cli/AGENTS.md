@@ -47,7 +47,8 @@ directory unless they name a workspace.
   `risk rules|check|classify|settings` (`risk-manage.ts`), `sign …` (`sign.ts`) and `sms`, `forms` and `scheduling`
   share `src/commands/list-output.ts` (`--limit`, tables, `confirmLive`, `secretInput`, flag values). Text someone
   else wrote goes through `printable`. `broadcasts send` and `resume`, `scheduling book|reschedule|approve|decline` and
-  `emails reschedule` to a past time ask before a live send and need `--yes` off a terminal; removes never ask;
+  `emails reschedule` to a past time ask before a live send and need `--yes` off a terminal, as do the deletes that
+  can't be undone and take a lot with them (`forms remove`, `subaccounts delete`); other removes don't ask;
   `broadcasts create` and `sign create` make drafts (`sign create --send` sends); `verify check` exits 1 for a wrong
   code, `contacts import` when it skipped a row, `audiences contacts add` when one is no contact. Secrets never come
   from a flag: `secretInput` prompts or reads stdin (`log-drains --auth-header`, `risk settings set

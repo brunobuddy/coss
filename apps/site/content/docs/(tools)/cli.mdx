@@ -272,8 +272,8 @@ quotas and reputation. Every `<subaccount>` is its id or your uid.
 - `coss subaccounts stats <subaccount>` prints its sending per day (`--from`, `--to`; at most the
   last 45 days).
 - `coss subaccounts delete <subaccount>` starts deleting it: its sends are refused at once, then its
-  domains are released and it is removed with its suppressions. It can't be undone, and like every
-  remove it doesn't ask first.
+  domains are released and it is removed with its suppressions. It can't be undone, so with a live
+  key it asks first, and off a terminal it needs `--yes`.
 
 ## Send test SMS
 
@@ -582,8 +582,8 @@ coss forms submissions form_01kd2m8n3p4q5r6s7t8v9w0x1y --status held
 - `coss forms update <form>` changes what is given and leaves the rest: `--name`, `--enabled` or
   `--disabled`, `--origin` (replaces the list), `--redirect` (`none` clears it) and `--data '{…}'` for
   any other setting (`fields`, `spam`, `notifications`, `hosted`…).
-- `coss forms remove <form>` deletes a form with its submissions and files. It can't be undone, and
-  like every remove it doesn't ask first.
+- `coss forms remove <form>` deletes a form with its submissions and files. It can't be undone, so with a
+  live key it asks first, and off a terminal it needs `--yes`.
 - `coss forms submission <form> <submission>` prints one submission's values, and
   `coss forms release <form> <submission>` accepts one Risk held for review, which sends it on to the form's
   webhooks, notification emails and contacts.
