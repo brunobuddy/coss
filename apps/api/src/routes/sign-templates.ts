@@ -45,7 +45,7 @@ const TemplateIdParams = z.object({
 const notFound = errorDoc(
   "No template with this id exists in the API key's environment (`not_found`).",
 );
-const unavailable = errorDoc("Sign isn't available in this deployment yet (`sign_unavailable`).");
+const unavailable = errorDoc("Sign is temporarily unavailable (`sign_unavailable`).");
 const bodyErrors = {
   400: errorDoc("The body is not valid JSON (`invalid_json`)."),
   413: errorDoc("The request body is larger than 40 MB (`payload_too_large`)."),
@@ -111,6 +111,8 @@ export const getSignTemplateRoute = createRoute({
   operationId: "getSignTemplate",
   tags: [TAG],
   summary: "Retrieve a template",
+  description:
+    "A template with its documents, roles and fields. `ready` says whether requests can be made from it.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ sign: ["read"] }), rateLimit("api.read")],
   request: { params: TemplateIdParams },
@@ -265,7 +267,7 @@ export function createSignTemplateRoutes(deps: {
     new ApiError(503, {
       type: "api_error",
       code: "sign_unavailable",
-      message: "Sign isn't available in this deployment yet.",
+      message: "Sign is temporarily unavailable.",
     });
   const service = (): SignService => {
     if (!deps.signService) throw unavailableError();

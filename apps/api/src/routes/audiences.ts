@@ -75,6 +75,8 @@ export const createAudienceRoute = createRoute({
   operationId: "createAudience",
   tags: ["Audiences"],
   summary: "Create an audience",
+  description:
+    "Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.",
   security: [{ bearerAuth: [] }],
   middleware: [
     requireApiKey({ contact: ["create"] }),
@@ -98,6 +100,7 @@ export const getAudienceRoute = createRoute({
   operationId: "getAudience",
   tags: ["Audiences"],
   summary: "Retrieve an audience",
+  description: "One audience of the API key's environment.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ contact: ["read"] }), rateLimit("api.read")],
   request: { params: AudienceParams },
@@ -110,6 +113,7 @@ export const updateAudienceRoute = createRoute({
   operationId: "updateAudience",
   tags: ["Audiences"],
   summary: "Rename an audience",
+  description: "Renames an audience. Its members stay.",
   security: [{ bearerAuth: [] }],
   middleware: [
     requireApiKey({ contact: ["update"] }),
@@ -204,6 +208,7 @@ export const removeAudienceContactRoute = createRoute({
   operationId: "removeAudienceContact",
   tags: ["Audiences"],
   summary: "Remove a contact from an audience",
+  description: "Takes a contact out of the audience. The contact itself stays.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ contact: ["update"] }), rateLimit("api.write")],
   request: { params: MemberParams },

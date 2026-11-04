@@ -82,7 +82,7 @@ export const HostStatus = z.enum(["active", "disabled"]);
 export const CreateHostRequest = z
   .strictObject({
     uid: HostUid.optional(),
-    name: z.string().min(1).max(100),
+    name: z.string().min(1).max(100).meta({ description: "The host's name." }),
     email: z.email().max(320).optional().meta({
       description: "Where this host's notifications go. Not an identity, and need not be unique.",
     }),
@@ -107,8 +107,13 @@ export type CreateHostRequestOutput = z.output<typeof CreateHostRequest>;
 export const UpdateHostRequest = z
   .strictObject({
     uid: HostUid.nullable().optional(),
-    name: z.string().min(1).max(100).optional(),
-    email: z.email().max(320).nullable().optional(),
+    name: z.string().min(1).max(100).optional().meta({ description: "The host's name." }),
+    email: z
+      .email()
+      .max(320)
+      .nullable()
+      .optional()
+      .meta({ description: "Where this host's notifications go. `null` removes it." }),
     time_zone: TimeZone.optional(),
     attributes: Attributes.optional(),
     metadata: Metadata.optional(),
@@ -137,13 +142,27 @@ export const HostObject = z
   .object({
     object: z.literal("scheduling.host"),
     id: z.string(),
-    uid: z.string().nullable(),
-    name: z.string(),
-    email: z.string().nullable(),
-    time_zone: z.string(),
-    attributes: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
-    metadata: z.record(z.string(), z.string()),
-    status: HostStatus,
+    uid: z.string().nullable().meta({
+      description:
+        "Your own id for this host, unique in the environment, accepted wherever a host id is. `null` when none is set.",
+    }),
+    name: z.string().meta({ description: "The host's name." }),
+    email: z.string().nullable().meta({
+      description:
+        "Where this host's notifications go. `null` when none is set. Not an identity, and need not be unique.",
+    }),
+    time_zone: z.string().meta({
+      description:
+        "The host's IANA time zone. Their schedules default to it, and limits count days and weeks in it.",
+    }),
+    attributes: z
+      .record(z.string(), z.union([z.string(), z.array(z.string())]))
+      .meta({ description: "What pools filter hosts by, as strings or lists of strings." }),
+    metadata: z.record(z.string(), z.string()).meta({ description: "Your own key-value pairs." }),
+    status: HostStatus.meta({
+      description:
+        "`active`: can be offered. `disabled`: isn't offered, and keeps its existing bookings.",
+    }),
     created_at: z.string(),
     updated_at: z.string(),
   })
@@ -198,10 +217,21 @@ const ScheduleOverride = z
 
 export const UpsertScheduleRequest = z
   .strictObject({
-    name: z.string().min(1).max(100).optional(),
+    name: z
+      .string()
+      .min(1)
+      .max(100)
+      .optional()
+      .meta({ description: "A label for the schedule. Default on creation: `Default`." }),
     time_zone: TimeZone.optional().meta({ description: "Default: the host's." }),
-    is_default: z.boolean().optional(),
-    rules: z.array(WeeklyRule).max(50),
+    is_default: z.boolean().optional().meta({
+      description:
+        "`true` makes this the host's default schedule, in place of the current one. A host's first schedule is their default anyway.",
+    }),
+    rules: z
+      .array(WeeklyRule)
+      .max(50)
+      .meta({ description: "Weekly hours in local time. A range can't cross midnight: use two." }),
     overrides: z.array(ScheduleOverride).max(366).optional().meta({
       description: "Replaces the schedule's overrides when given.",
     }),
@@ -235,17 +265,45 @@ export const ScheduleObject = z
   .object({
     object: z.literal("scheduling.schedule"),
     id: z.string(),
-    host: z.string(),
-    name: z.string(),
-    time_zone: z.string(),
-    is_default: z.boolean(),
-    rules: z.array(z.object({ days: z.array(z.number()), start: z.string(), end: z.string() })),
-    overrides: z.array(
-      z.object({
-        date: z.string(),
-        ranges: z.array(z.object({ start: z.string(), end: z.string() })),
-      }),
-    ),
+    host: z.string().meta({ description: "The id of the host this schedule belongs to." }),
+    name: z
+      .string()
+      .meta({ description: "A label for the schedule. `Default` when none was given." }),
+    time_zone: z
+      .string()
+      .meta({ description: "The IANA time zone its rules and overrides are local to." }),
+    is_default: z.boolean().meta({
+      description:
+        "Whether this is the host's default schedule, used by event types that don't name one. A host's first schedule always is.",
+    }),
+    rules: z
+      .array(
+        z.object({
+          days: z.array(z.number()).meta({ description: "Weekdays, with Sunday as 0." }),
+          start: z.string().meta({ description: "Local start time, `HH:MM`." }),
+          end: z
+            .string()
+            .meta({ description: "Local end time, `HH:MM`. `24:00` is the end of the day." }),
+        }),
+      )
+      .meta({ description: "Weekly hours in local time, unchanged across daylight saving." }),
+    overrides: z
+      .array(
+        z.object({
+          date: z.string().meta({ description: "The local date, `YYYY-MM-DD`." }),
+          ranges: z
+            .array(
+              z.object({
+                start: z.string().meta({ description: "Local start time, `HH:MM`." }),
+                end: z
+                  .string()
+                  .meta({ description: "Local end time, `HH:MM`. `24:00` is the end of the day." }),
+              }),
+            )
+            .meta({ description: "That day's hours. Empty means unavailable all day." }),
+        }),
+      )
+      .meta({ description: "Dates whose hours replace the weekly rules." }),
     created_at: z.string(),
     updated_at: z.string(),
   })
@@ -264,21 +322,42 @@ export const EVENT_TYPE_KINDS = ["one_on_one", "pool", "collective", "group"] as
 
 const BookingWindow = z
   .discriminatedUnion("kind", [
-    z.strictObject({ kind: z.literal("rolling"), days: z.number().int().min(1).max(730) }),
-    z.strictObject({ kind: z.literal("range"), from: LocalDate, to: LocalDate }),
+    z.strictObject({
+      kind: z.literal("rolling"),
+      days: z
+        .number()
+        .int()
+        .min(1)
+        .max(730)
+        .meta({ description: "Days ahead of now that slots are offered." }),
+    }),
+    z.strictObject({
+      kind: z.literal("range"),
+      from: LocalDate.meta({ description: "The first local date offered, `YYYY-MM-DD`." }),
+      to: LocalDate.meta({ description: "The last local date offered, `YYYY-MM-DD`." }),
+    }),
   ])
-  .meta({ id: "SchedulingBookingWindow" });
+  .meta({
+    description:
+      "How far ahead a slot can be booked: `rolling` for a number of days from now, or `range` for fixed dates. On an event type, `null` means no window of its own.",
+    id: "SchedulingBookingWindow",
+  });
 
 const Limit = z
   .strictObject({
     period: z.enum(["day", "week"]).meta({ description: "In the host's time zone." }),
-    max: z.number().int().min(1).max(1000),
+    max: z
+      .number()
+      .int()
+      .min(1)
+      .max(1000)
+      .meta({ description: "The most bookings allowed in one period." }),
     scope: z
       .enum(["event_type", "host"])
       .default("event_type")
       .meta({ description: "Count this event type's bookings, or all of the host's." }),
   })
-  .meta({ id: "SchedulingLimit" });
+  .meta({ description: "A cap on bookings in a day or a week.", id: "SchedulingLimit" });
 
 const QUESTION_TYPES = [
   "text",
@@ -295,24 +374,46 @@ const Question = z
   .strictObject({
     key: z
       .string()
-      .regex(/^[a-z][a-z0-9_]{0,63}$/, "Use lower case letters, digits and underscores."),
-    type: z.enum(QUESTION_TYPES),
-    label: z.string().min(1).max(200),
-    required: z.boolean().default(false),
-    options: z.array(z.string().min(1).max(200)).max(50).default([]),
+      .regex(/^[a-z][a-z0-9_]{0,63}$/, "Use lower case letters, digits and underscores.")
+      .meta({ description: "The answer's key in `answers`. Unique within the event type." }),
+    type: z
+      .enum(QUESTION_TYPES)
+      .meta({ description: "How it's asked and which answers are valid." }),
+    label: z.string().min(1).max(200).meta({ description: "The question as attendees see it." }),
+    required: z.boolean().default(false).meta({ description: "Whether a booking must answer it." }),
+    options: z.array(z.string().min(1).max(200)).max(50).default([]).meta({
+      description:
+        "The choices of a `select`, `radio` or `checkbox` question. `select` and `radio` need at least one.",
+    }),
   })
-  .meta({ id: "SchedulingQuestion" });
+  .meta({
+    description:
+      "Something attendees are asked when booking. Answers are encrypted, and come back only when you retrieve one booking.",
+    id: "SchedulingQuestion",
+  });
 
 export const Location = z
   .discriminatedUnion("type", [
-    z.strictObject({ type: z.literal("link"), url: z.url().max(2000).nullable().default(null) }),
+    z.strictObject({
+      type: z.literal("link"),
+      url: z.url().max(2000).nullable().default(null).meta({
+        description:
+          "The meeting link. `null` on an event type means the booking supplies its own.",
+      }),
+    }),
     z.strictObject({
       type: z.literal("phone"),
-      number: z.string().max(32).nullable().default(null),
+      number: z.string().max(32).nullable().default(null).meta({
+        description:
+          "The phone number to call. `null` on an event type means the booking supplies its own.",
+      }),
     }),
     z.strictObject({
       type: z.literal("in_person"),
-      address: z.string().max(500).nullable().default(null),
+      address: z.string().max(500).nullable().default(null).meta({
+        description:
+          "The address to meet at. `null` on an event type means the booking supplies its own.",
+      }),
     }),
     z.strictObject({ type: z.literal("google_meet") }),
     z.strictObject({ type: z.literal("microsoft_teams") }),
@@ -323,7 +424,11 @@ export const Location = z
       }),
     }),
   ])
-  .meta({ id: "SchedulingLocation" });
+  .meta({
+    description:
+      "Where a booking meets. `link`, `phone` and `in_person` carry their details; `google_meet`, `microsoft_teams` and `zoom` get a meeting made on the host's connected account.",
+    id: "SchedulingLocation",
+  });
 
 const EventTypeHostInput = z
   .strictObject({
@@ -342,31 +447,74 @@ const EventTypeHostInput = z
 
 const eventTypeFields = {
   title: z.string().min(1).max(120).meta({
-    description: "Shown to attendees and in emails. Host calendars always show a neutral title.",
+    description:
+      "Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.",
   }),
-  duration_minutes: z.number().int().min(5).max(1440),
-  duration_options: z.array(z.number().int().min(5).max(1440)).max(10).optional(),
+  duration_minutes: z
+    .number()
+    .int()
+    .min(5)
+    .max(1440)
+    .meta({ description: "How long a booking lasts by default, in minutes." }),
+  duration_options: z.array(z.number().int().min(5).max(1440)).max(10).optional().meta({
+    description:
+      "Other lengths an attendee may choose, in minutes. Empty: only `duration_minutes`.",
+  }),
   step_minutes: z.number().int().min(5).max(1440).optional().meta({
     description: "How far apart slots start. Default: the duration.",
   }),
   grid_time_zone: TimeZone.nullable().optional().meta({
     description: "The zone slots align in. Default: each host's own.",
   }),
-  buffer_before_minutes: z.number().int().min(0).max(480).optional(),
-  buffer_after_minutes: z.number().int().min(0).max(480).optional(),
-  min_notice_minutes: z.number().int().min(0).max(525600).optional(),
+  buffer_before_minutes: z
+    .number()
+    .int()
+    .min(0)
+    .max(480)
+    .optional()
+    .meta({ description: "Minutes kept free before each booking. Default: 0." }),
+  buffer_after_minutes: z
+    .number()
+    .int()
+    .min(0)
+    .max(480)
+    .optional()
+    .meta({ description: "Minutes kept free after each booking. Default: 0." }),
+  min_notice_minutes: z.number().int().min(0).max(525600).optional().meta({
+    description:
+      "Slots starting sooner than this many minutes from now aren't offered. Default: 0.",
+  }),
   booking_window: BookingWindow.nullable().optional(),
-  limits: z.array(Limit).max(4).optional(),
+  limits: z
+    .array(Limit)
+    .max(4)
+    .optional()
+    .meta({ description: "Caps on bookings per day or week. Default: none." }),
   capacity: z.number().int().min(2).max(10000).nullable().optional().meta({
     description: "Attendees per session. Required for, and only allowed on, `group`.",
   }),
-  requires_approval: z.boolean().optional(),
-  approval_ttl_minutes: z.number().int().min(5).max(43200).optional(),
-  hold_ttl_seconds: z.number().int().min(60).max(86400).optional(),
+  requires_approval: z.boolean().optional().meta({
+    description:
+      "Bookings start as `pending_approval`, holding the time until approved or declined. Default: `false`.",
+  }),
+  approval_ttl_minutes: z.number().int().min(5).max(43200).optional().meta({
+    description:
+      "How long a booking can wait for approval before it's declined, in minutes. Default: 1440.",
+  }),
+  hold_ttl_seconds: z
+    .number()
+    .int()
+    .min(60)
+    .max(86400)
+    .optional()
+    .meta({ description: "How long a hold keeps its slot, in seconds. Default: 600." }),
   cancel_notice_minutes: z.number().int().min(0).max(525600).optional().meta({
     description: "Attendees can't cancel closer to the start than this. API keys can.",
   }),
-  reschedule_notice_minutes: z.number().int().min(0).max(525600).optional(),
+  reschedule_notice_minutes: z.number().int().min(0).max(525600).optional().meta({
+    description:
+      "Attendees can't reschedule closer to the start than this. API keys can. Default: 0.",
+  }),
   max_guests: z.number().int().min(0).max(MAX_GUESTS).optional().meta({
     description:
       "How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`.",
@@ -375,20 +523,36 @@ const eventTypeFields = {
     description:
       "What hosts' calendars say about a booking. `neutral` (the default): a private event titled \"Appointment\". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode.",
   }),
-  questions: z.array(Question).max(25).optional(),
-  locations: z.array(Location).max(10).optional(),
+  questions: z
+    .array(Question)
+    .max(25)
+    .optional()
+    .meta({ description: "What attendees are asked when booking. Keys must be unique." }),
+  locations: z.array(Location).max(10).optional().meta({
+    description:
+      "Where bookings can meet. A browser only chooses among these. A `group` event type can't use `zoom`.",
+  }),
   host_filter: Attributes.nullable().optional().meta({
     description: "Pool members also include active hosts matching all of these attributes.",
   }),
-  metadata: Metadata.optional(),
+  metadata: Metadata.optional().meta({ description: "Your own key-value pairs." }),
 };
 
 export const CreateEventTypeRequest = z
   .strictObject({
-    uid: z.string().min(1).max(255).optional(),
-    kind: z.enum(EVENT_TYPE_KINDS).default("one_on_one"),
+    uid: z.string().min(1).max(255).optional().meta({
+      description:
+        "Your own id for this event type, unique in the environment, accepted wherever its id is.",
+    }),
+    kind: z.enum(EVENT_TYPE_KINDS).default("one_on_one").meta({
+      description:
+        "Who a booking needs. `one_on_one`: one host. `pool`: any one of its hosts. `collective`: every `required` host, plus at most one `member`. `group`: one host, with attendees taking seats up to `capacity`. Fixed once created.",
+    }),
     ...eventTypeFields,
-    hosts: z.array(EventTypeHostInput).max(MAX_SEARCH_HOSTS).default([]),
+    hosts: z.array(EventTypeHostInput).max(MAX_SEARCH_HOSTS).default([]).meta({
+      description:
+        "Who can be booked. `one_on_one` and `group` take one; `collective` needs at least one `required` host.",
+    }),
   })
   .meta({
     id: "CreateEventTypeRequest",
@@ -407,11 +571,20 @@ export type CreateEventTypeRequestOutput = z.output<typeof CreateEventTypeReques
 
 export const UpdateEventTypeRequest = z
   .strictObject({
-    uid: z.string().min(1).max(255).nullable().optional(),
+    uid: z
+      .string()
+      .min(1)
+      .max(255)
+      .nullable()
+      .optional()
+      .meta({ description: "Your own id for this event type. `null` removes it." }),
     ...eventTypeFields,
     title: eventTypeFields.title.optional(),
     duration_minutes: eventTypeFields.duration_minutes.optional(),
-    status: z.enum(["active", "archived"]).optional(),
+    status: z
+      .enum(["active", "archived"])
+      .optional()
+      .meta({ description: "`archived` stops new bookings, and keeps existing ones." }),
     hosts: z.array(EventTypeHostInput).max(MAX_SEARCH_HOSTS).optional().meta({
       description: "Replaces the assigned hosts. Removed hosts keep their existing bookings.",
     }),
@@ -463,39 +636,98 @@ export const EventTypeObject = z
   .object({
     object: z.literal("scheduling.event_type"),
     id: z.string(),
-    uid: z.string().nullable(),
-    title: z.string(),
-    kind: z.enum(EVENT_TYPE_KINDS),
-    status: z.enum(["active", "archived"]),
-    duration_minutes: z.number(),
-    duration_options: z.array(z.number()),
-    step_minutes: z.number(),
-    grid_time_zone: z.string().nullable(),
-    buffer_before_minutes: z.number(),
-    buffer_after_minutes: z.number(),
-    min_notice_minutes: z.number(),
+    uid: z.string().nullable().meta({
+      description:
+        "Your own id for this event type, accepted wherever its id is. `null` when none is set.",
+    }),
+    title: z.string().meta({
+      description:
+        "Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.",
+    }),
+    kind: z.enum(EVENT_TYPE_KINDS).meta({
+      description:
+        "Who a booking needs. `one_on_one`: one host. `pool`: any one of its hosts. `collective`: every `required` host, plus at most one `member`. `group`: one host, with attendees taking seats up to `capacity`.",
+    }),
+    status: z.enum(["active", "archived"]).meta({
+      description:
+        "`active`: can be booked. `archived`: new bookings answer `not_found`; existing ones stay.",
+    }),
+    duration_minutes: z
+      .number()
+      .meta({ description: "How long a booking lasts by default, in minutes." }),
+    duration_options: z.array(z.number()).meta({
+      description:
+        "Other lengths an attendee may choose, in minutes. Empty: only `duration_minutes`.",
+    }),
+    step_minutes: z.number().meta({ description: "How far apart slots start, in minutes." }),
+    grid_time_zone: z
+      .string()
+      .nullable()
+      .meta({ description: "The zone slots align in. `null`: each host's own." }),
+    buffer_before_minutes: z
+      .number()
+      .meta({ description: "Minutes kept free before each booking." }),
+    buffer_after_minutes: z.number().meta({ description: "Minutes kept free after each booking." }),
+    min_notice_minutes: z.number().meta({
+      description: "Slots starting sooner than this many minutes from now aren't offered.",
+    }),
     booking_window: BookingWindow.nullable(),
-    limits: z.array(Limit),
-    capacity: z.number().nullable(),
-    requires_approval: z.boolean(),
-    approval_ttl_minutes: z.number(),
-    hold_ttl_seconds: z.number(),
-    cancel_notice_minutes: z.number(),
-    reschedule_notice_minutes: z.number(),
-    max_guests: z.number(),
-    host_calendar_details: z.enum(HOST_CALENDAR_DETAILS),
-    questions: z.array(Question),
-    locations: z.array(Location),
-    host_filter: z.record(z.string(), z.union([z.string(), z.array(z.string())])).nullable(),
-    hosts: z.array(
-      z.object({
-        host: z.string(),
-        role: z.enum(["required", "member"]),
-        weight: z.number(),
-        schedule: z.string().nullable(),
+    limits: z.array(Limit).meta({ description: "Caps on bookings per day or week." }),
+    capacity: z.number().nullable().meta({
+      description: "Attendees per session of a `group` event type. `null` for every other kind.",
+    }),
+    requires_approval: z.boolean().meta({
+      description:
+        "Whether bookings start as `pending_approval`, holding the time until approved or declined.",
+    }),
+    approval_ttl_minutes: z.number().meta({
+      description: "How long a booking can wait for approval before it's declined, in minutes.",
+    }),
+    hold_ttl_seconds: z
+      .number()
+      .meta({ description: "How long a hold keeps its slot, in seconds." }),
+    cancel_notice_minutes: z
+      .number()
+      .meta({ description: "Attendees can't cancel closer to the start than this. API keys can." }),
+    reschedule_notice_minutes: z.number().meta({
+      description: "Attendees can't reschedule closer to the start than this. API keys can.",
+    }),
+    max_guests: z.number().meta({
+      description: "How many people an attendee can add to a booking. Not on `group`.",
+    }),
+    host_calendar_details: z.enum(HOST_CALENDAR_DETAILS).meta({
+      description:
+        "What hosts' calendars say about a booking. `neutral`: a private event titled \"Appointment\". `full`: a private event with this title and the attendee's and guests' details.",
+    }),
+    questions: z.array(Question).meta({ description: "What attendees are asked when booking." }),
+    locations: z
+      .array(Location)
+      .meta({ description: "Where bookings can meet. A browser only chooses among these." }),
+    host_filter: z
+      .record(z.string(), z.union([z.string(), z.array(z.string())]))
+      .nullable()
+      .meta({
+        description:
+          "Pool members also include active hosts matching all of these attributes. `null`: only `hosts`.",
       }),
-    ),
-    metadata: z.record(z.string(), z.string()),
+    hosts: z
+      .array(
+        z.object({
+          host: z.string().meta({ description: "The host's id." }),
+          role: z.enum(["required", "member"]).meta({
+            description: "`required` hosts must all be free; one `member` is chosen for a booking.",
+          }),
+          weight: z
+            .number()
+            .meta({ description: "Share of a pool's bookings relative to other members." }),
+          schedule: z.string().nullable().meta({
+            description:
+              "The id of the schedule used for this event type. `null`: the host's default schedule.",
+          }),
+        }),
+      )
+      .meta({ description: "The hosts assigned by name." }),
+    metadata: z.record(z.string(), z.string()).meta({ description: "Your own key-value pairs." }),
     created_at: z.string(),
     updated_at: z.string(),
   })
@@ -516,8 +748,8 @@ export const SlotsQuery = z.object({
 
 const Slot = z
   .object({
-    start: z.string(),
-    end: z.string(),
+    start: z.string().meta({ description: "When the slot starts." }),
+    end: z.string().meta({ description: "When the slot ends." }),
     hosts: z.array(z.string()).meta({ description: "Who could take it." }),
   })
   .meta({ id: "SchedulingSlot" });
@@ -549,8 +781,16 @@ export const AvailabilitySearchRequest = z
     attributes: Attributes.optional().meta({
       description: "Only hosts matching all of these.",
     }),
-    hosts: z.array(z.string()).max(MAX_SEARCH_HOSTS).optional(),
-    slots_per_host: z.number().int().min(1).max(50).default(3),
+    hosts: z.array(z.string()).max(MAX_SEARCH_HOSTS).optional().meta({
+      description: "Only these hosts (ids or uids). Default: everyone the event type could offer.",
+    }),
+    slots_per_host: z
+      .number()
+      .int()
+      .min(1)
+      .max(50)
+      .default(3)
+      .meta({ description: "How many of each host's soonest slots to return." }),
     limit: z.number().int().min(1).max(MAX_SEARCH_HOSTS).default(50).meta({
       description: "Hosts to return, soonest availability first.",
     }),
@@ -571,14 +811,28 @@ export type AvailabilitySearchRequestOutput = z.output<typeof AvailabilitySearch
 export const AvailabilitySearchResult = z
   .object({
     object: z.literal("list"),
-    data: z.array(
-      z.object({
-        host: z.string(),
-        uid: z.string().nullable(),
-        slots: z.array(z.object({ start: z.string(), end: z.string() })),
-      }),
-    ),
-    has_more: z.boolean(),
+    data: z
+      .array(
+        z.object({
+          host: z.string().meta({ description: "The host's id." }),
+          uid: z
+            .string()
+            .nullable()
+            .meta({ description: "The host's own uid. `null` when none is set." }),
+          slots: z
+            .array(
+              z.object({
+                start: z.string().meta({ description: "When the slot starts." }),
+                end: z.string().meta({ description: "When the slot ends." }),
+              }),
+            )
+            .meta({ description: "The host's soonest slots." }),
+        }),
+      )
+      .meta({ description: "Each host with availability, soonest first." }),
+    has_more: z
+      .boolean()
+      .meta({ description: "Whether more hosts matched than `limit` returned." }),
   })
   .meta({
     id: "SchedulingAvailabilitySearchResult",
@@ -610,14 +864,31 @@ const AttendeeInput = z
     uid: z.string().min(1).max(255).optional().meta({
       description: "Your own id for this person, used to erase their data later.",
     }),
-    name: z.string().min(1).max(100).optional(),
-    email: z.email().max(320).optional(),
+    name: z
+      .string()
+      .min(1)
+      .max(100)
+      .optional()
+      .meta({ description: "Needed for coss.com to notify them. Can't contain a link." }),
+    email: z
+      .email()
+      .max(320)
+      .optional()
+      .meta({ description: "Where coss.com emails them, if it does." }),
     phone: z
       .string()
       .regex(/^\+[1-9]\d{6,14}$/, "Use E.164.")
-      .optional(),
-    time_zone: TimeZone,
-    locale: z.string().min(2).max(35).optional(),
+      .optional()
+      .meta({ description: "An E.164 number, for SMS reminders." }),
+    time_zone: TimeZone.meta({
+      description: "Their IANA time zone. A series keeps their local time across clock changes.",
+    }),
+    locale: z
+      .string()
+      .min(2)
+      .max(35)
+      .optional()
+      .meta({ description: "Their locale, such as `en-US`." }),
   })
   .meta({
     id: "SchedulingAttendeeInput",
@@ -627,8 +898,13 @@ export type AttendeeInputOutput = z.output<typeof AttendeeInput>;
 
 const GuestInput = z
   .strictObject({
-    email: z.email().max(320),
-    name: z.string().min(1).max(100).optional(),
+    email: z.email().max(320).meta({ description: "Where they're emailed about the booking." }),
+    name: z
+      .string()
+      .min(1)
+      .max(100)
+      .optional()
+      .meta({ description: "Their name, if you have it." }),
   })
   .meta({
     id: "SchedulingGuestInput",
@@ -701,7 +977,9 @@ export const ConfirmHoldRequest = z
 
 export const RescheduleBookingRequest = z
   .strictObject({
-    start: Instant,
+    start: Instant.meta({
+      description: "The new start. The old time stays booked unless this one's free.",
+    }),
     host: z.string().optional().meta({
       description: "Move a pool booking to this host. Default: its current hosts.",
     }),
@@ -716,11 +994,24 @@ export const UpdateBookingLocationRequest = z.strictObject({ location: Location 
 export const CreateSeriesRequest = z
   .strictObject({
     ...bookingFields,
-    recurrence: z.strictObject({
-      frequency: z.enum(["weekly", "monthly"]),
-      interval: z.number().int().min(1).max(12).default(1),
-      count: z.number().int().min(2).max(MAX_SERIES_OCCURRENCES),
-    }),
+    recurrence: z
+      .strictObject({
+        frequency: z.enum(["weekly", "monthly"]).meta({ description: "Repeat weekly or monthly." }),
+        interval: z
+          .number()
+          .int()
+          .min(1)
+          .max(12)
+          .default(1)
+          .meta({ description: "Every this many weeks or months. Default: 1." }),
+        count: z
+          .number()
+          .int()
+          .min(2)
+          .max(MAX_SERIES_OCCURRENCES)
+          .meta({ description: "Occurrences in total, the first included." }),
+      })
+      .meta({ description: "How often the booking repeats, at the attendee's local time." }),
     on_conflict: z.enum(["reject", "skip"]).default("reject").meta({
       description: "If an occurrence isn't free: book nothing, or book the rest and report it.",
     }),
@@ -750,9 +1041,11 @@ const LOGO_MAX_BASE64 = Math.ceil(LOGO_MAX_BYTES / 3) * 4;
 
 const SettingsLogo = z
   .object({
-    content_type: z.enum(["image/png", "image/jpeg"]),
-    width: z.number().int(),
-    height: z.number().int(),
+    content_type: z
+      .enum(["image/png", "image/jpeg"])
+      .meta({ description: "The image's type, checked from its bytes." }),
+    width: z.number().int().meta({ description: "Width in pixels." }),
+    height: z.number().int().meta({ description: "Height in pixels." }),
     data_url: z.string().meta({ description: "The image, as a `data:` URL." }),
   })
   .meta({ id: "SchedulingLogo" });
@@ -763,8 +1056,14 @@ export const SettingsObject = z
     allowed_origins: z.array(z.string()).meta({
       description: "Sites allowed to embed coss.com's hosted pages and call the client API.",
     }),
-    brand_name: z.string().nullable(),
-    accent_color: z.string().nullable(),
+    brand_name: z.string().nullable().meta({
+      description:
+        "Your name on hosted pages and on emails sent from `email_from`. `null`: none set.",
+    }),
+    accent_color: z.string().nullable().meta({
+      description:
+        "The accent color of hosted pages and emails sent from `email_from`, as `#RRGGBB`. `null`: the default.",
+    }),
     logo: SettingsLogo.nullable().meta({
       description: "At the top of the hosted pages, and of emails sent from `email_from`.",
     }),
@@ -776,15 +1075,24 @@ export const SettingsObject = z
     }),
     calendar_failure_mode: z.enum(["hide", "last_known"]).meta({
       description:
-        "When a host's calendar can't be read: stop offering them, or keep offering their last known times and flag those bookings as unverified.",
+        "When a host's calendar can't be read: `hide` stops offering them, `last_known` keeps offering their last known times.",
     }),
     notifications: z
       .record(
         z.string(),
         z.object({
-          email_attendee: z.boolean().optional(),
-          email_host: z.boolean().optional(),
-          sms_attendee: z.boolean().optional(),
+          email_attendee: z
+            .boolean()
+            .optional()
+            .meta({ description: "Email the attendee about this event." }),
+          email_host: z
+            .boolean()
+            .optional()
+            .meta({ description: "Email the host about this event." }),
+          sms_attendee: z
+            .boolean()
+            .optional()
+            .meta({ description: "Text the attendee about this event, if `sms_from` is set." }),
         }),
       )
       .nullable()
@@ -810,13 +1118,20 @@ export type SettingsObjectOutput = z.output<typeof SettingsObject>;
 
 export const UpdateSettingsRequest = z
   .strictObject({
-    allowed_origins: z.array(z.string().max(200)).max(10).optional(),
-    brand_name: z.string().min(1).max(100).nullable().optional(),
+    allowed_origins: z.array(z.string().max(200)).max(10).optional().meta({
+      description:
+        "Sites allowed to embed coss.com's hosted pages and call the client API, as `https://host` origins.",
+    }),
+    brand_name: z.string().min(1).max(100).nullable().optional().meta({
+      description:
+        "Your name on hosted pages and on emails sent from `email_from`. `null` removes it.",
+    }),
     accent_color: z
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/, "Use #RRGGBB.")
       .nullable()
-      .optional(),
+      .optional()
+      .meta({ description: "The accent color as `#RRGGBB`. `null` restores the default." }),
     logo: z
       .strictObject({
         content: z
@@ -825,43 +1140,82 @@ export const UpdateSettingsRequest = z
           .meta({ description: "A PNG or JPEG's bytes, base64-encoded. 200 KB at most." }),
       })
       .nullable()
-      .optional(),
-    email_from: z.email().max(320).nullable().optional(),
+      .optional()
+      .meta({ description: "Your logo, a PNG or JPEG. `null` removes it." }),
+    email_from: z.email().max(320).nullable().optional().meta({
+      description:
+        "Sender of booking emails, on a verified domain. `null`: coss.com's own address.",
+    }),
     sms_from: z
       .string()
       .regex(/^\+[1-9]\d{6,14}$/, "Use E.164.")
       .nullable()
-      .optional(),
-    calendar_failure_mode: z.enum(["hide", "last_known"]).optional(),
+      .optional()
+      .meta({
+        description: "Your approved number for SMS reminders, in E.164. `null`: no SMS is sent.",
+      }),
+    calendar_failure_mode: z.enum(["hide", "last_known"]).optional().meta({
+      description:
+        "When a host's calendar can't be read: `hide` stops offering them, `last_known` keeps offering their last known times.",
+    }),
     notifications: z
       .record(
         z.string().max(64),
         z.strictObject({
-          email_attendee: z.boolean().optional(),
-          email_host: z.boolean().optional(),
-          sms_attendee: z.boolean().optional(),
+          email_attendee: z
+            .boolean()
+            .optional()
+            .meta({ description: "Email the attendee about this event." }),
+          email_host: z
+            .boolean()
+            .optional()
+            .meta({ description: "Email the host about this event." }),
+          sms_attendee: z
+            .boolean()
+            .optional()
+            .meta({ description: "Text the attendee about this event, if `sms_from` is set." }),
         }),
       )
       .nullable()
-      .optional(),
+      .optional()
+      .meta({
+        description:
+          "Per event (`confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined`, `reminder`), overriding the defaults. `null` restores them.",
+      }),
   })
   .meta({ id: "UpdateSchedulingSettingsRequest", examples: [{ brand_name: "Acme Health" }] });
 export type UpdateSettingsRequestOutput = z.output<typeof UpdateSettingsRequest>;
 
 export const ErasedAttendee = z
-  .object({ object: z.literal("scheduling.attendee_erasure"), uid: z.string(), erased: z.number() })
+  .object({
+    object: z.literal("scheduling.attendee_erasure"),
+    uid: z.string().meta({ description: "The attendee's uid." }),
+    erased: z
+      .number()
+      .meta({ description: "How many attendee records were erased, one per booking." }),
+  })
   .meta({
     id: "SchedulingAttendeeErasure",
     examples: [{ object: "scheduling.attendee_erasure", uid: "patient_77", erased: 3 }],
   });
 
-export const EraseAttendeeByEmailRequest = z.strictObject({ email: z.email().max(320) }).meta({
-  id: "EraseSchedulingAttendeeByEmailRequest",
-  examples: [{ email: "sam@example.com" }],
-});
+export const EraseAttendeeByEmailRequest = z
+  .strictObject({
+    email: z
+      .email()
+      .max(320)
+      .meta({ description: "The address to forget, an attendee's or a guest's." }),
+  })
+  .meta({
+    id: "EraseSchedulingAttendeeByEmailRequest",
+    examples: [{ email: "sam@example.com" }],
+  });
 
 export const ErasedAttendeeByEmail = z
-  .object({ object: z.literal("scheduling.attendee_erasure"), erased: z.number() })
+  .object({
+    object: z.literal("scheduling.attendee_erasure"),
+    erased: z.number().meta({ description: "How many attendee and guest records were erased." }),
+  })
   .meta({
     id: "SchedulingAttendeeErasureByEmail",
     examples: [{ object: "scheduling.attendee_erasure", erased: 3 }],
@@ -872,12 +1226,24 @@ const BookingAttendee = z.object({
   role: z.enum(["attendee", "guest"]).meta({
     description: "`attendee` booked it and comes first; a `guest` was added by them.",
   }),
-  uid: z.string().nullable(),
-  name: z.string().nullable(),
-  email: z.string().nullable(),
-  phone: z.string().nullable(),
-  time_zone: z.string(),
-  locale: z.string().nullable(),
+  uid: z
+    .string()
+    .nullable()
+    .meta({ description: "Your own id for this person. `null` when none was given." }),
+  name: z
+    .string()
+    .nullable()
+    .meta({ description: "`null` when not given, or after their details are erased." }),
+  email: z
+    .string()
+    .nullable()
+    .meta({ description: "`null` when not given, or after their details are erased." }),
+  phone: z
+    .string()
+    .nullable()
+    .meta({ description: "`null` when not given, or after their details are erased." }),
+  time_zone: z.string().meta({ description: "Their IANA time zone." }),
+  locale: z.string().nullable().meta({ description: "Their locale. `null` when not given." }),
   answers: z
     .record(z.string(), z.union([z.string(), z.array(z.string())]))
     .optional()
@@ -924,24 +1290,57 @@ export const BookingObject = z
   .object({
     object: z.literal("scheduling.booking"),
     id: z.string(),
-    event_type: z.string(),
-    status: z.enum(BOOKING_STATUSES),
-    title: z.string(),
-    start: z.string(),
-    end: z.string(),
-    hosts: z.array(z.string()),
-    attendees: z.array(BookingAttendee),
+    event_type: z.string().meta({ description: "The id of the booked event type." }),
+    status: z.enum(BOOKING_STATUSES).meta({
+      description:
+        "`held`: a hold keeping the slot until `hold_expires_at`, uncharged and known to nobody. `pending_approval`: holds the time until approved, declined or `approval_expires_at`. `confirmed`: booked. `cancelled`: cancelled, or a hold released or expired. `declined`: refused, or its approval deadline passed.",
+    }),
+    title: z.string().meta({ description: "The event type's title when this was booked." }),
+    start: z.string().meta({ description: "When the booking starts." }),
+    end: z.string().meta({ description: "When the booking ends, without buffers." }),
+    hosts: z.array(z.string()).meta({ description: "The ids of the hosts taking it." }),
+    attendees: z.array(BookingAttendee).meta({
+      description:
+        "Who's booked: the attendee first, then any guests they added. A group session's seat is its own booking.",
+    }),
     location: Location.nullable(),
-    hold_expires_at: z.string().nullable(),
-    approval_expires_at: z.string().nullable(),
-    series: z.string().nullable(),
-    series_index: z.number().nullable(),
-    group_session: z.string().nullable(),
-    calendar_unverified: z.boolean(),
-    external_conflict_at: z.string().nullable(),
-    no_show_at: z.string().nullable(),
-    cancelled_at: z.string().nullable(),
-    metadata: z.record(z.string(), z.string()),
+    hold_expires_at: z
+      .string()
+      .nullable()
+      .meta({ description: "When a `held` booking gives up its slot. `null` otherwise." }),
+    approval_expires_at: z.string().nullable().meta({
+      description:
+        "When a `pending_approval` booking is declined if nobody decides. `null` otherwise.",
+    }),
+    series: z
+      .string()
+      .nullable()
+      .meta({ description: "The id of the series it belongs to. `null`: not part of one." }),
+    series_index: z
+      .number()
+      .nullable()
+      .meta({ description: "Its place in the series, from 0. `null`: not part of one." }),
+    group_session: z
+      .string()
+      .nullable()
+      .meta({ description: "The id of the group session whose seat this is. `null`: not a seat." }),
+    calendar_unverified: z.boolean().meta({
+      description:
+        "Reserved for flagging a booking made on last known calendar data. Nothing sets it yet, so it's always `false`.",
+    }),
+    external_conflict_at: z.string().nullable().meta({
+      description:
+        "When something else landed on this time in the host's calendar, or the host changed the event. The booking stands. `null`: no conflict known.",
+    }),
+    no_show_at: z
+      .string()
+      .nullable()
+      .meta({ description: "When the attendee was marked as a no-show. `null`: not marked." }),
+    cancelled_at: z
+      .string()
+      .nullable()
+      .meta({ description: "When it was cancelled. `null`: not cancelled." }),
+    metadata: z.record(z.string(), z.string()).meta({ description: "Your own key-value pairs." }),
     created_at: z.string(),
     updated_at: z.string(),
   })
@@ -962,30 +1361,46 @@ export const ListBookingsQuery = PageQuery.extend({
 /** What a webhook carries: ids, times and statuses, never a person's details or answers. */
 export const SchedulingBookingWebhookData = z
   .object({
-    booking_id: z.string(),
-    event_type_id: z.string(),
-    status: z.enum(BOOKING_STATUSES),
-    start: z.string(),
-    end: z.string(),
-    host_ids: z.array(z.string()),
-    attendee_uids: z.array(z.string()),
-    series_id: z.string().nullable(),
-    previous_start: z.string().optional(),
-    occurred_at: z.string(),
+    booking_id: z.string().meta({ description: "The booking's id." }),
+    event_type_id: z.string().meta({ description: "The booked event type's id." }),
+    status: z
+      .enum(BOOKING_STATUSES)
+      .meta({ description: "The booking's status after this event." }),
+    start: z.string().meta({ description: "When the booking starts." }),
+    end: z.string().meta({ description: "When the booking ends." }),
+    host_ids: z.array(z.string()).meta({ description: "The ids of the hosts taking it." }),
+    attendee_uids: z.array(z.string()).meta({ description: "Your uids of its attendees." }),
+    series_id: z
+      .string()
+      .nullable()
+      .meta({ description: "The id of its series. `null`: not part of one." }),
+    previous_start: z
+      .string()
+      .optional()
+      .meta({ description: "`scheduling.booking.rescheduled`: when it used to start." }),
+    occurred_at: z.string().meta({ description: "When this happened." }),
   })
-  .meta({ id: "SchedulingBookingWebhookData" });
+  .meta({
+    id: "SchedulingBookingWebhookData",
+    description:
+      "Ids, times and statuses only. Retrieve the booking for anything about the person.",
+  });
 
 const webhookEnvelope = {
   id: z.string().meta({ description: "The event id." }),
   object: z.literal("event"),
-  api_version: z.string(),
-  created_at: z.iso.datetime(),
+  api_version: z
+    .string()
+    .meta({ description: "The API version this payload is rendered in: the endpoint's." }),
+  created_at: z.iso.datetime().meta({ description: "When the event was created." }),
 };
 
 export const SchedulingBookingWebhookEvent = z
   .object({
     ...webhookEnvelope,
-    type: z.enum(SCHEDULING_BOOKING_EVENT_TYPES),
+    type: z
+      .enum(SCHEDULING_BOOKING_EVENT_TYPES)
+      .meta({ description: "What happened to the booking." }),
     data: SchedulingBookingWebhookData,
   })
   .meta({
@@ -1023,13 +1438,18 @@ export type StoredSchedulingCalendarWebhookEvent = Omit<
 export const SchedulingCalendarWebhookEvent = z
   .object({
     ...webhookEnvelope,
-    type: z.enum(SCHEDULING_CALENDAR_EVENT_TYPES),
-    data: z.object({
-      host_id: z.string(),
-      connection_id: z.string(),
-      provider: z.string(),
-      occurred_at: z.string(),
+    type: z.enum(SCHEDULING_CALENDAR_EVENT_TYPES).meta({
+      description:
+        "`connected`: a calendar account was connected. `needs_reauth`: access was lost, and the host isn't offered until it's back. `disconnected`: the connection was removed.",
     }),
+    data: z
+      .object({
+        host_id: z.string().meta({ description: "The host's id." }),
+        connection_id: z.string().meta({ description: "The calendar connection's id." }),
+        provider: z.string().meta({ description: "The calendar provider, such as `google`." }),
+        occurred_at: z.string().meta({ description: "When this happened." }),
+      })
+      .meta({ description: "The host and calendar connection this is about." }),
   })
   .meta({
     id: "SchedulingCalendarWebhookEvent",
@@ -1054,8 +1474,20 @@ export const SeriesResult = z
   .object({
     object: z.literal("scheduling.series"),
     id: z.string(),
-    bookings: z.array(BookingObject),
-    conflicts: z.array(z.object({ index: z.number(), start: z.string() })),
+    bookings: z
+      .array(BookingObject)
+      .meta({ description: "The occurrences booked, each an ordinary booking." }),
+    conflicts: z
+      .array(
+        z.object({
+          index: z.number().meta({ description: "The occurrence's place in the series, from 0." }),
+          start: z.string().meta({ description: "When it would have started." }),
+        }),
+      )
+      .meta({
+        description:
+          "With `on_conflict: skip`, the occurrences that weren't free and weren't booked.",
+      }),
   })
   .meta({
     id: "SchedulingSeries",
@@ -1072,14 +1504,21 @@ export const SeriesResult = z
 export const SeriesPreview = z
   .object({
     object: z.literal("list"),
-    data: z.array(
-      z.object({
-        start: z.string(),
-        available: z.boolean(),
-        reason: z.string().nullable(),
-        hosts: z.array(z.string()),
-      }),
-    ),
+    data: z
+      .array(
+        z.object({
+          start: z.string().meta({ description: "When this occurrence starts." }),
+          available: z.boolean().meta({ description: "Whether it's free." }),
+          reason: z.string().nullable().meta({
+            description:
+              "Why it isn't free, such as `host_busy`, `already_claimed`, `outside_availability` or `no_hosts`. `null` when it is.",
+          }),
+          hosts: z
+            .array(z.string())
+            .meta({ description: "The ids of the hosts who could take it." }),
+        }),
+      )
+      .meta({ description: "Each occurrence the request would book. Nothing is booked." }),
     has_more: z.literal(false),
   })
   .meta({
@@ -1109,7 +1548,9 @@ export const CancelledSeries = z
 
 export const AuthorizeCalendarRequest = z
   .strictObject({
-    provider: z.enum(["google", "microsoft", "zoom"]),
+    provider: z.enum(["google", "microsoft", "zoom"]).meta({
+      description: "Whose consent page to open. CalDAV connects with a password instead.",
+    }),
     return_url: z.url().max(2000).optional().meta({
       description:
         "Where to send the browser afterwards, on one of the environment's allowed origins. `coss_calendar` says what happened: `connected`, `denied` or `invalid`.",
@@ -1139,7 +1580,11 @@ export const CreateCalendarConnectionRequest = z
     z.strictObject({
       provider: z.literal("caldav"),
       url: z.url().max(2000).meta({ description: "The server's https URL." }),
-      username: z.string().min(1).max(320),
+      username: z
+        .string()
+        .min(1)
+        .max(320)
+        .meta({ description: "The account's username on that server." }),
       password: z.string().min(1).max(500).meta({
         description: "An app-specific password. Encrypted, and never returned.",
       }),
@@ -1147,6 +1592,8 @@ export const CreateCalendarConnectionRequest = z
     z.strictObject({ provider: z.literal("simulated") }),
   ])
   .meta({
+    description:
+      "`caldav` connects a server with an app-specific password; `simulated` is a sandbox calendar for tests.",
     id: "CreateCalendarConnectionRequest",
     examples: [
       {
@@ -1184,21 +1631,31 @@ export const CalendarConnectionObject = z
   .object({
     object: z.literal("scheduling.calendar_connection"),
     id: z.string(),
-    host: z.string(),
-    provider: z.enum(["google", "microsoft", "caldav", "simulated", "zoom"]),
-    account: z.string(),
+    host: z.string().meta({ description: "The id of the host it belongs to." }),
+    provider: z.enum(["google", "microsoft", "caldav", "simulated", "zoom"]).meta({
+      description:
+        "Where the calendar lives. `simulated` exists only in sandbox environments; `zoom` is only used for meetings, never read for busy times.",
+    }),
+    account: z
+      .string()
+      .meta({ description: "The provider's account, such as the Google address." }),
     status: z.enum(["active", "needs_reauth"]).meta({
       description: "`needs_reauth`: access was lost, and this host isn't offered until it's back.",
     }),
-    calendars: z.array(
-      z.object({
-        id: z.string(),
-        external_id: z.string(),
-        read_busy: z.boolean().meta({ description: "Whether its busy times block slots." }),
-        write_target: z.boolean().meta({ description: "Whether bookings are written to it." }),
-        verified_at: z.string().nullable(),
-      }),
-    ),
+    calendars: z
+      .array(
+        z.object({
+          id: z.string(),
+          external_id: z.string().meta({ description: "The calendar's id at the provider." }),
+          read_busy: z.boolean().meta({ description: "Whether its busy times block slots." }),
+          write_target: z.boolean().meta({ description: "Whether bookings are written to it." }),
+          verified_at: z
+            .string()
+            .nullable()
+            .meta({ description: "When it was last read successfully. `null`: not read yet." }),
+        }),
+      )
+      .meta({ description: "The account's calendars." }),
     created_at: z.string(),
   })
   .meta({ id: "SchedulingCalendarConnection", examples: [CONNECTION_EXAMPLE] });
@@ -1217,7 +1674,10 @@ export const DeletedCalendarConnection = deleted(
 
 export const UpdateCalendarRequest = z
   .strictObject({
-    read_busy: z.boolean().optional(),
+    read_busy: z
+      .boolean()
+      .optional()
+      .meta({ description: "Whether this calendar's busy times block slots." }),
     write_target: z.boolean().optional().meta({
       description: "Bookings are written to one calendar; setting this moves it here.",
     }),
@@ -1226,7 +1686,10 @@ export const UpdateCalendarRequest = z
 
 export const SetSimulatedBusyRequest = z
   .strictObject({
-    intervals: z.array(z.strictObject({ start: Instant, end: Instant })).max(500),
+    intervals: z
+      .array(z.strictObject({ start: Instant, end: Instant }))
+      .max(500)
+      .meta({ description: "The simulated calendar's busy times." }),
   })
   .meta({
     id: "SetSimulatedBusyRequest",

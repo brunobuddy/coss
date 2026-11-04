@@ -174,7 +174,7 @@ async function route(
   ]);
   const store = deps.store;
   if (!store) {
-    throw new SigningApiError(503, "sign_unavailable", "Signing isn't available yet.");
+    throw new SigningApiError(503, "sign_unavailable", "Sign is temporarily unavailable.");
   }
   const token = /^Bearer (\S+)$/.exec(request.headers.get("authorization") ?? "")?.[1];
   if (!token) throw NOT_FOUND;

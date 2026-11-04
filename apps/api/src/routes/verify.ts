@@ -194,6 +194,7 @@ export const getVerificationRoute = createRoute({
   operationId: "getVerification",
   tags: ["Verifications"],
   summary: "Retrieve a verification",
+  description: "A verification's status and destination. Its code is never returned.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ verify: ["read"] }), rateLimit("api.read")],
   request: { params: VerificationIdParams },
