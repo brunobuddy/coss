@@ -368,6 +368,7 @@ export function schedulingHost(overrides: Partial<SchedulingHost> = {}): Schedul
     name: "Grace",
     email: null,
     time_zone: "Europe/London",
+    locations: [],
     attributes: {},
     metadata: {},
     status: "active",
