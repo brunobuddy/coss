@@ -12,6 +12,7 @@ import { AccountWebhookEvent } from "@coss/reputation/schemas";
 import { RiskWebhookEvent } from "@coss/risk/schemas";
 import {
   SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
 } from "@coss/scheduling/schemas";
 import { SignRequestWebhookEvent } from "@coss/sign/schemas";
@@ -40,6 +41,7 @@ const WEBHOOK_EVENTS = {
   SignRequestWebhookEvent,
   FormSubmissionWebhookEvent,
   SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
 };
 

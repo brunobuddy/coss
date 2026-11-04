@@ -156,6 +156,7 @@ describe("reencryptSchedulingData", () => {
     // These two hold the webhook key ring's values (`CalendarDeps.secretsKeys`).
     const onWebhookKeys = [
       "scheduling_calendar_connection.encrypted_credentials",
+      "scheduling_calendar_delegation.encrypted_credentials",
       "scheduling_oauth_state.encrypted_code_verifier",
     ];
     expect(rows.map((row) => row.name)).toEqual(

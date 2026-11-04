@@ -259,6 +259,37 @@ resource "aws_budgets_budget" "monthly" {
   }
 }
 
+# SES alone: received mail costs us by size before anything of ours can refuse it, and spam, viruses
+# and unroutable mail bill no one (README, "Abusive inbound mail").
+resource "aws_budgets_budget" "ses" {
+  name         = "${local.name}-ses-monthly"
+  budget_type  = "COST"
+  limit_amount = tostring(var.ses_monthly_budget_usd)
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
+
+  cost_filter {
+    name   = "Service"
+    values = ["Amazon Simple Email Service"]
+  }
+
+  notification {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = 80
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "ACTUAL"
+    subscriber_email_addresses = [var.alert_email]
+  }
+
+  notification {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = 100
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "FORECASTED"
+    subscriber_email_addresses = [var.alert_email]
+  }
+}
+
 # Spend spikes per service (e.g. NAT data processing, a runaway task count), daily.
 resource "aws_ce_anomaly_monitor" "services" {
   name              = "${local.name}-services"

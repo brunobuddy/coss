@@ -100,8 +100,8 @@ export default async function ReceivedEmailsPage({
         <Alert variant="warning">
           <AlertDescription>
             {dropped} {dropped === 1 ? "email was" : "emails were"} dropped today because the
-            organization reached its daily limit of received emails, or the Free plan's monthly
-            allowance. Upgrade your plan, or{" "}
+            organization reached its daily limit of received emails or data, or the Free plan's
+            monthly allowance. Upgrade your plan, or{" "}
             <SupportLink
               orgSlug={organization.slug}
               subject="Raise the daily inbound limit"
