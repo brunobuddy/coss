@@ -53,6 +53,14 @@ export class FakeDedicatedIpProvider implements DedicatedIpProvider {
     this.#streams.set(input.organizationId, streams);
   }
 
+  /** Organizations whose pool in this instance requires TLS (tests). */
+  readonly tlsRequired = new Set<string>();
+
+  async setRequireTls(input: { organizationId: string; require: boolean }): Promise<void> {
+    if (input.require) this.tlsRequired.add(input.organizationId);
+    else this.tlsRequired.delete(input.organizationId);
+  }
+
   async poolIps(organizationId: string): Promise<string[]> {
     // Pools created by another process (e.g. a previous dev server) are unknown here: treat them
     // as existing, since a fake pool has nothing to lose.

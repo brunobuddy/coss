@@ -12,6 +12,7 @@ import {
 import {
   accountOf,
   isSesError,
+  requiredTlsSetFor,
   type SesApi,
   type SesConfig,
   TENANT_SUPPRESSION,
@@ -103,11 +104,20 @@ export class SesIdentityProvider implements IdentityProvider {
       // Existing tenants are migrated by ses:bootstrap before their protection is disabled.
     }
     tenantArn ??= await this.#tenantArn({ tenantName, tenantArn: null });
-    // A tenant can only send with configuration sets associated with it: only its stream's.
-    await this.#associate(
-      tenantName,
-      this.#configurationSetArn(accountOf(tenantArn), input.stream),
-    );
+    // A tenant can only send with configuration sets associated with it: only its stream's, and
+    // that set's required-TLS twin, so turning on HIPAA mode needs no call to SES.
+    const configurationSetArn = this.#configurationSetArn(accountOf(tenantArn), input.stream);
+    await this.#associate(tenantName, configurationSetArn);
+    try {
+      await this.#associate(tenantName, requiredTlsSetFor(configurationSetArn));
+    } catch (error) {
+      // Between a deploy and `ses:bootstrap` the set or its IAM may not exist yet, and only an
+      // organization in HIPAA mode needs it: bootstrap associates every tenant that missed it.
+      if (!isSesError(error, "NotFoundException") && !isSesError(error, "AccessDeniedException")) {
+        throw error;
+      }
+      console.error(`[email:ses] ${tenantName} has no required-TLS set: run ses:bootstrap.`);
+    }
     return { tenantName, tenantArn };
   }
 

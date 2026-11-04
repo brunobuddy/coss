@@ -110,6 +110,7 @@ export {
   type ScimTokenLifetimeDays,
   setScimGroupRoles,
 } from "./scim.ts";
+export { touchHipaaSession } from "./session-activity.ts";
 export {
   getOrganizationSsoProvider,
   listOrganizationsRequiringSso,

@@ -11,6 +11,7 @@ import {
 } from "@coss/auth/api-key-permissions";
 import { API_KEY_NAME_MAX_LENGTH, API_KEY_PERMISSIONS, API_KEY_PREFIX } from "@coss/auth/constants";
 import { orgRoleCan } from "@coss/auth/permissions";
+import { hipaaModeSql } from "@coss/compliance";
 import { db, schema } from "@coss/db";
 import { isAPIError } from "better-auth/api";
 import { and, desc, eq, inArray, isNull, lte, or } from "drizzle-orm";
@@ -101,6 +102,8 @@ export type ApiKeyContext = {
   /** The member a personal key is assigned to; `null` for an organization key. */
   ownerUserId: string | null;
   mode: EnvironmentMode;
+  /** The organization is in HIPAA mode (`@coss/compliance`). */
+  hipaaMode: boolean;
   /** The organization's pinned API version (requests may override it with `Coss-Version`). */
   apiVersion: string;
 };
@@ -612,6 +615,7 @@ export async function authenticateApiKey(
       ownerBanned: user.banned,
       ownerBanExpires: user.banExpires,
       suspendedAt: organizationSuspension.createdAt,
+      hipaaMode: hipaaModeSql(environment.organizationId),
       apiVersion: organizationApiVersion.apiVersion,
     })
     .from(apikey)
@@ -653,8 +657,16 @@ export async function authenticateApiKey(
     return INVALID;
   }
 
-  const { apiKeyId, organizationId, projectId, environmentId, ownerUserId, mode } = row;
-  const context = { apiKeyId, organizationId, projectId, environmentId, ownerUserId, mode };
+  const { apiKeyId, organizationId, projectId, environmentId, ownerUserId, mode, hipaaMode } = row;
+  const context = {
+    apiKeyId,
+    organizationId,
+    projectId,
+    environmentId,
+    ownerUserId,
+    mode,
+    hipaaMode,
+  };
   // Checked only once the key itself is proven valid, so a guessed key learns nothing.
   if (row.suspendedAt !== null) return { ok: false, reason: "suspended", context };
   if (

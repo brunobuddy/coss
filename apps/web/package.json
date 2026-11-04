@@ -30,6 +30,7 @@
     "@coss/billing": "workspace:*",
     "@coss/companion": "workspace:*",
     "@coss/dashboard-routes": "workspace:*",
+    "@coss/compliance": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/email": "workspace:*",
     "@coss/forms": "workspace:*",

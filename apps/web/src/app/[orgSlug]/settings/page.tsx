@@ -31,7 +31,8 @@ export default async function OrganizationSettingsPage({
   params,
 }: PageProps<"/[orgSlug]/settings">) {
   const { orgSlug } = await params;
-  const { organization, member, can, suspended, session } = await requireOrgMember(orgSlug);
+  const { organization, member, can, suspended, session, hipaaMode } =
+    await requireOrgMember(orgSlug);
   const canUpdate = can({ organization: ["update"] });
   const canDelete = can({ organization: ["delete"] });
   const canReadSso = can({ sso: ["read"] });
@@ -140,7 +141,7 @@ export default async function OrganizationSettingsPage({
               )}
             </>
           }
-          disabled={!canUpdate}
+          disabled={!canUpdate || hipaaMode}
           orgSlug={organization.slug}
           required={organization.requireTwoFactor}
         />

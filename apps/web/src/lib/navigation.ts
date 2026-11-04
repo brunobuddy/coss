@@ -219,6 +219,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   sso: "Single sign-on",
   scim: "Directory sync",
   audit: "Audit log",
+  compliance: "Compliance",
   security: "Security",
   sessions: "Sessions",
   users: "Users",

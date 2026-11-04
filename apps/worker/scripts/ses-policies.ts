@@ -14,7 +14,7 @@
  * through it, named `<prefix>-<organization id>[-marketing]` and tagged `coss_managed`; only the
  * worker manages them.
  */
-import { configurationSetsFor, MANAGED_TAG } from "@coss/email/ses";
+import { configurationSetsFor, MANAGED_TAG, requiredTlsSetFor } from "@coss/email/ses";
 
 export type PolicyContext = {
   region: string;
@@ -44,9 +44,10 @@ export function cossPolicies(
   const ses = `arn:aws:ses:${ctx.region}:${ctx.account}`;
   const identities = `${ses}:identity/*`;
   const tenants = `${ses}:tenant/${ctx.tenantPrefix}-*`;
-  const configurationSets = Object.values(configurationSetsFor(ctx.name)).map(
-    (name) => `${ses}:configuration-set/${name}`,
-  );
+  const configurationSets = Object.values(configurationSetsFor(ctx.name)).flatMap((name) => [
+    `${ses}:configuration-set/${name}`,
+    `${ses}:configuration-set/${requiredTlsSetFor(name)}`,
+  ]);
   // Organizations' dedicated IP configuration sets and pools (`<prefix>-<organization id>…`).
   const dedicatedSets = `${ses}:configuration-set/${ctx.tenantPrefix}-*`;
   const dedicatedPools = `${ses}:dedicated-ip-pool/${ctx.tenantPrefix}-*`;
@@ -215,6 +216,7 @@ export function cossPolicies(
           Effect: "Allow",
           Action: [
             "ses:CreateConfigurationSetEventDestination",
+            "ses:PutConfigurationSetDeliveryOptions",
             "ses:DeleteConfigurationSet",
             "ses:DeleteDedicatedIpPool",
           ],

@@ -3,6 +3,7 @@ import { getEnvironment } from "@coss/tenancy";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ModeBadge } from "@/components/email-badges";
+import { HipaaManagedAlert } from "@/components/hipaa-managed-alert";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
 import { formatDateTime } from "@/lib/format";
@@ -34,19 +35,27 @@ export default async function ContentStoragePage({
         title="Content storage"
       />
 
+      {settings.lockedByHipaaMode ? (
+        <HipaaManagedAlert orgSlug={organization.slug}>
+          Email content is always discarded in this live environment.
+        </HipaaManagedAlert>
+      ) : null}
+
       <div className="grid items-start gap-6 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
           <Panel
             description={
-              settings.updatedAt
-                ? `Last changed ${formatDateTime(settings.updatedAt)}.`
-                : "Not changed: content is stored."
+              settings.lockedByHipaaMode
+                ? "Discarded, as HIPAA mode requires."
+                : settings.updatedAt
+                  ? `Last changed ${formatDateTime(settings.updatedAt)}.`
+                  : "Not changed: content is stored."
             }
             title="Email content"
           >
             <PanelBody>
               <StorageSettingsForm
-                canEdit={can({ environment: ["update"] })}
+                canEdit={can({ environment: ["update"] }) && !settings.lockedByHipaaMode}
                 contentStorage={settings.contentStorage}
                 envSlug={environment.slug}
                 key={settings.updatedAt?.toISOString() ?? "unset"}

@@ -161,6 +161,13 @@ export default function OrganizationSettingsScreen() {
 
       <Panel title="Security">
         <Ruled>
+          {settings.hipaa_mode ? (
+            <SettingsRow
+              description={`Business Associate Agreement ${settings.hipaa_mode.baa_reference}. See what it does on coss.com under Settings, Compliance.`}
+              label="HIPAA mode"
+              value={<StatusDot label="Active" muted tone="success" />}
+            />
+          ) : null}
           <SettingsRow
             description={twoFactorDescription(settings)}
             label="Require two-factor authentication"

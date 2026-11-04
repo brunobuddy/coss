@@ -150,6 +150,21 @@ export class SesDedicatedIpProvider implements DedicatedIpProvider {
     }
   }
 
+  async setRequireTls(input: {
+    organizationId: string;
+    streams: readonly EmailStream[];
+    require: boolean;
+  }): Promise<void> {
+    for (const stream of input.streams) {
+      await this.#api.putConfigurationSetDeliveryOptions({
+        ConfigurationSetName: this.#setName(input.organizationId, stream),
+        // The whole of the delivery options: leaving the pool out would take the set off it.
+        SendingPoolName: this.#name(input.organizationId),
+        TlsPolicy: input.require ? "REQUIRE" : "OPTIONAL",
+      });
+    }
+  }
+
   async poolIps(organizationId: string): Promise<string[]> {
     const ips: string[] = [];
     let NextToken: string | undefined;

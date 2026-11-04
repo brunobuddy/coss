@@ -1,5 +1,6 @@
 import { billingStateAt, usageByDay } from "@coss/billing";
 import { PLANS } from "@coss/billing/catalog";
+import { getHipaaImpact, getHipaaMode } from "@coss/compliance";
 import {
   dedicatedIpCapacity,
   dedicatedIpPoolObject,
@@ -61,14 +62,17 @@ import {
 import { SpecItem, SpecList } from "@/components/spec-list";
 import { Stat, StatRow } from "@/components/stat-row";
 import { abuseCategoryLabel } from "@/lib/abuse-categories";
+import { planHas } from "@/lib/billing";
 import { formatDateTime } from "@/lib/format";
 import { requirePlatformAdmin } from "@/lib/session";
 import { isSystemOrganization } from "@/lib/system-organization";
 import {
   deleteOrganizationAdminAction,
+  disableHipaaModeAction,
   disableOrganizationScimAction,
   disableOrganizationSsoAction,
   disableOrganizationSsoRequirementAction,
+  enableHipaaModeAction,
   resetRateLimitOverrideAction,
   revokeApiKeyAction,
   setRateLimitOverrideAction,
@@ -136,6 +140,9 @@ export default async function AdminOrganizationPage({
     takedown,
     dedicatedIps,
     capacity,
+    hipaaMode,
+    hipaaImpact,
+    auditLogOnPlan,
   ] = await Promise.all([
     listOrganizationMembers({ organizationId: organization.id }),
     listOrganizationApiKeysForAdmin(organization.id),
@@ -150,6 +157,9 @@ export default async function AdminOrganizationPage({
     planOrganizationTakedown(organization.id),
     dedicatedIpPoolObject(organization.id),
     dedicatedIpCapacity(),
+    getHipaaMode(organization.id),
+    getHipaaImpact(organization.id),
+    planHas(organization.id, "auditLog"),
   ]);
   const billing = await billingStateAt(organization.id, now);
   const isSystem = await isSystemOrganization(organization.id);
@@ -186,6 +196,90 @@ export default async function AdminOrganizationPage({
         />
         <AdminOrganizationTabs organizationId={organization.id} />
       </div>
+
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>HIPAA mode</PanelTitle>
+          <PanelDescription>
+            {hipaaMode
+              ? `On since ${formatDateTime(hipaaMode.enabledAt)}. Agreement ${hipaaMode.baaReference}, signed ${hipaaMode.baaSignedAt.toISOString().slice(0, 10)}. A contract ending doesn't turn it off.`
+              : "Turn this on once the organization's BAA is signed. Charge for it with a custom add-on on its contract."}
+          </PanelDescription>
+          <PanelAction>
+            {hipaaMode ? (
+              <AdminActionDialog
+                icon="organization"
+                action={disableHipaaModeAction}
+                description="AI screening, tracking and content storage go back to what the organization's settings say for new messages, and staff can view its content again. Its two-factor requirement stays on. The change appears in its audit log."
+                destructive
+                fields={fields}
+                reason="required"
+                reasonPlaceholder="e.g. BAA ended, ticket #1234"
+                submitLabel="Turn off HIPAA mode"
+                success="HIPAA mode turned off"
+                title={`Turn off HIPAA mode for ${organization.name}?`}
+                triggerLabel="Turn off"
+              />
+            ) : isSystem ? null : (
+              <AdminActionDialog
+                icon="organization"
+                action={enableHipaaModeAction}
+                description="This turns off AI screening and tracking, discards live email content, requires two-factor authentication, limits SMS to US numbers and stops staff from viewing the organization's content. The change appears in its audit log."
+                fields={fields}
+                reason="required"
+                reasonPlaceholder="e.g. Contract signed, ticket #1234"
+                submitLabel="Turn on HIPAA mode"
+                success="HIPAA mode turned on"
+                title={`Turn on HIPAA mode for ${organization.name}?`}
+                triggerLabel="Turn on"
+              >
+                <Field>
+                  <FieldLabel>Date the BAA was signed</FieldLabel>
+                  <Input name="baaSignedAt" required type="date" />
+                </Field>
+                <Field>
+                  <FieldLabel>BAA reference</FieldLabel>
+                  <Input name="baaReference" placeholder="e.g. BAA-2026-014" required />
+                </Field>
+                <div className="flex flex-col gap-2 text-sm">
+                  <p className="font-medium">What this organization will notice</p>
+                  <ul className="list-disc ps-5 text-muted-foreground">
+                    <li>
+                      {hipaaImpact.membersWithoutTwoFactor} of {members.length} members must set up
+                      two-factor authentication, or sign in through the organization's SSO
+                    </li>
+                    <li>
+                      {hipaaImpact.liveEnvironmentsTracking} live{" "}
+                      {hipaaImpact.liveEnvironmentsTracking === 1
+                        ? "environment loses"
+                        : "environments lose"}{" "}
+                      open and click tracking
+                    </li>
+                    <li>
+                      {hipaaImpact.smsOutsideUsLast30Days} live{" "}
+                      {hipaaImpact.smsOutsideUsLast30Days === 1 ? "SMS" : "SMS messages"} to numbers
+                      outside the US in the last 30 days, which will be refused
+                    </li>
+                    <li>Every member signs in again the next time they open the organization</li>
+                    {hipaaImpact.dedicatedPool ? (
+                      <li>
+                        Mail uses shared IPs until the dedicated pool requires TLS, usually within
+                        minutes
+                      </li>
+                    ) : null}
+                  </ul>
+                  {auditLogOnPlan ? null : (
+                    <p className="text-destructive-foreground">
+                      The plan doesn't include the audit log, so this will be refused until the
+                      contract grants it.
+                    </p>
+                  )}
+                </div>
+              </AdminActionDialog>
+            )}
+          </PanelAction>
+        </PanelHeader>
+      </Panel>
 
       <Panel>
         <PanelHeader>

@@ -254,6 +254,9 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   fake provider never logs subjects. `discard_body` (internal auth emails and Verify's codes) stays a separate, body-only flag; with it,
   `hashSendRequest` leaves `html`/`text` out of the stored request hash (a code's hash would
   confirm guesses).
+- **HIPAA mode** (`packages/compliance/AGENTS.md`): live environments of an organization in the mode
+  always `discard`, never track opens or clicks (asking is a 403) and send through configuration sets
+  that require TLS (`email.require_tls`, `requiredTlsSetFor`).
 - **Generated text parts** (`packages/email/src/html-text.ts`, `htmlToText`): an email sent with `html` and no
   `text` gets a plain-text part built from the original HTML in `toOutbound`, for the provider's copy only (like
   tracking: `email.text` stays `null`, so API reads, request hashes and webhooks are unchanged). It is built before

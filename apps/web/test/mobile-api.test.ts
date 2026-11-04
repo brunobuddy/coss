@@ -52,6 +52,7 @@ type Membership = {
 let membership: Membership | null = null;
 let environmentFound: { project: { id: string }; environment: { id: string } } | null = null;
 mock.module("@coss/tenancy", () => ({
+  touchHipaaSession: async () => "active",
   getMembership: async () => membership,
   getEnvironment: async () => environmentFound,
   listUserOrganizations: async () => [{ name: "Acme", slug: "acme", role: "owner" }],

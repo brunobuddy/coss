@@ -178,4 +178,5 @@ scheduling:reencrypt`). Still to do:
 
 1. Zoom's app review. The app "coss.com" is in Cal.com's Zoom developer account, separate from Cal.com's own, and
    production runs its Production credentials. Until it's approved, only reviewers and that Zoom account can consent.
-2. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement.
+2. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement, and
+   HIPAA mode (`packages/compliance/AGENTS.md`) is what such a customer gets.

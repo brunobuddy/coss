@@ -13,6 +13,7 @@
  *   (once the release has started, a returning entitlement waits for it and gets a new pool).
  * SES allows 50 pools per region, a hard limit: COSS keeps headroom below it.
  */
+import { hipaaModeSql } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { recordOrgAuditEvent } from "@coss/logs";
 import {
@@ -140,7 +141,41 @@ export function dedicatedPoolSql(
 ): SQL<boolean> {
   const marketing =
     stream === "marketing" ? sql` and ${dedicatedIpPool.marketingConfiguredAt} is not null` : sql``;
-  return sql<boolean>`exists (select 1 from ${dedicatedIpPool} where ${dedicatedIpPool.organizationId} = ${organizationId} and ${dedicatedIpPool.provider} = ${provider} and ${dedicatedIpPool.status} in ('warming', 'ready')${marketing})`;
+  // HIPAA mode: not until the pool's sets require TLS (the shared TLS sets carry the mail till then).
+  const encrypted = sql` and (${dedicatedIpPool.tlsRequiredAt} is not null or not ${hipaaModeSql(organizationId)})`;
+  return sql<boolean>`exists (select 1 from ${dedicatedIpPool} where ${dedicatedIpPool.organizationId} = ${organizationId} and ${dedicatedIpPool.provider} = ${provider} and ${dedicatedIpPool.status} in ('warming', 'ready')${marketing}${encrypted})`;
+}
+
+/** Brings pools' TLS requirement in line with their organizations' HIPAA mode. */
+async function reconcilePoolTls(scoped: SQL | undefined, now: Date, deps: DedicatedIpDeps) {
+  const inMode = hipaaModeSql(dedicatedIpPool.organizationId);
+  const rows = await db
+    .select()
+    .from(dedicatedIpPool)
+    .where(
+      and(
+        scoped,
+        eq(dedicatedIpPool.provider, deps.dedicatedIps.name),
+        inArray(dedicatedIpPool.status, ["warming", "ready"]),
+        sql`(${inMode}) = (${dedicatedIpPool.tlsRequiredAt} is null)`,
+      ),
+    );
+  for (const row of rows) {
+    const require = row.tlsRequiredAt === null;
+    try {
+      await deps.dedicatedIps.setRequireTls({
+        organizationId: row.organizationId,
+        streams: row.marketingConfiguredAt ? ["transactional", "marketing"] : ["transactional"],
+        require,
+      });
+      await db
+        .update(dedicatedIpPool)
+        .set({ tlsRequiredAt: require ? now : null })
+        .where(eq(dedicatedIpPool.id, row.id));
+    } catch (error) {
+      console.error(`[email:dedicated-ips] changing TLS of pool ${row.id} failed:`, error);
+    }
+  }
 }
 
 type StreamTenants = Partial<Record<EmailStream, ProviderTenant>>;
@@ -368,6 +403,8 @@ export async function reconcileDedicatedIpPools(
     }
   });
 
+  await reconcilePoolTls(scoped, now, deps);
+
   const due = await db
     .select({
       id: dedicatedIpPool.id,
@@ -515,6 +552,8 @@ async function step(row: DedicatedIpPoolRow, now: Date, deps: DedicatedIpDeps): 
           dedicatedShare: share,
           readyAt: ready ? (row.readyAt ?? now) : row.readyAt,
           marketingConfiguredAt,
+          // A marketing set made since has no TLS requirement yet: the next pass sets both.
+          ...(marketingConfiguredAt === row.marketingConfiguredAt ? {} : { tlsRequiredAt: null }),
           statusMessage: quiet
             ? "SES assigns the first dedicated IP once you send a few hundred emails a day."
             : null,

@@ -4,6 +4,7 @@
  * "<brand> via coss.com". Sandbox environments send in their own environment (the fake provider:
  * nothing is delivered), and keep the body so its emails page shows the links to test with.
  */
+import { isHipaaMode } from "@coss/compliance";
 import { db, schema } from "@coss/db";
 import { EmailError, type EmailService, type SendEnvironment } from "@coss/email";
 import { SendEmailRequest } from "@coss/email/schemas";
@@ -53,6 +54,7 @@ export function schedulingNotifier(opts: {
     from: string,
     html: string,
     logo: SchedulingEmail["logo"] = null,
+    hipaaOrigin = false,
   ): Promise<void> {
     const attachments = [
       ...(email.ics
@@ -102,6 +104,7 @@ export function schedulingNotifier(opts: {
         idempotencyRetentionMs: Number.POSITIVE_INFINITY,
         discardBody: environment.mode === "live",
         screeningExempt: true,
+        hipaaOrigin,
       });
       sent = replayed !== true;
     } catch (error) {
@@ -152,6 +155,9 @@ export function schedulingNotifier(opts: {
         opts.fallback.environment,
         named(`${email.senderName} via coss.com`, opts.fallback.address),
         email.cossHtml,
+        null,
+        // The row is coss.com's, so the mode's own checks can't see whose patient this names.
+        await isHipaaMode(email.environment.organizationId),
       );
     },
     ...(opts.sms

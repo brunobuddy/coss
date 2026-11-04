@@ -1,4 +1,5 @@
 import type { OrganizationSettingsResponse } from "@coss/companion";
+import { getHipaaMode } from "@coss/compliance";
 import {
   hasScimConnection,
   listOrganizationMembers,
@@ -20,10 +21,11 @@ export const GET = mobileRoute(
     const organizationId = organization.id;
     const readSso = can({ sso: ["read"] });
     const readScim = can({ scim: ["read"] });
-    const [members, pinned, scimConnected] = await Promise.all([
+    const [members, pinned, scimConnected, hipaa] = await Promise.all([
       listOrganizationMembers({ organizationId }),
       readOrganizationApiVersion({ organizationId }),
       readScim ? hasScimConnection({ organizationId }) : false,
+      getHipaaMode(organizationId),
     ]);
     return {
       organization: { id: organization.id, name: organization.name, slug: organization.slug },
@@ -37,6 +39,11 @@ export const GET = mobileRoute(
       sso: readSso ? { required: organization.requireSso } : null,
       scim: readScim ? { connected: scimConnected } : null,
       api_version: { pinned, latest: versioning.latest },
+      hipaa_mode: hipaa && {
+        enabled_at: hipaa.enabledAt.toISOString(),
+        baa_signed_at: hipaa.baaSignedAt.toISOString(),
+        baa_reference: hipaa.baaReference,
+      },
       can: {
         read_billing: can({ billing: ["read"] }),
         read_sso: readSso,

@@ -25,6 +25,9 @@ function hintFor(error: CossError): string | undefined {
         "sandbox (coss_test_) key can't see live ones, and a live key can't see sandbox ones."
       );
     case "permission_error":
+      if (error.code === "hipaa_mode_restriction") {
+        return "The organization's HIPAA mode refuses this, and no key changes that. Don't work around it: tell the user what was refused.";
+      }
       return error.code === "insufficient_permissions"
         ? "The API key is restricted and lacks the permission named in the message " +
             "(get_account_status lists what it holds). Ask the user for a key with that permission."

@@ -221,6 +221,7 @@ export const ORGANIZATION_SETTINGS: readonly SettingsPage[] = [
   { label: "Single sign-on", path: "/sso", group: "Security" },
   { label: "Directory sync", path: "/scim", group: "Security" },
   { label: "Audit log", path: "/audit", group: "Security" },
+  { label: "Compliance", path: "/compliance", group: "Security" },
 ];
 
 /** Project slugs that are taken by the organization's own pages (`/<org>/settings`). */

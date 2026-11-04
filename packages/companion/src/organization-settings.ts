@@ -24,6 +24,8 @@ export type OrganizationSettingsResponse = {
     pinned: string | null;
     latest: string;
   };
+  /** `null`: the organization isn't in HIPAA mode. */
+  hipaa_mode: { enabled_at: string; baa_signed_at: string; baa_reference: string } | null;
   /** The settings tabs the member may open (General always). */
   can: { read_billing: boolean; read_sso: boolean; read_scim: boolean; read_audit: boolean };
 };

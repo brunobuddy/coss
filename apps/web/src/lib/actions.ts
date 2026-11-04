@@ -1,5 +1,6 @@
 import "server-only";
 import { BillingError } from "@coss/billing";
+import { HipaaModeError } from "@coss/compliance";
 import {
   BroadcastError,
   ContactError,
@@ -48,6 +49,7 @@ export async function runAction<T>(body: () => Promise<T>): Promise<ActionResult
 function userFacingMessage(error: unknown): string {
   if (
     error instanceof ActionError ||
+    error instanceof HipaaModeError ||
     error instanceof TenancyError ||
     error instanceof DomainError ||
     error instanceof ContactError ||

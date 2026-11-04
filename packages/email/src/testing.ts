@@ -413,6 +413,18 @@ export class FakeSesApi implements SesApi {
     return {};
   }
 
+  async putConfigurationSetDeliveryOptions(input: {
+    ConfigurationSetName: string;
+    SendingPoolName?: string;
+    TlsPolicy: "REQUIRE" | "OPTIONAL";
+  }) {
+    this.#record("putConfigurationSetDeliveryOptions", input);
+    if (!this.configurationSets.has(input.ConfigurationSetName)) {
+      throw sesError("NotFoundException");
+    }
+    return {};
+  }
+
   async deleteConfigurationSet(input: { ConfigurationSetName: string }) {
     this.#record("deleteConfigurationSet", input);
     if (this.associations.get(this.configurationSetArn(input.ConfigurationSetName))?.size) {

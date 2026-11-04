@@ -17,6 +17,7 @@ const sampleEnvironment: Environment = {
     name: "Acme",
     slug: "acme",
     api_version: "2026-10-01",
+    hipaa_mode: false,
   },
   api_key: {
     id: "key_01k7c8m4q2f3e9v6t5r1n0p8yz",

@@ -21,7 +21,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { ID_PREFIXES, newId } from "../id.ts";
-import { apikey, organization, user } from "./auth.ts";
+import { apikey, organization, session, user } from "./auth.ts";
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () =>
@@ -325,6 +325,11 @@ export const email = pgTable(
     // Handed to the provider through the organization's dedicated IP pool (set at claim): metered
     // as `email.dedicated_ip` too, and its deliveries counted per sending IP.
     dedicatedPool: boolean("dedicated_pool").notNull().default(false),
+    // Decided at the claim, with `dedicated_pool`: its organization is in HIPAA mode.
+    requireTls: boolean("require_tls").notNull().default(false),
+    // Sent from coss.com's own environment for an organization in HIPAA mode (Forms, Sign, Verify
+    // and Scheduling fall back to it): the row is coss.com's, but the mode's rules still apply.
+    hipaaOrigin: boolean("hipaa_origin").notNull().default(false),
     // Email for platforms: the sub-account it was sent for (its quotas, suppressions and
     // reputation). No FK, like `api_key_id`: emails outlive a deleted sub-account.
     subaccountId: text("subaccount_id"),
@@ -1285,6 +1290,9 @@ export const dedicatedIpPool = pgTable(
     // Set before the provider resources are deleted: from then on a returning entitlement no
     // longer restores this row (it gets a new pool once the release has finished).
     releaseStartedAt: timestamp("release_started_at", { withTimezone: true }),
+    // When the pool's configuration sets were set to require TLS (HIPAA mode). Until then the
+    // organization's mail takes the shared TLS sets instead of the pool.
+    tlsRequiredAt: timestamp("tls_required_at", { withTimezone: true }),
     // When the marketing stream's configuration set on the pool was set up (null: marketing
     // sends stay on shared IPs). Pools made before the streams split, or while the organization
     // had no marketing tenant yet, get it at a later check.
@@ -2402,6 +2410,37 @@ export const organizationSuspension = pgTable("organization_suspension", {
     onDelete: "set null",
   }),
   createdAt: createdAt(),
+});
+
+/**
+ * An organization's HIPAA mode (`@coss/compliance`); the row's presence is the mode. Turned on and
+ * off only by platform admins, once a BAA is signed. Never derived from billing: a contract ending
+ * must not lift safeguards without anyone deciding to. History lives in `admin_audit_event` and the
+ * organization's own audit log.
+ */
+export const organizationHipaaMode = pgTable("organization_hipaa_mode", {
+  organizationId: text("organization_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  baaSignedAt: timestamp("baa_signed_at", { withTimezone: true }).notNull(),
+  // The agreement's reference, shown on the customer's compliance page.
+  baaReference: text("baa_reference").notNull(),
+  enabledByUserId: text("enabled_by_user_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  createdAt: createdAt(),
+});
+
+/**
+ * When a session was last active in an organization in HIPAA mode, for its idle logoff. Not
+ * `session.updated_at`: Better Auth moves that when it extends a session, which is just what a
+ * browser left open overnight triggers on its next request.
+ */
+export const hipaaSessionActivity = pgTable("hipaa_session_activity", {
+  sessionId: text("session_id")
+    .primaryKey()
+    .references(() => session.id, { onDelete: "cascade" }),
+  lastActiveAt: timestamp("last_active_at", { withTimezone: true }).notNull(),
 });
 
 /**

@@ -5,6 +5,7 @@
  * classification, which a caller asked for explicitly and is told about when it fails.
  */
 import { isOnBillingHold, recordUsage } from "@coss/billing/metering";
+import { HipaaModeError, hipaaVendorCovered, isHipaaMode } from "@coss/compliance";
 import { db, type Executor } from "@coss/db";
 import type { ContentClassifier } from "@coss/screening/classifier";
 import { MAX_TEXT_CHARS, prepareLinks, prepareText, urlsInText } from "@coss/screening/text";
@@ -249,6 +250,11 @@ export async function checkPhone(
     const fixture = sandboxPhoneData(phone);
     return fixture ? phoneCheck(phone, fixture) : unknown;
   }
+  if (!hipaaVendorCovered("twilio_lookup") && (await isHipaaMode(environment.organizationId))) {
+    throw new HipaaModeError(
+      "Phone checks aren't available in HIPAA mode: they would send the number to a provider outside your BAA.",
+    );
+  }
   if (!deps.phoneLookup) {
     throw new RiskError(
       "phone_lookup_unavailable",
@@ -334,6 +340,11 @@ export async function classifyContent(
   if (environment.mode === "sandbox") {
     return { object: "risk_content_classification", scores: sandboxContentScores(text), truncated };
   }
+  if (await isHipaaMode(environment.organizationId)) {
+    throw new HipaaModeError(
+      "Content classification isn't available in HIPAA mode: it would send the text to an AI model.",
+    );
+  }
   const scores = await modelScores(deps.classifier, text, deps.classifyTimeoutMs);
   return { object: "risk_content_classification", scores, truncated };
 }
@@ -383,6 +394,9 @@ export async function assessmentContentScores(
   text: string | undefined,
 ): Promise<{ scores: ContentScores | null; degraded: boolean }> {
   if (text === undefined) return { scores: null, degraded: false };
+  if (environment.mode === "live" && (await isHipaaMode(environment.organizationId))) {
+    return { scores: null, degraded: false };
+  }
   try {
     if (environment.mode === "live" && deps.chargeClassification) {
       const allowed = await deps.chargeClassification(environment.organizationId);

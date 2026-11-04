@@ -12,10 +12,18 @@ mock.module("@coss/email", () => ({
   SubaccountError: class extends Error {},
 }));
 mock.module("@coss/tenancy", () => ({ TenancyError: class extends Error {} }));
+const planHas = mock(async () => true);
+mock.module("@/lib/billing", () => ({ planHas }));
 const audit = mock(async () => {});
+const enableHipaaMode = mock(async () => {});
+const disableHipaaMode = mock(async () => {});
+const isMemberOfHipaaOrganization = mock(async () => false);
 mock.module("@coss/tenancy/admin", () => ({
   ADMIN_REASON_MAX_LENGTH: 500,
   deleteOrganizationAsAdmin: mock(async () => {}),
+  disableHipaaMode,
+  enableHipaaMode,
+  isMemberOfHipaaOrganization,
   disableOrganizationScim: mock(async () => ({ complete: true })),
   disableOrganizationSso: mock(async () => {}),
   disableOrganizationSsoRequirement: mock(async () => {}),
@@ -30,7 +38,11 @@ mock.module("@coss/tenancy/admin", () => ({
   unlinkUserSso: mock(async () => {}),
   unsuspendOrganization: mock(),
 }));
-const emailContext = { organizationId: newId("org"), organizationSlug: "spam-co" };
+const emailContext = {
+  organizationId: newId("org"),
+  organizationSlug: "spam-co",
+  hipaaMode: false,
+};
 const emailContent = mock(async () => ({
   organizationId: emailContext.organizationId,
   html: "<p>Win</p>",
@@ -834,6 +846,87 @@ describe("email content", () => {
   test("refuses anything but an email id, without recording a view", async () => {
     const data = new FormData();
     data.set("emailId", newId("user"));
+    expect((await emails.revealEmailContentAction(null, data)).ok).toBe(false);
+    expect(emailContent).not.toHaveBeenCalled();
+    expect(audit).not.toHaveBeenCalled();
+  });
+});
+
+describe("HIPAA mode", () => {
+  function hipaaForm(fields: Record<string, string> = {}) {
+    const data = new FormData();
+    data.set("organizationId", newId("org"));
+    data.set("baaSignedAt", "2026-10-30");
+    data.set("baaReference", "BAA-2026-014");
+    data.set("reason", "Contract signed");
+    for (const [name, value] of Object.entries(fields)) data.set(name, value);
+    return data;
+  }
+
+  beforeEach(() => {
+    audit.mockClear();
+    emailContent.mockClear();
+    enableHipaaMode.mockClear();
+    disableHipaaMode.mockClear();
+    planHas.mockClear();
+    planHas.mockImplementation(async () => true);
+    isMemberOfHipaaOrganization.mockImplementation(async () => false);
+    emailContext.hipaaMode = false;
+  });
+
+  test("turning it on passes the BAA and the actor along", async () => {
+    expect(await actions.enableHipaaModeAction(null, hipaaForm())).toEqual({
+      ok: true,
+      data: null,
+    });
+    expect(enableHipaaMode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baaReference: "BAA-2026-014",
+        baaSignedAt: new Date("2026-10-30"),
+        reason: "Contract signed",
+      }),
+    );
+  });
+
+  test("it needs the audit log on the plan, and a reason", async () => {
+    planHas.mockImplementation(async () => false);
+    expect((await actions.enableHipaaModeAction(null, hipaaForm())).ok).toBe(false);
+    planHas.mockImplementation(async () => true);
+    expect((await actions.enableHipaaModeAction(null, hipaaForm({ reason: " " }))).ok).toBe(false);
+    expect(enableHipaaMode).not.toHaveBeenCalled();
+  });
+
+  test("coss.com's own organization can't be put in it", async () => {
+    const data = hipaaForm({ organizationId: systemOrgId });
+    expect((await actions.enableHipaaModeAction(null, data)).ok).toBe(false);
+    expect(enableHipaaMode).not.toHaveBeenCalled();
+  });
+
+  test("turning it off needs a reason", async () => {
+    expect((await actions.disableHipaaModeAction(null, hipaaForm({ reason: " " }))).ok).toBe(false);
+    expect(disableHipaaMode).not.toHaveBeenCalled();
+    expect(await actions.disableHipaaModeAction(null, hipaaForm())).toEqual({
+      ok: true,
+      data: null,
+    });
+    expect(disableHipaaMode).toHaveBeenCalledTimes(1);
+  });
+
+  test("staff can't impersonate a member, and nothing is recorded as done", async () => {
+    isMemberOfHipaaOrganization.mockImplementation(async () => true);
+    mutate.mockClear();
+    const data = new FormData();
+    data.set("userId", newId("user"));
+    data.set("reason", "Debugging a ticket");
+    expect((await actions.impersonateUserAction(null, data)).ok).toBe(false);
+    expect(mutate).not.toHaveBeenCalled();
+    expect(audit).not.toHaveBeenCalled();
+  });
+
+  test("staff can't reveal content, which isn't even read", async () => {
+    emailContext.hipaaMode = true;
+    const data = new FormData();
+    data.set("emailId", newId("email"));
     expect((await emails.revealEmailContentAction(null, data)).ok).toBe(false);
     expect(emailContent).not.toHaveBeenCalled();
     expect(audit).not.toHaveBeenCalled();

@@ -5,6 +5,7 @@
  * `retry`, screening it again); shadow screening and coss.com's own notification organization send it
  * and owe the sample to the next message, once.
  */
+import { isHipaaMode } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import {
   getReputationStanding,
@@ -99,6 +100,8 @@ export async function screenMessage(
   input: ScreenInput,
   deps: ScreeningDeps,
 ): Promise<ScreenOutcome> {
+  // Before any policy: an admin's override can't send these organizations' messages to the model.
+  if (await isHipaaMode(input.organizationId)) return SEND;
   const now = deps.now ?? (() => new Date());
   const standing = await getReputationStanding(input.organizationId);
   const reputationPolicy = policyOf(standing);

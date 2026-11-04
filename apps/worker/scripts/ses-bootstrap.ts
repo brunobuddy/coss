@@ -74,6 +74,7 @@ import {
   CreateConfigurationSetEventDestinationCommand,
   CreateDedicatedIpPoolCommand,
   CreateEmailIdentityCommand,
+  CreateTenantResourceAssociationCommand,
   type EventDestinationDefinition,
   GetEmailIdentityCommand,
   PutConfigurationSetDeliveryOptionsCommand,
@@ -94,7 +95,7 @@ import {
   SetQueueAttributesCommand,
   SQSClient,
 } from "@aws-sdk/client-sqs";
-import { closeDb } from "@coss/db";
+import { closeDb, db, schema } from "@coss/db";
 import { EMAIL_STREAMS, type EmailStream, ensureMissingStreamTenants } from "@coss/email";
 import { SES_CONFIGURATION_SET_PATTERN, SES_TENANT_PREFIX_PATTERN } from "@coss/email/env";
 import { sesInboundMxHost } from "@coss/email/runtime";
@@ -102,6 +103,7 @@ import {
   configurationSetsFor,
   createSesApi,
   LANDING_PREFIX,
+  requiredTlsSetFor,
   SesIdentityProvider,
 } from "@coss/email/ses";
 import { RETENTION_DAYS } from "@coss/retention";
@@ -201,8 +203,10 @@ const { TopicArn: topicArn } = await sns.send(
 );
 if (!topicArn) throw new Error("CreateTopic returned no ARN.");
 const account = topicArn.split(":")[4] ?? "";
-const configurationSetArns = EMAIL_STREAMS.map(
-  (stream) => `arn:aws:ses:${region}:${account}:configuration-set/${configurationSets[stream]}`,
+const configurationSetArns = EMAIL_STREAMS.flatMap((stream) =>
+  [configurationSets[stream], requiredTlsSetFor(configurationSets[stream])].map(
+    (setName) => `arn:aws:ses:${region}:${account}:configuration-set/${setName}`,
+  ),
 );
 step(`SNS topic ${topicArn}`);
 await sns.send(
@@ -379,6 +383,48 @@ for (const stream of EMAIL_STREAMS) {
     `SES configuration set ${setName} (${stream}) → ${EVENT_TYPES.join(", ")}` +
       (pool ? `, dedicated IP pool ${pool}` : ""),
   );
+
+  // Its twin for organizations in HIPAA mode: the same events, but never unencrypted delivery.
+  const tlsSetName = requiredTlsSetFor(setName);
+  const tlsDelivery = { TlsPolicy: "REQUIRE" as const, ...(pool ? { SendingPoolName: pool } : {}) };
+  try {
+    await ses.send(
+      new CreateConfigurationSetCommand({
+        ConfigurationSetName: tlsSetName,
+        DeliveryOptions: tlsDelivery,
+        ReputationOptions: { ReputationMetricsEnabled: true },
+        SendingOptions: { SendingEnabled: true },
+        SuppressionOptions: { SuppressedReasons: [] },
+      }),
+    );
+  } catch (error) {
+    if (!isNamed(error, "AlreadyExistsException")) throw error;
+    await ses.send(
+      new PutConfigurationSetDeliveryOptionsCommand({
+        ConfigurationSetName: tlsSetName,
+        ...tlsDelivery,
+      }),
+    );
+  }
+  try {
+    await ses.send(
+      new CreateConfigurationSetEventDestinationCommand({
+        ConfigurationSetName: tlsSetName,
+        EventDestinationName: EVENT_DESTINATION,
+        EventDestination: destination,
+      }),
+    );
+  } catch (error) {
+    if (!isNamed(error, "AlreadyExistsException")) throw error;
+    await ses.send(
+      new UpdateConfigurationSetEventDestinationCommand({
+        ConfigurationSetName: tlsSetName,
+        EventDestinationName: EVENT_DESTINATION,
+        EventDestination: destination,
+      }),
+    );
+  }
+  step(`SES configuration set ${tlsSetName} (${stream}, TLS required)`);
 }
 
 // 5b. Receiving: bucket → topic → queues → receipt rule set (only with --managed-domain).
@@ -632,9 +678,29 @@ try {
     new SesIdentityProvider(createSesApi(region), { region, configurationSets, tenantPrefix }),
   );
   tenantsUpdated = await migrateSesSuppressions(ses, {
-    configurationSets: Object.values(configurationSets),
+    configurationSets: Object.values(configurationSets).flatMap((setName) => [
+      setName,
+      requiredTlsSetFor(setName),
+    ]),
     tenantPrefix,
   });
+  // New tenants get theirs from `ensureTenant`; a live send needs the association before the mode.
+  const tenants = (await db.select().from(schema.emailTenant)).filter(
+    (tenant) => tenant.provider === "ses",
+  );
+  for (const tenant of tenants) {
+    try {
+      await ses.send(
+        new CreateTenantResourceAssociationCommand({
+          TenantName: tenant.tenantName,
+          ResourceArn: `arn:aws:ses:${region}:${account}:configuration-set/${requiredTlsSetFor(configurationSets[tenant.stream])}`,
+        }),
+      );
+    } catch (error) {
+      if (!isNamed(error, "AlreadyExistsException")) throw error;
+    }
+  }
+  step(`SES required-TLS sets associated with ${tenants.length} tenants`);
 } finally {
   await closeDb();
 }

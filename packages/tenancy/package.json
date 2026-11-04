@@ -21,6 +21,7 @@
     "@better-auth/api-key": "catalog:",
     "@coss/auth": "workspace:*",
     "@coss/dashboard-routes": "workspace:*",
+    "@coss/compliance": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/retention": "workspace:*",
     "@coss/signals": "workspace:*",

@@ -5,12 +5,13 @@
  * webhook endpoints in the same transaction (outbox) and appended to its log (`@coss/logs`).
  */
 import { createHash } from "node:crypto";
+import { hipaaModeAppliesSql } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { isId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { markReputationDue } from "@coss/reputation";
 import { enqueueWebhookMessage } from "@coss/webhooks";
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { smsEventLogEntries } from "./event-logs.ts";
 import type { SmsProviderEvent } from "./provider.ts";
 import type { SmsEventType, SmsStatus, StoredSmsWebhookEvent } from "./schemas.ts";
@@ -31,12 +32,12 @@ export async function discardSmsBody(
 ): Promise<void> {
   await executor
     .update(smsMessage)
-    .set({ body: "" })
+    .set({ body: "", discardBody: true })
     .where(
       and(
         eq(smsMessage.id, row.id),
         eq(smsMessage.organizationId, row.organizationId),
-        eq(smsMessage.discardBody, true),
+        or(eq(smsMessage.discardBody, true), hipaaModeAppliesSql(smsMessage.environmentId)),
         ne(smsMessage.body, ""),
       ),
     );

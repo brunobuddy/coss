@@ -129,6 +129,12 @@ const SCIM = {
   groups: 3,
   deactivatedOwners: [{ userId: "user_9", email: "former@acme.com" }],
 };
+let hipaaMode: { enabledAt: Date; baaSignedAt: Date; baaReference: string } | null = null;
+const complianceModule = await import("@coss/compliance");
+mock.module("@coss/compliance", () => ({
+  ...complianceModule,
+  getHipaaMode: async () => hipaaMode,
+}));
 const tenancyModule = await import("@coss/tenancy");
 mock.module("@coss/tenancy", () => ({
   ...tenancyModule,
@@ -354,10 +360,27 @@ describe("general settings", () => {
       sso: null,
       scim: null,
       api_version: { pinned: null, latest: body.api_version.latest },
+      hipaa_mode: null,
       can: { read_billing: false, read_sso: false, read_scim: false, read_audit: false },
     });
     expect(scopes.some((call) => call.fn === "hasScimConnection")).toBe(false);
     expectScopedToOrg();
+  });
+
+  test("HIPAA mode is shown with its agreement", async () => {
+    hipaaMode = {
+      enabledAt: new Date("2026-11-03T00:00:00Z"),
+      baaSignedAt: new Date("2026-10-30T00:00:00Z"),
+      baaReference: "BAA-2026-014",
+    };
+    const response = await settings.GET(request("/orgs/acme/settings"), params({}));
+    hipaaMode = null;
+    const body = (await response.json()) as OrganizationSettingsResponse;
+    expect(body.hipaa_mode).toEqual({
+      enabled_at: "2026-11-03T00:00:00.000Z",
+      baa_signed_at: "2026-10-30T00:00:00.000Z",
+      baa_reference: "BAA-2026-014",
+    });
   });
 
   test("owners see the SSO requirement, the directory and every tab", async () => {

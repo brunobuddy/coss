@@ -6,6 +6,32 @@ import { parseDsn, tunnelDestination } from "../src/tunnel.ts";
 
 const DSN = "https://abc123@o42.ingest.us.sentry.io/4507";
 
+describe("failed queries", () => {
+  const message =
+    'Failed query: insert into "email" ("subject", "html") values ($1, $2)\nparams: Your biopsy results,<p>Dear Ada</p>';
+
+  test("keep the statement and lose every bound value", () => {
+    const scrubbed = scrubUrl(message);
+    expect(scrubbed).toContain('insert into "email"');
+    expect(scrubbed).toContain("params: [removed]");
+    expect(scrubbed).not.toContain("biopsy");
+    expect(scrubbed).not.toContain("Ada");
+  });
+
+  test("in events, however the error reached Sentry", () => {
+    const event = scrubEvent({
+      message,
+      exception: { values: [{ type: "DrizzleQueryError", value: message }] },
+    } as Event);
+    expect(JSON.stringify(event)).not.toContain("biopsy");
+  });
+
+  test("in log lines and breadcrumbs", () => {
+    expect(scrubLog({ level: "error", message }).message).not.toContain("biopsy");
+    expect(scrubBreadcrumb({ message }).message).not.toContain("biopsy");
+  });
+});
+
 describe("sentryConfig", () => {
   test("off without a DSN", () => {
     expect(sentryConfig({})).toBeNull();

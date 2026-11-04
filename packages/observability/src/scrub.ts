@@ -45,6 +45,17 @@ const CONTACT_DETAILS: [RegExp, string][] = [
 ];
 
 /**
+ * Drizzle's `DrizzleQueryError` message is the SQL and then every bound value: a failed insert
+ * would report an email's subject and body. The statement is useful; its values never are.
+ */
+function withoutQueryParams(value: string): string {
+  const query = value.indexOf("Failed query: ");
+  if (query === -1) return value;
+  const params = value.indexOf("\nparams: ", query);
+  return params === -1 ? value : `${value.slice(0, params)}\nparams: [removed]`;
+}
+
+/**
  * Query strings and fragments of paths and URLs: tokens (`?token=`, OAuth `code`/`state`) and
  * search terms. A `?` not following a path ("why?") is kept.
  */
@@ -91,7 +102,7 @@ const DROPPED_ATTRIBUTE_PATTERN =
  * and phone numbers masked and the query strings of its paths removed.
  */
 export function scrubUrl(value: string): string {
-  let scrubbed = value.replace(WORD, withoutQuery);
+  let scrubbed = withoutQueryParams(value).replace(WORD, withoutQuery);
   for (const [pattern, replacement] of [
     ...SECRET_PATH_SEGMENTS,
     ...SECRET_VALUES,

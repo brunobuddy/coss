@@ -33,6 +33,7 @@ const created = mock(
   }),
 );
 mock.module("@coss/tenancy", () => ({
+  touchHipaaSession: async () => "active",
   TenancyError,
   redeemCliAuthorization: redeem,
   createEnvironmentApiKey: created,

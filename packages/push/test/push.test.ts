@@ -7,6 +7,7 @@ import {
   mobileSessionHeaders,
   revokeMobileSession,
 } from "@coss/auth/mobile";
+import { enableTestHipaaMode } from "@coss/compliance/testing";
 import { db, schema } from "@coss/db";
 import { newId } from "@coss/db/id";
 import { uniqueSuffix } from "@coss/db/testing";
@@ -54,6 +55,31 @@ async function disabledEndpoint(tenant: TestTenant, description: string | null =
   if (!row) throw new Error("no endpoint");
   return row;
 }
+
+describe("HIPAA mode", () => {
+  test("nothing is queued, so no name passes through Apple", async () => {
+    const tenant = await createTestTenant();
+    await enableTestHipaaMode(tenant.organization.id);
+    await enqueueEndpointDisabled(tenant, "ep_1");
+    expect(await listPushNotifications(tenant.organization.id)).toEqual([]);
+  });
+
+  test("one queued as the mode was turned on is skipped, not sent", async () => {
+    const tenant = await createTestTenant();
+    await createTestPushDevice({ userId: tenant.owner.id });
+    const endpoint = await disabledEndpoint(tenant);
+    await enqueueEndpointDisabled(tenant, endpoint.id);
+    await enableTestHipaaMode(tenant.organization.id);
+
+    const sender = new FakePushSender();
+    await runDuePushNotifications({ scope: scopeOf(tenant) }, { sender });
+
+    expect(sender.sent).toEqual([]);
+    const [row] = await listPushNotifications(tenant.organization.id);
+    expect(row?.status).toBe("skipped");
+    expect(row?.lastError).toBe("hipaa_mode");
+  });
+});
 
 async function enqueueEndpointDisabled(tenant: TestTenant, endpointId: string, now = new Date()) {
   await enqueuePush(db, {

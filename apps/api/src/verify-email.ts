@@ -5,6 +5,8 @@
  * environment as "<app name> via coss.com". Sandbox environments always send in their own
  * environment (the fake provider: nothing is delivered, and the code — zeros — is readable).
  */
+
+import { isHipaaMode } from "@coss/compliance";
 import {
   checkSuppression,
   EmailError,
@@ -66,6 +68,10 @@ export function verifyEmailSender(opts: {
         params,
         idempotencyKey: input.idempotencyKey,
         discardBody: input.environment.mode === "live",
+        // A row in coss.com's environment: the mode's own checks can't see whose code this is.
+        hipaaOrigin:
+          environment !== input.environment &&
+          (await isHipaaMode(input.environment.organizationId)),
       }));
     } catch (error) {
       // The send's key already made an email here (sent, its id lost before Verify saved it),

@@ -7,6 +7,7 @@
  * lets them skip per-email content screening, which would send a patient's name to the AI Gateway:
  * what a customer can put in them is screened when it's set up instead (`screening.ts`).
  */
+import { HipaaModeError } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { type EmailBlock, type EmailContent, oneLine, renderEmail } from "@coss/email-layout";
 import { and, asc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
@@ -576,13 +577,19 @@ async function sendBookingSms(
     const contact = decryptContact(attendee.encryptedContact, deps);
     if (!contact.phone) continue;
     const brand = oneLine(settings.brandName ?? "Your booking");
-    await deps.notifier.sms({
-      environment: env,
-      from: settings.smsFrom,
-      to: contact.phone,
-      body: `${brand}: ${SUBJECTS[event](titleOf(booking))}, ${formatWhen(booking.startAt, attendee.timeZone, attendee.locale)}. Reply STOP to opt out.`,
-      idempotencyKey: `scheduling:${row.id}:${attendee.id}`,
-    });
+    try {
+      await deps.notifier.sms({
+        environment: env,
+        from: settings.smsFrom,
+        to: contact.phone,
+        body: `${brand}: ${SUBJECTS[event](titleOf(booking))}, ${formatWhen(booking.startAt, attendee.timeZone, attendee.locale)}. Reply STOP to opt out.`,
+        idempotencyKey: `scheduling:${row.id}:${attendee.id}`,
+      });
+    } catch (error) {
+      // A number HIPAA mode can't text won't become one on a retry.
+      if (error instanceof HipaaModeError) continue;
+      throw error;
+    }
     sent = true;
   }
   return sent ? "sent" : "no_address";
