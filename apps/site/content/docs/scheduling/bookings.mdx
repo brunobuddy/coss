@@ -90,7 +90,8 @@ at a time. Booking past it answers `attendee_limit_reached`, without saying what
 
 People are known by `uid` or email, and bookings matching either count. Someone booking with neither isn't limited.
 Holds, bookings awaiting approval and every occurrence of a series count, and a series that wouldn't fit is refused
-whole. Guests don't count, and rescheduling a booking doesn't use up another.
+whole. Guests don't count, and rescheduling an upcoming booking doesn't use up another. Confirming a hold or approving
+a request that's expired, or moving a past booking into the future, has to fit like a new booking.
 
 On a booking page where people type their own details, that answer tells whoever's typing that the address is at the
 limit for this event type. If that matters, fill in the attendee when you create the session.

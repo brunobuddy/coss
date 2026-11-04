@@ -3,6 +3,7 @@ import { db, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { eq } from "drizzle-orm";
 import {
+  approveBooking,
   cancelBooking,
   confirmHold,
   createBooking,
@@ -11,6 +12,7 @@ import {
   createHost,
   createSchedule,
   createSeries,
+  rescheduleBooking,
   type SchedulingEnvironment,
   SchedulingError,
   updateEventType,
@@ -181,6 +183,81 @@ describe("a limit on one person's bookings", () => {
     expect(await code(confirmHold(env, hold.id, { ifStillFree: true }, deps, actor))).toBe(
       "attendee_limit_reached",
     );
+  });
+
+  test("an expired seat in a session someone else keeps alive still has to fit", async () => {
+    const { env, eventType, book } = await setUp(1, { kind: "group", capacity: 5 });
+    const { booking: hold } = await createHold(
+      env,
+      { eventType: eventType.id, startMs: at("09:00"), attendee: sam },
+      deps,
+      actor,
+    );
+    await book("09:00", { uid: "patient_2", email: "kim@example.com", time_zone: "UTC" });
+    await db
+      .update(schema.schedulingBooking)
+      .set({ holdExpiresAt: new Date("2020-01-01T00:00:00Z") })
+      .where(eq(schema.schedulingBooking.id, hold.id));
+    expect(await code(book("10:00"))).toBe("ok");
+
+    expect(await code(confirmHold(env, hold.id, { ifStillFree: true }, deps, actor))).toBe(
+      "attendee_limit_reached",
+    );
+  });
+
+  test("approving a request that lapsed has to fit, and one still waiting doesn't count twice", async () => {
+    const { env, book } = await setUp(1, { requires_approval: true });
+    const { booking: lapsed } = await book("09:00");
+    expect(await code(book("10:00"))).toBe("attendee_limit_reached");
+    await db
+      .update(schema.schedulingBooking)
+      .set({ approvalExpiresAt: new Date("2020-01-01T00:00:00Z") })
+      .where(eq(schema.schedulingBooking.id, lapsed.id));
+    await db
+      .update(schema.schedulingClaim)
+      .set({
+        liveFrom: new Date("2019-12-31T00:00:00Z"),
+        liveUntil: new Date("2020-01-01T00:00:00Z"),
+      })
+      .where(eq(schema.schedulingClaim.bookingId, lapsed.id));
+    const { booking: second } = await book("10:00");
+
+    expect(await code(approveBooking(env, lapsed.id, deps, actor))).toBe("attendee_limit_reached");
+    expect(await code(approveBooking(env, second.id, deps, actor))).toBe("ok");
+  });
+
+  test("moving a past booking into the future has to fit, and moving a coming one doesn't", async () => {
+    const { env, book } = await setUp(1);
+    const { booking: past } = await book("09:00");
+    await db
+      .update(schema.schedulingBooking)
+      .set({ startAt: new Date("2020-01-01T00:00:00Z"), endAt: new Date("2020-01-01T00:30:00Z") })
+      .where(eq(schema.schedulingBooking.id, past.id));
+    const { booking: coming } = await book("10:00");
+
+    expect(await code(rescheduleBooking(env, past.id, { startMs: at("11:00") }, deps, actor))).toBe(
+      "attendee_limit_reached",
+    );
+    expect(
+      await code(rescheduleBooking(env, coming.id, { startMs: at("12:00") }, deps, actor)),
+    ).toBe("ok");
+  });
+
+  test("a hold being confirmed and a new booking can't both take the last place", async () => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { env, eventType, book } = await setUp(1);
+      const { booking: hold } = await createHold(
+        env,
+        { eventType: eventType.id, startMs: at("09:00"), attendee: sam },
+        deps,
+        actor,
+      );
+      const outcomes = await Promise.all([
+        code(confirmHold(env, hold.id, {}, deps, actor)),
+        code(book("10:00")),
+      ]);
+      expect(outcomes.filter((outcome) => outcome === "ok")).toHaveLength(1);
+    }
   });
 
   test("confirming a live hold doesn't count it twice", async () => {

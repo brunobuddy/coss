@@ -1151,31 +1151,36 @@ const attendeeLimitReached = () =>
     "This person already has as many upcoming bookings of this event type as it allows.",
   );
 
+type AttendeeIdentity = { uid: string | null; emailHmac: string | null };
+
 /**
- * Refuses a booking that would take someone past the event type's limit. People are known by `uid`
- * or email: someone with neither can't be counted. Advisory locks, because a row naming them would
- * outlive erasing them, and they come before the hosts' so two tabs can't both take the last one.
+ * Holds what counts this person's bookings still, until the transaction ends. People are known by
+ * `uid` or email: someone with neither can't be counted, so this answers false. Advisory locks,
+ * because a row naming them would outlive erasing them, and they come before the hosts' so two
+ * tabs can't both take the last place.
  */
-async function checkAttendeeLimit(
+async function lockAttendeeLimit(
   tx: Transaction,
   eventType: EventTypeRow,
-  attendee: { uid: string | null; emailHmac: string | null },
-  ownBookingId: string,
-): Promise<void> {
-  const max = eventType.maxActiveBookingsPerAttendee;
-  if (max === null) return;
-  const { uid, emailHmac } = attendee;
-  const identities = [
-    ...(emailHmac ? [eq(schedulingAttendee.emailHmac, emailHmac)] : []),
-    ...(uid ? [eq(schedulingAttendee.uid, uid)] : []),
-  ];
-  if (identities.length === 0) return;
-  const lockKeys = [...(emailHmac ? [`email:${emailHmac}`] : []), ...(uid ? [`uid:${uid}`] : [])];
-  for (const key of lockKeys.sort()) {
+  { uid, emailHmac }: AttendeeIdentity,
+): Promise<boolean> {
+  if (eventType.maxActiveBookingsPerAttendee === null || (!uid && !emailHmac)) return false;
+  const keys = [...(emailHmac ? [`email:${emailHmac}`] : []), ...(uid ? [`uid:${uid}`] : [])];
+  for (const key of keys.sort()) {
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtextextended(${`scheduling-attendee:${eventType.id}:${key}`}, 0))`,
     );
   }
+  return true;
+}
+
+/** Call with `lockAttendeeLimit` held. Their other bookings count, and this one doesn't. */
+async function refuseOverAttendeeLimit(
+  tx: Transaction,
+  eventType: EventTypeRow,
+  { uid, emailHmac }: AttendeeIdentity,
+  ownBookingId: string,
+): Promise<void> {
   const [row] = await tx
     .select({ active: sql<number>`count(distinct ${schedulingBooking.id})::int` })
     .from(schedulingBooking)
@@ -1194,10 +1199,66 @@ async function checkAttendeeLimit(
         sql`${schedulingBooking.startAt} > clock_timestamp()`,
         isLiveSeat(),
         eq(schedulingAttendee.role, "attendee"),
-        or(...identities),
+        or(
+          ...(emailHmac ? [eq(schedulingAttendee.emailHmac, emailHmac)] : []),
+          ...(uid ? [eq(schedulingAttendee.uid, uid)] : []),
+        ),
       ),
     );
-  if ((row?.active ?? 0) >= max) throw attendeeLimitReached();
+  if ((row?.active ?? 0) >= (eventType.maxActiveBookingsPerAttendee as number)) {
+    throw attendeeLimitReached();
+  }
+}
+
+async function checkAttendeeLimit(
+  tx: Transaction,
+  eventType: EventTypeRow,
+  attendee: AttendeeIdentity,
+  ownBookingId: string,
+): Promise<void> {
+  if (await lockAttendeeLimit(tx, eventType, attendee)) {
+    await refuseOverAttendeeLimit(tx, eventType, attendee, ownBookingId);
+  }
+}
+
+async function attendeeIdentityOf(tx: Transaction, booking: BookingRow): Promise<AttendeeIdentity> {
+  const [attendee] = await tx
+    .select({ uid: schedulingAttendee.uid, emailHmac: schedulingAttendee.emailHmac })
+    .from(schedulingAttendee)
+    .where(
+      and(
+        eq(schedulingAttendee.bookingId, booking.id),
+        eq(schedulingAttendee.organizationId, booking.organizationId),
+        eq(schedulingAttendee.role, "attendee"),
+      ),
+    );
+  return attendee ?? { uid: null, emailHmac: null };
+}
+
+/**
+ * A hold or approval stops counting the moment it expires, which can happen while it's being
+ * converted. So the expiry is read under the person's locks: a request counting them waits for this
+ * one, and one that expired has to fit again.
+ */
+async function reservationExpiredUnderLimit(
+  tx: Transaction,
+  eventType: EventTypeRow,
+  booking: BookingRow,
+  expiresAt: Date | null,
+): Promise<{ expired: boolean; refuseIfOver: () => Promise<void> }> {
+  const attendee = await attendeeIdentityOf(tx, booking);
+  const limited = await lockAttendeeLimit(tx, eventType, attendee);
+  const [{ expired } = { expired: true }] = (
+    await tx.execute(
+      sql`select ${expiresAt?.toISOString() ?? null}::timestamptz <= clock_timestamp() as expired`,
+    )
+  ).rows as { expired: boolean | null }[];
+  return {
+    expired: Boolean(expired),
+    refuseIfOver: async () => {
+      if (limited) await refuseOverAttendeeLimit(tx, eventType, attendee, booking.id);
+    },
+  };
 }
 
 async function liveSeatCount(
@@ -1669,18 +1730,20 @@ export async function confirmHold(
     const booking = await lockBooking(tx, env, id);
     if (booking.status === "confirmed" || booking.status === "pending_approval") return booking;
     if (booking.status !== "held") throw notChangeable(booking);
-    const [{ expired } = { expired: true }] = (
-      await tx.execute(
-        sql`select ${booking.holdExpiresAt?.toISOString() ?? null}::timestamptz <= clock_timestamp() as expired`,
-      )
-    ).rows as { expired: boolean }[];
+    const eventType = await resolveEventType(tx, env, booking.eventTypeId);
+    const { expired, refuseIfOver } = await reservationExpiredUnderLimit(
+      tx,
+      eventType,
+      booking,
+      booking.holdExpiresAt,
+    );
     if (expired && !opts.ifStillFree) {
       throw new SchedulingError(
         "hold_expired",
         "This hold has expired. Pass `if_still_free` to book anyway if nobody else took the slot.",
       );
     }
-    const eventType = await resolveEventType(tx, env, booking.eventTypeId);
+    if (expired) await refuseIfOver();
     const next: FinishedState = eventType.requiresApproval ? "pending_approval" : "confirmed";
     await convertClaims(tx, booking, eventType, env, next, expired ? nowOf(deps) : null);
     const updated = await bumped(tx, booking, {
@@ -1779,17 +1842,6 @@ async function recheckExpiredHold(
   hosts: readonly HostRow[],
   nowMs: number,
 ): Promise<void> {
-  const [attendee] = await tx
-    .select({ uid: schedulingAttendee.uid, emailHmac: schedulingAttendee.emailHmac })
-    .from(schedulingAttendee)
-    .where(
-      and(
-        eq(schedulingAttendee.bookingId, booking.id),
-        eq(schedulingAttendee.organizationId, booking.organizationId),
-        eq(schedulingAttendee.role, "attendee"),
-      ),
-    );
-  if (attendee) await checkAttendeeLimit(tx, eventType, attendee, booking.id);
   // Notice was met when it was held: being late to confirm shouldn't count against it.
   const rule = {
     ...slotRuleOf(eventType, (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS),
@@ -2069,6 +2121,13 @@ export async function approveBooking(
     if (booking.status === "confirmed") return booking;
     if (booking.status !== "pending_approval") throw notChangeable(booking);
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
+    const { expired, refuseIfOver } = await reservationExpiredUnderLimit(
+      tx,
+      eventType,
+      booking,
+      booking.approvalExpiresAt,
+    );
+    if (expired) await refuseIfOver();
     await convertClaims(tx, booking, eventType, env, "confirmed", null);
     const updated = await bumped(tx, booking, { status: "confirmed", approvalExpiresAt: null });
     const { hostIds } = await participants(tx, updated);
@@ -2186,6 +2245,16 @@ export async function rescheduleBooking(
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
     const now = nowOf(deps);
     checkNotice(booking, eventType.rescheduleNoticeMinutes, now, opts);
+    // A booking already behind them or lapsed wasn't counted, so bringing it back has to fit.
+    const reservedUntil =
+      booking.status === "held"
+        ? booking.holdExpiresAt
+        : booking.status === "pending_approval"
+          ? booking.approvalExpiresAt
+          : null;
+    if (booking.startAt <= now || (reservedUntil && reservedUntil <= now)) {
+      await checkAttendeeLimit(tx, eventType, await attendeeIdentityOf(tx, booking), booking.id);
+    }
     const durationMinutes = (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS;
     const { hostIds } = await participants(tx, booking);
     const current = await hostsByIds(tx, env, hostIds);
