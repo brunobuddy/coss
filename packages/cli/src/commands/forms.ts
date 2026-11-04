@@ -1,12 +1,14 @@
 /** `coss forms …`: the environment's forms and their submissions, on the public API. */
-import type { Coss, Form, FormSubmission, FormSubmissionStatus } from "coss";
+import type { Coss, Form, FormSubmission, FormSubmissionStatus, UpdateFormParams } from "coss";
 import { type Flags, requireArgs } from "../args.ts";
 import { type Command, type CommandInput, defineCommand } from "../command.ts";
 import { type Context, clientFor, resolveCredentials } from "../context.ts";
 import { printable } from "../emails/format.ts";
 import { apiError, UsageError } from "../errors.ts";
+import { jsonObject } from "../fields.ts";
 import type { Style } from "../output.ts";
 import { table } from "../table.ts";
+import { eitherOf, orNull, printDeleted } from "./list-output.ts";
 
 const STATUSES: readonly FormSubmissionStatus[] = [
   "accepted",
@@ -281,10 +283,87 @@ const release: Command = defineCommand({
   },
 });
 
+const UPDATE_FLAGS = {
+  name: { type: "string", value: "<name>", description: "Its new name" },
+  enabled: { type: "boolean", description: "Take submissions" },
+  disabled: { type: "boolean", description: "Refuse submissions" },
+  origin: {
+    type: "string",
+    multiple: true,
+    value: "<origin>",
+    description: "Sites allowed to post, replacing the list: https://acme.com (repeatable)",
+  },
+  redirect: {
+    type: "string",
+    value: "<url>",
+    description: "Where the browser goes afterwards (none: nowhere)",
+  },
+  data: {
+    type: "string",
+    value: "<json>",
+    description:
+      "Any other settings (fields, spam, submitter, notifications, contacts, files, hosted), as " +
+      "JSON: inline, @file or - for stdin; the flags above win over it",
+  },
+  json: { type: "boolean", description: "Print the form as JSON" },
+} as const satisfies Flags;
+
+const update: Command = defineCommand({
+  name: "forms update",
+  summary: "Change a form's settings",
+  usage: "<form> [options]",
+  description: "Changes what is given and leaves the rest, within each group of settings too.",
+  flags: UPDATE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof UPDATE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "forms update <form> [options]") as [string];
+    const enabled = eitherOf(values.enabled, values.disabled, ["--enabled", "--disabled"]);
+    const base = values.data === undefined ? {} : await jsonObject(context.io, values.data, "data");
+    const params = {
+      ...base,
+      ...(values.name !== undefined && { name: values.name }),
+      ...(enabled !== undefined && { enabled }),
+      ...(values.origin && { allowed_origins: values.origin }),
+      ...(values.redirect !== undefined && { redirect_url: orNull(values.redirect, "none") }),
+    } as UpdateFormParams;
+    if (Object.keys(params).length === 0) {
+      throw new UsageError("Pass at least one setting to change (coss forms update --help).");
+    }
+    const coss = await formsClient(context);
+    const { data, error } = await coss.forms.update(id, params);
+    if (error) throw apiError("Couldn't change the form", error);
+    printForm(context, data);
+    return 0;
+  },
+});
+
+const REMOVE_FLAGS = {
+  json: { type: "boolean", description: "Print the result as JSON" },
+} as const satisfies Flags;
+
+const remove: Command = defineCommand({
+  name: "forms remove",
+  summary: "Delete a form with its submissions and files",
+  usage: "<form>",
+  description: "Deletes a form with its submissions and files. It can't be undone.",
+  flags: REMOVE_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof REMOVE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "forms remove <form>") as [string];
+    const coss = await formsClient(context);
+    const { data, error } = await coss.forms.remove(id);
+    if (error) throw apiError("Couldn't delete the form", error);
+    printDeleted(context.out, data);
+    return 0;
+  },
+});
+
 export const FORMS_COMMANDS: readonly Command[] = [
   list,
   get,
   create,
+  update,
+  remove,
   submissions,
   submission,
   release,
