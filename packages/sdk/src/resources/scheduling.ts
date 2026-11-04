@@ -19,6 +19,7 @@ import type {
   ListSchedulingBookingsParams,
   ListSchedulingSlotsParams,
   RescheduleSchedulingBookingParams,
+  SchedulingAttendeeEmailErasure,
   SchedulingAttendeeErasure,
   SchedulingAvailabilitySearchResult,
   SchedulingBooking,
@@ -666,6 +667,19 @@ export class SchedulingAttendeesResource {
   /** @internal Use `new Coss().scheduling.attendees`. */
   constructor(http: HttpClient) {
     this.#http = http;
+  }
+
+  /** Removes this address's details and answers from every booking now: all there is of a guest. */
+  eraseByEmail(
+    email: string,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingAttendeeEmailErasure>> {
+    return this.#http.request<SchedulingAttendeeEmailErasure>({
+      method: "POST",
+      path: "/v1/scheduling/attendees/erase",
+      body: { email },
+      ...options,
+    });
   }
 
   /** Removes this person's details and answers from every booking now. */

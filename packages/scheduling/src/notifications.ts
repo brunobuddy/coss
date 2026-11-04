@@ -54,6 +54,7 @@ const {
   environment,
   schedulingAttendee,
   schedulingBooking,
+  schedulingBookingEvent,
   schedulingBookingHost,
   schedulingHost,
   schedulingNotification,
@@ -209,6 +210,8 @@ export type SchedulingEmail = {
   /** Inline in `html`, so it goes only with that, never with `cossHtml`. */
   logo: { filename: string; content: string; contentType: string; contentId: string } | null;
   idempotencyKey: string;
+  /** To someone who asked for nothing: goes from the customer's own address or not at all. */
+  ownSenderOnly: boolean;
 };
 
 export type SchedulingSms = {
@@ -318,6 +321,25 @@ const paragraphsOf = (text: string): EmailBlock[] =>
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
     .map((paragraph) => ({ paragraph }));
+
+/** Whether a guest has heard of this booking, or has any reason to hear about it now. */
+async function guestsAreTold(booking: BookingRow, kind: CopyKind): Promise<boolean> {
+  // A no-show is about the attendee: their guests may well have come.
+  if (kind === "pending_approval" || kind === "declined" || kind === "no_show") return false;
+  if (kind !== "cancelled") return booking.status === "confirmed";
+  const [confirmed] = await db
+    .select({ id: schedulingBookingEvent.bookingId })
+    .from(schedulingBookingEvent)
+    .where(
+      and(
+        eq(schedulingBookingEvent.bookingId, booking.id),
+        eq(schedulingBookingEvent.organizationId, booking.organizationId),
+        eq(schedulingBookingEvent.type, "scheduling.booking.confirmed"),
+      ),
+    )
+    .limit(1);
+  return Boolean(confirmed);
+}
 
 type Claimed = NotificationRow;
 
@@ -442,7 +464,8 @@ async function bookingAttendees(booking: BookingRow) {
         eq(schedulingAttendee.bookingId, booking.id),
         eq(schedulingAttendee.organizationId, booking.organizationId),
       ),
-    );
+    )
+    .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id));
 }
 
 const hostNamesOf = (hosts: readonly { name: string }[]) =>
@@ -498,7 +521,7 @@ async function sendBookingEmail(
 
   /** The customer's words if they wrote any, and the standard ones for coss.com's address. */
   const content = (input: {
-    audience: "attendee" | "host";
+    audience: "attendee" | "host" | "guest";
     values: ReminderValues;
     whenText: string;
     manageUrl: string | null;
@@ -550,13 +573,19 @@ async function sendBookingEmail(
   const hosts = await bookingHosts(booking);
 
   if (row.recipient === "attendee") {
+    // A guest is an address someone typed, who asked for nothing: never coss.com's own sender.
+    const toldGuests =
+      (env.mode === "sandbox" || Boolean(settings?.emailFrom)) &&
+      (await guestsAreTold(booking, copyKind));
     let sent = false;
     for (const attendee of await bookingAttendees(booking)) {
+      const guest = attendee.role === "guest";
+      if (guest && !toldGuests) continue;
       const contact = decryptContact(attendee.encryptedContact, deps);
       if (!contact.email) continue;
-      // Only while it can still be changed. A fresh link per email: its token can't be recovered,
-      // and a body isn't kept.
-      const changeable = !isEnded(booking) && (!rule || booking.startAt > now);
+      // Only while it can still be changed, and it's the attendee's to change, so a guest gets
+      // none. A fresh link per email: its token can't be recovered, and a body isn't kept.
+      const changeable = !guest && !isEnded(booking) && (!rule || booking.startAt > now);
       const manage =
         deps.publicUrl && changeable
           ? await createManageSession(env, {
@@ -566,10 +595,12 @@ async function sendBookingEmail(
             })
           : null;
       const message = content({
-        audience: "attendee",
+        audience: guest ? "guest" : "attendee",
         whenText: formatWhen(booking.startAt, attendee.timeZone, attendee.locale),
         manageUrl: manage?.url ?? null,
-        reason: `You're receiving this because of your booking with ${senderName}.`,
+        reason: guest
+          ? `You're receiving this because you were added as a guest to a booking with ${senderName}.`
+          : `You're receiving this because of your booking with ${senderName}.`,
         values: reminderValues({
           booking,
           brand: senderName,
@@ -596,6 +627,7 @@ async function sendBookingEmail(
         ics: withIcs ? ics({ name: contact.name, email: contact.email }) : null,
         logo: rendered.logo,
         idempotencyKey: `${key}:${attendee.id}`,
+        ownSenderOnly: guest,
       });
       sent = true;
     }
@@ -657,6 +689,7 @@ async function sendBookingEmail(
       ics: withIcs ? ics({ name: recipient.name, email: recipient.email }) : null,
       logo: rendered.logo,
       idempotencyKey: `${key}:${recipient.id}`,
+      ownSenderOnly: false,
     });
     sent = true;
   }
@@ -890,6 +923,7 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
     ics: null,
     logo: message.logo,
     idempotencyKey: `scheduling:${row.id}`,
+    ownSenderOnly: false,
   });
   return "sent";
 }

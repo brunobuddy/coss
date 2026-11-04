@@ -93,6 +93,9 @@ A text needs [`sms_from`](/docs/scheduling/notifications) and a phone number: th
 An email goes from your `email_from`. Without one, coss.com sends it on your behalf, in its own words,
 and at most two reminders can send email that way.
 
+`email_attendee` includes a booking's guests, from your own address only and with no manage link. They don't
+hear about a request until it's approved, or about a no-show, which is about the attendee.
+
 ## Your own words
 
 `subject` and `message` replace the standard wording of an email. The booking's details, the time in the

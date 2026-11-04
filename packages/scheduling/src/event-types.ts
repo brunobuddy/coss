@@ -1,7 +1,9 @@
 /** What can be booked. Bookings snapshot what they occupy, so edits never move an existing one. */
+import { HipaaModeError, hipaaModeApplies } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
-import { and, asc, desc, eq, inArray, isNull, lt, notInArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, notInArray, or, sql } from "drizzle-orm";
+import { notZoomMeeting } from "./calendar/zoom.ts";
 import { SchedulingError } from "./errors.ts";
 import { checkTimeZone, type HostRow, resolveHost } from "./hosts.ts";
 import { policyFromWire, policyToWire } from "./notification-policy.ts";
@@ -19,8 +21,15 @@ import type {
 import { refuseLinks, screenSetup } from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
-const { schedulingEventType, schedulingEventTypeHost, schedulingSchedule, schedulingSettings } =
-  schema;
+const {
+  schedulingBooking,
+  schedulingCalendarEvent,
+  schedulingEventType,
+  schedulingEventTypeHost,
+  schedulingGroupSession,
+  schedulingSchedule,
+  schedulingSettings,
+} = schema;
 
 export type EventTypeRow = typeof schedulingEventType.$inferSelect;
 export type EventTypeHostRow = typeof schedulingEventTypeHost.$inferSelect;
@@ -52,6 +61,8 @@ export function toEventTypeObject(
     hold_ttl_seconds: row.holdTtlSeconds,
     cancel_notice_minutes: row.cancelNoticeMinutes,
     reschedule_notice_minutes: row.rescheduleNoticeMinutes,
+    max_guests: row.maxGuests,
+    host_calendar_details: row.hostCalendarDetails,
     questions: row.questions,
     locations: row.locations as EventTypeObjectOutput["locations"],
     host_filter: row.hostFilter ?? null,
@@ -116,6 +127,7 @@ function checkShape(
   values: {
     kind: Kind;
     capacity: number | null;
+    maxGuests: number;
     durationMinutes: number;
     durationOptions: readonly number[];
     questions: readonly { key: string; type: string; options: readonly string[] }[];
@@ -132,6 +144,9 @@ function checkShape(
   }
   if (values.kind !== "group" && values.capacity) {
     throw invalid("Only a group event type has a capacity.", "capacity");
+  }
+  if (values.kind === "group" && values.maxGuests > 0) {
+    throw invalid("A group event type has no guests: each person takes a seat.", "max_guests");
   }
   if (values.gridTimeZone) checkTimeZone(values.gridTimeZone, "grid_time_zone");
   if (
@@ -284,6 +299,66 @@ async function emailFromOf(scope: Scope): Promise<string | null> {
   return settings?.emailFrom ?? null;
 }
 
+/** Attendees' details would reach hosts' calendar providers, which HIPAA mode doesn't allow. */
+async function checkHostCalendarDetails(
+  environmentId: string,
+  details: EventTypeRow["hostCalendarDetails"] | undefined,
+): Promise<void> {
+  if (details !== "full" || !(await hipaaModeApplies(environmentId))) return;
+  throw new HipaaModeError(
+    "HIPAA mode keeps attendees' details off hosts' calendars, so `host_calendar_details` can't be `full`.",
+  );
+}
+
+/** Upcoming events say what this event type now asks for. Past ones stay until they're redacted. */
+async function rewriteUpcomingEvents(tx: Executor, row: EventTypeRow): Promise<void> {
+  const now = sql`clock_timestamp()`;
+  await tx
+    .update(schedulingCalendarEvent)
+    .set({
+      ...(row.hostCalendarDetails === "neutral"
+        ? { scrubPending: sql<boolean>`${schedulingCalendarEvent.detailsWritten}` }
+        : {}),
+      desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
+      nextAttemptAt: now,
+      attempts: 0,
+    })
+    .where(
+      and(
+        eq(schedulingCalendarEvent.organizationId, row.organizationId),
+        eq(schedulingCalendarEvent.desiredState, "present"),
+        gt(schedulingCalendarEvent.desiredEnd, now),
+        notZoomMeeting(),
+        or(
+          inArray(
+            schedulingCalendarEvent.bookingId,
+            tx
+              .select({ id: schedulingBooking.id })
+              .from(schedulingBooking)
+              .where(
+                and(
+                  eq(schedulingBooking.eventTypeId, row.id),
+                  eq(schedulingBooking.organizationId, row.organizationId),
+                ),
+              ),
+          ),
+          inArray(
+            schedulingCalendarEvent.groupSessionId,
+            tx
+              .select({ id: schedulingGroupSession.id })
+              .from(schedulingGroupSession)
+              .where(
+                and(
+                  eq(schedulingGroupSession.eventTypeId, row.id),
+                  eq(schedulingGroupSession.organizationId, row.organizationId),
+                ),
+              ),
+          ),
+        ),
+      ),
+    );
+}
+
 export async function createEventType(
   env: SchedulingEnvironment,
   params: CreateEventTypeRequestOutput,
@@ -293,10 +368,12 @@ export async function createEventType(
   await screenSetup(env, setupText(params), opts.screen, "title");
   const reminders = params.reminders ? normalizeReminders(params.reminders) : null;
   if (reminders) await checkReminders(env, reminders, await emailFromOf(env), opts);
+  await checkHostCalendarDetails(env.environmentId, params.host_calendar_details);
   checkShape(
     {
       kind: params.kind,
       capacity: params.capacity ?? null,
+      maxGuests: params.max_guests ?? 0,
       durationMinutes: params.duration_minutes,
       durationOptions: params.duration_options ?? [],
       questions: params.questions ?? [],
@@ -336,6 +413,8 @@ export async function createEventType(
             : {}),
           cancelNoticeMinutes: params.cancel_notice_minutes ?? 0,
           rescheduleNoticeMinutes: params.reschedule_notice_minutes ?? 0,
+          maxGuests: params.max_guests ?? 0,
+          hostCalendarDetails: params.host_calendar_details ?? "neutral",
           questions: params.questions ?? [],
           locations: (params.locations ?? []) as EventTypeRow["locations"],
           hostFilter: params.host_filter ?? null,
@@ -409,6 +488,7 @@ export async function updateEventType(
   opts: ReminderChecks = {},
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
+  await checkHostCalendarDetails(scope.environmentId, params.host_calendar_details);
   if (scope.mode && (params.title !== undefined || params.questions !== undefined)) {
     await screenSetup(
       { organizationId: scope.organizationId, mode: scope.mode },
@@ -469,6 +549,10 @@ export async function updateEventType(
         ...(params.reschedule_notice_minutes !== undefined
           ? { rescheduleNoticeMinutes: params.reschedule_notice_minutes }
           : {}),
+        ...(params.max_guests !== undefined ? { maxGuests: params.max_guests } : {}),
+        ...(params.host_calendar_details !== undefined
+          ? { hostCalendarDetails: params.host_calendar_details }
+          : {}),
         ...(params.questions !== undefined ? { questions: params.questions } : {}),
         ...(params.locations !== undefined
           ? { locations: params.locations as EventTypeRow["locations"] }
@@ -496,6 +580,9 @@ export async function updateEventType(
       if (params.hosts) await replaceHosts(tx, scope, row, params.hosts);
       if (reminders !== undefined || params.notifications?.reminder !== undefined) {
         await queueReminderSync(tx, scope, row.id);
+      }
+      if (row.hostCalendarDetails !== existing.hostCalendarDetails) {
+        await rewriteUpcomingEvents(tx, row);
       }
       return toEventTypeObject(row, await eventTypeHosts(tx, row));
     });

@@ -42,6 +42,7 @@ export const SDK_METHODS: Readonly<Record<string, string>> = {
   "POST /v1/scheduling/series/preview": "scheduling.series.preview",
   "POST /v1/scheduling/series/{id}/cancel": "scheduling.series.cancel",
   "DELETE /v1/scheduling/attendees/{uid}": "scheduling.attendees.erase",
+  "POST /v1/scheduling/attendees/erase": "scheduling.attendees.eraseByEmail",
   "POST /v1/scheduling/hosts/{host}/calendar_connections/authorize":
     "scheduling.calendars.authorize",
   "POST /v1/scheduling/hosts/{host}/calendar_connections": "scheduling.calendars.connect",

@@ -34,11 +34,13 @@ export type RemoteCalendar = {
   writable: boolean;
 };
 
-/** What's written to a host's calendar. Deliberately little: a neutral title and a time. */
+/** What's written to a host's calendar. By default, deliberately little: a neutral title and a time. */
 export type CalendarEventWrite = {
   /** Stable for this booking, host and calendar: retries of a lost response can't duplicate. */
   key: string;
   title: string;
+  /** Plain text. `null` clears what an earlier write put there; left out, it's left alone. */
+  description?: string | null;
   startMs: number;
   endMs: number;
   conference: "google_meet" | "microsoft_teams" | "zoom" | null;

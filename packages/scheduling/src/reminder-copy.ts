@@ -59,19 +59,54 @@ export const STANDARD_SUBJECTS: Record<CopyKind, (title: string) => string> = {
   no_show: (title) => `We missed you: ${title}`,
 };
 
-export const STANDARD_LEADS: Record<CopyKind, { attendee: string; host: string }> = {
-  confirmed: { attendee: "Your booking is confirmed.", host: "You have a new booking." },
+export const STANDARD_LEADS: Record<CopyKind, { attendee: string; host: string; guest: string }> = {
+  // Guests hear nothing until there's something to come to, and a no-show isn't about them, so they
+  // have no line for these.
+  confirmed: {
+    attendee: "Your booking is confirmed.",
+    host: "You have a new booking.",
+    guest: "You've been added to this booking.",
+  },
   pending_approval: {
     attendee: "Your request has been received. You'll hear back once it's approved.",
     host: "A new booking is waiting for approval.",
+    guest: "",
   },
-  rescheduled: { attendee: "Your booking has moved.", host: "A booking has moved." },
-  cancelled: { attendee: "Your booking is cancelled.", host: "A booking was cancelled." },
-  declined: { attendee: "Your request couldn't be confirmed.", host: "A request was declined." },
-  reminder: { attendee: "This is coming up.", host: "This is coming up." },
-  happening: { attendee: "This is happening now.", host: "This is happening now." },
-  finished: { attendee: "Thanks for your time.", host: "This has finished." },
-  no_show: { attendee: "We missed you.", host: "The attendee was marked as a no-show." },
+  rescheduled: {
+    attendee: "Your booking has moved.",
+    host: "A booking has moved.",
+    guest: "A booking you're a guest of has moved.",
+  },
+  cancelled: {
+    attendee: "Your booking is cancelled.",
+    host: "A booking was cancelled.",
+    guest: "A booking you're a guest of was cancelled.",
+  },
+  declined: {
+    attendee: "Your request couldn't be confirmed.",
+    host: "A request was declined.",
+    guest: "",
+  },
+  reminder: {
+    attendee: "This is coming up.",
+    host: "This is coming up.",
+    guest: "This is coming up.",
+  },
+  happening: {
+    attendee: "This is happening now.",
+    host: "This is happening now.",
+    guest: "This is happening now.",
+  },
+  finished: {
+    attendee: "Thanks for your time.",
+    host: "This has finished.",
+    guest: "Thanks for your time.",
+  },
+  no_show: {
+    attendee: "We missed you.",
+    host: "The attendee was marked as a no-show.",
+    guest: "",
+  },
 };
 
 /** "This is coming up." would be wrong after a meeting: the standard words follow the timing. */

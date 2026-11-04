@@ -437,6 +437,10 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.attendees.erase",
     args: (r) => [tsValue(r.path.uid)],
   },
+  "POST /v1/scheduling/attendees/erase": {
+    method: "scheduling.attendees.eraseByEmail",
+    args: (r) => [tsValue((r.body as { email: string }).email)],
+  },
   "POST /v1/scheduling/hosts/{host}/calendar_connections/authorize": {
     method: "scheduling.calendars.authorize",
     args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],

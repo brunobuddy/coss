@@ -69,7 +69,7 @@ export async function participants(
         eq(schedulingAttendee.organizationId, booking.organizationId),
       ),
     )
-    .orderBy(asc(schedulingAttendee.id));
+    .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id));
   return { hostIds: hosts.map((row) => row.hostId), attendees };
 }
 

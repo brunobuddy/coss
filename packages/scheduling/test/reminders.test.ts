@@ -1218,3 +1218,84 @@ describe("group sessions", () => {
     );
   });
 });
+
+describe("guests", () => {
+  const withGuest = (s: Setup) =>
+    book(s, "09:00", { guests: [{ name: "Gus Guest", email: "gus@example.com" }] });
+
+  test("get a reminder from the customer's address, with no manage link", async () => {
+    const s = await setUp({ max_guests: 2 });
+    await updateSettings(s.env, {
+      email_from: "appointments@example.com",
+      reminders: [
+        rule({
+          anchor: "start",
+          before_minutes: 30,
+          send: ["email_attendee"],
+          message: "See you soon, {{attendee_first_name}}.",
+        }),
+      ],
+    });
+    await withGuest(s);
+    const n = await runAt(s, START - 30 * MINUTE);
+    const toGuest = n.emails.find(
+      (email) => email.to === "gus@example.com" && email.text.includes("See you soon"),
+    );
+    const toAttendee = n.emails.find(
+      (email) => email.to === attendee.email && email.text.includes("See you soon"),
+    );
+    expect(toGuest?.text).toContain("See you soon, Gus.");
+    expect(toGuest?.text).not.toContain("Reschedule or cancel");
+    expect(toGuest?.ownSenderOnly).toBe(true);
+    expect(toAttendee?.text).toContain("Reschedule or cancel");
+    expect(toAttendee?.ownSenderOnly).toBe(false);
+  });
+
+  test("hear nothing from coss.com's address in a live environment", async () => {
+    const s = await setUp({ max_guests: 2 });
+    const live: SchedulingEnvironment = { ...s.env, mode: "live" };
+    await db
+      .update(schema.environment)
+      .set({ mode: "live" })
+      .where(eq(schema.environment.id, s.env.environmentId));
+    await updateSettings(live, {
+      reminders: [rule({ anchor: "start", before_minutes: 30, send: ["email_attendee"] })],
+    });
+    await withGuest(s);
+    const n = await runAt(s, START - 30 * MINUTE);
+    const reminders = n.emails.filter((email) => isReminder(email.subject));
+    expect(reminders.map((email) => email.to)).toEqual([attendee.email]);
+  });
+
+  test("aren't told someone else was a no-show", async () => {
+    const s = await setUp({ max_guests: 2 });
+    await updateSettings(s.env, {
+      reminders: [rule({ key: "missed", anchor: "no_show", send: ["email_attendee"] })],
+    });
+    const { booking } = await withGuest(s);
+    const afterStart = testSchedulingDeps({ now: () => new Date(START + 5 * MINUTE) });
+    await markNoShow(s.env, booking.id, afterStart, actor);
+    const n = await runAt(s, START + 6 * MINUTE);
+    const missed = n.emails.filter((email) => email.subject.startsWith("We missed you"));
+    expect(missed.map((email) => email.to)).toEqual([attendee.email]);
+  });
+
+  test("a follow-up's words name the person who booked, for a host", async () => {
+    const s = await setUp({ max_guests: 2 });
+    await updateSettings(s.env, {
+      email_from: "appointments@example.com",
+      reminders: [
+        rule({
+          anchor: "end",
+          after_minutes: 60,
+          send: ["email_host"],
+          message: "How was {{attendee_name}}?",
+        }),
+      ],
+    });
+    await withGuest(s);
+    const n = await runAt(s, END + 60 * MINUTE);
+    const email = n.emails.find((message) => message.text.includes("How was"));
+    expect(email?.text).toContain("How was Sam Lee?");
+  });
+});

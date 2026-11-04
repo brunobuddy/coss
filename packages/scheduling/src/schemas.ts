@@ -45,6 +45,8 @@ export type SchedulingWebhookEventType = (typeof SCHEDULING_WEBHOOK_EVENT_TYPES)
 export const MAX_SERIES_OCCURRENCES = 52;
 export const MAX_SLOT_WINDOW_DAYS = 62;
 export const MAX_SEARCH_HOSTS = 500;
+export const MAX_GUESTS = 10;
+export const HOST_CALENDAR_DETAILS = ["neutral", "full"] as const;
 
 const Metadata = z
   .record(z.string().max(64), z.string().max(500))
@@ -635,6 +637,14 @@ const eventTypeFields = {
     description: "Attendees can't cancel closer to the start than this. API keys can.",
   }),
   reschedule_notice_minutes: z.number().int().min(0).max(525600).optional(),
+  max_guests: z.number().int().min(0).max(MAX_GUESTS).optional().meta({
+    description:
+      "How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`.",
+  }),
+  host_calendar_details: z.enum(HOST_CALENDAR_DETAILS).optional().meta({
+    description:
+      "What hosts' calendars say about a booking. `neutral` (the default): a private event titled \"Appointment\". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode.",
+  }),
   questions: z.array(Question).max(25).optional(),
   locations: z.array(Location).max(10).optional(),
   host_filter: Attributes.nullable().optional().meta({
@@ -708,6 +718,8 @@ const EVENT_TYPE_EXAMPLE = {
   hold_ttl_seconds: 600,
   cancel_notice_minutes: 0,
   reschedule_notice_minutes: 0,
+  max_guests: 0,
+  host_calendar_details: "neutral" as const,
   questions: [],
   locations: [],
   host_filter: null,
@@ -749,6 +761,8 @@ export const EventTypeObject = z
     hold_ttl_seconds: z.number(),
     cancel_notice_minutes: z.number(),
     reschedule_notice_minutes: z.number(),
+    max_guests: z.number(),
+    host_calendar_details: z.enum(HOST_CALENDAR_DETAILS),
     questions: z.array(Question),
     locations: z.array(Location),
     host_filter: z.record(z.string(), z.union([z.string(), z.array(z.string())])).nullable(),
@@ -892,6 +906,18 @@ const AttendeeInput = z
   });
 export type AttendeeInputOutput = z.output<typeof AttendeeInput>;
 
+const GuestInput = z
+  .strictObject({
+    email: z.email().max(320),
+    name: z.string().min(1).max(100).optional(),
+  })
+  .meta({
+    id: "SchedulingGuestInput",
+    description:
+      "Someone else coming along. They're emailed about the booking, with no manage link.",
+  });
+export type GuestInputOutput = z.output<typeof GuestInput>;
+
 const Answers = z
   .record(z.string().max(64), z.union([z.string().max(5000), z.array(z.string().max(500)).max(50)]))
   .meta({
@@ -912,6 +938,9 @@ const bookingFields = {
     description: "One of the event type's `duration_options`.",
   }),
   attendee: AttendeeInput,
+  guests: z.array(GuestInput).max(MAX_GUESTS).optional().meta({
+    description: "Up to the event type's `max_guests`.",
+  }),
   answers: Answers.optional(),
   location: Location.optional().meta({
     description: "One of the event type's `locations`, with your link filled in if it has none.",
@@ -1163,8 +1192,23 @@ export const ErasedAttendee = z
     examples: [{ object: "scheduling.attendee_erasure", uid: "patient_77", erased: 3 }],
   });
 
+export const EraseAttendeeByEmailRequest = z.strictObject({ email: z.email().max(320) }).meta({
+  id: "EraseSchedulingAttendeeByEmailRequest",
+  examples: [{ email: "sam@example.com" }],
+});
+
+export const ErasedAttendeeByEmail = z
+  .object({ object: z.literal("scheduling.attendee_erasure"), erased: z.number() })
+  .meta({
+    id: "SchedulingAttendeeErasureByEmail",
+    examples: [{ object: "scheduling.attendee_erasure", erased: 3 }],
+  });
+
 const BookingAttendee = z.object({
   id: z.string(),
+  role: z.enum(["attendee", "guest"]).meta({
+    description: "`attendee` booked it and comes first; a `guest` was added by them.",
+  }),
   uid: z.string().nullable(),
   name: z.string().nullable(),
   email: z.string().nullable(),
@@ -1189,6 +1233,7 @@ const BOOKING_EXAMPLE = {
   attendees: [
     {
       id: "attn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+      role: "attendee" as const,
       uid: "patient_77",
       name: "Sam Lee",
       email: "sam@example.com",

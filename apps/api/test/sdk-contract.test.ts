@@ -2036,6 +2036,8 @@ describe("coss.scheduling against the API", () => {
 
     const erased = await scheduling.attendees.erase("patient_1");
     expect(erased.error).toBeNull();
+    const erasedByEmail = await scheduling.attendees.eraseByEmail("nobody@example.com");
+    expect(erasedByEmail.data?.erased).toBe(0);
   });
 });
 
