@@ -172,9 +172,35 @@ const invalid = errorDoc(
   "The request failed validation (`validation_error`, see `issues`), or can't be done: see `code`.",
 );
 const refusedBooking = errorDoc(
-  "The time isn't available (`slot_unavailable`), the answers or attendee are invalid " +
-    "(`invalid_answers`, `invalid_attendee`), or the `Idempotency-Key` was used with a different " +
-    "request (`idempotency_key_reused`).",
+  "The time isn't available (`slot_unavailable`), `start`, `duration_minutes` or the occurrence " +
+    "count is out of bounds (`invalid_time`), the attendee's time zone isn't an IANA name " +
+    "(`invalid_time_zone`), the answers or attendee are invalid (`invalid_answers`, " +
+    "`invalid_attendee`), or the `Idempotency-Key` was used with a different request " +
+    "(`idempotency_key_reused`).",
+);
+const invalidHost = errorDoc(
+  "The request failed validation (`validation_error`, see `issues`), `time_zone` isn't an IANA " +
+    "name (`invalid_time_zone`), or another host has the `uid` (`uid_taken`).",
+);
+const invalidSchedule = errorDoc(
+  "The request failed validation (`validation_error`, see `issues`), a range ends before it " +
+    "starts or a date has two overrides (`invalid_schedule`), or `time_zone` isn't an IANA name " +
+    "(`invalid_time_zone`).",
+);
+const invalidEventType = errorDoc(
+  "The request failed validation (`validation_error`, see `issues`), the settings don't fit " +
+    "together (`invalid_event_type`), `grid_time_zone` isn't an IANA name (`invalid_time_zone`), " +
+    "another event type has the `uid` (`uid_taken`), or its text was refused (`content_refused`).",
+);
+const invalidWindow = errorDoc(
+  "The request failed validation (`validation_error`, see `issues`), or `start`, `end` or " +
+    "`duration_minutes` is invalid: `end` isn't after `start`, the window is longer than 62 days, " +
+    "or the duration isn't one of the event type's (`invalid_time`).",
+);
+const invalidCalendar = errorDoc(
+  "The request failed validation (`validation_error`, see `issues`), or the calendar can't be " +
+    "connected: the provider isn't set up, the server's URL is refused, or a simulated calendar " +
+    "was asked for outside a sandbox environment (`calendar_unavailable`).",
 );
 const refusedChange = errorDoc(
   "The booking can't change that way (`booking_not_changeable`), the new time isn't available " +
@@ -208,7 +234,7 @@ export const createHostRoute = createRoute({
     201: jsonDoc("The host.", HostObject),
     ...commonErrors,
     ...bodyErrors,
-    422: invalid,
+    422: invalidHost,
   },
 });
 
@@ -256,7 +282,7 @@ export const updateHostRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidHost,
   },
 });
 
@@ -299,7 +325,7 @@ export const createScheduleRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidSchedule,
   },
 });
 
@@ -349,7 +375,7 @@ export const updateScheduleRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidSchedule,
   },
 });
 
@@ -367,7 +393,9 @@ export const deleteScheduleRoute = createRoute({
     200: jsonDoc("Deleted.", DeletedSchedule),
     ...commonErrors,
     404: notFound,
-    422: invalid,
+    422: errorDoc(
+      "This is the host's default schedule (`invalid_schedule`): make another one the default first.",
+    ),
   },
 });
 
@@ -390,7 +418,7 @@ export const createEventTypeRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidEventType,
   },
 });
 
@@ -444,7 +472,7 @@ export const updateEventTypeRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidEventType,
   },
 });
 
@@ -460,7 +488,12 @@ export const listSlotsRoute = createRoute({
   security: [{ bearerAuth: [] }],
   middleware: read(),
   request: { params: EventTypeParams, query: SlotsQuery },
-  responses: { 200: jsonDoc("The slots.", SlotList), ...commonErrors, 404: notFound, 422: invalid },
+  responses: {
+    200: jsonDoc("The slots.", SlotList),
+    ...commonErrors,
+    404: notFound,
+    422: invalidWindow,
+  },
 });
 
 export const searchAvailabilityRoute = createRoute({
@@ -488,7 +521,7 @@ export const searchAvailabilityRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidWindow,
   },
 });
 
@@ -794,7 +827,7 @@ export const previewSeriesRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidWindow,
   },
 });
 
@@ -879,7 +912,7 @@ export const authorizeCalendarRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidCalendar,
   },
 });
 
@@ -906,7 +939,7 @@ export const createCalendarConnectionRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidCalendar,
   },
 });
 
@@ -983,7 +1016,10 @@ export const setSimulatedBusyRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: errorDoc(
+      "The body failed validation (`validation_error`, see `issues`), or this isn't a sandbox " +
+        "environment: simulated calendars only exist there (`calendar_unavailable`).",
+    ),
   },
 });
 
@@ -1019,7 +1055,10 @@ const CreatedSessionBody = z
 const CreateHostSessionRequest = z
   .strictObject({
     expires_in: SessionExpiry,
-    read_only: z.boolean().optional(),
+    read_only: z
+      .boolean()
+      .optional()
+      .meta({ description: "The host can look but not change anything." }),
   })
   .meta({ id: "CreateSchedulingHostSessionRequest", examples: [{ expires_in: 3600 }] });
 
@@ -1053,7 +1092,7 @@ export const createHostSessionRoute = createRoute({
   tags: [TAG_HOSTS],
   summary: "Create a host session",
   description:
-    "Lets one host manage their own hours and calendars, on coss.com's hosted page or your own UI. " +
+    "Lets one host manage their own hours, calendars and locations, on coss.com's hosted page or your own UI. " +
     "Send the `url` to their browser, or embed it with `coss/scheduling`.",
   security: [{ bearerAuth: [] }],
   middleware: writing("update", "POST /v1/scheduling/hosts/{host}/sessions"),
@@ -1142,7 +1181,11 @@ export const updateSettingsRoute = createRoute({
     200: jsonDoc("The settings.", SettingsObject),
     ...commonErrors,
     ...bodyErrors,
-    422: invalid,
+    422: errorDoc(
+      "The body failed validation (`validation_error`, see `issues`), the logo isn't a PNG or JPEG " +
+        "it can read (`invalid_logo`), an origin isn't https (`invalid_event_type`), or its text was " +
+        "refused (`content_refused`).",
+    ),
   },
 });
 

@@ -196,7 +196,7 @@ export type CheckVerificationRequestOutput = z.output<typeof CheckVerificationRe
 
 const VerificationSend = z
   .object({
-    channel: z.enum(VERIFY_CHANNELS),
+    channel: z.enum(VERIFY_CHANNELS).meta({ description: "`sms` or `email`." }),
     route: z.enum(VERIFY_SEND_ROUTES).meta({
       description:
         "`own_number`: one of your numbers; `shared_number`: coss.com's; `email`: your sender; `coss_email`: coss.com's sender.",
@@ -221,27 +221,40 @@ export const VerificationObject = z
   .object({
     object: z.literal("verification"),
     id: z.string().meta({ examples: [ID_EXAMPLE] }),
-    channel: z.enum(VERIFY_CHANNELS),
-    to: z.string(),
+    channel: z.enum(VERIFY_CHANNELS).meta({ description: "`sms` or `email`." }),
+    to: z.string().meta({ description: "The phone number (E.164) or address the code goes to." }),
     country: z.string().nullable().meta({ description: "ISO 3166 country of a phone number." }),
     status: z.enum(VERIFICATION_STATUSES).meta({
       description:
         "`pending` until the right code is checked (`approved`) or it ends: `expired`, `canceled`, `failed` (too many wrong codes, or the code couldn't be sent) or `blocked` (the fraud guard stopped it before anything was sent).",
     }),
     failure: z
-      .object({ code: z.string(), message: z.string() })
+      .object({
+        code: z.string().meta({ description: "Machine-readable reason." }),
+        message: z.string().meta({ description: "Human-readable explanation." }),
+      })
       .nullable()
       .meta({ description: "Why it `failed`." }),
     reasons: z.array(Reason).meta({ description: "Why it was `blocked` (empty otherwise)." }),
     attempts: z.number().int().meta({ description: "Wrong codes checked so far." }),
-    max_attempts: z.number().int(),
+    max_attempts: z.number().int().meta({ description: "How many wrong codes end it." }),
     sends: z.array(VerificationSend).meta({ description: "Each time the code was sent." }),
-    tags: z.array(z.object({ name: z.string(), value: z.string() })),
+    tags: z
+      .array(
+        z.object({
+          name: z.string().meta({ description: "The tag's name." }),
+          value: z.string().meta({ description: "The tag's value." }),
+        }),
+      )
+      .meta({ description: "Your tags on the verification." }),
     sandbox: z.boolean().meta({
       description: "Made in a sandbox environment: simulated, and the code is always zeros.",
     }),
-    expires_at: z.iso.datetime(),
-    approved_at: z.iso.datetime().nullable(),
+    expires_at: z.iso.datetime().meta({ description: "When the code stops working." }),
+    approved_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When the right code was checked. `null`: it wasn't." }),
     created_at: z.iso.datetime(),
   })
   .meta({
@@ -454,23 +467,44 @@ export const VerificationWebhookEvent = z
   .object({
     id: z.string(),
     object: z.literal("event"),
-    type: z.enum(VERIFY_WEBHOOK_EVENT_TYPES),
+    type: z
+      .enum(VERIFY_WEBHOOK_EVENT_TYPES)
+      .meta({ description: "What happened to the verification." }),
     api_version: z.string().meta({
       description: "The API version the payload is rendered in (your endpoint's version).",
       examples: [LATEST_API_VERSION],
     }),
-    created_at: z.iso.datetime(),
-    data: z.object({
-      verification_id: z.string(),
-      channel: z.enum(VERIFY_CHANNELS),
-      to: z.string(),
-      status: z.enum(VERIFICATION_STATUSES),
-      failure: z.object({ code: z.string(), message: z.string() }).nullable(),
-      reasons: z.array(Reason),
-      tags: z.array(z.object({ name: z.string(), value: z.string() })),
-      sandbox: z.boolean(),
-      occurred_at: z.iso.datetime(),
-    }),
+    created_at: z.iso.datetime().meta({ description: "When the event was created." }),
+    data: z
+      .object({
+        verification_id: z.string().meta({ description: "The verification's id." }),
+        channel: z.enum(VERIFY_CHANNELS).meta({ description: "`sms` or `email`." }),
+        to: z
+          .string()
+          .meta({ description: "The phone number (E.164) or address the code goes to." }),
+        status: z.enum(VERIFICATION_STATUSES).meta({ description: "Its status after this event." }),
+        failure: z
+          .object({
+            code: z.string().meta({ description: "Machine-readable reason." }),
+            message: z.string().meta({ description: "Human-readable explanation." }),
+          })
+          .nullable()
+          .meta({ description: "Why it `failed`. `null` otherwise." }),
+        reasons: z.array(Reason).meta({ description: "Why it was `blocked`. Empty otherwise." }),
+        tags: z
+          .array(
+            z.object({
+              name: z.string().meta({ description: "The tag's name." }),
+              value: z.string().meta({ description: "The tag's value." }),
+            }),
+          )
+          .meta({ description: "Your tags on the verification." }),
+        sandbox: z
+          .boolean()
+          .meta({ description: "Whether it's made in a sandbox environment: simulated." }),
+        occurred_at: z.iso.datetime().meta({ description: "When this happened." }),
+      })
+      .meta({ description: "The verification. Never its code." }),
   })
   .meta({
     id: "VerificationWebhookEvent",

@@ -15,7 +15,7 @@ export function signStore(): DocumentStore | null {
 /** The writes that touch documents' bytes; throws (for actions) while Sign is off. */
 export function signService(): SignService {
   const current = signStore();
-  if (!current) throw new ActionError("Sign isn't available yet.");
+  if (!current) throw new ActionError("Sign is temporarily unavailable.");
   return createSignService({ store: current });
 }
 

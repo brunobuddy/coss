@@ -103,12 +103,17 @@ export type { WebhookListenersResource } from "./resources/webhook-listeners.ts"
 export {
   describeSetup,
   fetchSetupReport,
+  type ProductSetup,
   SANDBOX_FROM,
+  SETUP_PRODUCTS,
   type SetupClient,
   type SetupDnsRecord,
   type SetupDomain,
+  type SetupFacts,
   type SetupInput,
+  type SetupProduct,
   type SetupReport,
+  type SetupSmsNumber,
   type SetupWebhookEndpoint,
   SIMULATOR_TO,
 } from "./setup.ts";

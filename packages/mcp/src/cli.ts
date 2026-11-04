@@ -10,7 +10,8 @@ import { relative } from "node:path";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { Coss } from "coss";
 import { readProjectApiKey } from "./project-env.ts";
-import { createCossMcpServer, TOOLSET_NAMES, type Toolset } from "./server.ts";
+import { createCossMcpServer, TOOLSET_NAMES } from "./server.ts";
+import { parseToolsets } from "./toolsets-env.ts";
 
 let apiKey = process.env.COSS_API_KEY?.trim();
 let baseUrl = process.env.COSS_BASE_URL?.trim() || undefined;
@@ -37,16 +38,12 @@ if (!apiKey) {
 
 const coss = apiKey ? new Coss({ apiKey, baseUrl }) : undefined;
 
-const asked = process.env.COSS_MCP_TOOLSETS?.split(",")
-  .map((name) => name.trim())
-  .filter(Boolean);
-const unknown = asked?.filter((name) => !TOOLSET_NAMES.includes(name as Toolset)) ?? [];
+const { toolsets, unknown } = parseToolsets(process.env.COSS_MCP_TOOLSETS);
 if (unknown.length > 0) {
   console.error(
     `coss-mcp: COSS_MCP_TOOLSETS has ${unknown.join(", ")}, which it ignores. It takes ${TOOLSET_NAMES.join(", ")}.`,
   );
 }
-const toolsets = asked?.filter((name): name is Toolset => TOOLSET_NAMES.includes(name as Toolset));
 
 serveStdio(() => createCossMcpServer({ coss, apiKey, ...(toolsets ? { toolsets } : {}) }), {
   onerror: (error) => console.error("coss-mcp:", error),

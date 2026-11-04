@@ -3,5 +3,5 @@
   "description": "Webhooks as a service: send each event once, and coss.com delivers it to your customers' endpoints.",
   "root": true,
   "icon": "Webhook",
-  "pages": ["index", "portal", "receiving", "delivery"]
+  "pages": ["index", "portal", "receiving", "delivery", "testing"]
 }

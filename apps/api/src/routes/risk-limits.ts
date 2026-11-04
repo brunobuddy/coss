@@ -145,6 +145,7 @@ export const getRiskLimitBucketRoute = createRoute({
   operationId: "getRiskLimitBucket",
   tags: ["Risk"],
   summary: "Retrieve a rate limit bucket",
+  description: "One of the rate limit buckets you defined for `POST /v1/risk/limit`.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ risk: ["read"] }), rateLimit("api.read")] as const,
   request: { params: BucketIdParams },

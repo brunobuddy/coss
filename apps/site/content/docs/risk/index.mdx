@@ -116,3 +116,12 @@ Assessments keep the email address, IP address and user agent (never content, on
 <RetentionPeriod of="risk_personal_data" />, then only keyed hashes of them; decisions, reasons and
 signals stay for <RetentionPeriod of="risk_assessments" />. When you delete one of your users, call
 `coss.risk.users.forget(userId)` (see [Forgetting users](/docs/risk/lists-and-feedback#forgetting-users)).
+
+## Tools
+
+- **CLI**: [`coss risk`](/docs/cli#risk) `assess`, `assessments`, `feedback` and `lists`.
+- **MCP server**: [coding agents](/docs/mcp#tools) get `assess_risk`, `get_risk_assessment`, `list_risk_assessments`,
+  `record_risk_feedback`, `add_risk_list_entry`, `check_email_risk`, `check_ip_risk`, `check_phone_risk`
+  and more.
+- **Other languages**: the [API reference](/docs/api-reference) shows every operation in Python, Go, Ruby,
+  PHP, Java and .NET.

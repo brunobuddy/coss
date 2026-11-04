@@ -53,6 +53,14 @@ Time is computed **only in Bun services** (api, worker), with `engine/time.ts`: 
 when this was written. Never compute slots in the dashboard or with SQL's `AT TIME ZONE`: the dashboard's preview
 embeds the booker. Local dates (overrides, limits) never pass through `Date`.
 
+The booking path computes slots, so the dashboard (Node) never calls `createBooking` or `rescheduleBooking`. It opens the
+hosted page in a tab through a session with `createdByUserId` (`openBookerAction`, `openBookingManagerAction`), and that
+session acts as the member (`sessionActor`), past attendees' cutoffs. A manage session made this way lasts an hour.
+`listRescheduleSlots` answers where a booking can move the way `rescheduleBooking` checks it: its own hosts (none disabled
+or taken off the event type), length and buffers, with its own claims left out. Change them together.
+A new event type field goes in the dashboard's form too
+(`apps/web/src/lib/scheduling-edit.ts`, `event-type-form.tsx`), or typecheck fails on the test fixtures there.
+
 ## Calendars
 
 - `CalendarClient` can't return a title: no method reads anything but busy intervals, and `scheduling_busy_interval`
@@ -108,6 +116,14 @@ embeds the booker. Local dates (overrides, limits) never pass through `Date`.
 A Meet or Teams link becomes a `link` location on the booking, stored with `conference` (stripped from the wire), so a
 new host gets a meeting of their own (`locationForNewHost`). A browser only chooses among an event type's `locations`
 (`locationFromBrowser`): it can't supply its own link or address.
+
+A `link`, `phone` or `in_person` location left blank takes the value of the booked host's `locations`, once a host has
+won (`withHostLocation`), and stays blank if they have none: nobody loses availability over it. It's stored with
+`fromHost` (stripped from the wire, like `conference`), so a move to another host never keeps the old host's office. A
+booking is a snapshot: editing a host only reaches new bookings. Hosts set these themselves from their page, and they
+land in attendees' emails, so `hosts.ts` refuses links in addresses and screens new addresses and URLs; a phone number
+is E.164, with no room to say anything. An event type's own locations get the same checks when set. Links must be
+https, but a booking can hold an older one, so `Where` (`apps/scheduling`) never puts anything but a web link in an `href`.
 
 ## Sessions and the client API
 

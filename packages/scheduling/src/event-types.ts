@@ -18,7 +18,7 @@ import type {
   EventTypeObjectOutput,
   UpdateEventTypeRequestOutput,
 } from "./schemas.ts";
-import { refuseLinks, screenSetup } from "./screening.ts";
+import { locationText, refuseLinks, refuseLinksInAddresses, screenSetup } from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
 const {
@@ -276,6 +276,11 @@ const uidTaken = (uid: string | null | undefined) =>
     param: "uid",
   });
 
+/** Addresses and links land in attendees' emails, where nothing screens them per email. */
+function locationsText(locations: readonly Parameters<typeof locationText>[0][] | undefined) {
+  return (locations ?? []).map(locationText).filter(Boolean).join("\n");
+}
+
 function setupText(values: {
   title?: string | undefined;
   questions?: readonly { label: string; options: readonly string[] }[] | undefined;
@@ -365,9 +370,11 @@ export async function createEventType(
   opts: ReminderChecks = {},
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
+  refuseLinksInAddresses(params.locations);
   await screenSetup(env, setupText(params), opts.screen, "title");
   const reminders = params.reminders ? normalizeReminders(params.reminders) : null;
   if (reminders) await checkReminders(env, reminders, await emailFromOf(env), opts);
+  await screenSetup(env, locationsText(params.locations), opts.screen, "locations");
   await checkHostCalendarDetails(env.environmentId, params.host_calendar_details);
   checkShape(
     {
@@ -440,7 +447,12 @@ export async function getEventType(scope: Scope, ref: string): Promise<EventType
 
 export async function listEventTypes(
   scope: Scope,
-  query: { limit: number; after?: string | undefined },
+  query: {
+    limit: number;
+    after?: string | undefined;
+    /** Only those this host is assigned to by name. */
+    hostId?: string | undefined;
+  },
 ): Promise<{ data: EventTypeObjectOutput[]; hasMore: boolean }> {
   const rows = await db
     .select()
@@ -450,6 +462,13 @@ export async function listEventTypes(
         eq(schedulingEventType.organizationId, scope.organizationId),
         eq(schedulingEventType.environmentId, scope.environmentId),
         query.after ? lt(schedulingEventType.id, query.after) : undefined,
+        query.hostId
+          ? sql`exists (select 1 from ${schedulingEventTypeHost}
+              where ${schedulingEventTypeHost.eventTypeId} = ${schedulingEventType.id}
+                and ${schedulingEventTypeHost.hostId} = ${query.hostId}
+                and ${schedulingEventTypeHost.assigned}
+                and ${schedulingEventTypeHost.removedAt} is null)`
+          : undefined,
       ),
     )
     .orderBy(desc(schedulingEventType.id))
@@ -481,6 +500,23 @@ export async function listEventTypes(
   };
 }
 
+/** Every active event type by name, for choosing one to book: no hosts, and no page to fall off. */
+export async function listBookableEventTypes(
+  scope: Scope,
+): Promise<{ id: string; title: string }[]> {
+  return db
+    .select({ id: schedulingEventType.id, title: schedulingEventType.title })
+    .from(schedulingEventType)
+    .where(
+      and(
+        eq(schedulingEventType.organizationId, scope.organizationId),
+        eq(schedulingEventType.environmentId, scope.environmentId),
+        eq(schedulingEventType.status, "active"),
+      ),
+    )
+    .orderBy(asc(schedulingEventType.title), asc(schedulingEventType.id));
+}
+
 export async function updateEventType(
   scope: Scope & { mode?: "live" | "sandbox" },
   ref: string,
@@ -488,6 +524,7 @@ export async function updateEventType(
   opts: ReminderChecks = {},
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
+  refuseLinksInAddresses(params.locations);
   await checkHostCalendarDetails(scope.environmentId, params.host_calendar_details);
   if (scope.mode && (params.title !== undefined || params.questions !== undefined)) {
     await screenSetup(
@@ -505,6 +542,14 @@ export async function updateEventType(
       reminders,
       await emailFromOf(scope),
       opts,
+    );
+  }
+  if (scope.mode) {
+    await screenSetup(
+      { organizationId: scope.organizationId, mode: scope.mode },
+      locationsText(params.locations),
+      opts.screen,
+      "locations",
     );
   }
   try {

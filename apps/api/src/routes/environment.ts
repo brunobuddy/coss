@@ -24,28 +24,30 @@ export const EnvironmentObject = z
   .strictObject({
     object: z.literal("environment"),
     id: z.string().meta({ description: "The environment's id." }),
-    name: z.string(),
-    slug: z.string(),
+    name: z.string().meta({ description: "The environment's name." }),
+    slug: z.string().meta({ description: "The environment's slug, as in dashboard URLs." }),
     mode: z.enum(["live", "sandbox"]).meta({
       description: "`live` delivers email; `sandbox` (`coss_test_` keys) never does.",
     }),
-    project: Named("project"),
-    organization: Named("organization").extend({
-      api_version: z.string().meta({
-        description:
-          "The organization's pinned API version: what requests without a `Coss-Version` header " +
-          "and new webhook endpoints get.",
-      }),
-      hipaa_mode: z.boolean().meta({
-        description:
-          "Whether the organization is in HIPAA mode, which refuses some requests with " +
-          "`hipaa_mode_restriction`. Its compliance settings page lists what the mode changes.",
-      }),
-    }),
+    project: Named("project").meta({ description: "The project it belongs to." }),
+    organization: Named("organization")
+      .extend({
+        api_version: z.string().meta({
+          description:
+            "The organization's pinned API version: what requests without a `Coss-Version` header " +
+            "and new webhook endpoints get.",
+        }),
+        hipaa_mode: z.boolean().meta({
+          description:
+            "Whether the organization is in HIPAA mode, which refuses some requests with " +
+            "`hipaa_mode_restriction`. Its compliance settings page lists what the mode changes.",
+        }),
+      })
+      .meta({ description: "The organization it belongs to." }),
     api_key: z
       .strictObject({
         id: z.string().meta({ description: "The key's id." }),
-        name: z.string().nullable(),
+        name: z.string().nullable().meta({ description: "The key's name. `null`: none." }),
         start: z
           .string()
           .nullable()

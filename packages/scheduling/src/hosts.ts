@@ -9,10 +9,17 @@ import { isValidTimeZone } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import type {
   CreateHostRequestOutput,
+  HostLocationOutput,
   HostObjectOutput,
   UpdateHostRequestOutput,
 } from "./schemas.ts";
-import { refuseLinks, type SetupScreening, screenSetup } from "./screening.ts";
+import {
+  locationText,
+  refuseLinks,
+  refuseLinksInAddresses,
+  type SetupScreening,
+  screenSetup,
+} from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
 const { schedulingBooking, schedulingBookingHost, schedulingClaim, schedulingHost } = schema;
@@ -38,11 +45,27 @@ export function toHostObject(row: HostRow): HostObjectOutput {
     phone: row.phone,
     time_zone: row.timeZone,
     attributes: row.attributes,
+    locations: row.locations,
     metadata: row.metadata,
     status: row.status,
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
   };
+}
+
+/** A value already on the host passed when it was set: saving the same list again costs nothing. */
+async function screenLocations(
+  env: { organizationId: string; mode: "live" | "sandbox" },
+  locations: readonly HostLocationOutput[] | undefined,
+  screen: SetupScreening | undefined,
+  existing: readonly HostLocationOutput[] = [],
+): Promise<void> {
+  const known = new Set(existing.map(locationText));
+  const text = (locations ?? [])
+    .map(locationText)
+    .filter((value) => value !== null && !known.has(value))
+    .join("\n");
+  await screenSetup(env, text, screen, "locations");
 }
 
 function hostMatch(scope: Scope, ref: string) {
@@ -79,7 +102,9 @@ export async function createHost(
 ): Promise<HostObjectOutput> {
   checkTimeZone(params.time_zone, "time_zone");
   refuseLinks(params.name, "name");
+  refuseLinksInAddresses(params.locations);
   await screenSetup(env, params.name, opts.screen, "name");
+  await screenLocations(env, params.locations, opts.screen);
   try {
     const [row] = await db
       .insert(schedulingHost)
@@ -93,6 +118,7 @@ export async function createHost(
         phone: params.phone ?? null,
         timeZone: params.time_zone,
         attributes: params.attributes ?? {},
+        locations: params.locations ?? [],
         metadata: params.metadata ?? {},
       })
       .returning();
@@ -137,6 +163,7 @@ export async function updateHost(
 ): Promise<HostObjectOutput> {
   if (params.time_zone) checkTimeZone(params.time_zone, "time_zone");
   refuseLinks(params.name, "name");
+  refuseLinksInAddresses(params.locations);
   if (scope.mode && params.name) {
     await screenSetup(
       { organizationId: scope.organizationId, mode: scope.mode },
@@ -146,6 +173,14 @@ export async function updateHost(
     );
   }
   const host = await resolveHost(db, scope, ref);
+  if (scope.mode) {
+    await screenLocations(
+      { organizationId: scope.organizationId, mode: scope.mode },
+      params.locations,
+      opts.screen,
+      host.locations,
+    );
+  }
   try {
     const [row] = await db
       .update(schedulingHost)
@@ -156,6 +191,7 @@ export async function updateHost(
         ...(params.phone !== undefined ? { phone: params.phone } : {}),
         ...(params.time_zone !== undefined ? { timeZone: params.time_zone } : {}),
         ...(params.attributes !== undefined ? { attributes: params.attributes } : {}),
+        ...(params.locations !== undefined ? { locations: params.locations } : {}),
         ...(params.metadata !== undefined ? { metadata: params.metadata } : {}),
         ...(params.status !== undefined ? { status: params.status } : {}),
       })

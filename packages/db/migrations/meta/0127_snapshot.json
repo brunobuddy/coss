@@ -1,5 +1,5 @@
 {
-  "id": "9ccd1b36-d982-4195-b9ff-25f1f992eb72",
+  "id": "d09f1f6e-9294-45c3-8700-b4db33285970",
   "prevId": "b2ce9d5e-da75-4d24-9428-00a6111ab223",
   "version": "7",
   "dialect": "postgresql",
@@ -22863,12 +22863,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "reminders": {
-          "name": "reminders",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "metadata": {
           "name": "metadata",
           "type": "jsonb",
@@ -23321,12 +23315,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "phone": {
-          "name": "phone",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "time_zone": {
           "name": "time_zone",
           "type": "text",
@@ -23346,6 +23334,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'::jsonb"
+        },
+        "locations": {
+          "name": "locations",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "status": {
           "name": "status",
@@ -23698,30 +23693,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "reminder_key": {
-          "name": "reminder_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reminder_anchor": {
-          "name": "reminder_anchor",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reminder_offset_minutes": {
-          "name": "reminder_offset_minutes",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "anchor_at": {
-          "name": "anchor_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "dedupe_key": {
           "name": "dedupe_key",
           "type": "text",
@@ -23958,115 +23929,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.scheduling_reminder_sync": {
-      "name": "scheduling_reminder_sync",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "organization_id": {
-          "name": "organization_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "environment_id": {
-          "name": "environment_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "event_type_id": {
-          "name": "event_type_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cursor_start_at": {
-          "name": "cursor_start_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cursor_booking_id": {
-          "name": "cursor_booking_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "lease_until": {
-          "name": "lease_until",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "scheduling_reminder_sync_environment_idx": {
-          "name": "scheduling_reminder_sync_environment_idx",
-          "columns": [
-            {
-              "expression": "environment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "scheduling_reminder_sync_environment_fk": {
-          "name": "scheduling_reminder_sync_environment_fk",
-          "tableFrom": "scheduling_reminder_sync",
-          "tableTo": "environment",
-          "columnsFrom": [
-            "environment_id",
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id",
-            "organization_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "scheduling_reminder_sync_event_type_fk": {
-          "name": "scheduling_reminder_sync_event_type_fk",
-          "tableFrom": "scheduling_reminder_sync",
-          "tableTo": "scheduling_event_type",
-          "columnsFrom": [
-            "event_type_id",
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id",
-            "organization_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -24743,12 +24605,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "email_reply_to": {
-          "name": "email_reply_to",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "sms_from": {
           "name": "sms_from",
           "type": "text",
@@ -24757,12 +24613,6 @@
         },
         "notifications": {
           "name": "notifications",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reminders": {
-          "name": "reminders",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -31015,8 +30865,7 @@
       "schema": "public",
       "values": [
         "email",
-        "sms",
-        "webhook"
+        "sms"
       ]
     },
     "public.scheduling_notification_recipient": {
@@ -31024,9 +30873,7 @@
       "schema": "public",
       "values": [
         "attendee",
-        "host",
-        "endpoint",
-        "address"
+        "host"
       ]
     },
     "public.scheduling_session_kind": {

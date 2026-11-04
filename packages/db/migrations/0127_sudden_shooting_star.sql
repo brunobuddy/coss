@@ -1,0 +1,1 @@
+ALTER TABLE "scheduling_host" ADD COLUMN "locations" jsonb DEFAULT '[]'::jsonb NOT NULL;

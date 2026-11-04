@@ -19,6 +19,21 @@ export const BOOKING_STATUS_LABEL = {
   declined: "Declined",
 } as const satisfies Record<BookingStatus, string>;
 
+export const EVENT_TYPE_KIND_LABEL = {
+  one_on_one: "One host",
+  pool: "Pool",
+  collective: "Collective",
+  group: "Group session",
+} as const;
+
+export function EventTypeStatusDot({ status }: { status: "active" | "archived" }) {
+  return (
+    <StatusDot tone={status === "active" ? "success" : "neutral"}>
+      {status === "active" ? "Active" : "Archived"}
+    </StatusDot>
+  );
+}
+
 export function BookingStatusDot({ status }: { status: BookingStatus }) {
   return <StatusDot tone={BOOKING_TONE[status]}>{BOOKING_STATUS_LABEL[status]}</StatusDot>;
 }

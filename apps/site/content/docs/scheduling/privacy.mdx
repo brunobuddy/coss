@@ -10,6 +10,8 @@ description: What's stored about attendees, for how long, and what to know about
   attendee simply isn't emailed. Contact details and answers are encrypted, and a `uid` of your own lets you
   find and erase someone.
 - **About guests:** the email and optional name given when booking, encrypted the same way.
+- **About hosts:** what you or they set, including any [locations](/docs/scheduling/hosts#locations). A
+  booking keeps a copy of its location, shown to its attendees, until its details are erased.
 - **In logs and webhooks:** ids, times and statuses. Request bodies of bookings aren't logged.
 - **On hosts' calendars:** a neutral event, unless you ask for [more](/docs/scheduling/calendars#what-cosscom-reads-and-writes).
 
@@ -45,7 +47,7 @@ record, keep them in your own systems.
 <Callout type="warn">
 Our [Terms](/legal/terms) don't allow protected health information without a written agreement. A doctor, a
 patient and a time can be health data on their own, so please talk to us before using Scheduling for patients: we
-sign a Business Associate Agreement and turn on HIPAA mode for your organization.
+sign a Business Associate Agreement and turn on [HIPAA mode](/docs/hipaa) for your organization.
 </Callout>
 
 Scheduling is built so it can hold that data safely, and you can reduce what it holds today: use opaque `uid`s

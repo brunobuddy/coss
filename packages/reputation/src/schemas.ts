@@ -287,15 +287,23 @@ export const ReputationObject = z
       description: "The trigger behind a `warning` or `suspended` status.",
       example: "complaint_rate",
     }),
-    status_changed_at: z.iso.datetime().nullable(),
+    status_changed_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When `status` last changed. `null`: it never has." }),
     evaluated_at: z.iso.datetime().nullable().meta({
       description: "When the checks below were computed; `null` before the first evaluation.",
     }),
     window: z
-      .object({ start: z.iso.datetime(), end: z.iso.datetime() })
+      .object({
+        start: z.iso.datetime().meta({ description: "When the period starts." }),
+        end: z.iso.datetime().meta({ description: "When the period ends." }),
+      })
       .nullable()
       .meta({ description: "The period the checks cover (live environments only)." }),
-    checks: z.array(ReputationCheckObject),
+    checks: z
+      .array(ReputationCheckObject)
+      .meta({ description: "The measurements behind `status`." }),
     marketing: MarketingStandingObject,
   })
   .meta({ id: "Reputation" });

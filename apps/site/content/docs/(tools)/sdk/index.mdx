@@ -26,6 +26,166 @@ const coss = new Coss({ apiKey: process.env.COSS_API_KEY });
 
 Hover any identifier in these examples to see its type.
 
+## Products
+
+The same client reaches every product. A short example of each, with its guide:
+
+### Email
+
+[Sending](/docs/email/sending), and [broadcasts](/docs/email/broadcasts) to a whole audience or segment:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.email.send({
+  from: "Acme <hello@acme.com>",
+  to: "ada@example.com",
+  subject: "Welcome",
+  html: "<p>It works!</p>",
+});
+
+const { data: broadcast } = await coss.email.broadcasts.create({
+  name: "October newsletter",
+  segment_id: "seg_01k7c8m4q2f3e9v6t5r1n0p8yz",
+  from: "Acme <news@acme.com>",
+  subject: "What's new",
+  html: "<p>Hi {{{contact.first_name|there}}}</p>",
+});
+await coss.email.broadcasts.send(broadcast!.id);
+```
+
+### SMS
+
+[Text messages](/docs/sms) from your organization's numbers:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: sms } = await coss.sms.send({
+  from: "+14155550123",
+  to: "+14155550199",
+  body: "Your order has shipped.",
+});
+```
+
+### Verify
+
+[One-time codes](/docs/verify) by SMS or email:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.verify.start({ to: "+14155550123" });
+const { data: check } = await coss.verify.check({ to: "+14155550123", code: "482913" });
+console.log(check?.valid);
+```
+
+### Sign
+
+[E-signatures](/docs/sign) on your PDFs, embedded or by email:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const pdfBase64: string;
+// ---cut---
+const { data: request } = await coss.sign.requests.create({
+  title: "Services agreement",
+  documents: [{ filename: "agreement.pdf", content: pdfBase64 }],
+  signers: [
+    {
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      fields: [{ type: "signature", anchor: "{{signature:signer_1}}" }],
+    },
+  ],
+});
+```
+
+### Forms
+
+[Form endpoints](/docs/forms) for your site, with spam filtering and delivery built in:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: form } = await coss.forms.create({
+  name: "Contact us",
+  notifications: { recipients: ["support@example.com"] },
+});
+console.log(form?.endpoint);
+```
+
+### Scheduling
+
+[Bookings](/docs/scheduling) with your users' calendars and double-booking handled:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const eventTypeId: string;
+// ---cut---
+const { data: slots } = await coss.scheduling.slots.list(eventTypeId, {
+  start: "2027-01-04T00:00:00Z",
+  end: "2027-01-11T00:00:00Z",
+});
+
+const { data: booking } = await coss.scheduling.bookings.create({
+  event_type: eventTypeId,
+  start: slots!.data[0]!.start,
+  attendee: { name: "Sam Lee", email: "sam@example.com", time_zone: "America/Chicago" },
+});
+```
+
+### Inboxes
+
+[Email addresses for AI agents](/docs/inboxes), with threads and replies:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const messageId: string;
+// ---cut---
+const { data: inbox } = await coss.inboxes.create({ username: "support-agent" });
+
+await coss.inboxes.messages.reply(inbox!.id, messageId, { text: "On it." });
+```
+
+### Hooks
+
+[Webhooks as a service](/docs/hooks), delivered to your customers' endpoints:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: message } = await coss.hooks.messages.send({
+  application: "customer_8812",
+  event_type: "invoice.paid",
+  payload: { invoice_id: "in_1042", amount: 4200 },
+});
+```
+
+### Risk
+
+[Risk assessments](/docs/risk) of sign-ups, logins and other events:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: assessment } = await coss.risk.assess({
+  event: "signup",
+  user: { email: "ada@example.com" },
+  ip: "203.0.113.7",
+});
+console.log(assessment?.decision, assessment?.reasons);
+```
+
 ## Options
 
 ```ts twoslash
@@ -117,6 +277,12 @@ revision). `responseType: "text"` or
 its cause), account problems that affect it and what to do next. `diagnose` reads the email, its
 events and the account context it needs; `diagnoseEmail` is the pure part, for data you already
 have. The CLI's `coss emails diagnose` and the MCP server's `diagnose_email` use it too.
+
+The other products have the same: `fetchSmsDiagnosis`, `fetchVerificationDiagnosis`,
+`fetchSignRequestDiagnosis`, `fetchFormSubmissionDiagnosis`, `fetchHookDeliveryDiagnosis` and
+`fetchSchedulingSlotsDiagnosis` read what they need and answer with a verdict, a summary and next
+steps, and `diagnoseSms`, `diagnoseVerification`, `diagnoseSignRequest`, `diagnoseFormSubmission`,
+`diagnoseHookDelivery` and `diagnoseSchedulingSlots` are their pure parts.
 
 ```ts twoslash
 import { Coss } from "coss";
