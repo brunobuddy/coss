@@ -136,14 +136,15 @@ export function reminderKeyOf(rule: {
   return `${rule.anchor}-after-${rule.after_minutes ?? 0}`;
 }
 
-const VARIABLE = /\{\{\s*([^{}]*?)\s*\}\}/g;
+// The name's spaces are trimmed after matching: matching them here backtracks badly on long runs.
+const VARIABLE = /\{\{([^{}]*)\}\}/g;
 
 export const URL_LIKE =
   /https?:\/\/|www\.|(?<![a-z0-9-])[a-z0-9-]+\.(com|net|org|io|ru|xyz|top|info|biz|co)\b/i;
 
 /** The names used in this text, in order. */
 export function reminderVariablesIn(text: string): string[] {
-  return [...text.matchAll(VARIABLE)].map((match) => match[1] ?? "");
+  return [...text.matchAll(VARIABLE)].map((match) => (match[1] ?? "").trim());
 }
 
 /** What's wrong with this text's variables; `allowed` narrows the catalog. */
@@ -162,7 +163,7 @@ export function reminderCopyProblem(
 
 /** Single pass: a value holding `{{…}}` stays text. */
 export function renderReminderCopy(text: string, values: ReminderValues): string {
-  return text.replace(VARIABLE, (_, name: string) => values[name as ReminderVariable] ?? "");
+  return text.replace(VARIABLE, (_, name: string) => values[name.trim() as ReminderVariable] ?? "");
 }
 
 /**

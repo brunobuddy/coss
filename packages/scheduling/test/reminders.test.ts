@@ -31,6 +31,7 @@ import {
 } from "../src/index.ts";
 import {
   REMINDER_SAMPLE_VALUES,
+  reminderVariablesIn,
   renderReminderCopy,
   safeName,
   timeUntil,
@@ -1031,6 +1032,18 @@ describe("the customer's own words", () => {
     for (const part of [email?.subject, email?.text, email?.html]) {
       expect(part).not.toContain("evil.com");
     }
+  });
+
+  test("spaces inside the braces are fine, and a long run of them costs nothing", () => {
+    expect(renderReminderCopy("Hi {{ attendee_first_name }}", REMINDER_SAMPLE_VALUES)).toBe(
+      "Hi Sam",
+    );
+    expect(reminderVariablesIn("{{  date\t}}")).toEqual(["date"]);
+    const started = performance.now();
+    const hostile = `{{${"\t".repeat(100_000)}`;
+    expect(renderReminderCopy(hostile, REMINDER_SAMPLE_VALUES)).toBe(hostile);
+    expect(reminderVariablesIn(hostile)).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(200);
   });
 
   test("a value holding {{…}} stays text", () => {
