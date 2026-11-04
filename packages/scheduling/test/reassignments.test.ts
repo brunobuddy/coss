@@ -545,6 +545,36 @@ describe("who they go to", () => {
     expect(moved[0]).not.toEqual([a.id]);
   });
 
+  test("undoing a session whose first seat has cancelled still gives it back", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const type = await createEventType(env, {
+      title: "Class",
+      kind: "group",
+      duration_minutes: 30,
+      capacity: 5,
+      hosts: [member(a)],
+    } as never);
+    const seat = (uid: string) =>
+      createBooking(
+        env,
+        { eventType: type.id, startMs: at("10:00"), attendee: { ...attendee, uid }, host: a.id },
+        plain,
+        actor,
+      ).then((result) => result.booking);
+    const seats = [await seat("one"), await seat("two")].sort((x, y) => (x.id < y.id ? -1 : 1));
+    const { reassignment } = await start(
+      env,
+      request({ host: a.id }, { to_host: b.id }, { overrides: ["any_host"], note: "Cover" }),
+    );
+    await drain(env);
+    expect(await hostsOf(seats[1]?.id as string)).toEqual([b.id]);
+    await cancelBooking(env, seats[0]?.id as string, plain, actor);
+    await undoReassignment(env, reassignment.id, {}, plain, actor);
+    await drain(env);
+    expect(await hostsOf(seats[1]?.id as string)).toEqual([a.id]);
+  });
+
   test("a group session is one item, and every seat moves", async () => {
     const env = await environment();
     const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);

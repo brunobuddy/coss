@@ -5,3 +5,26 @@ export function chosenTarget(
 ): string | null {
   return item.booking in choices ? (choices[item.booking] ?? null) : item.to_host;
 }
+
+/** What can be asked to go past. Anything else about a host can't be, like already being booked. */
+const OVERRIDABLE = new Set([
+  "out_of_office",
+  "outside_availability",
+  "host_busy",
+  "limit_reached",
+  "calendar_unverified",
+]);
+
+/** What choosing someone means going past: someone covering, outside it, is taking it as anyone. */
+export function overridesFor(candidate: {
+  member: boolean;
+  available: boolean;
+  reason: string | null;
+}): string[] {
+  const overrides: string[] = [];
+  if (!candidate.member || candidate.reason === "outside_coverage") overrides.push("any_host");
+  if (!candidate.available && candidate.reason && OVERRIDABLE.has(candidate.reason)) {
+    overrides.push(candidate.reason);
+  }
+  return overrides;
+}

@@ -637,6 +637,37 @@ describe("existing bookings", () => {
     expect(JSON.stringify(conflicts.data)).not.toContain("Sam Lee");
   });
 
+  test("a request whose time to approve has run out isn't in the way", async () => {
+    const env = await environment();
+    const doctor = await host(env);
+    const eventType = await createEventType(env, {
+      title: "Call",
+      kind: "one_on_one",
+      duration_minutes: 30,
+      hosts: [{ host: doctor.id, role: "member", weight: 100, schedule: null }],
+      requires_approval: true,
+    } as never);
+    const { booking } = await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("12:00"), attendee },
+      plain,
+      actor,
+    );
+    const [entry] = await away(env, { host: doctor.id, start: iso("09:00"), end: iso("17:00") });
+    const conflicts = () =>
+      listOutOfOfficeConflicts(env, entry?.id as string, { limit: 10 }, plain);
+    // Its deadline comes from the database's clock, and this test's is fixed.
+    const deadline = (at: Date) =>
+      db
+        .update(schema.schedulingBooking)
+        .set({ approvalExpiresAt: at })
+        .where(eq(schema.schedulingBooking.id, booking.id));
+    await deadline(new Date(NOW.getTime() + 60_000));
+    expect((await conflicts()).data.map((conflict) => conflict.booking)).toEqual([booking.id]);
+    await deadline(new Date(NOW.getTime() - 1000));
+    expect((await conflicts()).data).toEqual([]);
+  });
+
   test("a hold counts while it lasts, and a booking outside the entry never does", async () => {
     const env = await environment();
     const doctor = await host(env);

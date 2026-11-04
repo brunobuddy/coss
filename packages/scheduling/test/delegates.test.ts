@@ -613,6 +613,29 @@ describe("saying who", () => {
     expect(possible.map((entry) => entry.id)).not.toContain(b.id);
   });
 
+  test("a pool staffed by a filter counts, unless someone's been taken off it by name", async () => {
+    const env = await environment();
+    const heart = { attributes: { team: "heart" } };
+    const [a, b, c, gone] = await Promise.all([
+      host(env, "A", heart),
+      host(env, "B", heart),
+      host(env, "C", { attributes: { team: "skin" } }),
+      host(env, "Gone", heart),
+    ]);
+    const type = await eventType(env, "pool", [], { host_filter: { team: "heart" } });
+    await db.insert(schema.schedulingEventTypeHost).values({
+      eventTypeId: type.id,
+      hostId: gone.id,
+      organizationId: env.organizationId,
+      assigned: false,
+      removedAt: new Date(),
+    });
+    const possible = await listPossibleDelegates(env, a.id);
+    expect(possible).toEqual([{ id: b.id, name: "B" }]);
+    expect(await listPossibleDelegates(env, c.id)).toEqual([]);
+    expect(await listPossibleDelegates(env, gone.id)).toEqual([]);
+  });
+
   test("a host can name only those who take the same event types", async () => {
     const env = await environment();
     const [a, b, c] = await Promise.all([host(env, "A"), host(env, "B"), host(env, "C")]);

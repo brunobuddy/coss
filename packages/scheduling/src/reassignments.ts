@@ -563,15 +563,21 @@ export async function undoReassignment(
           onlyHosts.has(item.toHostId),
       )
     : items;
+  const seatOf = await liveSeats(
+    env,
+    moved.map((item) => item.bookingId),
+    nowOf(deps),
+  );
+  const standIn = (bookingId: string) => seatOf.get(bookingId) ?? bookingId;
   const row = await queueReassignment(db, {
     organizationId: env.organizationId,
     projectId: env.projectId,
     environmentId: env.environmentId,
-    selection: { booking_ids: moved.map((item) => item.bookingId) },
+    selection: { booking_ids: moved.map((item) => standIn(item.bookingId)) },
     strategy: {
       kind: "assignments",
       assignments: moved.map((item) => ({
-        booking_id: item.bookingId,
+        booking_id: standIn(item.bookingId),
         to_host_id: item.fromHostId as string,
         ...(item.toHostId ? { from_host_id: item.toHostId } : {}),
       })),
@@ -585,6 +591,57 @@ export async function undoReassignment(
     actor,
   });
   return toObject(row, await countsOf(db, row));
+}
+
+/**
+ * A run moves a session through one of its seats, which may have cancelled since, leaving the others
+ * with the host it moved them to. Another seat stands for the session instead.
+ */
+async function liveSeats(
+  env: Scope,
+  bookingIds: readonly string[],
+  now: Date,
+): Promise<ReadonlyMap<string, string>> {
+  if (bookingIds.length === 0) return new Map();
+  const seats = await db
+    .select({ id: schedulingBooking.id, sessionId: schedulingBooking.groupSessionId })
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.organizationId, env.organizationId),
+        eq(schedulingBooking.environmentId, env.environmentId),
+        inArray(schedulingBooking.id, [...bookingIds]),
+        isNotNull(schedulingBooking.groupSessionId),
+      ),
+    );
+  const sessionIds = seats.flatMap((seat) => (seat.sessionId ? [seat.sessionId] : []));
+  if (sessionIds.length === 0) return new Map();
+  const live = await db
+    .select({ id: schedulingBooking.id, sessionId: schedulingBooking.groupSessionId })
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.organizationId, env.organizationId),
+        inArray(schedulingBooking.groupSessionId, sessionIds),
+        inArray(schedulingBooking.status, ["confirmed", "pending_approval", "held"]),
+        or(isNull(schedulingBooking.holdExpiresAt), gt(schedulingBooking.holdExpiresAt, now)),
+        or(
+          isNull(schedulingBooking.approvalExpiresAt),
+          gt(schedulingBooking.approvalExpiresAt, now),
+        ),
+      ),
+    )
+    .orderBy(asc(schedulingBooking.id));
+  const firstOf = new Map<string, string>();
+  for (const seat of live) {
+    if (seat.sessionId && !firstOf.has(seat.sessionId)) firstOf.set(seat.sessionId, seat.id);
+  }
+  const standIns = new Map<string, string>();
+  for (const seat of seats) {
+    const first = seat.sessionId ? firstOf.get(seat.sessionId) : undefined;
+    if (first) standIns.set(seat.id, first);
+  }
+  return standIns;
 }
 
 /** A preview's fairest may be anyone, and it only proposes people the team reaches anyway. */

@@ -199,6 +199,13 @@ describe("the event type form", () => {
     expect(changes).toEqual({ max_guests: 5, host_calendar_details: "neutral" });
   });
 
+  test("whether a booking can go to another host is one of the form's", () => {
+    const state = eventTypeFormState(EVENT_TYPE);
+    expect(state.reassignmentEnabled).toBe(true);
+    state.reassignmentEnabled = false;
+    expect(eventTypePayload(state, "pool").reassignment_enabled).toBe(false);
+  });
+
   test("a group never sends guests, which the API would refuse", () => {
     const state = eventTypeFormState(EVENT_TYPE);
     state.maxGuests = "4";

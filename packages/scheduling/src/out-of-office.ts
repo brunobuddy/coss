@@ -265,38 +265,80 @@ export async function listPossibleDelegates(
   scope: Scope,
   hostId: string,
 ): Promise<{ id: string; name: string }[]> {
-  const rows = await db
-    .select({ eventTypeId: schedulingEventTypeHost.eventTypeId })
-    .from(schedulingEventTypeHost)
+  const hosts = await db
+    .select({
+      id: schedulingHost.id,
+      name: schedulingHost.name,
+      attributes: schedulingHost.attributes,
+    })
+    .from(schedulingHost)
     .where(
       and(
-        eq(schedulingEventTypeHost.organizationId, scope.organizationId),
-        eq(schedulingEventTypeHost.hostId, hostId),
-        eq(schedulingEventTypeHost.assigned, true),
-        isNull(schedulingEventTypeHost.removedAt),
+        eq(schedulingHost.organizationId, scope.organizationId),
+        eq(schedulingHost.environmentId, scope.environmentId),
+        eq(schedulingHost.status, "active"),
+      ),
+    );
+  const me = hosts.find((host) => host.id === hostId);
+  if (!me) return [];
+  const eventTypes = await db
+    .select({
+      id: schedulingEventType.id,
+      kind: schedulingEventType.kind,
+      hostFilter: schedulingEventType.hostFilter,
+    })
+    .from(schedulingEventType)
+    .where(
+      and(
+        eq(schedulingEventType.organizationId, scope.organizationId),
+        eq(schedulingEventType.environmentId, scope.environmentId),
+        eq(schedulingEventType.status, "active"),
       ),
     )
     .limit(MAX_EVENT_TYPES_TO_ASK);
-  if (rows.length === 0) return [];
-  const peers = await db
-    .select({ id: schedulingHost.id, name: schedulingHost.name })
+  // A pool's filter takes whoever matches now, and most of them have no row saying so. A row says
+  // who's named, and who's been taken off by name, which no filter overrides.
+  const memberships = await db
+    .select({
+      eventTypeId: schedulingEventTypeHost.eventTypeId,
+      hostId: schedulingEventTypeHost.hostId,
+      assigned: schedulingEventTypeHost.assigned,
+      removedAt: schedulingEventTypeHost.removedAt,
+    })
     .from(schedulingEventTypeHost)
-    .innerJoin(schedulingHost, eq(schedulingHost.id, schedulingEventTypeHost.hostId))
     .where(
       and(
         eq(schedulingEventTypeHost.organizationId, scope.organizationId),
         inArray(
           schedulingEventTypeHost.eventTypeId,
-          rows.map((row) => row.eventTypeId),
+          eventTypes.map((eventType) => eventType.id),
         ),
-        eq(schedulingEventTypeHost.assigned, true),
-        isNull(schedulingEventTypeHost.removedAt),
-        eq(schedulingHost.status, "active"),
-        eq(schedulingHost.environmentId, scope.environmentId),
       ),
     );
-  const named = new Map(peers.filter((peer) => peer.id !== hostId).map((peer) => [peer.id, peer]));
-  return [...named.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const named = new Map<string, Set<string>>();
+  const removed = new Map<string, Set<string>>();
+  for (const row of memberships) {
+    const into = row.removedAt ? removed : row.assigned ? named : null;
+    if (!into) continue;
+    into.set(row.eventTypeId, (into.get(row.eventTypeId) ?? new Set()).add(row.hostId));
+  }
+  const takes = (
+    eventType: (typeof eventTypes)[number],
+    host: { id: string; attributes: Record<string, unknown> },
+  ) => {
+    if (removed.get(eventType.id)?.has(host.id)) return false;
+    if (named.get(eventType.id)?.has(host.id)) return true;
+    return (
+      eventType.kind === "pool" &&
+      eventType.hostFilter !== null &&
+      attributesMatch(host.attributes as never, eventType.hostFilter)
+    );
+  };
+  const mine = eventTypes.filter((eventType) => takes(eventType, me));
+  return hosts
+    .filter((host) => host.id !== hostId && mine.some((eventType) => takes(eventType, host)))
+    .map((host) => ({ id: host.id, name: host.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 async function checkReason(scope: Scope, reason: string | undefined): Promise<void> {
@@ -536,6 +578,7 @@ const liveBooking = (now: Date) =>
   and(
     inArray(schedulingBooking.status, ["confirmed", "pending_approval", "held"]),
     or(isNull(schedulingBooking.holdExpiresAt), gt(schedulingBooking.holdExpiresAt, now)),
+    or(isNull(schedulingBooking.approvalExpiresAt), gt(schedulingBooking.approvalExpiresAt, now)),
   );
 
 /**

@@ -994,6 +994,19 @@ export function EventTypeForm(
                 The time is held until a host approves or declines, or the time to approve runs out.
               </p>
             </div>
+            <div className="flex flex-col gap-1 sm:col-span-2">
+              <Label className="flex items-center gap-2 font-normal">
+                <Checkbox
+                  checked={form.reassignmentEnabled}
+                  disabled={!canEdit}
+                  onCheckedChange={(checked) => set({ reassignmentEnabled: checked === true })}
+                />
+                A booking can go to another host
+              </Label>
+              <p className="text-muted-foreground text-xs">
+                When it's off, a booking stays with its hosts, whoever asks and whoever's away.
+              </p>
+            </div>
             {form.requiresApproval ? (
               <Minutes
                 label="Time to approve"

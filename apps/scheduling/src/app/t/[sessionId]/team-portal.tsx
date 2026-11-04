@@ -29,7 +29,7 @@ import {
 import { type Branding, useAccentColor } from "@/lib/branding";
 import { type ClientApiError, type ClientCall, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
-import { chosenTarget } from "@/lib/team-moves";
+import { chosenTarget, overridesFor } from "@/lib/team-moves";
 
 type TeamSession = Branding & { read_only: boolean; sandbox: boolean };
 type Host = { id: string; name: string; status: string };
@@ -460,12 +460,7 @@ function BookingRow(props: {
     if (opened && !readOnly) void open();
   }, []);
   const picked = candidates?.find((candidate) => candidate.host === to);
-  const overrides = picked
-    ? [
-        ...(picked.member ? [] : ["any_host"]),
-        ...(!picked.available && picked.reason ? [picked.reason] : []),
-      ]
-    : [];
+  const overrides = picked ? overridesFor(picked) : [];
   const overriding = Boolean(picked && !picked.available);
   const move = async () => {
     if (!to) return;
