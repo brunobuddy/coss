@@ -274,6 +274,17 @@ export const BUCKETS = {
     overridable: true,
     failureMode: "allow",
   },
+  // Received data per organization, in MB past each message's first (what `email.received_data`
+  // bills, spam included): anyone can mail an address, and this bounds what they can add to its
+  // bill and make coss.com store. Over it, large messages are dropped and counted while small ones
+  // still arrive. Fails open like received mail. Plans set their own (`@coss/billing/catalog`).
+  "email.inbound.megabytes.day": {
+    scope: "org",
+    limit: 10_000,
+    periodMs: DAY,
+    overridable: true,
+    failureMode: "allow",
+  },
   // DMARC aggregate reports accepted per organization (one per report message). Report addresses
   // are published in DNS, so anyone can mail them: this bounds what they can make coss.com store.
   // Fails open like received mail: a store outage must not lose reports.

@@ -1,8 +1,9 @@
 /**
  * The plans. A plan's monthly fee is credit spendable on any product's usage, so a month costs
  * the larger of the fee and the usage (plus add-ons). Free has no credit but includes 3,000
- * emails, 1,000 form submissions, 1,000 MB of their uploads and 50,000 Hooks messages a month and
- * blocks usage beyond its allowance. Every plan includes 100 phone checks, 3 inboxes and Hooks
+ * emails, 1,000 MB each of attachments and received data past each email's first MB, 1,000 form
+ * submissions, 1,000 MB of their uploads and 50,000 Hooks messages a month and blocks usage beyond
+ * its allowance. Every plan includes 100 phone checks, 3 inboxes and Hooks
  * messages a month.
  */
 import { type Entitlements, perDay, perSecond } from "./entitlements.ts";
@@ -54,7 +55,9 @@ export const PLANS = {
     feeCents: 0n,
     includedUnits: {
       "email.recipients": 3_000,
+      "email.attachment_data": 1_000,
       "email.received": 3_000,
+      "email.received_data": 1_000,
       "forms.submissions": 1_000,
       "forms.file_uploads": 1_000,
       "scheduling.bookings": 100,
@@ -87,6 +90,7 @@ export const PLANS = {
         "email.recipients.second": perSecond(2, 50),
         "email.recipients.day": perDay(3_000),
         "email.marketing.recipients.second": perSecond(2, 10),
+        "email.inbound.megabytes.day": perDay(250),
         "sms.segments.second": perSecond(1, 5),
         "sms.segments.day": perDay(100),
       },
@@ -130,6 +134,7 @@ export const PLANS = {
         "email.recipients.second": perSecond(14, 100),
         "email.recipients.day": perDay(100_000),
         "email.marketing.recipients.second": perSecond(10, 50),
+        "email.inbound.megabytes.day": perDay(10_000),
         "sms.segments.second": perSecond(10, 50),
         "sms.segments.day": perDay(10_000),
       },
@@ -180,6 +185,7 @@ export const PLANS = {
         "email.recipients.second": perSecond(50, 200),
         "email.recipients.day": perDay(1_000_000),
         "email.marketing.recipients.second": perSecond(50, 250),
+        "email.inbound.megabytes.day": perDay(100_000),
         "sms.segments.second": perSecond(30, 150),
         "sms.segments.day": perDay(100_000),
       },
@@ -229,6 +235,7 @@ export const PLANS = {
         "email.recipients.second": perSecond(100, 500),
         "email.recipients.day": perDay(5_000_000),
         "email.marketing.recipients.second": perSecond(100, 500),
+        "email.inbound.megabytes.day": perDay(500_000),
         "sms.segments.second": perSecond(100, 500),
         "sms.segments.day": perDay(1_000_000),
       },

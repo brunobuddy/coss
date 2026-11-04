@@ -1,12 +1,13 @@
 /**
- * Email metering: a live email is billed once, for its recipients, when it becomes `sent` (and
- * once more on `email.dedicated_ip` when it went through the organization's dedicated IPs).
+ * Email metering: a live email is billed once, for its recipients, when it becomes `sent` (once
+ * more on `email.dedicated_ip` when it went through the organization's dedicated IPs, and on
+ * `email.attachment_data` for attachments past its included size, per recipient).
  */
-import { recordUsage } from "@coss/billing/metering";
+import { billableEmailMegabytes, recordUsage } from "@coss/billing/metering";
 import { type Executor, schema } from "@coss/db";
-import { and, count, eq, isNull, ne, type SQL, sql } from "drizzle-orm";
+import { and, count, eq, isNull, ne, type SQL, sql, sum } from "drizzle-orm";
 
-const { email, emailRecipient } = schema;
+const { email, emailAttachment, emailRecipient } = schema;
 
 /**
  * The recipients a send is billed for: the ones handed to the provider (suppressed ones are left
@@ -80,4 +81,19 @@ export async function recordEmailUsage(
   if (row.dedicatedPool) {
     await recordUsage(tx, { ...source, meter: "email.dedicated_ip", quantity });
   }
+  // Sizes stay on the rows after the content is purged, so this reads the same on every path.
+  const [attachments] = await tx
+    .select({ bytes: sum(emailAttachment.size) })
+    .from(emailAttachment)
+    .where(
+      and(
+        eq(emailAttachment.organizationId, target.organizationId),
+        eq(emailAttachment.emailId, target.id),
+      ),
+    );
+  await recordUsage(tx, {
+    ...source,
+    meter: "email.attachment_data",
+    quantity: billableEmailMegabytes(Number(attachments?.bytes ?? 0)) * quantity,
+  });
 }

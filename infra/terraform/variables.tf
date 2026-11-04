@@ -127,6 +127,12 @@ variable "monthly_budget_usd" {
   description = "Monthly AWS spend that triggers budget alerts (80% actual, 100% forecasted)."
 }
 
+variable "ses_monthly_budget_usd" {
+  type        = number
+  description = "Monthly SES spend that triggers budget alerts (80% actual, 100% forecasted)."
+  default     = 100
+}
+
 variable "management_account_id" {
   description = "The AWS Organization's management account (infra/organization)."
   type        = string
