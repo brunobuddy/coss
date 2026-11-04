@@ -161,7 +161,8 @@ if (
   throw new Error(`Invalid --managed-domain "${managedDomain}".`);
 }
 
-const ses = new SESv2Client({ region });
+// SES allows about one call a second on tenant associations, and there is one per tenant.
+const ses = new SESv2Client({ region, maxAttempts: 20, retryMode: "adaptive" });
 const sesClassic = new SESClient({ region });
 const s3 = new S3Client({ region });
 const sns = new SNSClient({ region });

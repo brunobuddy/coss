@@ -832,7 +832,8 @@ One-off tasks (from `infra/`, with admin credentials):
 ```sh
 scripts/ecs-task.sh worker -- bun packages/db/src/migrate.ts
 scripts/ecs-task.sh --task-role "$(terraform -chdir=terraform output -raw bootstrap_role_arn)" worker -- \
-  bun apps/worker/scripts/ses-bootstrap.ts --name coss --tenant-prefix coss --alert-email ops@coss.com
+  bun apps/worker/scripts/ses-bootstrap.ts --name coss --tenant-prefix coss --managed-domain inbound.coss.com \
+  --alert-email ops@coss.com  # keep --managed-domain: without it the apps' policies lose inbound mail
 scripts/ecs-task.sh api -- bun packages/tenancy/scripts/create-admin.ts --email you@example.com [--verify-email]
 scripts/ecs-task.sh worker -- bun apps/worker/scripts/webhooks-reencrypt.ts --dry-run
 scripts/ecs-task.sh worker -- bun apps/worker/scripts/scheduling-reencrypt.ts --dry-run
