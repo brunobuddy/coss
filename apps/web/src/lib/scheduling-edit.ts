@@ -51,6 +51,8 @@ export type EventTypeFormState = {
   holdTtl: string;
   cancelNotice: string;
   rescheduleNotice: string;
+  maxGuests: string;
+  calendarDetails: EventTypeObjectOutput["host_calendar_details"];
   questions: QuestionRow[];
   locations: LocationRow[];
   hosts: HostRow[];
@@ -94,6 +96,8 @@ export function eventTypeFormState(eventType: EventTypeObjectOutput): EventTypeF
     holdTtl: String(eventType.hold_ttl_seconds),
     cancelNotice: String(eventType.cancel_notice_minutes),
     rescheduleNotice: String(eventType.reschedule_notice_minutes),
+    maxGuests: String(eventType.max_guests),
+    calendarDetails: eventType.host_calendar_details,
     questions: eventType.questions.map((question, index) => ({
       id: `question-${index}`,
       saved: true,
@@ -179,6 +183,9 @@ export function eventTypePayload(state: EventTypeFormState, kind: EventTypeObjec
     hold_ttl_seconds: Number(state.holdTtl),
     cancel_notice_minutes: Number(state.cancelNotice),
     reschedule_notice_minutes: Number(state.rescheduleNotice),
+    // Each person at a group session takes a seat of their own, so it never has guests.
+    max_guests: kind === "group" ? 0 : Number(state.maxGuests),
+    host_calendar_details: state.calendarDetails,
     questions: state.questions.map((question) => ({
       key: question.key.trim(),
       type: question.type,
@@ -246,40 +253,33 @@ export function eventTypeChanges(
 type Hosts = readonly { host: string }[];
 const sortedHosts = (hosts: Hosts) => [...hosts].sort((a, b) => (a.host < b.host ? -1 : 1));
 
-/** `key=value` per line, as metadata. Refuses a line it can't read rather than dropping it. */
-export function parseKeyValues(text: string): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const line of lines(text)) {
-    const at = line.indexOf("=");
-    const key = at > 0 ? line.slice(0, at).trim() : "";
-    if (!key) throw new Error(`"${line}" isn't in the form key=value.`);
-    result[key] = line.slice(at + 1).trim();
-  }
-  return result;
+/**
+ * Attributes, a pool's filter and metadata are edited as the JSON the API takes: any value an API
+ * client stored survives an unrelated save, commas and line breaks included.
+ */
+export function formatJsonObject(value: Record<string, unknown> | null): string {
+  if (value === null) return "";
+  return JSON.stringify(value, null, 2);
 }
 
-export const formatKeyValues = (values: Record<string, string>) =>
-  Object.entries(values)
-    .map(([key, value]) => `${key}=${value}`)
-    .join("\n");
+/** The same, with an empty object left blank, for what's never null. */
+export const formatOptionalJson = (value: Record<string, unknown>) =>
+  Object.keys(value).length === 0 ? "" : formatJsonObject(value);
 
-/** As `parseKeyValues`, with `key=a, b` as a list, which is what attributes can hold. */
-export function parseAttributes(text: string): Record<string, string | string[]> {
-  const result: Record<string, string | string[]> = {};
-  for (const [key, value] of Object.entries(parseKeyValues(text))) {
-    const items = value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-    result[key] = items.length > 1 ? items : (items[0] ?? "");
+/** `null` for blank. Refuses anything else that isn't an object; the schema checks the values. */
+export function parseJsonObject(text: string, label: string): Record<string, unknown> | null {
+  if (!text.trim()) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new Error(`${label} isn't valid JSON.`);
   }
-  return result;
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${label} must be a JSON object.`);
+  }
+  return value as Record<string, unknown>;
 }
-
-export const formatAttributes = (values: Record<string, string | string[]>) =>
-  Object.entries(values)
-    .map(([key, value]) => `${key}=${Array.isArray(value) ? value.join(", ") : value}`)
-    .join("\n");
 
 const LIST_LABEL: Record<string, string> = {
   questions: "Question",
@@ -304,6 +304,14 @@ const FIELD_LABEL: Record<string, string> = {
   hold_ttl_seconds: "Hold length",
   cancel_notice_minutes: "Cancellation notice",
   reschedule_notice_minutes: "Reschedule notice",
+  max_guests: "Guests",
+  host_calendar_details: "Host calendars",
+  host_filter: "Attributes to include",
+  metadata: "Metadata",
+  name: "Name",
+  email: "Email",
+  time_zone: "Time zone",
+  attributes: "Attributes",
 };
 
 /** A schema issue in the form's own words: `questions.1.key` reads "Question 2". */

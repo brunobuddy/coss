@@ -57,7 +57,8 @@ The booking path computes slots, so the dashboard (Node) never calls `createBook
 hosted page in a tab through a session with `createdByUserId` (`openBookerAction`, `openBookingManagerAction`), and that
 session acts as the member (`sessionActor`), past attendees' cutoffs. A manage session made this way lasts an hour.
 Editing an event type never changes a booking's length: moving one lists slots with `bookedDurationMinutes`, which skips
-the check that a duration is on offer.
+the check that a duration is on offer. A new event type field goes in the dashboard's form too
+(`apps/web/src/lib/scheduling-edit.ts`, `event-type-form.tsx`), or typecheck fails on the test fixtures there.
 
 ## Calendars
 

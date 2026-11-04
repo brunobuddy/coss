@@ -59,6 +59,8 @@ const CURRENT: EventTypeObjectOutput = {
   hold_ttl_seconds: 600,
   cancel_notice_minutes: 0,
   reschedule_notice_minutes: 0,
+  max_guests: 0,
+  host_calendar_details: "neutral",
   questions: [],
   locations: [],
   host_filter: null,
@@ -201,9 +203,9 @@ describe("saving an event type", () => {
   test("metadata it can't read isn't dropped silently", async () => {
     const result = await updateEventTypeAction(
       null,
-      form({ eventTypeId: "evtype_1", payload: payload(), metadata: "not a pair" }),
+      form({ eventTypeId: "evtype_1", payload: payload(), metadata: "a=1" }),
     );
-    expect(result.ok ? "" : result.error).toContain("not a pair");
+    expect(result.ok ? "" : result.error).toBe("Metadata isn't valid JSON.");
     expect(updateEventType).not.toHaveBeenCalled();
   });
 
@@ -265,6 +267,23 @@ describe("a host's details", () => {
       attributes: {},
       metadata: {},
     });
+  });
+
+  test("a blank time zone or name is refused, not saved", async () => {
+    for (const change of [{ timeZone: "   " }, { name: "  " }]) {
+      const result = await updateHostAction(null, form({ ...host, ...change }));
+      expect(result.ok).toBe(false);
+    }
+    expect(updateHost).not.toHaveBeenCalled();
+  });
+
+  test("attributes come through exactly as written", async () => {
+    await updateHostAction(
+      null,
+      form({ ...host, attributes: '{ "specialty": "Ear, nose and throat", "langs": ["es"] }' }),
+    );
+    const changes = updateHost.mock.calls[0]?.[2] as Record<string, unknown>;
+    expect(changes.attributes).toEqual({ specialty: "Ear, nose and throat", langs: ["es"] });
   });
 
   test("deleting from its own page goes back to the list, with paths from the slugs", async () => {

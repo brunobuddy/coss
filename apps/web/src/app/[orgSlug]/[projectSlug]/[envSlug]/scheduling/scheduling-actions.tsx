@@ -42,7 +42,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import type { ActionResult } from "@/lib/action-result";
-import { formatAttributes, formatKeyValues } from "@/lib/scheduling-edit";
+import { formatOptionalJson } from "@/lib/scheduling-edit";
 import { useActionToast } from "@/lib/toast";
 import {
   approveBookingAction,
@@ -308,8 +308,8 @@ export function HostForm(
     email: host.email ?? "",
     timeZone: host.time_zone,
     uid: host.uid ?? "",
-    attributes: formatAttributes(host.attributes),
-    metadata: formatKeyValues(host.metadata),
+    attributes: formatOptionalJson(host.attributes),
+    metadata: formatOptionalJson(host.metadata),
   });
   const field = (name: keyof typeof values) => ({
     name,
@@ -345,17 +345,19 @@ export function HostForm(
             <Textarea
               {...field("attributes")}
               className="font-mono"
-              placeholder="licensed_in=CA, NY"
+              placeholder='{ "licensed_in": ["CA", "NY"] }'
             />
-            <FieldDescription>
-              What pools filter hosts by. One per line, as key=value. Commas make a list.
-            </FieldDescription>
+            <FieldDescription>What pools filter hosts by, as a JSON object.</FieldDescription>
           </Field>
           <Field>
             <FieldLabel>Metadata</FieldLabel>
-            <Textarea {...field("metadata")} className="font-mono" placeholder="team=north" />
+            <Textarea
+              {...field("metadata")}
+              className="font-mono"
+              placeholder='{ "team": "north" }'
+            />
             <FieldDescription>
-              Your own key=value pairs, one per line. Don't put sensitive data here.
+              Your own key-value pairs, as a JSON object. Don't put sensitive data here.
             </FieldDescription>
           </Field>
         </div>

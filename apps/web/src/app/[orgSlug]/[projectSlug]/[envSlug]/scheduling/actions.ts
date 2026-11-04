@@ -20,7 +20,11 @@ import {
   updateSettings,
 } from "@coss/scheduling";
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
-import { EVENT_TYPE_KINDS, UpdateEventTypeRequest } from "@coss/scheduling/schemas";
+import {
+  EVENT_TYPE_KINDS,
+  UpdateEventTypeRequest,
+  UpdateHostRequest,
+} from "@coss/scheduling/schemas";
 import { getEnvironment } from "@coss/tenancy";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
@@ -28,12 +32,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { ActionError, formString, runAction } from "@/lib/actions";
 import { recordAudit } from "@/lib/audit";
 import { schedulingDeps, schedulingUrl } from "@/lib/scheduling";
-import {
-  eventTypeChanges,
-  issueLabel,
-  parseAttributes,
-  parseKeyValues,
-} from "@/lib/scheduling-edit";
+import { eventTypeChanges, issueLabel, parseJsonObject } from "@/lib/scheduling-edit";
 import { type OrgContext, requireOrgPermission } from "@/lib/session";
 
 type Permission = "create" | "read" | "update" | "delete";
@@ -93,13 +92,25 @@ async function friendly<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
-/** `key=value` lines a person typed, with the line that's wrong as the message. */
-function readKeyValues<T>(parse: (text: string) => T, text: string): T {
+/** JSON a person typed: `null` when left blank, and the message says which field is wrong. */
+function readJson(text: string, label: string): Record<string, unknown> | null {
   try {
-    return parse(text);
+    return parseJsonObject(text, label);
   } catch (error) {
     throw new ActionError((error as Error).message);
   }
+}
+
+type Parsed<T> = { success: true; data: T } | { success: false; error: { issues: Issue[] } };
+type Issue = { path: readonly PropertyKey[]; message: string };
+
+/** A schema's verdict, with its first complaint in the form's own words. */
+function checked<T>(result: Parsed<T>): T {
+  if (result.success) return result.data;
+  const issue = result.error.issues[0];
+  throw new ActionError(
+    issue ? `${issueLabel(issue.path)}: ${issue.message}` : "The form has a mistake.",
+  );
 }
 
 function publicUrlOrThrow(): string {
@@ -183,23 +194,20 @@ export async function updateHostAction(_prev: ActionResult | null, formData: For
     const email = formString(formData, "email") || null;
     const uid = formString(formData, "uid") || null;
     const timeZone = formString(formData, "timeZone");
-    const attributes = readKeyValues(parseAttributes, formString(formData, "attributes"));
-    const metadata = readKeyValues(parseKeyValues, formString(formData, "metadata"));
-    // Only what changed: a name goes through screening.
+    // Only what changed: a name goes through screening. The schema is the API's, so a blank name or
+    // time zone is refused here too.
+    const update = checked(
+      UpdateHostRequest.safeParse({
+        ...(name !== current.name ? { name } : {}),
+        ...(email !== current.email ? { email } : {}),
+        ...(uid !== current.uid ? { uid } : {}),
+        ...(timeZone !== current.time_zone ? { time_zone: timeZone } : {}),
+        attributes: readJson(formString(formData, "attributes"), "Attributes") ?? {},
+        metadata: readJson(formString(formData, "metadata"), "Metadata") ?? {},
+      }),
+    );
     const host = await friendly(() =>
-      updateHost(
-        env,
-        id,
-        {
-          ...(name !== current.name ? { name } : {}),
-          ...(email !== current.email ? { email } : {}),
-          ...(uid !== current.uid ? { uid } : {}),
-          ...(timeZone !== current.time_zone ? { time_zone: timeZone } : {}),
-          attributes,
-          metadata,
-        },
-        { screen: configuredDeps().screenSetup },
-      ),
+      updateHost(env, id, update, { screen: configuredDeps().screenSetup }),
     );
     await audit(context, "scheduling_host.updated", {
       type: "scheduling_host",
@@ -336,23 +344,17 @@ export async function updateEventTypeAction(_prev: ActionResult | null, formData
     }
     const current = await friendly(() => getEventType(env, id));
     const filter = formData.get("hostFilter");
-    const parsed = UpdateEventTypeRequest.safeParse({
-      ...(raw as object),
-      metadata: readKeyValues(parseKeyValues, formString(formData, "metadata")),
-      // Only a pool's form has this field, and an event type's kind never changes.
-      ...(typeof filter === "string"
-        ? {
-            host_filter: filter.trim() === "" ? null : readKeyValues(parseAttributes, filter),
-          }
-        : {}),
-    });
-    if (!parsed.success) {
-      const issue = parsed.error.issues[0];
-      throw new ActionError(
-        issue ? `${issueLabel(issue.path)}: ${issue.message}` : "The form has a mistake.",
-      );
-    }
-    const changes = eventTypeChanges(current, parsed.data);
+    const update = checked(
+      UpdateEventTypeRequest.safeParse({
+        ...(raw as object),
+        metadata: readJson(formString(formData, "metadata"), "Metadata") ?? {},
+        // Only a pool's form has this field, and an event type's kind never changes.
+        ...(typeof filter === "string"
+          ? { host_filter: readJson(filter, "Attributes to include") }
+          : {}),
+      }),
+    );
+    const changes = eventTypeChanges(current, update);
     if (Object.keys(changes).length === 0) return null;
     const eventType = await friendly(() =>
       updateEventType(env, id, changes, { screen: configuredDeps().screenSetup }),

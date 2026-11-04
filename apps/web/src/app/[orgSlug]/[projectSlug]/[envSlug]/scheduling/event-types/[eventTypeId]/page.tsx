@@ -1,3 +1,4 @@
+import { hipaaModeApplies } from "@coss/compliance";
 import { getEventType, listHosts, listScheduleNames, SchedulingError } from "@coss/scheduling";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -40,6 +41,7 @@ export default async function EventTypePage({
     scope,
     hostOptions.map((host) => host.id),
   );
+  const calendarDetailsLocked = await hipaaModeApplies(scope.environmentId);
   const canEdit = can({ scheduling: ["update"] });
   const active = eventType.status === "active";
   return (
@@ -70,6 +72,7 @@ export default async function EventTypePage({
       />
       <EventTypeForm
         {...target}
+        calendarDetailsLocked={calendarDetailsLocked}
         canEdit={canEdit}
         eventType={eventType}
         hostOptions={hostOptions}

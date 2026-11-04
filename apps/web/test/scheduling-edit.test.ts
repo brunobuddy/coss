@@ -4,10 +4,10 @@ import {
   eventTypeChanges,
   eventTypeFormState,
   eventTypePayload,
-  formatAttributes,
+  formatJsonObject,
+  formatOptionalJson,
   issueLabel,
-  parseAttributes,
-  parseKeyValues,
+  parseJsonObject,
   questionKey,
 } from "../src/lib/scheduling-edit";
 
@@ -33,6 +33,8 @@ const EVENT_TYPE: EventTypeObjectOutput = {
   hold_ttl_seconds: 600,
   cancel_notice_minutes: 60,
   reschedule_notice_minutes: 90,
+  max_guests: 3,
+  host_calendar_details: "full",
   questions: [
     { key: "reason", type: "text", label: "Reason", required: true, options: [] },
     { key: "kind", type: "select", label: "Kind", required: false, options: ["New", "Follow-up"] },
@@ -59,8 +61,8 @@ function submitted(eventType: EventTypeObjectOutput, edit?: (state: FormState) =
   edit?.(state);
   return UpdateEventTypeRequest.parse({
     ...eventTypePayload(state, eventType.kind),
-    metadata: eventType.metadata,
-    host_filter: eventType.host_filter,
+    metadata: parseJsonObject(formatOptionalJson(eventType.metadata), "Metadata") ?? {},
+    host_filter: parseJsonObject(formatJsonObject(eventType.host_filter), "Filter"),
   });
 }
 type FormState = ReturnType<typeof eventTypeFormState>;
@@ -76,6 +78,7 @@ describe("the event type form", () => {
       kind: "group",
       uid: null,
       capacity: 12,
+      max_guests: 0,
       grid_time_zone: null,
       booking_window: null,
       duration_options: [],
@@ -168,6 +171,23 @@ describe("the event type form", () => {
     });
   });
 
+  test("guests and calendar details are sent like the rest", () => {
+    const changes = eventTypeChanges(
+      EVENT_TYPE,
+      submitted(EVENT_TYPE, (state) => {
+        state.maxGuests = "5";
+        state.calendarDetails = "neutral";
+      }),
+    );
+    expect(changes).toEqual({ max_guests: 5, host_calendar_details: "neutral" });
+  });
+
+  test("a group never sends guests, which the API would refuse", () => {
+    const state = eventTypeFormState(EVENT_TYPE);
+    state.maxGuests = "4";
+    expect(eventTypePayload(state, "group").max_guests).toBe(0);
+  });
+
   test("a non-group event type never sends a capacity", () => {
     const payload = eventTypePayload(eventTypeFormState(EVENT_TYPE), "pool");
     expect(payload.capacity).toBeNull();
@@ -187,19 +207,27 @@ describe("question keys", () => {
   });
 });
 
-describe("key=value text", () => {
-  test("reads values with = in them, and blank lines", () => {
-    expect(parseKeyValues("a=1\n\n b = x=y \n")).toEqual({ a: "1", b: "x=y" });
+describe("attributes and metadata as JSON", () => {
+  test("whatever an API client stored survives an unrelated save", () => {
+    const stored: EventTypeObjectOutput = {
+      ...EVENT_TYPE,
+      host_filter: { specialty: "Ear, nose and throat", languages: ["es"], "a=b": ["x, y"] },
+      metadata: { note: "two\nlines", "key=with=equals": "  spaced  " },
+    };
+    expect(eventTypeChanges(stored, submitted(stored))).toEqual({});
   });
 
-  test("refuses a line it can't read, rather than dropping it", () => {
-    expect(() => parseKeyValues("a=1\nnot a pair")).toThrow(/not a pair/);
-    expect(() => parseKeyValues("=1")).toThrow();
+  test("blank means none, and an empty filter stays distinct from no filter", () => {
+    expect(parseJsonObject("  ", "Metadata")).toBeNull();
+    expect(formatJsonObject(null)).toBe("");
+    expect(parseJsonObject(formatJsonObject({}), "Filter")).toEqual({});
+    expect(formatOptionalJson({})).toBe("");
   });
 
-  test("attributes make lists from commas, and format back the same", () => {
-    const attributes = { licensed_in: ["CA", "NY"], language: "es" };
-    expect(parseAttributes(formatAttributes(attributes))).toEqual(attributes);
+  test("refuses what isn't a JSON object, saying which field", () => {
+    expect(() => parseJsonObject("a=1", "Metadata")).toThrow("Metadata isn't valid JSON.");
+    expect(() => parseJsonObject("[1]", "Attributes")).toThrow("Attributes must be a JSON object.");
+    expect(() => parseJsonObject("null", "Attributes")).toThrow(/JSON object/);
   });
 });
 
@@ -208,6 +236,7 @@ describe("issue labels", () => {
     expect(issueLabel(["questions", 1, "key"])).toBe("Question 2");
     expect(issueLabel(["locations", 0, "url"])).toBe("Location 1");
     expect(issueLabel(["step_minutes"])).toBe("Time between start times");
+    expect(issueLabel(["time_zone"])).toBe("Time zone");
     expect(issueLabel([])).toBe("This form");
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import type { EventTypeObjectOutput } from "@coss/scheduling/schemas";
+import { type EventTypeObjectOutput, MAX_GUESTS } from "@coss/scheduling/schemas";
 import { Button } from "@coss/ui/components/button";
 import { Checkbox } from "@coss/ui/components/checkbox";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
@@ -22,8 +22,8 @@ import {
   type EventTypeFormState,
   eventTypeFormState,
   eventTypePayload,
-  formatAttributes,
-  formatKeyValues,
+  formatJsonObject,
+  formatOptionalJson,
   type HostRow,
   hasOptions,
   type LimitRow,
@@ -183,21 +183,30 @@ export type ScheduleOption = { id: string; hostId: string; name: string };
 export function EventTypeForm(
   props: EnvTarget & {
     canEdit: boolean;
+    /** HIPAA mode keeps attendees' details off hosts' calendars. */
+    calendarDetailsLocked: boolean;
     eventType: EventTypeObjectOutput;
     hostOptions: HostOption[];
     scheduleOptions: ScheduleOption[];
   },
 ) {
-  const { canEdit, eventType, hostOptions, scheduleOptions, orgSlug, projectSlug, envSlug } = props;
+  const {
+    canEdit,
+    calendarDetailsLocked,
+    eventType,
+    hostOptions,
+    scheduleOptions,
+    orgSlug,
+    projectSlug,
+    envSlug,
+  } = props;
   const [state, formAction, pending] = useActionToast(updateEventTypeAction, {
     success: "Event type saved",
   });
   const [form, setForm] = useState<EventTypeFormState>(() => eventTypeFormState(eventType));
   // Controlled, like the rest: React resets uncontrolled fields after an action, even a refused one.
-  const [metadata, setMetadata] = useState(() => formatKeyValues(eventType.metadata));
-  const [hostFilter, setHostFilter] = useState(() =>
-    eventType.host_filter ? formatAttributes(eventType.host_filter) : "",
-  );
+  const [metadata, setMetadata] = useState(() => formatOptionalJson(eventType.metadata));
+  const [hostFilter, setHostFilter] = useState(() => formatJsonObject(eventType.host_filter));
   const nextRow = useRef(0);
   const rowId = () => {
     nextRow.current += 1;
@@ -271,9 +280,7 @@ export function EventTypeForm(
                 required
                 value={form.title}
               />
-              <FieldDescription>
-                Shown to attendees and in emails. Host calendars always show "Appointment".
-              </FieldDescription>
+              <FieldDescription>Shown to attendees and in emails.</FieldDescription>
             </Field>
             <Field>
               <FieldLabel>Your id</FieldLabel>
@@ -454,14 +461,14 @@ export function EventTypeForm(
               <Field>
                 <FieldLabel>Also include hosts with these attributes</FieldLabel>
                 <Textarea
+                  className="font-mono"
                   name="hostFilter"
                   onChange={(event) => setHostFilter(event.target.value)}
-                  placeholder="licensed_in=CA, NY"
+                  placeholder='{ "licensed_in": ["CA", "NY"] }'
                   value={hostFilter}
                 />
                 <FieldDescription>
-                  One per line, as key=value. Commas make a list. Active hosts matching all of them
-                  join the pool.
+                  A JSON object. Active hosts matching all of it join the pool.
                 </FieldDescription>
               </Field>
             ) : null}
@@ -795,6 +802,49 @@ export function EventTypeForm(
           </PanelBody>
         </Panel>
 
+        <Panel title="Guests and calendars">
+          <PanelBody className="grid gap-4 sm:grid-cols-2">
+            {kind === "group" ? null : (
+              <Field>
+                <FieldLabel>Guests an attendee can add</FieldLabel>
+                <Input
+                  max={MAX_GUESTS}
+                  min={0}
+                  onChange={(event) => set({ maxGuests: event.target.value })}
+                  required
+                  type="number"
+                  value={form.maxGuests}
+                />
+                <FieldDescription>
+                  Up to {MAX_GUESTS}. They're emailed about the booking, with no link to change it.
+                </FieldDescription>
+              </Field>
+            )}
+            <Field>
+              <FieldLabel>What hosts' calendars show</FieldLabel>
+              <Choice
+                disabled={!canEdit || calendarDetailsLocked}
+                items={[
+                  { value: "neutral", label: 'A private event titled "Appointment"' },
+                  { value: "full", label: "A private event with the booking's details" },
+                ]}
+                label="What hosts' calendars show"
+                onChange={(value) =>
+                  set({ calendarDetails: value as EventTypeFormState["calendarDetails"] })
+                }
+                value={form.calendarDetails}
+              />
+              <FieldDescription>
+                {calendarDetailsLocked
+                  ? "HIPAA mode keeps attendees' details off hosts' calendars."
+                  : form.calendarDetails === "full"
+                    ? "Names, emails and phone numbers go to the host's calendar provider, never answers. Upcoming events change too."
+                    : "Nothing about the attendee reaches the host's calendar provider. Upcoming events change too."}
+              </FieldDescription>
+            </Field>
+          </PanelBody>
+        </Panel>
+
         <Panel
           description="Where it happens. The first is the default, and the booker's page offers the rest."
           title="Locations"
@@ -931,7 +981,7 @@ export function EventTypeForm(
         </Panel>
 
         <Panel
-          description="Your own key=value pairs, one per line. Don't put sensitive data here."
+          description="Your own key-value pairs, as a JSON object. Don't put sensitive data here."
           title="Metadata"
         >
           <PanelBody>
@@ -941,7 +991,7 @@ export function EventTypeForm(
                 className="font-mono"
                 name="metadata"
                 onChange={(event) => setMetadata(event.target.value)}
-                placeholder="clinic=north"
+                placeholder='{ "clinic": "north" }'
                 value={metadata}
               />
             </Field>
