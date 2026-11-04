@@ -4,14 +4,14 @@
  */
 import type { McpServer } from "@modelcontextprotocol/server";
 import { type Coss, fetchSetupReport } from "coss";
-import { DEFAULT_DOCS_URL, type DocsOptions } from "./tools/docs.ts";
+import { type DocsOptions, docsOrigin } from "./tools/docs.ts";
 
 export const DOCS_INDEX_URI = "coss://docs/index";
 export const SETUP_URI = "coss://setup";
 
 /** The docs' index, `/llms.txt`: every page with a line about it. */
 export function registerDocsResources(server: McpServer, options: DocsOptions = {}): void {
-  const origin = (options.baseUrl ?? DEFAULT_DOCS_URL).replace(/\/+$/, "");
+  const origin = docsOrigin(options);
   const request = options.fetch ?? fetch;
   server.registerResource(
     "docs_index",
