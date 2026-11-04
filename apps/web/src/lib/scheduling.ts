@@ -26,5 +26,22 @@ export function schedulingDeps(): SchedulingDeps | null {
     publicUrl: schedulingUrl(),
     // Built when something is screened: most of these deps only read.
     screenSetup: (input) => hostedPageScreening(riskDeps())(input),
+    // Loaded when it's asked: this is only for saving a live reminder, and most deps only read.
+    async verifiedAddress({ organizationId, address }) {
+      const [{ authorizeLiveSender }, { emailRuntime }] = await Promise.all([
+        import("@coss/email"),
+        import("@/lib/email-runtime"),
+      ]);
+      try {
+        await authorizeLiveSender({
+          organizationId,
+          from: address,
+          provider: emailRuntime().domainDeps.identity.name,
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    },
   };
 }

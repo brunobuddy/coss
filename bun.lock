@@ -292,6 +292,7 @@
         "@coss/dashboard-routes": "workspace:*",
         "@coss/db": "workspace:*",
         "@coss/email": "workspace:*",
+        "@coss/email-layout": "workspace:*",
         "@coss/forms": "workspace:*",
         "@coss/hooks": "workspace:*",
         "@coss/logs": "workspace:*",

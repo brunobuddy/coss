@@ -10,11 +10,14 @@ import {
   createSchedule,
   declineBooking,
   deleteHost,
+  markNoShow,
   SchedulingError,
+  updateEventType,
   updateHost,
   updateSettings,
 } from "@coss/scheduling";
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
+import { Reminders } from "@coss/scheduling/schemas";
 import { getEnvironment } from "@coss/tenancy";
 import { refresh } from "next/cache";
 import type { ActionResult } from "@/lib/action-result";
@@ -89,6 +92,10 @@ export async function createHostAction(
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "create");
     const email = formString(formData, "email");
+    const phone = formString(formData, "phone");
+    if (phone && !/^\+[1-9]\d{6,14}$/.test(phone)) {
+      throw new ActionError("Enter the phone number with its country code, like +15551234567.");
+    }
     const host = await friendly(() =>
       createHost(
         env,
@@ -96,6 +103,7 @@ export async function createHostAction(
           name: formString(formData, "name"),
           time_zone: formString(formData, "timeZone"),
           ...(email ? { email } : {}),
+          ...(phone ? { phone } : {}),
         },
         { screen: configuredDeps().screenSetup },
       ),
@@ -240,6 +248,55 @@ export async function declineBookingAction(_prev: ActionResult | null, formData:
   });
 }
 
+export async function markNoShowAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const booking = await friendly(() =>
+      markNoShow(env, formString(formData, "bookingId"), configuredDeps(), actorOf(context)),
+    );
+    await audit(context, "scheduling_booking.no_show", {
+      type: "scheduling_booking",
+      id: booking.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+/** A whole list at a time, for the environment or one event type; `null` goes back to inheriting. */
+export async function saveRemindersAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const eventTypeId = formString(formData, "eventTypeId");
+    const raw: unknown = JSON.parse(formString(formData, "reminders"));
+    const parsed = raw === null ? null : Reminders.safeParse(raw);
+    if (parsed && !parsed.success) {
+      throw new ActionError(parsed.error.issues[0]?.message ?? "This reminder isn't valid.");
+    }
+    const reminders = parsed ? parsed.data : null;
+    const deps = configuredDeps();
+    const checks = { screen: deps.screenSetup, verifiedAddress: deps.verifiedAddress };
+    if (eventTypeId) {
+      const eventType = await friendly(() =>
+        updateEventType(env, eventTypeId, { reminders }, checks),
+      );
+      await audit(context, "scheduling_event_type.updated", {
+        type: "scheduling_event_type",
+        id: eventType.id,
+        label: eventType.title,
+      });
+    } else {
+      await friendly(() => updateSettings(env, { reminders }, checks));
+      await audit(context, "scheduling_settings.updated", {
+        type: "scheduling_settings",
+        id: env.environmentId,
+      });
+    }
+    refresh();
+    return null;
+  });
+}
+
 export async function saveSettingsAction(_prev: ActionResult | null, formData: FormData) {
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "update");
@@ -248,6 +305,7 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
       .filter(Boolean);
     const brandName = formString(formData, "brandName");
     const emailFrom = formString(formData, "emailFrom");
+    const emailReplyTo = formString(formData, "emailReplyTo");
     const smsFrom = formString(formData, "smsFrom");
     const accentColor = formString(formData, "accentColor");
     const useAccent = formString(formData, "useAccentColor") === "on";
@@ -272,11 +330,15 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
               ? { logo: null }
               : {}),
           email_from: emailFrom || null,
+          email_reply_to: emailReplyTo || null,
           sms_from: smsFrom || null,
           calendar_failure_mode:
             formString(formData, "calendarFailureMode") === "last_known" ? "last_known" : "hide",
         },
-        { screen: configuredDeps().screenSetup },
+        {
+          screen: configuredDeps().screenSetup,
+          verifiedAddress: configuredDeps().verifiedAddress,
+        },
       ),
     );
     await audit(context, "scheduling_settings.updated", {

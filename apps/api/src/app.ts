@@ -1,6 +1,11 @@
 import type { PlanGate, UsageGate } from "@coss/billing/gate";
 import { db } from "@coss/db";
-import type { DomainDeps, EmailService, LinkKeyRing } from "@coss/email";
+import {
+  authorizeLiveSender,
+  type DomainDeps,
+  type EmailService,
+  type LinkKeyRing,
+} from "@coss/email";
 import type { InboundRuntime } from "@coss/email/runtime";
 import { FakeFormFileStore, type FormFileStore, hostedPageScreening } from "@coss/forms";
 import { type LogWriter, noopLogWriter } from "@coss/logs";
@@ -342,6 +347,20 @@ export function createApp(opts: CreateAppOptions) {
         ...opts.scheduling,
         billing: opts.billing,
         screenSetup: opts.scheduling.screenSetup ?? hostedPageScreening(opts.riskDeps),
+        verifiedAddress:
+          opts.scheduling.verifiedAddress ??
+          (async ({ organizationId, address }) => {
+            try {
+              await authorizeLiveSender({
+                organizationId,
+                from: address,
+                provider: domainDeps.identity.name,
+              });
+              return true;
+            } catch {
+              return false;
+            }
+          }),
       },
       riskDeps: opts.riskDeps,
       inbound,

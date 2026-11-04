@@ -427,6 +427,11 @@ coss scheduling bookings --host doctor_482 --status confirmed
 - `coss scheduling slots <event-type> --start <time> --end <time>` lists bookable starts (`--host`).
 - `coss scheduling booking <booking>` shows a booking, and `coss scheduling cancel <booking>` cancels
   it and tells the attendee.
+- `coss scheduling no-show <booking>` marks a booking as a no-show, once it has started.
+- `coss scheduling notifications <booking>` lists what was queued for a booking and what became of it,
+  including why a reminder wasn't sent.
+- `coss scheduling reminders` lists what goes out around a booking (`--event-type` for one event type's
+  own list). Change it with `coss api` or in the dashboard.
 - `coss scheduling calendars <host>` lists a host's calendar connections. `needs_reauth` means that
   calendar can't be read, so the host isn't offered.
 

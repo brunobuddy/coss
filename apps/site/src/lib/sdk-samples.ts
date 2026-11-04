@@ -401,6 +401,10 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.bookings.markNoShow",
     args: (r) => [pathId(r)],
   },
+  "GET /v1/scheduling/bookings/{id}/notifications": {
+    method: "scheduling.bookings.notifications",
+    args: (r) => [pathId(r)],
+  },
   "PATCH /v1/scheduling/bookings/{id}/location": {
     method: "scheduling.bookings.updateLocation",
     args: (r) => [pathId(r), tsValue(r.body ?? {})],

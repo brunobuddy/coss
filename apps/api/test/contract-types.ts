@@ -215,6 +215,7 @@ import type {
   AuthorizeCalendarRequest,
   AvailabilitySearchRequest,
   AvailabilitySearchResult,
+  BookingNotificationObject,
   BookingObject,
   CalendarAuthorization,
   CalendarConnectionObject,
@@ -360,6 +361,7 @@ import type {
   SchedulingAttendeeErasure,
   SchedulingAvailabilitySearchResult,
   SchedulingBooking,
+  SchedulingBookingNotification,
   SchedulingCalendarAuthorization,
   SchedulingCalendarConnection,
   SchedulingCancelledSeries,
@@ -1107,6 +1109,9 @@ export type SubaccountContract = [
   Assert<MutuallyAssignable<z.output<typeof CancelledSeries>, SchedulingCancelledSeries>>,
   Assert<MutuallyAssignable<z.output<typeof ErasedAttendee>, SchedulingAttendeeErasure>>,
   Assert<MutuallyAssignable<z.output<typeof SettingsObject>, SchedulingSettings>>,
+  Assert<
+    MutuallyAssignable<z.output<typeof BookingNotificationObject>, SchedulingBookingNotification>
+  >,
   Assert<MutuallyAssignable<z.input<typeof UpdateSettingsRequest>, UpdateSchedulingSettingsParams>>,
   Assert<
     MutuallyAssignable<z.input<typeof AuthorizeCalendarRequest>, AuthorizeSchedulingCalendarParams>

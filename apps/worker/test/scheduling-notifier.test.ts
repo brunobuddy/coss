@@ -24,7 +24,10 @@ async function email(overrides: Partial<SchedulingEmail> = {}): Promise<Scheduli
     subject: "Confirmed: Consultation",
     text: "Your booking is confirmed.",
     html: "<p>Your booking is confirmed.</p>",
+    cossSubject: "Confirmed: Consultation",
+    cossText: "Your booking is confirmed.",
     cossHtml: "<p>Your booking is confirmed.</p>",
+    replyTo: null,
     ics: {
       filename: "booking.ics",
       method: "REQUEST",
@@ -241,5 +244,70 @@ test("the logo goes inline with the customer's copy, and never with coss.com's",
   expect(sent).toEqual([
     { environmentId: tenant.production.id, attachments: ["logo@acme"] },
     { environmentId: coss.production.id, attachments: undefined },
+  ]);
+});
+
+test("what a customer wrote, and where replies go, never leave under coss.com's address", async () => {
+  const tenant = await createTestTenant();
+  const coss = await createTestTenant();
+  const sent: Record<string, unknown>[] = [];
+  const notifier = schedulingNotifier({
+    service: {
+      async send(input) {
+        sent.push({
+          subject: input.params.subject,
+          text: input.params.text,
+          html: input.params.html,
+          replyTo: input.params.reply_to,
+        });
+        if (input.environment.environmentId === tenant.production.id) {
+          throw new EmailError("domain_not_verified", "Not verified.");
+        }
+        return { replayed: false } as never;
+      },
+    },
+    limiter: memoryLimiter(),
+    fallback: {
+      environment: {
+        organizationId: coss.organization.id,
+        projectId: coss.project.id,
+        environmentId: coss.production.id,
+        mode: "live",
+      },
+      address: "notifications@coss.test",
+    },
+  });
+  await notifier.email(
+    await email({
+      environment: {
+        organizationId: tenant.organization.id,
+        projectId: tenant.project.id,
+        environmentId: tenant.production.id,
+        mode: "live",
+      },
+      from: "bookings@acme.test",
+      subject: "Their subject",
+      text: "Their words",
+      html: "<p>Their words</p>",
+      cossSubject: "Reminder: Consultation",
+      cossText: "This is coming up.",
+      cossHtml: "<p>This is coming up.</p>",
+      replyTo: "desk@acme.test",
+      ics: null,
+    }),
+  );
+  expect(sent).toEqual([
+    {
+      subject: "Their subject",
+      text: "Their words",
+      html: "<p>Their words</p>",
+      replyTo: ["desk@acme.test"],
+    },
+    {
+      subject: "Reminder: Consultation",
+      text: "This is coming up.",
+      html: "<p>This is coming up.</p>",
+      replyTo: [],
+    },
   ]);
 });

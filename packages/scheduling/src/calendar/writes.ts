@@ -10,7 +10,6 @@ import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { confirmedSeats, locationOfSession } from "../group-sessions.ts";
-import { carryReminders } from "../notifications.ts";
 import { type CalendarClient, CalendarError, type CalendarEventWrite } from "./client.ts";
 import { type CalendarDeps, clientFor, markNeedsReauth } from "./connections.ts";
 import { notZoomMeeting } from "./zoom.ts";
@@ -214,7 +213,6 @@ async function setMeetingLink(
       )
       .returning();
     if (!updated) return;
-    await carryReminders(tx, updated);
     // The host's calendar event went out without the link.
     if (zoom) {
       await tx

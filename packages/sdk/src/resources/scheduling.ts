@@ -22,6 +22,7 @@ import type {
   SchedulingAttendeeErasure,
   SchedulingAvailabilitySearchResult,
   SchedulingBooking,
+  SchedulingBookingNotification,
   SchedulingCalendarAuthorization,
   SchedulingCalendarConnection,
   SchedulingCancelledSeries,
@@ -383,7 +384,19 @@ export class SchedulingBookingsResource {
     });
   }
 
-  /** Records that the attendee didn't come, once the booking has started. */
+  /** What's been queued for this booking and what became of it, including why something wasn't sent. */
+  notifications(
+    id: string,
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingBookingNotification>>> {
+    return this.#http.request<List<SchedulingBookingNotification>>({
+      method: "GET",
+      path: `/v1/scheduling/bookings/${part(id)}/notifications`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Records that the attendee didn't come, once the booking has started. Marking it again changes nothing. */
   markNoShow(id: string, options?: ReadOptions): Promise<CossResult<SchedulingBooking>> {
     return this.#http.request<SchedulingBooking>({
       method: "POST",

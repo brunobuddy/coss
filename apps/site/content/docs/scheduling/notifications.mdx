@@ -1,10 +1,11 @@
 ---
 title: Notifications
-description: "Who hears about a booking and how: confirmation emails with calendar invitations, reminders a day before, webhooks, your branding and meeting links."
+description: "Who hears about a booking and how: confirmation emails with calendar invitations, reminders, webhooks, your branding and meeting links."
 ---
 
 By default, attendees and hosts get an email when a booking's confirmed, moved or cancelled, with a
 calendar invitation, and attendees get a reminder a day before. Webhooks always fire, whatever's on here.
+For reminders at other times, to other people or in your own words, see [reminders](/docs/scheduling/reminders).
 
 Turn each one on or off in your settings, or per event type:
 
@@ -22,14 +23,17 @@ await coss.scheduling.settings.update({
 });
 ```
 
-The events are `confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined` and `reminder`. To
-send everything yourself, turn them all off and use [webhooks](/docs/webhooks).
+The events are `confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined` and `reminder`.
+`reminder` is the one a day before, and doesn't apply once you have a `reminders` list. An event type's
+`notifications` take the same shape and win over these. To send everything yourself, turn them all off and use
+[webhooks](/docs/webhooks).
 
 Emails come from `email_from`, on one of your verified domains. Without one, they come from coss.com on
-your behalf, in coss.com's own layout. They use fixed templates with your event type's title and your brand
-name, and the only link in them is the attendee's manage link. Titles, host names and brand names can't
-contain links, and in live environments they're screened for abuse when you set them, rather than each email
-being screened.
+your behalf, in coss.com's own layout. Set `email_reply_to` to say where replies to your own address go. They
+use fixed templates with your event type's title and your brand name, and the only link in them is the
+attendee's manage link, unless you [write your own](/docs/scheduling/reminders#your-own-words). Titles, host
+names and brand names can't contain links, and in live environments they're screened for abuse when you set
+them, rather than each email being screened.
 
 ## Your branding
 

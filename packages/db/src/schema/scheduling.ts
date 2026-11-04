@@ -71,6 +71,32 @@ export type SchedulingNotificationPolicy = Record<
   { emailAttendee?: boolean; emailHost?: boolean; smsAttendee?: boolean }
 >;
 
+/** One entry of a `reminders` list, as the API shows it: `@coss/scheduling/schemas` validates it. */
+export type SchedulingReminderRule = {
+  key: string;
+  anchor:
+    | "start"
+    | "end"
+    | "confirmed"
+    | "rescheduled"
+    | "cancelled"
+    | "declined"
+    | "pending_approval"
+    | "no_show";
+  before_minutes: number | null;
+  after_minutes: number | null;
+  send: ("email_attendee" | "email_host" | "sms_attendee" | "sms_host" | "webhook")[];
+  email_to: string[];
+  subject: string | null;
+  message: string | null;
+  sms_message: string | null;
+  button: { label: string; url: string } | null;
+  include_invite: boolean;
+  send_if_late: boolean;
+  skip_no_show: boolean;
+  only_if: { metadata: Record<string, string> | null; location_types: string[] | null } | null;
+};
+
 export type SchedulingActor =
   | { kind: "api_key"; id: string }
   | { kind: "user"; id: string }
@@ -121,10 +147,13 @@ export const schedulingExternalState = pgEnum("scheduling_external_state", [
 export const schedulingNotificationChannel = pgEnum("scheduling_notification_channel", [
   "email",
   "sms",
+  "webhook",
 ]);
 export const schedulingNotificationRecipient = pgEnum("scheduling_notification_recipient", [
   "attendee",
   "host",
+  "endpoint",
+  "address",
 ]);
 export const schedulingSessionKind = pgEnum("scheduling_session_kind", [
   "host",
@@ -150,6 +179,8 @@ export const schedulingHost = pgTable(
     name: text("name").notNull(),
     // Where notifications go; never an identity, and not unique.
     email: text("email"),
+    // Where SMS notifications go, in E.164: a staff contact, so in the clear like `email`.
+    phone: text("phone"),
     timeZone: text("time_zone").notNull(),
     attributes: jsonb("attributes")
       .$type<Record<string, string | string[]>>()
@@ -258,6 +289,8 @@ export const schedulingEventType = pgTable(
     // Attributes a host must have to be in this pool, on top of explicit members.
     hostFilter: jsonb("host_filter").$type<Record<string, string | string[]> | null>(),
     notifications: jsonb("notifications").$type<SchedulingNotificationPolicy | null>(),
+    // Null inherits the environment's list; an empty list means none.
+    reminders: jsonb("reminders").$type<SchedulingReminderRule[] | null>(),
     metadata: jsonb("metadata").$type<Record<string, string>>().notNull().default({}),
     screenedAt: instant("screened_at"),
     createdAt: createdAt(),
@@ -823,6 +856,12 @@ export const schedulingNotification = pgTable(
     recipient: schedulingNotificationRecipient("recipient").notNull(),
     // Null for news about a host rather than a booking.
     bookingVersion: integer("booking_version"),
+    // A rule's row: which rule, what it's timed from and by how much (negative: before).
+    reminderKey: text("reminder_key"),
+    reminderAnchor: text("reminder_anchor"),
+    reminderOffsetMinutes: integer("reminder_offset_minutes"),
+    // The moment this row is timed from, as it was when queued: moved since means stale.
+    anchorAt: instant("anchor_at"),
     dedupeKey: text("dedupe_key").notNull(),
     dueAt: instant("due_at").notNull(),
     leaseUntil: instant("lease_until"),
@@ -845,6 +884,40 @@ export const schedulingNotification = pgTable(
     unique("scheduling_notification_dedupe_unique").on(t.environmentId, t.dedupeKey),
     index("scheduling_notification_due_idx").on(t.dueAt).where(sql`${t.finishedAt} IS NULL`),
     index("scheduling_notification_booking_idx").on(t.bookingId),
+  ],
+);
+
+/**
+ * A `reminders` list changed: upcoming bookings still need rows for what it now asks for. One row per
+ * scope, restarted by another change and deleted when the walk finishes.
+ */
+export const schedulingReminderSync = pgTable(
+  "scheduling_reminder_sync",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.schedulingReminderSync)),
+    organizationId: text("organization_id").notNull(),
+    environmentId: text("environment_id").notNull(),
+    // Null: every event type of the environment.
+    eventTypeId: text("event_type_id"),
+    cursorStartAt: instant("cursor_start_at"),
+    cursorBookingId: text("cursor_booking_id"),
+    leaseUntil: instant("lease_until"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    foreignKey({
+      name: "scheduling_reminder_sync_environment_fk",
+      columns: [t.environmentId, t.organizationId],
+      foreignColumns: [environment.id, environment.organizationId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "scheduling_reminder_sync_event_type_fk",
+      columns: [t.eventTypeId, t.organizationId],
+      foreignColumns: [schedulingEventType.id, schedulingEventType.organizationId],
+    }).onDelete("cascade"),
+    index("scheduling_reminder_sync_environment_idx").on(t.environmentId),
   ],
 );
 
@@ -953,8 +1026,10 @@ export const schedulingSettings = pgTable(
     brandName: text("brand_name"),
     accentColor: text("accent_color"),
     emailFrom: text("email_from"),
+    emailReplyTo: text("email_reply_to"),
     smsFrom: text("sms_from"),
     notifications: jsonb("notifications").$type<SchedulingNotificationPolicy | null>(),
+    reminders: jsonb("reminders").$type<SchedulingReminderRule[] | null>(),
     calendarFailureMode: schedulingCalendarFailureMode("calendar_failure_mode")
       .notNull()
       .default("hide"),

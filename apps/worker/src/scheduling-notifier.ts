@@ -52,7 +52,7 @@ export function schedulingNotifier(opts: {
     email: SchedulingEmail,
     environment: SendEnvironment,
     from: string,
-    html: string,
+    content: { subject: string; text: string; html: string; replyTo: string | null },
     logo: SchedulingEmail["logo"] = null,
     hipaaOrigin = false,
   ): Promise<void> {
@@ -81,9 +81,10 @@ export function schedulingNotifier(opts: {
     const params = SendEmailRequest.parse({
       from,
       to: email.to,
-      subject: email.subject,
-      text: email.text,
-      html,
+      subject: content.subject,
+      text: content.text,
+      html: content.html,
+      ...(content.replyTo ? { reply_to: content.replyTo } : {}),
       category: "scheduling",
       // Manage links are secrets: never through click redirects, and in live environments never
       // kept after sending.
@@ -116,6 +117,19 @@ export function schedulingNotifier(opts: {
 
   return {
     async email(email) {
+      const own = {
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+        replyTo: email.replyTo,
+      };
+      // What a customer wrote, and where replies go, never leave under coss.com's address.
+      const coss = {
+        subject: email.cossSubject,
+        text: email.cossText,
+        html: email.cossHtml,
+        replyTo: null,
+      };
       const routes = [email.environment, ...(opts.fallback ? [opts.fallback.environment] : [])];
       if (await alreadySent(routes, email.idempotencyKey)) return;
       if (email.environment.mode === "sandbox") {
@@ -125,7 +139,7 @@ export function schedulingNotifier(opts: {
           email,
           email.environment,
           named(name, address),
-          email.html,
+          email.from ? own : coss,
           email.from ? email.logo : null,
         );
         return;
@@ -136,7 +150,7 @@ export function schedulingNotifier(opts: {
             email,
             email.environment,
             named(email.senderName, email.from),
-            email.html,
+            own,
             email.logo,
           );
           return;
@@ -154,7 +168,7 @@ export function schedulingNotifier(opts: {
         email,
         opts.fallback.environment,
         named(`${email.senderName} via coss.com`, opts.fallback.address),
-        email.cossHtml,
+        coss,
         null,
         // The row is coss.com's, so the mode's own checks can't see whose patient this names.
         await isHipaaMode(email.environment.organizationId),
