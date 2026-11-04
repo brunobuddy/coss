@@ -45,6 +45,7 @@ export type HostRow = {
 
 export type EventTypeFormState = {
   title: string;
+  description: string;
   uid: string;
   capacity: string;
   duration: string;
@@ -86,6 +87,7 @@ export function eventTypeFormState(eventType: EventTypeObjectOutput): EventTypeF
   const window = eventType.booking_window;
   return {
     title: eventType.title,
+    description: eventType.description ?? "",
     uid: eventType.uid ?? "",
     capacity: eventType.capacity === null ? "" : String(eventType.capacity),
     duration: String(eventType.duration_minutes),
@@ -183,6 +185,7 @@ function questionOptions(row: QuestionRow): string[] {
 export function eventTypePayload(state: EventTypeFormState, kind: EventTypeObjectOutput["kind"]) {
   return {
     title: state.title.trim(),
+    description: state.description.trim() || null,
     uid: state.uid.trim() || null,
     capacity: kind === "group" ? Number(state.capacity) : null,
     duration_minutes: Number(state.duration),
@@ -321,6 +324,7 @@ const LIST_LABEL: Record<string, string> = {
 
 const FIELD_LABEL: Record<string, string> = {
   title: "Title",
+  description: "Description",
   uid: "Your id",
   capacity: "Capacity",
   duration_minutes: "Duration",

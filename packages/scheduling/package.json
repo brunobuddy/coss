@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./branding": "./src/branding.ts",
+    "./description-links": "./src/description-links.ts",
     "./engine": "./src/engine/index.ts",
     "./schemas": "./src/schemas.ts",
     "./testing": "./src/testing.ts",

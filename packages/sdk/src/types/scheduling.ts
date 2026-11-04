@@ -204,6 +204,11 @@ interface SchedulingEventTypeFields {
   hold_ttl_seconds?: number;
   cancel_notice_minutes?: number;
   reschedule_notice_minutes?: number;
+  /**
+   * Plain text, shown on hosted booking pages and never in emails. Links must be on your
+   * organization's verified domains and use `https`.
+   */
+  description?: string | null;
   /** How many people an attendee can add to a booking. Default: 0. Not on `group`. */
   max_guests?: number;
   /**
@@ -245,6 +250,7 @@ export interface SchedulingEventType {
   id: string;
   uid: string | null;
   title: string;
+  description: string | null;
   kind: SchedulingEventTypeKind;
   status: "active" | "archived";
   duration_minutes: number;
@@ -302,6 +308,44 @@ export interface SchedulingSlotList {
   object: "list";
   data: SchedulingSlot[];
   has_more: false;
+}
+
+export type SchedulingBookingActorKind =
+  | "api_key"
+  | "user"
+  | "host_session"
+  | "booker_session"
+  | "manage_session"
+  | "system";
+
+export interface CancelSchedulingBookingParams {
+  /** Why it's being cancelled. Only retrieving this booking returns it. */
+  reason?: string;
+}
+
+export interface ListSchedulingBookingEventsParams {
+  limit?: number;
+  /** The last id of the previous page. */
+  after?: string;
+}
+
+export interface SchedulingBookingEvent {
+  object: "scheduling.booking_event";
+  id: string;
+  /** This booking's events count up from 1. */
+  sequence: number;
+  /** What happened, such as `scheduling.booking.rescheduled`. */
+  type: string;
+  actor: { kind: SchedulingBookingActorKind; id: string | null };
+  /** More about it, such as `previous_start` on a reschedule. Never personal data. */
+  details: Record<string, unknown>;
+  occurred_at: string;
+}
+
+export interface SchedulingBookingEventList {
+  object: "list";
+  data: SchedulingBookingEvent[];
+  has_more: boolean;
 }
 
 export interface ExplainSchedulingSlotParams {
@@ -424,6 +468,10 @@ export interface SchedulingBooking {
   external_conflict_at: string | null;
   no_show_at: string | null;
   cancelled_at: string | null;
+  /** Who cancelled it. `null`: not cancelled, or cancelled before this was recorded. */
+  cancelled_by: SchedulingBookingActorKind | null;
+  /** Why, if they said. Only when retrieving one booking. */
+  cancellation_reason?: string | null;
   metadata: Record<string, string>;
   created_at: string;
   updated_at: string;

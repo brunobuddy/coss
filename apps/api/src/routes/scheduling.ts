@@ -2,6 +2,7 @@
  * Scheduling over the public API (`/v1/scheduling/*`): hosts, their schedules, event types, slots,
  * bookings, holds and series. Tenancy comes only from the API key.
  */
+
 import {
   approveBooking,
   type BookingActor,
@@ -37,6 +38,7 @@ import {
   getSchedule,
   getSettings,
   getSettingsRow,
+  listBookingEvents,
   listBookings,
   listCalendarDelegations,
   listConnections,
@@ -66,6 +68,7 @@ import {
   AuthorizeCalendarRequest,
   AvailabilitySearchRequest,
   AvailabilitySearchResult,
+  BookingEventList,
   BookingList,
   BookingObject,
   CalendarAuthorization,
@@ -73,6 +76,7 @@ import {
   CalendarConnectionObject,
   CalendarDelegationList,
   CalendarDelegationObject,
+  CancelBookingRequest,
   CancelledSeries,
   CancelSeriesRequest,
   ConfirmHoldRequest,
@@ -95,6 +99,7 @@ import {
   ExplainSlotQuery,
   HostList,
   HostObject,
+  ListBookingEventsQuery,
   ListBookingsQuery,
   PageQuery,
   RescheduleBookingRequest,
@@ -118,6 +123,7 @@ import {
 } from "@coss/scheduling/schemas";
 import { secretsKeyRing } from "@coss/webhooks";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { recordApiAudit } from "../audit.ts";
 import { ApiError } from "../errors.ts";
@@ -635,6 +641,19 @@ export const rescheduleBookingRoute = createRoute({
   },
 });
 
+/**
+ * This route's body came later, and callers that send a JSON content type with no body have always
+ * been fine. Hono parses by the header, even with `required: false`, so an empty body is `{}` here.
+ */
+const emptyBodyIsAllowed = createMiddleware(async (c, next) => {
+  if (c.req.header("Content-Type")?.includes("json") && !(await c.req.text()).trim()) {
+    const { url, method, headers } = c.req.raw;
+    c.req.raw = new Request(url, { method, headers, body: "{}" });
+    c.req.bodyCache = {};
+  }
+  await next();
+});
+
 export const cancelBookingRoute = createRoute({
   method: "post",
   path: "/scheduling/bookings/{id}/cancel",
@@ -643,13 +662,37 @@ export const cancelBookingRoute = createRoute({
   summary: "Cancel a booking",
   description: "Frees the time and removes the calendar event. A cancelled booking stays charged.",
   security: [{ bearerAuth: [] }],
-  middleware: acting("update"),
-  request: { params: BookingParams },
+  middleware: [...acting("update"), emptyBodyIsAllowed],
+  request: {
+    params: BookingParams,
+    body: {
+      content: { "application/json": { schema: CancelBookingRequest } },
+      required: false,
+    },
+  },
   responses: {
     200: jsonDoc("The booking.", BookingObject),
     ...commonErrors,
     404: notFound,
     422: refusedChange,
+  },
+});
+
+export const listBookingEventsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/bookings/{id}/events",
+  operationId: "listSchedulingBookingEvents",
+  tags: [TAG_BOOKINGS],
+  summary: "List a booking's history",
+  description:
+    "What's happened to a booking, oldest first, and who did it. There's no personal data in here.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: BookingParams, query: ListBookingEventsQuery },
+  responses: {
+    200: jsonDoc("The events.", BookingEventList),
+    ...commonErrors,
+    404: notFound,
   },
 });
 
@@ -1665,12 +1708,24 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     );
   });
 
-  router.openapi(cancelBookingRoute, async (c) =>
-    c.json(
-      await cancelBooking(c.var.auth, c.req.valid("param").id, deps, actorOf(c.var.auth)),
+  router.openapi(cancelBookingRoute, async (c) => {
+    const body = c.req.valid("json") as { reason?: string } | undefined;
+    return c.json(
+      await cancelBooking(c.var.auth, c.req.valid("param").id, deps, actorOf(c.var.auth), {
+        reason: body?.reason,
+      }),
       200,
-    ),
-  );
+    );
+  });
+
+  router.openapi(listBookingEventsRoute, async (c) => {
+    const { data, hasMore } = await listBookingEvents(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("query"),
+    );
+    return c.json({ object: "list" as const, data, has_more: hasMore }, 200);
+  });
 
   router.openapi(approveBookingRoute, async (c) =>
     c.json(

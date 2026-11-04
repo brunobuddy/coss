@@ -385,13 +385,17 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.bookings.get",
     args: (r) => [pathId(r)],
   },
+  "GET /v1/scheduling/bookings/{id}/events": {
+    method: "scheduling.bookings.events",
+    args: (r) => [pathId(r), queryParams(r)],
+  },
   "POST /v1/scheduling/bookings/{id}/reschedule": {
     method: "scheduling.bookings.reschedule",
     args: (r) => [pathId(r), tsValue(r.body ?? {})],
   },
   "POST /v1/scheduling/bookings/{id}/cancel": {
     method: "scheduling.bookings.cancel",
-    args: (r) => [pathId(r)],
+    args: (r) => [pathId(r), ...(r.body ? [tsValue(r.body)] : [])],
   },
   "POST /v1/scheduling/bookings/{id}/approve": {
     method: "scheduling.bookings.approve",
