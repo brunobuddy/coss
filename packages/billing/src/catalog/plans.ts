@@ -94,6 +94,7 @@ export const PLANS = {
         scim: false,
         dedicatedIps: false,
         subaccounts: false,
+        calendarDelegation: false,
       },
       limits: {
         domains: 1,
@@ -141,6 +142,7 @@ export const PLANS = {
         scim: false,
         dedicatedIps: false,
         subaccounts: false,
+        calendarDelegation: false,
       },
       limits: {
         domains: 10,
@@ -195,6 +197,7 @@ export const PLANS = {
         scim: false,
         dedicatedIps: false,
         subaccounts: true,
+        calendarDelegation: true,
       },
       limits: {
         domains: 100,
@@ -248,6 +251,7 @@ export const PLANS = {
         scim: true,
         dedicatedIps: false,
         subaccounts: true,
+        calendarDelegation: true,
       },
       limits: {
         domains: null,
