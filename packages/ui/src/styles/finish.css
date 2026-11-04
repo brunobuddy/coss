@@ -1,0 +1,504 @@
+/*
+ * coss.com's tactile finish, shared by the dashboard and the marketing site: light from above on
+ * coss ui's vendored components, chosen by `data-slot`.
+ */
+
+/* One label voice: small caps-like labels over tables, sidebar groups and figures. */
+@utility label-caps {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1rem;
+  text-transform: uppercase;
+}
+
+[data-slot="table-head"],
+[data-slot="sidebar-group-label"] {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/*
+ * Primary and destructive buttons have a lit top edge; every button gives a little when pressed.
+ * Matched by the button's own classes, not `data-slot`: a button rendered as a dialog or menu
+ * trigger carries the trigger's slot instead.
+ */
+:is(.bg-primary, .bg-destructive)[class*="color-white/16%"]:not(:disabled) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 16%, transparent),
+    transparent 55%
+  );
+}
+
+/* White (outline) buttons read as keycaps: a faint shade toward a slightly heavier bottom edge. */
+[class*="data-loading:select-none"].bg-popover:not(:disabled) {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 40%,
+    color-mix(in srgb, var(--foreground) 3.5%, transparent)
+  );
+  border-bottom-color: color-mix(in srgb, var(--input), var(--foreground) 16%);
+}
+
+.dark [class*="data-loading:select-none"].bg-popover:not(:disabled) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 5%, transparent),
+    transparent 60%
+  );
+  border-bottom-color: var(--input);
+}
+
+[class*="data-loading:select-none"] {
+  transition-property: box-shadow, background-color, border-color, transform;
+  transition-duration: 150ms;
+}
+
+[class*="data-loading:select-none"]:not(:disabled):active {
+  transform: translateY(0.5px) scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="data-loading:select-none"]:not(:disabled):active {
+    transform: none;
+  }
+}
+
+/*
+ * Light from above, everywhere it carries meaning: raised things (the selected tab, keys, switch
+ * thumbs) catch light on top and sit on a heavier bottom edge; wells (inputs, the tab track) are
+ * shaded just inside their top edge. Gradients, not box-shadow, so focus rings stay intact.
+ */
+:is([data-slot="input-control"], [data-slot="textarea-control"], [data-slot="input-group"]),
+[data-slot="tabs-list"].bg-muted {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 3.5%, transparent),
+    transparent 0.5rem
+  );
+}
+
+.dark
+  :is(
+    [data-slot="input-control"],
+    [data-slot="textarea-control"],
+    [data-slot="input-group"],
+    [data-slot="tabs-list"].bg-muted
+  ) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, black 22%, transparent),
+    transparent 0.5rem
+  );
+}
+
+[data-slot="input-group"] :is([data-slot="input-control"], [data-slot="input"]) {
+  background-image: none;
+}
+
+/* A transparent control is part of something else (the ⌘K palette's search), not a well. */
+:is([data-slot="input-control"], [data-slot="input-group"])[class*="bg-transparent"],
+.dark :is([data-slot="input-control"], [data-slot="input-group"])[class*="bg-transparent"] {
+  background-image: none;
+}
+
+[data-slot="tab-indicator"].bg-background,
+[data-slot="switch-thumb"] {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 40%,
+    color-mix(in srgb, var(--foreground) 4%, transparent)
+  );
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 10%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--foreground) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 70%, transparent);
+}
+
+.dark :is([data-slot="tab-indicator"].bg-background, [data-slot="switch-thumb"]) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 6%, transparent),
+    transparent 60%
+  );
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 40%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+}
+
+[data-slot="kbd"] {
+  background-image: linear-gradient(to bottom, var(--background), var(--muted));
+  box-shadow:
+    inset 0 -1px 0 color-mix(in srgb, var(--foreground) 14%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+/* Popups hang in the same light: a lit top edge over a soft, deep shadow. */
+:is(
+  [data-slot="menu-popup"],
+  [data-slot="select-popup"],
+  [data-slot="popover-popup"],
+  [data-slot="dialog-popup"],
+  [data-slot="alert-dialog-popup"],
+  [data-slot="command-dialog-popup"]
+) {
+  box-shadow:
+    0 16px 40px -12px color-mix(in srgb, black 22%, transparent),
+    0 2px 6px color-mix(in srgb, black 6%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 70%, transparent);
+}
+
+.dark
+  :is(
+    [data-slot="menu-popup"],
+    [data-slot="select-popup"],
+    [data-slot="popover-popup"],
+    [data-slot="dialog-popup"],
+    [data-slot="alert-dialog-popup"],
+    [data-slot="command-dialog-popup"]
+  ) {
+  box-shadow:
+    0 16px 40px -12px color-mix(in srgb, black 70%, transparent),
+    0 2px 6px color-mix(in srgb, black 30%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 7%, transparent);
+}
+
+[data-slot="tooltip-popup"] {
+  box-shadow:
+    0 4px 12px -2px color-mix(in srgb, black 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 60%, transparent);
+}
+
+.dark [data-slot="tooltip-popup"] {
+  box-shadow:
+    0 4px 12px -2px color-mix(in srgb, black 50%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 7%, transparent);
+}
+
+/*
+ * A modal's header is a lit band over the drafting dots, set off from the body by a hairline; its
+ * footer is the tray under it. Without a body the header just fades into the footer.
+ */
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]) {
+  position: relative;
+  isolation: isolate;
+  border-start-start-radius: calc(var(--radius-2xl) - 1px);
+  border-start-end-radius: calc(var(--radius-2xl) - 1px);
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 4%, transparent),
+    transparent
+  );
+}
+
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"])::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--foreground) 15%, transparent) 1px,
+    transparent 1.2px
+  );
+  background-size: 1rem 1rem;
+  mask-image: radial-gradient(ellipse 70% 120% at top right, black, transparent);
+}
+
+[data-slot="dialog-header"] {
+  padding-inline-end: 3.5rem;
+}
+
+/* With an icon (`DialogIcon` in apps/web): the tile beside the title and description. */
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]):has(
+  > [data-slot="dialog-icon"]
+) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 1rem;
+  row-gap: 0.375rem;
+  align-items: start;
+  text-align: start;
+}
+
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]) > [data-slot="dialog-icon"] {
+  grid-row: span 2;
+}
+
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]):has(> [data-slot="dialog-icon"])
+  > :not([data-slot="dialog-icon"]) {
+  grid-column: 2;
+}
+
+:is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]):has(> [data-slot="dialog-icon"])
+  > :is([data-slot="dialog-title"], [data-slot="alert-dialog-title"]) {
+  align-self: center;
+  min-height: 1.25rem;
+  margin-top: 0.125rem;
+}
+
+[data-slot="dialog-popup"]:has([data-slot="dialog-panel"]) [data-slot="dialog-header"] {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+[data-slot="dialog-popup"]:has([data-slot="dialog-header"]) [data-slot="dialog-panel"] {
+  padding-top: 1.25rem;
+}
+
+:is([data-slot="dialog-description"], [data-slot="alert-dialog-description"]) {
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+:is([data-slot="dialog-footer"], [data-slot="alert-dialog-footer"]).border-t {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 3%, transparent),
+    transparent 0.75rem
+  );
+}
+
+.dark :is([data-slot="dialog-footer"], [data-slot="alert-dialog-footer"]).border-t {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, black 20%, transparent),
+    transparent 0.75rem
+  );
+}
+
+@media (width < 40rem) {
+  :is([data-slot="dialog-header"], [data-slot="alert-dialog-header"]) {
+    border-radius: 0;
+  }
+}
+
+/* The item under the pointer is a raised pill, like the sidebar's highlight. */
+:is(
+  [data-slot="menu-item"],
+  [data-slot="menu-link-item"],
+  [data-slot="menu-checkbox-item"],
+  [data-slot="menu-radio-item"],
+  [data-slot="menu-sub-trigger"],
+  [data-slot="select-item"],
+  [data-slot="command-item"]
+)[data-highlighted] {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 7%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 55%, transparent);
+}
+
+.dark
+  :is(
+    [data-slot="menu-item"],
+    [data-slot="menu-link-item"],
+    [data-slot="menu-checkbox-item"],
+    [data-slot="menu-radio-item"],
+    [data-slot="menu-sub-trigger"],
+    [data-slot="select-item"],
+    [data-slot="command-item"]
+  )[data-highlighted] {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 40%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 6%, transparent);
+}
+
+/* Selects are keycaps like white buttons; checkboxes and radios are wells until checked. */
+:is([data-slot="select-trigger"], [data-slot="select-button"]):not([data-disabled]) {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 40%,
+    color-mix(in srgb, var(--foreground) 3.5%, transparent)
+  );
+  border-bottom-color: color-mix(in srgb, var(--input), var(--foreground) 16%);
+}
+
+.dark :is([data-slot="select-trigger"], [data-slot="select-button"]):not([data-disabled]) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 5%, transparent),
+    transparent 60%
+  );
+  border-bottom-color: var(--input);
+}
+
+:is([data-slot="checkbox"], [data-slot="radio"]):not([data-checked]) {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 6%, transparent),
+    transparent 70%
+  );
+}
+
+:is([data-slot="checkbox-indicator"], [data-slot="radio-indicator"])[data-checked] {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, white 20%, transparent),
+    transparent 60%
+  );
+}
+
+/*
+ * Motion, one vocabulary: things arrive by rising a few pixels out of nothing, quickly, in reading
+ * order; figures count up and lines draw in. All of it is off under `prefers-reduced-motion`.
+ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes grow {
+  from {
+    scale: 1 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    scale: 0.5;
+  }
+}
+
+/* Checkmark paths are shorter than 24 units, so a 24-unit dash hides them whole. */
+@keyframes tick {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * Menus and dropdowns grow out of what opened them and shrink back as they close. A select laid
+   * over its trigger (`data-side="none"`) only fades: Base UI measures it in place.
+   */
+  :is([data-slot="menu-popup"], [data-slot="menu-sub-content"], [data-slot="select-popup"]) {
+    transition:
+      opacity 140ms ease-out,
+      scale 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  :is(
+    [data-slot="menu-popup"],
+    [data-slot="menu-sub-content"],
+    [data-slot="select-popup"]
+  )[data-starting-style] {
+    opacity: 0;
+    scale: 0.95;
+  }
+
+  :is(
+    [data-slot="menu-popup"],
+    [data-slot="menu-sub-content"],
+    [data-slot="select-popup"],
+    [data-slot="popover-popup"]
+  )[data-ending-style] {
+    opacity: 0;
+    scale: 0.97;
+    transition-duration: 100ms;
+    transition-timing-function: ease-in;
+  }
+
+  [data-slot="select-popup"][data-side="none"]:is([data-starting-style], [data-ending-style]) {
+    scale: 1;
+  }
+
+  /* The highlight follows the pointer softly instead of blinking from item to item. */
+  :is(
+    [data-slot="menu-item"],
+    [data-slot="menu-link-item"],
+    [data-slot="menu-checkbox-item"],
+    [data-slot="menu-radio-item"],
+    [data-slot="menu-sub-trigger"],
+    [data-slot="select-item"],
+    [data-slot="command-item"]
+  ) {
+    transition:
+      background-color 100ms ease-out,
+      box-shadow 100ms ease-out,
+      color 100ms ease-out;
+  }
+
+  /* Checkboxes and radios give under the finger; their fill pops in and the tick draws itself. */
+  :is([data-slot="checkbox"], [data-slot="radio"]) {
+    transition:
+      box-shadow 150ms,
+      scale 120ms ease-out;
+  }
+
+  :is([data-slot="checkbox"], [data-slot="radio"]):not([data-disabled]):active {
+    scale: 0.88;
+  }
+
+  :is([data-slot="checkbox-indicator"], [data-slot="radio-indicator"]):not([data-unchecked]) {
+    animation: pop 220ms cubic-bezier(0.3, 1.4, 0.6, 1) both;
+  }
+
+  [data-slot="checkbox-indicator"] path {
+    stroke-dasharray: 24;
+    animation: tick 240ms cubic-bezier(0.4, 0, 0.2, 1) 80ms both;
+  }
+
+  [data-slot="radio-indicator"]:not([data-unchecked])::before {
+    animation: pop 240ms cubic-bezier(0.3, 1.6, 0.6, 1) 60ms both;
+  }
+
+  /* A tab's panel fades in as the tab is chosen. */
+  [data-slot="tabs-content"]:not([hidden]) {
+    animation: fade 200ms ease-out both;
+  }
+
+  /* The sidebar's pages crossfade when moving to another product. */
+  .panel-swap {
+    animation: fade 180ms ease-out both;
+  }
+
+  /* Small confirmations: a copied tick pops, an inline error rises into place. */
+  .icon-pop {
+    animation: pop 260ms cubic-bezier(0.3, 1.5, 0.6, 1) both;
+  }
+
+  .enter-rise {
+    animation: rise 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
+/* Badges are pills. */
+[data-slot="badge"] {
+  border-radius: 9999px;
+  padding-inline: 0.5rem;
+  gap: 0.3125rem;
+}
+
+/* A table inside a panel lines its first and last columns up with the panel's title. */
+[data-slot="card-frame"] :is([data-slot="table-head"], [data-slot="table-cell"]):first-child {
+  padding-inline-start: 1.25rem;
+}
+
+[data-slot="card-frame"] :is([data-slot="table-head"], [data-slot="table-cell"]):last-child {
+  padding-inline-end: 1.25rem;
+}

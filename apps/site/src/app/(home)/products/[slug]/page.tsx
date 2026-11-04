@@ -1,16 +1,26 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/json-ld";
-import { getMarketingMDXComponents } from "@/components/marketing-mdx";
 import {
-  type CardLink,
-  Faq,
+  Band,
+  Close,
+  Crumbs,
+  FaqList,
+  FeatureCell,
+  FeatureRow,
+  Heading,
+  Hero,
   HeroActions,
-  LinkGrid,
-  MarketingClose,
-  MarketingHero,
-  Sheet,
-} from "@/components/marketing-page";
+  type OnwardLink,
+  OnwardLinks,
+  Page,
+  ProductTile,
+  Stage,
+  Tray,
+} from "@/components/marketing/kit";
+import { PricingAndLimits, ProductSample } from "@/components/marketing/samples";
+import { SHOWCASES } from "@/components/products";
 import { COMPARE_ROUTE, competitorsFor } from "@/lib/compare";
 import {
   marketingMarkdownUrl,
@@ -19,16 +29,20 @@ import {
   productPages,
   solutionPages,
 } from "@/lib/marketing";
+import { productVisual } from "@/lib/product-visuals";
 import { breadcrumbSchema, faqSchema, pageMetadata, productSchema } from "@/lib/seo";
 
 export default async function ProductRoute({ params }: PageProps<"/products/[slug]">) {
   const { slug } = await params;
   const page = productBySlug(slug);
-  if (!page) notFound();
-  const { title, headline, description, call, mark, docs, features, faq } = page.data;
-  const MDX = page.data.body;
+  const showcase = SHOWCASES[slug];
+  if (!page || !showcase) notFound();
+  const { title, headline, description, docs, features, faq } = page.data;
+  const markdown = await page.data.getText("processed");
+  const leading = showcase.highlights.slice(0, 2);
+  const rest = showcase.highlights.slice(2);
   return (
-    <Sheet>
+    <Page>
       <JsonLd
         data={productSchema({
           name: title,
@@ -44,43 +58,75 @@ export default async function ProductRoute({ params }: PageProps<"/products/[slu
         ])}
       />
       {faq.length ? <JsonLd data={faqSchema(faq)} /> : null}
-      <MarketingHero
+      <Crumbs trail={[["Products", "/products"], [title]]} />
+      <Hero
         actions={<HeroActions docs={docs} />}
-        call={call}
         headline={headline}
-        lede={<p>{description}</p>}
-        mark={mark}
-      />
-      <MDX components={getMarketingMDXComponents()} />
-      <Faq faq={faq} />
-      <LinkGrid
+        lede={<p>{showcase.lede}</p>}
+        tile={<ProductTile size="lg" slug={slug} />}
+      >
+        <Stage
+          code={<ProductSample body={page.data.body} />}
+          title={showcase.call}
+          tone={productVisual(slug).tone}
+        >
+          {showcase.stage}
+        </Stage>
+      </Hero>
+      <Band>
+        <div className="flex flex-col gap-16 sm:gap-24">
+          {leading.map((highlight, index) => (
+            <FeatureRow
+              body={highlight.body}
+              href={highlight.href}
+              key={highlight.title}
+              reverse={index % 2 === 1}
+              title={highlight.title}
+            >
+              {highlight.demo}
+            </FeatureRow>
+          ))}
+          {rest.length ? (
+            <div className="grid gap-10 md:grid-cols-2 md:gap-8">
+              {rest.map((highlight) => (
+                <FeatureCell
+                  body={highlight.body}
+                  href={highlight.href}
+                  key={highlight.title}
+                  title={highlight.title}
+                >
+                  {highlight.demo}
+                </FeatureCell>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </Band>
+      <PricingAndLimits body={page.data.body} docs={docs} markdown={markdown} />
+      <FaqList faq={faq} />
+      <OnwardLinks
         id="related-title"
+        lede="On the same key, SDK, webhooks and logs: nothing more to set up."
         links={related(page)}
         title="Works with"
-        lede="On the same key, SDK, webhooks and logs: nothing more to set up."
       />
-      <LinkGrid
+      <OnwardLinks
         id="compare-title"
         links={competitorsFor(slug).map((c) => ({
           href: `${COMPARE_ROUTE}/${c.slug}`,
           title: `coss.com vs ${c.name}`,
-          description: c.verdict,
         }))}
         title="Compared"
-        lede="How it stacks up against the services you may be using, with sources."
       />
-      <MarketingClose title={`Start with ${title} today.`}>
-        <p>
-          Development keys record every request and event and deliver nothing, so you can build and
-          test before you verify a domain. Hand your coding agent this prompt:
-        </p>
-      </MarketingClose>
-    </Sheet>
+      <Close title={showcase.close ?? `Start with ${title} today.`}>
+        <p>Development keys record every request and event and deliver nothing.</p>
+      </Close>
+    </Page>
   );
 }
 
 /** The related products, then the solutions that use this one. */
-function related(page: ProductPage): CardLink[] {
+function related(page: ProductPage): OnwardLink[] {
   const slug = page.slugs[0] ?? "";
   const products = page.data.related.flatMap((other) => {
     const product = productBySlug(other);
@@ -89,9 +135,7 @@ function related(page: ProductPage): CardLink[] {
           {
             href: product.url,
             title: product.data.title,
-            description: product.data.description ?? "",
-            mark: product.data.mark,
-            call: product.data.call,
+            slug: other,
           },
         ]
       : [];
@@ -101,7 +145,6 @@ function related(page: ProductPage): CardLink[] {
     .map((solution) => ({
       href: solution.url,
       title: solution.data.title,
-      description: solution.data.description ?? "",
     }));
   return [...products, ...solutions];
 }

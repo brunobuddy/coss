@@ -4,8 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import { JsonLd } from "@/components/json-ld";
-import { LinkGrid, Sheet } from "@/components/marketing-page";
-import { SectionHead } from "@/components/sheet";
+import { Crumbs, Hero, OnwardLinks, Page, Tray } from "@/components/marketing/kit";
 import { DmarcRecordChecker } from "@/components/tools/dmarc-record-checker";
 import { SmsSegmentCalculator } from "@/components/tools/sms-segment-calculator";
 import { WebhookSignatureVerifier } from "@/components/tools/webhook-signature-verifier";
@@ -42,7 +41,7 @@ export default async function ToolPage({ params }: PageProps<"/products/tools/[s
   if (!tool || !Tool) notFound();
   const path = `${TOOLS_ROUTE}/${tool.slug}`;
   return (
-    <Sheet>
+    <Page>
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -62,29 +61,43 @@ export default async function ToolPage({ params }: PageProps<"/products/tools/[s
           [tool.name, path],
         ])}
       />
-      <section className="border-b">
-        <SectionHead as="h1" id="tool-title" title={tool.name}>
-          <p>{tool.lede}</p>
-        </SectionHead>
-        <Tool />
-        <div className="flex flex-wrap gap-2.5 border-t px-4 py-6 sm:px-8">
-          <Button render={<Link href={tool.product.href} />} variant="outline">
-            {tool.product.label}
-          </Button>
-          <Button render={<Link href={tool.docs.href} />} variant="ghost">
-            {tool.docs.label}
-          </Button>
-        </div>
-      </section>
-      <LinkGrid
+      <Crumbs trail={[["Products", "/products"], ["Free tools", TOOLS_ROUTE], [tool.name]]} />
+      <Hero
+        actions={
+          <>
+            <Button
+              className="px-5"
+              render={<Link href={tool.product.href} />}
+              size="lg"
+              variant="outline"
+            >
+              {tool.product.label}
+            </Button>
+            <Button
+              className="px-5"
+              render={<Link href={tool.docs.href} />}
+              size="lg"
+              variant="ghost"
+            >
+              {tool.docs.label}
+            </Button>
+          </>
+        }
+        headline={tool.name}
+        lede={<p>{tool.lede}</p>}
+      >
+        <Tray flush meta="Runs in your browser" title={tool.name}>
+          <Tool />
+        </Tray>
+      </Hero>
+      <OnwardLinks
         id="other-tools"
         links={FREE_TOOLS.filter((other) => other.slug !== tool.slug).map((other) => ({
           href: `${TOOLS_ROUTE}/${other.slug}`,
           title: other.name,
-          description: other.description,
         }))}
         title="Other tools"
       />
-    </Sheet>
+    </Page>
   );
 }

@@ -37,6 +37,30 @@ faq:
     answer: Assessments keep answering, free, without velocity, memory of earlier events or content checks, and list usage_limit in degraded. Your lists, rules and stateless email and IP signals still decide. They never fail over billing, so a limit can't switch your protection off.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const body: { email: string; device: string };
+declare const request: { ip: string; userAgent: string };
+// ---cut---
+// [!code word:coss.risk.assess]
+const { data: assessment } = await coss.risk.assess({
+  event: "signup",
+  user: { email: body.email },
+  ip: request.ip,
+  user_agent: request.userAgent,
+  device: { token: body.device },
+});
+
+if (assessment?.decision === "block") {
+  throw new Error("We couldn't create your account.");
+}
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Assess the event when it happens, act on the decision, and tell coss.com later what the user turned out to be.">
 
 ```ts twoslash
