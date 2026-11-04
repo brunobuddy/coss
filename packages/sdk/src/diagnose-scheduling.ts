@@ -287,6 +287,14 @@ function findingsFor(
           connection.provider !== "simulated",
       ),
     );
+    const lostByDelegation = (entry: SchedulingSlotsHostInput, delegated: boolean): boolean =>
+      (entry.calendars ?? []).some(
+        (connection) =>
+          connection.status === "needs_reauth" &&
+          connection.provider !== "zoom" &&
+          connection.provider !== "simulated" &&
+          (connection.delegation !== null) === delegated,
+      );
     if (needsReauth.length > 0) {
       add(
         hidesOnFailure
@@ -298,7 +306,16 @@ function findingsFor(
         "calendar_needs_reauth",
         `${needsReauth.map((entry) => entry.host.name).join(", ")} lost access to a calendar${hidesOnFailure ? ", so they aren't offered until it's back: an unreadable calendar never reads as free" : "; with `calendar_failure_mode: last_known` the last known busy times are used"}.`,
         [
-          `Have them connect it again (${ref.authorize_scheduling_calendar}; ${ref.list_scheduling_calendars} shows each connection).`,
+          ...(needsReauth.some((entry) => lostByDelegation(entry, false))
+            ? [
+                `Have them connect it again (${ref.authorize_scheduling_calendar}; ${ref.list_scheduling_calendars} shows each connection).`,
+              ]
+            : []),
+          ...(needsReauth.some((entry) => lostByDelegation(entry, true))
+            ? [
+                "Reconnecting won't help a calendar a delegation manages (`delegation` on the connection): its Workspace or Entra admin has to restore access, and it comes back by itself. Check the delegation's `status` and `last_error_code`, and that the mailbox exists on the domain.",
+              ]
+            : []),
         ],
       );
     }

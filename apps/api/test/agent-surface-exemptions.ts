@@ -17,6 +17,8 @@ const SENDS =
 const BULK = "A whole list in one file: the dashboard, `coss api` and the SDK handle it.";
 const BYTES = "Answers with a file's bytes, not text for an agent: `coss api --raw` and the SDK.";
 const SECRET = "A signing secret is shown once, when it's created: never handed to an agent again.";
+const DELEGATION =
+  "Takes a Workspace or tenant's credentials, reaching every mailbox on a domain: set up by its admin, not an agent.";
 
 export const AGENT_SURFACE_EXEMPTIONS: Readonly<Record<string, string>> = {
   "POST /v1/emails/batch": SENDS,
@@ -64,6 +66,12 @@ export const AGENT_SURFACE_EXEMPTIONS: Readonly<Record<string, string>> = {
   "POST /v1/scheduling/series/{id}/cancel": CHANGE,
   "DELETE /v1/scheduling/attendees/{uid}": REMOVES,
   "POST /v1/scheduling/attendees/erase": REMOVES,
+  "POST /v1/scheduling/calendar_delegations": DELEGATION,
+  "GET /v1/scheduling/calendar_delegations": READ,
+  "GET /v1/scheduling/calendar_delegations/{id}": READ,
+  "PATCH /v1/scheduling/calendar_delegations/{id}": DELEGATION,
+  "POST /v1/scheduling/calendar_delegations/{id}/verify": DELEGATION,
+  "DELETE /v1/scheduling/calendar_delegations/{id}": REMOVES,
   "POST /v1/scheduling/hosts/{host}/calendar_connections": CHANGE,
   "DELETE /v1/scheduling/hosts/{host}/calendar_connections/{id}": REMOVES,
   "PATCH /v1/scheduling/hosts/{host}/calendars/{calendar_id}": CHANGE,

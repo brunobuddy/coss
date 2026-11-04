@@ -156,6 +156,7 @@ export const ID_PREFIXES = {
   schedulingSchedule: "sched",
   schedulingEventType: "evtype",
   schedulingCalendarConnection: "calconn",
+  schedulingCalendarDelegation: "caldlg",
   schedulingCalendar: "cal",
   schedulingClaim: "claim",
   schedulingBooking: "book",

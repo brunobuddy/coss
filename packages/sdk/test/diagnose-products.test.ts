@@ -796,6 +796,7 @@ describe("diagnoseSchedulingSlots", () => {
     const calendars = (minutes: number | null) => [
       {
         object: "scheduling.calendar_connection" as const,
+        delegation: null,
         id: "scc_1",
         host: "shost_1",
         provider: "caldav" as const,
@@ -841,6 +842,7 @@ describe("diagnoseSchedulingSlots", () => {
     const calendars = [
       {
         object: "scheduling.calendar_connection" as const,
+        delegation: null,
         id: "scc_1",
         host: "shost_1",
         provider: "google" as const,
@@ -864,6 +866,24 @@ describe("diagnoseSchedulingSlots", () => {
     });
     expect(hidden.explanation).toContain("never reads as free");
     expect(hidden.next_steps[0]).toContain(PRODUCT_SDK_REFERENCES.authorize_scheduling_calendar);
+    const managed = diagnoseSchedulingSlots({
+      eventType: schedulingEventType(),
+      range,
+      slots: [],
+      hosts: [
+        {
+          host: schedulingHost(),
+          schedules: [schedulingSchedule()],
+          calendars: calendars.map((row) => ({ ...row, delegation: "caldlg_1" })),
+        },
+      ],
+      now: NOW,
+    });
+    expect(managed.findings[0]).toMatchObject({ code: "calendar_needs_reauth" });
+    expect(managed.next_steps.join(" ")).toContain("delegation");
+    expect(managed.next_steps.join(" ")).not.toContain(
+      PRODUCT_SDK_REFERENCES.authorize_scheduling_calendar,
+    );
     const lastKnown = diagnoseSchedulingSlots({
       eventType: schedulingEventType(),
       range,
@@ -878,6 +898,7 @@ describe("diagnoseSchedulingSlots", () => {
   test("a Zoom connection never hides anyone, and a simulated one is never stale", () => {
     const connection = (provider: "zoom" | "simulated") => ({
       object: "scheduling.calendar_connection" as const,
+      delegation: null,
       id: "scc_1",
       host: "shost_1",
       provider,
@@ -916,6 +937,7 @@ describe("diagnoseSchedulingSlots", () => {
           calendars: [
             {
               object: "scheduling.calendar_connection",
+              delegation: null,
               id: "scc_1",
               host: "shost_1",
               provider: "google",

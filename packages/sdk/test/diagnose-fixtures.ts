@@ -370,6 +370,7 @@ export function schedulingHost(overrides: Partial<SchedulingHost> = {}): Schedul
     name: "Grace",
     email: null,
     phone: null,
+    calendar_account: null,
     time_zone: "Europe/London",
     locations: [],
     attributes: {},
