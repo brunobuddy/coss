@@ -357,26 +357,29 @@ async function releaseOldMailbox(
     );
   }
   // A cancellation not written yet would stay on the old calendar for good, since this takes its
-  // ledger row with it. Nothing's ever written to a calendar that can't be reached, so no waiting then.
-  if (connection.status === "active") {
-    const [owed] = await tx
-      .select({ id: schedulingCalendarEvent.id })
-      .from(schedulingCalendarEvent)
-      .innerJoin(schedulingCalendar, eq(schedulingCalendar.id, schedulingCalendarEvent.calendarId))
-      .where(
-        and(
-          eq(schedulingCalendar.connectionId, connection.id),
-          eq(schedulingCalendarEvent.organizationId, connection.organizationId),
-          sql`${schedulingCalendarEvent.appliedVersion} < ${schedulingCalendarEvent.desiredVersion}`,
-        ),
-      )
-      .limit(1);
-    if (owed) {
-      throw new SchedulingError(
-        "host_has_live_bookings",
-        "Changes to this host's calendar are still being written. Try again in a moment.",
-      );
-    }
+  // ledger row with it. Access can come back, so that holds for one that can't be reached too, as
+  // long as there's an event there to cancel: one never written leaves nothing behind.
+  const reachable = connection.status === "active";
+  const [owed] = await tx
+    .select({ id: schedulingCalendarEvent.id })
+    .from(schedulingCalendarEvent)
+    .innerJoin(schedulingCalendar, eq(schedulingCalendar.id, schedulingCalendarEvent.calendarId))
+    .where(
+      and(
+        eq(schedulingCalendar.connectionId, connection.id),
+        eq(schedulingCalendarEvent.organizationId, connection.organizationId),
+        sql`${schedulingCalendarEvent.appliedVersion} < ${schedulingCalendarEvent.desiredVersion}`,
+        reachable ? undefined : isNotNull(schedulingCalendarEvent.providerEventId),
+      ),
+    )
+    .limit(1);
+  if (owed) {
+    throw new SchedulingError(
+      "host_has_live_bookings",
+      reachable
+        ? "Changes to this host's calendar are still being written. Try again in a moment."
+        : "Changes to this host's calendar can't be written until it can be reached again. Restore access to the mailbox, or delete the host.",
+    );
   }
   await recordCalendarEvent(tx, connection, "scheduling.calendar.disconnected", new Date());
   await tx

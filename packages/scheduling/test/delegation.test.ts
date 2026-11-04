@@ -722,6 +722,59 @@ describe("a host's email and mailbox", () => {
     expect(await listConnections(env, ana.id)).toEqual([]);
   });
 
+  test("an outage doesn't let a move lose a cancellation of an event that's on the calendar", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    const eventType = await eventTypeFor(env, [ana.id]);
+    const delegation = await activeGoogle(env, deps);
+    await run(env, deps);
+    const plain = testSchedulingDeps({ now: () => NOW });
+    const { booking } = await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("09:00"), attendee },
+      plain,
+      actor,
+    );
+    await runDueCalendarWrites(deps, { scope: scope(env) });
+    await markDelegationFailing(
+      { id: delegation.id, organizationId: env.organizationId },
+      "unauthorized_client",
+      { now: () => NOW },
+    );
+    await cancelBooking(env, booking.id, plain, actor);
+    const moved = { calendar_account: `ana.new@${DOMAIN}` };
+    const refused = await updateHost(env, ana.id, moved).catch((error: Error) => error);
+    expect((refused as SchedulingError).code).toBe("host_has_live_bookings");
+    expect((refused as Error).message).toContain("delete the host");
+    expect(await listConnections(env, ana.id)).toHaveLength(1);
+  });
+
+  test("a mailbox that can't be reached and was never written to can be moved", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    const eventType = await eventTypeFor(env, [ana.id]);
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    const plain = testSchedulingDeps({ now: () => NOW });
+    const { booking } = await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("09:00"), attendee },
+      plain,
+      actor,
+    );
+    await db
+      .update(schema.schedulingCalendarConnection)
+      .set({ status: "needs_reauth", lastErrorAt: NOW })
+      .where(eq(schema.schedulingCalendarConnection.hostId, ana.id));
+    await cancelBooking(env, booking.id, plain, actor);
+    await updateHost(env, ana.id, { calendar_account: `ana.new@${DOMAIN}` });
+    expect(await listConnections(env, ana.id)).toEqual([]);
+  });
+
   test("setting calendar_account to the mailbox already connected changes nothing", async () => {
     const env = await environment();
     const api = new FakeGoogleCalendarApi();
