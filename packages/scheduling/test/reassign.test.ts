@@ -1442,6 +1442,18 @@ describe("who's told", () => {
     expect(subjectsTo(sent, "d@example.com")).toEqual(["Assigned to you: Call"]);
   });
 
+  test("cancelling straight after still tells the host who lost it", async () => {
+    const { env, booking, second } = await pair();
+    await reassign(env, booking.id, change(second.id));
+    await cancelBooking(env, booking.id, plain, actor);
+    const { sent, deps } = sender();
+    await runDueSchedulingNotifications(deps as never, { scope: scope(env) });
+    expect(subjectsTo(sent, "first@example.com")).toEqual(["No longer yours: Call"]);
+    const toSecond = subjectsTo(sent, "second@example.com");
+    expect(toSecond.some((subject) => subject.startsWith("Assigned"))).toBe(false);
+    expect(toSecond.length).toBe(1);
+  });
+
   test("going on to a third still tells the first, and not the one in between", async () => {
     const { env, booking, second } = await pair();
     const third = await host(env, "Dr. Third", { email: "third@example.com" });

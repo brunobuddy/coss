@@ -306,22 +306,27 @@ describe("what a run covers", () => {
     const [a, b, c] = await Promise.all([host(env, "A"), host(env, "B"), host(env, "C")]);
     const limits = [{ period: "day", max: 1, scope: "event_type" }];
     const type = await pool(env, [a, b, c], { limits });
-    const first = await book(env, type.id, at("10:00"), a.id);
-    const second = await book(env, type.id, at("10:00"), c.id);
+    // Two at one time go in id order, and those can come out either way within a millisecond.
+    const ordered = [
+      { id: (await book(env, type.id, at("10:00"), a.id)).id, host: a.id },
+      { id: (await book(env, type.id, at("10:00"), c.id)).id, host: c.id },
+    ].sort((x, y) => (x.id < y.id ? -1 : 1));
+    const first = ordered[0] as { id: string; host: string };
+    const second = ordered[1] as { id: string; host: string };
     const assignments = [
-      { booking: first.id, to_host: b.id, from_host: a.id },
-      { booking: second.id, to_host: a.id, from_host: c.id },
+      { booking: first.id, to_host: b.id, from_host: first.host },
+      { booking: second.id, to_host: first.host, from_host: second.host },
     ];
     const selection = { booking_ids: [first.id, second.id] };
     const { items } = await previewReassignment(env, request(selection, { assignments }), plain);
     expect(Object.fromEntries(items.map((item) => [item.booking, item.to_host]))).toEqual({
       [first.id]: b.id,
-      [second.id]: a.id,
+      [second.id]: first.host,
     });
     await start(env, request(selection, { assignments }));
     await drain(env);
     expect(await hostsOf(first.id)).toEqual([b.id]);
-    expect(await hostsOf(second.id)).toEqual([a.id]);
+    expect(await hostsOf(second.id)).toEqual([first.host]);
   });
 
   test("a limit on an event type only counts what's proposed from it", async () => {

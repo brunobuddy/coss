@@ -1791,6 +1791,26 @@ describe("out of office", () => {
       expect(asked.status).toBe(422);
     });
 
+    test("time away comes a page at a time", async () => {
+      const { lead, host, peer } = await team();
+      for (const hostId of [host.id, peer.id]) {
+        const made = await lead("/manager/out_of_office", "POST", { ...WHEN, hosts: [hostId] });
+        expect(made.status).toBe(201);
+      }
+      const page = async (query: string) =>
+        (await (await lead(`/manager/out_of_office${query}`, "GET")).json()) as {
+          data: { id: string }[];
+          has_more: boolean;
+        };
+      const first = await page("?limit=1");
+      expect(first.data.length).toBe(1);
+      expect(first.has_more).toBe(true);
+      const second = await page(`?limit=1&after=${first.data[0]?.id}`);
+      expect(second.data.length).toBe(1);
+      expect(second.data[0]?.id).not.toBe(first.data[0]?.id);
+      expect(second.has_more).toBe(false);
+    });
+
     test("moving an entry that moves bookings doesn't start a run", async () => {
       const { lead, send, host, outsider, bookFor } = await team();
       const created = (await (

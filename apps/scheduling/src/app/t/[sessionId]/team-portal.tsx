@@ -183,6 +183,7 @@ function Away(props: {
 }) {
   const { call, hosts, nameOf, readOnly } = props;
   const [entries, setEntries] = useState<Entry[] | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [reasons, setReasons] = useState<Reason[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
   const [chosen, setChosen] = useState<string[]>([]);
@@ -197,14 +198,29 @@ function Away(props: {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
-    call<{ data: Entry[]; reasons?: Reason[] }>("/manager/out_of_office")
+    call<{ data: Entry[]; has_more: boolean; reasons?: Reason[] }>("/manager/out_of_office")
       .then((response) => {
         setEntries(response.data);
+        setHasMore(response.has_more);
         setReasons(response.reasons ?? []);
       })
       .catch((error: Error) => setProblem(error.message));
   }, [call]);
   useEffect(load, [load]);
+  const loadMore = async () => {
+    const last = entries?.at(-1);
+    if (!last) return;
+    setProblem(null);
+    try {
+      const response = await call<{ data: Entry[]; has_more: boolean }>(
+        `/manager/out_of_office?after=${encodeURIComponent(last.id)}`,
+      );
+      setEntries((current) => [...(current ?? []), ...response.data]);
+      setHasMore(response.has_more);
+    } catch (error) {
+      setProblem((error as Error).message);
+    }
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -423,6 +439,11 @@ function Away(props: {
           ))}
         </ul>
       )}
+      {hasMore ? (
+        <Button className="self-start" onClick={loadMore} size="sm" variant="ghost">
+          Show more
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -800,6 +821,7 @@ function Cover(props: {
 }) {
   const { call, hosts, nameOf, readOnly, onStarted, focus } = props;
   const [bookings, setBookings] = useState<ManagedBooking[] | null>(null);
+  const [moreBookings, setMoreBookings] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [everything, setEverything] = useState(false);
   const only = everything ? undefined : focus.booking;
@@ -809,8 +831,11 @@ function Cover(props: {
       : everything
         ? ""
         : "?needs_cover=true";
-    call<{ data: ManagedBooking[] }>(`/manager/bookings${query}`)
-      .then((response) => setBookings(response.data))
+    call<{ data: ManagedBooking[]; has_more: boolean }>(`/manager/bookings${query}`)
+      .then((response) => {
+        setBookings(response.data);
+        setMoreBookings(response.has_more);
+      })
       .catch((error: Error) => setProblem(error.message));
   }, [call, everything, only]);
   useEffect(load, [load]);
@@ -854,6 +879,11 @@ function Cover(props: {
           ))}
         </ul>
       )}
+      {moreBookings ? (
+        <p className="text-muted-foreground text-xs">
+          These are the soonest 100. Moving someone's bookings covers all of them.
+        </p>
+      ) : null}
     </div>
   );
 }

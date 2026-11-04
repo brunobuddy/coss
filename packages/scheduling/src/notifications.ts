@@ -534,6 +534,25 @@ function isStale(row: Claimed, booking: BookingRow): boolean {
   return false;
 }
 
+/**
+ * A cancellation only reaches the booking's hosts by then, so whoever had it just before still needs
+ * this, or the invitation they accepted stays on their calendar. Those who were joining don't.
+ */
+async function lostItBeforeItEnded(row: Claimed, booking: BookingRow): Promise<boolean> {
+  if (row.kind !== "reassigned" || row.recipient !== "host" || !row.hostId) return false;
+  const [stillHost] = await db
+    .select({ hostId: schedulingBookingHost.hostId })
+    .from(schedulingBookingHost)
+    .where(
+      and(
+        eq(schedulingBookingHost.bookingId, booking.id),
+        eq(schedulingBookingHost.organizationId, booking.organizationId),
+        eq(schedulingBookingHost.hostId, row.hostId),
+      ),
+    );
+  return !stillHost;
+}
+
 async function environmentOf(row: Claimed): Promise<SchedulingEmail["environment"] | null> {
   const [found] = await db
     .select({ projectId: environment.projectId, mode: environment.mode })
@@ -953,7 +972,11 @@ export async function runDueSchedulingNotifications(
         .from(schedulingNotification)
         .where(eq(schedulingNotification.id, row.id));
       if (!current || current.finishedAt) continue;
-      if (!found || isStale({ ...row, bookingVersion: current.bookingVersion }, found)) {
+      if (
+        !found ||
+        (isStale({ ...row, bookingVersion: current.bookingVersion }, found) &&
+          !(await lostItBeforeItEnded(row, found)))
+      ) {
         await finish(row, "stale", now);
         continue;
       }

@@ -345,7 +345,11 @@ export async function createHolidayCalendarAction(_prev: ActionResult | null, fo
     });
     if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
     const calendar = await friendly(() =>
-      createHolidayCalendar(env, parsed.data, configuredDeps()),
+      // A feed's address can hold a token, so it's encrypted with what calendars' credentials are.
+      createHolidayCalendar(env, parsed.data, {
+        ...configuredDeps(),
+        calendars: schedulingCalendarDeps(),
+      }),
     );
     await audit(context, "scheduling_holiday_calendar.created", {
       type: "scheduling_holiday_calendar",

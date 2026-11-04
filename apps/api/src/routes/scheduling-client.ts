@@ -754,7 +754,12 @@ export function createSchedulingClientRoutes(opts: {
       return c.json({ object: "list" as const, data: [], has_more: false });
     const page = await listOutOfOffice(
       manager.env,
-      { hostIds: team.ids, fromMs: (deps.now?.() ?? new Date()).getTime(), limit: 100 },
+      {
+        hostIds: team.ids,
+        fromMs: (deps.now?.() ?? new Date()).getTime(),
+        limit: Math.min(Math.max(Number(c.req.query("limit")) || 100, 1), 100),
+        after: c.req.query("after"),
+      },
       deps,
     );
     const settings = await getSettingsRow(manager.env);

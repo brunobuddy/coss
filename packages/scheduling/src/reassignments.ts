@@ -1255,8 +1255,9 @@ async function workOn(run: ReassignmentRow, deps: Keys, now: Date) {
         eq(schedulingReassignmentItem.outcome, "pending"),
       ),
     )
-    // Soonest first: they're who it matters most to.
-    .orderBy(asc(schedulingReassignmentItem.startAt), asc(schedulingReassignmentItem.id))
+    // Soonest first: they're who it matters most to. Then as a preview takes them, since moving one
+    // can free the host the next is going to.
+    .orderBy(asc(schedulingReassignmentItem.startAt), asc(schedulingReassignmentItem.bookingId))
     .limit(ITEMS_PER_RUN);
   let current = run;
   for (const item of items) {
