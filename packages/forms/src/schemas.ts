@@ -146,26 +146,48 @@ export const FormFieldInput = z
       description: "Shown on hosted pages and in notifications. Default: the name.",
     }),
     required: z.boolean().optional().meta({ description: "Default false." }),
-    placeholder: z.string().max(200).optional(),
+    placeholder: z
+      .string()
+      .max(200)
+      .optional()
+      .meta({ description: "Shown in the empty input on hosted pages." }),
     options: z
       .array(z.string().min(1).max(200))
       .max(MAX_FORM_FIELD_OPTIONS)
       .optional()
       .meta({ description: "The choices of `select`, `radio` and `checkbox` fields." }),
-    max_length: z.number().int().min(1).max(MAX_SUBMISSION_VALUE_LENGTH).optional(),
+    max_length: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_SUBMISSION_VALUE_LENGTH)
+      .optional()
+      .meta({ description: "The longest value accepted, in characters." }),
   })
   .meta({ id: "FormFieldInput" });
 export type FormFieldInputOutput = z.output<typeof FormFieldInput>;
 
 const FormField = z
   .object({
-    name: z.string(),
-    type: z.enum(FORM_FIELD_TYPES),
-    label: z.string().nullable(),
-    required: z.boolean(),
-    placeholder: z.string().nullable(),
-    options: z.array(z.string()),
-    max_length: z.number().int().nullable(),
+    name: z.string().meta({ description: "The `name` the form's input posts." }),
+    type: z
+      .enum(FORM_FIELD_TYPES)
+      .meta({ description: "Validates the value and picks the input on hosted pages." }),
+    label: z
+      .string()
+      .nullable()
+      .meta({ description: "Shown on hosted pages and in notifications. `null`: the name." }),
+    required: z.boolean().meta({ description: "Whether a submission must include it." }),
+    placeholder: z
+      .string()
+      .nullable()
+      .meta({ description: "Shown in the empty input on hosted pages. `null`: none." }),
+    options: z.array(z.string()).meta({
+      description: "The choices of `select`, `radio` and `checkbox` fields. Empty for other types.",
+    }),
+    max_length: z.number().int().nullable().meta({
+      description: "The longest value accepted, in characters. `null`: only the overall limit.",
+    }),
   })
   .meta({ id: "FormField" });
 
@@ -224,8 +246,15 @@ const NotificationsInput = z.strictObject({
 });
 
 const ContactsInput = z.strictObject({
-  enabled: z.boolean().optional(),
-  audience_ids: z.array(z.string().max(64)).max(20).optional(),
+  enabled: z.boolean().optional().meta({
+    description:
+      "Turn each accepted submission into a contact, from `submitter.email_field`. Default false.",
+  }),
+  audience_ids: z
+    .array(z.string().max(64))
+    .max(20)
+    .optional()
+    .meta({ description: "Audiences the contact joins. They must exist in this environment." }),
   topics: z.array(z.string().min(1).max(64)).max(20).optional().meta({
     description: "Topic keys the contact is opted into.",
   }),
@@ -233,8 +262,12 @@ const ContactsInput = z.strictObject({
     description:
       "New contacts confirm their subscription by email first. `null` (default): the environment's marketing settings decide.",
   }),
-  first_name_field: FieldName.nullable().optional(),
-  last_name_field: FieldName.nullable().optional(),
+  first_name_field: FieldName.nullable()
+    .optional()
+    .meta({ description: "The field holding the contact's first name. `null`: none." }),
+  last_name_field: FieldName.nullable()
+    .optional()
+    .meta({ description: "The field holding the contact's last name. `null`: none." }),
   properties: z
     .record(z.string().min(1).max(64), FieldName)
     .optional()
@@ -245,8 +278,20 @@ const FilesInput = z.strictObject({
   enabled: z.boolean().optional().meta({
     description: "Accept uploads (`multipart/form-data`). Default false.",
   }),
-  max_files: z.number().int().min(1).max(MAX_FORM_FILES).optional(),
-  max_file_bytes: z.number().int().min(1).max(MAX_FORM_FILE_BYTES).optional(),
+  max_files: z
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_FORM_FILES)
+    .optional()
+    .meta({ description: "Most files per submission. Default 3." }),
+  max_file_bytes: z
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_FORM_FILE_BYTES)
+    .optional()
+    .meta({ description: "Largest file, in bytes. Default and maximum 10 MB." }),
   allowed_types: z
     .array(z.string().regex(/^[a-z0-9.+-]+\/([a-z0-9.+-]+|\*)$/))
     .max(50)
@@ -258,10 +303,33 @@ const HostedInput = z.strictObject({
   enabled: z.boolean().optional().meta({
     description: "Serve the form as a page at its `hosted_url` (needs `fields`). Default false.",
   }),
-  title: z.string().min(1).max(200).nullable().optional(),
-  description: z.string().max(2000).nullable().optional(),
-  submit_label: z.string().min(1).max(60).nullable().optional(),
-  success_message: z.string().min(1).max(500).nullable().optional(),
+  title: z
+    .string()
+    .min(1)
+    .max(200)
+    .nullable()
+    .optional()
+    .meta({ description: "The page's heading. `null`: the form's name." }),
+  description: z
+    .string()
+    .max(2000)
+    .nullable()
+    .optional()
+    .meta({ description: "Text under the heading. `null`: none." }),
+  submit_label: z
+    .string()
+    .min(1)
+    .max(60)
+    .nullable()
+    .optional()
+    .meta({ description: "The submit button's label. `null`: the default." }),
+  success_message: z
+    .string()
+    .min(1)
+    .max(500)
+    .nullable()
+    .optional()
+    .meta({ description: "Shown after a submission. `null`: the default." }),
 });
 
 const FormSettingsInput = {
@@ -281,16 +349,32 @@ const FormSettingsInput = {
     description:
       "Where browsers go after an HTML post. `null`: coss.com's thank-you page. A post's `_next` field overrides it when its origin is allowed.",
   }),
-  spam: SpamInput.optional(),
-  submitter: SubmitterInput.optional(),
-  notifications: NotificationsInput.optional(),
-  contacts: ContactsInput.optional(),
-  files: FilesInput.optional(),
-  hosted: HostedInput.optional(),
+  spam: SpamInput.optional().meta({
+    description: "How submissions are screened. Only the fields given change.",
+  }),
+  submitter: SubmitterInput.optional().meta({
+    description:
+      "Who the submitter is, and whether they must confirm by email. Only the fields given change.",
+  }),
+  notifications: NotificationsInput.optional().meta({
+    description: "Emails about accepted submissions. Only the fields given change.",
+  }),
+  contacts: ContactsInput.optional().meta({
+    description: "Turning submissions into contacts. Only the fields given change.",
+  }),
+  files: FilesInput.optional().meta({ description: "File uploads. Only the fields given change." }),
+  hosted: HostedInput.optional().meta({
+    description: "The page coss.com can serve for this form. Only the fields given change.",
+  }),
 };
 
 export const CreateFormRequest = z
-  .strictObject({ name: z.string().min(1).max(100), ...FormSettingsInput })
+  .strictObject({
+    name: z.string().min(1).max(100).meta({
+      description: "Your name for the form, shown in the dashboard and in notifications.",
+    }),
+    ...FormSettingsInput,
+  })
   .meta({
     id: "CreateFormRequest",
     examples: [
@@ -304,7 +388,12 @@ export const CreateFormRequest = z
 export type CreateFormRequestOutput = z.output<typeof CreateFormRequest>;
 
 export const UpdateFormRequest = z
-  .strictObject({ name: z.string().min(1).max(100).optional(), ...FormSettingsInput })
+  .strictObject({
+    name: z.string().min(1).max(100).optional().meta({
+      description: "Your name for the form, shown in the dashboard and in notifications.",
+    }),
+    ...FormSettingsInput,
+  })
   .meta({
     id: "UpdateFormRequest",
     description: "Only the fields given change, within each group too.",
@@ -316,57 +405,142 @@ export const FormObject = z
   .object({
     object: z.literal("form"),
     id: z.string().meta({ examples: [FORM_ID_EXAMPLE] }),
-    name: z.string(),
-    enabled: z.boolean(),
+    name: z.string().meta({
+      description: "Your name for the form, shown in the dashboard and in notifications.",
+    }),
+    enabled: z.boolean().meta({ description: "`false`: submissions are refused." }),
     endpoint: z.string().meta({ description: "Where the form posts: `<form action=…>`." }),
     hosted_url: z
       .string()
       .nullable()
       .meta({ description: "The hosted page, when `hosted.enabled`; `null` otherwise." }),
-    fields: z.array(FormField).nullable(),
-    strict_fields: z.boolean(),
-    allowed_origins: z.array(z.string()),
-    redirect_url: z.string().nullable(),
-    spam: z.object({
-      honeypot_field: z.string(),
-      captcha: z.enum(FORM_CAPTCHA_MODES),
-      captcha_site_key: z.string().nullable(),
-      content_threshold: z.number().nullable(),
-      on_review: z.enum(FORM_ON_REVIEW),
+    fields: z.array(FormField).nullable().meta({
+      description: "The form's fields. `null`: any field is accepted, without validation.",
     }),
-    submitter: z.object({
-      email_field: z.string(),
-      verify: z.boolean(),
-      confirmation_from: z.string().nullable(),
+    strict_fields: z
+      .boolean()
+      .meta({ description: "With `fields`: whether fields the form doesn't define are refused." }),
+    allowed_origins: z
+      .array(z.string())
+      .meta({ description: "Sites that may post to the form. Empty: any." }),
+    redirect_url: z.string().nullable().meta({
+      description: "Where browsers go after an HTML post. `null`: coss.com's thank-you page.",
     }),
-    notifications: z.object({ recipients: z.array(z.string()), from: z.string().nullable() }),
-    contacts: z.object({
-      enabled: z.boolean(),
-      audience_ids: z.array(z.string()),
-      topics: z.array(z.string()),
-      double_opt_in: z.boolean().nullable(),
-      first_name_field: z.string().nullable(),
-      last_name_field: z.string().nullable(),
-      properties: z.record(z.string(), z.string()),
-    }),
-    files: z.object({
-      enabled: z.boolean(),
-      max_files: z.number().int(),
-      max_file_bytes: z.number().int(),
-      allowed_types: z.array(z.string()),
-    }),
-    hosted: z.object({
-      enabled: z.boolean(),
-      title: z.string().nullable(),
-      description: z.string().nullable(),
-      submit_label: z.string().nullable(),
-      success_message: z.string().nullable(),
-      published_at: z.iso.datetime().nullable(),
-    }),
+    spam: z
+      .object({
+        honeypot_field: z
+          .string()
+          .meta({ description: "A field people leave empty; a submission that fills it is spam." }),
+        captcha: z.enum(FORM_CAPTCHA_MODES).meta({
+          description: "`required`: submissions need a captcha token. `off`: they don't.",
+        }),
+        captcha_site_key: z.string().nullable().meta({
+          description:
+            "The captcha's site key, which hosted pages render the widget with. `null`: none set.",
+        }),
+        content_threshold: z.number().nullable().meta({
+          description:
+            "A submission whose text scores at least this in a content category is spam. `null`: the environment's risk settings decide.",
+        }),
+        on_review: z.enum(FORM_ON_REVIEW).meta({
+          description:
+            "When Risk's decision is `review`: `hold` keeps the submission until you release it, `deliver` delivers it.",
+        }),
+      })
+      .meta({ description: "How submissions are screened." }),
+    submitter: z
+      .object({
+        email_field: z
+          .string()
+          .meta({ description: "The field holding the submitter's email address." }),
+        verify: z.boolean().meta({
+          description:
+            "Whether submissions wait until the submitter clicks a link emailed to them.",
+        }),
+        confirmation_from: z
+          .string()
+          .nullable()
+          .meta({ description: "The verification email's sender. `null`: none set." }),
+      })
+      .meta({ description: "Who the submitter is, and whether they must confirm by email." }),
+    notifications: z
+      .object({
+        recipients: z
+          .array(z.string())
+          .meta({ description: "Who gets an email for each accepted submission." }),
+        from: z.string().nullable().meta({
+          description:
+            'The notification\'s sender. `null`: coss.com, as "<form name> via coss.com".',
+        }),
+      })
+      .meta({ description: "Emails about accepted submissions." }),
+    contacts: z
+      .object({
+        enabled: z
+          .boolean()
+          .meta({ description: "Whether each accepted submission becomes a contact." }),
+        audience_ids: z.array(z.string()).meta({ description: "Audiences the contact joins." }),
+        topics: z.array(z.string()).meta({ description: "Topic keys the contact is opted into." }),
+        double_opt_in: z.boolean().nullable().meta({
+          description:
+            "Whether new contacts confirm by email first. `null`: the environment's marketing settings decide.",
+        }),
+        first_name_field: z
+          .string()
+          .nullable()
+          .meta({ description: "The field holding the contact's first name. `null`: none." }),
+        last_name_field: z
+          .string()
+          .nullable()
+          .meta({ description: "The field holding the contact's last name. `null`: none." }),
+        properties: z
+          .record(z.string(), z.string())
+          .meta({ description: "Contact property key → the field whose value it takes." }),
+      })
+      .meta({ description: "Turning submissions into contacts." }),
+    files: z
+      .object({
+        enabled: z
+          .boolean()
+          .meta({ description: "Whether uploads are accepted (`multipart/form-data`)." }),
+        max_files: z.number().int().meta({ description: "Most files per submission." }),
+        max_file_bytes: z.number().int().meta({ description: "Largest file, in bytes." }),
+        allowed_types: z
+          .array(z.string())
+          .meta({ description: "MIME types accepted. Empty: images, PDFs, text and Office." }),
+      })
+      .meta({ description: "File uploads." }),
+    hosted: z
+      .object({
+        enabled: z.boolean().meta({ description: "Whether the page is served at `hosted_url`." }),
+        title: z
+          .string()
+          .nullable()
+          .meta({ description: "The page's heading. `null`: the form's name." }),
+        description: z
+          .string()
+          .nullable()
+          .meta({ description: "Text under the heading. `null`: none." }),
+        submit_label: z
+          .string()
+          .nullable()
+          .meta({ description: "The submit button's label. `null`: the default." }),
+        success_message: z
+          .string()
+          .nullable()
+          .meta({ description: "Shown after a submission. `null`: the default." }),
+        published_at: z.iso.datetime().nullable().meta({
+          description:
+            "When the page was turned on, or what it shows last changed. `null`: never published.",
+        }),
+      })
+      .meta({ description: "The page coss.com can serve for this form." }),
     disabled_by_admin: z.boolean().meta({
       description: "coss.com disabled the form for abuse; contact support.",
     }),
-    sandbox: z.boolean(),
+    sandbox: z
+      .boolean()
+      .meta({ description: "Whether the form belongs to a sandbox environment." }),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
   })
@@ -462,9 +636,9 @@ const SubmissionData = z
 const FormSubmissionFileObject = z
   .object({
     id: z.string().meta({ examples: [FILE_ID_EXAMPLE] }),
-    field: z.string(),
-    filename: z.string(),
-    content_type: z.string(),
+    field: z.string().meta({ description: "The form field it was uploaded through." }),
+    filename: z.string().meta({ description: "The file's name, made safe." }),
+    content_type: z.string().meta({ description: "The MIME type it was uploaded as." }),
     size: z.number().int().meta({ description: "Bytes." }),
   })
   .meta({ id: "FormSubmissionFile" });
@@ -473,31 +647,68 @@ export const FormSubmissionObject = z
   .object({
     object: z.literal("form_submission"),
     id: z.string().meta({ examples: [SUBMISSION_ID_EXAMPLE] }),
-    form_id: z.string(),
+    form_id: z.string().meta({ description: "The id of the form it was posted to." }),
     status: z.enum(FORM_SUBMISSION_STATUSES).meta({
       description:
         "`accepted`: delivered (webhooks, notifications, contacts). `held`: Risk asked for a review. `spam`: refused by Risk, the content check or the honeypot. `pending_confirmation`: waiting for the submitter's email link.",
     }),
     data: SubmissionData,
-    submitter_email: z.string().nullable(),
-    files: z.array(FormSubmissionFileObject),
-    spam_reason: z.enum(FORM_SPAM_REASONS).nullable(),
+    submitter_email: z.string().nullable().meta({
+      description: "The value of the form's `submitter.email_field`. `null` when it has none.",
+    }),
+    files: z
+      .array(FormSubmissionFileObject)
+      .meta({ description: "Uploaded files. Download them with the API." }),
+    spam_reason: z.enum(FORM_SPAM_REASONS).nullable().meta({
+      description:
+        "Why it was flagged. `honeypot`: the honeypot field was filled. `risk_block`: Risk blocked it. `risk_review`: Risk asked for a review. `content`: its text passed `content_threshold`. `null`: not flagged.",
+    }),
     risk: z
       .object({
-        assessment_id: z.string().nullable(),
-        decision: z.enum(["allow", "review", "block"]).nullable(),
-        score: z.number().nullable(),
+        assessment_id: z
+          .string()
+          .nullable()
+          .meta({ description: "The id of Risk's assessment. `null`: none is recorded." }),
+        decision: z
+          .enum(["allow", "review", "block"])
+          .nullable()
+          .meta({ description: "Risk's decision. `null`: none is recorded." }),
+        score: z
+          .number()
+          .nullable()
+          .meta({ description: "Risk's score. `null`: none is recorded." }),
       })
       .nullable()
       .meta({ description: "Risk's assessment; `null` when none ran (honeypot)." }),
-    ip: z.string().nullable(),
-    user_agent: z.string().nullable(),
-    origin: z.string().nullable(),
-    referrer: z.string().nullable(),
-    confirmed_at: z.iso.datetime().nullable(),
-    accepted_at: z.iso.datetime().nullable(),
-    released_at: z.iso.datetime().nullable(),
-    sandbox: z.boolean(),
+    ip: z
+      .string()
+      .nullable()
+      .meta({ description: "The address it was posted from. `null`: unknown." }),
+    user_agent: z
+      .string()
+      .nullable()
+      .meta({ description: "The browser's `User-Agent`. `null`: not sent." }),
+    origin: z
+      .string()
+      .nullable()
+      .meta({ description: "The site it was posted from. `null`: not sent." }),
+    referrer: z
+      .string()
+      .nullable()
+      .meta({ description: "The page it was posted from. `null`: not sent." }),
+    confirmed_at: z.iso.datetime().nullable().meta({
+      description:
+        "When the submitter clicked the emailed link. `null`: they haven't, or the form doesn't verify.",
+    }),
+    accepted_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it became `accepted`. `null`: it hasn't." }),
+    released_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was released from `held` or `spam`. `null`: it wasn't." }),
+    sandbox: z.boolean().meta({ description: "Whether it belongs to a sandbox environment." }),
     created_at: z.iso.datetime(),
   })
   .meta({
@@ -588,21 +799,30 @@ export const FormSubmissionWebhookEvent = z
         "`received`: a submission was accepted (at once, after the submitter confirmed, or released from review). `flagged`: Risk held it for review or refused it (honeypot catches send nothing).",
     }),
     api_version: ApiVersion,
-    created_at: z.iso.datetime(),
-    data: z.object({
-      form_id: z.string(),
-      form_name: z.string(),
-      submission_id: z.string(),
-      status: z.enum(FORM_SUBMISSION_STATUSES),
-      data: SubmissionData,
-      submitter_email: z.string().nullable(),
-      files: z.array(FormSubmissionFileObject).meta({
-        description: "Uploaded files (download them with the API; never their bytes here).",
-      }),
-      spam_reason: z.enum(FORM_SPAM_REASONS).nullable(),
-      sandbox: z.boolean(),
-      occurred_at: z.iso.datetime(),
-    }),
+    created_at: z.iso.datetime().meta({ description: "When the event was created." }),
+    data: z
+      .object({
+        form_id: z.string().meta({ description: "The form's id." }),
+        form_name: z.string().meta({ description: "The form's name." }),
+        submission_id: z.string().meta({ description: "The submission's id." }),
+        status: z
+          .enum(FORM_SUBMISSION_STATUSES)
+          .meta({ description: "The submission's status after this event." }),
+        data: SubmissionData,
+        submitter_email: z.string().nullable().meta({
+          description: "The value of the form's `submitter.email_field`. `null` when it has none.",
+        }),
+        files: z.array(FormSubmissionFileObject).meta({
+          description: "Uploaded files (download them with the API; never their bytes here).",
+        }),
+        spam_reason: z
+          .enum(FORM_SPAM_REASONS)
+          .nullable()
+          .meta({ description: "Why it was flagged. `null`: not flagged." }),
+        sandbox: z.boolean().meta({ description: "Whether it belongs to a sandbox environment." }),
+        occurred_at: z.iso.datetime().meta({ description: "When this happened." }),
+      })
+      .meta({ description: "The submission." }),
   })
   .meta({
     id: "FormSubmissionWebhookEvent",
