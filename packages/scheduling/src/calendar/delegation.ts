@@ -684,6 +684,21 @@ async function connectHost(
             ),
           );
       }
+      // What stood in for a mailbox that couldn't be reached, if it's not a calendar after all.
+      if (host.existing) {
+        await tx.delete(schedulingCalendar).where(
+          and(
+            eq(schedulingCalendar.connectionId, connection.id),
+            eq(schedulingCalendar.organizationId, connection.organizationId),
+            isNull(schedulingCalendar.verifiedAt),
+            eq(schedulingCalendar.writeTarget, false),
+            notInArray(
+              schedulingCalendar.externalId,
+              remote.map((item) => item.externalId),
+            ),
+          ),
+        );
+      }
       await addRemoteCalendars(tx, connection, remote, now);
       const [calendar] = await tx
         .select()
@@ -696,6 +711,25 @@ async function connectHost(
           ),
         )
         .for("update");
+      // A stand-in that turned out to be the primary calendar was made without a write target.
+      if (calendar && primary.writable && !calendar.writeTarget && host.existing) {
+        const [target] = await tx
+          .select({ id: schedulingCalendar.id })
+          .from(schedulingCalendar)
+          .where(
+            and(
+              eq(schedulingCalendar.hostId, connection.hostId),
+              eq(schedulingCalendar.organizationId, connection.organizationId),
+              eq(schedulingCalendar.writeTarget, true),
+            ),
+          );
+        if (!target) {
+          await tx
+            .update(schedulingCalendar)
+            .set({ writeTarget: true })
+            .where(eq(schedulingCalendar.id, calendar.id));
+        }
+      }
       if (calendar?.readBusy) {
         // An OAuth row's sync may have read it since this began, and a slower fetch never overwrites
         // a newer one. The channel is still worth keeping, and it's read again straight after anyway.
@@ -771,7 +805,20 @@ async function recordMailboxFailure(
       // An OAuth connection to this address keeps working as it is.
       .onConflictDoNothing()
       .returning();
-    if (row) await recordCalendarEvent(tx, row, "scheduling.calendar.needs_reauth", now);
+    if (!row) return;
+    // Availability sees a connection's health through its calendars, and with none this host would
+    // be offered as free. Their calendar exists and can't be read, which never reads as free.
+    await tx.insert(schedulingCalendar).values({
+      organizationId: row.organizationId,
+      environmentId: row.environmentId,
+      hostId: row.hostId,
+      connectionId: row.id,
+      externalId: host.mailbox,
+      readBusy: true,
+      writeTarget: false,
+      nextSyncAt: now,
+    });
+    await recordCalendarEvent(tx, row, "scheduling.calendar.needs_reauth", now);
   });
 }
 

@@ -134,19 +134,18 @@ still choose which of its calendars count on [their page](/docs/scheduling/embed
   there's nothing they can do. Once access is back they return by themselves, with
   `scheduling.calendar_delegation.restored`, and nobody has to reconnect. New credentials or a successful verify
   bring them back straight away.
-- **One mailbox is gone** (someone left, or a typo). Only that host is affected: their connection's `status` is
-  `needs_reauth`, with `delegation` set, and you get `scheduling.calendar.needs_reauth`. It's tried again every
-  hour.
+- **One mailbox can't be reached** (someone left, or a typo), including one that never connected. Only that host is
+  affected, and they stop being offered: their calendar can't be read, which never counts as free. Their connection's
+  `status` is `needs_reauth`, with `delegation` set, and you get `scheduling.calendar.needs_reauth`. It's tried again
+  every hour. Correct a typo with `email`, or `calendar_account` if you set one.
 
 A token already issued keeps working until it expires, so revoking access can take up to an hour to show.
 
 As with any calendar, `calendar_failure_mode: "last_known"` in your [settings](/docs/scheduling/calendars#when-a-calendar-fails)
 keeps offering hosts on what's already known instead.
 
-<Callout type="warn">
-A host whose mailbox **never** connected has no calendar to check, so they're still offered, as they were before
-the delegation. Look for `hosts_failed` on the delegation, or the webhook.
-</Callout>
+So enabling a delegation can hide hosts whose address isn't a real mailbox on the domain. Check `hosts_failed` on the
+delegation afterwards.
 
 ## Removing a delegation
 

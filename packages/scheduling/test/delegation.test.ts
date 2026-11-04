@@ -465,9 +465,7 @@ describe("connecting hosts", () => {
     const delegation = await activeGoogle(env, deps);
     await run(env, deps);
     expect(await listConnections(env, ana.id)).toMatchObject([{ status: "active" }]);
-    expect(await listConnections(env, gone.id)).toMatchObject([
-      { status: "needs_reauth", calendars: [] },
-    ]);
+    expect(await listConnections(env, gone.id)).toMatchObject([{ status: "needs_reauth" }]);
     const after = await getCalendarDelegation(env, delegation.id);
     expect(after.status).toBe("active");
     expect(after).toMatchObject({ hosts_connected: 1, hosts_failed: 1 });
@@ -475,6 +473,86 @@ describe("connecting hosts", () => {
     await run(env, deps);
     expect(await logCount(env, "scheduling.calendar.needs_reauth")).toBe(1);
     expect(await hostEmails(gone.id)).toHaveLength(0);
+  });
+
+  test("a host whose mailbox was never reached isn't offered as free", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const gone = await hostOn(env, "gone");
+    const eventType = await eventTypeFor(env, [gone.id]);
+    expect(await slotStarts(env, eventType.id)).toContain("09:00");
+    api.goneMailboxes.add(`gone@${DOMAIN}`);
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    expect(await slotStarts(env, eventType.id)).toEqual([]);
+  });
+
+  test("correcting a typo in the email connects the right mailbox", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const host = await hostOn(env, "typo");
+    const eventType = await eventTypeFor(env, [host.id]);
+    api.goneMailboxes.add(`typo@${DOMAIN}`);
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    expect(await slotStarts(env, eventType.id)).toEqual([]);
+    await updateHost(env, host.id, { email: `right@${DOMAIN}` });
+    await run(env, deps);
+    expect(await listConnections(env, host.id)).toMatchObject([
+      { account: `right@${DOMAIN}`, status: "active" },
+    ]);
+    expect(await slotStarts(env, eventType.id)).toContain("09:00");
+  });
+
+  test("a mailbox that comes back can take bookings", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    let now = NOW;
+    const deps = googleDeps(api, () => now);
+    const back = await hostOn(env, "back");
+    api.goneMailboxes.add(`back@${DOMAIN}`);
+    const delegation = await activeGoogle(env, deps);
+    await run(env, deps);
+    api.goneMailboxes.clear();
+    now = new Date(NOW.getTime() + 2 * 3_600_000);
+    await dueNow(delegation.id);
+    await run(env, deps);
+    const [connection] = await listConnections(env, back.id);
+    expect(connection?.calendars).toMatchObject([
+      { external_id: `back@${DOMAIN}`, read_busy: true, write_target: true },
+    ]);
+  });
+
+  test("a stand-in that isn't the mailbox's calendar is replaced", async () => {
+    const env = await environment();
+    const api = new FakeGraphApi();
+    let now = NOW;
+    const deps = { ...graphDeps(api), now: () => now };
+    const back = await hostOn(env, "back");
+    api.goneMailboxes.add(`back@${DOMAIN}`);
+    const delegation = await createCalendarDelegation(
+      env,
+      {
+        provider: "microsoft",
+        domain: DOMAIN,
+        tenant_id: api.tenantId,
+        client_id: randomUUID(),
+        client_secret: api.clientSecret,
+      },
+      deps,
+    );
+    await verifyCalendarDelegation(env, delegation.id, { account: `boss@${DOMAIN}` }, deps);
+    await run(env, deps);
+    api.goneMailboxes.clear();
+    now = new Date(NOW.getTime() + 2 * 3_600_000);
+    await dueNow(delegation.id);
+    await run(env, deps);
+    const [connection] = await listConnections(env, back.id);
+    expect(connection?.calendars).toMatchObject([
+      { external_id: `cal-back@${DOMAIN}`, read_busy: true, write_target: true },
+    ]);
   });
 
   test("a failed mailbox is tried again, and comes back by itself", async () => {

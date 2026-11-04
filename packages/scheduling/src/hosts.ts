@@ -241,6 +241,8 @@ export async function updateHost(
     const row = await db.transaction(async (tx) => {
       if (params.calendar_account !== undefined) {
         await releaseOldMailbox(tx, host, calendarAccount ?? null, params.email);
+      } else if (params.email !== undefined && !host.calendarAccount) {
+        await releaseUnreachedMailbox(tx, host);
       }
       const [updated] = await tx
         .update(schedulingHost)
@@ -385,6 +387,46 @@ async function releaseOldMailbox(
       and(
         eq(schedulingCalendarConnection.id, connection.id),
         eq(schedulingCalendarConnection.organizationId, connection.organizationId),
+      ),
+    );
+}
+
+/**
+ * Correcting a typo: an email moves nothing once a mailbox is connected, but one that was never
+ * reached isn't connected to anything, and its host isn't offered until this is put right. Never
+ * having been read, it has no events to lose.
+ */
+async function releaseUnreachedMailbox(tx: Executor, host: HostRow): Promise<void> {
+  await tx
+    .select({ id: schedulingHost.id })
+    .from(schedulingHost)
+    .where(eq(schedulingHost.id, host.id))
+    .for("update");
+  const [reached] = await tx
+    .select({ id: schedulingCalendar.id })
+    .from(schedulingCalendar)
+    .innerJoin(
+      schedulingCalendarConnection,
+      eq(schedulingCalendarConnection.id, schedulingCalendar.connectionId),
+    )
+    .where(
+      and(
+        eq(schedulingCalendar.hostId, host.id),
+        eq(schedulingCalendar.organizationId, host.organizationId),
+        isNotNull(schedulingCalendarConnection.delegationId),
+        isNotNull(schedulingCalendar.verifiedAt),
+      ),
+    )
+    .limit(1);
+  if (reached) return;
+  await tx
+    .delete(schedulingCalendarConnection)
+    .where(
+      and(
+        eq(schedulingCalendarConnection.hostId, host.id),
+        eq(schedulingCalendarConnection.organizationId, host.organizationId),
+        isNotNull(schedulingCalendarConnection.delegationId),
+        eq(schedulingCalendarConnection.status, "needs_reauth"),
       ),
     );
 }

@@ -161,6 +161,10 @@ once, and every host on it gets their calendar with no consent screen.
 - **Tokens outlive a revocation** by up to an hour: Google's and Entra's tokens aren't recalled. A delegated client
   raises `auth` for what a revocation looks like (Graph's inner `$batch` 401/403, Google's `insufficientPermissions`),
   or it'd pass as a failed read or a permanent write failure.
+- **A mailbox never reached still hides its host**: its connection gets a stand-in calendar row, since availability reads
+  health through calendars and with none the host reads as free. `connectHost` replaces it, and gives it a write target
+  if it turns out to be the primary. An email correction releases such a connection (`releaseUnreachedMailbox`): it
+  has no events, and it's the only mailbox change that doesn't need `calendar_account`.
 - **Deleting** is `deleting`, then the worker, within a run's budget: each connection released (details scrubbed,
   channels stopped), then removed with the host locked `FOR UPDATE`, or a booking reading its write target would hit a foreign key. Hosts stay bookable with no conflict
   check (the dialog and docs say so), as with any disconnect.
