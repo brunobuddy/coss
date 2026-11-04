@@ -18,7 +18,8 @@ to your coding agent (Claude Code, Cursor, VS Code, Codex, or any MCP client), t
 
 The server runs locally on Node.js 22+ through `npx` and calls the coss.com API with your API key.
 It can also search and read these docs, with or without a key. In Claude Code, the
-[coss.com plugin](/docs/agents#claude-code-plugin) sets it up for you.
+[coss.com plugin](/docs/agents#claude-code-plugin) sets it up for you. For a client that can't start
+a local process, there is a [hosted server](#hosted-server).
 
 ## Set it up
 
@@ -99,6 +100,98 @@ API keys can do everything the API can, so the agent can also send email and SMS
 suppressions and domains through this server. Tools that change something are marked as such, and most clients
 ask before calling them. Give the server a development key unless you need production data.
 </Callout>
+
+## Hosted server
+
+The same tools, prompts and resources at `https://api.coss.com/mcp`, for clients that can't run
+`npx`: Streamable HTTP, with nothing to install. Authenticate with your API key in a header, `Authorization: Bearer coss_test_…`.
+There is no OAuth sign-in, so the client has to let you set a custom header: web apps whose
+connectors only offer OAuth can't use it yet.
+
+<Tabs items={["Claude Code", "Cursor", "VS Code", "Codex", "Others"]}>
+<Tab value="Claude Code">
+
+```sh
+claude mcp add --transport http coss https://api.coss.com/mcp \
+  --header "Authorization: Bearer coss_test_…"
+```
+
+</Tab>
+<Tab value="Cursor">
+
+In `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "coss": {
+      "url": "https://api.coss.com/mcp",
+      "headers": { "Authorization": "Bearer coss_test_…" }
+    }
+  }
+}
+```
+
+</Tab>
+<Tab value="VS Code">
+
+In `.vscode/mcp.json`; VS Code asks for the key once and stores it securely:
+
+```json
+{
+  "inputs": [
+    { "type": "promptString", "id": "coss-api-key", "description": "coss.com API key", "password": true }
+  ],
+  "servers": {
+    "coss": {
+      "type": "http",
+      "url": "https://api.coss.com/mcp",
+      "headers": { "Authorization": "Bearer ${input:coss-api-key}" }
+    }
+  }
+}
+```
+
+</Tab>
+<Tab value="Codex">
+
+In `~/.codex/config.toml`, with the key in your environment as `COSS_API_KEY`:
+
+```toml
+[mcp_servers.coss]
+url = "https://api.coss.com/mcp"
+bearer_token_env_var = "COSS_API_KEY"
+```
+
+</Tab>
+<Tab value="Others">
+
+Any client that speaks Streamable HTTP and can send a custom header works. Give it the URL and the
+header above.
+
+</Tab>
+</Tabs>
+
+Use a development key (`coss_test_…`) here too, unless you need production data: the key sits in the
+client's configuration, so keep that file out of your repository.
+
+It acts exactly as the API does with that key. Each tool calls the public API, so a restricted key's
+permissions, rate limits, quotas, a suspended organization and your environment's logs all apply as
+usual. coss.com keeps nothing about a request once it's answered: the server is stateless, with no
+sessions.
+
+What's different from the local server:
+
+- **It can't touch your files.** It has no project: it doesn't read `.env` or `.env.local`, so the key
+  must be in the header, and there is no `upload_sign_document` (upload the PDF with the
+  [API](/docs/api-reference/sign-documents/upload-sign-document) or an SDK, then use its id).
+- **`create_webhook_endpoint` returns the signing secret** instead of writing it to a file. Store it as
+  `COSS_WEBHOOK_SECRET` yourself; it isn't shown again.
+- **Environment variables don't apply.** `COSS_MCP_TOOLSETS` isn't available, so a client gets every
+  tool, and `COSS_BASE_URL` can't be set: it only talks to coss.com.
+- **Answers come whole.** Requests take at most 50 seconds and 1 MB, and an API call's answer at most
+  8 MB of JSON, so a tool can't read a CSV export; requests from browsers are refused. [Rate limits](/docs/api-reference/rate-limits) count requests to `/mcp` per key, on top of the API
+  calls each tool makes.
 
 ## Tools
 

@@ -64,6 +64,18 @@ export const BUCKETS = {
     overridable: true,
     failureMode: "deny",
   },
+  // The hosted MCP server (`POST /mcp`), per key, before a server is built for the request. Each
+  // API call a tool makes then spends its route's bucket and `api.authentication.*` like any
+  // other, so this stays under them: a tool call spends one more authentication than it makes
+  // calls. Denies on a store outage like every write (it can reach them).
+  "api.mcp": {
+    scope: "key",
+    limit: 10,
+    periodMs: SECOND,
+    burst: 30,
+    overridable: true,
+    failureMode: "deny",
+  },
   // Risk assessments (`POST /v1/risk/assessments`) sit in customers' sign-up and login paths, so
   // they get far more room than other writes. Denies on a store outage like every write (the
   // authentication buckets before it deny then anyway); integrations are told to fail open.

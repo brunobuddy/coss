@@ -1,5 +1,5 @@
 {
-  "id": "af0ad2bd-b1dc-4138-8b7c-92ed18dbcac1",
+  "id": "d8546727-50d2-4b17-baf2-f02a5519c1b5",
   "prevId": "84dbeb6d-7ad4-42b3-8ea8-e63022265290",
   "version": "7",
   "dialect": "postgresql",
@@ -2724,6 +2724,12 @@
         },
         "spend_limit_cents": {
           "name": "spend_limit_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credit_limit_cents": {
+          "name": "credit_limit_cents",
           "type": "bigint",
           "primaryKey": false,
           "notNull": false
@@ -23126,12 +23132,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "reminders": {
-          "name": "reminders",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "metadata": {
           "name": "metadata",
           "type": "jsonb",
@@ -23584,12 +23584,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "phone": {
-          "name": "phone",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "calendar_account": {
           "name": "calendar_account",
           "type": "text",
@@ -23980,30 +23974,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "reminder_key": {
-          "name": "reminder_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reminder_anchor": {
-          "name": "reminder_anchor",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reminder_offset_minutes": {
-          "name": "reminder_offset_minutes",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "anchor_at": {
-          "name": "anchor_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "dedupe_key": {
           "name": "dedupe_key",
           "type": "text",
@@ -24240,115 +24210,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.scheduling_reminder_sync": {
-      "name": "scheduling_reminder_sync",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "organization_id": {
-          "name": "organization_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "environment_id": {
-          "name": "environment_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "event_type_id": {
-          "name": "event_type_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cursor_start_at": {
-          "name": "cursor_start_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cursor_booking_id": {
-          "name": "cursor_booking_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "lease_until": {
-          "name": "lease_until",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "scheduling_reminder_sync_environment_idx": {
-          "name": "scheduling_reminder_sync_environment_idx",
-          "columns": [
-            {
-              "expression": "environment_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "scheduling_reminder_sync_environment_fk": {
-          "name": "scheduling_reminder_sync_environment_fk",
-          "tableFrom": "scheduling_reminder_sync",
-          "tableTo": "environment",
-          "columnsFrom": [
-            "environment_id",
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id",
-            "organization_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "scheduling_reminder_sync_event_type_fk": {
-          "name": "scheduling_reminder_sync_event_type_fk",
-          "tableFrom": "scheduling_reminder_sync",
-          "tableTo": "scheduling_event_type",
-          "columnsFrom": [
-            "event_type_id",
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id",
-            "organization_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -25025,12 +24886,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "email_reply_to": {
-          "name": "email_reply_to",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "sms_from": {
           "name": "sms_from",
           "type": "text",
@@ -25039,12 +24894,6 @@
         },
         "notifications": {
           "name": "notifications",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reminders": {
-          "name": "reminders",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -30370,7 +30219,8 @@
         "support",
         "promotion",
         "refund",
-        "sla"
+        "sla",
+        "threshold"
       ]
     },
     "public.billing_hold_reason": {
@@ -30379,6 +30229,7 @@
       "values": [
         "delinquent",
         "spend_limit",
+        "credit_limit",
         "admin"
       ]
     },
@@ -30389,7 +30240,8 @@
         "period",
         "plan_change",
         "one_off",
-        "final"
+        "final",
+        "threshold"
       ]
     },
     "public.billing_invoice_status": {
@@ -31316,8 +31168,7 @@
       "schema": "public",
       "values": [
         "email",
-        "sms",
-        "webhook"
+        "sms"
       ]
     },
     "public.scheduling_notification_recipient": {
@@ -31325,9 +31176,7 @@
       "schema": "public",
       "values": [
         "attendee",
-        "host",
-        "endpoint",
-        "address"
+        "host"
       ]
     },
     "public.scheduling_session_kind": {

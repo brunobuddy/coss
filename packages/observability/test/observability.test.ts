@@ -122,6 +122,21 @@ describe("scrubbing", () => {
     );
   });
 
+  test("coss.com's API keys are masked wherever text is scrubbed", () => {
+    // Built at runtime: key-shaped literals trip secret scanners.
+    const live = ["coss", "live", "a".repeat(64)].join("_");
+    const sandbox = ["coss", "test", "b".repeat(64)].join("_");
+    expect(scrubUrl(`refused ${live}`)).toBe("refused coss_live_[key]");
+    expect(scrubUrl(`refused ${sandbox}.`)).toBe("refused coss_test_[key].");
+    expect(scrubUrl("the coss_live_ prefix")).toBe("the coss_live_ prefix");
+    const event = scrubEvent({
+      message: `POST /mcp ${live}`,
+      exception: { values: [{ value: live }] },
+    });
+    expect(event.message).toBe("POST /mcp coss_live_[key]");
+    expect(event.exception?.values?.[0]?.value).toBe("coss_live_[key]");
+  });
+
   test("other providers' API keys are masked wherever text is scrubbed", () => {
     // Built at runtime: key-shaped literals trip secret scanners.
     const resendKey = ["re", "AbC123", "x".repeat(24)].join("_");

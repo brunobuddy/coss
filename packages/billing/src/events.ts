@@ -8,6 +8,7 @@ import { db, schema } from "@coss/db";
 import { and, asc, eq, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import type { BillingAccount } from "./accounts.ts";
 import { cancelContract, contractPendingOn } from "./contracts.ts";
+import { checkOrganizationCredit } from "./credit.ts";
 import { evaluateStanding } from "./holds.ts";
 import { lockInvoice } from "./invoices.ts";
 import { enqueueBillingNotification } from "./notifications.ts";
@@ -264,6 +265,10 @@ export async function applyOutcome(
           payload: { invoiceId: invoice.id, error: "the payment was disputed" },
           now,
         });
+        // A cardholder saying it wasn't them is the signal a stolen card gives: act on it now.
+        if (invoice.organizationId !== deps.systemOrganizationId) {
+          await checkOrganizationCredit(invoice.organizationId, now);
+        }
       }
       return;
     }

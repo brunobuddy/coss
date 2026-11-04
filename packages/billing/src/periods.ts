@@ -23,8 +23,15 @@ import { carriedKeys } from "./carried.ts";
 import type { MeterKey } from "./catalog/meters.ts";
 import { contractAt, contractsOverlapping } from "./contracts.ts";
 import { composePeriodInvoice } from "./engine/compose.ts";
-import type { Composition, Segment, SpendHistory, TermQuantity } from "./engine/types.ts";
-import { existingGrantKeys, grantsFor, toGrantBalance } from "./grants.ts";
+import type {
+  Composition,
+  GrantApplication,
+  GrantBalance,
+  Segment,
+  SpendHistory,
+  TermQuantity,
+} from "./engine/types.ts";
+import { existingGrantKeys, type Grant, grantsFor, toGrantBalance } from "./grants.ts";
 import { createInvoice, existingChargeKeys, finalizeInvoice, spendHistory } from "./invoices.ts";
 import { stringifyWithBigInt } from "./money.ts";
 import { contractSegment, segmentsFor } from "./resolve.ts";
@@ -36,7 +43,7 @@ const { billingAccount, billingContract, billingPeriod } = schema;
 /** How long after a month ends it is closed: longer than any transaction that meters usage. */
 export const USAGE_SETTLE_MS = 15 * 60 * 1000;
 /** Months the close scan looks back (it catches up after an outage). */
-const CATCH_UP_MONTHS = 3;
+export const CATCH_UP_MONTHS = 3;
 
 type ComposeInput = {
   organizationId: string;
@@ -45,7 +52,17 @@ type ComposeInput = {
   withAdvance: boolean;
   /** Only usage before this instant (an estimate of the running month). */
   usageUntil?: Date;
+  /** What an estimate of an earlier month drew down: that credit can't pay for this one too. */
+  drawnDown?: readonly GrantApplication[];
 };
+
+function balanceAfter(grant: Grant, drawnDown: readonly GrantApplication[]): GrantBalance {
+  const drawn = drawnDown
+    .filter((application) => application.grantId === grant.id)
+    .reduce((sum, application) => sum + application.amount, 0n);
+  const balance = toGrantBalance(grant);
+  return { ...balance, remaining: balance.remaining - drawn };
+}
 
 /** Everything the engine needs for an account's month, read in `executor`. */
 export async function composeMonth(
@@ -115,7 +132,9 @@ export async function composeMonth(
     }
   }
 
-  const grants = await grantsFor(organizationId, { start: period.start, end: next.end }, executor);
+  const grants = (
+    await grantsFor(organizationId, { start: period.start, end: next.end }, executor)
+  ).map((grant) => balanceAfter(grant, input.drawnDown ?? []));
 
   // Charges and grants an earlier invoice made (a mid-month contract start, a re-run).
   const draft = composePeriodInvoice({
@@ -127,7 +146,7 @@ export async function composeMonth(
       termQuantities: [...termQuantities.values()],
     },
     next: nextSegment ? { period: next, segment: nextSegment } : null,
-    grants: grants.map(toGrantBalance),
+    grants,
   });
   const billed = {
     chargeKeys: await existingChargeKeys(
@@ -156,7 +175,7 @@ export async function composeMonth(
             termQuantities: [...termQuantities.values()],
           },
           next: nextSegment ? { period: next, segment: nextSegment } : null,
-          grants: grants.map(toGrantBalance),
+          grants,
           billed,
         })
       : draft;

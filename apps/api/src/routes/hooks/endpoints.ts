@@ -309,7 +309,9 @@ export const sendHookEndpointTestRoute = createRoute({
     202: jsonDoc("The test message, queued.", HookMessageObject),
     ...bodyErrors,
     ...commonErrors,
-    402: errorDoc("An invoice is overdue or the spend limit was reached (`billing_hold`)."),
+    402: errorDoc(
+      "An invoice is overdue or the spend or credit limit was reached (`billing_hold`).",
+    ),
     404: notFound,
     422: errorDoc("The body failed validation (`validation_error`, `payload_too_large`)."),
   },

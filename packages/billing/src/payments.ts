@@ -4,7 +4,7 @@
  * write-offs and manual payments, which platform admins make.
  */
 import { db, schema, type Transaction } from "@coss/db";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { lockBillingAccount } from "./accounts.ts";
 import { announce } from "./announce.ts";
 import { type AdminActor, auditBillingChange } from "./audit.ts";
@@ -16,7 +16,13 @@ import { type InvoiceRow, lockInvoice } from "./invoices.ts";
 import { toInvoiceSummary } from "./objects.ts";
 import { settlePendingContract } from "./upgrades.ts";
 
-const { billingInvoice, billingInvoiceLine, billingPayment } = schema;
+const {
+  billingCreditEntry,
+  billingCreditGrant,
+  billingInvoice,
+  billingInvoiceLine,
+  billingPayment,
+} = schema;
 
 export type PaymentInput = {
   amountCents: bigint;
@@ -291,6 +297,13 @@ export async function voidInvoiceInTransaction(
     // A debit that may still settle: its outcome comes first.
     throw new BillingError("invoice_state", "A payment for this invoice is still being processed.");
   }
+  if (invoice.kind === "threshold" && (await thresholdChargeDrawnDown(tx, invoice))) {
+    // A month's invoice already took it off, so nothing would bill that usage again.
+    throw new BillingError(
+      "invoice_state",
+      "This usage already came off a month's invoice, so voiding would lose it. Issue a credit note to forgive it.",
+    );
+  }
   const [row] = await tx
     .update(billingInvoice)
     .set({
@@ -340,6 +353,22 @@ export async function voidInvoiceInTransaction(
     });
   }
   return row;
+}
+
+/** Whether a finalized invoice has spent the credit a threshold charge funded. */
+async function thresholdChargeDrawnDown(tx: Transaction, invoice: InvoiceRow): Promise<boolean> {
+  const [row] = await tx
+    .select({ drawn: sql<string>`coalesce(sum(${billingCreditEntry.amount}), 0)` })
+    .from(billingCreditEntry)
+    .innerJoin(billingCreditGrant, eq(billingCreditGrant.id, billingCreditEntry.grantId))
+    .where(
+      and(
+        eq(billingCreditGrant.organizationId, invoice.organizationId),
+        eq(billingCreditGrant.invoiceId, invoice.id),
+        eq(billingCreditGrant.source, "threshold"),
+      ),
+    );
+  return BigInt(row?.drawn ?? 0) > 0n;
 }
 
 /** Writes an unpaid invoice off: it stops counting as overdue (no more collection). */

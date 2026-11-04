@@ -21,10 +21,13 @@ const SECRET_PARAMS = new RegExp(
   "g",
 );
 
+// Our API keys work only in a header, but people paste them into URLs (MCP clients' especially).
+const API_KEYS = /\b(coss_(?:live|test)_)[A-Za-z0-9_-]{8,}/g;
+
 export function maskSecrets(text) {
   let masked = text;
   for (const path of SECRET_PATHS) masked = masked.replace(path, "$1[masked]");
-  return masked.replace(SECRET_PARAMS, "$1[masked]");
+  return masked.replace(SECRET_PARAMS, "$1[masked]").replace(API_KEYS, "$1[masked]");
 }
 
 export async function handler(event) {

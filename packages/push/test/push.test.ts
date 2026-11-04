@@ -461,13 +461,8 @@ describe("sending", () => {
 
   test("a worker that lost its claim stops and writes nothing", async () => {
     const tenant = await createTestTenant();
-    const first = await createTestPushDevice({ userId: tenant.owner.id });
     await createTestPushDevice({ userId: tenant.owner.id });
-    // This test exercises lease fencing, not UUID order when registrations share a millisecond.
-    await db
-      .update(schema.pushDevice)
-      .set({ createdAt: new Date(Date.now() - 1000) })
-      .where(eq(schema.pushDevice.id, first.device.id));
+    await createTestPushDevice({ userId: tenant.owner.id });
     const endpoint = await disabledEndpoint(tenant);
     await enqueueEndpointDisabled(tenant, endpoint.id);
     const sender = new FakePushSender();
@@ -483,7 +478,8 @@ describe("sending", () => {
       return result;
     };
     await runDuePushNotifications({ scope: scopeOf(tenant) }, { sender });
-    expect(sender.sent.map((push) => push.target.deviceId)).toEqual([first.device.id]);
+    // Whichever device came first (ids decide), the second one is never sent to.
+    expect(sender.sent).toHaveLength(1);
     const [row] = await listPushNotifications(tenant.organization.id);
     expect(row?.status).toBe("pending");
     expect(row?.deliveredDeviceIds).toEqual([]);

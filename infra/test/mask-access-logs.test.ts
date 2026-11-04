@@ -38,6 +38,14 @@ describe("maskSecrets", () => {
     expect(masked).toContain("[masked]");
   });
 
+  test("masks an API key someone put in a URL, under any parameter", () => {
+    // Built at runtime: key-shaped literals trip secret scanners.
+    const key = ["coss", "live", "a".repeat(64)].join("_");
+    const masked = maskSecrets(albLine(`https://api.coss.com:443/mcp?api_key=${key}`));
+    expect(masked).not.toContain(key);
+    expect(masked).toContain("api_key=coss_live_[masked]");
+  });
+
   test("masks CloudFront's separate query field and referrer", () => {
     const line = [
       "2026-11-03",

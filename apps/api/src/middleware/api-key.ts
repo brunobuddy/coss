@@ -18,6 +18,11 @@ export type Authenticate = (
 
 const BEARER = /^bearer\s+(.+)$/i;
 
+/** The key in an `Authorization` header, if it holds one. */
+export function bearerKey(header: string | undefined): string | undefined {
+  return header ? BEARER.exec(header.trim())?.[1]?.trim() : undefined;
+}
+
 // RFC 6750: 401 responses name the scheme the client should use.
 const WWW_AUTHENTICATE = { "WWW-Authenticate": "Bearer" };
 
@@ -45,7 +50,7 @@ export function requireApiKey(
 
   return createMiddleware<AppEnv>(async (c, next) => {
     const header = c.req.header("Authorization");
-    const key = header ? BEARER.exec(header.trim())?.[1]?.trim() : undefined;
+    const key = bearerKey(header);
     if (!key) {
       throw new ApiError(
         401,

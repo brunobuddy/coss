@@ -1,0 +1,36 @@
+name: API image
+
+# Builds apps/api/Dockerfile on pull requests that can break it, and checks the built image can load
+# the hosted MCP server. The Deploy workflow is otherwise the only thing that builds it, on main,
+# after the merge. Nothing is pushed, no secrets are used, and it isn't a required check.
+on:
+  pull_request:
+    paths:
+      - apps/api/Dockerfile
+      - apps/api/package.json
+      - packages/mcp/**
+      - packages/sdk/**
+      - bun.lock
+      - .dockerignore
+      - .github/workflows/api-image.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Build the image
+        run: docker build --file apps/api/Dockerfile --tag coss-api:pr .
+      - name: Load the hosted MCP server from it
+        run: |
+          docker run --rm --workdir /app/apps/api coss-api:pr bun --eval '
+            const { createHostedMcp } = await import("coss-mcp/http");
+            const mcp = createHostedMcp({ apiBaseUrl: "https://api.coss.com" });
+            const status = mcp.precheck(new Request("https://api.coss.com/mcp"))?.status;
+            if (status !== 405) throw new Error(`precheck answered ${status}`);
+            console.log("coss-mcp/http loads and answers");
+          '
