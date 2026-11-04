@@ -60,7 +60,7 @@ import {
   releaseSessionClaim,
   tryClaim,
 } from "./claims.ts";
-import { type PoolMember, rankCandidates } from "./engine/rank.ts";
+import { type PoolMember, rankCandidates, startingUnits } from "./engine/rank.ts";
 import { expandRecurrence } from "./engine/recurrence.ts";
 import {
   isBookable,
@@ -356,6 +356,40 @@ const slotLost = (reason?: string) =>
     { param: "start" },
   );
 
+/** Hosts a pool's filter found have no row of their own until they're first chosen. */
+async function joinFoundHosts(
+  tx: Executor,
+  eventType: EventTypeRow,
+  hostIds: readonly string[],
+): Promise<void> {
+  const known = await tx
+    .select({ hostId: schedulingEventTypeHost.hostId })
+    .from(schedulingEventTypeHost)
+    .where(
+      and(
+        eq(schedulingEventTypeHost.eventTypeId, eventType.id),
+        eq(schedulingEventTypeHost.organizationId, eventType.organizationId),
+        inArray(schedulingEventTypeHost.hostId, [...hostIds]),
+      ),
+    );
+  const missing = hostIds.filter((id) => !known.some((row) => row.hostId === id));
+  if (missing.length === 0) return;
+  const { members } = await candidatesOf(tx, eventType, eventType);
+  const pool = members.flatMap(({ membership }) => (membership ? [membership] : []));
+  for (const hostId of missing) {
+    await tx
+      .insert(schedulingEventTypeHost)
+      .values({
+        eventTypeId: eventType.id,
+        hostId,
+        organizationId: eventType.organizationId,
+        assigned: false,
+        fairUnits: startingUnits(pool, 100),
+      })
+      .onConflictDoNothing();
+  }
+}
+
 async function lockHostsAndMemberships(
   tx: Executor,
   eventType: EventTypeRow,
@@ -375,17 +409,7 @@ async function lockHostsAndMemberships(
     .orderBy(asc(schedulingHost.id))
     .for("share");
   if (active.length !== sorted.length) throw new LostSlot("host_unavailable");
-  for (const hostId of sorted) {
-    await tx
-      .insert(schedulingEventTypeHost)
-      .values({
-        eventTypeId: eventType.id,
-        hostId,
-        organizationId: eventType.organizationId,
-        assigned: false,
-      })
-      .onConflictDoNothing();
-  }
+  await joinFoundHosts(tx, eventType, sorted);
   const memberships = await tx
     .select({ hostId: schedulingEventTypeHost.hostId })
     .from(schedulingEventTypeHost)
@@ -763,24 +787,54 @@ async function chargeOnce(
 
 async function assignFairly(
   tx: Executor,
-  booking: Pick<BookingRow, "eventTypeId" | "organizationId">,
+  booking: Pick<BookingRow, "id" | "eventTypeId" | "organizationId">,
   hostIds: readonly string[],
   delta: 1 | -1,
 ): Promise<void> {
   if (hostIds.length === 0) return;
+  const members = and(
+    eq(schedulingEventTypeHost.eventTypeId, booking.eventTypeId),
+    eq(schedulingEventTypeHost.organizationId, booking.organizationId),
+    inArray(schedulingEventTypeHost.hostId, [...hostIds].sort()),
+  );
+  const thisBooking = and(
+    eq(schedulingBookingHost.bookingId, booking.id),
+    eq(schedulingBookingHost.organizationId, booking.organizationId),
+    inArray(schedulingBookingHost.hostId, [...hostIds]),
+  );
+  if (delta > 0) {
+    await tx
+      .update(schedulingEventTypeHost)
+      .set({
+        fairUnits: sql`${schedulingEventTypeHost.fairUnits} + 1`,
+        lastAssignedAt: sql`clock_timestamp()`,
+      })
+      .where(members);
+    await tx
+      .update(schedulingBookingHost)
+      .set({
+        fairShare: sql`1.0 / (
+          select member.weight from scheduling_event_type_host member
+          where member.event_type_id = ${booking.eventTypeId}
+            and member.organization_id = ${booking.organizationId}
+            and member.host_id = scheduling_booking_host.host_id
+        )`,
+      })
+      .where(thisBooking);
+    return;
+  }
+  // A weight changed since rescales what this booking added, so it's the share that comes back.
   await tx
     .update(schedulingEventTypeHost)
     .set({
-      fairUnits: sql`greatest(${schedulingEventTypeHost.fairUnits} + ${delta}, 0)`,
-      ...(delta > 0 ? { lastAssignedAt: sql`clock_timestamp()` } : {}),
+      fairUnits: sql`greatest(${schedulingEventTypeHost.fairUnits} - coalesce((
+        select added.fair_share from scheduling_booking_host added
+        where added.booking_id = ${booking.id}
+          and added.organization_id = ${booking.organizationId}
+          and added.host_id = scheduling_event_type_host.host_id
+      ) * scheduling_event_type_host.weight, 1), 0)`,
     })
-    .where(
-      and(
-        eq(schedulingEventTypeHost.eventTypeId, booking.eventTypeId),
-        eq(schedulingEventTypeHost.organizationId, booking.organizationId),
-        inArray(schedulingEventTypeHost.hostId, [...hostIds].sort()),
-      ),
-    );
+    .where(members);
 }
 
 /** What each host's calendar should now show. A seat's event is its session's. The worker converges. */
@@ -2159,7 +2213,7 @@ export async function rescheduleBooking(
       if (error instanceof LostSlot) throw slotLost(error.reason);
       throw error;
     }
-    if (replacement && member) {
+    if (replacement && member && replacement.id !== member.hostId) {
       await tx
         .delete(schedulingBookingHost)
         .where(

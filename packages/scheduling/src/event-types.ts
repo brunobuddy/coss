@@ -4,8 +4,9 @@ import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, notInArray, or, sql } from "drizzle-orm";
 import { notZoomMeeting } from "./calendar/zoom.ts";
+import { startingUnits } from "./engine/rank.ts";
 import { SchedulingError } from "./errors.ts";
-import { checkTimeZone, type HostRow, resolveHost } from "./hosts.ts";
+import { attributesMatch, checkTimeZone, type HostRow, resolveHost } from "./hosts.ts";
 import type {
   CreateEventTypeRequestOutput,
   EventTypeObjectOutput,
@@ -215,9 +216,19 @@ async function replaceHosts(
     }
   }
   // Waits for bookers holding `key share`, so a removal can't slip past one choosing the host.
-  await tx
-    .select({ hostId: schedulingEventTypeHost.hostId })
+  const current = await tx
+    .select({
+      hostId: schedulingEventTypeHost.hostId,
+      role: schedulingEventTypeHost.role,
+      weight: schedulingEventTypeHost.weight,
+      fairUnits: schedulingEventTypeHost.fairUnits,
+      assigned: schedulingEventTypeHost.assigned,
+      removedAt: schedulingEventTypeHost.removedAt,
+      hostStatus: schema.schedulingHost.status,
+      attributes: schema.schedulingHost.attributes,
+    })
     .from(schedulingEventTypeHost)
+    .innerJoin(schema.schedulingHost, eq(schema.schedulingHost.id, schedulingEventTypeHost.hostId))
     .where(
       and(
         eq(schedulingEventTypeHost.eventTypeId, row.id),
@@ -225,7 +236,7 @@ async function replaceHosts(
       ),
     )
     .orderBy(asc(schedulingEventTypeHost.hostId))
-    .for("update");
+    .for("update", { of: schedulingEventTypeHost });
   const keep = resolved.map(({ host }) => host.id);
   await tx
     .update(schedulingEventTypeHost)
@@ -239,13 +250,36 @@ async function replaceHosts(
         keep.length > 0 ? notInArray(schedulingEventTypeHost.hostId, keep) : undefined,
       ),
     );
+  const before = new Map(current.map((entry) => [entry.hostId, entry]));
+  const wanted = new Map(resolved.map(({ input, host }) => [host.id, input]));
+  // Who's in the pool once this is saved, decided before anyone's counter is, so it can't depend on
+  // the order hosts are written in.
+  const staying = current.filter((entry) => {
+    if (entry.hostStatus !== "active" || entry.removedAt || entry.role !== "member") return false;
+    const input = wanted.get(entry.hostId);
+    if (input) return input.role === "member";
+    return (
+      !entry.assigned &&
+      row.kind === "pool" &&
+      Boolean(row.hostFilter) &&
+      attributesMatch(entry.attributes, row.hostFilter)
+    );
+  });
   for (const { input, host } of resolved.sort((a, b) => (a.host.id < b.host.id ? -1 : 1))) {
+    const existing = before.get(host.id);
+    const continuing = existing && !existing.removedAt && existing.role === "member";
+    // Coming back, or newly taking bookings, is joining. A new weight applies from now on, so it
+    // keeps their place rather than leaving them with a backlog to catch up on.
+    const fairUnits = continuing
+      ? (existing.fairUnits * input.weight) / existing.weight
+      : startingUnits(staying, input.weight);
     const values = {
       role: input.role,
       weight: input.weight,
       scheduleId: input.schedule,
       assigned: true,
       removedAt: null,
+      fairUnits,
     };
     await tx
       .insert(schedulingEventTypeHost)
@@ -257,7 +291,16 @@ async function replaceHosts(
       })
       .onConflictDoUpdate({
         target: [schedulingEventTypeHost.eventTypeId, schedulingEventTypeHost.hostId],
-        set: values,
+        set: {
+          ...values,
+          // Not there when this read: a booker just made it for a host its filter found, and it
+          // already holds their counter.
+          ...(existing
+            ? {}
+            : {
+                fairUnits: sql`scheduling_event_type_host.fair_units * ${input.weight}::double precision / scheduling_event_type_host.weight`,
+              }),
+        },
       });
   }
 }

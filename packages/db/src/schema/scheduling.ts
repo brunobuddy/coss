@@ -11,6 +11,7 @@ import {
   check,
   customType,
   date,
+  doublePrecision,
   foreignKey,
   index,
   integer,
@@ -326,8 +327,10 @@ export const schedulingEventTypeHost = pgTable(
     weight: integer("weight").notNull().default(100),
     // False: only here to count a host a pool's `host_filter` found, who's no member of its own.
     assigned: boolean("assigned").notNull().default(true),
-    // Bookings assigned, net of cancellations before the start: the pool's fairness counter.
-    fairUnits: integer("fair_units").notNull().default(0),
+    // The pool's fairness counter: bookings assigned, net of cancellations before the start, from
+    // a start level with the pool. Fractional, because a new weight rescales it and rounding could
+    // leave someone a backlog.
+    fairUnits: doublePrecision("fair_units").notNull().default(0),
     lastAssignedAt: instant("last_assigned_at"),
     // Null: the host's default schedule.
     scheduleId: text("schedule_id"),
@@ -686,6 +689,9 @@ export const schedulingBookingHost = pgTable(
     hostId: text("host_id").notNull(),
     organizationId: text("organization_id").notNull(),
     role: schedulingHostRole("role").notNull().default("member"),
+    // What this booking added to a pool member's share (1 / weight at the time), so cancelling gives
+    // back what it took however the weight's changed since. Null: not a pool's, or from before this.
+    fairShare: doublePrecision("fair_share"),
   },
   (t) => [
     primaryKey({ columns: [t.bookingId, t.hostId] }),
