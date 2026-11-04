@@ -75,6 +75,7 @@ const {
   LostSlot,
   assignFairly,
   bumped,
+  coverPrincipals,
   coverageWindows,
   locationForNewHost,
   locationWithoutHost,
@@ -452,6 +453,7 @@ async function reassignOne(
     ttlSeconds: null,
     skip: skipsOfOverrides(input.overrides),
     coverage: coverageWindows(candidates),
+    coverPrincipals: coverPrincipals(candidates),
   };
   const schedules = schedulesOf(candidates);
   const taken = new Set(rows.map((row) => row.hostId));
@@ -771,6 +773,7 @@ async function reassignSession(
     ttlSeconds: null,
     skip: skipsOfOverrides(input.overrides),
     coverage: coverageWindows(candidates),
+    coverPrincipals: coverPrincipals(candidates),
   };
   const schedules = schedulesOf(candidates);
   let target: HostRow | null = null;

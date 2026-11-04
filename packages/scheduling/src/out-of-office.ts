@@ -232,12 +232,14 @@ export async function standingCover(
   executor: Executor,
   scope: Scope,
   hostIds: readonly string[],
+  principalsOf?: ReadonlyMap<string, readonly string[]>,
 ): Promise<ReadonlyMap<string, readonly Interval[]>> {
   const found = new Map<string, Interval[]>();
   if (hostIds.length === 0) return found;
   const rows = await executor
     .select({
       hostId: schedulingOutOfOfficeDelegate.hostId,
+      principal: schedulingOutOfOffice.hostId,
       startAt: schedulingOutOfOffice.startAt,
       endAt: schedulingOutOfOffice.endAt,
     })
@@ -254,6 +256,9 @@ export async function standingCover(
       ),
     );
   for (const row of rows) {
+    // Standing in for someone this booking couldn't go to says nothing about it.
+    const principals = principalsOf?.get(row.hostId);
+    if (principals && !principals.includes(row.principal)) continue;
     const windows = found.get(row.hostId) ?? [];
     windows.push({ startMs: row.startAt.getTime(), endMs: row.endAt.getTime() });
     found.set(row.hostId, windows);

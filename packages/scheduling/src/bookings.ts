@@ -11,7 +11,7 @@ import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { requestHash as hashRequest, withIdempotencyKey } from "@coss/db/idempotency";
 import { appendLogEntries } from "@coss/logs";
-import { decryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
+import { decryptSecret, encryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
 import {
   and,
   asc,
@@ -20,6 +20,7 @@ import {
   gt,
   gte,
   inArray,
+  isNotNull,
   isNull,
   lt,
   lte,
@@ -86,6 +87,7 @@ import {
 import { hostsAwayDuring, standingCover } from "./out-of-office.ts";
 import {
   type AttendeeInputOutput,
+  type BookingEventObjectOutput,
   type BookingObjectOutput,
   type GuestInputOutput,
   MAX_SERIES_OCCURRENCES,
@@ -531,6 +533,8 @@ export type ClaimPlan = {
   skip?: readonly NotBookableReason[] | undefined;
   /** Who's only standing in for someone, and when. */
   coverage?: ReadonlyMap<string, readonly Interval[]> | undefined;
+  /** And whose time away that came from. */
+  coverPrincipals?: ReadonlyMap<string, readonly string[]> | undefined;
 };
 
 /**
@@ -548,6 +552,7 @@ async function coverAsItStands(
     executor,
     plan.scope,
     hosts.flatMap((host) => (coverage.has(host.id) ? [host.id] : [])),
+    plan.coverPrincipals,
   );
   const result = new Map<string, readonly Interval[]>();
   for (const [hostId, windows] of coverage) {
@@ -646,6 +651,14 @@ function coverageWindows(candidates: Candidates): Map<string, Interval[]> {
   return new Map(
     candidates.members.flatMap((entry) =>
       entry.coverage ? [[entry.host.id, entry.coverage.windows] as const] : [],
+    ),
+  );
+}
+
+function coverPrincipals(candidates: Candidates): Map<string, readonly string[]> {
+  return new Map(
+    candidates.members.flatMap((entry) =>
+      entry.coverage ? [[entry.host.id, entry.coverage.principals] as const] : [],
     ),
   );
 }
@@ -1698,6 +1711,14 @@ export async function toBookingObject(
     external_conflict_at: booking.externalConflictAt?.toISOString() ?? null,
     no_show_at: booking.noShowAt?.toISOString() ?? null,
     cancelled_at: booking.cancelledAt?.toISOString() ?? null,
+    cancelled_by: booking.cancelledBy,
+    ...(opts.includeAnswers
+      ? {
+          cancellation_reason: booking.encryptedCancellationReason
+            ? decryptSecret(booking.encryptedCancellationReason, deps.dataKeys)
+            : null,
+        }
+      : {}),
     metadata: booking.metadata,
     created_at: booking.createdAt.toISOString(),
     updated_at: booking.updatedAt.toISOString(),
@@ -1792,6 +1813,7 @@ async function book(
     failureMode,
     ttlSeconds,
     coverage: coverageWindows(candidates),
+    coverPrincipals: coverPrincipals(candidates),
   };
   const context: NewBookingContext = { env, eventType, deps, actor, now };
   const hash = hashRequest({ wantHold, request: { ...request, idempotencyKey: undefined } });
@@ -2179,6 +2201,7 @@ async function endBooking(
   const updated = await bumped(tx, booking, {
     status,
     cancelledAt: now,
+    cancelledBy: status === "cancelled" ? actor.kind : null,
     holdExpiresAt: null,
     approvalExpiresAt: null,
   });
@@ -2255,12 +2278,27 @@ function checkNotice(
   }
 }
 
+async function hasErasedAttendee(tx: Executor, booking: BookingRow): Promise<boolean> {
+  const [erased] = await tx
+    .select({ id: schedulingAttendee.id })
+    .from(schedulingAttendee)
+    .where(
+      and(
+        eq(schedulingAttendee.bookingId, booking.id),
+        eq(schedulingAttendee.organizationId, booking.organizationId),
+        isNotNull(schedulingAttendee.redactedAt),
+      ),
+    )
+    .limit(1);
+  return Boolean(erased);
+}
+
 export async function cancelBooking(
   env: SchedulingEnvironment,
   id: string,
   deps: SchedulingDeps,
   actor: BookingActor,
-  opts: { enforceCutoffs?: boolean } = {},
+  opts: { enforceCutoffs?: boolean; reason?: string | undefined } = {},
 ): Promise<BookingObjectOutput> {
   const row = await db.transaction(async (tx) => {
     const booking = await lockBooking(tx, env, id);
@@ -2268,7 +2306,7 @@ export async function cancelBooking(
     if (booking.status === "declined") throw notChangeable(booking);
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
     checkNotice(booking, eventType.cancelNoticeMinutes, nowOf(deps), opts);
-    return endBooking(
+    const ended = await endBooking(
       tx,
       booking,
       "cancelled",
@@ -2277,6 +2315,20 @@ export async function cancelBooking(
       "scheduling.booking.cancelled",
       "Booking cancelled",
     );
+    const reason = opts.reason?.trim();
+    // Their details are gone for good, so nothing new about them goes back in.
+    if (reason && !booking.redactedAt && !(await hasErasedAttendee(tx, booking))) {
+      await tx
+        .update(schedulingBooking)
+        .set({ encryptedCancellationReason: encryptSecret(reason, deps.dataKeys) })
+        .where(
+          and(
+            eq(schedulingBooking.id, booking.id),
+            eq(schedulingBooking.organizationId, booking.organizationId),
+          ),
+        );
+    }
+    return ended;
   });
   return toBookingObject(db, row, deps);
 }
@@ -2341,6 +2393,7 @@ export async function approveBooking(
 
 /** What `reassign.ts` builds on. Not part of the package's interface. */
 export const bookingInternals = {
+  coverPrincipals,
   coverageWindows,
   LostSlot,
   assignFairly,
@@ -2500,6 +2553,7 @@ export async function rescheduleBooking(
       );
     }
     let replacementCoverage: Map<string, Interval[]> | undefined;
+    let replacementPrincipals: Map<string, readonly string[]> | undefined;
     if (replacement && !member) {
       throw new SchedulingError("invalid_event_type", "This booking's hosts can't be changed.", {
         param: "host",
@@ -2513,7 +2567,10 @@ export async function rescheduleBooking(
           param: "host",
         });
       }
-      if (entry.coverage) replacementCoverage = new Map([[replacement.id, entry.coverage.windows]]);
+      if (entry.coverage) {
+        replacementCoverage = new Map([[replacement.id, entry.coverage.windows]]);
+        replacementPrincipals = new Map([[replacement.id, entry.coverage.principals]]);
+      }
     }
     const hosts = replacing
       ? [...current.filter((host) => host.id !== member?.hostId), replacing]
@@ -2551,6 +2608,7 @@ export async function rescheduleBooking(
       failureMode: await calendarFailureModeOf(tx, env),
       ttlSeconds,
       coverage: replacementCoverage,
+      coverPrincipals: replacementPrincipals,
     };
     try {
       await tx.transaction(async (savepoint) => {
@@ -2745,6 +2803,43 @@ export async function getBooking(
   deps: Pick<SchedulingDeps, "dataKeys">,
 ): Promise<BookingObjectOutput> {
   return toBookingObject(db, await bookingRow(scope, id), deps, { includeAnswers: true });
+}
+
+/** What's happened to a booking, oldest first. No personal data lives here, or in `details`. */
+export async function listBookingEvents(
+  scope: Scope,
+  id: string,
+  query: { limit: number; after?: string | undefined },
+): Promise<{ data: BookingEventObjectOutput[]; hasMore: boolean }> {
+  const booking = await bookingRow(scope, id);
+  const inBooking = and(
+    eq(schedulingBookingEvent.bookingId, booking.id),
+    eq(schedulingBookingEvent.organizationId, booking.organizationId),
+  );
+  const previous = query.after
+    ? db
+        .select({ sequence: schedulingBookingEvent.sequence })
+        .from(schedulingBookingEvent)
+        .where(and(inBooking, eq(schedulingBookingEvent.id, query.after)))
+    : null;
+  const rows = await db
+    .select()
+    .from(schedulingBookingEvent)
+    .where(and(inBooking, previous ? gt(schedulingBookingEvent.sequence, previous) : undefined))
+    .orderBy(asc(schedulingBookingEvent.sequence))
+    .limit(query.limit + 1);
+  return {
+    data: rows.slice(0, query.limit).map((row) => ({
+      object: "scheduling.booking_event" as const,
+      id: row.id,
+      sequence: row.sequence,
+      type: row.type,
+      actor: { kind: row.actor.kind, id: "id" in row.actor ? row.actor.id : null },
+      details: row.details,
+      occurred_at: row.occurredAt.toISOString(),
+    })),
+    hasMore: rows.length > query.limit,
+  };
 }
 
 /** The dashboard's view of one booking: names and its history, never answers (only `getBooking`). */
@@ -3212,6 +3307,7 @@ export async function createSeries(
         failureMode,
         ttlSeconds,
         coverage: coverageWindows(candidates),
+        coverPrincipals: coverPrincipals(candidates),
       };
       try {
         const created = await inSavepoint(tx, async (savepoint) => {

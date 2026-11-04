@@ -2356,7 +2356,14 @@ describe("coss.scheduling against the API", () => {
     const rescheduled = await scheduling.bookings.reschedule(booking.id, { start: moved });
     expect(rescheduled.data).toMatchObject({ id: booking.id, start: moved });
     expect((await scheduling.bookings.get(booking.id)).data?.attendees[0]?.uid).toBe("patient_1");
-    expect((await scheduling.bookings.cancel(booking.id)).data?.status).toBe("cancelled");
+    const cancelled = await scheduling.bookings.cancel(booking.id, { reason: "Feeling better" });
+    expect(cancelled.data?.status).toBe("cancelled");
+    expect(cancelled.data?.cancelled_by).toBe("api_key");
+    const history = await scheduling.bookings.events(booking.id);
+    expect(history.data?.data.at(-1)?.type).toBe("scheduling.booking.cancelled");
+    expect((await scheduling.bookings.get(booking.id)).data?.cancellation_reason).toBe(
+      "Feeling better",
+    );
 
     const hold = must(
       (await scheduling.holds.create({ event_type: eventType.id, start: later, attendee })).data,

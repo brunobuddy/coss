@@ -676,6 +676,31 @@ describe("saying who", () => {
       await expect(booking).rejects.toBeDefined();
     });
 
+    test("covering someone else at that time doesn't keep it", async () => {
+      const { env, d, type, entry, gate, release, holding, locked } = await lockedDelegate();
+      const elsewhere = await host(env, "Elsewhere");
+      await away(env, elsewhere.id, [d.id]);
+      const change = db.transaction(async (tx) => {
+        await tx
+          .select({ id: schema.schedulingHost.id })
+          .from(schema.schedulingHost)
+          .where(eq(schema.schedulingHost.id, d.id))
+          .for("update");
+        locked();
+        await gate;
+        await tx
+          .update(schema.schedulingOutOfOffice)
+          .set({ deletedAt: NOW })
+          .where(eq(schema.schedulingOutOfOffice.id, entry?.id as string));
+      });
+      await holding;
+      const booking = book(env, type.id, at("10:00"), { host: d.id });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      release();
+      await change;
+      await expect(booking).rejects.toBeDefined();
+    });
+
     test("taking it back waits for a booking that's taking it", async () => {
       const { env, d, entry, gate, release, holding, locked } = await lockedDelegate();
       const booker = db.transaction(async (tx) => {

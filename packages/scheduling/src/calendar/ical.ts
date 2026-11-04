@@ -176,6 +176,8 @@ const MAX_FEED_EVENTS = 5000;
 const MAX_HOLIDAY_DAYS = 400;
 const MAX_HOLIDAY_SPAN_DAYS = 60;
 const MAX_NAME_LENGTH = 200;
+/** Longer than a name: Canada's Boxing Day lists most of its provinces, and any of them can match. */
+const MAX_REGIONS_LENGTH = 2000;
 const DAY = 86_400_000;
 
 /** A local date, as written: holidays are days, in nobody's time zone. */
@@ -224,7 +226,7 @@ export function holidaysFromIcs(
     const regionOf = (vevent: ICAL.Component) => {
       const text = String(vevent.getFirstPropertyValue("description") ?? "");
       return (
-        /^Public holiday in ([^\n]+)/i.exec(text)?.[1]?.trim().slice(0, MAX_NAME_LENGTH) ?? null
+        /^Public holiday in ([^\n]+)/i.exec(text)?.[1]?.trim().slice(0, MAX_REGIONS_LENGTH) ?? null
       );
     };
     const addEvent = (vevent: ICAL.Component) => {

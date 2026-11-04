@@ -5,7 +5,7 @@
  */
 import { db, schema } from "@coss/db";
 import { RETENTION_DAYS } from "@coss/retention";
-import { and, eq, inArray, isNotNull, isNull, lt, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, lt, or, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import { emailLookup } from "./attendees.ts";
 import { rewriteDetailedEvents } from "./calendar/details.ts";
@@ -93,6 +93,7 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
           isNull(schedulingBooking.redactedAt),
         ),
       )
+      .orderBy(asc(schedulingBooking.id))
       .for("update");
     if (locked.length === 0) return 0;
     const ids = locked.map((row) => row.id);
@@ -111,7 +112,13 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
     }
     await tx
       .update(schedulingBooking)
-      .set({ metadata: {}, location: null, encryptedAttributes: null, redactedAt: now })
+      .set({
+        metadata: {},
+        location: null,
+        encryptedAttributes: null,
+        encryptedCancellationReason: null,
+        redactedAt: now,
+      })
       .where(inArray(schedulingBooking.id, ids));
     await tx
       .update(schedulingBookingEvent)
@@ -316,6 +323,24 @@ async function eraseMatching(
       eq(schedulingAttendee.environmentId, scope.environmentId),
       matching,
     );
+    // Bookings first, as redacting and cancelling do, or erasing the same booking would deadlock.
+    const affected = await tx
+      .select({ bookingId: schedulingAttendee.bookingId })
+      .from(schedulingAttendee)
+      .where(where);
+    if (affected.length > 0) {
+      await tx
+        .select({ id: schedulingBooking.id })
+        .from(schedulingBooking)
+        .where(
+          and(
+            inArray(schedulingBooking.id, [...new Set(affected.map((row) => row.bookingId))]),
+            eq(schedulingBooking.organizationId, scope.organizationId),
+          ),
+        )
+        .orderBy(asc(schedulingBooking.id))
+        .for("update");
+    }
     // Before they're gone: redacting takes the uid, which is how sessions name this person.
     const matched = await tx
       .select({ uid: schedulingAttendee.uid })
@@ -329,11 +354,12 @@ async function eraseMatching(
       .returning({ bookingId: schedulingAttendee.bookingId });
     const bookingIds = [...new Set(erased.map((row) => row.bookingId))];
     await rewriteDetailedEvents(tx, scope, bookingIds, now);
-    // What they were routed with can say what they needed, as their answers can.
+    // What they were routed with can say what they needed, as their answers can, and whoever wrote
+    // a cancellation's reason may have said anything about this person.
     if (bookingIds.length > 0) {
       await tx
         .update(schedulingBooking)
-        .set({ encryptedAttributes: null })
+        .set({ encryptedAttributes: null, encryptedCancellationReason: null })
         .where(
           and(
             eq(schedulingBooking.organizationId, scope.organizationId),

@@ -55,7 +55,7 @@ that was already there skips the check, and those bookings show up as conflicts.
 
 - A write takes `for no key update` on the host row, and bookers hold `share`, so a booking either commits first and
   is a conflict, or sees the entry. It takes the rows of whoever's covering too, since a booking with them holds theirs
-  and not the principal's, and it reads their cover again once it does (`coverAsItStands`).
+  and not the principal's, and it reads their cover again once it does (`coverAsItStands`), for the same people it was found through.
 - `reason` can say someone's on medical leave, so it stays out of webhooks, logs, calendars and anything a booker sees
   (`slotLost` hides that a host is out of office, too). Notes are encrypted; `public_message` is what bookers read,
   screened, with no links.

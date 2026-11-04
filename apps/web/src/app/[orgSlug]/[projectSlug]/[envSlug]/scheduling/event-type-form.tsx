@@ -303,6 +303,19 @@ export function EventTypeForm(
               />
               <FieldDescription>Shown to attendees and in emails.</FieldDescription>
             </Field>
+            <Field className="sm:col-span-2">
+              <FieldLabel>Description</FieldLabel>
+              <Textarea
+                maxLength={2000}
+                onChange={(event) => set({ description: event.target.value })}
+                rows={3}
+                value={form.description}
+              />
+              <FieldDescription>
+                Shown on booking pages, never in emails. Links must be on your verified domains and
+                use https.
+              </FieldDescription>
+            </Field>
             <Field>
               <FieldLabel>Your id</FieldLabel>
               <Input

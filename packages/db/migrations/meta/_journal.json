@@ -922,8 +922,29 @@
     {
       "idx": 131,
       "version": "7",
-      "when": 1793829570549,
-      "tag": "0131_cuddly_shooting_star",
+      "when": 1793828712469,
+      "tag": "0131_scheduling_event_type_description",
+      "breakpoints": true
+    },
+    {
+      "idx": 132,
+      "version": "7",
+      "when": 1793828798058,
+      "tag": "0132_scheduling_cancellation_details",
+      "breakpoints": true
+    },
+    {
+      "idx": 133,
+      "version": "7",
+      "when": 1793828799205,
+      "tag": "0133_scheduling_backfill_cancelled_by",
+      "breakpoints": true
+    },
+    {
+      "idx": 134,
+      "version": "7",
+      "when": 1793830154689,
+      "tag": "0134_gorgeous_nova",
       "breakpoints": true
     }
   ]

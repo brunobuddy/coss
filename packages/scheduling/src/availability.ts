@@ -422,7 +422,13 @@ export async function calendarFailureModeOf(
 }
 
 /** Why someone who isn't otherwise a candidate is one: they're standing in for someone. */
-export type Coverage = { windows: Interval[]; position: number; principalRatio: number };
+export type Coverage = {
+  windows: Interval[];
+  /** Whose time away it is: only theirs says anything about this booking. */
+  principals: readonly string[];
+  position: number;
+  principalRatio: number;
+};
 
 export type Candidates = {
   required: { host: HostRow; membership: EventTypeHostRow | null }[];
@@ -522,6 +528,7 @@ async function coverageOf(
         windows: normalizeIntervals(
           covering.map((row) => ({ startMs: row.startAt.getTime(), endMs: row.endAt.getTime() })),
         ),
+        principals: [...new Set(covering.map((row) => row.principal))],
         position: Math.min(...covering.map((row) => row.position)),
         principalRatio: Math.max(...covering.map((row) => ratioOf.get(row.principal) ?? 0)),
       },
