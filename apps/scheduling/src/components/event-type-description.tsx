@@ -1,31 +1,28 @@
-const HTTPS_LINK = /(https:\/\/[^\s<>"']+)/;
-const TRAILING_PUNCTUATION = /[.,;:!?)\]]+$/;
+import { descriptionParts } from "@coss/scheduling/description-links";
 
 /**
- * Plain text the customer wrote, with their `https` links clickable. The API only stores links to
- * their verified domains. It's never treated as HTML.
+ * Plain text the customer wrote, never treated as HTML. Its links are the ones the API checked when
+ * it was saved, split the same way, so only those are clickable.
  */
 export function EventTypeDescription(props: { text: string }) {
   return (
     <p className="whitespace-pre-line text-pretty text-muted-foreground text-sm">
-      {props.text.split(HTTPS_LINK).map((part, index) => {
-        if (index % 2 === 0) return part;
-        const href = part.replace(TRAILING_PUNCTUATION, "");
-        return (
-          // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one fixed string, in order.
-          <span key={index}>
-            <a
-              className="underline underline-offset-2"
-              href={href}
-              rel="noopener noreferrer nofollow"
-              target="_blank"
-            >
-              {href}
-            </a>
-            {part.slice(href.length)}
-          </span>
-        );
-      })}
+      {descriptionParts(props.text).map((part, index) =>
+        part.kind === "link" ? (
+          <a
+            className="underline underline-offset-2"
+            href={part.href}
+            // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one fixed string, in order.
+            key={index}
+            rel="noopener noreferrer nofollow"
+            target="_blank"
+          >
+            {part.text}
+          </a>
+        ) : (
+          part.text
+        ),
+      )}
     </p>
   );
 }

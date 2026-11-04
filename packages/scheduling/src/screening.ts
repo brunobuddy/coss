@@ -4,6 +4,7 @@
  * event title and mail it to anyone. Live environments only; injected, like Forms' hosted pages.
  */
 import { isHipaaMode } from "@coss/compliance";
+import { parseLink, schemeLinks } from "./description-links.ts";
 import { SchedulingError } from "./errors.ts";
 
 export type SetupScreening = (input: { organizationId: string; text: string }) => Promise<boolean>;
@@ -18,37 +19,39 @@ export function refuseLinks(value: string | null | undefined, param: string): vo
   }
 }
 
-const SCHEME_LINK = /[a-z][a-z0-9+.-]*:\/\/[^\s<>"']*/giu;
 const BARE_HOST =
-  /(?<![\p{L}\p{N}.-])(?:[\p{L}\p{N}-]+\.)+\p{L}{2,}(?![\p{L}\p{N}-])(?:\/[^\s<>"']*)?/gu;
+  /(?<![\p{L}\p{N}.-])(?:[\p{L}\p{N}-]+\.)+(?:xn--[a-z0-9-]+|\p{L}{2,})(?![\p{L}\p{N}-])(?:\/[^\s<>"']*)?/giu;
+// What a browser's address bar would drop or read as a dot, so a reader can follow it anyway.
+const INVISIBLE = /\p{Cf}/gu;
+const OTHER_DOTS = /[\u3002\uff0e\uff61]/g;
 
-function hostOf(value: string): string | null {
-  try {
-    return new URL(value).hostname.replace(/\.$/, "").toLowerCase();
-  } catch {
-    return null;
-  }
+function hostOf(url: URL): string {
+  return url.hostname.replace(/\.$/, "").toLowerCase();
 }
 
 /**
- * Every host text links to, as it would resolve: lookalike letters come out as punycode, and
- * `https://acme.com@evil.com` as `evil.com`. Null when a link isn't `https` or can't be read. Anything
- * shaped like a domain counts, since a person can follow one that isn't a link at all.
+ * Every host a description links to. Null when a link can't be allowed: not `https`, or it could go
+ * somewhere other than it appears to. Links are read exactly as the page would render them. What's
+ * left is then normalized as a reader's browser would, since anything shaped like a domain can be
+ * copied and followed, even with an invisible character in it.
  */
 export function linkedHosts(text: string): string[] | null {
-  // The dots browsers also accept in a host name, which NFKC leaves alone.
-  const normalized = text.normalize("NFKC").replace(/[\u3002\uff0e\uff61]/g, ".");
   const hosts = new Set<string>();
-  for (const [link] of normalized.matchAll(SCHEME_LINK)) {
-    if (!link.toLowerCase().startsWith("https://")) return null;
-    const host = hostOf(link);
-    if (!host) return null;
-    hosts.add(host);
+  const links = schemeLinks(text);
+  for (const link of links) {
+    const url = parseLink(link);
+    if (!url) return null;
+    hosts.add(hostOf(url));
   }
-  for (const [bare] of normalized.replace(SCHEME_LINK, " ").matchAll(BARE_HOST)) {
-    const host = hostOf(`https://${bare}`);
-    if (!host) return null;
-    hosts.add(host);
+  let rest = text;
+  for (const link of links) rest = rest.replace(link, " ");
+  const readable = rest.normalize("NFKC").replace(INVISIBLE, "").replace(OTHER_DOTS, ".");
+  for (const [bare] of readable.matchAll(BARE_HOST)) {
+    try {
+      hosts.add(hostOf(new URL(`https://${bare}`)));
+    } catch {
+      return null;
+    }
   }
   return [...hosts];
 }

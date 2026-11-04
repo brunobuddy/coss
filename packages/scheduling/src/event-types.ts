@@ -316,9 +316,13 @@ async function checkDescription(
   if (!description) return;
   const hosts = linkedHosts(description);
   if (!hosts) {
-    throw new SchedulingError("content_refused", "Links in a description must use https.", {
-      param: "description",
-    });
+    throw new SchedulingError(
+      "content_refused",
+      "Links in a description must use https and a plain address, with no `user@`.",
+      {
+        param: "description",
+      },
+    );
   }
   if (hosts.length === 0) return;
   const verified = await db

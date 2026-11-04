@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { db, schema } from "@coss/db";
 import { uniqueSuffix } from "@coss/db/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
+import { descriptionParts } from "../src/description-links.ts";
 import {
   createEventType,
   createHost,
@@ -22,16 +23,28 @@ describe("what a description links to", () => {
     ["Questions? help@acme.com", ["acme.com"]],
     ["https://acme.com/report.pdf", ["acme.com"]],
     ["HTTPS://ACME.COM", ["acme.com"]],
-    ["https://acme.com@evil.com/", ["evil.com"]],
     ["https://evil.com/acme.com", ["evil.com"]],
+    ["https://%65vil.com", ["evil.com"]],
     ["evil.de and evil.xyz", ["evil.de", "evil.xyz"]],
   ])("%s", (text, hosts) => {
     expect(linkedHosts(text)).toEqual(hosts);
   });
 
-  test("lookalikes come out as what they'd really resolve to", () => {
-    expect(linkedHosts("https://аcme.com")).toEqual(["xn--cme-5cd.com"]);
+  test("what a reader could follow counts, whatever's hiding in it", () => {
+    expect(linkedHosts("See аcme.com")).toEqual(["xn--cme-5cd.com"]);
     expect(linkedHosts("acme。com")).toEqual(["acme.com"]);
+    expect(linkedHosts("evil\u200b.com")).toEqual(["evil.com"]);
+    expect(linkedHosts("e\u200dvil.com")).toEqual(["evil.com"]);
+    expect(linkedHosts("evil.xn--p1ai")).toEqual(["evil.xn--p1ai"]);
+    expect(linkedHosts("Dr. Reyes 👩\u200d⚕️ sees you soon.")).toEqual([]);
+  });
+
+  test("a nested link is checked as the outer one, and that's what's rendered", () => {
+    const text = "HTTPS://acme.com/https://evil.com/login";
+    expect(linkedHosts(text)).toEqual(["acme.com"]);
+    expect(descriptionParts(text)).toEqual([
+      { kind: "link", text, href: "https://acme.com/https://evil.com/login" },
+    ]);
   });
 
   test.each([
@@ -39,6 +52,13 @@ describe("what a description links to", () => {
     "javascript://acme.com/%0aalert(1)",
     "ftp://acme.com",
     "https://[broken",
+    "https://acme.com@evil.com/",
+    "https://acme.com＃@evil.com/login",
+    "https://acme.com／@evil.com/login",
+    "https://acme.com？@evil.com/login",
+    "https://аcme.com",
+    "https://acme。com",
+    "https://ac\u200bme.com",
   ])("%s isn't a link it can allow", (text) => {
     expect(linkedHosts(text)).toBeNull();
   });
@@ -102,6 +122,41 @@ async function refusal(run: Promise<unknown>): Promise<{ code: string; param?: s
 
 const refused = { code: "content_refused", param: "description" };
 
+describe("what the page makes clickable", () => {
+  const hrefs = (text: string) =>
+    descriptionParts(text).flatMap((part) => (part.kind === "link" ? [part.href] : []));
+
+  test("keeps the text around a link, and the punctuation after it", () => {
+    expect(descriptionParts("See https://acme.com/a, then call.")).toEqual([
+      { kind: "text", text: "See " },
+      { kind: "link", text: "https://acme.com/a", href: "https://acme.com/a" },
+      { kind: "text", text: ", then call." },
+    ]);
+  });
+
+  test.each([
+    "http://evil.com",
+    "https://user@evil.com",
+    "javascript://evil.com/%0aalert(1)",
+    "https://аcme.com",
+    "plain evil.com",
+  ])("never links %s", (text) => {
+    expect(hrefs(text)).toEqual([]);
+  });
+
+  test("anything it would link passes the same check", () => {
+    for (const text of [
+      "See https://acme.com.",
+      "(https://acme.com/a?b=c#d)",
+      "https://ACME.com",
+    ]) {
+      const hosts = linkedHosts(text);
+      expect(hosts).toEqual(["acme.com"]);
+      for (const href of hrefs(text)) expect(new URL(href).hostname).toBe("acme.com");
+    }
+  });
+});
+
 describe("an event type's description", () => {
   test("is optional, and can be set, changed and removed", async () => {
     const { env, create } = await setUp();
@@ -132,6 +187,9 @@ describe("an event type's description", () => {
       "See evil.example",
       `See https://${verified}.evil.example`,
       `See https://${verified}@evil.example`,
+      `See https://${verified}＃@evil.example`,
+      `HTTPS://evil.example/https://${verified}`,
+      "evil\u200b.example",
       `See http://${verified}`,
     ];
     for (const text of shapes) {
