@@ -1,8 +1,8 @@
-// Google's verification requires its own button: these colors, sizes and logo can't be changed.
+// Google's branding rules fix the colors, font, padding and logo. Its size and corners are ours.
 export function ContinueWithGoogle(props: { onClick: () => void }) {
   return (
     <button
-      className="inline-flex h-10 items-center gap-2.5 rounded-sm border border-[#747775] bg-white px-3 font-[Roboto,Arial,sans-serif] font-medium text-[#1F1F1F] text-sm/5 hover:bg-[#F7F8F8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-2.5 rounded-lg border border-[#747775] bg-white px-3 font-[family-name:var(--font-google-sans)] font-medium text-[#1F1F1F] text-sm/5 hover:bg-[#F7F8F8] focus-visible:outline-2 sm:h-9 focus-visible:outline-offset-2 focus-visible:outline-ring"
       onClick={props.onClick}
       type="button"
     >

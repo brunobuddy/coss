@@ -1,6 +1,17 @@
 import "./globals.css";
 import { fontMono, fontSans } from "@coss/ui/fonts";
 import type { Metadata } from "next";
+import { Google_Sans } from "next/font/google";
+
+// Google's button asks for this font. Not preloaded: only the host portal shows it.
+const googleSans = Google_Sans({
+  subsets: ["latin"],
+  weight: "500",
+  display: "swap",
+  preload: false,
+  adjustFontFallback: false,
+  variable: "--font-google-sans",
+});
 
 export const metadata: Metadata = {
   title: { default: "Scheduling", template: "%s" },
@@ -12,7 +23,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      className={`${fontSans.variable} ${fontMono.variable}`}
+      className={`${fontSans.variable} ${fontMono.variable} ${googleSans.variable}`}
       lang="en"
       suppressHydrationWarning
     >
