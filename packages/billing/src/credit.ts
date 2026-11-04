@@ -14,7 +14,7 @@
  * Self-serve accounts charged automatically are under it; contracts and net terms only when an admin
  * sets a limit (`billing_account.credit_limit_cents`). System-level: spans organizations.
  */
-import { db, type Executor, schema } from "@coss/db";
+import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import {
   type BillingAccount,
@@ -26,7 +26,7 @@ import { automaticCreditLimit, CREDIT_POLICY, chargeThreshold } from "./catalog/
 import type { GrantApplication } from "./engine/types.ts";
 import { insertComposedGrants } from "./grants.ts";
 import { liftHold, placeHold } from "./holds.ts";
-import { createInvoice, finalizeInvoice, type InvoiceRow } from "./invoices.ts";
+import { createInvoice, finalizeInvoice } from "./invoices.ts";
 import { formatCents } from "./money.ts";
 import { enqueueBillingNotification } from "./notifications.ts";
 import { CATCH_UP_MONTHS, composeMonth, hasContractIn } from "./periods.ts";
@@ -195,111 +195,105 @@ export async function creditStandingOf(
 }
 
 /**
- * Invoices the month's unbilled usage now, if it has reached `thresholdCents` and no earlier
- * threshold charge is still open. Takes the account lock, so several workers (and the month's close)
- * can't bill the same usage twice. Returns the invoice.
+ * Invoices this month's unbilled usage now, unless an earlier threshold charge is still open. The
+ * caller holds the account lock, so several workers (and the month's close) can't bill it twice.
  */
-export async function chargeAccruedUsage(input: {
-  organizationId: string;
-  provider: BillingAccount["provider"];
-  thresholdCents: bigint;
-  now: Date;
-}): Promise<InvoiceRow | null> {
-  const { organizationId, now } = input;
-  return db.transaction(async (tx) => {
-    const account = await lockBillingAccount(tx, organizationId, input.provider);
-    const [open] = await tx
-      .select({ id: billingInvoice.id })
-      .from(billingInvoice)
-      .where(
-        and(
-          eq(billingInvoice.organizationId, organizationId),
-          eq(billingInvoice.kind, "threshold"),
-          eq(billingInvoice.status, "open"),
-        ),
-      )
-      .limit(1);
-    if (open) return null;
-    const period = periodOf(now);
-    const { thisMonthCents: amount } = await unbilledUsage(organizationId, now, tx);
-    if (amount <= 0n || amount < input.thresholdCents) return null;
-    const organization = await organizationLabel(organizationId, tx);
-    if (!organization) return null;
-    const soFar = { start: period.start, end: now };
-    const invoice = await createInvoice(tx, {
-      account,
-      organization,
-      kind: "threshold",
-      period: soFar,
-      lines: [
-        {
-          kind: "adjustment",
-          description: "Usage so far this month",
-          amountCents: amount,
-          period: soFar,
-          contractId: null,
-        },
-      ],
-      memo: "Usage charged early: it reached your billing threshold. This month's invoice takes it off.",
-    });
-    const finalized = await finalizeInvoice(tx, invoice, account, now);
-    await insertComposedGrants(tx, organizationId, finalized.id, [
+async function chargeAccruedUsage(
+  tx: Transaction,
+  input: { account: BillingAccount; amount: bigint; thresholdCents: bigint; now: Date },
+): Promise<void> {
+  const { account, amount, now } = input;
+  const organizationId = account.organizationId;
+  const [open] = await tx
+    .select({ id: billingInvoice.id })
+    .from(billingInvoice)
+    .where(
+      and(
+        eq(billingInvoice.organizationId, organizationId),
+        eq(billingInvoice.kind, "threshold"),
+        eq(billingInvoice.status, "open"),
+      ),
+    )
+    .limit(1);
+  if (open) return;
+  const organization = await organizationLabel(organizationId, tx);
+  if (!organization) return;
+  const soFar = { start: periodOf(now).start, end: now };
+  const invoice = await createInvoice(tx, {
+    account,
+    organization,
+    kind: "threshold",
+    period: soFar,
+    lines: [
       {
-        key: `threshold:${finalized.id}`,
-        kind: "amount",
-        amount,
-        meter: null,
-        dimension: null,
-        scope: null,
-        // Never expires, and pays for anything: it's the customer's own money, however the month's
-        // final rating turns out (volume pricing can lower what's owed).
-        appliesTo: "any",
-        source: "threshold",
-        effectiveAt: now,
-        expiresAt: null,
+        kind: "adjustment",
+        description: "Usage so far this month",
+        amountCents: amount,
+        period: soFar,
         contractId: null,
-        description: `Usage charged early on invoice ${finalized.number ?? finalized.id}`,
       },
-    ]);
-    await enqueueBillingNotification(tx, {
-      organizationId,
-      kind: "usage_charged",
-      dedupeKey: `usage_charged:${finalized.id}`,
-      payload: {
-        invoiceId: finalized.id,
-        amount: formatCents(amount),
-        threshold: formatCents(input.thresholdCents),
-      },
-      now,
-    });
-    return finalized;
+    ],
+    memo: "Usage charged early: it reached your billing threshold. This month's invoice takes it off.",
+  });
+  const finalized = await finalizeInvoice(tx, invoice, account, now);
+  await insertComposedGrants(tx, organizationId, finalized.id, [
+    {
+      key: `threshold:${finalized.id}`,
+      kind: "amount",
+      amount,
+      meter: null,
+      dimension: null,
+      scope: null,
+      // Never expires, and pays for anything: it's the customer's own money, however the month's
+      // final rating turns out (volume pricing can lower what's owed).
+      appliesTo: "any",
+      source: "threshold",
+      effectiveAt: now,
+      expiresAt: null,
+      contractId: null,
+      description: `Usage charged early on invoice ${finalized.number ?? finalized.id}`,
+    },
+  ]);
+  await enqueueBillingNotification(tx, {
+    organizationId,
+    kind: "usage_charged",
+    dedupeKey: `usage_charged:${finalized.id}`,
+    payload: {
+      invoiceId: finalized.id,
+      amount: formatCents(amount),
+      threshold: formatCents(input.thresholdCents),
+    },
+    now,
   });
 }
 
 /**
  * One organization's credit check: charges unbilled usage over the threshold, warns near the limit,
- * and places or lifts the hold.
+ * and places or lifts the hold. All in one transaction under the account lock: what it decides from
+ * is never older than what it writes, so a stale read can't undo a hold another check just placed.
  */
 export async function checkOrganizationCredit(organizationId: string, now: Date): Promise<void> {
-  const account = await getBillingAccount(organizationId);
-  if (!account) return;
-  const state = await billingStateAt(organizationId, now);
-  const standing = await creditStandingOf(account, state, now);
-  if (
-    standing?.thresholdCents != null &&
-    standing.accruedThisMonthCents >= standing.thresholdCents
-  ) {
-    // What it moves from unbilled to unpaid, so what's at risk (and the hold below) doesn't change.
-    await chargeAccruedUsage({
-      organizationId,
-      provider: account.provider,
-      thresholdCents: standing.thresholdCents,
-      now,
-    });
-  }
-  const exempt = account.holdExemptUntil !== null && account.holdExemptUntil > now;
-  const cause = exempt ? null : (standing?.holdCause ?? null);
+  const existing = await getBillingAccount(organizationId);
+  if (!existing) return;
   await db.transaction(async (tx) => {
+    const account = await lockBillingAccount(tx, organizationId, existing.provider);
+    const state = await billingStateAt(organizationId, now, tx);
+    const standing = await creditStandingOf(account, state, now, tx);
+    if (
+      standing?.thresholdCents != null &&
+      standing.accruedThisMonthCents > 0n &&
+      standing.accruedThisMonthCents >= standing.thresholdCents
+    ) {
+      // It moves from unbilled to unpaid, so what's at risk (and the hold below) doesn't change.
+      await chargeAccruedUsage(tx, {
+        account,
+        amount: standing.accruedThisMonthCents,
+        thresholdCents: standing.thresholdCents,
+        now,
+      });
+    }
+    const exempt = account.holdExemptUntil !== null && account.holdExemptUntil > now;
+    const cause = exempt ? null : (standing?.holdCause ?? null);
     if (cause && standing) {
       const limit = formatCents(standing.limitCents);
       const placed = await placeHold(

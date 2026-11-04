@@ -6,9 +6,9 @@ import { getBillingAccount } from "../src/accounts.ts";
 import { runBillingUsageChecks } from "../src/alerts.ts";
 import { billingObject } from "../src/api.ts";
 import { automaticCreditLimit, CREDIT_POLICY, chargeThreshold } from "../src/catalog/credit.ts";
-import { chargeAccruedUsage, creditStandingOf, runDueCreditChecks } from "../src/credit.ts";
+import { creditStandingOf, runDueCreditChecks } from "../src/credit.ts";
 import { applyOutcome } from "../src/events.ts";
-import { holdsOf } from "../src/holds.ts";
+import { holdsOf, placeHold } from "../src/holds.ts";
 import { getInvoice, listInvoices } from "../src/invoices.ts";
 import { type BillingNotice, runDueBillingNotifications } from "../src/notifications.ts";
 import { estimatePeriod } from "../src/overview.ts";
@@ -167,15 +167,8 @@ describe("threshold charges", () => {
   test("only one is open at a time, and racing workers bill usage once", async () => {
     const f = await fixture();
     await f.useCents(15_000);
-    const charge = () =>
-      chargeAccruedUsage({
-        organizationId: f.organizationId,
-        provider: "fake",
-        thresholdCents: 10_000n,
-        now,
-      });
-    const results = await Promise.all([charge(), charge(), charge()]);
-    expect(results.filter(Boolean)).toHaveLength(1);
+    await Promise.all([f.check(), f.check(), f.check()]);
+    expect(await f.invoices("threshold")).toHaveLength(1);
     await f.useCents(15_000);
     await f.check();
     expect(await f.invoices("threshold")).toHaveLength(1);
@@ -421,6 +414,44 @@ describe("the credit limit", () => {
       .where(eq(schema.billingAccount.organizationId, f.organizationId));
     await f.check();
     expect(await f.held()).toBeFalse();
+  });
+
+  test("a check waiting for the account sees what happened while it waited", async () => {
+    const f = await fixture();
+    await f.useCents(15_000);
+    await f.check();
+    await f.collect();
+    const [charge] = await f.invoices("threshold");
+    let release = () => {};
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked = () => {};
+    const holding = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    // Another change of the account is under way…
+    const other = db.transaction(async (tx) => {
+      await tx
+        .select({ id: schema.billingAccount.id })
+        .from(schema.billingAccount)
+        .where(eq(schema.billingAccount.organizationId, f.organizationId))
+        .for("update");
+      locked();
+      await released;
+      // … and it's a fraud dispute, with its hold: the waiting check must not undo them.
+      await tx
+        .update(schema.billingInvoice)
+        .set({ paymentState: "disputed", paymentError: "fraudulent" })
+        .where(eq(schema.billingInvoice.id, charge?.id ?? ""));
+      await placeHold(tx, f.organizationId, "credit_limit", "Test");
+    });
+    await holding;
+    const waiting = f.check();
+    await Bun.sleep(50);
+    release();
+    await Promise.all([other, waiting]);
+    expect(await f.held()).toBeTrue();
   });
 
   test("other disputes don't hold", async () => {
