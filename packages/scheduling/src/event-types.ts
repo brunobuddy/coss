@@ -21,7 +21,7 @@ import { notZoomMeeting } from "./calendar/zoom.ts";
 import { startingUnits } from "./engine/rank.ts";
 import { SchedulingError } from "./errors.ts";
 import { attributesMatch, checkTimeZone, type HostRow, resolveHost } from "./hosts.ts";
-import { requireLiveFeature } from "./plan.ts";
+import { requireLiveFeatureToCreate } from "./plan.ts";
 import type {
   CreateEventTypeRequestOutput,
   EventTypeObjectOutput,
@@ -445,7 +445,8 @@ export async function createEventType(
   opts: { screen?: SetupScreening | undefined; plans?: PlanGate | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
   // `{}` is a filter too: it matches every active host.
-  if (params.host_filter != null) await requireLiveFeature(env, opts.plans, "schedulingRouting");
+  if (params.host_filter != null)
+    await requireLiveFeatureToCreate(env, opts.plans, "schedulingRouting");
   await checkGroupSeats(env, opts.plans, params.capacity);
   refuseLinks(params.title, "title");
   refuseLinksInAddresses(params.locations);
@@ -624,7 +625,7 @@ export async function updateEventType(
       params.host_filter != null &&
       JSON.stringify(params.host_filter) !== JSON.stringify(current.hostFilter)
     ) {
-      await requireLiveFeature(scope, opts.plans, "schedulingRouting");
+      await requireLiveFeatureToCreate(scope, opts.plans, "schedulingRouting");
     }
     await checkGroupSeats(scope, opts.plans, params.capacity, current.capacity ?? 0);
   }

@@ -97,6 +97,10 @@ export function createPlanGate(opts: { systemOrganizationId?: string | null } = 
       if (exempt(organizationId)) return null;
       return (await entitlementsFor(organizationId)).limits[limit];
     },
+    async currentLimit(organizationId, limit) {
+      if (exempt(organizationId)) return null;
+      return (await billingStateAt(organizationId, new Date())).terms.entitlements.limits[limit];
+    },
   };
 }
 

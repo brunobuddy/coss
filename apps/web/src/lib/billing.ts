@@ -62,6 +62,8 @@ export function planGate(): PlanGate {
     requireCapacity: async (organizationId, limit, current, count) =>
       (await gate()).requireCapacity(organizationId, limit, current, count),
     limit: async (organizationId, limit) => (await gate()).limit(organizationId, limit),
+    currentLimit: async (organizationId, limit) =>
+      (await gate()).currentLimit(organizationId, limit),
   };
 }
 

@@ -24,8 +24,13 @@ export interface PlanGate {
     current: number,
     count?: number,
   ): Promise<void>;
-  /** The plan's limit (`null`: unlimited), for packages that combine it with their own caps. */
+  /**
+   * The limit on what can be created now (`null`: unlimited), for packages that combine it with
+   * their own caps: while a downgrade is scheduled, the lower of both plans.
+   */
   limit(organizationId: string, limit: LimitKey): Promise<number | null>;
+  /** The limit of the plan in effect (`null`: unlimited), for reads and use rather than creation. */
+  currentLimit(organizationId: string, limit: LimitKey): Promise<number | null>;
 }
 
 export interface UsageGate {

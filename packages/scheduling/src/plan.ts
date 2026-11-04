@@ -14,8 +14,26 @@ type Environment = Pick<SchedulingEnvironment, "organizationId"> & {
   mode?: SchedulingEnvironment["mode"];
 };
 
-/** Throws a `BillingError` when a live environment's plan lacks the feature. */
+/**
+ * Using a feature: throws a `BillingError` when the plan in effect lacks it. A scheduled downgrade
+ * changes nothing until it applies: the customer has paid for the month.
+ */
 export async function requireLiveFeature(
+  env: Environment,
+  plans: PlanGate | undefined,
+  feature: FeatureKey,
+): Promise<void> {
+  if (env.mode !== "live" || !plans) return;
+  if (!(await plans.hasFeature(env.organizationId, feature))) {
+    await plans.requireFeature(env.organizationId, feature);
+  }
+}
+
+/**
+ * Setting up something that outlives this request: what a scheduled downgrade would leave behind
+ * is refused now too, or it would block the downgrade.
+ */
+export async function requireLiveFeatureToCreate(
   env: Environment,
   plans: PlanGate | undefined,
   feature: FeatureKey,

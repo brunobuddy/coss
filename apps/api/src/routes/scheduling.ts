@@ -539,6 +539,7 @@ export const explainSlotRoute = createRoute({
   middleware: read(),
   request: { params: EventTypeParams, query: ExplainSlotQuery },
   responses: {
+    402: planRefused,
     200: jsonDoc("Whether it can be booked, and why.", SlotExplanation),
     ...commonErrors,
     404: notFound,
@@ -1567,6 +1568,8 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
 
   router.openapi(explainSlotRoute, async (c) => {
     const query = c.req.valid("query");
+    await limitSchedulingSlots(c.var.rateLimiter, c.var.auth);
+    await requireRouting(c.var.auth, deps.plans, attributesParam(query.attributes));
     const explained = await explainSlot(c.var.auth, {
       eventTypeRef: c.req.valid("param").event_type,
       startMs: instant(query.start, "start"),
@@ -1609,7 +1612,9 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       slotsPerHost: body.slots_per_host,
       limit: body.limit,
       maxHosts:
-        mode === "live" ? await deps.plans?.limit(organizationId, "schedulingSearchHosts") : null,
+        mode === "live"
+          ? await deps.plans?.currentLimit(organizationId, "schedulingSearchHosts")
+          : null,
     });
     return c.json(
       {

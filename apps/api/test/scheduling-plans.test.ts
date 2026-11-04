@@ -161,6 +161,7 @@ describe("Scheduling's plan gates", () => {
     const lower = enforced({
       plans: {
         ...createPlanGate(),
+        hasFeature: async () => false,
         requireFeature: async () => {
           throw new BillingError("plan_feature_unavailable", "Not on this plan.");
         },
@@ -279,6 +280,14 @@ describe("Scheduling's plan gates", () => {
     });
     expect(onHold.status).toBe(402);
     expect((await errorOf(onHold)).code).toBe("plan_feature_unavailable");
+    const attributes = encodeURIComponent('{"specialty":"dermatology"}');
+    const explained = await call(
+      app,
+      pro.liveKey,
+      "GET",
+      `/event_types/${eventType}/slots/explain?start=${at("09:00")}&attributes=${attributes}`,
+    );
+    expect(explained.status).toBe(402);
     const filtered = await call(app, pro.liveKey, "POST", "/event_types", {
       title: "Pool",
       kind: "pool",
@@ -358,7 +367,7 @@ describe("Scheduling's plan gates", () => {
     expect((await search()).data).toHaveLength(3);
 
     // The same search with the plan's limit below the pool.
-    const small = enforced({ plans: { ...createPlanGate(), limit: async () => 2 } });
+    const small = enforced({ plans: { ...createPlanGate(), currentLimit: async () => 2 } });
     const res = await call(small, pro.liveKey, "POST", "/availability/search", {
       event_type: id,
       start: at("09:00"),
@@ -399,6 +408,46 @@ describe("Scheduling's plan gates", () => {
     // A sandbox has everything on every plan.
     const sandbox = await createTestTenant();
     expect((await sessionOf(sandbox, sandbox.sandboxKey)).coss_attribution).toBe(false);
+  });
+
+  test("a scheduled downgrade changes what's in use only when it applies", async () => {
+    const tenant = await createTestTenant();
+    await createTestContract(
+      tenant.organization.id,
+      { version: 1, plan: "scale" },
+      {
+        effectiveFrom: new Date("2026-01-01T00:00:00Z"),
+        effectiveUntil: new Date("2099-01-01T00:00:00Z"),
+      },
+    );
+    await createTestContract(
+      tenant.organization.id,
+      { version: 1, plan: "pro" },
+      { effectiveFrom: new Date("2099-01-01T00:00:00Z") },
+    );
+    const app = enforced();
+    const gate = createPlanGate();
+    expect(await gate.currentLimit(tenant.organization.id, "schedulingSearchHosts")).toBe(500);
+    expect(await gate.limit(tenant.organization.id, "schedulingSearchHosts")).toBe(25);
+
+    const eventType = await bookable(app, tenant.liveKey);
+    const slots = await call(
+      app,
+      tenant.liveKey,
+      "GET",
+      `/event_types/${eventType}/slots?start=${at("09:00")}&end=${at("10:00")}&attributes=${encodeURIComponent('{"language":"es"}')}`,
+    );
+    expect(slots.status).not.toBe(402);
+    expect((await call(app, tenant.liveKey, "POST", "/hosts/h1/sessions", {})).status).toBe(201);
+    // Setting up what the lower plan lacks is refused already: it would block the downgrade.
+    const filtered = await call(app, tenant.liveKey, "POST", "/event_types", {
+      title: "Pool",
+      kind: "pool",
+      duration_minutes: 30,
+      hosts: [],
+      host_filter: { language: "es" },
+    });
+    expect(filtered.status).toBe(402);
   });
 
   test("a scheduled downgrade keeps the attribution off until it applies", async () => {

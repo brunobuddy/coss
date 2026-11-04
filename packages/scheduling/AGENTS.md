@@ -278,6 +278,10 @@ Injected as `SchedulingDeps.plans`; without it nothing is enforced. What the pla
 - `schedulingWhiteLabel` (`coss_attribution` in the client API's `/session`).
 - `scheduling.slots.second` (`limitSchedulingSlots` in the API): live slot lists and searches per organization.
 
+Using a feature reads the plan in effect (`requireLiveFeature`, `currentLimit`): a scheduled downgrade changes nothing
+until it applies. Setting up something that outlives the request (`requireLiveFeatureToCreate`, `requireCapacity`) is also
+checked against the plan to come, like every creation in billing.
+
 Gates take a connection of their own, so they never run inside a transaction: holding one connection while waiting for
 another stalls the pool under load. They run before it, and `gateNewRequest` skips a retry of a key still in its window (an expired key makes something
 new, so it meets the plan).

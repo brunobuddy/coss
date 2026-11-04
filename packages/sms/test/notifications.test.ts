@@ -26,6 +26,9 @@ const anyPlan: PlanGate = {
   async limit() {
     return null;
   },
+  async currentLimit() {
+    return null;
+  },
   async requireCapacity() {},
 };
 

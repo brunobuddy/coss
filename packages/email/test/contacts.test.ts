@@ -67,6 +67,9 @@ function limitedTo(limit: number): PlanGate {
     async limit() {
       return limit;
     },
+    async currentLimit() {
+      return limit;
+    },
     async requireCapacity(_organizationId, _key, current, count = 1) {
       if (current + count > limit) {
         throw new BillingError("plan_limit_reached", `Your plan includes ${limit} contacts.`);

@@ -420,6 +420,9 @@ describe("runDueMigrations", () => {
       async limit() {
         return 1;
       },
+      async currentLimit() {
+        return 1;
+      },
       async requireCapacity(_organizationId, _key, current, count = 1) {
         if (current + count > 1) {
           throw Object.assign(new Error("Your plan includes 1 contact."), {
