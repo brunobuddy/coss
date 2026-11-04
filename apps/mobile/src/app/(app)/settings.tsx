@@ -14,6 +14,7 @@ import { Text } from "../../components/text";
 import { useAuth } from "../../lib/auth";
 import { DASHBOARD_URL } from "../../lib/config";
 import { useMe } from "../../lib/queries";
+import { space } from "../../lib/theme";
 
 export default function SettingsScreen() {
   const me = useMe();
@@ -103,6 +104,6 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  profile: { alignItems: "center", gap: 6, paddingVertical: 12 },
+  profile: { alignItems: "center", gap: 6, paddingVertical: space.md },
   done: { paddingHorizontal: 6 },
 });

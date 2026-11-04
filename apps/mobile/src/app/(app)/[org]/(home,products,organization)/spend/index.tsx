@@ -23,6 +23,7 @@ import { Text } from "../../../../../components/text";
 import { WebButton } from "../../../../../components/web-button";
 import { formatCount, formatMoney, formatPeriod } from "../../../../../lib/format";
 import { useSpend } from "../../../../../lib/queries-spend";
+import { space } from "../../../../../lib/theme";
 
 // Copy from apps/web/src/app/[orgSlug]/spend/page.tsx. Read-only: budgets are set on coss.com.
 
@@ -50,15 +51,12 @@ const MEMBER_SERIES: BarSeries<SpendDay>[] = [
 export default function SpendScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useSpend(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Spend" loading="list" />;
   if (query.isError && !query.data)
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Spend" error={query.error} onRetry={() => query.refetch()} />;
   const spend = query.data;
   return (
-    <Screen
-      onRefresh={() => query.refetch()}
-      title={spend.view === "member" ? "Your spend" : "Spend"}
-    >
+    <Screen onRefresh={() => query.refetch()} title="Spend">
       <WebButton path={`/${org}/spend`} />
       {spend.view === "member" ? (
         <MemberSpend spend={spend} />
@@ -234,9 +232,9 @@ function SpendRowView({ row }: { row: SpendRow }) {
 }
 
 const styles = StyleSheet.create({
-  row: { gap: 4, padding: 16 },
-  line: { flexDirection: "row", alignItems: "center", gap: 12 },
-  name: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
+  row: { gap: space.xs, padding: space.lg },
+  line: { flexDirection: "row", alignItems: "center", gap: space.md },
+  name: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.sm },
   shrink: { flexShrink: 1 },
   budget: { marginTop: 6 },
 });

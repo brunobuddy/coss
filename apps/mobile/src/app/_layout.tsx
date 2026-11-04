@@ -22,7 +22,7 @@ import { EmptyState } from "../components/empty";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { reportError, wrapRoot } from "../lib/monitoring";
 import { routeFromNotification } from "../lib/push-route";
-import { colors } from "../lib/theme";
+import { colors, space } from "../lib/theme";
 
 // React Native has no window focus: refetch what's on screen when the app comes back.
 focusManager.setEventListener((onFocus) => {
@@ -101,5 +101,10 @@ function useNotificationTaps(signedIn: boolean) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  fallback: { flex: 1, justifyContent: "center", padding: 16, backgroundColor: colors.background },
+  fallback: {
+    flex: 1,
+    justifyContent: "center",
+    padding: space.lg,
+    backgroundColor: colors.background,
+  },
 });

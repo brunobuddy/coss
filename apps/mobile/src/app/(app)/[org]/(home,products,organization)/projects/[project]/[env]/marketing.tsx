@@ -13,9 +13,11 @@ export default function MarketingSettingsScreen() {
   const query = useMarketingSettings(params);
   const header = <WebButton path={`${environmentPath(params)}/marketing`} />;
 
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Marketing settings" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return (
+      <Screen title="Marketing settings" error={query.error} onRetry={() => query.refetch()} />
+    );
   }
   const { settings } = query.data;
 

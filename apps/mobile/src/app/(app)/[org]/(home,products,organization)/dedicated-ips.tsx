@@ -12,7 +12,7 @@ import { WebButton } from "../../../../components/web-button";
 import { formatCount } from "../../../../lib/format";
 import { useDedicatedIps } from "../../../../lib/queries-sms-senders";
 import { DEDICATED_IP_STATUS } from "../../../../lib/status-sms-senders";
-import { colors } from "../../../../lib/theme";
+import { colors, space } from "../../../../lib/theme";
 
 // Copy from apps/web/src/app/[orgSlug]/dedicated-ips/page.tsx. Read-only, without the add-on's price or a
 // way to add it (App Store guideline 3.1.1).
@@ -24,9 +24,9 @@ export default function DedicatedIpsScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const router = useRouter();
   const query = useDedicatedIps(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Dedicated IPs" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Dedicated IPs" error={query.error} onRetry={() => query.refetch()} />;
   }
   const pool = query.data;
   const status = DEDICATED_IP_STATUS[pool.status];
@@ -50,6 +50,7 @@ export default function DedicatedIpsScreen() {
       {pool.status === "not_enabled" ? (
         <Panel>
           <EmptyState
+            tone="email"
             description={`An add-on of the ${pool.add_on.plans.join(" and ")} plans. Best for steady volume: the first IP is assigned once you send a few hundred emails a day.`}
             icon={Network}
             title="Dedicated IPs aren't on your plan"
@@ -112,6 +113,7 @@ export default function DedicatedIpsScreen() {
               </View>
             ) : (
               <EmptyState
+                tone="email"
                 description="SES assigns the first IP once you send a few hundred emails a day over a few days. Until then, emails leave from shared IPs."
                 icon={Network}
                 title="No IPs yet"
@@ -140,12 +142,12 @@ const styles = StyleSheet.create({
   ip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
   },
   head: {
-    paddingVertical: 8,
+    paddingVertical: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },

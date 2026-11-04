@@ -42,7 +42,7 @@ import {
   EVENT_VARIANT,
   RECIPIENT_STATUS_VARIANT,
 } from "../../../../../../../../lib/status";
-import { colors, usePalette } from "../../../../../../../../lib/theme";
+import { colors, space, usePalette } from "../../../../../../../../lib/theme";
 import { openOnWeb } from "../../../../../../../../lib/web";
 
 type Tab = "overview" | "events" | "recipients" | "content" | "attachments";
@@ -354,6 +354,7 @@ export default function EmailScreen() {
           <Panel footer={has_more_events ? "Older events are on coss.com." : undefined}>
             {events.length === 0 ? (
               <EmptyState
+                tone="email"
                 description="Delivery events from the provider appear here as they arrive."
                 icon={Route}
                 title="No events yet"
@@ -385,7 +386,7 @@ export default function EmailScreen() {
         {tab === "recipients" ? (
           <Panel>
             {email.recipients.length === 0 ? (
-              <EmptyState icon={Users} title="No recipients" />
+              <EmptyState tone="email" icon={Users} title="No recipients" />
             ) : (
               <Ruled>
                 {email.recipients.map((recipient) => (
@@ -408,6 +409,7 @@ export default function EmailScreen() {
           email.content_discarded_at ? (
             <Panel title="Content">
               <EmptyState
+                tone="email"
                 description="This environment's content storage was off when the email was sent: its subject, body, headers and attachment names were discarded once it left the queue."
                 icon={FileText}
                 title="No content stored"
@@ -433,6 +435,7 @@ export default function EmailScreen() {
           ) : (
             <Panel title="Content">
               <EmptyState
+                tone="email"
                 action={
                   email.has_html ? (
                     <Button
@@ -477,21 +480,21 @@ export default function EmailScreen() {
 
 const styles = StyleSheet.create({
   link: { textDecorationLine: "underline" },
-  actions: { flexDirection: "row", gap: 8 },
+  actions: { flexDirection: "row", gap: space.sm },
   action: { flex: 1 },
-  sheet: { flex: 1, gap: 16, padding: 20, backgroundColor: colors.background },
+  sheet: { flex: 1, gap: space.lg, padding: space.xl, backgroundColor: colors.background },
   sheetText: { gap: 6 },
-  sheetActions: { flexDirection: "row", gap: 8 },
+  sheetActions: { flexDirection: "row", gap: space.sm },
   sheetAction: { flex: 1 },
   error: { color: colors.destructiveForeground },
   id: { flexShrink: 1 },
-  event: { gap: 6, paddingHorizontal: 16, paddingVertical: 12 },
+  event: { gap: 6, paddingHorizontal: space.lg, paddingVertical: space.md },
   eventHead: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
-    columnGap: 12,
-    rowGap: 4,
+    columnGap: space.md,
+    rowGap: space.xs,
   },
 });

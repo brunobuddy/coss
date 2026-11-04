@@ -58,6 +58,7 @@ export default function BroadcastsScreen() {
       />
       <PagedPanel
         empty={{
+          tone: "marketing",
           icon: Send,
           title: "No broadcasts yet",
           description:

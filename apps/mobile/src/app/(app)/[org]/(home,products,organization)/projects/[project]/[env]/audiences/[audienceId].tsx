@@ -34,7 +34,7 @@ export default function AudienceScreen() {
         title={audience.name}
       />
       <PagedPanel
-        empty={{ icon: UsersRound, title: "No contacts in this audience yet." }}
+        empty={{ tone: "marketing", icon: UsersRound, title: "No contacts in this audience yet." }}
         items={members}
         query={query}
         render={(contact) => {

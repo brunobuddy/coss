@@ -6,7 +6,7 @@ import { Code, Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { useHookPortalSettings } from "../../../../../../../../lib/queries-risk-settings";
 import { PORTAL_THEME_LABELS } from "../../../../../../../../lib/status-risk-settings";
-import { colors, radius } from "../../../../../../../../lib/theme";
+import { colors, radius, space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 // Copy from apps/web/src/app/[orgSlug]/projects/[projectSlug]/[envSlug]/hooks/settings/page.tsx
@@ -14,9 +14,9 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function HookPortalSettingsScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useHookPortalSettings(params);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Portal settings" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Portal settings" error={query.error} onRetry={() => query.refetch()} />;
   }
   const settings = query.data;
   return (
@@ -73,8 +73,8 @@ export default function HookPortalSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  origins: { gap: 4 },
-  color: { flexDirection: "row", alignItems: "center", gap: 8 },
+  origins: { gap: space.xs },
+  color: { flexDirection: "row", alignItems: "center", gap: space.sm },
   swatch: {
     width: 14,
     height: 14,

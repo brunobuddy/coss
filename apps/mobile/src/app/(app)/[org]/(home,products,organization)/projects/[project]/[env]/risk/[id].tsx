@@ -26,7 +26,7 @@ import {
   useRiskFeedback,
 } from "../../../../../../../../lib/queries";
 import { DECISION_TONE, OUTCOME_TONE } from "../../../../../../../../lib/status";
-import { colors, fonts, radius, usePalette } from "../../../../../../../../lib/theme";
+import { colors, fonts, radius, space, usePalette } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 type EmailSignals = {
@@ -224,6 +224,7 @@ export default function RiskAssessmentScreen() {
       <Panel title="Reasons">
         {assessment.reasons.length === 0 ? (
           <EmptyState
+            tone="risk"
             description="The assessment found nothing risky."
             icon={ShieldCheck}
             title="No risk signals fired"
@@ -383,10 +384,10 @@ export default function RiskAssessmentScreen() {
 
 const styles = StyleSheet.create({
   id: { flexShrink: 1 },
-  reason: { gap: 6, padding: 16, alignItems: "flex-start" },
+  reason: { gap: 6, padding: space.lg, alignItems: "flex-start" },
   note: {
     height: 40,
-    paddingHorizontal: 12,
+    paddingHorizontal: space.md,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.input,
@@ -395,6 +396,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 15,
   },
-  outcomes: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  outcomes: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   link: { textDecorationLine: "underline" },
 });

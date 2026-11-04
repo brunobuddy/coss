@@ -17,6 +17,7 @@ import { WebButton } from "../../../../../../../../components/web-button";
 import { formatCompact, formatPercent } from "../../../../../../../../lib/format";
 import { PRODUCT_ICONS, pageHref, pagesFor } from "../../../../../../../../lib/products";
 import { useEmails, useEnvironment, useOrganization } from "../../../../../../../../lib/queries";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 function EmailOverview({ params, base }: { params: EnvironmentParams; base: string }) {
@@ -152,7 +153,7 @@ export default function ProductScreen() {
 }
 
 const styles = StyleSheet.create({
-  intro: { flexDirection: "row", alignItems: "center", gap: 12 },
+  intro: { flexDirection: "row", alignItems: "center", gap: space.md },
   introText: { flex: 1 },
-  viewAll: { paddingVertical: 4 },
+  viewAll: { paddingVertical: space.xs },
 });

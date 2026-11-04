@@ -209,9 +209,9 @@ function RequirePanel({ sso }: { sso: Sso }) {
 export default function SingleSignOnScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useSsoSettings(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Single sign-on" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Single sign-on" error={query.error} onRetry={() => query.refetch()} />;
   }
   const sso = query.data;
   return (

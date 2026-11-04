@@ -11,7 +11,7 @@ import { Text } from "../../../../components/text";
 import { formatCount, formatDateTime, formatRate } from "../../../../lib/format";
 import { useReputation } from "../../../../lib/queries";
 import { STANDING_LABELS, standingTone } from "../../../../lib/status";
-import { colors } from "../../../../lib/theme";
+import { colors, space } from "../../../../lib/theme";
 
 const EVENT_LABELS = {
   warning_raised: "Warning raised",
@@ -85,9 +85,9 @@ function Check({ check }: { check: ReputationCheck }) {
 export default function ReputationScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useReputation(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Reputation" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Reputation" error={query.error} onRetry={() => query.refetch()} />;
   }
   const { standing, sending_paused, events } = query.data;
 
@@ -131,6 +131,7 @@ export default function ReputationScreen() {
       <Panel title="History">
         {events.length === 0 ? (
           <EmptyState
+            tone="email"
             description="Warnings, suspensions and reinstatements are listed here."
             icon={History}
             title="No changes yet"
@@ -153,8 +154,8 @@ export default function ReputationScreen() {
 }
 
 const styles = StyleSheet.create({
-  check: { gap: 8, paddingHorizontal: 16, paddingVertical: 16 },
-  checkHead: { flexDirection: "row", alignItems: "baseline", gap: 12 },
+  check: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.lg },
+  checkHead: { flexDirection: "row", alignItems: "baseline", gap: space.md },
   checkLabel: { flex: 1 },
   track: {
     height: 6,

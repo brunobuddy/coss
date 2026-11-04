@@ -21,6 +21,7 @@ import { PageIntro, Screen } from "../../../../../components/screen";
 import { Text } from "../../../../../components/text";
 import { WebButton } from "../../../../../components/web-button";
 import { useOrganizationSettings } from "../../../../../lib/queries-organization-settings";
+import { space } from "../../../../../lib/theme";
 import { openOnWeb } from "../../../../../lib/web";
 
 // Copy from the dashboard's organization settings (apps/web/src/app/[orgSlug]/settings/page.tsx,
@@ -106,9 +107,9 @@ function RetentionPanel() {
 export default function OrganizationSettingsScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useOrganizationSettings(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Settings" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Settings" error={query.error} onRetry={() => query.refetch()} />;
   }
   const settings = query.data;
   const { organization, api_version: apiVersion } = settings;
@@ -247,8 +248,8 @@ export default function OrganizationSettingsScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  buttons: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  rule: { gap: 4, paddingHorizontal: 16, paddingVertical: 12 },
-  ruleHead: { flexDirection: "row", alignItems: "baseline", gap: 12 },
-  version: { flexDirection: "row", alignItems: "center", gap: 8 },
+  buttons: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  rule: { gap: space.xs, paddingHorizontal: space.lg, paddingVertical: space.md },
+  ruleHead: { flexDirection: "row", alignItems: "baseline", gap: space.md },
+  version: { flexDirection: "row", alignItems: "center", gap: space.sm },
 });

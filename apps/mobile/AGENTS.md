@@ -1,6 +1,7 @@
 # AGENTS.md — `apps/mobile` (coss.com for iOS)
 
-Expo (SDK 57, React Native 0.86, Expo Router) companion app for the dashboard. Organization:
+Expo (SDK 57, React Native 0.86, Expo Router) companion app for the dashboard: three tabs, Home (the
+dashboard's environment home), Products (a hub per product) and Organization. Organization:
 projects, reputation, domains (DNS records, DMARC reports), dedicated IPs, SMS senders (numbers,
 carrier registrations, countries), members, spend (the organization's, or a member's own
 personal keys') and budgets, settings (general, single sign-on, directory sync), billing and
@@ -8,13 +9,14 @@ invoices (read-only), the audit log. Environment: activity, sent and received em
 templates and their versions, suppressions, open/click tracking, content storage, sent and
 received SMS, SMS suppressions, broadcasts, contacts (and their properties), audiences, segments,
 topics, marketing settings, risk assessments, rules, lists, rate limits, calibration and settings,
-Hooks (applications, endpoints, messages, event types, portal settings), API keys (owners and
+Hooks (applications, endpoints, messages, event types, portal settings), Scheduling (an agenda of
+bookings, a host's hours and calendars, event types, settings), API keys (owners and
 budget pauses), webhook
 endpoints and deliveries, logs, log drains. A few changes, each mirroring a dashboard action (same
 checks, same audit event): retrying a webhook delivery, recovering an endpoint's failed
 deliveries, enabling or disabling an endpoint, canceling or rescheduling a scheduled email,
 pausing, resuming or canceling a broadcast, reporting a risk assessment's outcome (also from
-the review queue), and deleting the account (`delete-account.tsx`, App Store guideline 5.1.1(v));
+the review queue), approving, declining or canceling a booking, and deleting the account (`delete-account.tsx`, App Store guideline 5.1.1(v));
 everything else is read-only (with a link to the same page on coss.com). It
 talks only to the dashboard's `/api/mobile/v1/*` (never the public API: it holds no API key).
 
@@ -127,24 +129,48 @@ the React Native SDK's, so the app scrubs its few event fields itself.
   page's read permission) for the environment or organization screen's link to it.
 - `src/app/` holds routes only (Expo Router); everything else lives in `src/lib` and
   `src/components`. Relative imports (no path aliases).
+- Navigation: `(app)/[org]/_layout.tsx` is native tabs (`expo-router/unstable-native-tabs` on SDK 57;
+  `expo-router/native-tabs` from 58), each with its own stack. Every page but the tab roots lives under
+  `[org]/(home,products,organization)/`, array syntax for one copy per tab, so a push stays in the tab it started
+  in. Groups aren't in the URL: links stay `/[org]/…`. A cold link opens in the first tab; name another with its
+  group (`/acme/(organization)/reputation`, what `routeFromNotification` does for an organization's own pages).
+  Native tabs don't pass `[org]` to tab roots: they read `org` from `useActiveEnvironment`
+  (`src/lib/active-environment.tsx`, the app's version of the dashboard's last-used environment), and so does anything
+  outside a route's own params. Declare `index` first in a stack that lists screens, or the tab opens on the first
+  one listed.
 - Routes keep the dashboard's former paths (`/[org]/projects/[project]/[env]/emails`, `/[org]/domains`,
   `/[org]/settings/…`); the dashboard moved to product-first ones (`/<org>/<project>/<env>/email/messages`,
   `@coss/dashboard-routes`). `WebButton`/`openOnWeb` (`src/lib/web.ts`) take an app path and open the same page
   on coss.com through `dashboardPath` (`src/lib/dashboard-path.ts`): change it with the dashboard's URLs. Copy is the dashboard's, copied verbatim (say where from).
-- Design follows the dashboard (`apps/site/DESIGN.md`, coss ui): grayscale, hue only for status.
-  `src/lib/theme.ts` holds coss ui's tokens (`packages/ui/src/styles/theme.css`, light and `.dark`)
-  as `DynamicColorIOS` colors (`colors`) and plain ones for SVG (`usePalette`). Type is Cal Sans and
+- Chrome is Apple's, content is the dashboard's. Bars, tabs, sheets, menus and alerts are the system's, with SF
+  Symbols; bar buttons are `Stack.Toolbar` items (`WebButton`, `RootToolbar`), never custom views in `headerRight`.
+  Inside a page, design follows the dashboard (`apps/web/src/components`, `packages/ui/src/styles/globals.css`, coss
+  ui): grayscale, a product's colour on its tile and in its own area (`productColors`, `ProductGlyph`), and hue for
+  status. `src/lib/theme.ts` holds coss ui's tokens (`packages/ui/src/styles/theme.css`, light and `.dark`)
+  as `DynamicColorIOS` colors (`colors`) and plain ones for SVG (`usePalette`), the dashboard's "light from above"
+  (`useFinish`: gradients and shadows as style strings) and the `space` scale. Type is Cal Sans and
   Paper Mono: static TTFs cut from `@coss/ui`'s WOFF2 by `scripts/build-fonts.py` (re-run it when
   those change), embedded by the `expo-font` plugin and named by PostScript name (`fonts`). Always
   render text through `components/text.tsx` (never `fontWeight` with these families); mono is for
   ids, slugs, timestamps and measured values only. Icons are lucide (`components/icon.tsx`), as on the web.
 - Components mirror the dashboard's: `Panel` (framed card on the muted tray), `ListRow`/`Ruled`,
   `SpecList`/`SpecItem`, `StatGrid`/`Stat`, `Badge`/`StatusDot`, `Alert`,
-  `EmptyState` (on the drafting grid), `Tabs`/`Segmented`, `Button`, `ActivityChart`. Copy and status
+  `EmptyState` (on the drafting grid; `tone` is the product), `Tabs`/`Segmented`/`FilterChips`, `Button`,
+  `ActivityChart`, `Sparkline`, `CountUp`, `ProductGlyph`, `SectionHeading`. Copy and status
   colors are the dashboard's (`src/lib/status.ts` mirrors `apps/web/src/components/email-badges.tsx`).
-- Pages draw their own title like the dashboard's `PageHeader` (`Screen title` + `PageIntro`); the
-  navigation bar shows it once it scrolls away. Native large titles didn't render with this setup
-  (screens mount a loading view before their scroll view), so they're off.
+- Every state of a route renders a `Screen` (`loading="list|detail|stats"`, `error` + `onRetry`, or children), never
+  another root: React then keeps one native scroll view for the screen's life, which UIKit needs for large titles and
+  the bars' scroll edge. Give it a `title` from the first frame: a short one becomes a native large title, and a
+  `PageIntro` with the same title doesn't draw it again. A title that needs data stays inline, with `PageIntro` drawing
+  it until it scrolls away.
+- Motion confirms, it doesn't decorate. Pushes and sheets stay the system's. Content fades in, figures count and charts
+  draw only when they replaced a skeleton (`useArrival`), never on a cached paint. Respect `useReducedMotion`. Nothing
+  may rest on a shared value: Reanimated can lose one when a screen re-attaches after a push (a tab's underline went
+  back under an old tab). Keep what's on screen in React's style and animate with CSS transitions or animations
+  (`useSlidingIndicator`, `ActivityChart`), or swap to a plain element when done (`Sparkline`). A shared value that
+  returns to its resting value by itself is fine (`Button`'s press).
+- Lists load their next page as the end nears: `PagedPanel`, or `useEndReached` from a custom list. There's no on-disk
+  cache of responses, on purpose: it would put customers' data on the device and change the privacy label.
 - Hermes has no `Intl.RelativeTimeFormat`: `formatAgo` in `src/lib/format.ts` counts by hand.
 - `src/lib/api.ts`, `src/lib/pkce.ts` and `src/lib/push-route.ts` import nothing from React Native so
   `bun test` covers them.
@@ -152,9 +178,11 @@ the React Native SDK's, so the app scrubs its few event fields itself.
   plugins, never edit or commit them.
 - React and React Native are pinned to the SDK's versions (React 19.2.3), not the root catalog's
   (the web apps' React): RN refuses a mismatched renderer. The isolated linker keeps them apart.
-- `react-native-reanimated`, `-worklets` and `-gesture-handler` are declared (SDK versions) only
-  because `expo-router` → `react-native-drawer-layout` requires them as peers: undeclared, Bun
-  installs their latest releases, which don't match the SDK's native code.
+- `react-native-reanimated`, `-worklets` and `-gesture-handler` are the SDK's versions, not the latest: other
+  releases don't match its native code.
+- Scheduling: a booking reaches the app through `scheduling/wire.ts` only: name or uid, never email, phone, answers
+  or metadata, and a host's calendars say whether they work, not whose they are. Times are shown in the phone's zone
+  (`src/lib/format-scheduling.ts`, pure); slots are never computed here (`packages/scheduling/AGENTS.md`).
 - TypeScript is the catalog's TS 7 (no JS API); `EXPO_NO_TYPESCRIPT_SETUP=1` keeps the Expo CLI
   from touching it, and `expo.install.exclude` silences `expo-doctor`'s version check.
 - `expo-doctor` reports "duplicate" copies of `expo`/`@expo/log-box`/`expo-router`: Bun's

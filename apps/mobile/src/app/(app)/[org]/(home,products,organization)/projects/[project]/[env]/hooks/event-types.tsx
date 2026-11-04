@@ -12,9 +12,9 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function HookEventTypesScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useHookEventTypes(params);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Event types" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Event types" error={query.error} onRetry={() => query.refetch()} />;
   }
   return (
     <Screen onRefresh={() => query.refetch()} title="Event types">
@@ -27,6 +27,7 @@ export default function HookEventTypesScreen() {
       <Panel>
         {query.data.data.length === 0 ? (
           <EmptyState
+            tone="hooks"
             description="Messages can use any type, but registered ones are what users subscribe to."
             icon={Tags}
             title="No event types yet"

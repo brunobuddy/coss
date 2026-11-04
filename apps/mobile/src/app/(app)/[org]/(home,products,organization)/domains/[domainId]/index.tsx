@@ -11,6 +11,7 @@ import { WebButton } from "../../../../../../components/web-button";
 import { formatDateTime } from "../../../../../../lib/format";
 import { useDomain } from "../../../../../../lib/queries";
 import { DOMAIN_STATUS, RECORD_STATUS, TRACKING_STATUS } from "../../../../../../lib/status";
+import { space } from "../../../../../../lib/theme";
 
 // Copied from the dashboard's domain page (apps/web/src/app/[orgSlug]/domains/[domainId]).
 const STATUS_HELP: Record<string, string> = {
@@ -170,9 +171,14 @@ export default function DomainScreen() {
 }
 
 const styles = StyleSheet.create({
-  record: { paddingHorizontal: 16, paddingVertical: 14, gap: 8 },
-  field: { gap: 2 },
-  recordHead: { flexDirection: "row", alignItems: "center", gap: 8, paddingBottom: 4 },
+  record: { paddingHorizontal: space.lg, paddingVertical: 14, gap: space.sm },
+  field: { gap: space.xxs },
+  recordHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
+    paddingBottom: space.xs,
+  },
   purpose: { flex: 1 },
-  alert: { padding: 12, paddingBottom: 0 },
+  alert: { padding: space.md, paddingBottom: 0 },
 });

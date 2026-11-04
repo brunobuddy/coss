@@ -11,6 +11,7 @@ import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatAgo } from "../../../../../../../../lib/format";
 import { useRiskLists } from "../../../../../../../../lib/queries";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 type ListFilter = "all" | "block" | "allow";
@@ -39,6 +40,7 @@ export default function RiskListsScreen() {
       <Tabs items={LIST_TABS} onChange={setList} value={list} />
       <PagedPanel
         empty={{
+          tone: "risk",
           icon: ListChecks,
           title: "No entries yet",
           description:
@@ -79,7 +81,7 @@ export default function RiskListsScreen() {
 }
 
 const styles = StyleSheet.create({
-  entry: { gap: 4, padding: 16 },
-  head: { flexDirection: "row", alignItems: "center", gap: 8 },
+  entry: { gap: space.xs, padding: space.lg },
+  head: { flexDirection: "row", alignItems: "center", gap: space.sm },
   when: { marginLeft: "auto" },
 });

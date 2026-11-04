@@ -12,6 +12,7 @@ import { formatDate, formatDateTime, plural, roleLabel } from "../../../../../li
 import { useOrganization } from "../../../../../lib/queries";
 import { useScimSettings } from "../../../../../lib/queries-organization-settings";
 import { scimDirectoryStatus } from "../../../../../lib/status-organization-settings";
+import { space } from "../../../../../lib/theme";
 import { openOnWeb } from "../../../../../lib/web";
 
 // Copy from the dashboard's directory sync tab (apps/web/src/app/[orgSlug]/settings/scim/page.tsx
@@ -98,9 +99,9 @@ function DirectoryPanel({ scim, org }: { scim: Scim; org: string }) {
 export default function DirectorySyncScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useScimSettings(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Directory sync" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Directory sync" error={query.error} onRetry={() => query.refetch()} />;
   }
   const scim = query.data;
   const { directory } = scim;
@@ -223,7 +224,7 @@ export default function DirectorySyncScreen() {
 }
 
 const styles = StyleSheet.create({
-  note: { gap: 4 },
+  note: { gap: space.xs },
   link: { textDecorationLine: "underline" },
-  event: { gap: 2, paddingHorizontal: 16, paddingVertical: 12 },
+  event: { gap: space.xxs, paddingHorizontal: space.lg, paddingVertical: space.md },
 });

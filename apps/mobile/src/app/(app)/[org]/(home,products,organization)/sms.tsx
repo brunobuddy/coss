@@ -17,6 +17,7 @@ import { WebButton } from "../../../../components/web-button";
 import { formatDateTime } from "../../../../lib/format";
 import { useSmsSenders } from "../../../../lib/queries-sms-senders";
 import { SMS_NUMBER_SENDING, SMS_REGISTRATION_KIND } from "../../../../lib/status-sms-senders";
+import { space } from "../../../../lib/theme";
 import { openOnWeb } from "../../../../lib/web";
 
 // Copy from apps/web/src/app/[orgSlug]/sms/page.tsx (and its sms-forms.tsx's countries filter).
@@ -49,6 +50,7 @@ function Countries(props: { countries: MobileSmsCountry[] }) {
       >
         {shown.length === 0 ? (
           <EmptyState
+            tone="sms"
             description={needle ? "No country matches the filter." : "No country is allowed."}
             icon={Globe}
             title="No countries"
@@ -84,9 +86,9 @@ function Countries(props: { countries: MobileSmsCountry[] }) {
 export default function OrganizationSmsScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useSmsSenders(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="SMS" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="SMS" error={query.error} onRetry={() => query.refetch()} />;
   }
   const { notice, can_create, numbers, registrations, countries } = query.data;
   const path = `/${org}/sms`;
@@ -132,6 +134,7 @@ export default function OrganizationSmsScreen() {
       >
         {numbers.length === 0 ? (
           <EmptyState
+            tone="sms"
             description="Local numbers (registered for US A2P 10DLC) and toll-free ones (verified on their own) show up here."
             icon={MessageSquare}
             title="No numbers yet"
@@ -159,6 +162,7 @@ export default function OrganizationSmsScreen() {
       >
         {registrations.length === 0 ? (
           <EmptyState
+            tone="sms"
             description="Register your business for US A2P 10DLC, or verify a toll-free number."
             icon={ShieldCheck}
             title="Nothing registered yet"
@@ -197,15 +201,15 @@ export default function OrganizationSmsScreen() {
 }
 
 const styles = StyleSheet.create({
-  actions: { flexDirection: "row", gap: 8 },
+  actions: { flexDirection: "row", gap: space.sm },
   country: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
   },
   check: { width: 16 },
   fill: { flex: 1 },
-  reason: { paddingHorizontal: 16, paddingBottom: 12, marginTop: -6 },
+  reason: { paddingHorizontal: space.lg, paddingBottom: space.md, marginTop: -6 },
 });

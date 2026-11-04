@@ -1,7 +1,7 @@
 import { Search, X } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
-import { colors, fonts, radius, usePalette } from "../lib/theme";
+import { colors, fonts, radius, space, usePalette } from "../lib/theme";
 import { Icon } from "./icon";
 
 /** coss ui's `Input` with a search icon; submits on return, clears with the × button. */
@@ -49,9 +49,9 @@ const styles = StyleSheet.create({
   field: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: space.sm,
     height: 40,
-    paddingHorizontal: 12,
+    paddingHorizontal: space.md,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.input,

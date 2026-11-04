@@ -160,6 +160,7 @@ export default function ReceivedEmailScreen() {
         ) : (
           <Panel>
             <EmptyState
+              tone="email"
               description={
                 email.has_html
                   ? "This email has an HTML body only. Its preview stays on coss.com, where it is sandboxed."

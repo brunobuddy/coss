@@ -43,6 +43,7 @@ export default function EmailsScreen() {
       <FilterChips items={FILTERS} onChange={setStatus} value={status} />
       <PagedPanel
         empty={{
+          tone: "email",
           icon: Mail,
           title: status ? "Nothing found" : "No emails yet",
           description: status

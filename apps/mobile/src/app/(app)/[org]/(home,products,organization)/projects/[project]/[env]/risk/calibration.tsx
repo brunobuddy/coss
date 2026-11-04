@@ -10,6 +10,7 @@ import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatCount } from "../../../../../../../../lib/format";
 import { useRiskCalibration } from "../../../../../../../../lib/queries-risk-settings";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 // Copy and formats from apps/web/src/app/[orgSlug]/projects/[projectSlug]/[envSlug]/risk/calibration/page.tsx.
@@ -20,9 +21,9 @@ const weight = (value: number) => value.toFixed(2);
 export default function RiskCalibrationScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useRiskCalibration(params);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Calibration" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Calibration" error={query.error} onRetry={() => query.refetch()} />;
   }
   const calibration = query.data;
   const changed = calibration.reasons.filter(
@@ -55,6 +56,7 @@ export default function RiskCalibrationScreen() {
       >
         {calibration.reasons.length === 0 ? (
           <EmptyState
+            tone="risk"
             description="Once assessments come in and you send feedback on them, each reason's track record shows here."
             icon={Scale}
             title="Nothing to calibrate yet"
@@ -117,8 +119,8 @@ function Cell(props: { label: string; value: string; detail?: string }) {
 }
 
 const styles = StyleSheet.create({
-  reason: { gap: 8, padding: 16 },
+  reason: { gap: space.sm, padding: space.lg },
   code: { fontSize: 13 },
-  cells: { flexDirection: "row", gap: 12 },
-  cell: { flex: 1, gap: 2 },
+  cells: { flexDirection: "row", gap: space.md },
+  cell: { flex: 1, gap: space.xxs },
 });

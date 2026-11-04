@@ -8,6 +8,7 @@ import { PageIntro, Screen } from "../../../../../../../components/screen";
 import { Text } from "../../../../../../../components/text";
 import { WebButton } from "../../../../../../../components/web-button";
 import { useTopics } from "../../../../../../../lib/queries-contacts";
+import { space } from "../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../lib/web";
 
 // Copy from the dashboard's topics/page.tsx.
@@ -15,9 +16,9 @@ export default function TopicsScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useTopics(params);
 
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Topics" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Topics" error={query.error} onRetry={() => query.refetch()} />;
   }
   const topics = query.data.data;
 
@@ -32,6 +33,7 @@ export default function TopicsScreen() {
         <Panel>
           {topics.length === 0 ? (
             <EmptyState
+              tone="marketing"
               description="E.g. a newsletter, product updates or event invitations."
               icon={Bookmark}
               title="No topics yet"
@@ -72,8 +74,8 @@ export default function TopicsScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { gap: 6, padding: 16 },
-  head: { flexDirection: "row", alignItems: "baseline", gap: 8 },
+  row: { gap: 6, padding: space.lg },
+  head: { flexDirection: "row", alignItems: "baseline", gap: space.sm },
   name: { flex: 1 },
   key: { flexShrink: 1, maxWidth: "50%" },
   badges: { flexDirection: "row", gap: 6 },

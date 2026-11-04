@@ -10,6 +10,7 @@ import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatAgo } from "../../../../../../../../lib/format";
 import { useEnvironment, useReceivedSms } from "../../../../../../../../lib/queries";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 // The dashboard's sms/received/page.tsx: no detail page, so each row shows the whole text.
@@ -28,6 +29,7 @@ export default function ReceivedSmsScreen() {
       />
       <PagedPanel
         empty={{
+          tone: "sms",
           icon: MessageSquareReply,
           title: "Nothing received yet",
           description:
@@ -64,7 +66,12 @@ export default function ReceivedSmsScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { gap: 4, paddingHorizontal: 16, paddingVertical: 12 },
-  head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  row: { gap: space.xs, paddingHorizontal: space.lg, paddingVertical: space.md },
+  head: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: space.md,
+  },
   from: { flexShrink: 1 },
 });

@@ -16,7 +16,7 @@ export default function ReceivedScreen() {
   const query = useReceivedEmails(params);
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   return (
-    <Screen onRefresh={() => query.refetch()} title="Received">
+    <Screen onRefresh={() => query.refetch()} title="Received emails">
       <WebButton path={`${environmentPath(params)}/received`} />
       <PageIntro
         description={`Emails sent to this environment's addresses. Each one also triggers an email.received webhook. Received emails are kept for ${formatRetentionDays(RETENTION_DAYS.receivedEmails)}.`}
@@ -25,6 +25,7 @@ export default function ReceivedScreen() {
       />
       <PagedPanel
         empty={{
+          tone: "email",
           icon: Inbox,
           title: "No received emails yet",
           description: "Emails sent to this environment's addresses show up here.",

@@ -38,6 +38,7 @@ export default function HookApplicationScreen() {
       >
         {endpoints.length === 0 ? (
           <EmptyState
+            tone="hooks"
             description="Add one here, or let the application's users add theirs in the portal."
             icon={Webhook}
             title="No endpoints yet"
@@ -66,6 +67,7 @@ export default function HookApplicationScreen() {
       <Panel description="The last 20 messages sent to this application." title="Recent messages">
         {messages.length === 0 ? (
           <EmptyState
+            tone="hooks"
             description="Messages you send to this application show up here."
             icon={Send}
             title="No messages yet"

@@ -11,7 +11,7 @@ import { Text } from "../../../../../../components/text";
 import { formatCount, formatMoney, formatPeriod, plural } from "../../../../../../lib/format";
 import { useBilling } from "../../../../../../lib/queries";
 import { invoiceStatus } from "../../../../../../lib/status";
-import { colors } from "../../../../../../lib/theme";
+import { colors, space } from "../../../../../../lib/theme";
 
 // apps/web/src/components/billing/billing-banner.tsx, without its calls to action: the app's billing
 // is read-only, with no way to pay or buy (App Store guideline 3.1.1).
@@ -28,9 +28,9 @@ function daysLeft(end: string): number {
 export default function BillingScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useBilling(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Billing" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Billing" error={query.error} onRetry={() => query.refetch()} />;
   }
   const billing = query.data;
   const held =
@@ -160,8 +160,8 @@ export default function BillingScreen() {
 }
 
 const styles = StyleSheet.create({
-  meter: { gap: 8, padding: 16 },
-  meterHead: { flexDirection: "row", alignItems: "baseline", gap: 12 },
+  meter: { gap: space.sm, padding: space.lg },
+  meterHead: { flexDirection: "row", alignItems: "baseline", gap: space.md },
   meterLabel: { flex: 1 },
   track: { height: 6, borderRadius: 3, backgroundColor: colors.muted, overflow: "hidden" },
   fill: { height: "100%", borderRadius: 3 },

@@ -7,7 +7,7 @@ import {
   TriangleAlert,
 } from "lucide-react-native";
 import { Pressable, StyleSheet, View } from "react-native";
-import { colors, radius, TONE_TOKENS, type Tone } from "../lib/theme";
+import { colors, radius, space, TONE_TOKENS, type Tone } from "../lib/theme";
 import { Icon } from "./icon";
 import { Text } from "./text";
 
@@ -81,10 +81,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: space.md,
   },
-  icon: { paddingTop: 2 },
-  text: { flex: 1, gap: 2 },
+  icon: { paddingTop: space.xxs },
+  text: { flex: 1, gap: space.xxs },
   action: { alignSelf: "flex-start", marginTop: 6 },
   actionText: { textDecorationLine: "underline" },
   pressed: { opacity: 0.6 },

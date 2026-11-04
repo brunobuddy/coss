@@ -12,6 +12,7 @@ import { WebButton } from "../../../../../../../../components/web-button";
 import { formatCount } from "../../../../../../../../lib/format";
 import { useRiskLimitBuckets } from "../../../../../../../../lib/queries-risk-settings";
 import { bucketRate, ON_FAILURE } from "../../../../../../../../lib/status-risk-settings";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 // Copy from apps/web/src/app/[orgSlug]/projects/[projectSlug]/[envSlug]/risk/limits/page.tsx.
@@ -19,9 +20,9 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function RiskLimitsScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useRiskLimitBuckets(params);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Rate limits" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Rate limits" error={query.error} onRetry={() => query.refetch()} />;
   }
   return (
     <Screen onRefresh={() => query.refetch()} title="Rate limits">
@@ -34,6 +35,7 @@ export default function RiskLimitsScreen() {
       <Panel>
         {query.data.data.length === 0 ? (
           <EmptyState
+            tone="risk"
             description="Limit password resets per address, sign-ups per IP, or anything else per key."
             icon={Gauge}
             title="No buckets yet"
@@ -79,8 +81,8 @@ function Line(props: { label: string; children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  bucket: { gap: 6, padding: 16 },
-  name: { fontSize: 13, marginBottom: 2 },
-  line: { flexDirection: "row", alignItems: "center", gap: 12 },
+  bucket: { gap: 6, padding: space.lg },
+  name: { fontSize: 13, marginBottom: space.xxs },
+  line: { flexDirection: "row", alignItems: "center", gap: space.md },
   label: { flex: 1 },
 });

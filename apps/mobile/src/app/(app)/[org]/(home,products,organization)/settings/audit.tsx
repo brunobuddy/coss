@@ -10,13 +10,14 @@ import { Text } from "../../../../../components/text";
 import { WebButton } from "../../../../../components/web-button";
 import { formatAgo } from "../../../../../lib/format";
 import { useAudit } from "../../../../../lib/queries";
+import { space } from "../../../../../lib/theme";
 
 export default function AuditScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useAudit(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Audit log" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Audit log" error={query.error} onRetry={() => query.refetch()} />;
   }
   const allowed = query.data.pages[0]?.plan_allows ?? true;
   const events = query.data.pages.flatMap((page) => page.data);
@@ -81,8 +82,8 @@ export default function AuditScreen() {
 }
 
 const styles = StyleSheet.create({
-  event: { gap: 4, padding: 16 },
-  head: { flexDirection: "row", alignItems: "baseline", gap: 12 },
+  event: { gap: space.xs, padding: space.lg },
+  head: { flexDirection: "row", alignItems: "baseline", gap: space.md },
   action: { flex: 1 },
   meta: { flexDirection: "row", alignItems: "center", gap: 6 },
   flex: { flex: 1 },

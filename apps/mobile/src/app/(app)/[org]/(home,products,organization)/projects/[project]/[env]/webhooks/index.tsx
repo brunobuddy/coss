@@ -14,9 +14,9 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function WebhooksScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useWebhookEndpoints(params);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Webhooks" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Webhooks" error={query.error} onRetry={() => query.refetch()} />;
   }
   return (
     <Screen onRefresh={() => query.refetch()} title="Webhooks">

@@ -123,7 +123,8 @@ attendee sees times, never other hosts.
 - Attendee contact details and answers, and a booker session's fixed attendee, are encrypted with
   `SCHEDULING_DATA_KEYS`. Only `email_hmac` is searchable. A new column on this ring goes in
   `SCHEDULING_DATA_KEY_COLUMNS` and `reencryptSchedulingData` (a test compares the list with the database).
-- Answers come back only from `getBooking`: never lists, webhooks, logs, emails or calendars.
+- Answers come back only from `getBooking`: never lists, webhooks, logs, emails or calendars. The dashboard's iOS
+  routes map bookings to name or uid only (`scheduling/wire.ts` under `apps/web/src/app/api/mobile/v1`).
 - Webhooks and log lines carry ids, times and statuses. `request-log.ts` keeps no bodies of these routes.
 - Host calendar events are private, titled "Appointment", with no attendees.
 - `redactExpiredBookings` erases details 90 days after a booking ends, `purgeExpiredBookings` the row at 395;
@@ -168,6 +169,9 @@ tables. A pool tries its top candidate, then reads who could still take the slot
 take costs one attempt and one read rather than an attempt per host. A series on a pool of more than three reads first
 too: everyone free for all of it, or with `skip` the three with the fewest conflicts. Loops over hosts call `takeTurn`,
 since slots are computed on the API's one thread.
+
+`bun run db:seed` adds demo hosts, event types and bookings around today to `acme`'s environments
+(`scripts/seed.ts`).
 
 ## Going live
 

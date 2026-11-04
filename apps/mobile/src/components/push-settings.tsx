@@ -6,7 +6,7 @@ import { AppState, Linking, StyleSheet, Switch, View } from "react-native";
 import { useAuth } from "../lib/auth";
 import { enablePush, type PushPermission, pushPermission } from "../lib/push";
 import { usePushSettings, useUpdatePushCategories } from "../lib/queries";
-import { colors, usePalette } from "../lib/theme";
+import { colors, space, usePalette } from "../lib/theme";
 import { Alert } from "./alert";
 import { Button } from "./button";
 import { Panel, PanelBody, Ruled } from "./panel";
@@ -141,6 +141,6 @@ export function PushSettingsPanel() {
 }
 
 const styles = StyleSheet.create({
-  row: { alignItems: "center", flexDirection: "row", gap: 12, padding: 14 },
-  text: { flex: 1, gap: 2 },
+  row: { alignItems: "center", flexDirection: "row", gap: space.md, padding: 14 },
+  text: { flex: 1, gap: space.xxs },
 });

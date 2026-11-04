@@ -8,7 +8,7 @@ import { Button } from "../components/button";
 import { DraftingGrid } from "../components/empty";
 import { Text } from "../components/text";
 import { type SignInResult, useAuth } from "../lib/auth";
-import { colors, fonts, radius } from "../lib/theme";
+import { colors, fonts, radius, space } from "../lib/theme";
 
 // The dashboard's sign-in panel (apps/web/src/components/auth-frame.tsx): real SDK methods.
 const PARTS = [
@@ -94,13 +94,18 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16, gap: 20 },
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingHorizontal: space.lg,
+    gap: space.xl,
+  },
   wordmark: {
     fontFamily: fonts.wordmark,
     fontSize: 22,
     color: colors.foreground,
-    paddingHorizontal: 8,
-    paddingTop: 8,
+    paddingHorizontal: space.sm,
+    paddingTop: space.sm,
   },
   panel: {
     flex: 1,
@@ -109,7 +114,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.sidebar,
-    padding: 24,
+    padding: space.xxl,
     overflow: "hidden",
   },
   headline: {
@@ -119,7 +124,7 @@ const styles = StyleSheet.create({
     letterSpacing: -1.1,
     color: colors.foreground,
   },
-  parts: { gap: 16 },
+  parts: { gap: space.lg },
   list: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   part: {
     flexDirection: "row",
@@ -131,7 +136,7 @@ const styles = StyleSheet.create({
   },
   gap: { flex: 1 },
   call: { fontSize: 12, flexShrink: 1, textAlign: "right" },
-  form: { gap: 16, paddingHorizontal: 8, paddingBottom: 8 },
+  form: { gap: space.lg, paddingHorizontal: space.sm, paddingBottom: space.sm },
   heading: { gap: 6 },
   legal: { textAlign: "center", fontSize: 12 },
 });

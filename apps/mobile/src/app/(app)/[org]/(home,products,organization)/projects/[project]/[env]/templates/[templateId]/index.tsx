@@ -24,6 +24,7 @@ import { Text } from "../../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../../components/web-button";
 import { useTemplate } from "../../../../../../../../../lib/queries-templates";
 import { templateStatuses } from "../../../../../../../../../lib/status-templates";
+import { space } from "../../../../../../../../../lib/theme";
 import {
   type EnvironmentParams,
   environmentPath,
@@ -179,7 +180,7 @@ export default function TemplateScreen() {
 
 const styles = StyleSheet.create({
   id: { flexShrink: 1 },
-  actions: { flexDirection: "row", gap: 8 },
+  actions: { flexDirection: "row", gap: space.sm },
   button: { alignSelf: "flex-start" },
-  problem: { gap: 4, paddingHorizontal: 16, paddingVertical: 12 },
+  problem: { gap: space.xs, paddingHorizontal: space.lg, paddingVertical: space.md },
 });

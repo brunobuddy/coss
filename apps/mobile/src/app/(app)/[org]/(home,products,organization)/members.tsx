@@ -10,6 +10,7 @@ import { Text } from "../../../../components/text";
 import { WebButton } from "../../../../components/web-button";
 import { formatDate, formatDateTime, roleLabel } from "../../../../lib/format";
 import { useMembers } from "../../../../lib/queries";
+import { space } from "../../../../lib/theme";
 
 export default function MembersScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
@@ -87,7 +88,7 @@ export default function MembersScreen() {
 }
 
 const styles = StyleSheet.create({
-  member: { flexDirection: "row", alignItems: "flex-start", gap: 12, padding: 16 },
-  memberText: { flex: 1, gap: 2 },
+  member: { flexDirection: "row", alignItems: "flex-start", gap: space.md, padding: space.lg },
+  memberText: { flex: 1, gap: space.xxs },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingTop: 6 },
 });

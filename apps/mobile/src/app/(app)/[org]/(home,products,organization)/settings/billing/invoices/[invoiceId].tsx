@@ -12,6 +12,7 @@ import {
 } from "../../../../../../../lib/format";
 import { useInvoice } from "../../../../../../../lib/queries";
 import { invoiceStatus } from "../../../../../../../lib/status";
+import { space } from "../../../../../../../lib/theme";
 
 export default function InvoiceScreen() {
   const { org, invoiceId } = useLocalSearchParams<{ org: string; invoiceId: string }>();
@@ -100,6 +101,6 @@ export default function InvoiceScreen() {
 }
 
 const styles = StyleSheet.create({
-  line: { flexDirection: "row", alignItems: "flex-start", gap: 12, padding: 16 },
-  lineText: { flex: 1, gap: 2 },
+  line: { flexDirection: "row", alignItems: "flex-start", gap: space.md, padding: space.lg },
+  lineText: { flex: 1, gap: space.xxs },
 });

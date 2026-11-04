@@ -10,7 +10,7 @@ import { WebButton } from "../../../../../../../components/web-button";
 import { formatDateTime } from "../../../../../../../lib/format";
 import { useContentStorage } from "../../../../../../../lib/queries-templates";
 import { CONTENT_STORAGE_OPTIONS } from "../../../../../../../lib/status-templates";
-import { colors } from "../../../../../../../lib/theme";
+import { colors, space } from "../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../lib/web";
 
 // Copy from apps/web/src/app/[orgSlug]/projects/[projectSlug]/[envSlug]/content-storage/page.tsx
@@ -26,9 +26,9 @@ const GOOD_TO_KNOW = [
 export default function ContentStorageScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useContentStorage(params);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Content storage" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Content storage" error={query.error} onRetry={() => query.refetch()} />;
   }
   const settings = query.data;
   return (
@@ -93,8 +93,13 @@ export default function ContentStorageScreen() {
 }
 
 const styles = StyleSheet.create({
-  option: { flexDirection: "row", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
-  optionText: { flex: 1, gap: 2 },
+  option: {
+    flexDirection: "row",
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+  },
+  optionText: { flex: 1, gap: space.xxs },
   radio: {
     width: 18,
     height: 18,
@@ -106,6 +111,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   radioChosen: { borderColor: colors.primary, backgroundColor: colors.primary },
-  bullet: { flexDirection: "row", gap: 8 },
+  bullet: { flexDirection: "row", gap: space.sm },
   bulletText: { flex: 1 },
 });

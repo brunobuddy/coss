@@ -12,6 +12,7 @@ import { Text } from "../../../../../components/text";
 import { WebButton } from "../../../../../components/web-button";
 import { formatMoney, roleLabel } from "../../../../../lib/format";
 import { useBudgets } from "../../../../../lib/queries-spend";
+import { space } from "../../../../../lib/theme";
 
 // Copy from apps/web/src/app/[orgSlug]/spend/budgets/page.tsx. Read-only: budgets are set,
 // changed and removed on coss.com.
@@ -19,9 +20,9 @@ import { useBudgets } from "../../../../../lib/queries-spend";
 export default function BudgetsScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useBudgets(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Spend" loading="list" />;
   if (query.isError && !query.data)
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Spend" error={query.error} onRetry={() => query.refetch()} />;
   const budgets = query.data;
   return (
     <Screen onRefresh={() => query.refetch()} title="Spend">
@@ -118,8 +119,8 @@ function BudgetRow(props: {
 }
 
 const styles = StyleSheet.create({
-  row: { gap: 4, padding: 16 },
-  name: { flexDirection: "row", alignItems: "center", gap: 8 },
+  row: { gap: space.xs, padding: space.lg },
+  name: { flexDirection: "row", alignItems: "center", gap: space.sm },
   shrink: { flexShrink: 1 },
   budget: { marginTop: 6 },
 });

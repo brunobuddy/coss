@@ -31,6 +31,7 @@ export default function TemplateVersionsScreen() {
       />
       <PagedPanel
         empty={{
+          tone: "email",
           icon: History,
           title: "Not published yet",
           description: "Publish the draft to create version 1.",

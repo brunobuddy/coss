@@ -47,6 +47,7 @@ export default function SmsScreen() {
       <FilterChips items={FILTERS} onChange={setFilter} value={filter} />
       <PagedPanel
         empty={{
+          tone: "sms",
           icon: MessageSquare,
           title: filter ? "Nothing here" : "No messages yet",
           description: filter

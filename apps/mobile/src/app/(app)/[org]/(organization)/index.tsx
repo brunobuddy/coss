@@ -28,6 +28,7 @@ import { useActiveEnvironment } from "../../../../lib/active-environment";
 import { formatCount, roleLabel } from "../../../../lib/format";
 import { useOrganization } from "../../../../lib/queries";
 import { STANDING_LABELS, standingTone } from "../../../../lib/status";
+import { space } from "../../../../lib/theme";
 
 // apps/web/src/components/billing/billing-banner.tsx, without its calls to action: the app's billing
 // is read-only, with no way to pay or buy (App Store guideline 3.1.1).
@@ -259,7 +260,7 @@ export default function OrganizationScreen() {
 }
 
 const styles = StyleSheet.create({
-  identity: { flexDirection: "row", alignItems: "center", gap: 12 },
-  identityText: { flex: 1, gap: 4 },
-  identityMeta: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
+  identity: { flexDirection: "row", alignItems: "center", gap: space.md },
+  identityText: { flex: 1, gap: space.xs },
+  identityMeta: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.sm },
 });

@@ -10,6 +10,7 @@ import { WebButton } from "../../../../../../../../components/web-button";
 import { formatAgo } from "../../../../../../../../lib/format";
 import { useSmsSuppressions } from "../../../../../../../../lib/queries-sms-senders";
 import { SMS_SUPPRESSION_REASON } from "../../../../../../../../lib/status-sms-senders";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 // Copy from apps/web/src/app/[orgSlug]/projects/[projectSlug]/[envSlug]/sms/suppressions/page.tsx.
@@ -28,6 +29,7 @@ export default function SmsSuppressionsScreen() {
       />
       <PagedPanel
         empty={{
+          tone: "sms",
           icon: MessageSquareX,
           title: "No suppressed numbers",
           description: "Opt-outs and invalid numbers land here, along with numbers you add.",
@@ -56,6 +58,6 @@ export default function SmsSuppressionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "flex-start", gap: 12, padding: 16 },
+  row: { flexDirection: "row", alignItems: "flex-start", gap: space.md, padding: space.lg },
   text: { flex: 1, gap: 6, alignItems: "flex-start" },
 });

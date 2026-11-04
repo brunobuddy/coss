@@ -14,9 +14,9 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function LogDrainsScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useLogDrains(params);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Log drains" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Log drains" error={query.error} onRetry={() => query.refetch()} />;
   }
   const { plan_allows, data } = query.data;
   return (

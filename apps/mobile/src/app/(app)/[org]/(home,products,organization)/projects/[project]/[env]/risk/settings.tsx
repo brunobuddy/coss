@@ -8,6 +8,7 @@ import { Code, Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { useRiskSettings } from "../../../../../../../../lib/queries-risk-settings";
 import { CAPTCHA_PROVIDER_LABELS } from "../../../../../../../../lib/status-risk-settings";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 // Copy from apps/web/src/app/[orgSlug]/projects/[projectSlug]/[envSlug]/risk/settings/page.tsx
@@ -16,9 +17,9 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function RiskSettingsScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useRiskSettings(params);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Risk settings" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Risk settings" error={query.error} onRetry={() => query.refetch()} />;
   }
   const settings = query.data;
   return (
@@ -141,10 +142,10 @@ const styles = StyleSheet.create({
   setting: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: space.lg,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
   },
-  text: { flex: 1, gap: 2 },
-  reason: { gap: 2, paddingHorizontal: 16, paddingVertical: 12 },
+  text: { flex: 1, gap: space.xxs },
+  reason: { gap: space.xxs, paddingHorizontal: space.lg, paddingVertical: space.md },
 });

@@ -22,7 +22,7 @@ import {
   useWebhookEndpoint,
 } from "../../../../../../../../lib/queries";
 import { DELIVERY_STATUS, endpointStatus } from "../../../../../../../../lib/status";
-import { colors } from "../../../../../../../../lib/theme";
+import { colors, space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 // DISABLE_FAILING_ENDPOINT_AFTER_MS in @coss/webhooks/engine.
@@ -322,18 +322,23 @@ export default function WebhookEndpointScreen() {
 }
 
 const styles = StyleSheet.create({
-  actions: { flexDirection: "row", gap: 8 },
+  actions: { flexDirection: "row", gap: space.sm },
   action: { flex: 1 },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
   },
   pressed: { backgroundColor: colors.muted },
-  rowText: { flex: 1, gap: 2 },
-  detail: { gap: 8, paddingHorizontal: 16, paddingBottom: 16, backgroundColor: colors.muted },
-  attempt: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  rowText: { flex: 1, gap: space.xxs },
+  detail: {
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.lg,
+    backgroundColor: colors.muted,
+  },
+  attempt: { flexDirection: "row", alignItems: "flex-start", gap: space.sm },
   attemptText: { flex: 1 },
 });

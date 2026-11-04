@@ -11,7 +11,7 @@ import { PageIntro, Screen } from "../../components/screen";
 import { Code, Text } from "../../components/text";
 import { useAuth } from "../../lib/auth";
 import { ApiRequestError, useAccountDeletion, useDeleteAccount, useMe } from "../../lib/queries";
-import { colors, fonts, radius, usePalette } from "../../lib/theme";
+import { colors, fonts, radius, space, usePalette } from "../../lib/theme";
 
 // Mirrors the dashboard's account settings (apps/web/src/app/settings/delete-account-button.tsx).
 function Organizations(props: { title: string; organizations: AccountDeletionOrganization[] }) {
@@ -36,11 +36,12 @@ export default function DeleteAccountScreen() {
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  if (plan.isPending || me.isPending) return <Screen loading="list" />;
+  if (plan.isPending || me.isPending) return <Screen title="Delete account" loading="list" />;
   if (plan.isError && !plan.data) {
-    return <Screen error={plan.error} onRetry={() => plan.refetch()} />;
+    return <Screen title="Delete account" error={plan.error} onRetry={() => plan.refetch()} />;
   }
-  if (me.isError && !me.data) return <Screen error={me.error} onRetry={() => me.refetch()} />;
+  if (me.isError && !me.data)
+    return <Screen title="Delete account" error={me.error} onRetry={() => me.refetch()} />;
   const { email } = me.data.user;
   const blocked = plan.data.blockers.length > 0;
   const confirmed = confirmation.trim().toLowerCase() === email.toLowerCase();
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   cancel: { paddingHorizontal: 6 },
   input: {
     height: 40,
-    paddingHorizontal: 12,
+    paddingHorizontal: space.md,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.input,

@@ -33,6 +33,7 @@ import {
   BROADCAST_STATUS_TONE,
   pauseReasonText,
 } from "../../../../../../../../lib/status-broadcasts";
+import { space } from "../../../../../../../../lib/theme";
 import {
   type EnvironmentParams,
   environmentPath,
@@ -227,6 +228,7 @@ function Preview(props: { broadcast: Broadcast; onOpenWeb: () => void }) {
   return (
     <Panel title={title}>
       <EmptyState
+        tone="marketing"
         action={
           broadcast.has_html ? (
             <Button
@@ -402,7 +404,7 @@ export default function BroadcastScreen() {
 }
 
 const styles = StyleSheet.create({
-  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   action: { flexGrow: 1, flexBasis: "45%" },
   // "Cancel broadcast" doesn't fit half a row beside Pause or Resume.
   cancel: { flexBasis: "100%" },

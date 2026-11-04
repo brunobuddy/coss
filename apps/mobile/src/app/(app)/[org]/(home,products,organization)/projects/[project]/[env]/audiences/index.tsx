@@ -22,6 +22,7 @@ export default function AudiencesScreen() {
       />
       <PagedPanel
         empty={{
+          tone: "marketing",
           icon: UsersRound,
           title: "No audiences yet",
           description: "Group contacts into lists to send broadcasts to them.",

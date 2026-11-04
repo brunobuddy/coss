@@ -19,6 +19,7 @@ import {
   useRiskAssessments,
 } from "../../../../../../../../lib/queries";
 import { DECISION_TONE } from "../../../../../../../../lib/status";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 type View_ = "review" | "block" | "allow";
@@ -43,7 +44,7 @@ export default function RiskScreen() {
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   const resolving = view === "review" && (query.data?.pages[0]?.can_review ?? false);
   return (
-    <Screen onRefresh={() => query.refetch()} title="Risk">
+    <Screen onRefresh={() => query.refetch()} title="Risk assessments">
       <WebButton path={`${environmentPath(params)}/risk`} />
       <PageIntro
         description="Every assessment of sign-ups, logins and other events made with this environment's API keys: the decision, its score and the reasons behind it. Reviews stay open until you report an outcome."
@@ -53,6 +54,7 @@ export default function RiskScreen() {
       <FilterChips items={VIEWS} onChange={setView} value={view} />
       <PagedPanel
         empty={{
+          tone: "risk",
           icon: view === "review" ? ShieldCheck : ShieldAlert,
           title: view === "review" ? "Nothing to review" : "No assessments yet",
           description:
@@ -159,5 +161,10 @@ function ResolveButtons(props: {
 
 const styles = StyleSheet.create({
   badges: { flexDirection: "row", gap: 6 },
-  resolve: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
+  resolve: {
+    flexDirection: "row",
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.md,
+  },
 });

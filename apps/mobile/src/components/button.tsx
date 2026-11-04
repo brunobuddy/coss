@@ -100,7 +100,7 @@ export function Button(props: {
 
 const styles = StyleSheet.create({
   button: {
-    height: 46,
+    minHeight: 46,
     borderRadius: radius.lg,
     paddingHorizontal: space.lg,
     alignItems: "center",
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "transparent",
   },
-  small: { height: 36, paddingHorizontal: space.md, borderRadius: radius.md },
+  small: { minHeight: 36, paddingHorizontal: space.md, borderRadius: radius.md },
   content: { flexDirection: "row", alignItems: "center", gap: space.sm },
   default: { backgroundColor: colors.primary, borderColor: colors.primary },
   outline: { backgroundColor: colors.card, borderColor: colors.input },

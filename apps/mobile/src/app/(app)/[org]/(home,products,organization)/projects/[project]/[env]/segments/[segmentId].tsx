@@ -7,6 +7,7 @@ import { Code, Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatCount, formatDateTime } from "../../../../../../../../lib/format";
 import { useSegment } from "../../../../../../../../lib/queries-contacts";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 // Copy from the dashboard's segments/[segmentId]/page.tsx and segment-builder.tsx (the builder's
@@ -90,6 +91,6 @@ export default function SegmentScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { gap: 6, paddingHorizontal: 16, paddingVertical: 12 },
-  group: { gap: 6, paddingLeft: 12 },
+  row: { gap: 6, paddingHorizontal: space.lg, paddingVertical: space.md },
+  group: { gap: 6, paddingLeft: space.md },
 });

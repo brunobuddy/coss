@@ -22,6 +22,7 @@ export default function SegmentsScreen() {
       />
       <PagedPanel
         empty={{
+          tone: "marketing",
           icon: Filter,
           title: "No segments yet",
           description: "Filter contacts by their properties, audiences, topics or email domain.",

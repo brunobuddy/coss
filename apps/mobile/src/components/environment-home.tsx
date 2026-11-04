@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     marginBottom: space.xs,
   },
   stack: { flexDirection: "row", alignItems: "center", marginTop: space.md },
-  stackTile: { borderRadius: radius.xl, backgroundColor: colors.card, padding: 2 },
+  stackTile: { borderRadius: radius.xl, backgroundColor: colors.card, padding: space.xxs },
   stackOverlap: { marginLeft: -10 },
   stackLabel: { marginLeft: space.md },
   frame: {

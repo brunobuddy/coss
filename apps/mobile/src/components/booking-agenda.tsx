@@ -174,7 +174,7 @@ export function BookingRow(props: {
             ]}
           >
             <View style={styles.when}>
-              <Text muted={muted} style={styles.whenTime} variant="mono">
+              <Text muted={muted} numberOfLines={1} style={styles.whenTime} variant="mono">
                 {formatTime(booking.start)}
               </Text>
               <Text muted style={styles.whenDuration} variant="mono">
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   stripFrame: { flexGrow: 0, marginHorizontal: -space.lg },
   strip: { gap: space.xs, paddingHorizontal: space.lg, paddingVertical: space.xxs },
   day: {
-    width: 44,
+    minWidth: 44,
     alignItems: "center",
     gap: space.xxs,
     paddingTop: space.sm,
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     minHeight: 64,
   },
   rowPressed: { backgroundColor: colors.muted },
-  when: { width: 46, gap: space.xxs },
+  when: { minWidth: 46, gap: space.xxs },
   whenTime: { fontSize: 13, lineHeight: 20 },
   whenDuration: { fontSize: 11, lineHeight: 15 },
   rule: { width: 3, borderRadius: 1.5 },
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingLeft: space.lg,
   },
-  nowTime: { width: 46, fontSize: 11, lineHeight: 14 },
+  nowTime: { minWidth: 46, fontSize: 11, lineHeight: 14 },
   nowDot: { width: 7, height: 7, borderRadius: 3.5, marginLeft: 10 },
   nowRule: { flex: 1, height: 1, opacity: 0.5 },
   swipeBody: { backgroundColor: colors.card },

@@ -14,9 +14,11 @@ export default function ContactPropertiesScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useContactProperties(params);
 
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Contact properties" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return (
+      <Screen title="Contact properties" error={query.error} onRetry={() => query.refetch()} />
+    );
   }
   const properties = query.data.data;
 
@@ -31,6 +33,7 @@ export default function ContactPropertiesScreen() {
         <Panel>
           {properties.length === 0 ? (
             <EmptyState
+              tone="marketing"
               description="Add a property, e.g. plan or signed_up_at, to store it on contacts."
               icon={Braces}
               title="No custom properties yet"

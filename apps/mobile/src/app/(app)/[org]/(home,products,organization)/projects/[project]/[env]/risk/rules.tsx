@@ -10,14 +10,15 @@ import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { useRiskRules } from "../../../../../../../../lib/queries";
 import { DECISION_TONE } from "../../../../../../../../lib/status";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 export default function RiskRulesScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useRiskRules(params);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Rules" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Rules" error={query.error} onRetry={() => query.refetch()} />;
   }
   return (
     <Screen onRefresh={() => query.refetch()} title="Rules">
@@ -30,6 +31,7 @@ export default function RiskRulesScreen() {
       <Panel>
         {query.data.data.length === 0 ? (
           <EmptyState
+            tone="risk"
             description="Without rules, decisions come from the lists and the score."
             icon={ListFilter}
             title="No rules yet"
@@ -66,10 +68,10 @@ export default function RiskRulesScreen() {
 }
 
 const styles = StyleSheet.create({
-  rule: { flexDirection: "row", gap: 12, padding: 16 },
+  rule: { flexDirection: "row", gap: space.md, padding: space.lg },
   off: { opacity: 0.7 },
   position: { width: 16, paddingTop: 3 },
-  body: { flex: 1, gap: 4 },
-  head: { flexDirection: "row", alignItems: "center", gap: 8 },
+  body: { flex: 1, gap: space.xs },
+  head: { flexDirection: "row", alignItems: "center", gap: space.sm },
   name: { flex: 1 },
 });

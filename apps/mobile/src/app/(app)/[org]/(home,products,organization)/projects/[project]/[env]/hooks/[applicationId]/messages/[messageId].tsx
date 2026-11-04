@@ -11,6 +11,7 @@ import { WebButton } from "../../../../../../../../../../components/web-button";
 import { formatDateTime } from "../../../../../../../../../../lib/format";
 import { useHookMessage } from "../../../../../../../../../../lib/queries";
 import { HOOK_DELIVERY_STATUS } from "../../../../../../../../../../lib/status";
+import { space } from "../../../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../../../lib/web";
 
 export default function HookMessageScreen() {
@@ -48,6 +49,7 @@ export default function HookMessageScreen() {
       >
         {deliveries.length === 0 ? (
           <EmptyState
+            tone="hooks"
             description={`No endpoint of this application was subscribed to ${message.event_type}.`}
             icon={Send}
             title="Not delivered anywhere"
@@ -106,8 +108,8 @@ export default function HookMessageScreen() {
 }
 
 const styles = StyleSheet.create({
-  delivery: { gap: 10, padding: 16 },
-  head: { flexDirection: "row", alignItems: "center", gap: 8 },
+  delivery: { gap: 10, padding: space.lg },
+  head: { flexDirection: "row", alignItems: "center", gap: space.sm },
   url: { flex: 1 },
-  attempt: { gap: 4, paddingLeft: 14 },
+  attempt: { gap: space.xs, paddingLeft: 14 },
 });

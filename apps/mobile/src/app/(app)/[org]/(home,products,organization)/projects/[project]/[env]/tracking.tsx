@@ -10,6 +10,7 @@ import { Code, Text } from "../../../../../../../components/text";
 import { WebButton } from "../../../../../../../components/web-button";
 import { formatDateTime } from "../../../../../../../lib/format";
 import { useTracking } from "../../../../../../../lib/queries";
+import { space } from "../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../lib/web";
 
 // apps/web/src/components/email-badges.tsx (TrackingBadge).
@@ -73,6 +74,7 @@ export default function TrackingScreen() {
       >
         {settings.categories.length === 0 ? (
           <EmptyState
+            tone="email"
             description="Every category follows the environment default."
             icon={Tag}
             title="No category rules"
@@ -104,8 +106,8 @@ export default function TrackingScreen() {
 }
 
 const styles = StyleSheet.create({
-  rule: { gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-  ruleHead: { flexDirection: "row", alignItems: "baseline", gap: 12 },
+  rule: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.md },
+  ruleHead: { flexDirection: "row", alignItems: "baseline", gap: space.md },
   category: { flex: 1 },
   badges: { flexDirection: "row", gap: 6 },
 });

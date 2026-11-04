@@ -29,6 +29,7 @@ export default function TemplatesScreen() {
       />
       <PagedPanel
         empty={{
+          tone: "email",
           icon: LayoutTemplate,
           title: "No templates yet",
           description:

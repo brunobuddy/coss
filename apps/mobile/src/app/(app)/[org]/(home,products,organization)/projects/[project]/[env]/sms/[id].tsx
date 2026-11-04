@@ -20,6 +20,7 @@ import {
   SMS_STATUS_LABELS,
   SMS_STATUS_TONE,
 } from "../../../../../../../../lib/status";
+import { space } from "../../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
 
 // The dashboard's sms/[smsId]/page.tsx.
@@ -104,6 +105,7 @@ export default function SmsDetailScreen() {
         <Panel title="Events">
           {events.length === 0 ? (
             <EmptyState
+              tone="sms"
               description="Delivery events from the carrier appear here as they arrive."
               icon={Route}
               title="No events yet"
@@ -136,13 +138,13 @@ export default function SmsDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  event: { gap: 6, paddingHorizontal: 16, paddingVertical: 12 },
+  event: { gap: 6, paddingHorizontal: space.lg, paddingVertical: space.md },
   eventHead: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
-    columnGap: 12,
-    rowGap: 4,
+    columnGap: space.md,
+    rowGap: space.xs,
   },
 });

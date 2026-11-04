@@ -3,7 +3,7 @@ import { type Href, Link } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { colors } from "../lib/theme";
+import { colors, space } from "../lib/theme";
 import { Icon } from "./icon";
 import { Text } from "./text";
 
@@ -63,9 +63,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
   },
   pressed: { backgroundColor: colors.muted },
   text: { flex: 1, gap: 6 },
@@ -78,6 +78,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.background,
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: space.sm,
   },
 });

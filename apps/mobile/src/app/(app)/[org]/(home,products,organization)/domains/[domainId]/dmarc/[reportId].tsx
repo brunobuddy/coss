@@ -9,6 +9,7 @@ import { WebButton } from "../../../../../../../components/web-button";
 import { formatCount, formatDateTime } from "../../../../../../../lib/format";
 import { useDmarcReport } from "../../../../../../../lib/queries-organization-settings";
 import { dmarcResultTone } from "../../../../../../../lib/status-organization-settings";
+import { space } from "../../../../../../../lib/theme";
 
 // Copy from the dashboard's DMARC report page
 // (apps/web/src/app/[orgSlug]/domains/[domainId]/dmarc/[reportId]/page.tsx).
@@ -123,14 +124,14 @@ export default function DmarcReportScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  row: { gap: 4, paddingHorizontal: 16, paddingVertical: 12 },
+  row: { gap: space.xs, paddingHorizontal: space.lg, paddingVertical: space.md },
   line: { flexDirection: "row", alignItems: "center", gap: 10 },
   results: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
-    columnGap: 8,
-    rowGap: 4,
-    paddingTop: 4,
+    columnGap: space.sm,
+    rowGap: space.xs,
+    paddingTop: space.xs,
   },
 });

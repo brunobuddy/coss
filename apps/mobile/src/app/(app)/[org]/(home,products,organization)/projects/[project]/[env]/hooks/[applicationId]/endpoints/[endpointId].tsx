@@ -81,6 +81,7 @@ export default function HookEndpointScreen() {
       <PagedPanel
         description={`Failed deliveries are retried for about a day (8 attempts). Kept for ${formatRetentionDays(RETENTION_DAYS.hookMessages)}.`}
         empty={{
+          tone: "hooks",
           icon: Send,
           title: "No deliveries yet",
           description: "Messages sent to this endpoint's application show up here.",

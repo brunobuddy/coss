@@ -13,9 +13,9 @@ import { DOMAIN_STATUS } from "../../../../../lib/status";
 export default function DomainsScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useDomains(org);
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="Domains" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="Domains" error={query.error} onRetry={() => query.refetch()} />;
   }
   return (
     <Screen onRefresh={() => query.refetch()} title="Domains">
@@ -34,6 +34,7 @@ export default function DomainsScreen() {
       <Panel>
         {query.data.data.length === 0 ? (
           <EmptyState
+            tone="email"
             description="Add one to send from your own address with live API keys."
             icon={Globe}
             title="No domains yet"

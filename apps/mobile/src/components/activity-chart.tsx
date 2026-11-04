@@ -5,7 +5,7 @@ import { StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { cubicBezier, useReducedMotion } from "react-native-reanimated";
 import { formatCount, formatDay } from "../lib/format";
-import { type ColorToken, colors } from "../lib/theme";
+import { type ColorToken, colors, space } from "../lib/theme";
 import { useArrival } from "./screen";
 import { Text } from "./text";
 
@@ -212,13 +212,13 @@ export function StackedBars<D extends { date: string }>({
 }
 
 const styles = StyleSheet.create({
-  chart: { gap: 12 },
+  chart: { gap: space.md },
   legend: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
-    columnGap: 12,
-    rowGap: 4,
+    columnGap: space.md,
+    rowGap: space.xs,
     minHeight: 18,
   },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },

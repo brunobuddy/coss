@@ -1,6 +1,6 @@
 import { Children, isValidElement, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { colors, radius, useFinish } from "../lib/theme";
+import { colors, radius, space, useFinish } from "../lib/theme";
 import { CountUp } from "./count-up";
 import { Text } from "./text";
 
@@ -71,8 +71,8 @@ const styles = StyleSheet.create({
   rowRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   cell: { flex: 1 },
   cellRule: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.border },
-  stat: { gap: 4, paddingHorizontal: 16, paddingVertical: 14 },
-  value: { flexDirection: "row", alignItems: "baseline", gap: 4 },
+  stat: { gap: space.xs, paddingHorizontal: space.lg, paddingVertical: 14 },
+  value: { flexDirection: "row", alignItems: "baseline", gap: space.xs },
   unit: { fontSize: 17 },
   number: { flexShrink: 1 },
 });

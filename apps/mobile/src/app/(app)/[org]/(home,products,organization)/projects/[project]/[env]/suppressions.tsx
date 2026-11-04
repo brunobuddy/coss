@@ -11,6 +11,7 @@ import { Text } from "../../../../../../../components/text";
 import { WebButton } from "../../../../../../../components/web-button";
 import { formatAgo } from "../../../../../../../lib/format";
 import { ApiRequestError, useSuppressions } from "../../../../../../../lib/queries";
+import { space } from "../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../lib/web";
 
 // apps/web/src/components/email-badges.tsx (SuppressionReasonBadge).
@@ -101,7 +102,7 @@ export default function SuppressionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "flex-start", gap: 12, padding: 16 },
+  row: { flexDirection: "row", alignItems: "flex-start", gap: space.md, padding: space.lg },
   text: { flex: 1, gap: 6 },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   scope: { maxWidth: "100%" },

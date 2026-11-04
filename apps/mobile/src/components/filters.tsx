@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   chip: {
     alignItems: "center",
     justifyContent: "center",
-    height: 34,
+    minHeight: 34,
     paddingHorizontal: space.md,
   },
 });

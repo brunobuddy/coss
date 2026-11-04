@@ -12,6 +12,7 @@ import { Text } from "../../../../../../../components/text";
 import { WebButton } from "../../../../../../../components/web-button";
 import { formatAgo, formatDate } from "../../../../../../../lib/format";
 import { useApiKeys, useEnvironment, useMe } from "../../../../../../../lib/queries";
+import { space } from "../../../../../../../lib/theme";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../lib/web";
 
 // The dashboard's labels (`API_KEY_PRESET_LABELS` in `@coss/auth/api-key-permissions`).
@@ -34,9 +35,9 @@ export default function ApiKeysScreen() {
   const environment = useEnvironment(params).data;
   const userId = useMe().data?.user.id;
   const live = environment?.environment.mode === "live";
-  if (query.isPending) return <Screen loading="list" />;
+  if (query.isPending) return <Screen title="API keys" loading="list" />;
   if (query.isError && !query.data) {
-    return <Screen error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen title="API keys" error={query.error} onRetry={() => query.refetch()} />;
   }
   const where = environment
     ? `${environment.project.name} · ${environment.environment.name}`
@@ -119,10 +120,10 @@ export default function ApiKeysScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "flex-start", gap: 12, padding: 16 },
-  text: { flex: 1, gap: 2 },
-  name: { flexDirection: "row", alignItems: "center", gap: 8 },
+  row: { flexDirection: "row", alignItems: "flex-start", gap: space.md, padding: space.lg },
+  text: { flex: 1, gap: space.xxs },
+  name: { flexDirection: "row", alignItems: "center", gap: space.sm },
   shrink: { flexShrink: 1 },
-  setting: { flexDirection: "row", alignItems: "center", gap: 12 },
+  setting: { flexDirection: "row", alignItems: "center", gap: space.md },
   fill: { flex: 1 },
 });

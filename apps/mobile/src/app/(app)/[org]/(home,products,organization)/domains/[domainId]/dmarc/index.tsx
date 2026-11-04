@@ -35,7 +35,7 @@ import {
   dmarcRate,
   dmarcRateTone,
 } from "../../../../../../../lib/status-organization-settings";
-import { colors, radius } from "../../../../../../../lib/theme";
+import { colors, radius, space } from "../../../../../../../lib/theme";
 
 // Copy from the dashboard's DMARC page (apps/web/src/app/[orgSlug]/domains/[domainId]/dmarc/page.tsx)
 // and apps/web/src/lib/dmarc-status.ts. The page's daily chart is left out: the stats and sources
@@ -160,7 +160,7 @@ function Reports(props: {
   return (
     <PagedPanel
       description={`Reports are kept for ${RETENTION_DAYS.dmarcReports} days.`}
-      empty={{ icon: FileChartColumn, title: "No reports received yet." }}
+      empty={{ tone: "email", icon: FileChartColumn, title: "No reports received yet." }}
       items={reports}
       query={query}
       render={(report) => (
@@ -276,6 +276,7 @@ export default function DmarcScreen() {
       >
         {summary.sources.length === 0 ? (
           <EmptyState
+            tone="email"
             description={
               dmarc.report_address
                 ? `Mailbox providers send a report about each day's mail, usually within a day or two, once the DMARC record names ${dmarc.report_address}.`
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   step: {
-    gap: 2,
+    gap: space.xxs,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -336,20 +337,20 @@ const styles = StyleSheet.create({
     marginTop: -StyleSheet.hairlineWidth,
   },
   stepActive: { backgroundColor: colors.muted },
-  next: { gap: 12 },
-  nextHead: { flexDirection: "row", alignItems: "center", gap: 8 },
+  next: { gap: space.md },
+  nextHead: { flexDirection: "row", alignItems: "center", gap: space.sm },
   record: {
-    gap: 4,
+    gap: space.xs,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.background,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
   },
-  check: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  check: { flexDirection: "row", alignItems: "flex-start", gap: space.sm },
   checkDot: { paddingTop: 6 },
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
-  source: { gap: 4, paddingHorizontal: 16, paddingVertical: 12 },
+  source: { gap: space.xs, paddingHorizontal: space.lg, paddingVertical: space.md },
   sourceHead: { flexDirection: "row", alignItems: "center", gap: 10 },
 });
