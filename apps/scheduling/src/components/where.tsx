@@ -8,10 +8,21 @@ export type BookingLocation = {
   address?: string | null;
 } | null;
 
+/** New links must be https, but a booking can hold an older one: never put anything else in an `href`. */
+export function isWebLink(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 /** Where a booking happens, once there's something to say: a link can still be on its way. */
 export function Where({ location }: { location: BookingLocation }) {
   if (!location) return null;
   if (location.url) {
+    if (!isWebLink(location.url)) return null;
     return (
       <Detail icon={VideoIcon} label="Where">
         <a

@@ -625,6 +625,35 @@ describe("client API", () => {
     expect(body.location).toEqual(office);
   });
 
+  test("an event type's or booking's link must be https, and an address can't hold a link", async () => {
+    const s = await setUp();
+    const create = (locations: object[]) =>
+      call(s.app, s.key, "POST", "/event_types", {
+        title: "Video visit",
+        duration_minutes: 30,
+        hosts: [{ host: s.host }],
+        locations,
+      });
+    expect((await create([{ type: "link", url: "javascript:alert(1)" }])).status).toBe(422);
+    expect((await create([{ type: "link", url: "http://video.example/room" }])).status).toBe(422);
+    const inAddress = await create([{ type: "in_person", address: "https://evil.example/login" }]);
+    expect(await errorOf(inAddress)).toMatchObject({ code: "content_refused", param: "locations" });
+
+    const created = await call(
+      s.app,
+      s.key,
+      "POST",
+      "/bookings",
+      booking(s.eventType, at("09:00")),
+    );
+    const { id } = (await created.json()) as { id: string };
+    const update = (url: string) =>
+      call(s.app, s.key, "PATCH", `/bookings/${id}/location`, { location: { type: "link", url } });
+    const refused = await update("javascript:alert(1)");
+    expect(refused.status).toBe(422);
+    expect((await update("https://video.example/room")).status).toBe(200);
+  });
+
   test("a booker can't read or change a host's locations", async () => {
     const s = await setUp();
     const { token } = await bookerSession(s);
