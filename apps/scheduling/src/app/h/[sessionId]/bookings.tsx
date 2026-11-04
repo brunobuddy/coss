@@ -34,26 +34,44 @@ type HostBooking = {
   attendees: { name: string | null }[];
 };
 
+type BookingPage = { data: HostBooking[]; next_cursor: string | null };
+
 export function Bookings(props: { call: ClientCall; session: HostSession }) {
   const { call, session } = props;
   const [bookings, setBookings] = useState<HostBooking[] | null>(null);
   const [loadFailed, setLoadFailed] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [working, setWorking] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const timeZone = session.host.time_zone;
 
   const load = useCallback(() => {
-    call<{ data: HostBooking[] }>("/host/bookings")
-      .then((response) =>
-        setBookings(
-          [...response.data]
-            .filter((booking) => booking.status !== "cancelled" && booking.status !== "declined")
-            .sort((a, b) => a.start.localeCompare(b.start)),
-        ),
-      )
+    call<BookingPage>("/host/bookings")
+      .then((response) => {
+        setBookings(response.data);
+        setNextCursor(response.next_cursor);
+      })
       .catch((error: Error) => setLoadFailed(error.message));
   }, [call]);
   useEffect(load, [load]);
+
+  const loadMore = async () => {
+    if (!nextCursor) return;
+    setLoadingMore(true);
+    setProblem(null);
+    try {
+      const response = await call<BookingPage>(
+        `/host/bookings?cursor=${encodeURIComponent(nextCursor)}`,
+      );
+      setBookings((current) => [...(current ?? []), ...response.data]);
+      setNextCursor(response.next_cursor);
+    } catch (error) {
+      setProblem((error as Error).message);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const act = async (id: string, action: "approve" | "decline" | "cancel") => {
     setWorking(id);
@@ -214,6 +232,17 @@ export function Bookings(props: { call: ClientCall; session: HostSession }) {
           </ul>
         </section>
       ))}
+      {nextCursor ? (
+        <Button
+          className="self-start"
+          disabled={loadingMore}
+          onClick={loadMore}
+          type="button"
+          variant="outline"
+        >
+          Show more
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -23,6 +23,13 @@ it questions it would refuse.
 - Anything that retries in a savepoint goes through `inSavepoint` (`claims.ts`), never drizzle's nested `transaction`:
   that one rolls back without releasing, so each failed attempt nests deeper and keeps a transaction id lock until
   commit. On a 500-host pool that ran Postgres out of lock table (`53200`), which is shared by the whole server.
+- A group session has one claim, and every change to it happens under the session's lock, conversions included:
+  firm while a seat is confirmed, otherwise as long as the latest live reservation, gone with the last live seat. A
+  conversion counts the other seats first, because an expired hold's seat may have been taken. An expired approval
+  gives up its seat like an expired hold.
+- `deleteHost` refuses while a `held` or `pending_approval` booking has that host, expired or not. The cascade takes the
+  host's `scheduling_booking_host` and claim rows together, so a collective booking can't tell afterwards that it lost
+  one: a conversion can only catch a booking with no hosts at all.
 
 An audit in `test/bookings.test.ts` checks every live booking holds exactly one claim per host.
 
@@ -32,6 +39,7 @@ An audit in `test/bookings.test.ts` checks every live booking holds exactly one 
 a booking: named hosts, plus a pool's `host_filter` matches right now, narrowed by `attributes`, and it never falls back
 to someone who doesn't match. A row in `scheduling_event_type_host` with `assigned = false` only counts bookings for a
 host a filter found, and never makes them a member. A host taken off `hosts` by name stays out whatever the filter says.
+A pool's `required` hosts need a member: if narrowing leaves none, nobody's offered, rather than the required host alone.
 A booker session's `attributes` come from the customer's server and are encrypted, since with an attendee they can say
 what someone needs; the browser never sees them or sends its own.
 
@@ -52,25 +60,54 @@ embeds the booker. Local dates (overrides, limits) never pass through `Date`.
   has no narrower read scope. CalDAV objects arrive whole: `ical.ts` parses times and drops the rest.
 - **A calendar that errored is left out of `fetchBusy`'s result, and never reads as free**. Cal.com's CalDAV adapter
   got this wrong for a deleted calendar. `calendarVerdict` decides how long old data is trusted.
+- **A CalDAV read with anything missing is a failed read**: an object that can't be parsed, a failed `propstat`, a
+  truncated or cut-off multistatus. Time is unknowable there. A rule that's only expensive (too dense, impossible,
+  malformed) has a known start and end, so it's expanded up to `MAX_CYCLES_PER_EVENT`/`MAX_OCCURRENCES_PER_EVENT` and
+  the rest of its span counts as busy: one odd event shouldn't stale a whole calendar. Spending
+  `MAX_CYCLES_PER_READ` fails the read, so a hostile server can only hide its own host. Expansion is synchronous, and
+  `ical.js` can loop forever inside `next()` (`FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30`), so `ical.ts` counts cycles by
+  wrapping `check_contracting_rules`: re-check that when bumping the pinned version.
 - A push only sets `dirty_at`. The leased `scheduling-calendar-sync` loop reads, fenced on `last_fetch_started_at`, so
   a slow older fetch can't overwrite a newer one.
 - `scheduling_calendar_event` is desired state: the worker converges on the latest, so create, move and cancel can't
-  reorder, and a key makes a retry after a lost answer harmless (Google's client-chosen `id`, Graph's `transactionId`,
-  CalDAV's `If-None-Match`). iCalUID doesn't do this on Google.
+  reorder. A key makes a retry after a lost answer harmless (Google's client-chosen `id`, Graph's extended property
+  plus `transactionId`, CalDAV's `If-None-Match`, Zoom's `agenda` marker); iCalUID doesn't do this on Google.
+  `createEvent` leaves the event as asked even if a lost attempt made it, since the booking may have moved since, and
+  a row with no `provider_event_id` is cancelled with `deleteEventByKey`.
+- A write's `lease_until` is its fencing token (`stillHeld`): each row renews before its request, and only the holder
+  records anything. Fencing can't recall a request on the wire, so a worker that finds it lost the row after sending
+  bumps `desired_version` (`redrive`), and the row is written again from the latest state. Requests time out well
+  inside the lease (`requestTimeoutMs`). What's left: a worker that dies with a request in flight can't re-drive, so
+  that request can land last unnoticed, and CalDAV's 15 s timeout only covers an idle socket.
+- A ledger row belongs to a booking or a group session, never a seat: a session has one event, from its first confirmed
+  seat to its last, and news about it (`location_ready`, `external_conflict`, `calendar_write_failed`) goes to each
+  confirmed seat. `scheduling_group_session.location` is where a session meets and `meeting_url` the link a provider
+  made, gone with the event; a seat's own `location` is never read (`withSessionLocation`, `group-sessions.ts`), and
+  since others see it, a booker's browser or an attendee's own number can't fill it in. A session's event that was
+  deleted comes back as a new row, because its key can't be used twice.
 - `freeBusy` carries no identity, so our own events are subtracted at read time. Limit, documented for customers: a
   foreign event wholly inside a booking's written event can't be detected.
-- Host-supplied CalDAV URLs go through `pinnedDavTransport` (public addresses only, pinned against rebinding, redirects
-  re-checked, the password never sent to another origin).
+- Host-supplied CalDAV URLs go through `pinnedDavTransport` (public addresses only, pinned against rebinding). Every
+  URL a server names, in a redirect or a discovery answer, is checked in `send` before credentials go on it: the host's
+  own origin, or between iCloud's `caldav` and `pNN-caldav` hosts (`isICloudCalDav`). That rule never skips the transport.
 - Credentials use `encryptSecret` with `WEBHOOK_SECRETS_KEY`, never `SCHEDULING_DATA_KEYS`; `reencryptWebhookSecrets`
-  covers them. A refresh writes back with a compare-and-set. A consent's `encrypted_code_verifier` uses the same ring
-  and isn't covered: it lasts 10 minutes, so a consent in progress when an old key leaves just starts over.
+  covers them. A refresh writes back under a row lock unless the row now holds a different refresh token (compared
+  decrypted, since a re-encryption changes the ciphertext and not the token, and a one-time token just used can't be
+  asked for again). A consent's `encrypted_code_verifier` uses the same ring and isn't covered: it lasts 10 minutes, so
+  a consent in progress when an old key leaves just starts over.
 - Coss.com never auto-cancels: an external conflict or a host editing an event is flagged, with a webhook.
 - Zoom (`calendar/zoom.ts`) is a write-only calendar: a connection has one hidden calendar row, never read for busy
   times and never a `write_target`, and a booking's meeting is a row in the same ledger, so retries, moves and cancels
-  are the same code. Zoom has no idempotency key, so `createEvent` looks for its own meeting first. Its refresh tokens
+  are the same code. Zoom has no idempotency key, so `createEvent` looks for its own meeting first, by a hash of the
+  key in its `agenda` (never by title and time, which would adopt someone else's meeting), listing `type=scheduled`,
+  since `upcoming` is reported to drop `agenda`. Its refresh tokens
   work once and expire unused, so `clientFor` re-reads after a refused refresh and `refreshIdleZoomConnections` keeps
   idle ones alive. `notZoomMeeting()` keeps these rows out of what's subtracted from busy times. Losing Zoom never hides
   a host. The app's deauthorization event comes to `POST /scheduling/zoom/events`.
+
+A Meet or Teams link becomes a `link` location on the booking, stored with `conference` (stripped from the wire), so a
+new host gets a meeting of their own (`locationForNewHost`). A browser only chooses among an event type's `locations`
+(`locationFromBrowser`): it can't supply its own link or address.
 
 ## Sessions and the client API
 
@@ -96,7 +133,8 @@ attendee sees times, never other hosts.
 ## Notifications
 
 `notifications.ts` resolves policy once, into outbox rows in the deciding transaction: core code never branches on it.
-Rows hold no content; a row's rendered at send time and dropped if stale. Booking emails use `@coss/email-layout` with
+Rows hold no content; a row's rendered at send time and dropped if stale. A change that keeps a booking's time but
+bumps its version (a location, a meeting link) calls `carryReminders`, or its reminder would look stale. Booking emails use `@coss/email-layout` with
 no customer HTML and no links but the manage link, and pass `screeningExempt`: per-email screening would send patients'
 names to the AI Gateway. In exchange, text a customer controls is screened at setup (`screening.ts`) and can't hold a
 link. Never add a free-form field to these emails without screening it. SMS goes through `@coss/sms`, so it's sampled

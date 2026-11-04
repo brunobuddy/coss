@@ -50,5 +50,6 @@ Changing a schedule only changes what's offered next. Existing bookings stay.
 
 ## Hosts leaving
 
-A `disabled` host keeps their bookings but isn't offered. A host with bookings still to come can't be
-deleted (`host_has_live_bookings`): cancel them or disable the host.
+A `disabled` host keeps their bookings but isn't offered. A host with bookings still to come, holds or
+requests awaiting approval can't be deleted (`host_has_live_bookings`): cancel them or disable the host. An
+expired hold counts until it's tidied up, within about a minute, since it can still be confirmed until then.

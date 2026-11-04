@@ -17,7 +17,7 @@ import {
   errorFromStatus,
   type RemoteCalendar,
 } from "./client.ts";
-import { buildIcs, busyFromIcs } from "./ical.ts";
+import { buildIcs, busyFromIcs, newExpansionBudget, UnreadableCalendarData } from "./ical.ts";
 
 export type DavRequest = {
   url: string;
@@ -34,6 +34,8 @@ const MAX_RESPONSE_BYTES = 20 * 1024 * 1024;
 const TIMEOUT_MS = 15_000;
 const MAX_REDIRECTS = 3;
 const MAX_RANGE_DAYS = 90;
+// Expanding rules is synchronous: give timers a turn, or a live check's own timeout can't fire.
+const CYCLES_PER_TURN = 50_000;
 
 /** Requests pinned to an address checked to be public, so DNS can't rebind between check and use. */
 export function pinnedDavTransport(opts: { allowPrivateNetworks?: boolean } = {}): DavTransport {
@@ -89,13 +91,23 @@ const parser = new XMLParser({
 type Propstat = { status?: string; prop?: Record<string, unknown> };
 type DavEntry = { href?: string; propstat?: Propstat[] };
 
-function entriesOf(xml: string): DavEntry[] {
-  const parsed = parser.parse(xml) as { multistatus?: { response?: DavEntry[] } };
-  return parsed.multistatus?.response ?? [];
+/** Null unless this is a whole multistatus: what's absent would read as free. */
+function completeEntries(xml: string): DavEntry[] | null {
+  if (!/(?:<\/(?:[\w.-]+:)?multistatus\s*>|<(?:[\w.-]+:)?multistatus\b[^>]*\/>)\s*$/.test(xml)) {
+    return null;
+  }
+  try {
+    const parsed = parser.parse(xml) as { multistatus?: { response?: DavEntry[] } };
+    return parsed.multistatus === undefined ? null : (parsed.multistatus.response ?? []);
+  } catch {
+    return null;
+  }
 }
 
+const entriesOf = (xml: string): DavEntry[] => completeEntries(xml) ?? [];
+
 function propOf(entry: DavEntry): Record<string, unknown> {
-  const ok = entry.propstat?.find((item) => !item.status || / 200 /.test(item.status));
+  const ok = entry.propstat?.find((item) => !item.status || /\s2\d\d(\s|$)/.test(item.status));
   return ok?.prop ?? {};
 }
 
@@ -148,12 +160,21 @@ export function caldavCalendarClient(input: {
 }): CalendarClient {
   const authorization = `Basic ${Buffer.from(`${input.username}:${input.password}`, "utf8").toString("base64")}`;
   const now = input.now ?? Date.now;
+  const home = new URL(input.url);
+  const mayHavePassword = (target: URL) =>
+    target.origin === home.origin || (isICloudCalDav(home) && isICloudCalDav(target));
 
   const send = async (
     request: Omit<DavRequest, "headers"> & { headers?: Record<string, string> },
   ) => {
     let url = request.url;
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      // Servers name these URLs: the password goes only where the host said.
+      if (!mayHavePassword(new URL(url))) {
+        throw hop === 0
+          ? new CalendarError("permanent", "untrusted_origin", "The server pointed elsewhere.")
+          : new CalendarError("permanent", "redirected_away", "The server redirected elsewhere.");
+      }
       let response: DavResponse;
       try {
         response = await input.transport({
@@ -167,16 +188,7 @@ export function caldavCalendarClient(input: {
       }
       const location = response.headers.location;
       if (response.status >= 300 && response.status < 400 && location) {
-        const next = new URL(location, url);
-        // The password goes only where the host told us to send it.
-        if (next.origin !== new URL(url).origin && !isKnownMove(url, next)) {
-          throw new CalendarError(
-            "permanent",
-            "redirected_away",
-            "The server redirected elsewhere.",
-          );
-        }
-        url = next.toString();
+        url = resolveHref(location, url).toString();
         continue;
       }
       return { ...response, url };
@@ -206,7 +218,7 @@ export function caldavCalendarClient(input: {
       throw new CalendarError("permanent", "no_principal", "This server has no calendar account.");
     }
     const principal = await propfind(
-      new URL(principalHref, root.url).toString(),
+      resolveHref(principalHref, root.url).toString(),
       PROPFIND_HOME,
       "0",
     );
@@ -216,7 +228,7 @@ export function caldavCalendarClient(input: {
     if (!homeHref) {
       throw new CalendarError("permanent", "no_home", "This account has no calendars.");
     }
-    const homeUrl = new URL(homeHref, principal.url);
+    const homeUrl = resolveHref(homeHref, principal.url);
     const home = await propfind(homeUrl.toString(), PROPFIND_CALENDARS, "1");
     if (home.status !== 207) throw fail(home.status, "discovery_failed", home.headers);
     const calendars: RemoteCalendar[] = [];
@@ -224,8 +236,10 @@ export function caldavCalendarClient(input: {
       const prop = propOf(entry);
       const type = prop.resourcetype as Record<string, unknown> | undefined;
       if (!entry.href || !type || !("calendar" in type) || !acceptsEvents(prop)) continue;
+      const calendarUrl = new URL(entry.href, homeUrl);
+      if (!mayHavePassword(calendarUrl)) continue;
       calendars.push({
-        externalId: new URL(entry.href, homeUrl).toString(),
+        externalId: calendarUrl.toString(),
         name: textOf(prop.displayname),
         primary: calendars.length === 0,
         writable: true,
@@ -251,6 +265,44 @@ export function caldavCalendarClient(input: {
       private: true,
     });
 
+  /** Null unless every object in the range was read. */
+  const readRange = async (
+    calendarId: string,
+    from: number,
+    to: number,
+  ): Promise<Interval[] | null> => {
+    const response = await send({
+      url: calendarId,
+      method: "REPORT",
+      headers: { depth: "1", "content-type": "application/xml; charset=utf-8" },
+      body: queryBody(from, to),
+    });
+    if (response.status === 401 || response.status === 403) {
+      throw fail(response.status, "report_refused", response.headers);
+    }
+    if (response.status !== 207) return null;
+    const entries = completeEntries(response.body);
+    if (!entries) return null;
+    const budget = newExpansionBudget();
+    let turnStartedAt = budget.cycles;
+    const intervals: Interval[] = [];
+    for (const entry of entries) {
+      const data = textOf(propOf(entry)["calendar-data"]);
+      if (!data?.trim()) return null;
+      try {
+        intervals.push(...busyFromIcs(data, from, to, budget));
+      } catch (error) {
+        if (error instanceof UnreadableCalendarData) return null;
+        throw error;
+      }
+      if (turnStartedAt - budget.cycles >= CYCLES_PER_TURN) {
+        turnStartedAt = budget.cycles;
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+    }
+    return intervals;
+  };
+
   return {
     listCalendars: discover,
 
@@ -260,24 +312,12 @@ export function caldavCalendarClient(input: {
         const intervals: Interval[] = [];
         let ok = true;
         for (const [from, to] of chunkRange(fromMs, toMs, MAX_RANGE_DAYS)) {
-          const response = await send({
-            url: calendarId,
-            method: "REPORT",
-            headers: { depth: "1", "content-type": "application/xml; charset=utf-8" },
-            body: queryBody(from, to),
-          });
-          if (response.status === 401 || response.status === 403) {
-            throw fail(response.status, "report_refused", response.headers);
-          }
-          // A deleted calendar must not read as free: it's left out of the result.
-          if (response.status !== 207) {
+          const range = await readRange(calendarId, from, to);
+          if (!range) {
             ok = false;
             break;
           }
-          for (const entry of entriesOf(response.body)) {
-            const data = textOf(propOf(entry)["calendar-data"]);
-            if (data) intervals.push(...busyFromIcs(data, from, to));
-          }
+          intervals.push(...range);
         }
         if (ok) result[calendarId] = normalizeIntervals(intervals);
       }
@@ -293,7 +333,8 @@ export function caldavCalendarClient(input: {
         headers: { "if-none-match": "*", "content-type": "text/calendar; charset=utf-8" },
         body: eventIcs(event),
       });
-      if (response.status === 412 || (response.status >= 200 && response.status < 300)) {
+      if (response.status === 412) return this.updateEvent(calendarId, event.key, event);
+      if (response.status >= 200 && response.status < 300) {
         return { providerEventId: event.key, meetingUrl: null };
       }
       throw fail(response.status, "create_failed", response.headers);
@@ -322,11 +363,26 @@ export function caldavCalendarClient(input: {
       if (response.status >= 200 && response.status < 300) return;
       throw fail(response.status, "delete_failed", response.headers);
     },
+
+    deleteEventByKey(calendarId, key) {
+      return this.deleteEvent(calendarId, key);
+    },
   };
 }
 
 /** iCloud moves an account to a partition host (`p42-caldav.icloud.com`): the same service. */
-function isKnownMove(from: string, to: URL): boolean {
-  const icloud = /(^|\.)icloud\.com$/;
-  return icloud.test(new URL(from).hostname) && icloud.test(to.hostname);
+function isICloudCalDav(url: URL): boolean {
+  return (
+    url.protocol === "https:" &&
+    url.port === "" &&
+    /^(?:p\d+-)?caldav\.icloud\.com$/.test(url.hostname)
+  );
+}
+
+function resolveHref(href: string, base: string | URL): URL {
+  try {
+    return new URL(href, base);
+  } catch {
+    throw new CalendarError("permanent", "invalid_url", "The server named an invalid URL.");
+  }
 }

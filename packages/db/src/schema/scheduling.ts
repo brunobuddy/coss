@@ -437,6 +437,10 @@ export const schedulingGroupSession = pgTable(
     startAt: instant("start_at").notNull(),
     endAt: instant("end_at").notNull(),
     capacity: integer("capacity").notNull(),
+    // Where every seat meets: a seat's own `location` is never read.
+    location: jsonb("location").$type<SchedulingLocation | null>(),
+    // The link a calendar provider made for this session's event, gone with the event.
+    meetingUrl: text("meeting_url"),
     usageRecordedAt: instant("usage_recorded_at"),
     createdAt: createdAt(),
   },
@@ -740,9 +744,9 @@ export const schedulingBookingEvent = pgTable(
 );
 
 /**
- * What a host's calendar should show for a booking, and what it was last made to show. The worker
- * converges on the latest desired state, so a quick create, move and cancel can't reorder. Also how
- * sync recognises coss.com's own events, which `freeBusy` can't identify.
+ * What a host's calendar should show for a booking or group session, and what it was last made to
+ * show. The worker converges on the latest desired state, so a quick create, move and cancel can't
+ * reorder. Also how sync recognises coss.com's own events, which `freeBusy` can't identify.
  */
 export const schedulingCalendarEvent = pgTable(
   "scheduling_calendar_event",
@@ -752,7 +756,8 @@ export const schedulingCalendarEvent = pgTable(
       .$defaultFn(() => newId(ID_PREFIXES.schedulingCalendarEvent)),
     organizationId: text("organization_id").notNull(),
     environmentId: text("environment_id").notNull(),
-    bookingId: text("booking_id").notNull(),
+    bookingId: text("booking_id"),
+    groupSessionId: text("group_session_id"),
     hostId: text("host_id").notNull(),
     calendarId: text("calendar_id").notNull(),
     desiredStart: instant("desired_start").notNull(),
@@ -776,11 +781,25 @@ export const schedulingCalendarEvent = pgTable(
       foreignColumns: [schedulingBooking.id, schedulingBooking.organizationId],
     }).onDelete("cascade"),
     foreignKey({
+      name: "scheduling_calendar_event_group_session_fk",
+      columns: [t.groupSessionId, t.organizationId],
+      foreignColumns: [schedulingGroupSession.id, schedulingGroupSession.organizationId],
+    }).onDelete("cascade"),
+    foreignKey({
       name: "scheduling_calendar_event_calendar_fk",
       columns: [t.calendarId, t.organizationId],
       foreignColumns: [schedulingCalendar.id, schedulingCalendar.organizationId],
     }).onDelete("cascade"),
     unique("scheduling_calendar_event_target_unique").on(t.bookingId, t.hostId, t.calendarId),
+    unique("scheduling_calendar_event_session_target_unique").on(
+      t.groupSessionId,
+      t.hostId,
+      t.calendarId,
+    ),
+    check(
+      "scheduling_calendar_event_one_owner",
+      sql`(${t.bookingId} IS NULL) <> (${t.groupSessionId} IS NULL)`,
+    ),
     index("scheduling_calendar_event_host_idx").on(t.hostId, t.desiredEnd, t.desiredStart),
     index("scheduling_calendar_event_due_idx")
       .on(t.nextAttemptAt)

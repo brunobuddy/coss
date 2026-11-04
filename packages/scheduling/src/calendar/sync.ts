@@ -41,6 +41,8 @@ const MAX_BACKOFF_MS = 60 * 60_000;
 const CHANNEL_TTL_SECONDS = 2 * 86_400;
 const CHANNEL_RENEW_BEFORE_MS = 86_400_000;
 const CHANNEL_CLAIM_MS = 5 * 60_000;
+// Postgres takes 65,535 parameters a statement, and a dense calendar's rows can pass that.
+const BUSY_ROWS_PER_INSERT = 1_000;
 
 type Scan = { limit?: number; scope?: { organizationIds: readonly string[] } };
 
@@ -113,9 +115,9 @@ async function replaceIntervals(
     await tx
       .delete(schedulingBusyInterval)
       .where(eq(schedulingBusyInterval.calendarId, calendar.id));
-    if (intervals.length > 0) {
+    for (let index = 0; index < intervals.length; index += BUSY_ROWS_PER_INSERT) {
       await tx.insert(schedulingBusyInterval).values(
-        intervals.map((interval) => ({
+        intervals.slice(index, index + BUSY_ROWS_PER_INSERT).map((interval) => ({
           organizationId: calendar.organizationId,
           calendarId: calendar.id,
           hostId: calendar.hostId,
@@ -167,12 +169,19 @@ export async function flagExternalConflicts(
 ): Promise<number> {
   const claims = await db
     .select({
-      bookingId: schedulingClaim.bookingId,
+      bookingId: schedulingBooking.id,
       occupiedStart: schedulingClaim.occupiedStart,
       occupiedEnd: schedulingClaim.occupiedEnd,
     })
     .from(schedulingClaim)
-    .innerJoin(schedulingBooking, eq(schedulingBooking.id, schedulingClaim.bookingId))
+    // A session's claim stands for each of its seats, and each has a flag of its own.
+    .innerJoin(
+      schedulingBooking,
+      or(
+        eq(schedulingBooking.id, schedulingClaim.bookingId),
+        eq(schedulingBooking.groupSessionId, schedulingClaim.groupSessionId),
+      ),
+    )
     .where(
       and(
         eq(schedulingClaim.hostId, hostId),
@@ -234,7 +243,6 @@ export async function flagExternalConflicts(
   ).filter((interval) => !inFlight.has(`${interval.startMs}:${interval.endMs}`));
   let flagged = 0;
   for (const claim of claims) {
-    if (!claim.bookingId) continue;
     const start = claim.occupiedStart.getTime();
     const end = claim.occupiedEnd.getTime();
     if (!external.some((interval) => interval.startMs < end && interval.endMs > start)) continue;
@@ -244,7 +252,7 @@ export async function flagExternalConflicts(
         .set({ externalConflictAt: now })
         .where(
           and(
-            eq(schedulingBooking.id, claim.bookingId as string),
+            eq(schedulingBooking.id, claim.bookingId),
             eq(schedulingBooking.organizationId, organizationId),
             isNull(schedulingBooking.externalConflictAt),
           ),

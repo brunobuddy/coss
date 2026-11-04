@@ -31,7 +31,8 @@ type FakeEvent = { id: string; startMs: number; endMs: number; deleted?: boolean
 /**
  * Google Calendar as a `fetch`, for `CalendarDeps.fetcher`. Written events echo back as busy, as
  * the real one does, which is how double-counting our own events would show. `failNext` makes the
- * next matching request fail; `loseNextAnswer` does the write, then fails as if the answer was lost.
+ * next matching request fail; `loseNextAnswer` does the write, then fails as if the answer was lost;
+ * `hold` keeps the next matching request waiting, before it takes effect or before its answer.
  */
 export class FakeGoogleCalendarApi {
   readonly busy = new Map<string, { start: string; end: string }[]>();
@@ -49,8 +50,47 @@ export class FakeGoogleCalendarApi {
   delayMs = 0;
   /** Set to see what clients ask a provider for: nothing should read titles. */
   fieldsAsked: string[] = [];
+  #holds: {
+    method: string;
+    path: RegExp;
+    at: "before" | "after";
+    arrive: () => void;
+    gate: Promise<void>;
+  }[] = [];
+
+  hold(method: string, path: RegExp, at: "before" | "after" = "before") {
+    let arrive = () => {};
+    let release = () => {};
+    const arrived = new Promise<void>((resolve) => {
+      arrive = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this.#holds.push({ method, path, at, arrive, gate });
+    return { arrived, release };
+  }
 
   readonly fetch = async (url: string, init?: RequestInit): Promise<Response> => {
+    const method = init?.method ?? "GET";
+    const pathname = new URL(url).pathname;
+    const index = this.#holds.findIndex(
+      (hold) => hold.method === method && hold.path.test(pathname),
+    );
+    const held = index >= 0 ? this.#holds.splice(index, 1)[0] : undefined;
+    if (held?.at === "before") {
+      held.arrive();
+      await held.gate;
+    }
+    const response = await this.#respond(url, init);
+    if (held?.at === "after") {
+      held.arrive();
+      await held.gate;
+    }
+    return response;
+  };
+
+  readonly #respond = async (url: string, init?: RequestInit): Promise<Response> => {
     const method = init?.method ?? "GET";
     const parsed = new URL(url);
     this.requests.push(`${method} ${parsed.pathname}`);
@@ -160,9 +200,10 @@ type FakeZoomMeeting = {
   start_time: string;
   duration: number;
   join_url: string;
+  agenda?: string;
 };
 
-/** Zoom's API and OAuth. Refresh tokens work once, as Zoom's do. */
+/** Zoom's API and OAuth: one-time refresh tokens, and lists that page and cut `agenda` as Zoom's do. */
 export class FakeZoomApi {
   readonly meetings = new Map<number, FakeZoomMeeting>();
   readonly bodies: Record<string, unknown>[] = [];
@@ -172,6 +213,7 @@ export class FakeZoomApi {
   loseNextAnswer = false;
   failNext: { path: RegExp; status: number } | null = null;
   refreshToken = "zoom-refresh-0";
+  listPageSize = 300;
   #nextId = 1000;
   #refreshes = 0;
 
@@ -210,7 +252,17 @@ export class FakeZoomApi {
     }
     if (parsed.pathname === "/v2/users/me") return json(200, { id: this.userId });
     if (parsed.pathname === "/v2/users/me/meetings" && method === "GET") {
-      return json(200, { meetings: [...this.meetings.values()] });
+      const all = [...this.meetings.values()];
+      const offset = Number(parsed.searchParams.get("next_page_token") ?? 0);
+      const end = offset + this.listPageSize;
+      const upcoming = parsed.searchParams.get("type") === "upcoming";
+      return json(200, {
+        meetings: all.slice(offset, end).map(({ agenda, ...meeting }) => ({
+          ...meeting,
+          ...(agenda && !upcoming ? { agenda: agenda.slice(0, 250) } : {}),
+        })),
+        next_page_token: end < all.length ? String(end) : "",
+      });
     }
     if (parsed.pathname === "/v2/users/me/meetings" && method === "POST") {
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
@@ -222,6 +274,7 @@ export class FakeZoomApi {
         start_time: String(body.start_time),
         duration: Number(body.duration),
         join_url: `https://zoom.us/j/${id}?pwd=secret`,
+        ...(typeof body.agenda === "string" ? { agenda: body.agenda } : {}),
       };
       this.meetings.set(id, meeting);
       if (this.loseNextAnswer) {

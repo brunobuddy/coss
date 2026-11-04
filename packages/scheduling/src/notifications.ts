@@ -13,6 +13,7 @@ import { and, asc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { decryptContact } from "./attendees.ts";
 import { accentColors } from "./branding.ts";
 import { buildIcs } from "./calendar/ical.ts";
+import { withSessionLocation } from "./group-sessions.ts";
 import { getLogoRow, LOGO_CONTENT_ID, type SchedulingLogoRow } from "./logo.ts";
 import { createHostInvitationSession, createManageSession } from "./sessions.ts";
 import type { SchedulingDeps } from "./types.ts";
@@ -96,7 +97,24 @@ function emailLogo(logo: SchedulingLogoRow): NonNullable<SchedulingEmail["logo"]
   };
 }
 
-async function policiesOf(tx: Executor, booking: BookingRow) {
+/**
+ * Whether an attendee will be emailed once this event type's booking is confirmed: what the booker
+ * promises them. An approval's outcome is the same `confirmed` email, so it covers requests too.
+ */
+export async function attendeeEmailedOnConfirm(
+  env: { organizationId: string; environmentId: string },
+  eventTypeId: string,
+): Promise<boolean> {
+  const policies = await policiesOf(db, { ...env, eventTypeId });
+  return (
+    resolvePolicy("confirmed", policies.environment, policies.eventType).emailAttendee === true
+  );
+}
+
+async function policiesOf(
+  tx: Executor,
+  booking: Pick<BookingRow, "organizationId" | "environmentId" | "eventTypeId">,
+) {
   const [settings] = await tx
     .select({ notifications: schedulingSettings.notifications })
     .from(schedulingSettings)
@@ -116,6 +134,25 @@ async function policiesOf(tx: Executor, booking: BookingRow) {
       ),
     );
   return { environment: settings?.notifications, eventType: eventType?.notifications };
+}
+
+/** A change that doesn't touch a booking's time still bumps its version; its reminder still holds. */
+export async function carryReminders(
+  tx: Executor,
+  booking: Pick<BookingRow, "id" | "organizationId" | "version">,
+): Promise<void> {
+  await tx
+    .update(schedulingNotification)
+    .set({ bookingVersion: booking.version })
+    .where(
+      and(
+        eq(schedulingNotification.bookingId, booking.id),
+        eq(schedulingNotification.organizationId, booking.organizationId),
+        eq(schedulingNotification.kind, "reminder"),
+        isNull(schedulingNotification.finishedAt),
+        eq(schedulingNotification.bookingVersion, booking.version - 1),
+      ),
+    );
 }
 
 /** Queues what this change owes, in the transaction that decided it. A held booking owes nothing. */
@@ -145,6 +182,21 @@ export async function enqueueBookingNotifications(
       dueAt,
     });
   };
+  if (event === "rescheduled") {
+    // Only the latest move is news: an unsent notice of an earlier one would say the same thing.
+    await tx
+      .update(schedulingNotification)
+      .set({ finishedAt: now, outcome: "superseded", leaseUntil: null })
+      .where(
+        and(
+          eq(schedulingNotification.bookingId, booking.id),
+          eq(schedulingNotification.organizationId, booking.organizationId),
+          eq(schedulingNotification.kind, "rescheduled"),
+          isNull(schedulingNotification.finishedAt),
+          lt(schedulingNotification.bookingVersion, booking.version),
+        ),
+      );
+  }
   const policy = resolvePolicy(event, policies.environment, policies.eventType);
   if (policy.emailAttendee) add(event, "email", "attendee", now);
   if (policy.emailHost) add(event, "email", "host", now);
@@ -303,6 +355,7 @@ function isStale(row: Claimed, booking: BookingRow): boolean {
   const ended = booking.status === "cancelled" || booking.status === "declined";
   if (row.kind === "cancelled" || row.kind === "declined") return !ended;
   if (ended) return true;
+  if (row.kind === "pending_approval") return booking.status !== "pending_approval";
   if (row.kind === "reminder") {
     return booking.status !== "confirmed" || row.bookingVersion !== booking.version;
   }
@@ -378,7 +431,11 @@ async function sendBookingEmail(
       attendee: to,
     }),
   });
-  const withIcs = event !== "pending_approval" && event !== "reminder";
+  // Nothing goes on a calendar until it's approved, even if it moved while waiting.
+  const withIcs =
+    event === "cancelled" ||
+    event === "declined" ||
+    ((event === "confirmed" || event === "rescheduled") && booking.status === "confirmed");
   const key = `scheduling:${row.id}`;
 
   if (row.recipient === "attendee") {
@@ -598,7 +655,7 @@ export async function runDueSchedulingNotifications(
         await finish(row, await sendHostNews(row, deps, now), now);
         continue;
       }
-      const [booking] = await db
+      const [found] = await db
         .select()
         .from(schedulingBooking)
         .where(
@@ -607,10 +664,20 @@ export async function runDueSchedulingNotifications(
             eq(schedulingBooking.organizationId, row.organizationId),
           ),
         );
-      if (!booking || isStale(row, booking)) {
+      // Claimed a while ago, maybe: carried forward or superseded since.
+      const [current] = await db
+        .select({
+          bookingVersion: schedulingNotification.bookingVersion,
+          finishedAt: schedulingNotification.finishedAt,
+        })
+        .from(schedulingNotification)
+        .where(eq(schedulingNotification.id, row.id));
+      if (!current || current.finishedAt) continue;
+      if (!found || isStale({ ...row, bookingVersion: current.bookingVersion }, found)) {
         await finish(row, "stale", now);
         continue;
       }
+      const booking = await withSessionLocation(db, found);
       // A Meet, Teams or Zoom link appears only after the write: a confirmation gives it a moment,
       // then goes without. The manage page always shows the link once it exists.
       const waitingForLink =

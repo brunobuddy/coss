@@ -1,7 +1,7 @@
 /**
  * A host's calendar connections: consent, credentials, which calendars count. Credentials are
- * encrypted with `encryptSecret`, and a refresh writes back with a compare-and-set on the old value
- * so it can't overwrite a concurrent re-encryption or a newer refresh.
+ * encrypted with `encryptSecret`, and a refresh writes back only over the token it used, so it can't
+ * overwrite a newer one, and a re-encryption can't make it lose the one it was just given.
  */
 import { createHash, randomBytes } from "node:crypto";
 import { db, type Executor, schema } from "@coss/db";
@@ -63,6 +63,8 @@ export type CalendarDeps = {
   /** `API_PUBLIC_URL`: where providers send consent back and push notifications to. */
   publicUrl: string;
   fetcher?: HttpFetch;
+  /** Defaults to well inside a write's lease, so a hung request can't outlive it. */
+  requestTimeoutMs?: number;
   davTransport?: DavTransport;
   now?: () => Date;
 };
@@ -70,10 +72,25 @@ export type CalendarDeps = {
 type CaldavCredentials = { url: string; username: string; password: string };
 const OAUTH_STATE_TTL_MS = 10 * 60_000;
 const REFRESH_MARGIN_MS = 2 * 60_000;
+const REQUEST_TIMEOUT_MS = 30_000;
 // Past a year: a weekly series of 52 has to fit, or its last occurrences couldn't be verified.
 export const SYNC_HORIZON_DAYS = 400;
 
-const fetcherOf = (deps: CalendarDeps): HttpFetch => deps.fetcher ?? fetch;
+const fetcherOf = (deps: CalendarDeps): HttpFetch => {
+  const fetcher = deps.fetcher ?? fetch;
+  const timeoutMs = deps.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
+  return async (url, init) => {
+    try {
+      const res = await fetcher(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+      if (res.status === 204) return res;
+      // Read here so the timeout also covers a body that never finishes.
+      const { status, statusText, headers } = res;
+      return new Response(await res.text(), { status, statusText, headers });
+    } catch {
+      throw new CalendarError("transient", "unreachable", "Couldn't reach the calendar provider.");
+    }
+  };
+};
 const nowMs = (deps: CalendarDeps): number => (deps.now?.() ?? new Date()).getTime();
 
 export const oauthRedirectUri = (deps: Pick<CalendarDeps, "publicUrl">, provider: OAuthProvider) =>
@@ -460,6 +477,35 @@ export async function setSimulatedBusy(
   });
 }
 
+/** A re-encrypted row still holds the token used; any other value is newer, and stays. */
+async function saveRefreshedTokens(
+  connection: ConnectionRow,
+  usedRefreshToken: string,
+  tokens: OAuthTokens,
+  deps: CalendarDeps,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    const where = and(
+      eq(schedulingCalendarConnection.id, connection.id),
+      eq(schedulingCalendarConnection.organizationId, connection.organizationId),
+    );
+    const [current] = await tx
+      .select({ stored: schedulingCalendarConnection.encryptedCredentials })
+      .from(schedulingCalendarConnection)
+      .where(where)
+      .for("update");
+    if (!current?.stored) return;
+    if (current.stored !== connection.encryptedCredentials) {
+      const held = JSON.parse(decryptSecret(current.stored, deps.secretsKeys)) as OAuthTokens;
+      if (held.refreshToken !== usedRefreshToken) return;
+    }
+    await tx
+      .update(schedulingCalendarConnection)
+      .set({ encryptedCredentials: encryptCredentials(tokens, deps.secretsKeys) })
+      .where(where);
+  });
+}
+
 /** A client for a connection, refreshing its access first when it's close to expiring. */
 export async function clientFor(
   connection: ConnectionRow,
@@ -480,14 +526,15 @@ export async function clientFor(
   const provider = connection.provider;
   let tokens = JSON.parse(stored) as OAuthTokens;
   if (tokens.expiresAtMs - REFRESH_MARGIN_MS <= nowMs(deps)) {
-    if (!tokens.refreshToken) {
+    const usedRefreshToken = tokens.refreshToken;
+    if (!usedRefreshToken) {
       throw new CalendarError("auth", "no_refresh_token", "Calendar access has expired.");
     }
     try {
       tokens = await refreshTokens({
         provider,
         app: appOf(deps, provider),
-        refreshToken: tokens.refreshToken,
+        refreshToken: usedRefreshToken,
         fetcher: fetcherOf(deps),
         nowMs: nowMs(deps),
       });
@@ -507,17 +554,7 @@ export async function clientFor(
       }
       throw error;
     }
-    // Whoever wrote since keeps their value; this refresh's tokens still work for this run.
-    await db
-      .update(schedulingCalendarConnection)
-      .set({ encryptedCredentials: encryptCredentials(tokens, deps.secretsKeys) })
-      .where(
-        and(
-          eq(schedulingCalendarConnection.id, connection.id),
-          eq(schedulingCalendarConnection.organizationId, connection.organizationId),
-          eq(schedulingCalendarConnection.encryptedCredentials, connection.encryptedCredentials),
-        ),
-      );
+    await saveRefreshedTokens(connection, usedRefreshToken, tokens, deps);
   }
   return oauthClient(provider, tokens.accessToken, deps);
 }

@@ -31,6 +31,7 @@ export function simulatedCalendarClient(): CalendarClient {
     }),
     updateEvent: async (_calendarId, providerEventId) => ({ providerEventId, meetingUrl: null }),
     deleteEvent: async () => {},
+    deleteEventByKey: async () => {},
     getEvent: async () => null,
   };
 }

@@ -1,12 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import { createHash, createHmac } from "node:crypto";
 import { db, schema } from "@coss/db";
+import { uniqueSuffix } from "@coss/db/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
-import { secretsKeyRing } from "@coss/webhooks";
+import {
+  decryptSecret,
+  encryptSecret,
+  reencryptWebhookSecrets,
+  secretsKeyRing,
+} from "@coss/webhooks";
 import { and, eq } from "drizzle-orm";
 import {
   type CalendarDeps,
   cancelBooking,
+  clientFor,
   completeCalendarAuthorization,
   connectSimulated,
   createBooking,
@@ -267,6 +274,142 @@ describe("meetings", () => {
     expect((after.location as { url: string | null }).url).toContain("zoom.us/j/");
   });
 
+  const foreignMeeting = {
+    id: 1,
+    topic: "Appointment",
+    start_time: "2031-01-06T09:00:00Z",
+    duration: 30,
+    join_url: "https://zoom.us/j/someone-elses",
+  };
+
+  const expireRetry = (bookingId: string) =>
+    db
+      .update(schema.schedulingCalendarEvent)
+      .set({ leaseUntil: null, nextAttemptAt: NOW })
+      .where(eq(schema.schedulingCalendarEvent.bookingId, bookingId));
+
+  test("another meeting with the same title and time is never adopted", async () => {
+    const { env, host, eventType } = await setUp();
+    const api = new FakeZoomApi();
+    const deps = zoomDeps(api);
+    await connectZoom(env, host.id, deps);
+    api.meetings.set(1, { ...foreignMeeting });
+    const { booking } = await book(env, eventType.id);
+    await runDueCalendarWrites(deps, { scope: scopeOf(env) });
+    const after = await getBooking(env, booking.id, testSchedulingDeps());
+    expect((after.location as { url: string }).url).not.toBe(foreignMeeting.join_url);
+    expect(api.meetings.size).toBe(2);
+    await cancelBooking(env, booking.id, testSchedulingDeps({ now: () => NOW }), actor);
+    await runDueCalendarWrites(deps, { scope: scopeOf(env) });
+    expect([...api.meetings.keys()]).toEqual([1]);
+  });
+
+  test("the marker says nothing about the booking and survives Zoom's list", async () => {
+    const { env, host, eventType } = await setUp();
+    const api = new FakeZoomApi();
+    const deps = zoomDeps(api);
+    await connectZoom(env, host.id, deps);
+    const { booking } = await book(env, eventType.id);
+    await runDueCalendarWrites(deps, { scope: scopeOf(env) });
+    const agenda = String(api.bodies[0]?.agenda);
+    expect(agenda.length).toBeGreaterThan(0);
+    expect(agenda.length).toBeLessThanOrEqual(250);
+    for (const secret of ["Sam", "sam@example.com", booking.id, host.id, env.organizationId]) {
+      expect(agenda).not.toContain(secret);
+    }
+  });
+
+  test("a retry finds its meeting past the first page of the list", async () => {
+    const { env, host, eventType } = await setUp();
+    const api = new FakeZoomApi();
+    api.listPageSize = 2;
+    await connectZoom(env, host.id, zoomDeps(api));
+    for (const id of [1, 2, 3]) {
+      api.meetings.set(id, { ...foreignMeeting, id, start_time: "2031-02-01T09:00:00Z" });
+    }
+    const { booking } = await book(env, eventType.id);
+    api.loseNextAnswer = true;
+    await runDueCalendarWrites(zoomDeps(api), { scope: scopeOf(env) });
+    await expireRetry(booking.id);
+    await runDueCalendarWrites(zoomDeps(api), { scope: scopeOf(env) });
+    expect(api.meetings.size).toBe(4);
+    const after = await getBooking(env, booking.id, testSchedulingDeps());
+    expect((after.location as { url: string }).url).toContain("/j/1000");
+  });
+
+  test("a lost answer then a move puts the one meeting at the new time", async () => {
+    const { env, host, eventType } = await setUp();
+    const api = new FakeZoomApi();
+    await connectZoom(env, host.id, zoomDeps(api));
+    const { booking } = await book(env, eventType.id);
+    api.loseNextAnswer = true;
+    await runDueCalendarWrites(zoomDeps(api), { scope: scopeOf(env) });
+    await rescheduleBooking(
+      env,
+      booking.id,
+      { startMs: at("11:00") },
+      testSchedulingDeps({ now: () => NOW }),
+      actor,
+    );
+    await expireRetry(booking.id);
+    await runDueCalendarWrites(zoomDeps(api), { scope: scopeOf(env) });
+    expect(api.meetings.size).toBe(1);
+    expect([...api.meetings.values()][0]?.start_time).toBe("2031-01-06T11:00:00Z");
+  });
+
+  test("a lost answer then a cancel deletes that meeting and no other", async () => {
+    const { env, host, eventType } = await setUp();
+    const api = new FakeZoomApi();
+    await connectZoom(env, host.id, zoomDeps(api));
+    api.meetings.set(1, { ...foreignMeeting });
+    const { booking } = await book(env, eventType.id);
+    api.loseNextAnswer = true;
+    await runDueCalendarWrites(zoomDeps(api), { scope: scopeOf(env) });
+    expect(api.meetings.size).toBe(2);
+    await cancelBooking(env, booking.id, testSchedulingDeps({ now: () => NOW }), actor);
+    await expireRetry(booking.id);
+    await runDueCalendarWrites(zoomDeps(api), { scope: scopeOf(env) });
+    expect([...api.meetings.keys()]).toEqual([1]);
+  });
+
+  test("a stale worker's meeting doesn't replace the one a patient was sent", async () => {
+    const { env, host, eventType } = await setUp();
+    const api = new FakeZoomApi();
+    const later = () => new Date(NOW.getTime() + 3 * 60_000);
+    await connectZoom(env, host.id, zoomDeps(api));
+    const { booking } = await book(env, eventType.id);
+    let arrived = () => {};
+    let release = () => {};
+    const reached = new Promise<void>((resolve) => {
+      arrived = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let holding = true;
+    const stale: CalendarDeps = {
+      ...zoomDeps(api),
+      fetcher: async (url, init) => {
+        if (holding && init?.method === "POST" && url.endsWith("/users/me/meetings")) {
+          holding = false;
+          arrived();
+          await gate;
+        }
+        return api.fetch(url, init);
+      },
+    };
+    const workerA = runDueCalendarWrites(stale, { scope: scopeOf(env) });
+    await reached;
+    await runDueCalendarWrites(zoomDeps(api, later), { scope: scopeOf(env) });
+    const sent = (await getBooking(env, booking.id, testSchedulingDeps())).location;
+    expect(api.meetings.size).toBe(1);
+    release();
+    await workerA;
+    expect((await getBooking(env, booking.id, testSchedulingDeps())).location).toEqual(sent);
+    expect(api.meetings.size).toBe(1);
+    expect((sent as { url: string }).url).toContain(String([...api.meetings.keys()][0]));
+  });
+
   test("a pool that changes host gets the new host a new meeting", async () => {
     const { env, host } = await setUp();
     const other = await hostWithHours(env);
@@ -396,6 +539,111 @@ describe("losing access", () => {
     await clientFor(stale as NonNullable<typeof stale>, zoomDeps(api, later));
     const [connection] = await listConnections(env, host.id);
     expect(connection?.status).toBe("active");
+  });
+
+  describe("a refresh racing another write of the credentials", () => {
+    const OLD_KEY = Buffer.alloc(32, 41);
+    const NEW_KEY = Buffer.alloc(32, 42);
+    const later = () => new Date(NOW.getTime() + 2 * 3_600_000);
+    const muchLater = () => new Date(NOW.getTime() + 4 * 3_600_000);
+    const stored = async (hostId: string) => {
+      const [row] = await db
+        .select()
+        .from(schema.schedulingCalendarConnection)
+        .where(eq(schema.schedulingCalendarConnection.hostId, hostId));
+      return row as NonNullable<typeof row>;
+    };
+
+    function racingDeps(api: FakeZoomApi, onRefresh: () => Promise<void>, now: () => Date) {
+      let raced = false;
+      return {
+        ...zoomDeps(api, now),
+        secretsKeys: secretsKeyRing([NEW_KEY, OLD_KEY]),
+        fetcher: async (url: string, init?: RequestInit) => {
+          const refreshing = url.includes("zoom.us/oauth/token") && !raced;
+          if (refreshing) {
+            raced = true;
+            await onRefresh();
+          }
+          return api.fetch(url, init);
+        },
+      } satisfies CalendarDeps;
+    }
+
+    async function connected() {
+      const { env, host } = await setUp();
+      const api = new FakeZoomApi();
+      // Deauthorization looks across tenants, and these use keys other tests don't hold.
+      api.userId = `zoom_user_${uniqueSuffix()}`;
+      await connectZoom(env, host.id, {
+        ...zoomDeps(api),
+        secretsKeys: secretsKeyRing([OLD_KEY]),
+      });
+      return { env, host, api };
+    }
+
+    test("re-encryption can't lose a rotated one-time refresh token", async () => {
+      const { env, host, api } = await connected();
+      const keys = secretsKeyRing([NEW_KEY, OLD_KEY]);
+      const stale = await stored(host.id);
+      const deps = racingDeps(
+        api,
+        async () => {
+          const result = await reencryptWebhookSecrets({ keys, scope: scopeOf(env) });
+          expect(result.reencrypted).toBeGreaterThanOrEqual(1);
+        },
+        later,
+      );
+      await clientFor(stale, deps);
+      const held = JSON.parse(
+        decryptSecret((await stored(host.id)).encryptedCredentials as string, keys),
+      ) as { refreshToken: string };
+      expect(held.refreshToken).toBe(api.refreshToken);
+      await clientFor(await stored(host.id), { ...deps, now: muchLater });
+      expect((await stored(host.id)).status).toBe("active");
+    });
+
+    test("a reconnect during the refresh keeps the newer credentials", async () => {
+      const { host, api } = await connected();
+      const keys = secretsKeyRing([NEW_KEY, OLD_KEY]);
+      const stale = await stored(host.id);
+      const reconnected = {
+        accessToken: "reconnected",
+        refreshToken: "reconnected-refresh",
+        expiresAtMs: later().getTime() + 3_600_000,
+      };
+      const deps = racingDeps(
+        api,
+        async () => {
+          await db
+            .update(schema.schedulingCalendarConnection)
+            .set({ encryptedCredentials: encryptSecret(JSON.stringify(reconnected), keys) })
+            .where(eq(schema.schedulingCalendarConnection.id, stale.id));
+        },
+        later,
+      );
+      await clientFor(stale, deps);
+      expect(
+        JSON.parse(decryptSecret((await stored(host.id)).encryptedCredentials as string, keys)),
+      ).toEqual(reconnected);
+    });
+
+    test("a disconnect during the refresh isn't undone", async () => {
+      const { host, api } = await connected();
+      const stale = await stored(host.id);
+      const deps = racingDeps(
+        api,
+        async () => {
+          await db
+            .update(schema.schedulingCalendarConnection)
+            .set({ encryptedCredentials: null })
+            .where(eq(schema.schedulingCalendarConnection.id, stale.id));
+        },
+        later,
+      );
+      await clientFor(stale, deps);
+      expect((await stored(host.id)).encryptedCredentials).toBeNull();
+    });
   });
 
   test("a connection nobody's used is refreshed before its token expires", async () => {

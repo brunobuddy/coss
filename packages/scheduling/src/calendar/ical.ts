@@ -6,9 +6,28 @@
 import ICAL from "ical.js";
 import type { Interval } from "../engine/intervals.ts";
 
-const EXCESSIVE_FREQUENCIES = ["HOURLY", "MINUTELY", "SECONDLY"];
-const CLIP_MARGIN_MS = 86_400_000;
-const MAX_ITERATIONS = 20_000;
+// One rule's limits: past either, the rest of its span counts as busy.
+const MAX_CYCLES_PER_EVENT = 300_000;
+const MAX_OCCURRENCES_PER_EVENT = 5_000;
+// Past this a read fails, so a hostile server only hides its own host.
+const MAX_CYCLES_PER_READ = 3_000_000;
+
+/** Calendar data that says nothing about when its host is busy, so the read can't be trusted. */
+export class UnreadableCalendarData extends Error {}
+
+export type ExpansionBudget = { cycles: number };
+export const newExpansionBudget = (): ExpansionBudget => ({ cycles: MAX_CYCLES_PER_READ });
+
+class RuleTooExpensive extends Error {}
+
+let cyclesLeft = Number.POSITIVE_INFINITY;
+
+// ical.js 2.2.1 can spin forever in `next()`, and this check is in its one loop (AGENTS.md).
+const checkContractingRules = ICAL.RecurIterator.prototype.check_contracting_rules;
+ICAL.RecurIterator.prototype.check_contracting_rules = function (this: ICAL.RecurIterator) {
+  if (--cyclesLeft < 0) throw new RuleTooExpensive();
+  return checkContractingRules.call(this);
+};
 
 function countsAsBusy(event: ICAL.Component): boolean {
   const transparency = String(event.getFirstPropertyValue("transp") ?? "OPAQUE").toUpperCase();
@@ -23,63 +42,142 @@ function register(root: ICAL.Component): void {
   }
 }
 
-/** Instances overlapping `[fromMs, toMs)`. Data that can't be parsed gives none for that object. */
-export function busyFromIcs(ics: string, fromMs: number, toMs: number): Interval[] {
-  let root: ICAL.Component;
-  try {
-    root = new ICAL.Component(ICAL.parse(ics));
-    register(root);
-  } catch {
-    return [];
+function instantOf(time: ICAL.Time): number {
+  const ms = time.toJSDate().getTime();
+  if (Number.isNaN(ms)) throw new UnreadableCalendarData();
+  return ms;
+}
+
+function spanOf(event: ICAL.Event): Interval {
+  if (!event.startDate) throw new UnreadableCalendarData();
+  return { startMs: instantOf(event.startDate), endMs: instantOf(event.endDate) };
+}
+
+/** When a rule can last occur, if it says. `COUNT` doesn't without expanding it. */
+function lastOccurrenceMs(event: ICAL.Event): number {
+  const rules = event.component
+    .getAllProperties("rrule")
+    .map((property) => property.getFirstValue() as ICAL.Recur);
+  if (event.component.hasProperty("rdate") || rules.length === 0) return Number.POSITIVE_INFINITY;
+  let last = Number.NEGATIVE_INFINITY;
+  for (const rule of rules) {
+    if (!rule.until) return Number.POSITIVE_INFINITY;
+    last = Math.max(last, instantOf(rule.until));
   }
+  return last;
+}
+
+function expandRecurring(
+  master: ICAL.Component,
+  event: ICAL.Event,
+  overrides: readonly ICAL.Event[],
+  fromMs: number,
+  toMs: number,
+  budget: ExpansionBudget,
+): Interval[] {
   const slots: Interval[] = [];
-  // A moved or cancelled occurrence is its own VEVENT, linked by RECURRENCE-ID.
-  const masters = root.getAllSubcomponents("vevent");
-  const exceptions = masters.filter((vevent) => vevent.hasProperty("recurrence-id"));
-  for (const vevent of masters) {
-    if (vevent.hasProperty("recurrence-id")) continue;
-    let event: ICAL.Event;
-    try {
-      event = new ICAL.Event(vevent);
-    } catch {
-      continue;
+  const add = (span: Interval) => {
+    if (span.startMs < toMs && span.endMs > fromMs) slots.push(span);
+  };
+  const addOverrides = () => {
+    for (const override of overrides) {
+      if (countsAsBusy(override.component)) add(spanOf(override));
     }
-    for (const exception of exceptions) {
-      if (exception.getFirstPropertyValue("uid") === event.uid) {
-        event.relateException(exception);
+  };
+  const base = spanOf(event);
+  const masterBusy = countsAsBusy(master);
+  if (!masterBusy && overrides.length === 0) return slots;
+  // An override can land far from its place in the series.
+  let moved = 0;
+  let longest = base.endMs - base.startMs;
+  for (const override of overrides) {
+    const span = spanOf(override);
+    moved = Math.max(moved, Math.abs(span.startMs - instantOf(override.recurrenceId)));
+    longest = Math.max(longest, span.endMs - span.startMs);
+  }
+  const allowance = Math.min(MAX_CYCLES_PER_EVENT, budget.cycles);
+  if (allowance <= 0) throw new UnreadableCalendarData();
+  cyclesLeft = allowance;
+  let reachedMs = base.startMs;
+  let occurrences = 0;
+  try {
+    const iterator = event.iterator();
+    for (;;) {
+      const next = iterator.next();
+      if (!next) return slots;
+      reachedMs = instantOf(next);
+      if (reachedMs - moved >= toMs) return slots;
+      if (reachedMs + moved + longest <= fromMs) continue;
+      const details = event.getOccurrenceDetails(next);
+      if (!countsAsBusy(details.item.component)) continue;
+      add({ startMs: instantOf(details.startDate), endMs: instantOf(details.endDate) });
+      if (++occurrences >= MAX_OCCURRENCES_PER_EVENT) throw new RuleTooExpensive();
+    }
+  } catch {
+    // Its start and end are known, so this bounds it rather than failing the whole read.
+    if (masterBusy) {
+      add({
+        startMs: Math.max(fromMs, reachedMs - moved),
+        endMs: Math.min(toMs, lastOccurrenceMs(event) + moved + longest),
+      });
+    }
+    addOverrides();
+    return slots;
+  } finally {
+    budget.cycles -= allowance - Math.max(cyclesLeft, 0);
+    cyclesLeft = Number.POSITIVE_INFINITY;
+  }
+}
+
+/** Instances overlapping `[fromMs, toMs)`. `UnreadableCalendarData` means a failed read. */
+export function busyFromIcs(
+  ics: string,
+  fromMs: number,
+  toMs: number,
+  budget: ExpansionBudget = newExpansionBudget(),
+): Interval[] {
+  try {
+    const root = new ICAL.Component(ICAL.parse(ics));
+    if (root.name !== "vcalendar") throw new UnreadableCalendarData();
+    register(root);
+    const slots: Interval[] = [];
+    const add = (span: Interval) => {
+      if (span.startMs < toMs && span.endMs > fromMs) slots.push(span);
+    };
+    // A moved or cancelled occurrence is its own VEVENT, linked by RECURRENCE-ID.
+    const vevents = root.getAllSubcomponents("vevent");
+    const masters = vevents.filter((vevent) => !vevent.hasProperty("recurrence-id"));
+    const uidOf = (vevent: ICAL.Component) => vevent.getFirstPropertyValue("uid");
+    const masterUids = new Set(masters.map(uidOf));
+    for (const vevent of vevents) {
+      // Someone invited to one occurrence gets it alone, with no series to hang it on.
+      if (vevent.hasProperty("recurrence-id") && !masterUids.has(uidOf(vevent))) {
+        if (countsAsBusy(vevent)) add(spanOf(new ICAL.Event(vevent)));
       }
     }
-    if (!event.startDate || !event.endDate) continue;
-    if (!event.isRecurring()) {
-      if (!countsAsBusy(vevent)) continue;
-      const startMs = event.startDate.toJSDate().getTime();
-      const endMs = event.endDate.toJSDate().getTime();
-      if (startMs < toMs && endMs > fromMs) slots.push({ startMs, endMs });
-      continue;
-    }
-    const types = event.getRecurrenceTypes() as unknown as Record<string, boolean>;
-    if (EXCESSIVE_FREQUENCIES.some((frequency) => types[frequency])) continue;
-    const iterator = event.iterator();
-    const clipFrom = fromMs - CLIP_MARGIN_MS;
-    for (let count = 0; count < MAX_ITERATIONS; count++) {
-      const next = iterator.next();
-      if (!next) break;
-      const at = next.toJSDate().getTime();
-      if (at >= toMs) break;
-      if (at < clipFrom) continue;
-      let details: ReturnType<ICAL.Event["getOccurrenceDetails"]>;
-      try {
-        details = event.getOccurrenceDetails(next);
-      } catch {
+    for (const master of masters) {
+      const event = new ICAL.Event(master);
+      const overrides: ICAL.Event[] = [];
+      for (const vevent of vevents) {
+        if (vevent.hasProperty("recurrence-id") && uidOf(vevent) === event.uid) {
+          event.relateException(vevent);
+          overrides.push(new ICAL.Event(vevent));
+        }
+      }
+      if (event.isRecurring()) {
+        slots.push(...expandRecurring(master, event, overrides, fromMs, toMs, budget));
         continue;
       }
-      if (!countsAsBusy(details.item.component)) continue;
-      const startMs = details.startDate.toJSDate().getTime();
-      const endMs = details.endDate.toJSDate().getTime();
-      if (startMs < toMs && endMs > fromMs) slots.push({ startMs, endMs });
+      if (countsAsBusy(master)) add(spanOf(event));
+      for (const override of overrides) {
+        if (countsAsBusy(override.component)) add(spanOf(override));
+      }
     }
+    return slots;
+  } catch (error) {
+    if (error instanceof UnreadableCalendarData) throw error;
+    throw new UnreadableCalendarData();
   }
-  return slots;
 }
 
 const ICS_DATE = (ms: number) =>

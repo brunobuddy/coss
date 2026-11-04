@@ -127,6 +127,8 @@ If that host has just been taken, you get `slot_unavailable`: book your next cho
 - **It never falls back.** If every match is taken, the time isn't offered, even if another host is free. A patient is
   never booked with someone who doesn't match.
 
+If a pool also has `required` hosts, they're booked with a matching member, never alone in place of one.
+
 If nobody matches, there are no times to offer, and a booking answers `slot_unavailable` with the reason `no_hosts`.
 
 ## When things change

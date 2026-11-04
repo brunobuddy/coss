@@ -55,9 +55,11 @@ In a sandbox, a host with a `simulated` calendar gets a pretend link, so you can
 
 ## What Zoom receives, and what coss.com keeps
 
-Meetings have the title "Appointment" and a time, use a waiting room and aren't recorded automatically. No attendee
-details are sent to Zoom. coss.com stores the Zoom user ID, access tokens (encrypted) and each meeting's ID and
-link, and doesn't read other meetings' contents. See the [Privacy Policy](/legal/privacy).
+Meetings have the title "Appointment", a time and a description holding only an opaque reference, which is how coss.com
+recognizes its own meetings. They use a waiting room and aren't recorded automatically. No attendee details are sent to
+Zoom, and a host who edits that description may end up with a second meeting if a create was being retried. coss.com stores the Zoom user ID, access tokens (encrypted) and each meeting's ID and
+link. To find its own meetings it lists the host's meetings and compares their descriptions, keeping nothing from any
+other meeting. See the [Privacy Policy](/legal/privacy).
 
 Zoom is the host's own account. If a booking involves health data, check that it's covered by their agreement with
 Zoom.

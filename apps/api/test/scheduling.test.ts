@@ -411,6 +411,130 @@ describe("client API", () => {
     expect(full.hosts).toEqual([cardio.id]);
   });
 
+  test("a booking says whether the attendee will be emailed, so the page never promises it wrongly", async () => {
+    const s = await setUp();
+    const book = async (start: string, extra: object = {}) => {
+      const { token } = await bookerSession(s, extra);
+      const res = await client(s.app, token, "POST", "/bookings", {
+        start,
+        ...("attendee" in extra
+          ? {}
+          : { attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" } }),
+      });
+      expect(res.status).toBe(201);
+      return ((await res.json()) as { attendee_emailed: boolean }).attendee_emailed;
+    };
+    expect(await book(at("09:00"))).toBe(true);
+    expect(
+      await book(at("10:00"), { attendee: { uid: "no_address", name: "Sam", time_zone: "UTC" } }),
+    ).toBe(false);
+    await call(s.app, s.key, "PATCH", "/settings", {
+      notifications: { confirmed: { email_attendee: false } },
+    });
+    expect(await book(at("11:00"))).toBe(false);
+  });
+
+  test("a browser chooses among the locations offered, but can't supply its own", async () => {
+    const s = await setUp();
+    const meeting = (await (
+      await call(s.app, s.key, "POST", "/event_types", {
+        title: "Video visit",
+        duration_minutes: 30,
+        hosts: [{ host: s.host }],
+        locations: [
+          { type: "link", url: "https://trusted.example/room" },
+          { type: "phone", number: null },
+        ],
+      })
+    ).json()) as { id: string };
+    const { token } = await bookerSession({ ...s, eventType: meeting.id });
+    const book = async (start: string, location: object) => {
+      const res = await client(s.app, token, "POST", "/bookings", {
+        start,
+        location,
+        attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+      });
+      expect(res.status).toBe(201);
+      return ((await res.json()) as { location: unknown }).location;
+    };
+    expect(await book(at("09:00"), { type: "link", url: "https://attacker.example" })).toEqual({
+      type: "link",
+      url: "https://trusted.example/room",
+    });
+    expect(await book(at("10:00"), { type: "phone", number: "+15551234567" })).toEqual({
+      type: "phone",
+      number: "+15551234567",
+    });
+  });
+
+  test("a host's portal lists coming bookings soonest first, leaving out cancelled ones", async () => {
+    const s = await setUp();
+    const ids: string[] = [];
+    for (const [index, time] of ["11:00", "09:00", "10:00"].entries()) {
+      const res = await call(
+        s.app,
+        s.key,
+        "POST",
+        "/bookings",
+        booking(s.eventType, at(time), {
+          attendee: { uid: `p${index}`, name: "Sam", time_zone: "UTC" },
+        }),
+      );
+      ids.push(((await res.json()) as { id: string }).id);
+    }
+    await call(s.app, s.key, "POST", `/bookings/${ids[0]}/cancel`);
+    const { token } = (await (
+      await call(s.app, s.key, "POST", `/hosts/${s.host}/sessions`, {})
+    ).json()) as { token: string };
+    const page = (await (await client(s.app, token, "GET", "/host/bookings")).json()) as {
+      data: { id: string }[];
+      next_cursor: string | null;
+    };
+    expect(page.data.map((item) => item.id)).toEqual([ids[1] as string, ids[2] as string]);
+    expect(page.next_cursor).toBeNull();
+  });
+
+  test("a manage page offers the booked hosts' times, with a required host in the pool", async () => {
+    const s = await setUp();
+    for (const [uid, start, end] of [
+      ["member", "09:00", "12:00"],
+      ["other", "14:00", "15:00"],
+    ] as const) {
+      await call(s.app, s.key, "POST", "/hosts", { uid, name: uid, time_zone: "UTC" });
+      await call(s.app, s.key, "POST", `/hosts/${uid}/schedules`, {
+        rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start, end }],
+      });
+    }
+    const pool = (await (
+      await call(s.app, s.key, "POST", "/event_types", {
+        title: "Supervised",
+        kind: "pool",
+        duration_minutes: 30,
+        hosts: [{ host: s.host, role: "required" }, { host: "member" }, { host: "other" }],
+      })
+    ).json()) as { id: string };
+    const created = (await (
+      await call(
+        s.app,
+        s.key,
+        "POST",
+        "/bookings",
+        booking(pool.id, at("09:00"), { host: "member" }),
+      )
+    ).json()) as { id: string };
+    const manage = (await (
+      await call(s.app, s.key, "POST", `/bookings/${created.id}/manage_sessions`)
+    ).json()) as { token: string };
+    const times = async (from: string, to: string) =>
+      (
+        (await (
+          await client(s.app, manage.token, "GET", `/booking/slots?start=${at(from)}&end=${at(to)}`)
+        ).json()) as { data: unknown[] }
+      ).data.length;
+    expect(await times("10:00", "11:00")).toBeGreaterThan(0);
+    expect(await times("13:00", "16:00")).toBe(0);
+  });
+
   test("a fixed attendee can't be replaced from the browser", async () => {
     const s = await setUp();
     const { token } = await bookerSession(s, {

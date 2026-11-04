@@ -101,6 +101,7 @@ function QuestionField(props: {
         id={id}
         onChange={(event) => onChange(event.target.value)}
         required={question.required}
+        value={single ?? ""}
       />
     );
   }
@@ -168,18 +169,17 @@ function QuestionField(props: {
       onChange={(event) => onChange(event.target.value)}
       required={question.required}
       type={inputType}
+      value={single ?? ""}
     />
   );
 }
 
-function Confirmed(props: {
-  session: Session;
-  done: { status: string; start: string };
-  when: string;
-  timeZone: string;
-}) {
+type Done = { status: string; start: string; attendee_emailed: boolean };
+
+function Confirmed(props: { session: Session; done: Done; when: string; timeZone: string }) {
   const { session, done, when, timeZone } = props;
   const pending = done.status === "pending_approval";
+  const emailed = done.attendee_emailed && !session.sandbox;
   return (
     <main className="mx-auto flex max-w-lg flex-col gap-4 px-4 py-6 sm:py-12">
       {session.sandbox ? <TestModeNotice /> : null}
@@ -190,11 +190,15 @@ function Confirmed(props: {
             <CheckIcon aria-hidden="true" className="size-5" />
           </span>
           <PageTitle>{pending ? "Request sent" : "You're booked"}</PageTitle>
-          <p className="text-pretty text-muted-foreground text-sm">
-            {pending
-              ? "You'll get an email once it's approved."
-              : "A confirmation is on its way, with a link to reschedule or cancel."}
-          </p>
+          {pending || emailed ? (
+            <p className="text-pretty text-muted-foreground text-sm">
+              {!pending
+                ? "A confirmation is on its way, with a link to reschedule or cancel."
+                : emailed
+                  ? "You'll get an email once it's approved."
+                  : "It's waiting to be approved."}
+            </p>
+          ) : null}
         </div>
         <DetailList>
           <Detail icon={CalendarIcon} label="What">
@@ -224,7 +228,7 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [submitting, setSubmitting] = useState(false);
   const [lostSlot, setLostSlot] = useState(false);
-  const [done, setDone] = useState<{ status: string; start: string } | null>(null);
+  const [done, setDone] = useState<Done | null>(null);
   const [timeZone, setTimeZone] = useState(browserTimeZone);
   // One attempt's key, new for each chosen time: a double click or a retry can't book twice.
   const [attemptKey, setAttemptKey] = useState(() => crypto.randomUUID());
@@ -265,7 +269,7 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
     setSubmitting(true);
     setFormProblem(null);
     try {
-      const booking = await call<{ id: string; status: string; start: string }>("/bookings", {
+      const booking = await call<Done & { id: string }>("/bookings", {
         method: "POST",
         idempotencyKey: attemptKey,
         body: {
@@ -277,7 +281,7 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
           ...(Object.keys(answers).length > 0 ? { answers } : {}),
         },
       });
-      setDone({ status: booking.status, start: booking.start });
+      setDone(booking);
       postToHost({ type: "booked", booking_id: booking.id, status: booking.status });
     } catch (error) {
       if (error instanceof ClientApiError && error.detail.code === "slot_unavailable") {

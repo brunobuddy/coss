@@ -21,7 +21,11 @@ export function expandRecurrence(input: {
   const occurrences: number[] = [];
   if (rule.frequency === "weekly") {
     for (let index = 0; index < rule.count; index++) {
-      occurrences.push(wallClockToInstant(wall + index * rule.interval * 7 * DAY_MS, timeZone));
+      occurrences.push(
+        index === 0
+          ? startMs
+          : wallClockToInstant(wall + index * rule.interval * 7 * DAY_MS, timeZone),
+      );
     }
     return occurrences;
   }
@@ -35,7 +39,7 @@ export function expandRecurrence(input: {
       dayOfMonth,
     );
     if (new Date(candidate).getUTCDate() !== dayOfMonth) continue;
-    occurrences.push(wallClockToInstant(candidate + timeOfDay, timeZone));
+    occurrences.push(step === 0 ? startMs : wallClockToInstant(candidate + timeOfDay, timeZone));
   }
   return occurrences;
 }

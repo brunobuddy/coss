@@ -165,7 +165,9 @@ export async function loadHostInputs(
           // would compare the wrong `id`.
           seats: sql<number>`(select count(*)::int from scheduling_booking b
             where b.group_session_id = scheduling_group_session.id
-              and (b.status in ('confirmed', 'pending_approval')
+              and (b.status = 'confirmed'
+                or (b.status = 'pending_approval'
+                  and (b.approval_expires_at is null or b.approval_expires_at > clock_timestamp()))
                 or (b.status = 'held' and b.hold_expires_at > clock_timestamp())))`,
         })
         .from(schedulingGroupSession)
@@ -415,9 +417,11 @@ export async function candidatesOf(
   }
   const required: Candidates["required"] = [];
   const members: Candidates["members"] = [];
+  let hasMembers = false;
   for (const host of hosts.values()) {
-    if (host.status !== "active") continue;
     const membership = byHost.get(host.id) ?? null;
+    if (membership?.role !== "required") hasMembers = true;
+    if (host.status !== "active") continue;
     if (membership?.role === "required") {
       required.push({ host, membership });
       continue;
@@ -426,6 +430,8 @@ export async function candidatesOf(
     if (!attributesMatch(host.attributes, narrow.attributes)) continue;
     members.push({ host, membership });
   }
+  // A pool's required hosts come with a member: they're never booked alone in place of one.
+  if (hasMembers && members.length === 0) return { required: [], members };
   return { required, members };
 }
 
@@ -495,6 +501,7 @@ export async function listEventTypeSlots(
     toMs: number;
     nowMs: number;
     hostRef?: string | undefined;
+    hostRefs?: readonly string[] | undefined;
     attributes?: Record<string, string | string[]> | undefined;
     durationMinutes?: number | undefined;
   },
@@ -512,6 +519,7 @@ export async function listEventTypeSlots(
   }
   const candidates = await candidatesOf(db, scope, eventType, {
     hostRef: input.hostRef,
+    hostRefs: input.hostRefs,
     attributes: input.attributes,
   });
   const all = [...candidates.required, ...candidates.members];

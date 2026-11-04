@@ -186,3 +186,21 @@ test("leftovers go in batches, and what's still in use stays", async () => {
   expect(later[2]).toBe(2);
   expect(await bucketsOf()).toHaveLength(2);
 });
+
+test("redaction leaves a booking alone if it moved into the future meanwhile", async () => {
+  const { env, booking, scope } = await booked();
+  const late = new Date(START + (RETENTION_DAYS.schedulingPersonalData + 1) * DAY);
+  const moved = new Date(late.getTime() + 30 * DAY);
+  let redacting: Promise<number> | undefined;
+  await db.transaction(async (tx) => {
+    await tx
+      .update(schema.schedulingBooking)
+      .set({ startAt: moved, endAt: new Date(moved.getTime() + 1_800_000) })
+      .where(eq(schema.schedulingBooking.id, booking.id));
+    redacting = redactExpiredBookings({ now: late, scope });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  });
+  await redacting;
+  const after = await getBooking(env, booking.id, deps);
+  expect(after.attendees[0]?.name).toBe("Sam");
+});

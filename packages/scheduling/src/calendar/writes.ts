@@ -9,7 +9,9 @@ import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
-import { CalendarError, type CalendarEventWrite } from "./client.ts";
+import { confirmedSeats, locationOfSession } from "../group-sessions.ts";
+import { carryReminders } from "../notifications.ts";
+import { type CalendarClient, CalendarError, type CalendarEventWrite } from "./client.ts";
 import { type CalendarDeps, clientFor, markNeedsReauth } from "./connections.ts";
 import { notZoomMeeting } from "./zoom.ts";
 
@@ -19,11 +21,14 @@ const {
   schedulingCalendar,
   schedulingCalendarConnection,
   schedulingCalendarEvent,
+  schedulingGroupSession,
 } = schema;
 
 type LedgerRow = typeof schedulingCalendarEvent.$inferSelect;
 type BookingRow = typeof schedulingBooking.$inferSelect;
+type SessionRow = typeof schedulingGroupSession.$inferSelect;
 
+// A row's `lease_until` is its fencing token: each claim sets a later one than any before it.
 const LEASE_MS = 2 * 60_000;
 const MAX_ATTEMPTS = 8;
 const MAX_BACKOFF_MS = 6 * 60 * 60_000;
@@ -58,29 +63,49 @@ async function claimDue(now: Date, opts: Scan): Promise<LedgerRow[]> {
       .limit(opts.limit ?? 50)
       .for("update", { skipLocked: true });
     if (due.length === 0) return [];
+    const leaseUntil = new Date(now.getTime() + LEASE_MS);
     await tx
       .update(schedulingCalendarEvent)
-      .set({ leaseUntil: new Date(now.getTime() + LEASE_MS) })
+      .set({ leaseUntil })
       .where(
         inArray(
           schedulingCalendarEvent.id,
           due.map((row) => row.id),
         ),
       );
-    return due;
+    return due.map((row) => ({ ...row, leaseUntil }));
   });
 }
 
-const eventKey = (row: LedgerRow) =>
-  `${row.bookingId}-${row.calendarId}`.replace(/[^a-z0-9_-]/gi, "");
+const stillHeld = (row: LedgerRow) =>
+  and(
+    eq(schedulingCalendarEvent.id, row.id),
+    eq(schedulingCalendarEvent.organizationId, row.organizationId),
+    row.leaseUntil ? eq(schedulingCalendarEvent.leaseUntil, row.leaseUntil) : undefined,
+  );
 
-function conferenceOf(booking: BookingRow): CalendarEventWrite["conference"] {
-  const type = booking.location?.type;
+/** A batch can outlast its lease: each row takes a new one and its latest state. */
+async function renewLease(row: LedgerRow, now: Date): Promise<LedgerRow | null> {
+  const [renewed] = await db
+    .update(schedulingCalendarEvent)
+    .set({ leaseUntil: new Date(now.getTime() + LEASE_MS) })
+    .where(stillHeld(row))
+    .returning();
+  return renewed ?? null;
+}
+
+// A session's event can go and come back, as a new row, while a booking's key lasts for good.
+const eventKey = (row: LedgerRow) =>
+  (row.groupSessionId ? row.id : `${row.bookingId}-${row.calendarId}`).replace(/[^a-z0-9_-]/gi, "");
+
+type Location = BookingRow["location"];
+
+function conferenceOf(location: Location): CalendarEventWrite["conference"] {
+  const type = location?.type;
   return type === "google_meet" || type === "microsoft_teams" || type === "zoom" ? type : null;
 }
 
-function locationText(booking: BookingRow): string | null {
-  const location = booking.location;
+function locationText(location: Location): string | null {
   if (!location) return null;
   if (location.type === "link" || location.type === "zoom") return location.url;
   if (location.type === "phone") return location.number;
@@ -88,7 +113,7 @@ function locationText(booking: BookingRow): string | null {
   return null;
 }
 
-/** Records what happened, only if the row wasn't changed or reclaimed meanwhile. */
+/** Records what happened, only if this worker still holds the row. */
 async function finish(
   row: LedgerRow,
   set: Partial<typeof schedulingCalendarEvent.$inferInsert>,
@@ -96,25 +121,89 @@ async function finish(
   const [updated] = await db
     .update(schedulingCalendarEvent)
     .set({ ...set, leaseUntil: null })
+    .where(stillHeld(row))
+    .returning({ id: schedulingCalendarEvent.id });
+  return Boolean(updated);
+}
+
+/** The lost request may land after the newest write, so the row is written once more. */
+async function redrive(row: LedgerRow, now: Date): Promise<void> {
+  await db
+    .update(schedulingCalendarEvent)
+    .set({
+      desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
+      nextAttemptAt: now,
+      attempts: 0,
+    })
     .where(
       and(
         eq(schedulingCalendarEvent.id, row.id),
         eq(schedulingCalendarEvent.organizationId, row.organizationId),
       ),
-    )
-    .returning({ id: schedulingCalendarEvent.id });
-  return Boolean(updated);
+    );
 }
 
-async function setMeetingLink(booking: BookingRow, url: string, now: Date): Promise<void> {
+/** An event this worker made is spare once the row names another or has gone. */
+async function dropSpareEvent(
+  row: LedgerRow,
+  client: CalendarClient,
+  calendarId: string,
+  providerEventId: string,
+): Promise<void> {
+  const [current] = await db
+    .select({ providerEventId: schedulingCalendarEvent.providerEventId })
+    .from(schedulingCalendarEvent)
+    .where(
+      and(
+        eq(schedulingCalendarEvent.id, row.id),
+        eq(schedulingCalendarEvent.organizationId, row.organizationId),
+      ),
+    );
+  // With no row left, nothing else will ever clean up what this request made.
+  if (!current || (current.providerEventId && current.providerEventId !== providerEventId)) {
+    await client.deleteEvent(calendarId, providerEventId).catch(() => {});
+  }
+}
+
+async function setMeetingLink(
+  booking: BookingRow,
+  hostId: string,
+  url: string,
+  now: Date,
+): Promise<void> {
   const location = booking.location;
   if (!location || location.type === "link") return;
   const zoom = location.type === "zoom";
   await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ location: schedulingBooking.location })
+      .from(schedulingBooking)
+      .where(
+        and(
+          eq(schedulingBooking.id, booking.id),
+          eq(schedulingBooking.organizationId, booking.organizationId),
+        ),
+      )
+      .for("update");
+    const [assigned] = await tx
+      .select({ hostId: schedulingBookingHost.hostId })
+      .from(schedulingBookingHost)
+      .where(
+        and(
+          eq(schedulingBookingHost.bookingId, booking.id),
+          eq(schedulingBookingHost.organizationId, booking.organizationId),
+          eq(schedulingBookingHost.hostId, hostId),
+        ),
+      );
+    // A slow answer for a host who's since been replaced: their meeting isn't this booking's.
+    if (!assigned || current?.location?.type !== location.type) return;
     const [updated] = await tx
       .update(schedulingBooking)
       .set({
-        location: zoom ? { type: "zoom", url } : { type: "link", url },
+        // Remembers where the link came from, for when another host takes the booking.
+        location: zoom
+          ? { type: "zoom", url }
+          : ({ type: "link", url, conference: location.type } as never),
         version: sql`${schedulingBooking.version} + 1`,
       })
       .where(
@@ -125,6 +214,7 @@ async function setMeetingLink(booking: BookingRow, url: string, now: Date): Prom
       )
       .returning();
     if (!updated) return;
+    await carryReminders(tx, updated);
     // The host's calendar event went out without the link.
     if (zoom) {
       await tx
@@ -145,6 +235,53 @@ async function setMeetingLink(booking: BookingRow, url: string, now: Date): Prom
     }
     await announce(tx, updated, "scheduling.booking.location_ready", "Meeting link ready", now);
   });
+}
+
+/** Every confirmed seat gets the session's link, unless they've all left since the write. */
+async function setSessionMeetingLink(session: SessionRow, url: string, now: Date): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [locked] = await tx
+      .select()
+      .from(schedulingGroupSession)
+      .where(
+        and(
+          eq(schedulingGroupSession.id, session.id),
+          eq(schedulingGroupSession.organizationId, session.organizationId),
+        ),
+      )
+      .for("update");
+    if (!locked || locked.meetingUrl === url || locked.location?.type === "link") return;
+    const seats = await confirmedSeats(tx, locked);
+    if (seats.length === 0) return;
+    await tx
+      .update(schedulingGroupSession)
+      .set({ meetingUrl: url })
+      .where(
+        and(
+          eq(schedulingGroupSession.id, locked.id),
+          eq(schedulingGroupSession.organizationId, locked.organizationId),
+        ),
+      );
+    for (const seat of seats) {
+      await announce(tx, seat, "scheduling.booking.location_ready", "Meeting link ready", now);
+    }
+  });
+}
+
+/** Who a ledger row's news is about: its booking, or each confirmed seat of its session. */
+async function bookingsOfRow(tx: Executor, row: LedgerRow): Promise<BookingRow[]> {
+  if (row.groupSessionId) {
+    return confirmedSeats(tx, { id: row.groupSessionId, organizationId: row.organizationId });
+  }
+  return tx
+    .select()
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.id, row.bookingId as string),
+        eq(schedulingBooking.organizationId, row.organizationId),
+      ),
+    );
 }
 
 type WritableEvent =
@@ -203,7 +340,10 @@ export async function announce(
   ]);
 }
 
-async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<void> {
+async function writeOne(claimed: LedgerRow, deps: CalendarDeps): Promise<void> {
+  const now = deps.now?.() ?? new Date();
+  const row = await renewLease(claimed, now);
+  if (!row) return;
   const [target] = await db
     .select({ calendar: schedulingCalendar, connection: schedulingCalendarConnection })
     .from(schedulingCalendar)
@@ -212,27 +352,50 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
       eq(schedulingCalendarConnection.id, schedulingCalendar.connectionId),
     )
     .where(eq(schedulingCalendar.id, row.calendarId));
-  const [booking] = await db
-    .select()
-    .from(schedulingBooking)
-    .where(
-      and(
-        eq(schedulingBooking.id, row.bookingId),
-        eq(schedulingBooking.organizationId, row.organizationId),
-      ),
-    );
-  if (!target || !booking) return;
+  const [booking] = row.bookingId
+    ? await db
+        .select()
+        .from(schedulingBooking)
+        .where(
+          and(
+            eq(schedulingBooking.id, row.bookingId),
+            eq(schedulingBooking.organizationId, row.organizationId),
+          ),
+        )
+    : [];
+  const [session] = row.groupSessionId
+    ? await db
+        .select()
+        .from(schedulingGroupSession)
+        .where(
+          and(
+            eq(schedulingGroupSession.id, row.groupSessionId),
+            eq(schedulingGroupSession.organizationId, row.organizationId),
+          ),
+        )
+    : [];
+  if (!target || !(booking || session)) return;
+  const location = session ? locationOfSession(session) : (booking?.location ?? null);
   const { calendar, connection } = target;
   // Waits for the host to reconnect, without using up attempts.
   if (connection.status !== "active") {
     await finish(row, { nextAttemptAt: new Date(now.getTime() + 15 * 60_000) });
     return;
   }
+  let sent = false;
+  const settle = async (set: Parameters<typeof finish>[1]): Promise<boolean> => {
+    const finished = await finish(row, set);
+    if (!finished && sent) await redrive(row, now);
+    return finished;
+  };
   try {
     const client = await clientFor(connection, deps);
+    sent = true;
     if (row.desiredState === "absent") {
+      // No id doesn't mean no event: a create's answer may have been lost.
       if (row.providerEventId) await client.deleteEvent(calendar.externalId, row.providerEventId);
-      await finish(row, {
+      else await client.deleteEventByKey(calendar.externalId, eventKey(row));
+      await settle({
         appliedVersion: row.desiredVersion,
         providerEventId: null,
         attempts: 0,
@@ -245,28 +408,35 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
       title: NEUTRAL_TITLE,
       startMs: row.desiredStart.getTime(),
       endMs: row.desiredEnd.getTime(),
-      conference: conferenceOf(booking),
-      location: locationText(booking),
+      conference: conferenceOf(location),
+      location: locationText(location),
     };
     const written = row.providerEventId
       ? await client.updateEvent(calendar.externalId, row.providerEventId, event)
       : await client.createEvent(calendar.externalId, event);
-    await finish(row, {
+    const finished = await settle({
       appliedVersion: row.desiredVersion,
       providerEventId: written.providerEventId,
       attempts: 0,
       lastErrorCode: null,
       externalState: "in_sync",
     });
-    if (written.meetingUrl) await setMeetingLink(booking, written.meetingUrl, now);
+    if (!finished) {
+      await dropSpareEvent(row, client, calendar.externalId, written.providerEventId);
+      return;
+    }
+    if (written.meetingUrl) {
+      if (session) await setSessionMeetingLink(session, written.meetingUrl, now);
+      else if (booking) await setMeetingLink(booking, row.hostId, written.meetingUrl, now);
+    }
   } catch (error) {
     if (!(error instanceof CalendarError)) {
-      await finish(row, { nextAttemptAt: new Date(now.getTime() + backoffMs(row.attempts)) });
+      await settle({ nextAttemptAt: new Date(now.getTime() + backoffMs(row.attempts)) });
       throw error;
     }
     if (error.kind === "auth") {
       await markNeedsReauth(connection, error.code, deps);
-      await finish(row, {
+      await settle({
         nextAttemptAt: new Date(now.getTime() + 15 * 60_000),
         lastErrorCode: error.code,
       });
@@ -276,8 +446,8 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
     const exhausted = error.kind === "permanent" || attempts >= MAX_ATTEMPTS;
     if (exhausted) {
       // Given up on this version: the booking stands, and the customer knows.
-      await db.transaction(async (tx) => {
-        await tx
+      const gaveUp = await db.transaction(async (tx) => {
+        const [updated] = await tx
           .update(schedulingCalendarEvent)
           .set({
             appliedVersion: row.desiredVersion,
@@ -285,18 +455,24 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
             lastErrorCode: error.code,
             leaseUntil: null,
           })
-          .where(eq(schedulingCalendarEvent.id, row.id));
-        await announce(
-          tx,
-          booking,
-          "scheduling.booking.calendar_write_failed",
-          "This booking couldn't be written to the host's calendar",
-          now,
-        );
+          .where(stillHeld(row))
+          .returning({ id: schedulingCalendarEvent.id });
+        if (!updated) return false;
+        for (const about of await bookingsOfRow(tx, row)) {
+          await announce(
+            tx,
+            about,
+            "scheduling.booking.calendar_write_failed",
+            "This booking couldn't be written to the host's calendar",
+            now,
+          );
+        }
+        return true;
       });
+      if (!gaveUp && sent) await redrive(row, now);
       return;
     }
-    await finish(row, {
+    await settle({
       attempts,
       lastErrorCode: error.code,
       nextAttemptAt: new Date(
@@ -310,7 +486,7 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
 export async function runDueCalendarWrites(deps: CalendarDeps, opts: Scan = {}): Promise<number> {
   const now = deps.now?.() ?? new Date();
   const due = await claimDue(now, opts);
-  for (const row of due) await writeOne(row, deps, now);
+  for (const row of due) await writeOne(row, deps);
   return due.length;
 }
 
@@ -371,16 +547,12 @@ export async function checkHostEditedEvents(deps: CalendarDeps, opts: Scan = {})
           .where(eq(schedulingCalendarEvent.id, row.id));
         continue;
       }
-      const [booking] = await db
-        .select()
-        .from(schedulingBooking)
-        .where(eq(schedulingBooking.id, row.bookingId));
       await db.transaction(async (tx) => {
         await tx
           .update(schedulingCalendarEvent)
           .set({ externalState: moved ? "moved" : "deleted" })
           .where(eq(schedulingCalendarEvent.id, row.id));
-        if (booking) {
+        for (const booking of await bookingsOfRow(tx, row)) {
           await tx
             .update(schedulingBooking)
             .set({ externalConflictAt: now })

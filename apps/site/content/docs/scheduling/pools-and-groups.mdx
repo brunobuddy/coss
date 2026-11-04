@@ -69,3 +69,10 @@ interpreter. Add at most one `member`, and one of a pool is chosen alongside the
 With `kind: "group"` and a `capacity`, each attendee books a seat in the same session, with a booking and
 manage link of their own. The host's time is taken once, by the first seat, and given back with the last.
 A full session answers `slot_unavailable`. A seat moves by cancelling it and booking another session.
+
+A session is one meeting. The first seat's `location` is everyone's, so don't pass one attendee's own details in
+it: a `phone` location only ever shows the number on the event type, and a booking page's seat can't fill one in.
+A later seat asking for another type of location answers `invalid_event_type`, and changing a seat's location
+changes the session's. The host's calendar has one event, from the first confirmed seat until the last has left,
+and every confirmed seat gets its Meet or Teams link, `location_ready`, `external_conflict` and
+`calendar_write_failed` webhooks. A hold that expired confirms with `if_still_free` only while a seat is free.

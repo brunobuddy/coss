@@ -12,7 +12,22 @@ import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { requestHash as hashRequest, withIdempotencyKey } from "@coss/db/idempotency";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
-import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  ne,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import {
   decryptAnswers,
   decryptContact,
@@ -32,11 +47,14 @@ import { hostsBusyNow } from "./calendar/live-check.ts";
 import { announce } from "./calendar/writes.ts";
 import { ZOOM_CALENDAR_ID } from "./calendar/zoom.ts";
 import {
+  extendSessionClaim,
   inSavepoint,
   isDeadlock,
   isExclusionViolation,
+  limitSessionClaim,
   makeClaimPermanent,
   releaseBookingClaims,
+  releaseSessionClaim,
   tryClaim,
 } from "./claims.ts";
 import { type PoolMember, rankCandidates } from "./engine/rank.ts";
@@ -45,8 +63,9 @@ import { isBookable, limitUsageKey, occupiedRange, type SlotRule } from "./engin
 import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { type EventTypeRow, resolveEventType } from "./event-types.ts";
+import { confirmedSeats, withSessionLocation } from "./group-sessions.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
-import { enqueueBookingNotifications } from "./notifications.ts";
+import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
 import {
   type AttendeeInputOutput,
   type BookingObjectOutput,
@@ -89,6 +108,7 @@ export type BookingRequest = {
   attendee: AttendeeInputOutput;
   answers?: Answers | undefined;
   location?: Location | undefined;
+  locationFromBrowser?: boolean | undefined;
   metadata?: Record<string, string> | undefined;
   idempotencyKey?: string | undefined;
 };
@@ -150,7 +170,26 @@ function checkAttendee(attendee: AttendeeInputOutput): void {
   }
 }
 
-function chooseLocation(eventType: EventTypeRow, wanted: Location | undefined): Location | null {
+/** What a meeting created on a host's account reverts to when another host takes the booking. */
+function locationForNewHost(location: BookingRow["location"]): BookingRow["location"] {
+  if (location?.type === "zoom") return { type: "zoom", url: null };
+  if (location?.type !== "link" || !("conference" in location)) return null;
+  return { type: location.conference as "google_meet" | "microsoft_teams" };
+}
+
+function wireLocation(location: BookingRow["location"]): BookingRow["location"] {
+  if (!location || !("conference" in location)) return location ?? null;
+  const { conference: _conference, ...rest } = location as typeof location & {
+    conference: string;
+  };
+  return rest as BookingRow["location"];
+}
+
+function chooseLocation(
+  eventType: EventTypeRow,
+  wanted: Location | undefined,
+  fromBrowser = false,
+): Location | null {
   const location = wanted ?? eventType.locations[0] ?? null;
   // Its link comes from the meeting we create, never from whoever's booking.
   if (location?.type === "zoom" && eventType.locations.some((l) => l.type === "zoom")) {
@@ -165,7 +204,11 @@ function chooseLocation(eventType: EventTypeRow, wanted: Location | undefined): 
       { param: "location" },
     );
   }
-  return wanted;
+  if (!fromBrowser) return wanted;
+  // A browser picks among what's offered. It can't supply a link or address of its own, only the
+  // number to call it on when the event type leaves that open.
+  if (offered.type === "phone" && wanted.type === "phone" && !offered.number) return wanted;
+  return offered;
 }
 
 function checkBookableEventType(eventType: EventTypeRow, durationMinutes: number): void {
@@ -624,7 +667,7 @@ async function assignFairly(
     );
 }
 
-/** What each host's calendar should now show. The worker converges on it. */
+/** What each host's calendar should now show. A seat's event is its session's. The worker converges. */
 async function setCalendarState(
   tx: Executor,
   booking: BookingRow,
@@ -675,13 +718,28 @@ async function setCalendarState(
       );
     }
   }
+  const sessionId = booking.groupSessionId;
+  // A session can come back after its event went, and a provider's key doesn't work twice.
+  if (sessionId && state === "present") {
+    await tx
+      .delete(schedulingCalendarEvent)
+      .where(
+        and(
+          eq(schedulingCalendarEvent.groupSessionId, sessionId),
+          eq(schedulingCalendarEvent.organizationId, booking.organizationId),
+          eq(schedulingCalendarEvent.desiredState, "absent"),
+          isNull(schedulingCalendarEvent.providerEventId),
+          sql`${schedulingCalendarEvent.appliedVersion} = ${schedulingCalendarEvent.desiredVersion}`,
+        ),
+      );
+  }
   for (const target of targets) {
     await tx
       .insert(schedulingCalendarEvent)
       .values({
         organizationId: booking.organizationId,
         environmentId: booking.environmentId,
-        bookingId: booking.id,
+        ...(sessionId ? { groupSessionId: sessionId } : { bookingId: booking.id }),
         hostId: target.hostId,
         calendarId: target.id,
         desiredStart: booking.startAt,
@@ -690,7 +748,7 @@ async function setCalendarState(
       })
       .onConflictDoUpdate({
         target: [
-          schedulingCalendarEvent.bookingId,
+          sessionId ? schedulingCalendarEvent.groupSessionId : schedulingCalendarEvent.bookingId,
           schedulingCalendarEvent.hostId,
           schedulingCalendarEvent.calendarId,
         ],
@@ -752,7 +810,7 @@ async function insertBookingRow(
       title: eventType.title,
       bufferBeforeMinutes: eventType.bufferBeforeMinutes,
       bufferAfterMinutes: eventType.bufferAfterMinutes,
-      location: values.location,
+      location: eventType.kind === "group" ? null : values.location,
       holdExpiresAt: values.status === "held" ? expiresAt : null,
       approvalExpiresAt: values.status === "pending_approval" ? expiresAt : null,
       seriesId: values.seriesId ?? null,
@@ -827,6 +885,7 @@ async function joinGroupSession(
   booking: BookingRow,
   host: HostRow,
   scheduleId: string | null,
+  location: { chosen: Location | null; wanted: Location | undefined },
 ): Promise<{ sessionId: string; liveUntil: Date | null }> {
   const { eventType, rule, startMs, scope, nowMs } = plan;
   await lockHostsAndMemberships(tx, eventType, [host.id]);
@@ -868,13 +927,12 @@ async function joinGroupSession(
     );
   const liveSeats = await liveSeatCount(tx, session);
   if (liveSeats >= session.capacity) throw new LostSlot("session_full");
+  await settleSessionLocation(tx, session, liveSeats, location);
   const ttlSeconds = plan.ttlSeconds;
+  const sessionClaim = { organizationId: eventType.organizationId, groupSessionId: session.id };
   let liveUntil: Date | null = null;
-  const stillLive = claimed && (claimed.liveUntil === null || liveSeats > 0);
-  if (!stillLive) {
-    if (claimed) {
-      await tx.delete(schedulingClaim).where(eq(schedulingClaim.id, claimed.id));
-    }
+  if (!claimed || liveSeats === 0) {
+    if (claimed) await releaseSessionClaim(tx, sessionClaim);
     const loaded = await loadHostInputs(tx, {
       scope,
       hosts: [{ id: host.id, timeZone: host.timeZone, scheduleId }],
@@ -901,23 +959,10 @@ async function joinGroupSession(
     });
     if (!claim) throw new LostSlot("already_claimed");
     liveUntil = claim.liveUntil;
-  } else if (claimed?.liveUntil) {
+  } else if (claimed.liveUntil) {
     // Every seat so far is a hold: the claim now lasts as long as the longest of them.
-    if (ttlSeconds === null) {
-      await makeClaimPermanent(tx, {
-        organizationId: eventType.organizationId,
-        groupSessionId: session.id,
-      });
-    } else {
-      const [extended] = await tx
-        .update(schedulingClaim)
-        .set({
-          liveUntil: sql`greatest(${schedulingClaim.liveUntil}, clock_timestamp() + (${ttlSeconds}::int * interval '1 second'))`,
-        })
-        .where(eq(schedulingClaim.id, claimed.id))
-        .returning({ liveUntil: schedulingClaim.liveUntil });
-      liveUntil = extended?.liveUntil ?? null;
-    }
+    if (ttlSeconds === null) await makeClaimPermanent(tx, sessionClaim);
+    else liveUntil = await extendSessionClaim(tx, sessionClaim, ttlSeconds);
   }
   await tx
     .update(schedulingBooking)
@@ -931,9 +976,26 @@ async function joinGroupSession(
   return { sessionId: session.id, liveUntil };
 }
 
+const isLiveSeat = () =>
+  or(
+    eq(schedulingBooking.status, "confirmed"),
+    and(
+      eq(schedulingBooking.status, "pending_approval"),
+      or(
+        isNull(schedulingBooking.approvalExpiresAt),
+        sql`${schedulingBooking.approvalExpiresAt} > clock_timestamp()`,
+      ),
+    ),
+    and(
+      eq(schedulingBooking.status, "held"),
+      sql`${schedulingBooking.holdExpiresAt} > clock_timestamp()`,
+    ),
+  );
+
 async function liveSeatCount(
   tx: Executor,
   session: { id: string; organizationId: string },
+  except?: string,
 ): Promise<number> {
   const [row] = await tx
     .select({ seats: sql<number>`count(*)::int` })
@@ -942,16 +1004,51 @@ async function liveSeatCount(
       and(
         eq(schedulingBooking.groupSessionId, session.id),
         eq(schedulingBooking.organizationId, session.organizationId),
-        or(
-          inArray(schedulingBooking.status, ["confirmed", "pending_approval"]),
-          and(
-            eq(schedulingBooking.status, "held"),
-            sql`${schedulingBooking.holdExpiresAt} > clock_timestamp()`,
-          ),
-        ),
+        except ? ne(schedulingBooking.id, except) : undefined,
+        isLiveSeat(),
       ),
     );
   return row?.seats ?? 0;
+}
+
+/** The first seat of a session says where it meets, and everyone after is told the same. */
+async function settleSessionLocation(
+  tx: Executor,
+  session: typeof schedulingGroupSession.$inferSelect,
+  liveSeats: number,
+  { chosen, wanted }: { chosen: Location | null; wanted: Location | undefined },
+): Promise<void> {
+  if (liveSeats > 0 && session.location) {
+    if (wanted && wanted.type !== session.location.type) {
+      throw new SchedulingError(
+        "invalid_event_type",
+        `This session already meets by "${session.location.type}".`,
+        { param: "location" },
+      );
+    }
+    return;
+  }
+  await tx
+    .update(schedulingGroupSession)
+    .set({ location: chosen, meetingUrl: null })
+    .where(
+      and(
+        eq(schedulingGroupSession.id, session.id),
+        eq(schedulingGroupSession.organizationId, session.organizationId),
+      ),
+    );
+}
+
+/** Other attendees will see this, so a browser's values and one attendee's own number stay out. */
+function sharedLocation(
+  eventType: EventTypeRow,
+  chosen: Location | null,
+  actor: BookingActor,
+): Location | null {
+  if (!chosen) return null;
+  const browser = actor.kind === "booker_session" || actor.kind === "manage_session";
+  if (!browser && chosen.type !== "phone") return chosen;
+  return eventType.locations.find((location) => location.type === chosen.type) ?? chosen;
 }
 
 /** A seat left: the session's claim goes with its last seat, and stops being firm with its last confirmed one. */
@@ -968,15 +1065,29 @@ async function leaveGroupSession(tx: Executor, booking: BookingRow): Promise<voi
     )
     .for("update");
   if (!session) return;
-  if ((await liveSeatCount(tx, session)) > 0) return;
-  await tx
-    .delete(schedulingClaim)
+  const sessionClaim = { organizationId: session.organizationId, groupSessionId: session.id };
+  const [seats] = await tx
+    .select({
+      live: sql<number>`count(*)::int`,
+      confirmed: sql<number>`(count(*) filter (where ${schedulingBooking.status} = 'confirmed'))::int`,
+      until:
+        sql<Date | null>`max(greatest(${schedulingBooking.holdExpiresAt}, ${schedulingBooking.approvalExpiresAt}))`.mapWith(
+          schedulingBooking.holdExpiresAt,
+        ),
+    })
+    .from(schedulingBooking)
     .where(
       and(
-        eq(schedulingClaim.groupSessionId, session.id),
-        eq(schedulingClaim.organizationId, session.organizationId),
+        eq(schedulingBooking.groupSessionId, session.id),
+        eq(schedulingBooking.organizationId, session.organizationId),
+        isLiveSeat(),
       ),
     );
+  if (!seats?.live) {
+    await releaseSessionClaim(tx, sessionClaim);
+  } else if (!seats.confirmed && seats.until) {
+    await limitSessionClaim(tx, sessionClaim, seats.until);
+  }
 }
 
 function chooseStatus(eventType: EventTypeRow, wantHold: boolean): FinishedState {
@@ -1017,6 +1128,7 @@ async function createOne(
   if (eventType.kind === "group") {
     const entry = candidates.members[0] ?? candidates.required[0];
     if (!entry) throw slotLost("no_hosts");
+    const chosen = sharedLocation(eventType, chooseLocation(eventType, request.location), actor);
     try {
       const joined = await tx.transaction((savepoint) =>
         joinGroupSession(
@@ -1025,6 +1137,10 @@ async function createOne(
           booking,
           entry.host,
           entry.membership?.scheduleId ?? null,
+          {
+            chosen,
+            wanted: request.location,
+          },
         ),
       );
       won = { hosts: [entry.host], liveUntil: joined.liveUntil };
@@ -1043,9 +1159,7 @@ async function createOne(
   if (eventType.kind === "pool") await assignFairly(tx, current, memberIds, 1);
   const hostIds = won.hosts.map((host) => host.id);
   if (current.status === "confirmed") {
-    if (eventType.kind !== "group" || (await isFirstConfirmedSeat(tx, current))) {
-      await setCalendarState(tx, current, hostIds, "present");
-    }
+    await showOnCalendars(tx, current, hostIds);
     await chargeOnce(tx, env, current, deps);
   }
   await recordChange(tx, current, {
@@ -1061,20 +1175,20 @@ async function createOne(
   return current;
 }
 
-async function isFirstConfirmedSeat(tx: Executor, booking: BookingRow): Promise<boolean> {
-  const [other] = await tx
-    .select({ id: schedulingBooking.id })
-    .from(schedulingBooking)
-    .where(
-      and(
-        eq(schedulingBooking.groupSessionId, booking.groupSessionId as string),
-        eq(schedulingBooking.organizationId, booking.organizationId),
-        eq(schedulingBooking.status, "confirmed"),
-        sql`${schedulingBooking.id} <> ${booking.id}`,
-      ),
-    )
-    .limit(1);
-  return !other;
+/** A newly confirmed booking goes on its hosts' calendars; a seat only if it's the session's first. */
+async function showOnCalendars(
+  tx: Executor,
+  booking: BookingRow,
+  hostIds: readonly string[],
+): Promise<void> {
+  if (booking.groupSessionId) {
+    const seats = await confirmedSeats(tx, {
+      id: booking.groupSessionId,
+      organizationId: booking.organizationId,
+    });
+    if (seats.some((seat) => seat.id !== booking.id)) return;
+  }
+  await setCalendarState(tx, booking, hostIds, "present");
 }
 
 /** Everything about a booking, with attendees decrypted; answers only when asked for. */
@@ -1085,6 +1199,7 @@ export async function toBookingObject(
   opts: { includeAnswers?: boolean } = {},
 ): Promise<BookingObjectOutput> {
   const { hostIds, attendees } = await participants(executor, booking);
+  const { location } = await withSessionLocation(executor, booking);
   return {
     object: "scheduling.booking",
     id: booking.id,
@@ -1109,7 +1224,7 @@ export async function toBookingObject(
           : {}),
       };
     }),
-    location: (booking.location ?? null) as BookingObjectOutput["location"],
+    location: wireLocation(location) as BookingObjectOutput["location"],
     hold_expires_at: booking.holdExpiresAt?.toISOString() ?? null,
     approval_expires_at: booking.approvalExpiresAt?.toISOString() ?? null,
     series: booking.seriesId,
@@ -1181,7 +1296,7 @@ async function book(
   const durationMinutes = request.durationMinutes ?? eventType.durationMinutes;
   checkBookableEventType(eventType, durationMinutes);
   checkAnswers(eventType, request.answers);
-  const location = chooseLocation(eventType, request.location);
+  const location = chooseLocation(eventType, request.location, request.locationFromBrowser);
   const status = chooseStatus(eventType, wantHold);
   const ttlSeconds = ttlFor(eventType, status);
   const now = nowOf(deps);
@@ -1343,7 +1458,7 @@ export async function confirmHold(
     }
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
     const next: FinishedState = eventType.requiresApproval ? "pending_approval" : "confirmed";
-    await convertClaims(tx, booking, eventType, env, next);
+    await convertClaims(tx, booking, eventType, env, next, expired ? nowOf(deps) : null);
     const updated = await bumped(tx, booking, {
       status: next,
       holdExpiresAt: null,
@@ -1357,7 +1472,7 @@ export async function confirmHold(
     });
     const { hostIds } = await participants(tx, updated);
     if (next === "confirmed") {
-      await setCalendarState(tx, updated, hostIds, "present");
+      await showOnCalendars(tx, updated, hostIds);
       await chargeOnce(tx, env, updated, deps);
     }
     await recordChange(tx, updated, {
@@ -1373,6 +1488,117 @@ export async function confirmHold(
   return toBookingObject(db, row, deps);
 }
 
+/** Under the session's lock, since an expired hold's seat may be gone. False: no claim to firm up. */
+async function convertSeat(
+  tx: Executor,
+  booking: BookingRow,
+  ttlSeconds: number | null,
+): Promise<boolean> {
+  const sessionId = booking.groupSessionId as string;
+  const [session] = await tx
+    .select()
+    .from(schedulingGroupSession)
+    .where(
+      and(
+        eq(schedulingGroupSession.id, sessionId),
+        eq(schedulingGroupSession.organizationId, booking.organizationId),
+      ),
+    )
+    .for("update");
+  if (!session) throw new LostSlot("host_unavailable");
+  if ((await liveSeatCount(tx, session, booking.id)) >= session.capacity) {
+    throw new LostSlot("session_full");
+  }
+  const [claim] = await tx
+    .select({ liveUntil: schedulingClaim.liveUntil })
+    .from(schedulingClaim)
+    .where(
+      and(
+        eq(schedulingClaim.groupSessionId, session.id),
+        eq(schedulingClaim.organizationId, session.organizationId),
+      ),
+    );
+  if (!claim) return false;
+  if (claim.liveUntil) {
+    const where = { organizationId: session.organizationId, groupSessionId: session.id };
+    if (ttlSeconds === null) await makeClaimPermanent(tx, where);
+    else await extendSessionClaim(tx, where, ttlSeconds);
+  }
+  return true;
+}
+
+/** Joining a session someone else is keeping alive commits the host to nothing new. */
+async function sessionClaimIsLive(tx: Executor, booking: BookingRow): Promise<boolean> {
+  if (!booking.groupSessionId) return false;
+  const [claim] = await tx
+    .select({ id: schedulingClaim.id })
+    .from(schedulingClaim)
+    .where(
+      and(
+        eq(schedulingClaim.groupSessionId, booking.groupSessionId),
+        eq(schedulingClaim.organizationId, booking.organizationId),
+        or(
+          isNull(schedulingClaim.liveUntil),
+          sql`${schedulingClaim.liveUntil} > clock_timestamp()`,
+        ),
+      ),
+    );
+  return Boolean(claim);
+}
+
+/** It stopped counting towards hours and limits when it expired, so they apply again. */
+async function recheckExpiredHold(
+  tx: Transaction,
+  booking: BookingRow,
+  eventType: EventTypeRow,
+  env: SchedulingEnvironment,
+  hosts: readonly HostRow[],
+  nowMs: number,
+): Promise<void> {
+  // Notice was met when it was held: being late to confirm shouldn't count against it.
+  const rule = {
+    ...slotRuleOf(eventType, (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS),
+    minNoticeMinutes: 0,
+  };
+  const startMs = booking.startAt.getTime();
+  await lockHostsAndMemberships(
+    tx,
+    eventType,
+    hosts.map((host) => host.id),
+  );
+  await lockLimitBuckets(tx, eventType, rule, hosts, startMs);
+  const memberships = await tx
+    .select({
+      hostId: schedulingEventTypeHost.hostId,
+      scheduleId: schedulingEventTypeHost.scheduleId,
+    })
+    .from(schedulingEventTypeHost)
+    .where(
+      and(
+        eq(schedulingEventTypeHost.eventTypeId, eventType.id),
+        eq(schedulingEventTypeHost.organizationId, eventType.organizationId),
+      ),
+    );
+  const verdicts = await verdictsOf(
+    tx,
+    {
+      eventType,
+      rule,
+      scope: env,
+      startMs,
+      nowMs,
+      failureMode: await calendarFailureModeOf(tx, env),
+      ttlSeconds: null,
+    },
+    hosts,
+    new Map(memberships.map((row) => [row.hostId, row.scheduleId])),
+  );
+  for (const host of hosts) {
+    const verdict = verdicts.get(host.id);
+    if (!verdict?.ok) throw new LostSlot(verdict?.reason ?? "host_unavailable");
+  }
+}
+
 /**
  * Firms up a booking's claims. If a sweep already removed them they're claimed afresh, so a slot
  * someone else took since refuses the conversion either way.
@@ -1383,6 +1609,7 @@ async function convertClaims(
   eventType: EventTypeRow,
   env: SchedulingEnvironment,
   next: FinishedState,
+  expiredAt: Date | null,
 ): Promise<void> {
   const ttlSeconds = next === "pending_approval" ? eventType.approvalTtlMinutes * 60 : null;
   const hostRows = await tx
@@ -1401,16 +1628,15 @@ async function convertClaims(
       hostRows.map((row) => row.hostId),
     )
   ).sort((a, b) => (a.id < b.id ? -1 : 1));
+  // `deleteHost` refuses while a booking can still convert: this is a row from before it did.
+  if (hosts.length === 0) throw slotLost("host_unavailable");
   try {
-    await tx.transaction(async (savepoint) => {
+    await inSavepoint(tx, async (savepoint) => {
+      if (expiredAt && !(await sessionClaimIsLive(savepoint, booking))) {
+        await recheckExpiredHold(savepoint, booking, eventType, env, hosts, expiredAt.getTime());
+      }
       if (booking.groupSessionId) {
-        if (ttlSeconds === null) {
-          const made = await makeClaimPermanent(savepoint, {
-            organizationId: booking.organizationId,
-            groupSessionId: booking.groupSessionId,
-          });
-          if (made > 0) return;
-        }
+        if (await convertSeat(savepoint, booking, ttlSeconds)) return;
       } else {
         await releaseBookingClaims(savepoint, booking);
       }
@@ -1432,11 +1658,12 @@ async function convertClaims(
           startMs: booking.startAt.getTime(),
           ttlSeconds,
         });
-        if (!claim) throw new LostSlot("already_claimed");
+        if (!claim) throw new LostSlot("taken since");
       }
     });
   } catch (error) {
-    if (error instanceof LostSlot || isExclusionViolation(error)) throw slotLost("taken since");
+    if (error instanceof LostSlot) throw slotLost(error.reason);
+    if (isExclusionViolation(error)) throw slotLost("taken since");
     throw error;
   }
 }
@@ -1476,22 +1703,23 @@ async function endBooking(
     approvalExpiresAt: null,
   });
   await leaveGroupSession(tx, updated);
-  const lastSeat =
-    !updated.groupSessionId ||
-    (
+  if (!updated.groupSessionId) {
+    await setCalendarState(tx, updated, hostIds, "absent");
+  } else if (booking.status === "confirmed") {
+    const session = { id: updated.groupSessionId, organizationId: updated.organizationId };
+    if ((await confirmedSeats(tx, session)).length === 0) {
+      await setCalendarState(tx, updated, hostIds, "absent");
       await tx
-        .select({ id: schedulingBooking.id })
-        .from(schedulingBooking)
+        .update(schedulingGroupSession)
+        .set({ meetingUrl: null })
         .where(
           and(
-            eq(schedulingBooking.groupSessionId, updated.groupSessionId),
-            eq(schedulingBooking.organizationId, updated.organizationId),
-            eq(schedulingBooking.status, "confirmed"),
+            eq(schedulingGroupSession.id, session.id),
+            eq(schedulingGroupSession.organizationId, session.organizationId),
           ),
-        )
-        .limit(1)
-    ).length === 0;
-  if (lastSeat) await setCalendarState(tx, updated, hostIds, "absent");
+        );
+    }
+  }
   if (booking.status === "confirmed" && booking.startAt.getTime() > now.getTime()) {
     const members = await tx
       .select({ hostId: schedulingBookingHost.hostId })
@@ -1606,10 +1834,10 @@ export async function approveBooking(
     if (booking.status === "confirmed") return booking;
     if (booking.status !== "pending_approval") throw notChangeable(booking);
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
-    await convertClaims(tx, booking, eventType, env, "confirmed");
+    await convertClaims(tx, booking, eventType, env, "confirmed", null);
     const updated = await bumped(tx, booking, { status: "confirmed", approvalExpiresAt: null });
     const { hostIds } = await participants(tx, updated);
-    await setCalendarState(tx, updated, hostIds, "present");
+    await showOnCalendars(tx, updated, hostIds);
     await chargeOnce(tx, env, updated, deps);
     await recordChange(tx, updated, {
       type: "scheduling.booking.confirmed",
@@ -1740,14 +1968,13 @@ export async function rescheduleBooking(
         })
         .onConflictDoNothing();
     }
+    const newLocation = replacement ? locationForNewHost(booking.location) : null;
     const updated = await bumped(tx, booking, {
       startAt: new Date(input.startMs),
       endAt: new Date(input.startMs + durationMinutes * MINUTE_MS),
       externalConflictAt: null,
       // The old host's meeting goes with them, so the new host's gets a new link.
-      ...(replacement && booking.location?.type === "zoom"
-        ? { location: { type: "zoom" as const, url: null } }
-        : {}),
+      ...(newLocation ? { location: newLocation } : {}),
     });
     const after = await participants(tx, updated);
     if (updated.status === "confirmed") {
@@ -1809,7 +2036,9 @@ export async function updateBookingLocation(
     if (booking.status === "cancelled" || booking.status === "declined") {
       throw notChangeable(booking);
     }
-    const updated = await bumped(tx, booking, { location });
+    // A seat's version stays: nothing about the seat changed, and a bump would drop its reminder.
+    const updated = booking.groupSessionId ? booking : await bumped(tx, booking, { location });
+    if (!booking.groupSessionId) await carryReminders(tx, updated);
     await recordChange(tx, updated, {
       type: "scheduling.booking.location_ready",
       webhook: "scheduling.booking.location_ready",
@@ -1817,6 +2046,28 @@ export async function updateBookingLocation(
       occurredAt: nowOf(deps),
       message: "Booking location set",
     });
+    if (updated.groupSessionId) {
+      const session = { id: updated.groupSessionId, organizationId: updated.organizationId };
+      await tx
+        .update(schedulingGroupSession)
+        .set({ location, meetingUrl: null })
+        .where(
+          and(
+            eq(schedulingGroupSession.id, session.id),
+            eq(schedulingGroupSession.organizationId, session.organizationId),
+          ),
+        );
+      for (const seat of await confirmedSeats(tx, session)) {
+        if (seat.id === updated.id) continue;
+        await announce(
+          tx,
+          seat,
+          "scheduling.booking.location_ready",
+          "Booking location set",
+          nowOf(deps),
+        );
+      }
+    }
     return updated;
   });
   return toBookingObject(db, row, deps);
@@ -1900,6 +2151,48 @@ export async function listBookings(
   return {
     data: await Promise.all(page.map((row) => toBookingObject(db, row, deps))),
     hasMore: rows.length > query.limit,
+  };
+}
+
+/** A host's coming bookings, soonest first, without the ones that are off. */
+export async function listUpcomingHostBookings(
+  scope: Scope,
+  query: { hostId: string; now: Date; limit: number; cursor?: string | undefined },
+  deps: Pick<SchedulingDeps, "dataKeys">,
+): Promise<{ data: BookingObjectOutput[]; nextCursor: string | null }> {
+  const [cursorStart, cursorId] = query.cursor?.split("_after_") ?? [];
+  const cursorMs = cursorStart ? Number(cursorStart) : Number.NaN;
+  const rows = await db
+    .select()
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.organizationId, scope.organizationId),
+        eq(schedulingBooking.environmentId, scope.environmentId),
+        gte(schedulingBooking.startAt, query.now),
+        notInArray(schedulingBooking.status, ["cancelled", "declined"]),
+        sql`exists (select 1 from ${schedulingBookingHost}
+          where ${schedulingBookingHost.bookingId} = ${schedulingBooking.id}
+            and ${schedulingBookingHost.hostId} = ${query.hostId})`,
+        Number.isFinite(cursorMs) && cursorId
+          ? or(
+              gt(schedulingBooking.startAt, new Date(cursorMs)),
+              and(
+                eq(schedulingBooking.startAt, new Date(cursorMs)),
+                gt(schedulingBooking.id, cursorId),
+              ),
+            )
+          : undefined,
+      ),
+    )
+    .orderBy(asc(schedulingBooking.startAt), asc(schedulingBooking.id))
+    .limit(query.limit + 1);
+  const page = rows.slice(0, query.limit);
+  const last = page[page.length - 1];
+  return {
+    data: await Promise.all(page.map((row) => toBookingObject(db, row, deps))),
+    nextCursor:
+      rows.length > query.limit && last ? `${last.startAt.getTime()}_after_${last.id}` : null,
   };
 }
 
@@ -2065,7 +2358,7 @@ export async function createSeries(
   const durationMinutes = request.durationMinutes ?? eventType.durationMinutes;
   checkBookableEventType(eventType, durationMinutes);
   checkAnswers(eventType, request.answers);
-  const location = chooseLocation(eventType, request.location);
+  const location = chooseLocation(eventType, request.location, request.locationFromBrowser);
   const anchor = request.attendee.time_zone;
   const starts = expandedStarts(request, anchor);
   const now = nowOf(deps);

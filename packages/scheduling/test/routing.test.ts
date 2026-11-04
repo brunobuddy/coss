@@ -9,6 +9,7 @@ import {
   getBooking,
   getEventType,
   listEventTypeSlots,
+  listUpcomingHostBookings,
   rescheduleBooking,
   type SchedulingEnvironment,
   SchedulingError,
@@ -478,4 +479,94 @@ describe("routing to a specialist", () => {
     const moved = await rescheduleBooking(env, booking.id, { startMs: at("10:00") }, deps, actor);
     expect(moved.hosts).toEqual([ids.cardio_ca as string]);
   });
+});
+
+describe("a pool with a required host", () => {
+  async function withRequired() {
+    const { env, ids } = await setUp({
+      lead: { attributes: { role: "supervisor" } },
+      derm: { attributes: { specialty: "dermatology" } },
+    });
+    const eventType = await createEventType(env, {
+      title: "Supervised visit",
+      kind: "pool",
+      duration_minutes: 30,
+      hosts: [
+        { host: ids.lead, role: "required", weight: 100, schedule: null },
+        { host: ids.derm, role: "member", weight: 100, schedule: null },
+      ],
+    } as never);
+    return { env, ids, eventType };
+  }
+
+  test("never books the required host alone when no member matches", async () => {
+    const { env, eventType } = await withRequired();
+    await expect(
+      createBooking(
+        env,
+        {
+          eventType: eventType.id,
+          startMs: at("09:00"),
+          attributes: { specialty: "cardiology" },
+          attendee: attendee("p"),
+        },
+        deps,
+        actor,
+      ),
+    ).rejects.toMatchObject({ code: "slot_unavailable" });
+    const slots = await listEventTypeSlots(env, {
+      eventTypeRef: eventType.id,
+      fromMs: at("09:00"),
+      toMs: at("10:00"),
+      nowMs: NOW.getTime(),
+      attributes: { specialty: "cardiology" },
+    });
+    expect(slots).toEqual([]);
+  });
+
+  test("books the required host and the matching member together", async () => {
+    const { env, ids, eventType } = await withRequired();
+    const { booking } = await createBooking(
+      env,
+      {
+        eventType: eventType.id,
+        startMs: at("09:00"),
+        attributes: { specialty: "dermatology" },
+        attendee: attendee("p"),
+      },
+      deps,
+      actor,
+    );
+    expect([...(await getBooking(env, booking.id, deps)).hosts].sort()).toEqual(
+      [ids.lead as string, ids.derm as string].sort(),
+    );
+  });
+});
+
+test("a host's coming bookings page by start time, however they were created", async () => {
+  const { env, ids } = await setUp({ only: { attributes: {} } });
+  const eventType = await pool(env, ids);
+  const host = ids.only as string;
+  for (const [index, time] of ["13:00", "09:00", "11:00", "10:00", "12:00"].entries()) {
+    await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at(time), attendee: attendee(`p${index}`) },
+      deps,
+      actor,
+    );
+  }
+  const seen: string[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < 3; page++) {
+    const { data, nextCursor } = await listUpcomingHostBookings(
+      env,
+      { hostId: host, now: NOW, limit: 2, cursor },
+      deps,
+    );
+    seen.push(...data.map((booking) => booking.start.slice(11, 16)));
+    cursor = nextCursor ?? undefined;
+    if (page < 2) expect(nextCursor).not.toBeNull();
+    else expect(nextCursor).toBeNull();
+  }
+  expect(seen).toEqual(["09:00", "10:00", "11:00", "12:00", "13:00"]);
 });
