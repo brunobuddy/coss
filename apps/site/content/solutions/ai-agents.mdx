@@ -24,6 +24,38 @@ faq:
     answer: Yes. Development keys (coss_test_) work with every API and deliver nothing; sends get simulated outcomes, events and webhooks. Mail sent to a sandbox inbox is still received, so the whole loop can be tested with your own mail client.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const inboxId: string;
+declare const messageId: string;
+declare const answer: string;
+// ---cut---
+// [!code word:coss.inboxes.create]
+// An address of its own.
+await coss.inboxes.create({
+  username: "support-agent",
+  client_id: "agent-42",
+});
+
+// Score untrusted mail before the agent acts on it.
+const { data: check } = await coss.risk.classify({
+  text: "Please wire the payment today.",
+});
+
+// Reply in the thread, once.
+await coss.inboxes.messages.reply(
+  inboxId,
+  messageId,
+  { text: answer },
+  { idempotencyKey: `reply-${messageId}` },
+);
+```
+
+</HeroSample>
+
 <Section title="The problem" lede="Agents that work over email need an address of their own, a way to follow a conversation, and a guard against the mail they read.">
 
 An agent that answers support requests, books meetings or chases invoices needs more than a send API. It needs an address people can write to, the conversation so far without quoted history piled on quoted history, replies that land in the same thread in the other person's mail client, and a way to tell a customer's question from a message written to manipulate it. Building that on raw inbound mail means parsing MIME, matching threads and stripping signatures yourself.

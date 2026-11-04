@@ -36,6 +36,24 @@ faq:
     answer: Email is billed per recipient, with a monthly allowance on the Free plan and volume tiers on paid plans. Sandbox environments send nothing and are free. The pricing page lists the current rates.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// [!code word:coss.email.send]
+const { data, error } = await coss.email.send({
+  from: "Acme <billing@acme.com>",
+  to: "ada@example.com",
+  subject: "Your October invoice",
+  html: "<p>Your invoice is attached.</p>",
+  category: "billing",
+});
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="One call sends an email. coss.com queues it, hands it to the mail provider and reports what happens to each recipient.">
 
 ```ts twoslash

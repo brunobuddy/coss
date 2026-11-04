@@ -28,6 +28,35 @@ faq:
     answer: One per confirmed booking, per occurrence of a series and per group session, however many people attend. Holds and pending approvals aren't charged, rescheduling is free and a cancelled booking stays charged. Sandbox environments are free. The pricing page has the rate.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: lesson } = await coss.scheduling.eventTypes
+  .create({
+    title: "Trial lesson",
+    duration_minutes: 30,
+    hosts: [{ host: "tutor_482" }],
+    locations: [{ type: "google_meet" }],
+  });
+
+// A session for the booker: hand its url to the browser.
+const { data: session } = await coss.scheduling.sessions
+  .createForBooker({
+    event_type: lesson?.id ?? "",
+    attendee: {
+      uid: "customer_77",
+      name: "Sam Lee",
+      email: "sam@example.com",
+      time_zone: "UTC",
+    },
+  });
+```
+
+</HeroSample>
+
 <Section title="The problem" lede="A booking looks like one form. Behind it are time zones, calendars, races between two people and the emails that tell everyone what happened.">
 
 If people book people in your product, such as tutors, advisers or service providers, you need weekly hours that survive a clock change, calendars that stay in sync, and a guarantee that one time can't be sold twice. Then everyone has to hear about it: confirmations, reminders and calendar invitations.

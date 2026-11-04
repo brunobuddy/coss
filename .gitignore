@@ -36,3 +36,9 @@ sdks/java/.gradle
 sdks/java/sample-app/build
 sdks/dotnet/**/bin
 sdks/dotnet/**/obj
+
+# Impeccable's working files (the surface briefs in .impeccable/surfaces are kept)
+**/.impeccable/mocks/
+**/.impeccable/review/
+**/.impeccable/questions/
+**/.impeccable/hook.cache.json

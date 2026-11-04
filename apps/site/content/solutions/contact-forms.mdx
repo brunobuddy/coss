@@ -28,6 +28,31 @@ faq:
     answer: No. You define a form's fields in code or write your own HTML. Drag-and-drop building and conditional or multi-page forms aren't available.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const leadsAudienceId: string;
+// ---cut---
+// [!code word:coss.forms.create]
+const { data: form } = await coss.forms.create({
+  name: "Contact us",
+  allowed_origins: ["https://www.example.com"],
+  fields: [
+    { name: "email", type: "email", required: true },
+    { name: "message", type: "textarea", max_length: 5000 },
+  ],
+  notifications: {
+    recipients: ["sales@example.com"],
+    from: "forms@example.com",
+  },
+  contacts: { enabled: true, audience_ids: [leadsAudienceId] },
+});
+```
+
+</HeroSample>
+
 <Section title="The problem" lede="A contact form is a few inputs on a page, and it still needs a server, a spam filter and somewhere for the messages to go.">
 
 Static sites have nowhere to post a form. Adding a function for it means parsing the post, validating fields, keeping bots out, emailing the right person and getting the lead into your CRM or mailing list, and every public form attracts spam the day it goes up.

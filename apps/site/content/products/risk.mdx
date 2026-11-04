@@ -35,6 +35,30 @@ faq:
     answer: Live phone checks are billed per lookup that got an answer, and every plan includes a monthly allowance of them. Sandbox checks are free. The pricing page lists the current rates.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const body: { email: string; device: string };
+declare const request: { ip: string; userAgent: string };
+// ---cut---
+// [!code word:coss.risk.assess]
+const { data: assessment } = await coss.risk.assess({
+  event: "signup",
+  user: { email: body.email },
+  ip: request.ip,
+  user_agent: request.userAgent,
+  device: { token: body.device },
+});
+
+if (assessment?.decision === "block") {
+  throw new Error("We couldn't create your account.");
+}
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Assess the event when it happens, act on the decision, and tell coss.com later what the user turned out to be.">
 
 ```ts twoslash

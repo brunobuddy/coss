@@ -79,9 +79,9 @@ function FooterColumns({ className }: { className?: string }) {
  */
 export function SiteFooter() {
   return (
-    <footer className="relative mt-8 py-8 text-muted-foreground before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-border/64">
-      <FooterColumns className="container grid w-full grid-cols-2 gap-x-6 gap-y-8 px-4 pt-4 pb-10 sm:grid-cols-3 sm:px-6 lg:grid-cols-6" />
-      <div className="container flex w-full flex-col gap-4 px-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+    <footer className="relative border-border/64 border-t bg-muted/32 py-12 text-muted-foreground sm:py-16">
+      <FooterColumns className="mx-auto grid w-full max-w-[1416px] grid-cols-2 gap-x-6 gap-y-10 px-4 pb-12 sm:grid-cols-3 sm:px-6 lg:grid-cols-6" />
+      <div className="mx-auto flex w-full max-w-[1416px] flex-col gap-4 border-border/64 border-t px-4 pt-8 sm:flex-row sm:items-end sm:justify-between sm:px-6">
         <Colophon />
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
           <Link className="hover:text-foreground" href="/about">
