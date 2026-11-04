@@ -277,11 +277,18 @@ export function createSchedulingClientRoutes(opts: {
     };
   };
 
-  /** An attendee sees times, never who else could take them. */
-  const slotList = (c: Context<ClientEnv>, slots: { startMs: number; endMs: number }[]) =>
+  /** An attendee sees times and free seats, never who else could take them. */
+  const slotList = (
+    c: Context<ClientEnv>,
+    slots: { startMs: number; endMs: number; seatsLeft?: number | null }[],
+  ) =>
     c.json({
       object: "list" as const,
-      data: slots.map((slot) => ({ start: iso(slot.startMs), end: iso(slot.endMs) })),
+      data: slots.map((slot) => ({
+        start: iso(slot.startMs),
+        end: iso(slot.endMs),
+        seats_left: slot.seatsLeft ?? null,
+      })),
       has_more: false,
     });
 

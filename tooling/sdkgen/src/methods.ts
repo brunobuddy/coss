@@ -24,6 +24,7 @@ export const SDK_METHODS: Readonly<Record<string, string>> = {
   "GET /v1/scheduling/event_types/{event_type}": "scheduling.eventTypes.get",
   "PATCH /v1/scheduling/event_types/{event_type}": "scheduling.eventTypes.update",
   "GET /v1/scheduling/event_types/{event_type}/slots": "scheduling.slots.list",
+  "GET /v1/scheduling/event_types/{event_type}/slots/explain": "scheduling.slots.explain",
   "POST /v1/scheduling/availability/search": "scheduling.availability.search",
   "POST /v1/scheduling/bookings": "scheduling.bookings.create",
   "GET /v1/scheduling/bookings": "scheduling.bookings.list",
