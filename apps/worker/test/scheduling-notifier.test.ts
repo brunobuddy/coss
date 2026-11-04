@@ -5,6 +5,7 @@ import { SendEmailRequest } from "@coss/email/schemas";
 import { createVerifiedDomain, dispatchingEmailService } from "@coss/email/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
 import { buildIcs, type SchedulingEmail } from "@coss/scheduling";
+import { SmsError } from "@coss/sms";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { eq } from "drizzle-orm";
 import { schedulingNotifier } from "../src/scheduling-notifier.ts";
@@ -356,4 +357,54 @@ test("mail to a guest never falls back to coss.com's sender", async () => {
     .from(schema.email)
     .where(eq(schema.email.idempotencyKey, attendee.idempotencyKey));
   expect(fellBack[0]?.from).toContain("via coss.com");
+});
+
+test("a text already accepted isn't refused for reading differently on a retry", async () => {
+  const message = await email();
+  const asked: string[] = [];
+  const notifier = schedulingNotifier({
+    service: service(),
+    sms: {
+      async send(input) {
+        asked.push(input.params.body);
+        // What the real service says when a key comes back with a different body.
+        if (asked.length > 1) throw new SmsError("idempotency_key_reused", "Reused.");
+        return { replayed: false } as never;
+      },
+    },
+    limiter: memoryLimiter(),
+    fallback: null,
+  });
+  const text = {
+    environment: message.environment,
+    from: "+15550001111",
+    to: "+15550002222",
+    idempotencyKey: "scheduling:row:host",
+  };
+  await notifier.sms?.({ ...text, body: "It's in 30 minutes." });
+  await notifier.sms?.({ ...text, body: "It's in 28 minutes." });
+  expect(asked.length).toBe(2);
+});
+
+test("any other refusal of a text still fails, and is retried", async () => {
+  const message = await email();
+  const notifier = schedulingNotifier({
+    service: service(),
+    sms: {
+      async send() {
+        throw new SmsError("sender_not_verified" as never, "Not yours.");
+      },
+    },
+    limiter: memoryLimiter(),
+    fallback: null,
+  });
+  await expect(
+    notifier.sms?.({
+      environment: message.environment,
+      from: "+15550001111",
+      to: "+15550002222",
+      body: "Hello",
+      idempotencyKey: "scheduling:row:other",
+    }),
+  ).rejects.toThrow("Not yours.");
 });

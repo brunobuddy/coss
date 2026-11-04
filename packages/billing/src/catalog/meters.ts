@@ -50,6 +50,18 @@ export const METERS = {
     dimensions: [],
     requires: "plan",
   },
+  // Attachments past `EMAIL_DATA_INCLUDED_MB` per email, per recipient billed, in MB: SES charges
+  // for attachment data on top of the message, so large ones would otherwise sell below cost.
+  "email.attachment_data": {
+    product: "email",
+    label: "Email attachments",
+    unit: "MB",
+    units: "MB",
+    displayPer: 1000,
+    dimensions: [],
+    requires: "plan",
+    measure: true,
+  },
   // Mail received through the receiving provider (SES), in any environment: routed messages
   // stored (not dropped), except those with a spam or virus verdict.
   "email.received": {
@@ -60,6 +72,18 @@ export const METERS = {
     displayPer: 1000,
     dimensions: [],
     requires: "plan",
+  },
+  // Received messages past `EMAIL_DATA_INCLUDED_MB`, per copy billed as `email.received`, in MB:
+  // SES charges per 256 KB received and the content is kept for the messages' retention.
+  "email.received_data": {
+    product: "email",
+    label: "Received email data",
+    unit: "MB",
+    units: "MB",
+    displayPer: 1000,
+    dimensions: [],
+    requires: "plan",
+    measure: true,
   },
   // Live inboxes, per day each one exists (a day is charged when it starts: on creation, then
   // daily). Priced per 30 inbox-days, an inbox for a month.
@@ -209,6 +233,17 @@ export const METERS = {
     requires: "plan",
   },
 } as const satisfies Record<string, MeterDefinition>;
+
+/** The size of an email that its per-email price covers; the rest is on the data meters. */
+export const EMAIL_DATA_INCLUDED_MB = 1;
+
+/**
+ * What `bytes` of an email bill on a data meter (`email.attachment_data` per recipient,
+ * `email.received_data` per copy): whole MB (2^20 bytes) past the included size, rounded up.
+ */
+export function billableEmailMegabytes(bytes: number): number {
+  return Math.max(0, Math.ceil(bytes / 2 ** 20 - EMAIL_DATA_INCLUDED_MB));
+}
 
 export type MeterKey = keyof typeof METERS;
 export const METER_KEYS = Object.keys(METERS) as [MeterKey, ...MeterKey[]];

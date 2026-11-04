@@ -11,7 +11,7 @@ import { SendEmailRequest } from "@coss/email/schemas";
 import { oneLine } from "@coss/email-layout";
 import { emailSendQuota, type RateLimiter } from "@coss/ratelimit";
 import type { SchedulingEmail, SchedulingNotifier, SchedulingSms } from "@coss/scheduling";
-import type { SmsService } from "@coss/sms";
+import { SmsError, type SmsService } from "@coss/sms";
 import { SendSmsRequest } from "@coss/sms/schemas";
 import { and, eq, inArray } from "drizzle-orm";
 
@@ -180,17 +180,24 @@ export function schedulingNotifier(opts: {
     ...(opts.sms
       ? {
           async sms(message: SchedulingSms) {
-            await (opts.sms as Pick<SmsService, "send">).send({
-              environment: message.environment,
-              apiKeyId: null,
-              params: SendSmsRequest.parse({
-                from: message.from,
-                to: message.to,
-                body: message.body,
-              }),
-              idempotencyKey: message.idempotencyKey,
-              discardBody: message.environment.mode === "live",
-            });
+            try {
+              await (opts.sms as Pick<SmsService, "send">).send({
+                environment: message.environment,
+                apiKeyId: null,
+                params: SendSmsRequest.parse({
+                  from: message.from,
+                  to: message.to,
+                  body: message.body,
+                }),
+                idempotencyKey: message.idempotencyKey,
+                discardBody: message.environment.mode === "live",
+              });
+            } catch (error) {
+              // Accepted on an earlier attempt: `{{time_until}}` or an edit changed the text since,
+              // and it mustn't stop the rest of this reminder's recipients being reached.
+              if (!(error instanceof SmsError && error.code === "idempotency_key_reused"))
+                throw error;
+            }
           },
         }
       : {}),
