@@ -65,8 +65,8 @@ export const ERROR_HINTS: Record<string, string> = {
     "settings page lists what the mode changes.",
 
   // Standing, plans and billing.
-  organization_suspended: `This organization is suspended, so sending and changes are refused until it is reinstated. ${DOCS.reputation}`,
-  account_suspended: `This organization is suspended, so sending and changes are refused until it is reinstated. ${DOCS.reputation}`,
+  organization_suspended: `This organization is suspended, so sending and changes are refused until it is reinstated. ${DOCS.delivery}`,
+  account_suspended: `This organization is suspended, so sending and changes are refused until it is reinstated. ${DOCS.delivery}`,
   sending_paused: `Sending is paused because of its reputation, so look at its bounces and complaints. Sandbox keys still work. ${DOCS.reputation}`,
   marketing_paused: `Look at the marketing stream's bounces and complaints, and send transactional email in the meantime. ${DOCS.reputation}`,
   billing_hold: `Pay the overdue invoice or raise the spend limit in the organization's billing settings. Sandbox keys still work. ${DOCS.billing}`,
