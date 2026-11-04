@@ -53,6 +53,7 @@ import {
   restoreDelegation,
   settleRefusal,
 } from "./delegation-failures.ts";
+import { SECRET_WARNING_MS } from "./delegation-notifications.ts";
 import {
   DELEGATION_SCOPES,
   type DelegationCredentials,
@@ -87,7 +88,6 @@ const LEASE_MS = 10 * MINUTE_MS;
 const IDLE_MS = 5 * MINUTE_MS;
 const BACKOFF_MS = 5 * MINUTE_MS;
 const MAILBOX_RETRY_MS = 60 * MINUTE_MS;
-const SECRET_WARNING_MS = 14 * DAY_MS;
 
 export { DELEGATION_SCOPES };
 

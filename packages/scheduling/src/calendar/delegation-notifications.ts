@@ -10,6 +10,9 @@ import { and, eq } from "drizzle-orm";
 
 const { environment, project, schedulingCalendarDelegation } = schema;
 
+/** How long before a client secret expires its owners are warned. */
+export const SECRET_WARNING_MS = 14 * 86_400_000;
+
 async function delegationOf(context: NotificationContext) {
   const id = context.payload.delegationId;
   if (typeof id !== "string") return null;
@@ -74,7 +77,14 @@ export const SCHEDULING_NOTIFICATION_KINDS: NotificationKinds = {
       const row = await delegationOf(context);
       if (!row) return { skip: "the delegation is gone" };
       const expires = row.delegation.secretExpiresAt;
-      if (!expires || expires < context.now) return { skip: "no secret about to expire" };
+      // Rotated since this was queued, the secret it was about is gone.
+      if (
+        !expires ||
+        expires < context.now ||
+        expires.getTime() - context.now.getTime() > SECRET_WARNING_MS
+      ) {
+        return { skip: "no secret about to expire" };
+      }
       const { domain } = row.delegation;
       return {
         subject: `The client secret for ${domain}'s calendars expires soon`,

@@ -23,6 +23,7 @@ import {
   runDueCalendarDelegations,
   runDueCalendarSyncs,
   runDueCalendarWrites,
+  SCHEDULING_NOTIFICATION_KINDS,
   type SchedulingEnvironment,
   SchedulingError,
   startCalendarAuthorization,
@@ -1411,6 +1412,43 @@ describe("Microsoft 365", () => {
     expect((await getCalendarDelegation(env, delegation.id)).status).toBe("active");
     expect(await listConnections(env, ana.id)).toMatchObject([{ status: "needs_reauth" }]);
     expect(await listConnections(env, ben.id)).toMatchObject([{ status: "active" }]);
+  });
+
+  test("an expiry warning queued before a rotation isn't sent", async () => {
+    const env = await environment();
+    const api = new FakeGraphApi();
+    const deps = graphDeps(api);
+    const soon = new Date(NOW.getTime() + 10 * 86_400_000).toISOString();
+    const delegation = await createCalendarDelegation(
+      env,
+      {
+        provider: "microsoft",
+        domain: DOMAIN,
+        tenant_id: api.tenantId,
+        client_id: randomUUID(),
+        client_secret: api.clientSecret,
+        secret_expires_at: soon,
+      },
+      deps,
+    );
+    const kind = SCHEDULING_NOTIFICATION_KINDS["scheduling.delegation_secret_expiring"];
+    const render = () =>
+      kind?.render({
+        organizationId: env.organizationId,
+        organization: { name: "Acme", slug: "acme" },
+        payload: { delegationId: delegation.id },
+        createdAt: NOW,
+        now: NOW,
+        url: (path) => path,
+      });
+    expect(await render()).toMatchObject({ subject: expect.stringContaining("expires soon") });
+    await updateCalendarDelegation(
+      env,
+      delegation.id,
+      { secret_expires_at: new Date(NOW.getTime() + 300 * 86_400_000).toISOString() },
+      deps,
+    );
+    expect(await render()).toMatchObject({ skip: expect.any(String) });
   });
 
   test("an expired secret is the delegation's problem, not each host's", async () => {

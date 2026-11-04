@@ -171,7 +171,10 @@ export async function updateDelegationAction(_prev: ActionResult | null, formDat
           match_host_email: formString(formData, "matchHostEmail") === "on",
           ...(serviceAccountKey ? { service_account_key: serviceAccountKey } : {}),
           ...(clientSecret ? { client_secret: clientSecret } : {}),
-          ...(secretExpiresAt ? { secret_expires_at: secretExpiresAt } : {}),
+          // Only Microsoft's form has it, and there an empty date clears it.
+          ...(formData.has("secretExpiresAt")
+            ? { secret_expires_at: secretExpiresAt ?? null }
+            : {}),
         },
         schedulingCalendarDeps(),
       ),
