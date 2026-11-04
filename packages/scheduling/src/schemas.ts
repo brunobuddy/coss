@@ -77,6 +77,36 @@ const HostUid = z
 
 export const HostStatus = z.enum(["active", "disabled"]);
 
+export const HostLocation = z
+  .discriminatedUnion("type", [
+    z.strictObject({
+      type: z.literal("link"),
+      url: z.url({ protocol: /^https$/, error: "Use an https:// link." }).max(2000),
+    }),
+    z.strictObject({
+      type: z.literal("phone"),
+      number: z.string().regex(/^\+[1-9]\d{6,14}$/, "Use the E.164 format, such as +12125550100."),
+    }),
+    z.strictObject({
+      type: z.literal("in_person"),
+      address: z.string().trim().min(1).max(500),
+    }),
+  ])
+  .meta({ id: "SchedulingHostLocation" });
+export type HostLocationOutput = z.output<typeof HostLocation>;
+
+const HostLocations = z
+  .array(HostLocation)
+  .max(3)
+  .refine(
+    (locations) => new Set(locations.map((location) => location.type)).size === locations.length,
+    "A host has at most one location of each type.",
+  )
+  .meta({
+    description:
+      "This host's own office, meeting link and phone number. An event type's location that leaves its value blank uses them.",
+  });
+
 export const CreateHostRequest = z
   .strictObject({
     uid: HostUid.optional(),
@@ -86,6 +116,7 @@ export const CreateHostRequest = z
     }),
     time_zone: TimeZone,
     attributes: Attributes.optional(),
+    locations: HostLocations.optional(),
     metadata: Metadata.optional(),
   })
   .meta({
@@ -97,6 +128,7 @@ export const CreateHostRequest = z
         email: "ana@example.com",
         time_zone: "America/New_York",
         attributes: { licensed_in: ["NY", "NJ"] },
+        locations: [{ type: "in_person", address: "12 Main St, New York, NY" }],
       },
     ],
   });
@@ -109,6 +141,10 @@ export const UpdateHostRequest = z
     email: z.email().max(320).nullable().optional(),
     time_zone: TimeZone.optional(),
     attributes: Attributes.optional(),
+    locations: HostLocations.optional().meta({
+      description:
+        "Replaces this host's own locations. Existing bookings keep the location they have.",
+    }),
     metadata: Metadata.optional(),
     status: HostStatus.optional().meta({
       description: "A `disabled` host isn't offered. Its existing bookings stay.",
@@ -116,6 +152,9 @@ export const UpdateHostRequest = z
   })
   .meta({ id: "UpdateHostRequest", examples: [{ status: "disabled" }] });
 export type UpdateHostRequestOutput = z.output<typeof UpdateHostRequest>;
+
+/** What a host's own page sends: the whole list, which replaces what's there. */
+export const UpdateHostLocationsRequest = z.strictObject({ locations: HostLocations });
 
 const HOST_EXAMPLE = {
   object: "scheduling.host" as const,
@@ -125,6 +164,7 @@ const HOST_EXAMPLE = {
   email: "ana@example.com",
   time_zone: "America/New_York",
   attributes: { licensed_in: ["NY", "NJ"] },
+  locations: [{ type: "in_person" as const, address: "12 Main St, New York, NY" }],
   metadata: {},
   status: "active" as const,
   created_at: "2027-01-01T10:00:00.000Z",
@@ -140,6 +180,7 @@ export const HostObject = z
     email: z.string().nullable(),
     time_zone: z.string(),
     attributes: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
+    locations: z.array(HostLocation),
     metadata: z.record(z.string(), z.string()),
     status: HostStatus,
     created_at: z.string(),
@@ -321,7 +362,11 @@ export const Location = z
       }),
     }),
   ])
-  .meta({ id: "SchedulingLocation" });
+  .meta({
+    id: "SchedulingLocation",
+    description:
+      "On an event type, a `link`, `phone` or `in_person` location left blank uses the booked host's own, if they have one.",
+  });
 
 const EventTypeHostInput = z
   .strictObject({

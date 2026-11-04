@@ -17,6 +17,7 @@ import { StatusDot } from "@/components/status-dot";
 import { schedulingPageContext } from "../page-context";
 import {
   DeleteHostButton,
+  HostLocationsDialog,
   HostStatusButton,
   NewHostDialog,
   OpenPortalButton,
@@ -89,6 +90,12 @@ export default async function HostsPage({
                     {canUpdate ? (
                       <div className="flex justify-end gap-1">
                         <OpenPortalButton {...target} hostId={host.id} />
+                        <HostLocationsDialog
+                          {...target}
+                          hostId={host.id}
+                          locations={host.locations}
+                          name={host.name}
+                        />
                         <HostStatusButton {...target} hostId={host.id} status={host.status} />
                         {can({ scheduling: ["delete"] }) ? (
                           <DeleteHostButton {...target} hostId={host.id} name={host.name} />

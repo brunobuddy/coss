@@ -5,6 +5,12 @@
 
 export type SchedulingAttributes = Record<string, string | string[]>;
 
+/** A host's own place to meet. `url` must be https, and `number` in E.164 format. */
+export type SchedulingHostLocation =
+  | { type: "link"; url: string }
+  | { type: "phone"; number: string }
+  | { type: "in_person"; address: string };
+
 export type SchedulingHostStatus = "active" | "disabled";
 
 export interface CreateSchedulingHostParams {
@@ -16,6 +22,11 @@ export interface CreateSchedulingHostParams {
   time_zone: string;
   /** What pools filter hosts by, such as `{ licensed_in: ["CA", "NY"] }`. */
   attributes?: SchedulingAttributes;
+  /**
+   * This host's own office, meeting link and phone number, at most one of each. An event type's
+   * location that leaves its value blank uses them.
+   */
+  locations?: SchedulingHostLocation[];
   metadata?: Record<string, string>;
 }
 
@@ -25,6 +36,8 @@ export interface UpdateSchedulingHostParams {
   email?: string | null;
   time_zone?: string;
   attributes?: SchedulingAttributes;
+  /** Replaces this host's own locations. Existing bookings keep the location they have. */
+  locations?: SchedulingHostLocation[];
   metadata?: Record<string, string>;
   /** A `disabled` host isn't offered. Its existing bookings stay. */
   status?: SchedulingHostStatus;
@@ -38,6 +51,7 @@ export interface SchedulingHost {
   email: string | null;
   time_zone: string;
   attributes: SchedulingAttributes;
+  locations: SchedulingHostLocation[];
   metadata: Record<string, string>;
   status: SchedulingHostStatus;
   created_at: string;
