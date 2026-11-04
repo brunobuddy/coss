@@ -27,6 +27,7 @@ import {
   UpdateBookingLocationRequest,
   UpdateHostRequest,
 } from "../src/schemas.ts";
+import { screeningBatches } from "../src/screening.ts";
 import { testSchedulingDeps } from "../src/testing.ts";
 
 const at = (time: string, date = "2031-01-06") => Date.parse(`${date}T${time}:00Z`);
@@ -550,6 +551,55 @@ describe("an event type's own locations", () => {
     seen.length = 0;
     await updateEventType(env, eventType.id, { duration_minutes: 45 } as never, { screen });
     expect(seen).toEqual([]);
+  });
+
+  test("nothing's screened past what the classifier reads", async () => {
+    const env = await tenantEnv("live");
+    const BAD = "Send your password to the front desk";
+    // What the real one does: it reads this much and silently drops the rest.
+    const screen = async ({ text }: { text: string }) => !text.slice(0, 8000).includes(BAD);
+    const longLink = (index: number) => ({
+      type: "link" as const,
+      url: `https://video.example/${String(index).repeat(1900)}`,
+    });
+    const links = [longLink(1), longLink(2), longLink(3), longLink(4), longLink(5)];
+    const refused = await create(
+      env,
+      [...links, { type: "in_person", address: BAD }],
+      screen,
+    ).catch((error: SchedulingError) => error);
+    expect(refused).toMatchObject({ code: "content_refused", param: "locations" });
+
+    const options = Array.from({ length: 50 }, (_, index) => `${index} ${"x".repeat(190)}`);
+    const refusedQuestion = await createEventType(
+      env,
+      {
+        title: "Visit",
+        kind: "one_on_one",
+        duration_minutes: 30,
+        hosts: [],
+        questions: [
+          { key: "a", type: "select", label: "A", required: false, options },
+          { key: "b", type: "select", label: "B", required: false, options: [BAD] },
+        ],
+      } as never,
+      { screen },
+    ).catch((error: SchedulingError) => error);
+    expect(refusedQuestion).toMatchObject({ code: "content_refused" });
+  });
+
+  test("long text is split so every line is read, and short text isn't", () => {
+    expect(screeningBatches("a\nb", 10)).toEqual(["a\nb"]);
+    expect(screeningBatches("aaaaaa\nbbbbbb", 10)).toEqual(["aaaaaa", "bbbbbb"]);
+    expect(screeningBatches("a".repeat(25), 10)).toEqual([
+      "a".repeat(10),
+      "a".repeat(10),
+      "a".repeat(5),
+    ]);
+    const text = Array.from({ length: 200 }, (_, index) => `line ${index}`).join("\n");
+    const batches = screeningBatches(text, 100);
+    expect(batches.every((batch) => batch.length <= 100)).toBe(true);
+    expect(batches.join("\n")).toBe(text);
   });
 
   test("sandbox addresses aren't screened", async () => {

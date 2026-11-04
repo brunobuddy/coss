@@ -38,11 +38,41 @@ export async function screenSetup(
 ): Promise<void> {
   if (env.mode !== "live" || !screen || !text.trim()) return;
   if (await isHipaaMode(env.organizationId)) return;
-  if (!(await screen({ organizationId: env.organizationId, text }))) {
-    throw new SchedulingError(
-      "content_refused",
-      "This text looks like phishing or spam, so it can't be used. Contact support if that's wrong.",
-      { param },
-    );
+  for (const batch of screeningBatches(text)) {
+    if (!(await screen({ organizationId: env.organizationId, text: batch }))) {
+      throw new SchedulingError(
+        "content_refused",
+        "This text looks like phishing or spam, so it can't be used. Contact support if that's wrong.",
+        { param },
+      );
+    }
   }
+}
+
+/**
+ * The classifier reads this much and silently drops the rest, which would let anything past it
+ * through unread (`MAX_TEXT_CHARS`, `@coss/screening/text`, which this package doesn't depend on).
+ */
+const MAX_SCREENED_CHARS = 8000;
+
+/** Whole lines where they fit, so a value is read together, and everything read by someone. */
+export function screeningBatches(text: string, max: number = MAX_SCREENED_CHARS): string[] {
+  const batches: string[] = [];
+  let current = "";
+  for (const line of text.split("\n")) {
+    const joined = current ? `${current}\n${line}` : line;
+    if (joined.length <= max) {
+      current = joined;
+      continue;
+    }
+    if (current) batches.push(current);
+    let rest = line;
+    while (rest.length > max) {
+      batches.push(rest.slice(0, max));
+      rest = rest.slice(max);
+    }
+    current = rest;
+  }
+  if (current) batches.push(current);
+  return batches;
 }
