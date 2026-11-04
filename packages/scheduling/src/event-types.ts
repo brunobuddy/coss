@@ -578,7 +578,8 @@ export async function updateEventType(
         .returning();
       const row = updated as EventTypeRow;
       if (params.hosts) await replaceHosts(tx, scope, row, params.hosts);
-      if (reminders !== undefined || params.notifications?.reminder !== undefined) {
+      // Clearing a policy can bring the default reminder back, as much as setting one can.
+      if (reminders !== undefined || params.notifications !== undefined) {
         await queueReminderSync(tx, scope, row.id);
       }
       if (row.hostCalendarDetails !== existing.hostCalendarDetails) {

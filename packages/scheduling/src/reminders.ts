@@ -351,6 +351,12 @@ export function isRuleRowStale(
   }
 }
 
+/** What a booking's location was chosen as: a Meet link is still `google_meet` once it exists. */
+function locationKind(location: BookingRow["location"]): string {
+  if (!location) return "";
+  return (location as { conference?: string }).conference ?? location.type;
+}
+
 /** What a due row's rule says now, or the outcome that finishes the row instead of sending it. */
 export function ruleVerdict(
   row: NotificationRow,
@@ -375,12 +381,13 @@ export function ruleVerdict(
       if (booking.metadata[key] !== value) return { outcome: "filtered" };
     }
   }
-  if (onlyIf?.location_types && !onlyIf.location_types.includes(booking.location?.type ?? "")) {
+  if (onlyIf?.location_types && !onlyIf.location_types.includes(locationKind(booking.location))) {
     return { outcome: "filtered" };
   }
   if (rule.skip_no_show && booking.noShowAt) return { outcome: "no_show" };
   if (row.channel !== "webhook") {
-    const beforeStart = rule.anchor === "start" && rule.before_minutes !== null;
+    // Zero minutes before is the start itself, due the moment it stops being before.
+    const beforeStart = rule.anchor === "start" && Boolean(rule.before_minutes);
     if (beforeStart && now.getTime() >= booking.startAt.getTime()) return { outcome: "too_late" };
     // From when it was due: `send_if_late` queues a reminder long after its moment, retries only
     // move this later, and by minutes.
@@ -423,7 +430,6 @@ export async function checkReminders(
       "reminders",
     );
   }
-  const texts: string[] = [];
   for (const [index, rule] of rules.entries()) {
     const at = (field: string) => `reminders[${index}].${field}`;
     if (!emailFrom && hasCustomEmail(rule)) {
@@ -436,14 +442,13 @@ export async function checkReminders(
     refuseLinks(rule.message, at("message"));
     refuseLinks(rule.sms_message, at("sms_message"));
     refuseLinks(rule.button?.label, at("button"));
-    texts.push(
-      rule.subject ?? "",
-      rule.message ?? "",
-      rule.sms_message ?? "",
-      rule.button?.label ?? "",
-    );
+    // One at a time: a rule fits within what the classifier reads, and a whole list doesn't, so
+    // what's past its limit would go out unscreened.
+    const text = [rule.subject, rule.message, rule.sms_message, rule.button?.label]
+      .filter(Boolean)
+      .join("\n");
+    await screenSetup(env, text, checks.screen, at("message"));
   }
-  await screenSetup(env, texts.filter(Boolean).join("\n"), checks.screen, "reminders");
   if (env.mode !== "live") return;
   const verified = async (address: string) =>
     (await checks.verifiedAddress?.({ organizationId: env.organizationId, address })) === true;

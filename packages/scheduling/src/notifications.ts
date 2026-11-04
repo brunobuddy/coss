@@ -18,7 +18,7 @@ import { recordChange } from "./booking-record.ts";
 import { accentColors } from "./branding.ts";
 import { buildIcs } from "./calendar/ical.ts";
 import { SchedulingError } from "./errors.ts";
-import { withSessionLocation } from "./group-sessions.ts";
+import { chosenLocation, withSessionLocation } from "./group-sessions.ts";
 import { getLogoRow, LOGO_CONTENT_ID, type SchedulingLogoRow } from "./logo.ts";
 import { type NotificationEvent, policiesOf, resolvePolicy } from "./notification-policy.ts";
 import {
@@ -803,9 +803,9 @@ export async function sendTimedWebhook(
       });
       return finish("sent");
     }
-    const located = await withSessionLocation(tx, booking);
+    const location = await chosenLocation(tx, booking);
     const rules = effectiveRules(await policiesOf(tx, booking));
-    const verdict = ruleVerdict(current, located, rules, now);
+    const verdict = ruleVerdict(current, { ...booking, location }, rules, now);
     if ("outcome" in verdict) return finish(verdict.outcome);
     const { rule } = verdict;
     const scheduledFor = new Date((current.anchorAt ?? now).getTime() + offsetOf(rule) * 60_000);
@@ -971,7 +971,8 @@ export async function runDueSchedulingNotifications(
       let rule: ReminderRule | null = null;
       if (row.kind === "reminder" && row.reminderKey) {
         const rules = effectiveRules(await policiesOf(db, found));
-        const verdict = ruleVerdict(row, booking, rules, now);
+        const location = await chosenLocation(db, found);
+        const verdict = ruleVerdict(row, { ...found, location }, rules, now);
         if ("outcome" in verdict) {
           await finish(row, verdict.outcome, now);
           continue;

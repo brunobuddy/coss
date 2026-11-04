@@ -34,7 +34,8 @@ import {
   safeName,
   timeUntil,
 } from "../src/reminder-copy.ts";
-import { UpdateSettingsRequest } from "../src/schemas.ts";
+import { normalizeReminders } from "../src/reminders.ts";
+import { Reminders, UpdateSettingsRequest } from "../src/schemas.ts";
 import { testSchedulingDeps } from "../src/testing.ts";
 
 const ms = Date.parse;
@@ -1297,5 +1298,178 @@ describe("guests", () => {
     const n = await runAt(s, END + 60 * MINUTE);
     const email = n.emails.find((message) => message.text.includes("How was"));
     expect(email?.text).toContain("How was Sam Lee?");
+  });
+});
+
+describe("what a list can be", () => {
+  test("every timing gets a key that can be sent back, and what's returned can be", () => {
+    const list = Reminders.parse([
+      { anchor: "start", before_minutes: 60, send: ["email_attendee"] },
+      { anchor: "start", after_minutes: 5, send: ["webhook"] },
+      { anchor: "end", after_minutes: 60, send: ["email_attendee"] },
+      { anchor: "end", before_minutes: 5, send: ["webhook"] },
+      { anchor: "confirmed", send: ["email_host"] },
+      { anchor: "no_show", after_minutes: 15, send: ["email_attendee"] },
+      {
+        anchor: "cancelled",
+        after_minutes: 60,
+        send: ["webhook"],
+        only_if: { metadata: { plan: "pro" } },
+      },
+    ]);
+    const stored = normalizeReminders(list);
+    expect(stored.map((found) => found.key)).toEqual([
+      "start-60",
+      "start-after-5",
+      "end-after-60",
+      "end-5",
+      "confirmed-after-0",
+      "no_show-after-15",
+      "cancelled-after-60",
+    ]);
+    // What the API returns, and what the dashboard posts, is valid as it stands.
+    const again = Reminders.safeParse(stored);
+    expect(again.success ? [] : again.error.issues).toEqual([]);
+    expect(normalizeReminders(again.data ?? [])).toEqual(stored);
+  });
+
+  test("at the start itself, a reminder goes out, in words that fit", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      reminders: [
+        rule({ key: "now", anchor: "start", before_minutes: 0, send: ["email_attendee"] }),
+      ],
+    });
+    const { booking } = await book(s);
+    const n = await runAt(s, START);
+    expect((await rows(s, booking.id)).find((row) => row.reminder_key === "now")?.outcome).toBe(
+      "sent",
+    );
+    expect(subjects(n)).toContain("Happening now: Consultation");
+  });
+});
+
+describe("screening a list", () => {
+  test("each reminder is read on its own, so a long list can't hide one", async () => {
+    const s = await setUp();
+    const live: SchedulingEnvironment = { ...s.env, mode: "live" };
+    const screened: string[] = [];
+    const screen = async ({ text }: { text: string }) => {
+      screened.push(text);
+      return !text.includes("Free money");
+    };
+    const long = "See you soon, and thanks for booking. ".repeat(52).slice(0, 2000);
+    const reminders = [
+      ...Array.from({ length: 9 }, (_, index) =>
+        rule({
+          key: `r${index}`,
+          anchor: "start",
+          before_minutes: index + 1,
+          send: ["email_attendee"],
+          message: long,
+        }),
+      ),
+      rule({
+        key: "last",
+        anchor: "start",
+        before_minutes: 30,
+        send: ["email_attendee"],
+        message: "Free money",
+      }),
+    ];
+    await expect(
+      updateSettings(
+        live,
+        { email_from: "appointments@example.com", reminders },
+        { screen, verifiedAddress: async () => true },
+      ),
+    ).rejects.toThrow(/phishing or spam/);
+    expect(screened.length).toBe(10);
+    // The most a classifier would be handed at once is under what it reads (8,000 characters).
+    expect(Math.max(...screened.map((text) => text.length))).toBeLessThan(8000);
+  });
+});
+
+describe("the location a reminder is limited to", () => {
+  test("a Meet booking is still a Meet booking once its link exists", async () => {
+    const s = await setUp({ locations: [{ type: "google_meet" }] });
+    await updateSettings(s.env, {
+      reminders: [
+        rule({
+          key: "meet",
+          anchor: "end",
+          after_minutes: 60,
+          send: ["webhook"],
+          only_if: { location_types: ["google_meet"] },
+        }),
+      ],
+    });
+    const { booking } = await book(s);
+    await db
+      .update(schema.schedulingBooking)
+      .set({
+        location: {
+          type: "link",
+          url: "https://meet.google.com/abc",
+          conference: "google_meet",
+        } as never,
+      })
+      .where(eq(schema.schedulingBooking.id, booking.id));
+    await runAt(s, END + 60 * MINUTE);
+    expect((await rows(s, booking.id)).find((row) => row.reminder_key === "meet")?.outcome).toBe(
+      "sent",
+    );
+  });
+});
+
+describe("the location of a group session", () => {
+  test("is what the session asked for, once it has a meeting link", async () => {
+    const s = await setUp({ kind: "group", capacity: 5 });
+    await updateSettings(s.env, {
+      reminders: [
+        rule({
+          key: "meet",
+          anchor: "end",
+          after_minutes: 60,
+          send: ["webhook"],
+          only_if: { location_types: ["google_meet"] },
+        }),
+      ],
+    });
+    const { booking } = await book(s);
+    const [row] = await db
+      .select({ session: schema.schedulingBooking.groupSessionId })
+      .from(schema.schedulingBooking)
+      .where(eq(schema.schedulingBooking.id, booking.id));
+    await db
+      .update(schema.schedulingGroupSession)
+      .set({ location: { type: "google_meet" }, meetingUrl: "https://meet.google.com/abc" })
+      .where(eq(schema.schedulingGroupSession.id, row?.session as string));
+    await runAt(s, END + 60 * MINUTE);
+    expect(
+      (await rows(s, booking.id)).find((found) => found.reminder_key === "meet")?.outcome,
+    ).toBe("sent");
+  });
+});
+
+describe("clearing a policy", () => {
+  const scope = (s: Setup) => ({ scope: { organizationIds: [s.env.organizationId] } });
+
+  test("brings the default reminder back to existing bookings", async () => {
+    const s = await setUp({ notifications: { reminder: { email_attendee: false } } });
+    const { booking } = await book(s);
+    expect((await rows(s, booking.id)).some((row) => row.reminder_key === "reminder")).toBe(false);
+    await updateEventType(s.env, s.eventType.id, { notifications: null });
+    await runDueReminderSyncs({ now: () => NOW }, scope(s));
+    expect((await rows(s, booking.id)).some((row) => row.reminder_key === "reminder")).toBe(true);
+  });
+
+  test("on the environment too", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, { notifications: { reminder: { email_attendee: false } } });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { notifications: null });
+    await runDueReminderSyncs({ now: () => NOW }, scope(s));
+    expect((await rows(s, booking.id)).some((row) => row.reminder_key === "reminder")).toBe(true);
   });
 });

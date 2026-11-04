@@ -116,9 +116,9 @@ export function reminderCopyKind(rule: {
 }): CopyKind {
   switch (rule.anchor) {
     case "start":
-      return rule.before_minutes !== null ? "reminder" : "happening";
+      return rule.before_minutes ? "reminder" : "happening";
     case "end":
-      return rule.before_minutes !== null ? "happening" : "finished";
+      return rule.before_minutes ? "happening" : "finished";
     default:
       return rule.anchor as CopyKind;
   }
@@ -132,8 +132,8 @@ export function reminderKeyOf(rule: {
   after_minutes?: number | null | undefined;
 }): string {
   if (rule.key) return rule.key;
-  const minutes = rule.before_minutes ?? rule.after_minutes ?? 0;
-  return `${rule.anchor}${rule.before_minutes != null ? "-" : "+"}${minutes}`;
+  if (rule.before_minutes != null) return `${rule.anchor}-${rule.before_minutes}`;
+  return `${rule.anchor}-after-${rule.after_minutes ?? 0}`;
 }
 
 const VARIABLE = /\{\{\s*([^{}]*?)\s*\}\}/g;

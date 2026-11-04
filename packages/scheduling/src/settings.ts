@@ -131,7 +131,8 @@ export async function updateSettings(
         set: { ...values, updatedAt: new Date() },
       })
       .returning();
-    if (reminders !== undefined || params.notifications?.reminder !== undefined) {
+    // Clearing a policy can bring the default reminder back, as much as setting one can.
+    if (reminders !== undefined || params.notifications !== undefined) {
       await queueReminderSync(tx, env, null);
     }
     return saved;
