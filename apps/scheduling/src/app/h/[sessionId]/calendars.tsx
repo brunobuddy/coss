@@ -30,6 +30,8 @@ type Connection = {
   provider: Provider;
   account: string;
   status: "active" | "needs_reauth";
+  /** Set: your organization manages this one, so there's nothing here to reconnect or disconnect. */
+  delegation: string | null;
   calendars: { id: string; external_id: string; read_busy: boolean; write_target: boolean }[];
 };
 
@@ -44,7 +46,9 @@ function ConnectionCard(props: {
   const { connection, readOnly, working, onReconnect, onDisconnect, onChangeCalendar } = props;
   const name = PROVIDER_NAMES[connection.provider];
   const zoom = connection.provider === "zoom";
+  const managed = connection.delegation !== null;
   const canReconnect =
+    !managed &&
     connection.status === "needs_reauth" &&
     (connection.provider === "google" || connection.provider === "microsoft" || zoom);
   return (
@@ -55,8 +59,9 @@ function ConnectionCard(props: {
           <span className="flex flex-wrap items-center gap-2 font-medium text-sm">
             {name}
             {connection.status === "needs_reauth" ? (
-              <Badge variant="error">Needs reconnecting</Badge>
+              <Badge variant="error">{managed ? "Can't be reached" : "Needs reconnecting"}</Badge>
             ) : null}
+            {managed ? <Badge variant="outline">Managed by your organization</Badge> : null}
           </span>
           {zoom ? (
             <span className="text-muted-foreground text-sm">
@@ -66,7 +71,7 @@ function ConnectionCard(props: {
             <span className="break-all text-muted-foreground text-sm">{connection.account}</span>
           )}
         </div>
-        {readOnly ? null : (
+        {readOnly || managed ? null : (
           <div className="flex gap-1">
             {canReconnect ? (
               <Button onClick={onReconnect} size="sm" variant="outline">
@@ -206,7 +211,10 @@ export function Calendars(props: { call: ClientCall; session: HostSession }) {
   };
 
   const lostAccess = connections?.filter((connection) => connection.status === "needs_reauth");
-  const needsReauth = lostAccess?.some((connection) => connection.provider !== "zoom");
+  const needsReauth = lostAccess?.some(
+    (connection) => connection.provider !== "zoom" && connection.delegation === null,
+  );
+  const managedLost = lostAccess?.some((connection) => connection.delegation !== null);
   const zoomNeedsReauth = lostAccess?.some((connection) => connection.provider === "zoom");
   return (
     <div className="flex flex-col gap-6">
@@ -215,6 +223,15 @@ export function Calendars(props: { call: ClientCall; session: HostSession }) {
           <AlertTitle>A calendar needs reconnecting</AlertTitle>
           <AlertDescription>
             We can't read it, so you aren't being offered for new bookings until it's back.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {managedLost ? (
+        <Alert variant="error">
+          <AlertTitle>We can't reach your calendar</AlertTitle>
+          <AlertDescription>
+            You aren't being offered for new bookings until it's back. Your organization manages
+            this connection, so there's nothing to do here. Existing bookings stay as they are.
           </AlertDescription>
         </Alert>
       ) : null}

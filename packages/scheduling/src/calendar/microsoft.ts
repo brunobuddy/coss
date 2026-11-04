@@ -11,6 +11,7 @@ import {
   type HttpFetch,
   type RemoteCalendar,
 } from "./client.ts";
+import { isMailboxGoneCode } from "./delegation-tokens.ts";
 
 const API = "https://graph.microsoft.com/v1.0";
 const GRAPH_BATCH = 20;
@@ -74,8 +75,11 @@ const UTC_PREFER = { Prefer: 'outlook.timezone="UTC"' };
 export function microsoftCalendarClient(input: {
   accessToken: string;
   fetcher: HttpFetch;
+  /** A delegation's: its token isn't anyone's, so every path has to say whose mailbox it means. */
+  mailbox?: string;
 }): CalendarClient {
-  const { accessToken, fetcher } = input;
+  const { accessToken, fetcher, mailbox } = input;
+  const owner = mailbox ? `/users/${encodeURIComponent(mailbox)}` : "/me";
 
   const call = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
     const url = path.startsWith("http") ? path : `${API}${path}`;
@@ -97,6 +101,9 @@ export function microsoftCalendarClient(input: {
       if (code === "InvalidAuthenticationToken" || code === "ErrorAccessDenied") {
         throw new CalendarError("auth", code, "The calendar refused our access.");
       }
+      if (mailbox && code && isMailboxGoneCode(code)) {
+        throw new CalendarError("auth", code, "This mailbox can't be reached.");
+      }
       throw errorFromStatus(res.status, code ?? "graph_error", res.headers.get("retry-after"));
     }
     return (await res.json()) as T;
@@ -108,7 +115,7 @@ export function microsoftCalendarClient(input: {
     const value = key.replace(/'/g, "''");
     const filter = `singleValueExtendedProperties/Any(ep: ep/id eq '${EVENT_KEY_PROPERTY}' and ep/value eq '${value}')`;
     const page = await call<{ value?: GraphEvent[] }>(
-      `/me/events?$filter=${encode(filter)}&$select=id,start,end,location,onlineMeeting`,
+      `${owner}/events?$filter=${encode(filter)}&$select=id,start,end,location,onlineMeeting`,
       { headers: UTC_PREFER },
     );
     return page.value ?? [];
@@ -118,7 +125,7 @@ export function microsoftCalendarClient(input: {
     async listCalendars(): Promise<RemoteCalendar[]> {
       const calendars: RemoteCalendar[] = [];
       let next: string | undefined =
-        "/me/calendars?$select=id,name,isDefaultCalendar,canEdit&$top=100";
+        `${owner}/calendars?$select=id,name,isDefaultCalendar,canEdit&$top=100`;
       while (next) {
         const page: {
           value?: { id: string; name?: string; isDefaultCalendar?: boolean; canEdit?: boolean }[];
@@ -165,7 +172,7 @@ export function microsoftCalendarClient(input: {
             requests: batch.map((calendarId, position) => ({
               id: String(position),
               method: "GET",
-              url: `/me/calendars/${calendarId}/calendarView${query}`,
+              url: `${owner}/calendars/${calendarId}/calendarView${query}`,
               headers: UTC_PREFER,
             })),
           }),
@@ -175,6 +182,21 @@ export function microsoftCalendarClient(input: {
         }
         for (const item of response.responses) {
           const id = batch[Number(item.id)];
+          // With a delegation's token this is a revocation, which must not pass as one failed read.
+          if (mailbox && (item.status === 401 || item.status === 403)) {
+            throw new CalendarError(
+              "auth",
+              item.body?.error?.code ?? "graph_refused",
+              "The calendar refused our access.",
+            );
+          }
+          if (mailbox && isMailboxGoneCode(item.body?.error?.code)) {
+            throw new CalendarError(
+              "auth",
+              item.body?.error?.code ?? "graph_refused",
+              "This mailbox can't be reached.",
+            );
+          }
           // Left out, not empty: a failure must not read as free.
           if (!id || item.status !== 200 || !item.body) continue;
           const intervals: Interval[] = [];
@@ -203,7 +225,7 @@ export function microsoftCalendarClient(input: {
       const [found] = await eventsWithKey(event.key);
       const existing =
         found ??
-        (await call<GraphEvent>(`/me/calendars/${calendarId}/events`, {
+        (await call<GraphEvent>(`${owner}/calendars/${calendarId}/events`, {
           method: "POST",
           headers: UTC_PREFER,
           body: JSON.stringify({
@@ -219,7 +241,7 @@ export function microsoftCalendarClient(input: {
 
     async updateEvent(_calendarId, providerEventId, event) {
       return written(
-        await call<GraphEvent>(`/me/events/${encode(providerEventId)}`, {
+        await call<GraphEvent>(`${owner}/events/${encode(providerEventId)}`, {
           method: "PATCH",
           body: JSON.stringify(toBody(event)),
         }),
@@ -228,7 +250,7 @@ export function microsoftCalendarClient(input: {
 
     async deleteEvent(_calendarId, providerEventId) {
       try {
-        await call(`/me/events/${encode(providerEventId)}`, { method: "DELETE" });
+        await call(`${owner}/events/${encode(providerEventId)}`, { method: "DELETE" });
       } catch (error) {
         if (error instanceof CalendarError && error.status === 404) return;
         throw error;
@@ -244,7 +266,7 @@ export function microsoftCalendarClient(input: {
     async getEvent(_calendarId, providerEventId): Promise<CalendarEventState | null> {
       try {
         const event = await call<GraphEvent>(
-          `/me/events/${encode(providerEventId)}?$select=start,end,isCancelled`,
+          `${owner}/events/${encode(providerEventId)}?$select=start,end,isCancelled`,
           { headers: UTC_PREFER },
         );
         if (event.isCancelled) return { state: "deleted" };
@@ -268,7 +290,7 @@ export function microsoftCalendarClient(input: {
         body: JSON.stringify({
           changeType: "created,updated,deleted",
           notificationUrl: webhookUrl,
-          resource: `/me/calendars/${calendarId}/events`,
+          resource: `${owner}/calendars/${calendarId}/events`,
           expirationDateTime: new Date(Date.now() + seconds * 1000).toISOString(),
           clientState: token,
         }),
