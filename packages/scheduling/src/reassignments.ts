@@ -772,7 +772,7 @@ export async function previewReassignment(
         if (opts.onlyHosts && !opts.onlyHosts.has(hostId)) reason = "not_on_team";
         else if (current.has(hostId)) reason = "already_a_host";
         else if (!memberIds.has(hostId) && !anyHost) reason = "not_a_member";
-        else if (!inputs) reason = "host_unavailable";
+        else if (!inputs || everyone.get(hostId)?.status !== "active") reason = "host_unavailable";
         else {
           const taken = proposed.get(hostId) ?? [];
           const limitUsage = { ...inputs.limitUsage };

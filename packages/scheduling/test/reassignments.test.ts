@@ -287,6 +287,20 @@ describe("what a run covers", () => {
     expect(of(later.id)).toMatchObject({ to_host: null, reason: "calendar_unverified" });
   });
 
+  test("doesn't propose someone disabled, whom the run would refuse", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const type = await pool(env, [a]);
+    const booking = await book(env, type.id, at("10:00"), a.id);
+    await updateHost(env, b.id, { status: "disabled" } as never);
+    const { items } = await previewReassignment(
+      env,
+      request({ booking_ids: [booking.id] }, { to_host: b.id }, { overrides: ["any_host"] }),
+      plain,
+    );
+    expect(items[0]).toMatchObject({ to_host: null, reason: "host_unavailable" });
+  });
+
   test("a limit on an event type only counts what's proposed from it", async () => {
     const env = await environment();
     const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);

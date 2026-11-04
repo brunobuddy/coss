@@ -957,8 +957,10 @@ export type ReassignCandidate = {
   /** Takes this event type, and fits what the booking was routed with. Otherwise `any_host`. */
   member: boolean;
   available: boolean;
-  /** Why not. Each has an override of the same name, except `already_claimed`. */
+  /** Why not, the first of `reasons`. */
   reason: NotBookableReason | "host_unavailable" | null;
+  /** Everything in the way. Each has an override of the same name, except `already_claimed`. */
+  reasons: (NotBookableReason | "host_unavailable")[];
   /** Their live bookings in the week from this one. */
   load: number;
   /** Their place in who a pool would pick next, from 1. Null when they aren't a member. */
@@ -1072,20 +1074,19 @@ export async function listReassignCandidates(
     )
     .groupBy(schedulingClaim.hostId);
   const loadOf = new Map(loads.map((row) => [row.hostId, row.count]));
-  const needed = await providerNeeded(db, booking, query.fromHost ?? null, rows);
+  // A `uid` works as well here, and whose meeting it is goes by id.
+  const leaving = query.fromHost ? await refId(db, env, query.fromHost) : null;
+  const needed = await providerNeeded(db, booking, leaving, rows);
   const connected = needed ? await hostsWithProvider(db, env, needed, chosen) : null;
   const started = startMs <= now.getTime();
   const data = chosen.map((host): ReassignCandidate => {
     const inputs = loaded.get(host.id);
-    const verdict = inputs
-      ? isBookable(startMs, {
-          nowMs: now.getTime(),
-          rule,
-          host: inputs,
-          skip: ALREADY_DECIDED,
-        })
-      : null;
-    const available = started || verdict?.ok === true;
+    const reasons: ReassignCandidate["reasons"] = started
+      ? []
+      : inputs
+        ? blockersOf(startMs, { nowMs: now.getTime(), rule, host: inputs })
+        : ["host_unavailable"];
+    const available = reasons.length === 0;
     return {
       object: "scheduling.reassign_candidate",
       host: host.id,
@@ -1093,13 +1094,29 @@ export async function listReassignCandidates(
       name: host.name,
       member: members.has(host.id),
       available,
-      reason: available ? null : verdict && !verdict.ok ? verdict.reason : "host_unavailable",
+      reason: reasons[0] ?? null,
+      reasons,
       load: loadOf.get(host.id) ?? 0,
       rank: order.get(host.id) ?? null,
       meeting_provider_missing: connected ? !connected.has(host.id) : false,
     };
   });
   return { data, hasMore: others.length > chosen.length };
+}
+
+/** Everything in the way, not only what's checked first: overriding one would just show the next. */
+function blockersOf(
+  startMs: number,
+  input: Omit<Parameters<typeof isBookable>[1], "skip">,
+): NotBookableReason[] {
+  const skip: NotBookableReason[] = [...ALREADY_DECIDED];
+  const blockers: NotBookableReason[] = [];
+  for (;;) {
+    const verdict = isBookable(startMs, { ...input, skip });
+    if (verdict.ok || skip.includes(verdict.reason)) return blockers;
+    blockers.push(verdict.reason);
+    skip.push(verdict.reason);
+  }
 }
 
 /** The provider a new host would need, if leaving takes the meeting with them. */

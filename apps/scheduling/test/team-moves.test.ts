@@ -15,12 +15,17 @@ test("choosing someone, or that it stays, wins over the proposal", () => {
 });
 
 test("choosing someone asks only for what the API can go past", () => {
-  const free = { member: true, available: true, reason: null };
+  const free = { member: true, reasons: [] };
   expect(overridesFor(free)).toEqual([]);
   expect(overridesFor({ ...free, member: false })).toEqual(["any_host"]);
-  const busy = { member: true, available: false, reason: "host_busy" };
+  const busy = { member: true, reasons: ["host_busy"] };
   expect(overridesFor(busy)).toEqual(["host_busy"]);
   expect(overridesFor({ ...busy, member: false })).toEqual(["any_host", "host_busy"]);
-  expect(overridesFor({ ...busy, reason: "outside_coverage" })).toEqual(["any_host"]);
-  expect(overridesFor({ ...busy, reason: "already_claimed" })).toEqual([]);
+  expect(overridesFor({ member: true, reasons: ["outside_coverage"] })).toEqual(["any_host"]);
+  expect(overridesFor({ member: true, reasons: ["already_claimed"] })).toEqual([]);
+});
+
+test("everything in the way is asked for, or going past one would only show the next", () => {
+  const both = { member: true, reasons: ["outside_availability", "limit_reached"] };
+  expect(overridesFor(both)).toEqual(["outside_availability", "limit_reached"]);
 });

@@ -2238,6 +2238,7 @@ const REASSIGN_CANDIDATE_EXAMPLE = {
   member: true,
   available: true,
   reason: null,
+  reasons: [],
   load: 4,
   rank: 1,
   meeting_provider_missing: false,
@@ -2255,7 +2256,11 @@ export const ReassignCandidate = z
     }),
     available: z.boolean(),
     reason: z.string().nullable().meta({
-      description: "Why they aren't available. `already_claimed` can't be overridden.",
+      description: "Why they aren't available, the first of `reasons`.",
+    }),
+    reasons: z.array(z.string()).meta({
+      description:
+        "Everything in the way, each needing its override. `already_claimed` can't be overridden.",
     }),
     load: z.number().meta({ description: "Their live bookings in the week from this one." }),
     rank: z.number().nullable().meta({

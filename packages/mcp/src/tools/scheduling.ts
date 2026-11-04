@@ -727,7 +727,7 @@ export function registerSchedulingTools(ctx: ToolContext): void {
     {
       title: "Mark hosts as away",
       description:
-        "Stops hosts being offered during some time: start_date and end_date for whole days (the last one included), or start and end instants for part of a day. Give one of host, hosts and host_filter. Existing bookings stay: see list_scheduling_out_of_office_conflicts. public_message is shown to people booking, and can't hold a link.",
+        "Stops hosts being offered during some time: start_date and end_date for whole days (the last one included), or start and end instants for part of a day. Give one of host, hosts and host_filter. Existing bookings stay and their host is emailed a count (see list_scheduling_out_of_office_conflicts), unless existing_bookings is reassign, which starts moving them and emails their attendees and hosts. public_message is shown to people booking, and can't hold a link.",
       inputSchema: z.object({
         delegates: z
           .array(z.string())
@@ -750,7 +750,7 @@ export function registerSchedulingTools(ctx: ToolContext): void {
         public_message: z.string().optional(),
         notes: z.string().optional(),
       }),
-      annotations: WRITE,
+      annotations: SENDS,
     },
     (args) =>
       respond(

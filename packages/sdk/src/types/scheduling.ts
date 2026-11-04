@@ -1136,8 +1136,10 @@ export interface SchedulingReassignCandidate {
   /** Takes this event type and fits the booking's routing. Otherwise it needs `any_host`. */
   member: boolean;
   available: boolean;
-  /** Why they aren't available. `already_claimed` can't be overridden. */
+  /** Why they aren't available, the first of `reasons`. */
   reason: string | null;
+  /** Everything in the way, each needing its override. `already_claimed` can't be overridden. */
+  reasons: string[];
   /** Their live bookings in the week from this one. */
   load: number;
   /** Their place in who a pool would pick next, from 1. Null for a non-member. */

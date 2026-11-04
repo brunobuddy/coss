@@ -59,6 +59,7 @@ type Candidate = {
   name: string;
   available: boolean;
   reason: string | null;
+  reasons: string[];
   member: boolean;
 };
 type PreviewItem = {
@@ -534,14 +535,14 @@ function BookingRow(props: {
               <SelectPopup>
                 {candidates.map((candidate) => (
                   <SelectItem
-                    disabled={candidate.reason === "already_claimed"}
+                    disabled={candidate.reasons.includes("already_claimed")}
                     key={candidate.host}
                     value={candidate.host}
                   >
                     {candidate.name}
                     {candidate.available
                       ? ""
-                      : `: ${WHY_NOT[candidate.reason ?? ""] ?? "Not available"}`}
+                      : `: ${candidate.reasons.map((why) => WHY_NOT[why] ?? "Not available").join(", ")}`}
                   </SelectItem>
                 ))}
               </SelectPopup>

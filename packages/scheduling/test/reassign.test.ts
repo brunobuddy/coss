@@ -1830,6 +1830,68 @@ describe("candidates", () => {
     expect(lastMember).toBeLessThan(firstOther);
   });
 
+  test("say everything in the way, since each needs its own override", async () => {
+    const env = await environment();
+    const first = await host(env, "First");
+    const late = await host(env, "Late", {}, { start: "20:00", end: "22:00" });
+    const limits = [{ period: "day", max: 1, scope: "event_type" }];
+    const pool = await eventTypeWith(env, "pool", [member(first), member(late)], { limits });
+    const { booking } = await createBooking(
+      env,
+      { eventType: pool.id, startMs: at("10:00"), host: first.id, attendee },
+      plain,
+      actor,
+    );
+    await createBooking(
+      env,
+      {
+        eventType: pool.id,
+        startMs: at("20:30"),
+        host: late.id,
+        attendee: { ...attendee, uid: "other" },
+      },
+      plain,
+      actor,
+    );
+    const { data } = await listReassignCandidates(env, booking.id, {}, plain);
+    const candidate = data.find((entry) => entry.host === late.id);
+    expect(candidate?.reasons).toEqual(["outside_availability", "limit_reached"]);
+    expect(candidate?.reason).toBe("outside_availability");
+    const moved = await reassign(
+      env,
+      booking.id,
+      change(late.id, {
+        overrides: ["outside_availability", "limit_reached"],
+        note: "They said they'd take it",
+      }),
+    );
+    expect(moved.hosts).toEqual([late.id]);
+  });
+
+  test("say whether the meeting goes, whichever way the host leaving is named", async () => {
+    const env = await environment();
+    const first = await createHost(env, { name: "First", time_zone: "UTC", uid: "first_uid" });
+    await createSchedule(env, first.id, {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+    });
+    const second = await host(env, "Second");
+    const pool = await eventTypeWith(env, "pool", [member(first), member(second)], {
+      locations: [{ type: "zoom", url: null }],
+    });
+    const { booking } = await createBooking(
+      env,
+      { eventType: pool.id, startMs: at("10:00"), host: first.id, attendee },
+      plain,
+      actor,
+    );
+    const missing = async (fromHost: string) =>
+      (await listReassignCandidates(env, booking.id, { fromHost }, plain)).data.find(
+        (candidate) => candidate.host === second.id,
+      )?.meeting_provider_missing;
+    expect(await missing(first.id)).toBe(await missing("first_uid"));
+    await expect(missing("nobody")).rejects.toMatchObject({ code: "not_found" });
+  });
+
   test("say when they'd leave it with no meeting", async () => {
     const env = await environment();
     const [first, second] = [await host(env, "First"), await host(env, "Second")];

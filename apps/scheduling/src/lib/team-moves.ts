@@ -16,15 +16,9 @@ const OVERRIDABLE = new Set([
 ]);
 
 /** What choosing someone means going past: someone covering, outside it, is taking it as anyone. */
-export function overridesFor(candidate: {
-  member: boolean;
-  available: boolean;
-  reason: string | null;
-}): string[] {
-  const overrides: string[] = [];
-  if (!candidate.member || candidate.reason === "outside_coverage") overrides.push("any_host");
-  if (!candidate.available && candidate.reason && OVERRIDABLE.has(candidate.reason)) {
-    overrides.push(candidate.reason);
-  }
-  return overrides;
+export function overridesFor(candidate: { member: boolean; reasons: readonly string[] }): string[] {
+  return [
+    ...(!candidate.member || candidate.reasons.includes("outside_coverage") ? ["any_host"] : []),
+    ...candidate.reasons.filter((reason) => OVERRIDABLE.has(reason)),
+  ];
 }
