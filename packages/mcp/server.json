@@ -1,0 +1,55 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.coss/mcp",
+  "title": "coss.com",
+  "description": "Look up and send email and SMS, diagnose delivery, and set up coss.com's products.",
+  "websiteUrl": "https://coss.com/docs/mcp",
+  "repository": {
+    "url": "https://github.com/cosscom/coss",
+    "source": "github",
+    "subfolder": "packages/mcp"
+  },
+  "version": "0.6.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "coss-mcp",
+      "version": "0.6.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "COSS_API_KEY",
+          "description": "A coss.com API key. Use a development key (coss_test_) unless you need production data. Without one, only the docs tools are available.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.coss.com/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer and a coss.com API key. Use a development key (coss_test_) unless you need production data.",
+          "value": "Bearer {api_key}",
+          "isRequired": true,
+          "isSecret": true,
+          "variables": {
+            "api_key": {
+              "description": "A coss.com API key.",
+              "isRequired": true,
+              "isSecret": true,
+              "format": "string"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

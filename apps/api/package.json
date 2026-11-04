@@ -37,6 +37,7 @@
     "@hono/zod-openapi": "catalog:",
     "@sentry/bun": "catalog:",
     "@t3-oss/env-core": "catalog:",
+    "coss-mcp": "workspace:*",
     "hono": "catalog:",
     "zod": "catalog:"
   },
@@ -46,7 +47,6 @@
     "@modelcontextprotocol/client": "2.3.1",
     "coss": "workspace:*",
     "coss-cli": "workspace:*",
-    "coss-mcp": "workspace:*",
     "nodemailer": "catalog:",
     "typescript": "catalog:"
   }

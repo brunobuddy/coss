@@ -166,6 +166,88 @@ test("an event with no date makes the whole feed unreadable, since it could be a
   ).toThrow(UnreadableCalendarData);
 });
 
+test("someone covering who's since been deleted stops nobody's holidays", async () => {
+  const env = await environment();
+  const [a, b] = [await host(env, "A"), await host(env, "B")];
+  const created = await calendar(env, [a.id], { delegates: [b.id] });
+  await deleteHost(env, b.id);
+  await sync(env, feed(ics(day("2031-01-05", "One"))).transport);
+  expect(await datesOf(env, a.id)).toEqual(["2031-01-05"]);
+  expect((await entriesOf(env, a.id))[0]?.delegates).toEqual([]);
+  const [row] = await db
+    .select({ lastError: schema.schedulingHolidayCalendar.lastError })
+    .from(schema.schedulingHolidayCalendar)
+    .where(eq(schema.schedulingHolidayCalendar.id, created.id));
+  expect(row?.lastError).toBeNull();
+});
+
+describe("hosts west of UTC", () => {
+  // January 5th in Los Angeles runs until 08:00 UTC on the 6th.
+  const stillThe5th = new Date("2031-01-06T01:00:00Z");
+  async function angeleno() {
+    const env = await environment();
+    const doctor = await createHost(env, { name: "Doctor", time_zone: "America/Los_Angeles" });
+    const created = await calendar(env, [doctor.id]);
+    await sync(env, feed(ics(day("2031-01-05", "One"), day("2031-02-05", "Two"))).transport);
+    return { env, doctor, created };
+  }
+
+  test("deleting the calendar lifts a holiday that's still running there", async () => {
+    const { env, doctor, created } = await angeleno();
+    await deleteHolidayCalendar(env, created.id, plain);
+    await sync(env, feed("").transport, stillThe5th);
+    expect(await datesOf(env, doctor.id)).toEqual([]);
+  });
+
+  test("a feed read the next UTC day doesn't take it away", async () => {
+    const { env, doctor, created } = await angeleno();
+    await dueAgain(created.id);
+    await sync(
+      env,
+      feed(ics(day("2031-01-05", "One"), day("2031-02-05", "Two"))).transport,
+      stillThe5th,
+    );
+    expect(await datesOf(env, doctor.id)).toEqual(["2031-01-05", "2031-02-05"]);
+  });
+
+  test("a first read gets the holiday still running there, and not where it's over", async () => {
+    const env = await environment();
+    const west = await createHost(env, { name: "West", time_zone: "America/Los_Angeles" });
+    const east = await createHost(env, { name: "East", time_zone: "Asia/Tokyo" });
+    await calendar(env, [west.id, east.id]);
+    await sync(env, feed(ics(day("2031-01-05", "One"))).transport, stillThe5th);
+    expect(await datesOf(env, west.id)).toEqual(["2031-01-05"]);
+    expect(await datesOf(env, east.id)).toEqual([]);
+  });
+});
+
+test("a worker that lost its lease reading a feed changes nothing", async () => {
+  const env = await environment();
+  const doctor = await host(env, "Doctor");
+  const created = await calendar(env, [doctor.id]);
+  const lease = new Date(NOW.getTime() + 3_600_000);
+  const next = new Date(NOW.getTime() + 7_200_000);
+  await sync(
+    env,
+    during(feed(ics(day("2031-01-05", "One"))).transport, () =>
+      // Someone else took it over meanwhile, and they've said when it's next due.
+      db
+        .update(schema.schedulingHolidayCalendar)
+        .set({ leaseUntil: lease, nextSyncAt: next })
+        .where(eq(schema.schedulingHolidayCalendar.id, created.id)),
+    ),
+  );
+  expect(await datesOf(env, doctor.id)).toEqual([]);
+  const [row] = await db
+    .select({
+      leaseUntil: schema.schedulingHolidayCalendar.leaseUntil,
+      nextSyncAt: schema.schedulingHolidayCalendar.nextSyncAt,
+    })
+    .from(schema.schedulingHolidayCalendar)
+    .where(eq(schema.schedulingHolidayCalendar.id, created.id));
+  expect(row).toEqual({ leaseUntil: lease, nextSyncAt: next });
+});
+
 describe("a calendar changed while its feed is being read", () => {
   test("deleted, it makes nobody away, and goes", async () => {
     const env = await environment();

@@ -35,6 +35,7 @@ import { space } from "../../../../lib/theme";
 const HOLD_MESSAGES: Record<NonNullable<BillingAlerts["held"]>, string> = {
   delinquent: "An invoice is overdue. Sending resumes as soon as it is paid.",
   spend_limit: "This month's usage reached your spend limit. Sending resumes next month.",
+  credit_limit: "Your organization reached its credit limit, or a usage charge failed.",
   admin: "coss.com paused live sending for billing reasons. Contact support.",
 };
 

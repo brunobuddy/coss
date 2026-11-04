@@ -10,6 +10,8 @@ import {
 import {
   addOnRows,
   billingExample,
+  type CreditAmountKey,
+  creditAmountText,
   graduatedExampleText,
   includedUnitsText,
   limitText,
@@ -147,6 +149,10 @@ export function Included({ meter, plan = "free" }: { meter: MeterKey; plan?: Pla
 
 export function Limit({ of, plan }: { of: LimitKey; plan: PlanKey }) {
   return <>{limitText(of, plan)}</>;
+}
+
+export function CreditAmount({ of }: { of: CreditAmountKey }) {
+  return <>{creditAmountText(of)}</>;
 }
 
 export function PlanPrice({ plan }: { plan: PlanKey }) {

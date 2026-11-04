@@ -1720,6 +1720,7 @@
                     "enum": [
                       "delinquent",
                       "spend_limit",
+                      "credit_limit",
                       "admin"
                     ]
                   }
@@ -2059,9 +2060,10 @@
               "period",
               "plan_change",
               "one_off",
-              "final"
+              "final",
+              "threshold"
             ],
-            "description": "`period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account."
+            "description": "`period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account. `threshold`: usage charged early, taken off the month's invoice."
           },
           "status": {
             "type": "string",
@@ -2344,7 +2346,8 @@
               "support",
               "promotion",
               "refund",
-              "sla"
+              "sla",
+              "threshold"
             ],
             "description": "Where it came from: `fee`, `commitment`, `support`, `promotion`, `refund` or `sla`."
           },
@@ -29786,9 +29789,10 @@
                   "enum": [
                     "delinquent",
                     "spend_limit",
+                    "credit_limit",
                     "admin"
                   ],
-                  "description": "`delinquent`: an invoice is past its grace period. `spend_limit`: the spend limit was reached. `admin`: placed by coss.com."
+                  "description": "`delinquent`: an invoice is past its grace period. `spend_limit`: the spend limit was reached. `credit_limit`: the credit limit was reached, or a usage charge failed. `admin`: placed by coss.com."
                 },
                 "since": {
                   "type": "string",
@@ -29922,6 +29926,35 @@
               "null"
             ],
             "description": "Usage beyond the credit past which live sending is held; `null`: none."
+          },
+          "credit_limit": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "limit": {
+                "type": "integer",
+                "description": "What coss.com carries before live sending is held. It rises as payments settle."
+              },
+              "used": {
+                "type": "integer",
+                "description": "Usage not invoiced yet, unpaid invoices and recent usage charges."
+              },
+              "charge_threshold": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Usage not invoiced yet is charged early at this amount; `null`: it isn't charged automatically."
+              }
+            },
+            "required": [
+              "limit",
+              "used",
+              "charge_threshold"
+            ],
+            "description": "Where the organization stands against its credit limit; `null`: it has none."
           },
           "payment_method": {
             "type": [
@@ -30097,6 +30130,7 @@
           "estimate",
           "credit_remaining",
           "spend_limit",
+          "credit_limit",
           "payment_method",
           "add_ons",
           "features",
@@ -30138,6 +30172,11 @@
             },
             "credit_remaining": 0,
             "spend_limit": null,
+            "credit_limit": {
+              "limit": 50000,
+              "used": 2300,
+              "charge_threshold": 10000
+            },
             "payment_method": {
               "type": "card",
               "brand": "visa",
@@ -30408,9 +30447,10 @@
               "period",
               "plan_change",
               "one_off",
-              "final"
+              "final",
+              "threshold"
             ],
-            "description": "`period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account."
+            "description": "`period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account. `threshold`: usage charged early, taken off the month's invoice."
           },
           "status": {
             "type": "string",
@@ -109257,7 +109297,7 @@
             }
           },
           "402": {
-            "description": "An invoice is overdue or the spend limit was reached (`billing_hold`).",
+            "description": "An invoice is overdue or the spend or credit limit was reached (`billing_hold`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",
@@ -109861,7 +109901,7 @@
             }
           },
           "402": {
-            "description": "The plan or the account's billing stands in the way of this live send: Free's monthly messages are used up (`usage_limit_exceeded`), an invoice is overdue or the spend limit was reached (`billing_hold`), or a budget is spent (`budget_exceeded`).",
+            "description": "The plan or the account's billing stands in the way of this live send: Free's monthly messages are used up (`usage_limit_exceeded`), an invoice is overdue or the spend or credit limit was reached (`billing_hold`), or a budget is spent (`budget_exceeded`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",

@@ -162,9 +162,11 @@ const RESOLVERS: Record<PushNotificationRow["kind"], Resolver> = {
     const why =
       hold.reason === "spend_limit"
         ? "it reached its spend limit"
-        : hold.reason === "delinquent"
-          ? "an invoice is overdue"
-          : "of its billing";
+        : hold.reason === "credit_limit"
+          ? "it reached its credit limit"
+          : hold.reason === "delinquent"
+            ? "an invoice is overdue"
+            : "of its billing";
     return {
       content: {
         title: "Live sending on hold",

@@ -93,6 +93,7 @@ const BUCKET_LABELS: Partial<Record<BucketName, string>> = {
   "api.read": "API reads, per key",
   "api.write": "API writes, per key",
   "api.send": "API send requests, per key",
+  "api.mcp": "Hosted MCP server requests, per key",
   "risk.assess": "Risk assessments and lookups, per key",
   "risk.classify": "Risk content classifications per second, per organization",
   "risk.classify.day": "Risk content classifications per day, per organization",

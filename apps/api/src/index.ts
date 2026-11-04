@@ -20,11 +20,13 @@ import { ensureSmsDispatchQueue, pgBossSmsDispatchQueue } from "@coss/sms/dispat
 import { verifyCodeKey } from "@coss/verify";
 import { parseSecretsKeys } from "@coss/webhooks";
 import * as Sentry from "@sentry/bun";
+import { createHostedMcp } from "coss-mcp/http";
 import { createApp } from "./app.ts";
 import { env } from "./env.ts";
 import { createDefaultEmailRuntime } from "./runtime.ts";
 import { startServer } from "./server.ts";
 
+const MCP_DRAIN_MS = 10_000;
 const publicUrl = env.API_PUBLIC_URL ?? `http://localhost:${env.API_PORT}`;
 if (!env.NOTIFICATIONS_ENVIRONMENT_ID !== !env.NOTIFICATIONS_FROM) {
   throw new Error("Set both NOTIFICATIONS_ENVIRONMENT_ID and NOTIFICATIONS_FROM, or neither.");
@@ -75,6 +77,11 @@ const signStore = signStoreFromEnv(env);
 const schedulingDataKeys = schedulingDataKeysFromEnv({
   SCHEDULING_DATA_KEYS: env.SCHEDULING_DATA_KEYS,
   NODE_ENV: process.env.NODE_ENV,
+});
+const mcp = createHostedMcp({
+  apiBaseUrl: publicUrl,
+  // Its name only: what callers send is never logged, and a message can quote it.
+  onFailure: (name) => console.error(`[api] A hosted MCP request failed: ${name}`),
 });
 const app = createApp({
   emailService: createEmailService({
@@ -152,6 +159,7 @@ const app = createApp({
   corsOrigins: env.API_CORS_ORIGINS,
   logWriter,
   shutdownSignal: shutdown.signal,
+  mcp,
 });
 
 /** The bare address of `Name <address>` or `address`. */
@@ -163,6 +171,11 @@ const server = startServer({
   fetch: app.fetch,
   port: env.API_PORT,
   onDrained: async () => {
+    // Tools' API calls run in process, so the server's own drain doesn't see them. First: they use
+    // everything below. Well under the task's 30 s between SIGTERM and SIGKILL.
+    if (!(await mcp.drain(MCP_DRAIN_MS))) {
+      console.warn("[api] Hosted MCP tool calls were still running when the drain's limit passed.");
+    }
     await Promise.all([jobs.stop({ graceful: true }), logWriter.close()]);
     await Promise.all([closeDb(), rateLimits.limiter.close(), Sentry.close(2_000)]);
   },

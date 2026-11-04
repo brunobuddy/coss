@@ -957,7 +957,12 @@ export async function updateOutOfOffice(
   const now = nowOf(deps);
   const found = await entryRow(db, env, id, only);
   const strategy =
-    params.existing_bookings === undefined ? undefined : await reassignStrategyOf(env, params);
+    params.existing_bookings === undefined && params.reassign === undefined
+      ? undefined
+      : await reassignStrategyOf(env, {
+          ...params,
+          existing_bookings: params.existing_bookings ?? found.existingBookings,
+        });
   const delegates = await delegateIdsOf(env, params.delegates, opts.allowedDelegates);
   refuseSelfCover(delegates, found.hostId);
   const row = await db.transaction(async (tx) => {
@@ -1137,8 +1142,11 @@ export async function deleteOutOfOffice(
 ): Promise<{ id: string }> {
   const now = nowOf(deps);
   return db.transaction(async (tx) => {
+    const before = await entryRow(tx, scope, id, only);
+    await lockHosts(tx, scope, [before.hostId, ...(await coveringOf(tx, before))]);
+    // It can have gone to someone else while this waited, and then it isn't this session's to delete.
     const row = await entryRow(tx, scope, id, only);
-    await lockHosts(tx, scope, [row.hostId, ...(await coveringOf(tx, row))]);
+    if (row.hostId !== before.hostId) await lockHosts(tx, scope, [row.hostId]);
     const [deleted] = await tx
       .update(schedulingOutOfOffice)
       // Nobody will read these again, so they don't wait for the row to go.

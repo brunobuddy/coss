@@ -103,6 +103,7 @@ export type AccountSettings = Partial<
     | "taxId"
     | "graceDays"
     | "holdExemptUntil"
+    | "creditLimitCents"
     | "notes"
   >
 >;
@@ -214,6 +215,13 @@ function validateSettings(settings: AccountSettings): void {
     ) {
       throw new BillingError("invalid_change", "The grace period is 0 to 365 days.");
     }
+  }
+  if (
+    settings.creditLimitCents !== undefined &&
+    settings.creditLimitCents !== null &&
+    settings.creditLimitCents < 0n
+  ) {
+    throw new BillingError("invalid_change", "The credit limit can't be negative.");
   }
   for (const list of [settings.allowedPaymentMethods, settings.requiredPaymentMethods]) {
     if (list?.some((type) => !(PAYMENT_METHOD_TYPES as readonly string[]).includes(type))) {

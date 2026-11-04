@@ -1743,6 +1743,27 @@ describe("going out of office", () => {
     expect(await hostsOf(theirs.id)).not.toEqual([b.id]);
   });
 
+  test("a new target needs no repeating that bookings move", async () => {
+    const env = await environment();
+    const [a, b, c] = await Promise.all([host(env, "A"), host(env, "B"), host(env, "C")]);
+    const type = await pool(env, [a, b, c]);
+    const booking = await book(env, type.id, at("15:00"), a.id);
+    const [entry] = await away(env, a.id, {
+      end: iso("12:00"),
+      existing_bookings: "reassign",
+      reassign: { to_host: b.id },
+    });
+    await updateOutOfOffice(
+      env,
+      entry?.id as string,
+      { end: iso("18:00"), reassign: { to_host: c.id } },
+      plain,
+      actor,
+    );
+    await drain(env);
+    expect(await hostsOf(booking.id)).toEqual([c.id]);
+  });
+
   test("a change that starts a run goes to the cover it sets", async () => {
     const env = await environment();
     const [a, b, c] = await Promise.all([host(env, "A"), host(env, "B"), host(env, "C")]);

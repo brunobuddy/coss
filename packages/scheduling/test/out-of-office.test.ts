@@ -429,6 +429,46 @@ describe("many hosts at once", () => {
   });
 });
 
+describe("deleting an entry that's moving", () => {
+  test("a session can't delete what's just become someone else's", async () => {
+    const env = await environment();
+    const [a, b] = [await host(env), await host(env)];
+    const [entry] = await away(env, { host: a.id, start: iso("09:00"), end: iso("17:00") });
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked = () => {};
+    const holding = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const transfer = db.transaction(async (tx) => {
+      await tx
+        .select({ id: schema.schedulingHost.id })
+        .from(schema.schedulingHost)
+        .where(eq(schema.schedulingHost.id, a.id))
+        .for("update");
+      locked();
+      await gate;
+      await tx
+        .update(schema.schedulingOutOfOffice)
+        .set({ hostId: b.id })
+        .where(eq(schema.schedulingOutOfOffice.id, entry?.id as string));
+    });
+    await holding;
+    const removal = deleteOutOfOffice(env, entry?.id as string, plain, { hostId: a.id });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    release();
+    await transfer;
+    await expect(removal).rejects.toMatchObject({ code: "not_found" });
+    const [row] = await db
+      .select({ deletedAt: schema.schedulingOutOfOffice.deletedAt })
+      .from(schema.schedulingOutOfOffice)
+      .where(eq(schema.schedulingOutOfOffice.id, entry?.id as string));
+    expect(row?.deletedAt).toBeNull();
+  });
+});
+
 describe("syncing from a system of record", () => {
   test("the same id sent twice at once leaves one entry, and neither fails", async () => {
     const env = await environment();

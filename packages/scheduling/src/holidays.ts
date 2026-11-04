@@ -13,7 +13,7 @@ import { decryptSecret, encryptSecret } from "@coss/webhooks";
 import { and, asc, eq, gte, inArray, isNotNull, isNull, like, lt, lte, or } from "drizzle-orm";
 import type { DavTransport } from "./calendar/caldav.ts";
 import { holidaysFromIcs, UnreadableCalendarData } from "./calendar/ical.ts";
-import { DAY_MS } from "./engine/time.ts";
+import { DAY_MS, localDateOf } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { HOLIDAY_COUNTRIES } from "./holiday-countries.ts";
 import { attributesMatch, type HostRow, resolveHost } from "./hosts.ts";
@@ -58,6 +58,8 @@ const invalid = (message: string, param: string) =>
   new SchedulingError("invalid_holiday_calendar", message, { param });
 
 const dayOf = (at: Date) => at.toISOString().slice(0, 10);
+/** Read from here: UTC's date can be a day ahead of a host's, whose holiday's still running. */
+const earliestDay = (at: Date) => dayOf(new Date(at.getTime() - DAY_MS));
 
 function keys(deps: Keys) {
   if (!deps.calendars) throw invalid("Feeds can't be stored in this deployment.", "ics_url");
@@ -346,7 +348,11 @@ async function refreshCountries(
     if (source?.nextReadAt && source.nextReadAt > now) continue;
     let holidays: Holiday[];
     try {
-      holidays = holidaysFromIcs(await readFeed(transport, googleFeedUrl(country)), today, until);
+      holidays = holidaysFromIcs(
+        await readFeed(transport, googleFeedUrl(country)),
+        earliestDay(now),
+        until,
+      );
       // A feed that's suddenly empty is a broken feed, and shouldn't take every holiday away.
       if (holidays.length === 0) throw new UnreadableCalendarData("empty");
     } catch (error) {
@@ -506,10 +512,10 @@ async function reconcile(
     if (entry.deletedAt || wanted.has(entry.sourceKey as string)) continue;
     // Over, wherever the host is: dates are in their zone, so yesterday's can still be running.
     if (entry.endAt <= now) continue;
-    // Feeds are read from today, so one that's started but isn't listed hasn't gone from anything.
+    // Feeds are only read back so far, so one older than that hasn't gone from anything.
     const noLongerAsked =
       row.deletedAt || !stillHosts.has((entry.sourceKey as string).split(":")[1] as string);
-    if (!noLongerAsked && (entry.startDate ?? today) < today) continue;
+    if (!noLongerAsked && (entry.startDate ?? today) < earliestDay(now)) continue;
     await deleteOutOfOffice(env, entry.id, deps);
     await db
       .update(schedulingOutOfOffice)
@@ -551,7 +557,7 @@ async function reconcile(
     budget--;
   }
   for (const [key, { host, date }] of wanted) {
-    if (known.has(key) || date < today) continue;
+    if (known.has(key) || date < localDateOf(host.timeZone, now.getTime())) continue;
     if (budget <= 0) return true;
     await createOutOfOffice(
       env,
@@ -622,7 +628,7 @@ async function syncOne(
   if (row.deletedAt) {
     holidays = [];
   } else if (row.countryCode) {
-    holidays = await publicHolidaysOf(db, row.countryCode, today);
+    holidays = await publicHolidaysOf(db, row.countryCode, earliestDay(now));
     holidays = holidays.filter((holiday) => holiday.date < until);
     // Not read yet, or never could be: that's not "no holidays", so nothing's taken away.
     if (holidays.length === 0) {
@@ -637,7 +643,7 @@ async function syncOne(
     }
     try {
       const url = decryptSecret(row.encryptedIcsUrl, keys(deps));
-      holidays = holidaysFromIcs(await readFeed(transport, url), today, until);
+      holidays = holidaysFromIcs(await readFeed(transport, url), earliestDay(now), until);
       // A feed that's suddenly empty is a broken feed, and shouldn't take every holiday away.
       if (holidays.length === 0 && row.holidays?.some((holiday) => holiday.date >= today)) {
         throw new UnreadableCalendarData("empty");

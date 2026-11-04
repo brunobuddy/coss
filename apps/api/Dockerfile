@@ -9,11 +9,13 @@
 ARG BUN_VERSION=1.4.2
 # Base images: Docker Hub by default; deploys pass mirrors (Docker Hub limits anonymous pulls).
 ARG BUN_IMAGE=oven/bun
+ARG NODE_VERSION=24
+ARG NODE_IMAGE=node
 ARG TURBO_VERSION=2.11.7
 
 FROM ${BUN_IMAGE}:${BUN_VERSION}-slim AS bun
 
-# The workspaces @coss/api needs at runtime (--production drops dev-only ones, like the SDK used by
+# The workspaces @coss/api needs at runtime (--production drops dev-only ones, like the CLI used by
 # contract tests), and their slice of bun.lock.
 FROM bun AS prune
 ARG TURBO_VERSION
@@ -21,12 +23,27 @@ ENV TURBO_TELEMETRY_DISABLED=1
 WORKDIR /repo
 COPY . .
 RUN bunx turbo@${TURBO_VERSION} prune @coss/api --docker --production --out-dir /pruned
+RUN bunx turbo@${TURBO_VERSION} prune coss-mcp --docker --out-dir /pruned-mcp
+
+# The hosted MCP server: coss-mcp and the SDK under it are the two workspaces that run from built
+# output, since they're published that way. They build with their dev dependencies, on Node like the
+# dashboard's copy of the SDK, and only their dist reaches the image.
+FROM ${NODE_IMAGE}:${NODE_VERSION}-slim AS build-mcp
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
+ENV TURBO_TELEMETRY_DISABLED=1
+WORKDIR /repo
+COPY --from=prune /pruned-mcp/json/ .
+RUN bun install --frozen-lockfile
+COPY --from=prune /pruned-mcp/full/ .
+RUN bun x turbo run build --filter=coss-mcp
 
 FROM bun AS install
 WORKDIR /app
 COPY --from=prune /pruned/json/ .
 RUN bun install --frozen-lockfile --production
 COPY --from=prune /pruned/full/ .
+COPY --from=build-mcp /repo/packages/sdk/dist packages/sdk/dist
+COPY --from=build-mcp /repo/packages/mcp/dist packages/mcp/dist
 
 FROM bun AS runtime
 # Debian's security fixes, refreshed weekly by BASE_PATCH_WEEK; nothing here runs Perl.

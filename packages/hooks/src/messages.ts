@@ -275,7 +275,7 @@ export async function sendHookMessage(input: {
   if (env.mode === "live" && (await isOnBillingHold(application.organizationId))) {
     throw new HookError(
       "billing_hold",
-      "Live sending is paused: your organization has an overdue invoice or reached its spend limit.",
+      "Live sending is paused: your organization has an overdue invoice or reached its spend or credit limit.",
     );
   }
   const billable = env.mode === "live" && input.onlyEndpointId === undefined;
