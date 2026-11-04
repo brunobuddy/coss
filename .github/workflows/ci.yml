@@ -97,19 +97,22 @@ jobs:
               { "sdk": "dotnet", "versions": ".NET 9", "dotnet": "9.0.x" }
             ]
         run: |
+          # A file, not an argument: "Regenerate SDKs" changes thousands of paths, past Linux's
+          # 128 KiB limit on one argument.
+          changed="$(mktemp)"
           case "$EVENT" in
-            pull_request) changed="$(git diff --name-only HEAD^1 HEAD)" ;;
+            pull_request) git diff --name-only HEAD^1 HEAD > "$changed" ;;
             merge_group)
               git fetch --quiet --depth=1 origin "$MERGE_GROUP_BASE"
-              changed="$(git diff --name-only "$MERGE_GROUP_BASE" HEAD)"
+              git diff --name-only "$MERGE_GROUP_BASE" HEAD > "$changed"
               ;;
             # The nightly run and dispatches: everything.
-            *) changed="*" ;;
+            *) echo "*" > "$changed" ;;
           esac
           # $1: the entries, $2: the key naming each one's directory under $3, $4: what every entry
           # is tested against.
           pick() {
-            jq --compact-output --arg changed "$changed" --arg key "$2" --arg dir "$3" --arg shared "$4" '
+            jq --compact-output --rawfile changed "$changed" --arg key "$2" --arg dir "$3" --arg shared "$4" '
               ($changed | split("\n") | map(select(. != ""))) as $files
               | map(select(. as $entry | $files | any(
                   . == "*" or test($shared) or startswith("\($dir)/\($entry[$key])/"))))' <<<"$1"
