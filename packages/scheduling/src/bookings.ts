@@ -12,7 +12,22 @@ import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { requestHash as hashRequest, withIdempotencyKey } from "@coss/db/idempotency";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, ne, notInArray, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  ne,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import {
   decryptAnswers,
   decryptContact,
@@ -1443,7 +1458,7 @@ export async function confirmHold(
     }
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
     const next: FinishedState = eventType.requiresApproval ? "pending_approval" : "confirmed";
-    await convertClaims(tx, booking, eventType, env, next);
+    await convertClaims(tx, booking, eventType, env, next, expired);
     const updated = await bumped(tx, booking, {
       status: next,
       holdExpiresAt: null,
@@ -1512,6 +1527,58 @@ async function convertSeat(
   return true;
 }
 
+/** It stopped counting towards hours and limits when it expired, so they apply again. */
+async function recheckExpiredHold(
+  tx: Transaction,
+  booking: BookingRow,
+  eventType: EventTypeRow,
+  env: SchedulingEnvironment,
+  hosts: readonly HostRow[],
+): Promise<void> {
+  const rule = slotRuleOf(
+    eventType,
+    (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS,
+  );
+  const startMs = booking.startAt.getTime();
+  await lockHostsAndMemberships(
+    tx,
+    eventType,
+    hosts.map((host) => host.id),
+  );
+  await lockLimitBuckets(tx, eventType, rule, hosts, startMs);
+  const memberships = await tx
+    .select({
+      hostId: schedulingEventTypeHost.hostId,
+      scheduleId: schedulingEventTypeHost.scheduleId,
+    })
+    .from(schedulingEventTypeHost)
+    .where(
+      and(
+        eq(schedulingEventTypeHost.eventTypeId, eventType.id),
+        eq(schedulingEventTypeHost.organizationId, eventType.organizationId),
+      ),
+    );
+  const verdicts = await verdictsOf(
+    tx,
+    {
+      eventType,
+      rule,
+      scope: env,
+      startMs,
+      // Notice was met when it was held: being late to confirm shouldn't count against it.
+      nowMs: booking.createdAt.getTime(),
+      failureMode: await calendarFailureModeOf(tx, env),
+      ttlSeconds: null,
+    },
+    hosts,
+    new Map(memberships.map((row) => [row.hostId, row.scheduleId])),
+  );
+  for (const host of hosts) {
+    const verdict = verdicts.get(host.id);
+    if (!verdict?.ok) throw new LostSlot(verdict?.reason ?? "host_unavailable");
+  }
+}
+
 /**
  * Firms up a booking's claims. If a sweep already removed them they're claimed afresh, so a slot
  * someone else took since refuses the conversion either way.
@@ -1522,6 +1589,7 @@ async function convertClaims(
   eventType: EventTypeRow,
   env: SchedulingEnvironment,
   next: FinishedState,
+  expired: boolean,
 ): Promise<void> {
   const ttlSeconds = next === "pending_approval" ? eventType.approvalTtlMinutes * 60 : null;
   const hostRows = await tx
@@ -1547,6 +1615,7 @@ async function convertClaims(
       if (booking.groupSessionId) {
         if (await convertSeat(savepoint, booking, ttlSeconds)) return;
       } else {
+        if (expired) await recheckExpiredHold(savepoint, booking, eventType, env, hosts);
         await releaseBookingClaims(savepoint, booking);
       }
       const occupied = {
@@ -1743,7 +1812,7 @@ export async function approveBooking(
     if (booking.status === "confirmed") return booking;
     if (booking.status !== "pending_approval") throw notChangeable(booking);
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
-    await convertClaims(tx, booking, eventType, env, "confirmed");
+    await convertClaims(tx, booking, eventType, env, "confirmed", false);
     const updated = await bumped(tx, booking, { status: "confirmed", approvalExpiresAt: null });
     const { hostIds } = await participants(tx, updated);
     await showOnCalendars(tx, updated, hostIds);

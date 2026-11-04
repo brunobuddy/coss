@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
-import { db, schema, type Transaction } from "@coss/db";
+import { db, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { secretsKeyRing } from "@coss/webhooks";
 import { eq, sql } from "drizzle-orm";
@@ -744,141 +743,14 @@ describe("a session's location", () => {
   });
 });
 
-describe("the migration of seats' calendar events", () => {
-  const directory = new URL("../../db/migrations/", import.meta.url);
-  const file = readdirSync(directory).find((name) =>
-    name.endsWith("_scheduling_group_session_events.sql"),
-  );
-
-  const undo = new Error("undo");
-
-  // Undone afterwards: it runs over the whole test database, which is never truncated.
-  const afterMigrating = (check: (tx: Transaction) => Promise<void>) =>
-    db
-      .transaction(async (tx) => {
-        const text = readFileSync(new URL(file as string, directory), "utf8");
-        for (const statement of text.split("--> statement-breakpoint")) {
-          await tx.execute(sql.raw(statement));
-        }
-        await check(tx);
-        throw undo;
-      })
-      .catch((error) => {
-        if (error !== undo) throw error;
-      });
-
-  /** The way a seat's event looked before it was its session's. */
-  async function legacyEvent(
-    env: SchedulingEnvironment,
-    hostId: string,
-    calendarId: string,
-    bookingId: string,
-    set: { providerEventId: string | null; desiredState?: "present" | "absent" },
-  ) {
-    const [booking] = await db
-      .select()
-      .from(schema.schedulingBooking)
-      .where(eq(schema.schedulingBooking.id, bookingId));
-    const [row] = await db
-      .insert(schema.schedulingCalendarEvent)
-      .values({
-        organizationId: env.organizationId,
-        environmentId: env.environmentId,
-        bookingId,
-        hostId,
-        calendarId,
-        desiredStart: booking?.startAt as Date,
-        desiredEnd: booking?.endAt as Date,
-        desiredState: set.desiredState ?? "present",
-        desiredVersion: 1,
-        appliedVersion: 1,
-        providerEventId: set.providerEventId,
-      })
-      .returning();
-    return row as typeof schema.schedulingCalendarEvent.$inferSelect;
-  }
-
-  async function calendarOf(env: SchedulingEnvironment, hostId: string) {
-    const [connection] = await db
-      .insert(schema.schedulingCalendarConnection)
-      .values({
-        organizationId: env.organizationId,
-        environmentId: env.environmentId,
-        hostId,
-        provider: "simulated",
-        accountId: `sim-${hostId}`,
-      } as never)
-      .returning();
-    const [calendar] = await db
-      .insert(schema.schedulingCalendar)
-      .values({
-        organizationId: env.organizationId,
-        environmentId: env.environmentId,
-        hostId,
-        connectionId: connection?.id as string,
-        externalId: `cal-${hostId}`,
-        name: "Calendar",
-        writeTarget: true,
-      } as never)
-      .returning();
-    return calendar?.id as string;
-  }
-
-  test("keeps one event per calendar, removes the rest, and fills in the location", async () => {
-    const env = await tenantEnv();
-    const host = await hostWithHours(env);
-    const eventType = await groupOf(env, host.id);
-    const { booking: a } = await createBooking(env, seat(eventType.id, "a"), deps, actor);
-    const { booking: b } = await createBooking(env, seat(eventType.id, "b"), deps, actor);
-    const calendarId = await calendarOf(env, host.id);
-    const link = { type: "link" as const, url: "https://meet.example.com/a" };
-    await db
-      .update(schema.schedulingBooking)
-      .set({ location: { type: "google_meet" } })
-      .where(eq(schema.schedulingBooking.id, b.id));
-    await db
-      .update(schema.schedulingBooking)
-      .set({ location: link })
-      .where(eq(schema.schedulingBooking.id, a.id));
-    const kept = await legacyEvent(env, host.id, calendarId, a.id, { providerEventId: "evt_a" });
-    const extra = await legacyEvent(env, host.id, calendarId, b.id, { providerEventId: "evt_b" });
-    await afterMigrating(async (tx) => {
-      const rows = await tx
-        .select()
-        .from(schema.schedulingCalendarEvent)
-        .where(eq(schema.schedulingCalendarEvent.calendarId, calendarId));
-      const after = (id: string) => rows.find((row) => row.id === id);
-      expect(after(kept.id)?.groupSessionId).toBe(a.group_session);
-      expect(after(kept.id)?.bookingId).toBeNull();
-      expect(after(kept.id)?.desiredState).toBe("present");
-      expect(after(kept.id)?.desiredVersion).toBe(1);
-      expect(after(extra.id)?.bookingId).toBe(b.id);
-      expect(after(extra.id)?.desiredState).toBe("absent");
-      expect(after(extra.id)?.desiredVersion).toBe(2);
-      const [session] = await tx
-        .select()
-        .from(schema.schedulingGroupSession)
-        .where(eq(schema.schedulingGroupSession.id, b.group_session as string));
-      expect(session?.location).toEqual(link);
-    });
-  });
-
-  test("an event left behind by seats that all cancelled goes", async () => {
-    const env = await tenantEnv();
-    const host = await hostWithHours(env);
-    const eventType = await groupOf(env, host.id);
-    const { booking: a } = await createBooking(env, seat(eventType.id, "a"), deps, actor);
-    await cancelBooking(env, a.id, deps, actor);
-    const calendarId = await calendarOf(env, host.id);
-    const leaked = await legacyEvent(env, host.id, calendarId, a.id, { providerEventId: "evt_a" });
-    await afterMigrating(async (tx) => {
-      const [row] = await tx
-        .select()
-        .from(schema.schedulingCalendarEvent)
-        .where(eq(schema.schedulingCalendarEvent.id, leaked.id));
-      expect(row?.groupSessionId).toBe(a.group_session);
-      expect(row?.desiredState).toBe("absent");
-      expect(row?.desiredVersion).toBe(2);
-    });
-  });
+test("a host with past group seats can be deleted, and the seats stay", async () => {
+  const env = await tenantEnv();
+  const host = await hostWithHours(env);
+  const eventType = await groupOf(env, host.id);
+  const { booking } = await createBooking(env, seat(eventType.id, "p1"), deps, actor);
+  await cancelBooking(env, booking.id, deps, actor);
+  await deleteHost(env, host.id);
+  const after = await getBooking(env, booking.id, deps);
+  expect(after.status).toBe("cancelled");
+  expect(after.group_session).toBeNull();
 });

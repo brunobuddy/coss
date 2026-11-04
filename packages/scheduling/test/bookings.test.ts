@@ -478,6 +478,34 @@ describe("holds", () => {
     await auditClaims(env);
   });
 
+  test("an expired hold can't convert past a limit, or outside new hours", async () => {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    const limited = await createEventType(env, {
+      title: "Limited",
+      kind: "one_on_one",
+      duration_minutes: 30,
+      hosts: [{ host: host.id, role: "member", weight: 100, schedule: null }],
+      limits: [{ period: "day", max: 1, scope: "event_type" }],
+    } as never);
+    const hold = await expiredHold(env, limited.id, at("09:00"));
+    await createBooking(env, request(limited.id, at("11:00")), deps, actor);
+    expect(await code(confirmHold(env, hold.id, { ifStillFree: true }, deps, actor))).toBe(
+      "slot_unavailable",
+    );
+
+    const other = await hostWithHours(env);
+    const eventType = await eventTypeFor(env, [{ host: other.id }]);
+    const late = await expiredHold(env, eventType.id, at("09:00"));
+    await db
+      .update(schema.schedulingSchedule)
+      .set({ rules: [{ days: [0, 1, 2, 3, 4, 5, 6], startMinute: 780, endMinute: 1020 }] })
+      .where(eq(schema.schedulingSchedule.hostId, other.id));
+    expect(await code(confirmHold(env, late.id, { ifStillFree: true }, deps, actor))).toBe(
+      "slot_unavailable",
+    );
+  });
+
   test("two expired holds on one slot don't falsely conflict on conversion", async () => {
     const env = await tenantEnv();
     const host = await hostWithHours(env);
