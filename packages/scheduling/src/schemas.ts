@@ -806,6 +806,9 @@ const Slot = z
     start: z.string().meta({ description: "When the slot starts." }),
     end: z.string().meta({ description: "When the slot ends." }),
     hosts: z.array(z.string()).meta({ description: "Who could take it." }),
+    seats_left: z.number().nullable().meta({
+      description: "Free seats at this start, for a `group` event type. `null` for the others.",
+    }),
   })
   .meta({ id: "SchedulingSlot" });
 
@@ -821,9 +824,78 @@ export const SlotList = z
             start: "2027-01-04T15:00:00.000Z",
             end: "2027-01-04T15:30:00.000Z",
             hosts: ["host_01kd2m9a0b1c2d3e4f5g6h7j8m"],
+            seats_left: null,
           },
         ],
         has_more: false,
+      },
+    ],
+  });
+
+export const ExplainSlotQuery = z.object({
+  start: Instant,
+  host: z.string().optional().meta({ description: "Only this host (id or uid)." }),
+  duration_minutes: z.coerce.number().int().min(5).max(1440).optional(),
+  attributes: z.string().optional().meta({
+    description: 'A JSON object narrowing a pool, such as `{"licensed_in":"CA"}`.',
+  }),
+});
+
+const SLOT_REASONS =
+  "`not_on_grid`, `too_soon`, `outside_booking_window`, `calendar_unverified`, `outside_availability`, `host_busy`, `already_claimed`, `limit_reached` or `session_full`";
+
+export const SlotExplanation = z
+  .object({
+    object: z.literal("scheduling.slot_explanation"),
+    start: z.string().meta({ description: "The start asked about." }),
+    end: z.string().meta({ description: "When it would end." }),
+    available: z.boolean().meta({ description: "Whether it can be booked right now." }),
+    reason: z
+      .string()
+      .nullable()
+      .meta({
+        description: `Why it can't: ${SLOT_REASONS}, or \`event_type_inactive\` or \`no_hosts\`. \`null\` when it can. With several hosts refused, the first one's reason: see \`hosts\`.`,
+      }),
+    hosts: z
+      .array(
+        z.object({
+          host: z.string().meta({ description: "The host's id." }),
+          role: z.enum(["required", "member"]).meta({
+            description: "`required` hosts must all be free. Only one `member` needs to be.",
+          }),
+          available: z.boolean().meta({ description: "Whether this host could take it." }),
+          reason: z
+            .string()
+            .nullable()
+            .meta({
+              description: `Why not: ${SLOT_REASONS}. \`null\` when they could.`,
+            }),
+          calendar_reason: z.string().nullable().meta({
+            description:
+              "With `calendar_unverified`: `calendar_needs_reauth`, `calendar_stale` or `calendar_not_covered`.",
+          }),
+        }),
+      )
+      .meta({ description: "Everyone who could take this event type, narrowed by the query." }),
+  })
+  .meta({
+    id: "SchedulingSlotExplanation",
+    examples: [
+      {
+        object: "scheduling.slot_explanation",
+        start: "2027-01-04T15:00:00.000Z",
+        end: "2027-01-04T15:30:00.000Z",
+        available: false,
+        reason: "host_busy",
+        hosts: [
+          {
+            host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            role: "member",
+            available: false,
+            reason: "host_busy",
+            calendar_reason: null,
+          },
+        ],
       },
     ],
   });

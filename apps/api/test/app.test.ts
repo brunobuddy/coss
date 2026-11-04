@@ -294,6 +294,7 @@ describe("GET /openapi.json", () => {
       "/v1/scheduling/event_types",
       "/v1/scheduling/event_types/{event_type}",
       "/v1/scheduling/event_types/{event_type}/slots",
+      "/v1/scheduling/event_types/{event_type}/slots/explain",
       "/v1/scheduling/holds",
       "/v1/scheduling/holds/{id}",
       "/v1/scheduling/holds/{id}/confirm",

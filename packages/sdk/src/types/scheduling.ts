@@ -283,12 +283,42 @@ export interface SchedulingSlot {
   end: string;
   /** Who could take it. */
   hosts: string[];
+  /** Free seats at this start, for a `group` event type. `null` for the others. */
+  seats_left: number | null;
 }
 
 export interface SchedulingSlotList {
   object: "list";
   data: SchedulingSlot[];
   has_more: false;
+}
+
+export interface ExplainSchedulingSlotParams {
+  start: string;
+  /** Only this host (id or uid). */
+  host?: string;
+  duration_minutes?: number;
+  /** A JSON object narrowing a pool, such as `{"licensed_in":"CA"}`. */
+  attributes?: string;
+}
+
+export interface SchedulingSlotExplanation {
+  object: "scheduling.slot_explanation";
+  start: string;
+  end: string;
+  /** Whether it can be booked right now. */
+  available: boolean;
+  /** Why it can't, such as `host_busy` or `no_hosts`. With several hosts refused, the first one's reason. */
+  reason: string | null;
+  hosts: {
+    host: string;
+    /** `required` hosts must all be free. Only one `member` needs to be. */
+    role: "required" | "member";
+    available: boolean;
+    reason: string | null;
+    /** With `calendar_unverified`, why the calendars can't be trusted. */
+    calendar_reason: string | null;
+  }[];
 }
 
 export interface SearchSchedulingAvailabilityParams {

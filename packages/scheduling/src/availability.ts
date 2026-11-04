@@ -8,7 +8,13 @@ import { notZoomMeeting } from "./calendar/zoom.ts";
 import { buildAvailability, overrideDateRange } from "./engine/availability.ts";
 import { type CalendarFreshness, calendarVerdict } from "./engine/calendar-verdict.ts";
 import { type Interval, normalizeIntervals, subtractIntervals } from "./engine/intervals.ts";
-import { type HostInputs, listSlots, type SlotRule } from "./engine/slots.ts";
+import {
+  type HostInputs,
+  isBookable,
+  listSlots,
+  type NotBookableReason,
+  type SlotRule,
+} from "./engine/slots.ts";
 import { DAY_MS, MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import {
@@ -455,7 +461,13 @@ export function checkWindow(fromMs: number, toMs: number): void {
   }
 }
 
-export type SlotResult = { startMs: number; endMs: number; hostIds: string[] };
+/** `seatsLeft`: a group event type's free seats at that start, otherwise null. */
+export type SlotResult = {
+  startMs: number;
+  endMs: number;
+  hostIds: string[];
+  seatsLeft: number | null;
+};
 
 /** A required host must be free at every slot, and so must one member if there are any. */
 export function combineSlots(
@@ -492,6 +504,7 @@ export function combineSlots(
       startMs: start,
       endMs: start + durationMs,
       hostIds: [...required, ...(memberHosts ?? [])],
+      seatsLeft: null,
     });
   }
   return result.sort((a, b) => a.startMs - b.startMs);
@@ -499,6 +512,18 @@ export function combineSlots(
 
 function scheduleOf(entry: { membership: EventTypeHostRow | null }): string | null {
   return entry.membership?.scheduleId ?? null;
+}
+
+function durationOf(eventType: EventTypeRow, requested: number | undefined): number {
+  const duration = requested ?? eventType.durationMinutes;
+  if (duration !== eventType.durationMinutes && !eventType.durationOptions.includes(duration)) {
+    throw new SchedulingError(
+      "invalid_time",
+      `${duration} minutes isn't one of this event type's durations.`,
+      { param: "duration_minutes" },
+    );
+  }
+  return duration;
 }
 
 export async function listEventTypeSlots(
@@ -517,14 +542,7 @@ export async function listEventTypeSlots(
   checkWindow(input.fromMs, input.toMs);
   const eventType = await resolveEventType(db, scope, input.eventTypeRef);
   if (eventType.status !== "active") return [];
-  const duration = input.durationMinutes ?? eventType.durationMinutes;
-  if (duration !== eventType.durationMinutes && !eventType.durationOptions.includes(duration)) {
-    throw new SchedulingError(
-      "invalid_time",
-      `${duration} minutes isn't one of this event type's durations.`,
-      { param: "duration_minutes" },
-    );
-  }
+  const duration = durationOf(eventType, input.durationMinutes);
   const candidates = await candidatesOf(db, scope, eventType, {
     hostRef: input.hostRef,
     hostRefs: input.hostRefs,
@@ -554,12 +572,114 @@ export async function listEventTypeSlots(
       listSlots({ nowMs: input.nowMs, rule, host, fromMs: input.fromMs, toMs: input.toMs }),
     );
   }
-  return combineSlots(
+  const slots = combineSlots(
     perHost,
     candidates.required.map((entry) => entry.host.id),
     candidates.members.map((entry) => entry.host.id),
     duration * MINUTE_MS,
   );
+  if (eventType.kind !== "group") return slots;
+  return slots.map((slot) => ({
+    ...slot,
+    seatsLeft: Math.max(
+      ...slot.hostIds.map(
+        (hostId) =>
+          loaded.get(hostId)?.sessions?.find((session) => session.startMs === slot.startMs)
+            ?.seatsLeft ?? (eventType.capacity as number),
+      ),
+    ),
+  }));
+}
+
+export type SlotUnavailableReason = NotBookableReason | "event_type_inactive" | "no_hosts";
+
+export type SlotExplanation = {
+  startMs: number;
+  endMs: number;
+  available: boolean;
+  /** Null when it's available. The first host's reason, when several hosts are refused. */
+  reason: SlotUnavailableReason | null;
+  hosts: {
+    hostId: string;
+    required: boolean;
+    available: boolean;
+    reason: NotBookableReason | null;
+    /** Why a `calendar_unverified` host's calendars can't be trusted. */
+    calendarReason: string | null;
+  }[];
+};
+
+/**
+ * Why a start can or can't be booked, host by host, from the same `isBookable` booking uses. This
+ * tells whoever's asking about a host's calendar, so it never reaches the hosted pages.
+ */
+export async function explainSlot(
+  scope: Scope,
+  input: {
+    eventTypeRef: string;
+    startMs: number;
+    nowMs: number;
+    hostRef?: string | undefined;
+    attributes?: Record<string, string | string[]> | undefined;
+    durationMinutes?: number | undefined;
+  },
+): Promise<SlotExplanation> {
+  const eventType = await resolveEventType(db, scope, input.eventTypeRef);
+  const duration = durationOf(eventType, input.durationMinutes);
+  const { startMs, nowMs } = input;
+  const endMs = startMs + duration * MINUTE_MS;
+  if (eventType.status !== "active") {
+    return { startMs, endMs, available: false, reason: "event_type_inactive", hosts: [] };
+  }
+  const candidates = await candidatesOf(db, scope, eventType, {
+    hostRef: input.hostRef,
+    attributes: input.attributes,
+  });
+  const entries = [...candidates.required, ...candidates.members];
+  if (entries.length === 0) {
+    return { startMs, endMs, available: false, reason: "no_hosts", hosts: [] };
+  }
+  const loaded = await loadHostInputs(db, {
+    scope,
+    hosts: entries.map((entry) => ({
+      id: entry.host.id,
+      timeZone: entry.host.timeZone,
+      scheduleId: scheduleOf(entry),
+    })),
+    eventTypeId: eventType.id,
+    fromMs: startMs,
+    toMs: endMs,
+    nowMs,
+    groupSessions: eventType.kind === "group",
+    calendarFailureMode: await calendarFailureModeOf(db, scope),
+  });
+  const rule = slotRuleOf(eventType, duration);
+  const hosts = entries.map((entry) => {
+    const host = loaded.get(entry.host.id);
+    const verdict = host
+      ? isBookable(startMs, { nowMs, rule, host })
+      : { ok: false as const, reason: "outside_availability" as const };
+    const reason = verdict.ok ? null : verdict.reason;
+    return {
+      hostId: entry.host.id,
+      required: candidates.required.includes(entry),
+      available: verdict.ok,
+      reason,
+      calendarReason: reason === "calendar_unverified" ? (host?.calendarReason ?? null) : null,
+    };
+  });
+  const required = hosts.filter((host) => host.required);
+  const members = hosts.filter((host) => !host.required);
+  const blocking =
+    required.find((host) => !host.available) ??
+    (members.length > 0 && !members.some((host) => host.available) ? members[0] : undefined);
+  return {
+    startMs,
+    endMs,
+    available: !blocking,
+    reason: blocking?.reason ?? null,
+    hosts,
+  };
 }
 
 /** For a marketplace's "who's free": each host's soonest slots, soonest first. */

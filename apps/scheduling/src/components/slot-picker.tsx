@@ -10,7 +10,11 @@ const DAY_MS = 86_400_000;
 // How far a page with nothing soon looks ahead on its own, before saying so.
 const EMPTY_MONTHS_TO_SKIP = 2;
 
-export type Slot = { start: string; end: string };
+export type Slot = { start: string; end: string; seats_left?: number | null };
+
+function seatsLabel(seats: number): string {
+  return seats === 1 ? "1 seat left" : `${seats} seats left`;
+}
 
 /** A day in the attendee's own zone, as a stable key. */
 function dayKey(iso: string, timeZone: string): string {
@@ -194,6 +198,11 @@ export function SlotPicker(props: {
                     variant="outline"
                   >
                     {timeFormat.format(new Date(slot.start))}
+                    {slot.seats_left != null ? (
+                      <span className="ms-1.5 font-normal text-muted-foreground text-xs">
+                        {seatsLabel(slot.seats_left)}
+                      </span>
+                    ) : null}
                   </Button>
                 ))}
               </fieldset>
