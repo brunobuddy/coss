@@ -2405,7 +2405,31 @@
               "PathPatternConfig": {
                 "Values": [
                   "/changelog",
-                  "/changelog/*"
+                  "/changelog/*",
+                  "/status"
+                ]
+              }
+            },
+            {
+              "Field": "http-header",
+              "HttpHeaderConfig": {
+                "HttpHeaderName": "X-Origin-Verify",
+                "Values": [
+                  "<origin-verify-secret>"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "priority": 124,
+          "targetGroup": "site",
+          "conditions": [
+            {
+              "Field": "path-pattern",
+              "PathPatternConfig": {
+                "Values": [
+                  "/contact"
                 ]
               }
             },
@@ -2734,6 +2758,18 @@
             "reason": "site zone (/changelog)"
           },
           {
+            "pathPattern": "/status",
+            "origin": "alb",
+            "cache": "origin",
+            "reason": "site zone (/status)"
+          },
+          {
+            "pathPattern": "/contact",
+            "origin": "alb",
+            "cache": "origin",
+            "reason": "site zone (/contact)"
+          },
+          {
             "pathPattern": "/ui",
             "origin": "ui",
             "cache": "origin",
@@ -2896,7 +2932,9 @@
       "/opengraph-image*",
       "/pricing.md",
       "/about.md",
-      "/changelog*"
+      "/changelog*",
+      "/status*",
+      "/contact*"
     ]
   }
 }

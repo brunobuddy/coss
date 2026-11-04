@@ -1,7 +1,7 @@
-import { describe, expect, test } from "bun:test";
-import { db } from "@coss/db";
+import { describe, expect, spyOn, test } from "bun:test";
+import { db, schema } from "@coss/db";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { RATE_CARDS } from "../src/catalog/rates.ts";
 import { startUpgrade } from "../src/changes.ts";
 import { contractAt } from "../src/contracts.ts";
@@ -329,4 +329,50 @@ test("replacing an upgrade refuses while its payment is processing", async () =>
   );
   await expect(startUpgrade(input)).rejects.toThrow("still being processed");
   expect((await invoicesOf(tenant)).map((invoice) => invoice.status)).toEqual(["open"]);
+});
+
+describe("a month that won't close", () => {
+  test("is reported while it can still be closed", async () => {
+    const tenant = await createTestTenant();
+    const scope = { organizationIds: [tenant.organization.id] };
+    const contract = await createTestContract(
+      tenant.organization.id,
+      { version: 1, plan: "pro" },
+      { effectiveFrom: new Date("2026-10-01T00:00:00Z") },
+    );
+    await db
+      .update(schema.billingContract)
+      .set({ terms: { broken: true } as never })
+      .where(eq(schema.billingContract.id, contract.id));
+
+    const errors = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await runDueBillingPeriods({ now: new Date("2026-12-01T00:20:00Z"), scope });
+      const lines = errors.mock.calls.map((call) => String(call[0]));
+      expect(
+        lines.some(
+          (line) => line.includes("is still open for") && line.includes(tenant.organization.id),
+        ),
+      ).toBe(true);
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
+  test("nothing is reported when months close", async () => {
+    const tenant = await createTestTenant();
+    const scope = { organizationIds: [tenant.organization.id] };
+    await createTestContract(
+      tenant.organization.id,
+      { version: 1, plan: "pro" },
+      { effectiveFrom: new Date("2026-10-01T00:00:00Z") },
+    );
+    const errors = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await runDueBillingPeriods({ now: new Date("2026-12-01T00:20:00Z"), scope });
+      expect(errors).not.toHaveBeenCalled();
+    } finally {
+      errors.mockRestore();
+    }
+  });
 });

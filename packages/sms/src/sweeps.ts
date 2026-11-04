@@ -42,6 +42,28 @@ function unclaimedBefore(before: Date, limit: number, scope: Scope | undefined, 
     .limit(limit);
 }
 
+/** System-level: unclaimed `queued` messages due before `olderThan`, for the worker's backlog check. */
+export async function unclaimedSmsBacklog(opts: {
+  olderThan: Date;
+  scope?: Scope;
+}): Promise<{ count: number; oldest: Date | null }> {
+  const [row] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      oldest: sql<string | null>`min(${DUE_AT})`,
+    })
+    .from(smsMessage)
+    .where(
+      and(
+        eq(smsMessage.status, "queued"),
+        isNull(smsMessage.provider),
+        sql`${DUE_AT} < ${opts.olderThan.toISOString()}::timestamptz`,
+        opts.scope ? inArray(smsMessage.organizationId, opts.scope.organizationIds) : undefined,
+      ),
+    );
+  return { count: row?.count ?? 0, oldest: row?.oldest ? new Date(row.oldest) : null };
+}
+
 /**
  * Recovers messages no dispatcher claimed in time: older than `UNCLAIMED_SMS_FAIL_MS` they fail
  * (`dispatch_failed`, or `content_screening_unavailable` for one held by screening), older than

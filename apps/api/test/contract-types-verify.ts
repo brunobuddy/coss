@@ -6,10 +6,12 @@ import type {
   CheckVerificationRequest,
   ListVerificationsQuery,
   StartVerificationRequest,
+  UpdateVerifySettingsRequest,
   VerificationCheckObject,
   VerificationList,
   VerificationObject,
   VerificationWebhookEvent,
+  VerifySettingsObject,
 } from "@coss/verify/schemas";
 import type {
   CheckVerificationParams,
@@ -17,8 +19,10 @@ import type {
   ListVerificationsParams,
   VerificationWebhookEvent as SdkVerificationWebhookEvent,
   StartVerificationParams,
+  UpdateVerifySettingsParams,
   Verification,
   VerificationCheck,
+  VerifySettings,
 } from "coss";
 import type { z } from "zod";
 
@@ -37,6 +41,10 @@ export type VerifyContract = [
   Assert<MutuallyAssignable<z.output<typeof VerificationObject>, Verification>>,
   Assert<MutuallyAssignable<z.output<typeof VerificationCheckObject>, VerificationCheck>>,
   Assert<MutuallyAssignable<z.output<typeof VerificationList>, List<Verification>>>,
+  Assert<MutuallyAssignable<z.output<typeof VerifySettingsObject>, VerifySettings>>,
+  Assert<
+    MutuallyAssignable<z.input<typeof UpdateVerifySettingsRequest>, UpdateVerifySettingsParams>
+  >,
   // List queries arrive as strings (the SDK sends numbers): only their keys must match.
   Assert<Equals<keyof z.input<typeof ListVerificationsQuery>, keyof ListVerificationsParams>>,
   Assert<

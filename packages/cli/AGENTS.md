@@ -42,6 +42,11 @@ directory unless they name a workspace.
   `webhooks add` writes the new endpoint's signing secret to the project env file as `COSS_WEBHOOK_SECRET`.
 - `inboxes list|create|threads|thread|reply` wrap `coss.inboxes` (`src/commands/inboxes.ts`; `thread` prints each
   message's `extracted_text` unless `--full`); `inbox` (singular) follows every received email.
+- `verify …` (`src/commands/verify.ts`), `contacts …`, `broadcasts …` (`marketing.ts`), `sign …` (`sign.ts`) and the
+  read commands of `sms`, `forms` and `scheduling` share `src/commands/list-output.ts` (`--limit`, tables,
+  `confirmLive`). Text someone else wrote goes through `printable`. `broadcasts send` asks before a live send and needs
+  `--yes` off a terminal; `broadcasts create` and `sign create` make drafts (`sign create --send` sends); `verify
+  check` exits 1 for a wrong code.
 - `logs tail` polls `GET /v1/logs` like the dashboard's live mode (re-reads from a minute before the newest line,
   prints unseen ids oldest first, `src/logs/tail.ts`); `emails send --simulate` uses the mailbox simulator addresses
   (`src/emails/simulate.ts`, must match `packages/email/src/providers/fake.ts`).

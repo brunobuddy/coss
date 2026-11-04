@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { db, schema } from "@coss/db";
 import { EmailError, listEmailSummariesPage } from "@coss/email";
 import { createVerifiedDomain } from "@coss/email/testing";
+import { listOrgAuditEvents } from "@coss/logs";
 import { createTestSmsNumber } from "@coss/sms/testing";
+import { createEnvironmentApiKey } from "@coss/tenancy";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { updateVerifySettings } from "@coss/verify";
 import { codeIn } from "@coss/verify/testing";
@@ -406,6 +408,83 @@ describe("Verify over the API", () => {
       { environmentId: tenant.production.id, html: "<p>branded</p>" },
       { environmentId: coss.production.id, html: "<p>coss</p>" },
     ]);
+  });
+
+  test("settings: a sender must be the organization's, and restricted keys need verify:update", async () => {
+    const tenant = await createTestTenant();
+    const other = await createTestTenant();
+    const { app } = createTestApp();
+    const theirs = await createTestSmsNumber(other.organization.id);
+    const own = await createTestSmsNumber(tenant.organization.id);
+    const domain = await createVerifiedDomain(tenant.organization.id);
+
+    const defaults = await apiRequest(app, "GET", "/v1/verify/settings", { key: tenant.liveKey });
+    expect(defaults.status).toBe(200);
+    expect(await defaults.json()).toMatchObject({
+      object: "verify_settings",
+      app_name_is_default: true,
+      sms_from: null,
+      email_from: null,
+    });
+
+    const stolenNumber = await apiRequest(app, "PATCH", "/v1/verify/settings", {
+      key: tenant.liveKey,
+      body: { sms_from: theirs.phoneNumber },
+    });
+    expect(stolenNumber.status).toBe(422);
+    expect(await errorOf(stolenNumber)).toMatchObject({
+      code: "invalid_settings",
+      param: "sms_from",
+    });
+
+    const unverified = await apiRequest(app, "PATCH", "/v1/verify/settings", {
+      key: tenant.liveKey,
+      body: { email_from: "codes@not-yours.example" },
+    });
+    expect(unverified.status).toBe(422);
+    expect(await errorOf(unverified)).toMatchObject({
+      code: "invalid_settings",
+      param: "email_from",
+    });
+
+    const saved = await apiRequest(app, "PATCH", "/v1/verify/settings", {
+      key: tenant.liveKey,
+      body: {
+        sms_from: own.phoneNumber,
+        email_from: `Codes@${domain.name}`,
+        allowed_countries: ["US", "GB", "US"],
+      },
+    });
+    expect(saved.status).toBe(200);
+    expect(await saved.json()).toMatchObject({
+      sms_from: own.phoneNumber,
+      email_from: `codes@${domain.name}`,
+      allowed_countries: ["GB", "US"],
+    });
+    const { events } = await listOrgAuditEvents({ organizationId: tenant.organization.id });
+    expect(events.map((event) => event.action)).toContain("verify_settings.updated");
+
+    const invalid = await apiRequest(app, "PATCH", "/v1/verify/settings", {
+      key: tenant.liveKey,
+      body: { code_length: 99 },
+    });
+    expect(invalid.status).toBe(422);
+
+    const { key: readOnly } = await createEnvironmentApiKey({
+      organizationId: tenant.organization.id,
+      environmentId: tenant.production.id,
+      name: "Verify reader",
+      userId: tenant.owner.id,
+      permissions: { verify: ["read"] },
+    });
+    expect((await apiRequest(app, "GET", "/v1/verify/settings", { key: readOnly })).status).toBe(
+      200,
+    );
+    const refused = await apiRequest(app, "PATCH", "/v1/verify/settings", {
+      key: readOnly,
+      body: { code_length: 8 },
+    });
+    expect(refused.status).toBe(403);
   });
 
   test("a check names a verification or a destination", async () => {

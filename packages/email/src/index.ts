@@ -669,6 +669,7 @@ export {
   sweepUnclaimedEmails,
   UNCLAIMED_FAIL_MS,
   UNCLAIMED_REQUEUE_MS,
+  unclaimedEmailBacklog,
 } from "./sweeps.ts";
 export {
   createEmailTemplate,

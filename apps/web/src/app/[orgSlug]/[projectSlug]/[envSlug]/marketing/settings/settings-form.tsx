@@ -6,9 +6,9 @@ import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import { Textarea } from "@coss/ui/components/textarea";
-import { useActionState } from "react";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
+import { useActionToast } from "@/lib/toast";
 import { saveMarketingSettingsAction } from "./actions";
 
 export function MarketingSettingsForm(
@@ -23,7 +23,9 @@ export function MarketingSettingsForm(
     canEdit: boolean;
   },
 ) {
-  const [state, formAction, pending] = useActionState(saveMarketingSettingsAction, null);
+  const [state, formAction, pending] = useActionToast(saveMarketingSettingsAction, {
+    success: "Marketing settings saved",
+  });
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <TargetInputs {...props} />
@@ -113,7 +115,6 @@ export function MarketingSettingsForm(
           type="url"
         />
       </Field>
-      {state?.ok ? <p className="text-muted-foreground text-sm">Saved.</p> : null}
       {state && !state.ok ? <FormError message={state.error} /> : null}
       {props.canEdit ? (
         <div>

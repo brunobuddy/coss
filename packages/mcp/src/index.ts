@@ -13,6 +13,11 @@ export {
   type SmsDiagnosisContext,
   type SmsVerdict,
 } from "./diagnose-sms.ts";
-export { type CossMcpServerOptions, createCossMcpServer } from "./server.ts";
+export {
+  type CossMcpServerOptions,
+  createCossMcpServer,
+  TOOLSET_NAMES,
+  type Toolset,
+} from "./server.ts";
 export type { DocsOptions } from "./tools/docs.ts";
 export { VERSION } from "./version.ts";

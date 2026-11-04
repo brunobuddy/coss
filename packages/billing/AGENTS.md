@@ -44,7 +44,8 @@ repository root.
     (`usage_recorded_at` compare-and-set), and on `email.dedicated_ip` too when it went through the organization's
     dedicated IPs (`email.dedicated_pool`); sandbox never. Received email is `email.received` when it is stored
     (sandbox too: it is real mail; not the fake provider's, spam or viruses), inboxes `email.inboxes` per day a live
-    one exists (priced per 30 inbox-days; see `packages/email/AGENTS.md`).
+    one exists (priced per 30 inbox-days; see `packages/email/AGENTS.md`). Hooks is `hooks.messages`, one per live
+    message accepted whatever its fan-out, with Free capped and paid plans including more (`packages/hooks/AGENTS.md`).
   - **Attribution and spend** (`billing_usage_attribution`, `./spend`): `recordUsage` also writes who caused the usage
     (project, API key, and the member a personal key belongs to — `email.api_key_owner_id`, captured at
     acceptance, so revoking a key never erases a member's spend), same hour and shard as `billing_usage`, which

@@ -9,7 +9,8 @@ icon: Rocket
 
 ### Create an API key
 
-In the dashboard, open your project's **Development** environment and create an API key. Development
+In the dashboard, open your project's **Development** environment and create an API key. A new
+organization starts with a project and opens there. Development
 keys start with `coss_test_`: emails sent with them are recorded but never delivered, so you can
 experiment freely. See [Environments and API keys](/docs/environments).
 
@@ -19,7 +20,7 @@ export COSS_API_KEY=coss_test_...
 
 Or, in your project's directory, let the [CLI](/docs/cli#set-a-project-up) do this step and the
 next: `npx coss-cli init` asks you to approve a development key for the project in the
-dashboard, writes it to `.env.local` (Next.js) or `.env` as `COSS_API_KEY` and installs the SDK.
+dashboard (creating your account, organization and project on the way if you're new), writes it to `.env.local` (Next.js) or `.env` as `COSS_API_KEY` and installs the SDK.
 Building with a coding agent? See [Coding agents](/docs/agents).
 
 </Step>

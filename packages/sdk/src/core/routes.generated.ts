@@ -199,6 +199,7 @@ export const ROUTES: readonly string[] = [
   "/v1/verifications/check",
   "/v1/verifications/{id}",
   "/v1/verifications/{id}/cancel",
+  "/v1/verify/settings",
   "/v1/webhook_endpoints",
   "/v1/webhook_endpoints/{id}",
   "/v1/webhook_endpoints/{id}/deliveries",

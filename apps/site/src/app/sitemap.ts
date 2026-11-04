@@ -28,6 +28,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}${CHANGELOG_ROUTE}`, lastModified: CHANGELOG[0]?.date },
     { url: `${SITE_URL}${TOOLS_ROUTE}` },
     ...FREE_TOOLS.map((tool) => ({ url: `${SITE_URL}${TOOLS_ROUTE}/${tool.slug}` })),
+    { url: `${SITE_URL}/status` },
+    { url: `${SITE_URL}/contact` },
     { url: `${SITE_URL}${PRODUCTS_ROUTE}` },
     ...productPages().map((page) => contentEntry("products", page)),
     { url: `${SITE_URL}${SOLUTIONS_ROUTE}` },

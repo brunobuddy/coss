@@ -136,6 +136,9 @@ export default async function ContactsPage({
         ) : contacts.data.length === 0 ? (
           <PanelBody flush>
             <EmptyState
+              action={
+                canCreate && !email && !status ? <AddContactDialog {...target} base={base} /> : null
+              }
               compact
               description={
                 email || status

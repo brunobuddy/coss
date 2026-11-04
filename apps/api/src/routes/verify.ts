@@ -1,14 +1,26 @@
-import { getVerification, listVerificationsPage, type VerifyService } from "@coss/verify";
+import { authorizeLiveSender } from "@coss/email";
+import {
+  getVerification,
+  getVerifySettings,
+  listVerificationsPage,
+  toVerifySettingsObject,
+  updateVerifySettings,
+  VerifyError,
+  type VerifyService,
+} from "@coss/verify";
 import {
   CheckVerificationRequest,
   ListVerificationsQuery,
   StartVerificationRequest,
+  UpdateVerifySettingsRequest,
   VerificationCheckObject,
   VerificationList,
   VerificationObject,
+  VerifySettingsObject,
 } from "@coss/verify/schemas";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { z } from "zod";
+import { recordApiAudit } from "../audit.ts";
 import { requireApiKey } from "../middleware/api-key.ts";
 import { upgradeRequestBody } from "../middleware/api-version.ts";
 import { rateLimit } from "../middleware/rate-limit.ts";
@@ -214,7 +226,64 @@ export const cancelVerificationRoute = createRoute({
   },
 });
 
-export function createVerifyRoutes(verifyService: VerifyService): OpenAPIHono<AppEnv> {
+export const getVerifySettingsRoute = createRoute({
+  method: "get",
+  path: "/verify/settings",
+  operationId: "getVerifySettings",
+  tags: ["Verify settings"],
+  summary: "Get the Verify settings",
+  description:
+    "The API key's environment's settings, with defaults filled in: the name codes are sent for, " +
+    "code length, lifetime and attempts, the senders, and the countries SMS codes may go to.",
+  security: [{ bearerAuth: [] }],
+  middleware: [requireApiKey({ verify: ["read"] }), rateLimit("api.read")],
+  responses: {
+    200: jsonDoc("The settings.", VerifySettingsObject),
+    ...commonErrors,
+  },
+});
+
+export const updateVerifySettingsRoute = createRoute({
+  method: "patch",
+  path: "/verify/settings",
+  operationId: "updateVerifySettings",
+  tags: ["Verify settings"],
+  summary: "Update the Verify settings",
+  description:
+    "Changes the fields given; the others keep their values. `sms_from` must be one of the " +
+    "organization's numbers, and a live key's `email_from` must be on one of its verified domains.",
+  security: [{ bearerAuth: [] }],
+  middleware: [
+    requireApiKey({ verify: ["update"] }),
+    rateLimit("api.write"),
+    upgradeRequestBody("PATCH /v1/verify/settings"),
+  ],
+  request: {
+    body: {
+      content: { "application/json": { schema: UpdateVerifySettingsRequest } },
+      required: true,
+    },
+  },
+  responses: {
+    200: jsonDoc("The settings.", VerifySettingsObject),
+    ...commonErrors,
+    422: errorDoc(
+      "The body failed validation (`validation_error`), or a sender isn't the organization's " +
+        "(`invalid_settings`).",
+    ),
+  },
+});
+
+export type VerifyRouteDeps = {
+  verifyService: VerifyService;
+  /** The live email provider: `email_from` must be on a domain it verified. */
+  liveProvider: string;
+};
+
+export function createVerifyRoutes({
+  verifyService,
+  liveProvider,
+}: VerifyRouteDeps): OpenAPIHono<AppEnv> {
   const router = new OpenAPIHono<AppEnv>();
 
   router.openapi(
@@ -289,6 +358,40 @@ export function createVerifyRoutes(verifyService: VerifyService): OpenAPIHono<Ap
       }),
       200,
     );
+  });
+
+  router.openapi(getVerifySettingsRoute, async (c) => {
+    const { organizationId, environmentId } = c.var.auth;
+    const settings = await getVerifySettings({ organizationId, environmentId });
+    if (!settings) throw new VerifyError("not_found", "Environment not found.");
+    return c.json(toVerifySettingsObject(settings), 200);
+  });
+
+  router.openapi(updateVerifySettingsRoute, async (c) => {
+    const update = c.req.valid("json");
+    const { organizationId, environmentId } = c.var.auth;
+    const settings = await updateVerifySettings({ organizationId, environmentId }, update, {
+      checkEmailFrom: (organization, address) =>
+        authorizeLiveSender({
+          organizationId: organization,
+          from: address,
+          provider: liveProvider,
+        }).then(
+          () => true,
+          () => false,
+        ),
+    });
+    await recordApiAudit(c, {
+      action: "verify_settings.updated",
+      target: { type: "environment", id: environmentId },
+      metadata: {
+        fields: Object.keys(update),
+        sms_from: settings.smsFrom,
+        email_from: settings.emailFrom,
+        allowed_countries: settings.allowedCountries,
+      },
+    });
+    return c.json(toVerifySettingsObject(settings), 200);
   });
 
   return router;

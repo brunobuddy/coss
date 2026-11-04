@@ -20,11 +20,12 @@ import {
   SelectValue,
 } from "@coss/ui/components/select";
 import { HistoryIcon } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { Panel, PanelBody } from "@/components/panel";
 import { SpecItem, SpecList } from "@/components/spec-list";
+import { useActionToast } from "@/lib/toast";
 import { restoreVersionAction } from "../../../actions";
 import { type PreviewContent, TemplatePreview } from "../../../template-preview";
 
@@ -100,7 +101,9 @@ export function VersionView(props: {
 
 function RestoreButton(props: { target: Target; version: number }) {
   // On success the action redirects to the editor.
-  const [state, formAction, pending] = useActionState(restoreVersionAction, null);
+  const [state, formAction, pending] = useActionToast(restoreVersionAction, {
+    success: "Version restored to the draft",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button variant="outline" />}>

@@ -9,6 +9,7 @@ export class FakeTrackingHostnameProvider implements TrackingHostnameProvider {
   readonly name = "fake";
   readonly cnameTarget: string;
   readonly #hostnames = new Map<string, string>();
+  readonly #claims = new Map<string, string>();
   readonly #state: (hostname: string) => TrackingHostnameState;
 
   /** `state` decides what a hostname reports (default: always active). */
@@ -24,8 +25,12 @@ export class FakeTrackingHostnameProvider implements TrackingHostnameProvider {
     return [...this.#hostnames.values()];
   }
 
-  async create(hostname: string): Promise<{ id: string; state: TrackingHostnameState }> {
-    const id = randomUUID();
+  async create(
+    hostname: string,
+    claim: string,
+  ): Promise<{ id: string; state: TrackingHostnameState }> {
+    const id = this.#claims.get(claim) ?? randomUUID();
+    this.#claims.set(claim, id);
     this.#hostnames.set(id, hostname);
     return { id, state: this.#state(hostname) };
   }
@@ -38,5 +43,11 @@ export class FakeTrackingHostnameProvider implements TrackingHostnameProvider {
 
   async delete(id: string): Promise<void> {
     this.#hostnames.delete(id);
+  }
+
+  async release(_hostname: string, claim: string): Promise<void> {
+    const id = this.#claims.get(claim);
+    if (id) this.#hostnames.delete(id);
+    this.#claims.delete(claim);
   }
 }

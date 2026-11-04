@@ -128,7 +128,7 @@ export const API_KEY_RESOURCES: readonly ApiKeyResourceInfo[] = [
     label: "Verifications",
     group: "Verify",
     description:
-      "Start, check and cancel verifications (one-time codes by SMS or email); read them.",
+      "Start, check and cancel verifications (one-time codes by SMS or email); read them; change Verify's settings.",
   },
   {
     resource: "form",

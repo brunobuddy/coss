@@ -12,11 +12,14 @@ import { requireOrgMember } from "@/lib/session";
 export default async function OrganizationPage({ params, searchParams }: PageProps<"/[orgSlug]">) {
   const { orgSlug } = await params;
   const { to } = await searchParams;
-  const { organization } = await requireOrgMember(orgSlug);
+  const { organization, can } = await requireOrgMember(orgSlug);
   const projects = toShellProjects(await listProjectsWithDefaultEnvironment(organization.id));
   const cookie = (await cookies()).get(environmentCookieName(organization.slug))?.value;
   const current = rememberedEnvironment(projects, cookie);
-  if (!current) redirect(settingsHref(organization.slug, "/projects"));
+  if (!current) {
+    const create = can({ project: ["create"] }) ? "?new=1" : "";
+    redirect(settingsHref(organization.slug, `/projects${create}`));
+  }
   const base = environmentHref({
     organization: organization.slug,
     project: current.project.slug,

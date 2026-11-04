@@ -163,7 +163,15 @@ export async function recordProviderPayment(
       })
       .where(eq(billingInvoice.id, invoice.id))
       .returning();
-    if (settled) await afterSettled(tx, settled, now, opts.systemOrganizationId);
+    if (settled) {
+      await announce(
+        tx,
+        settled.organizationId,
+        { type: "billing.invoice_paid", data: { invoice: toInvoiceSummary(settled) } },
+        now,
+      );
+      await afterSettled(tx, settled, now, opts.systemOrganizationId);
+    }
   }
 }
 

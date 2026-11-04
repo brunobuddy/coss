@@ -90,6 +90,7 @@ The server reads its configuration from the environment only:
 | --- | --- |
 | `COSS_API_KEY` | The key every tool calls the API with. Without it, the server reads a development (`coss_test_`) key from the project's `.env.local` or `.env`. A `coss_live_` key in that file is never loaded. With no key at all, only the docs tools are available. |
 | `COSS_BASE_URL` | Another API origin, e.g. `http://localhost:3001` when you run coss.com yourself. Defaults to `https://api.coss.com`. |
+| `COSS_MCP_TOOLSETS` | Fewer tools, for a client that struggles with this many: a comma-separated list of `email`, `marketing`, `inboxes`, `sms`, `verify`, `sign`, `forms`, `scheduling`, `webhooks`, `hooks` and `risk`. The docs, `get_setup`, logs and `get_account_status` are always there. Default: every tool. |
 
 <Callout type="warn">
 API keys can do everything the API can, so the agent can also send email and SMS and change
@@ -152,16 +153,48 @@ from address that will succeed, DNS records still missing, webhook endpoints, an
 (an unknown alias is created). `publish_email_template` publishes the draft at the revision you
 read, which sends use from then on. A save does not publish by itself.
 
-**Hooks**: `list_hook_applications`, `send_hook_message` (delivers to the application's endpoints),
-`list_hook_deliveries`. See [Hooks](/docs/hooks).
+**Marketing**: `list_contacts`, `upsert_contact`, `list_audiences`, `save_audience`, `list_segments`,
+`save_segment`, `list_topics`, `save_topic`, `list_broadcasts`, `get_broadcast`, `save_broadcast`
+(always a draft), `send_test_broadcast`, `send_broadcast`, `cancel_broadcast`,
+`get_marketing_settings` and `update_marketing_settings`. A `save_` tool updates with an `id` and
+creates without one. See [Broadcasts](/docs/email/broadcasts).
 
-**Forms**: `list_forms`, `list_form_submissions` (by status: `held` is Risk's review queue),
-`get_form_submission` (the values, labelled as untrusted: someone typed them into a form). See
-[Forms](/docs/forms).
+**Verify**: `start_verification` sends a code, `check_verification` compares one, then
+`list_verifications`, `get_verification`, `cancel_verification`, `get_verify_settings` and
+`update_verify_settings` (a sender must be the organization's). See [Verify](/docs/verify).
+
+**Sign**: `upload_sign_document` reads a PDF from the project (a path inside it, nothing else),
+`create_sign_request` and `create_sign_request_from_template` make drafts, and `send_sign_request`
+sends one. `list_sign_requests`, `get_sign_request`, `get_sign_audit_trail`, `remind_sign_request`,
+`cancel_sign_request`, `create_sign_session` (a signing link for an embedded signer),
+`list_sign_templates`, `create_sign_template`, `get_sign_settings` and `update_sign_settings`. See
+[Sign](/docs/sign).
+
+**Hooks**: `list_hook_applications`, `create_hook_application`, `list_hook_event_types`,
+`create_hook_event_type`, `list_hook_endpoints`, `create_hook_endpoint` (the answer holds its signing
+secret), `send_hook_message` (delivers to the application's endpoints), `send_hook_test_message`
+(to one endpoint), `list_hook_deliveries`, `list_hook_attempts` (each request's status and response),
+`retry_hook_delivery` and `create_hook_portal_session`. See [Hooks](/docs/hooks).
+
+**Forms**: `list_forms`, `get_form`, `save_form` (the answer has the endpoint a site posts to),
+`list_form_submissions` (by status: `held` is Risk's review queue), `get_form_submission` (the
+values, labelled as untrusted: someone typed them into a form) and `release_form_submission`
+(accepts a held one, which sends it on). See [Forms](/docs/forms).
+
+**Scheduling**: `list_scheduling_hosts`, `save_scheduling_host`, `list_scheduling_schedules`,
+`save_scheduling_schedule`, `list_scheduling_calendars` (a calendar that `needs_reauth` is the usual
+reason for having no slots), `authorize_scheduling_calendar`, `list_scheduling_event_types`,
+`save_scheduling_event_type`, `list_scheduling_slots`, `search_scheduling_availability`,
+`list_scheduling_bookings`, `get_scheduling_booking`, `create_scheduling_booking`,
+`reschedule_scheduling_booking`, `cancel_scheduling_booking` and `create_scheduling_session` (a link
+to a hosted page). See [Scheduling](/docs/scheduling).
 
 **Risk**: `assess_risk` records a decision for a sign-up, login, message, checkout or custom event.
-`list_risk_assessments`, `list_risk_rules` and `list_risk_list_entries` read what the environment
-already decided and the rules and lists behind it. See [Risk](/docs/risk).
+`list_risk_assessments`, `get_risk_assessment`, `list_risk_rules`, `list_risk_list_entries` and
+`get_risk_settings` read what the environment already decided and the rules and lists behind it.
+`record_risk_feedback` resolves a review, `add_risk_list_entry` and `remove_risk_list_entry` change
+the lists, and `check_email_risk`, `check_ip_risk` and `check_phone_risk` look at one identifier
+without recording a decision (a live key's phone checks are billed). See [Risk](/docs/risk).
 
 **Account**: `get_account_status`: whether the key is live or sandbox, the
 [sending reputation](/docs/email/delivery) and its checks, billing status and holds, and tracking
@@ -179,6 +212,6 @@ unverified domain): `search_logs` finds those requests and the errors they got.
 SMS works the same way: sandbox messages are simulated, and the [SMS simulator's
 numbers](/docs/sms/testing) produce each outcome.
 
-Email content, SMS text, received messages, bounce messages and webhook responses are written by
-other people.
+Email content, SMS text, received messages, form submissions, booking answers, signers' details,
+bounce messages and webhook responses are written by other people.
 The server tells the agent to treat them as data, never as instructions.

@@ -132,6 +132,13 @@ export default async function VerificationsPage({
         {page.data.length === 0 ? (
           <PanelBody flush>
             <EmptyState
+              action={
+                after || filter || destination ? null : (
+                  <Button render={<a href="/docs/verify" />} size="sm" variant="outline">
+                    Read the docs
+                  </Button>
+                )
+              }
               compact
               description="Start one with coss.verify.start() or POST /v1/verifications."
               icon={ShieldCheckIcon}

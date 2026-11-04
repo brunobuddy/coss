@@ -27,12 +27,13 @@ import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import { MegaphoneIcon, SendIcon } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { UtcDateTimeField } from "@/components/fields/date-field";
 import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
+import { useActionToast } from "@/lib/toast";
 import {
   changeBroadcastAction,
   deleteBroadcastAction,
@@ -65,8 +66,10 @@ export function SendBroadcastDialog(props: Target & { estimate: number | null })
 function SendForm(props: Target & { estimate: number | null }) {
   // On success the page refreshes into the scheduled broadcast, which has no "Send…" button, so
   // the dialog closes by itself.
-  const [state, formAction, pending] = useActionState(sendBroadcastAction, null);
   const [when, setWhen] = useState("now");
+  const [state, formAction, pending] = useActionToast(sendBroadcastAction, {
+    success: when === "later" ? "Broadcast scheduled" : "Broadcast started",
+  });
   const [missing, setMissing] = useState(false);
   return (
     <form
@@ -144,7 +147,9 @@ export function TestBroadcastDialog(props: TestProps) {
 }
 
 function TestForm(props: TestProps) {
-  const [state, formAction, pending] = useActionState(testBroadcastAction, null);
+  const [state, formAction, pending] = useActionToast(testBroadcastAction, {
+    success: "Test sent",
+  });
   const [to, setTo] = useState<Set<string>>(
     new Set(props.recipients.includes(props.currentUserEmail) ? [props.currentUserEmail] : []),
   );
@@ -219,7 +224,9 @@ function TestForm(props: TestProps) {
 
 /** Pause or resume (one click). */
 export function BroadcastChangeButton(props: Target & { change: "pause" | "resume" }) {
-  const [state, formAction, pending] = useActionState(changeBroadcastAction, null);
+  const [state, formAction, pending] = useActionToast(changeBroadcastAction, {
+    success: props.change === "pause" ? "Broadcast paused" : "Broadcast resumed",
+  });
   return (
     <form action={formAction} className="flex items-center gap-2">
       <Hidden {...props} />
@@ -233,7 +240,9 @@ export function BroadcastChangeButton(props: Target & { change: "pause" | "resum
 }
 
 export function CancelBroadcastButton(props: Target) {
-  const [state, formAction, pending] = useActionState(changeBroadcastAction, null);
+  const [state, formAction, pending] = useActionToast(changeBroadcastAction, {
+    success: "Broadcast canceled",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button size="sm" variant="destructive-outline" />}>
@@ -269,7 +278,9 @@ export function CancelBroadcastButton(props: Target) {
 }
 
 export function DeleteBroadcastButton(props: Target) {
-  const [state, formAction, pending] = useActionState(deleteBroadcastAction, null);
+  const [state, formAction, pending] = useActionToast(deleteBroadcastAction, {
+    success: "Broadcast deleted",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button size="sm" variant="ghost" />}>Delete</AlertDialogTrigger>

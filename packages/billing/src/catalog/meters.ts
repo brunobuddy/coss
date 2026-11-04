@@ -9,6 +9,7 @@ export const PRODUCTS = [
   "forms",
   "video",
   "scheduling",
+  "hooks",
 ] as const;
 export type Product = (typeof PRODUCTS)[number];
 
@@ -193,6 +194,17 @@ export const METERS = {
     unit: "booking",
     units: "bookings",
     displayPer: 1,
+    dimensions: [],
+    requires: "plan",
+  },
+  // Hooks: a live message accepted, once whatever its fan-out. Retries, recoveries, test sends and
+  // sandbox are free; delivery quotas bound the fan-out.
+  "hooks.messages": {
+    product: "hooks",
+    label: "Hooks",
+    unit: "message",
+    units: "messages",
+    displayPer: 1000,
     dimensions: [],
     requires: "plan",
   },

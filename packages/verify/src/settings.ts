@@ -6,7 +6,11 @@
 import { db, schema } from "@coss/db";
 import { and, eq } from "drizzle-orm";
 import { VerifyError } from "./errors.ts";
-import { DEFAULT_VERIFY_SETTINGS, type UpdateVerifySettingsRequestOutput } from "./schemas.ts";
+import {
+  DEFAULT_VERIFY_SETTINGS,
+  type UpdateVerifySettingsRequestOutput,
+  type VerifySettingsWire,
+} from "./schemas.ts";
 
 const { environment, project, smsNumber, verifySettings } = schema;
 
@@ -69,10 +73,24 @@ export async function getVerifySettings(
   };
 }
 
+export function toVerifySettingsObject(settings: ResolvedVerifySettings): VerifySettingsWire {
+  return {
+    object: "verify_settings",
+    app_name: settings.appName,
+    app_name_is_default: settings.appNameIsDefault,
+    code_length: settings.codeLength,
+    ttl_seconds: settings.ttlSeconds,
+    max_attempts: settings.maxAttempts,
+    sms_from: settings.smsFrom,
+    email_from: settings.emailFrom,
+    allowed_countries: settings.allowedCountries,
+  };
+}
+
 export type UpdateVerifySettingsOptions = {
   /**
    * Whether the address may send from a live environment (a verified domain of the organization;
-   * the dashboard checks with `@coss/email`). Sandbox environments accept any.
+   * the dashboard and the API check with `@coss/email`). Sandbox environments accept any.
    */
   checkEmailFrom?: (organizationId: string, address: string) => Promise<boolean>;
 };

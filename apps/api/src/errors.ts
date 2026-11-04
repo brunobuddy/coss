@@ -623,6 +623,9 @@ function fromHookError(error: HookError): ApiError {
   if (error.code === "request_in_progress" || error.code === "idempotency_key_reused") {
     return fromIdempotencyError({ code: error.code, message: error.message });
   }
+  if (error.status === 402) {
+    return new ApiError(402, { type: "billing_error", code: error.code, message: error.message });
+  }
   if (error.status === 404) {
     return new ApiError(404, { type: "not_found_error", code: error.code, message: error.message });
   }

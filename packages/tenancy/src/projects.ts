@@ -91,6 +91,18 @@ export async function createProject(input: {
   }
 }
 
+/** The name of the project an organization starts with. */
+export const FIRST_PROJECT_NAME = "Default";
+
+/** An organization's first project: `null` (and nothing created) once it has any project. */
+export async function createFirstProject(input: {
+  organizationId: string;
+}): Promise<{ project: Project; environments: Environment[] } | null> {
+  const existing = await listProjects(input);
+  if (existing.length > 0) return null;
+  return createProject({ organizationId: input.organizationId, name: FIRST_PROJECT_NAME });
+}
+
 /** Projects of an organization, oldest first. */
 export async function listProjects(input: { organizationId: string }): Promise<Project[]> {
   return db

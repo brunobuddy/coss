@@ -1,6 +1,6 @@
 # Alarms and cost guardrails. Alarms notify `<ses_name>-alerts` (created by ses:bootstrap with
-# --alert-email, already confirmed). Application errors and uptime (multi-region probes of
-# coss.com/api/health and api.coss.com/health) are Sentry's: the organization's SCP denies
+# --alert-email, already confirmed). Application errors, worker loops (cron monitors `worker-<loop>`)
+# and uptime (multi-region probes, README "Monitoring") are Sentry's: the organization's SCP denies
 # us-east-1, the only region with Route 53 health check and CloudFront metrics.
 
 data "aws_sns_topic" "alerts" {
@@ -115,6 +115,53 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy_targets" {
   evaluation_periods  = 5
   comparison_operator = "GreaterThanThreshold"
   threshold           = 0
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.alarm_actions
+  ok_actions          = local.alarm_actions
+}
+
+# The SMTP relay has no ALB target, so none of the above sees it. Fewer healthy tasks than one on a
+# port means smtp.coss.com refuses connections there.
+resource "aws_cloudwatch_metric_alarm" "smtp_healthy_hosts" {
+  for_each            = local.nlb_targets
+  alarm_name          = "${local.name}-${each.key}-healthy-hosts"
+  alarm_description   = "${each.key}: no healthy task behind the network load balancer for 3 minutes"
+  namespace           = "AWS/NetworkELB"
+  metric_name         = "HealthyHostCount"
+  dimensions          = { LoadBalancer = aws_lb.smtp.arn_suffix, TargetGroup = aws_lb_target_group.tcp[each.key].arn_suffix }
+  statistic           = "Minimum"
+  period              = 60
+  evaluation_periods  = 3
+  comparison_operator = "LessThanThreshold"
+  threshold           = 1
+  treat_missing_data  = "breaching"
+  alarm_actions       = local.alarm_actions
+  ok_actions          = local.alarm_actions
+}
+
+# --- SES -------------------------------------------------------------------------------------
+
+# The account's reputation, as AWS measures it. SES reviews an account at a 5 % bounce or 0.1 %
+# complaint rate and can pause all sending at 10 % or 0.5 %: every customer shares this account, so
+# these warn first. SES publishes them irregularly, so no data says nothing.
+locals {
+  ses_reputation_alarms = {
+    bounce-rate    = { metric = "Reputation.BounceRate", threshold = 0.04, description = "SES bounce rate above 4 % (AWS reviews the account at 5 %)" }
+    complaint-rate = { metric = "Reputation.ComplaintRate", threshold = 0.0008, description = "SES complaint rate above 0.08 % (AWS reviews the account at 0.1 %)" }
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "ses_reputation" {
+  for_each            = local.ses_reputation_alarms
+  alarm_name          = "${local.name}-ses-${each.key}"
+  alarm_description   = each.value.description
+  namespace           = "AWS/SES"
+  metric_name         = each.value.metric
+  statistic           = "Maximum"
+  period              = 3600
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = each.value.threshold
   treat_missing_data  = "notBreaching"
   alarm_actions       = local.alarm_actions
   ok_actions          = local.alarm_actions

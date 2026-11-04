@@ -52,6 +52,9 @@ export default async function AudiencesPage({
           <PanelBody flush>
             <EmptyState
               compact
+              action={
+                context.can({ contact: ["create"] }) ? <CreateAudienceDialog {...target} /> : null
+              }
               description="Group contacts into lists to send broadcasts to them."
               icon={UsersRoundIcon}
               title="No audiences yet"

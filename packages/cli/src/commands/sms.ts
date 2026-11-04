@@ -1,7 +1,8 @@
 import type { Coss, ReceivedSms, SendSmsParams, Sms, SmsEvent, SmsStatus } from "coss";
-import { type Flags, pairs } from "../args.ts";
+import { type Flags, pairs, requireArgs } from "../args.ts";
 import { type Command, type CommandInput, defineCommand } from "../command.ts";
 import { type Context, clientFor, resolveCredentials } from "../context.ts";
+import { printable } from "../emails/format.ts";
 import { apiError, UsageError } from "../errors.ts";
 import type { Output } from "../output.ts";
 import {
@@ -9,6 +10,7 @@ import {
   SIMULATED_SMS_OUTCOMES,
   type SimulatedSmsOutcome,
 } from "../sms/simulate.ts";
+import { client, LIMIT, limitOf, oneOf, printList, when } from "./list-output.ts";
 
 const SANDBOX_FROM = "+14155550100";
 const DEFAULT_BODY = "Test message from the coss.com CLI";
@@ -209,3 +211,228 @@ async function smsSend({ values, context }: CommandInput<typeof FLAGS>): Promise
   }
   return io.signal.aborted ? 130 : 0;
 }
+
+const STATUSES: readonly SmsStatus[] = [
+  "scheduled",
+  "queued",
+  "sent",
+  "delivered",
+  "undelivered",
+  "failed",
+  "canceled",
+];
+
+const LIST_FLAGS = {
+  to: { type: "string", value: "<number>", description: "Only messages to this number" },
+  status: {
+    type: "string",
+    value: "<status>",
+    choices: STATUSES,
+    description: STATUSES.join(", "),
+  },
+  limit: LIMIT,
+  json: { type: "boolean", description: "One message per line, as JSON" },
+} as const satisfies Flags;
+
+export const smsListCommand: Command = defineCommand({
+  name: "sms list",
+  summary: "List text messages",
+  description: "Lists the environment's messages, newest first.",
+  flags: LIST_FLAGS,
+  run: async ({ values, context }: CommandInput<typeof LIST_FLAGS>) => {
+    const status = oneOf("--status", values.status, STATUSES);
+    const coss = await client(context);
+    const { data, error } = await coss.sms.list({
+      ...(values.to !== undefined && { to: values.to }),
+      ...(status && { status }),
+      ...(values.limit !== undefined && { limit: limitOf(values.limit) }),
+    });
+    if (error) throw apiError("Couldn't list the messages", error);
+    const { out } = context;
+    printList(out, data.data, {
+      empty: "No messages.",
+      header: ["ID", "STATUS", "FROM", "TO", "CREATED"],
+      row: (item) => [
+        item.id,
+        out.style(statusStyle(item.status), item.status),
+        item.from,
+        item.to,
+        when(item.created_at),
+      ],
+      more: data.has_more && "There are more: `coss api sms --paginate` lists them all.",
+    });
+    return 0;
+  },
+});
+
+const GET_FLAGS = {
+  json: { type: "boolean", description: "Print the message and its events as JSON" },
+} as const satisfies Flags;
+
+export const smsGetCommand: Command = defineCommand({
+  name: "sms get",
+  summary: "Show a text message and its delivery events",
+  usage: "<message>",
+  description: "Shows a message: its text, status, failure and delivery events.",
+  flags: GET_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof GET_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "sms get <message>") as [string];
+    const coss = await client(context);
+    const [message, events] = await Promise.all([coss.sms.get(id), coss.sms.listEvents(id)]);
+    if (message.error) throw apiError("Couldn't read the message", message.error);
+    if (events.error) throw apiError("Couldn't read the message's events", events.error);
+    const { out } = context;
+    if (out.json) {
+      out.data({ ...message.data, events: events.data.data });
+      return 0;
+    }
+    const sms = message.data;
+    out.line(`${sms.id} ${out.style(statusStyle(sms.status), sms.status)} ${sms.from} → ${sms.to}`);
+    if (sms.failure) out.line(`  ${sms.failure.code}: ${sms.failure.message}`);
+    out.line(`  ${printable(sms.body)}`);
+    for (const event of events.data.data) {
+      const failure = event.data.failure ? `  ${event.data.failure.code}` : "";
+      out.line(`  ${out.style("dim", event.occurred_at)}  ${event.type}${failure}`);
+    }
+    return 0;
+  },
+});
+
+const RECEIVED_FLAGS = {
+  from: { type: "string", value: "<number>", description: "Only from this number" },
+  to: { type: "string", value: "<number>", description: "Only to this number of yours" },
+  limit: LIMIT,
+  json: { type: "boolean", description: "One message per line, as JSON" },
+} as const satisfies Flags;
+
+export const smsReceivedCommand: Command = defineCommand({
+  name: "sms received",
+  summary: "List text messages sent to your numbers",
+  description: "Lists messages your numbers received, newest first. Anyone can write their text.",
+  flags: RECEIVED_FLAGS,
+  run: async ({ values, context }: CommandInput<typeof RECEIVED_FLAGS>) => {
+    const coss = await client(context);
+    const { data, error } = await coss.sms.received.list({
+      ...(values.from !== undefined && { from: values.from }),
+      ...(values.to !== undefined && { to: values.to }),
+      ...(values.limit !== undefined && { limit: limitOf(values.limit) }),
+    });
+    if (error) throw apiError("Couldn't list the received messages", error);
+    const { out } = context;
+    printList(out, data.data, {
+      empty: "No received messages.",
+      header: ["ID", "FROM", "TO", "TEXT", "RECEIVED"],
+      row: (item) => [item.id, item.from, item.to, printable(item.body), when(item.created_at)],
+    });
+    return 0;
+  },
+});
+
+const NUMBERS_FLAGS = {
+  json: { type: "boolean", description: "One number per line, as JSON" },
+} as const satisfies Flags;
+
+export const smsNumbersCommand: Command = defineCommand({
+  name: "sms numbers",
+  summary: "List your numbers and whether each can send",
+  description: "Lists the organization's numbers, their registration and whether each can send.",
+  flags: NUMBERS_FLAGS,
+  run: async ({ context }: CommandInput<typeof NUMBERS_FLAGS>) => {
+    const coss = await client(context);
+    const { data, error } = await coss.sms.numbers.list();
+    if (error) throw apiError("Couldn't list the numbers", error);
+    const { out } = context;
+    printList(out, data.data, {
+      empty: "No numbers. Buy one in the dashboard: `coss open` then SMS.",
+      header: ["NUMBER", "KIND", "COUNTRY", "REGISTRATION", "CAN SEND"],
+      row: (item) => [
+        item.phone_number,
+        item.kind,
+        item.country,
+        item.registration_status ?? "",
+        item.can_send ? out.style("green", "yes") : out.style("yellow", "no"),
+      ],
+    });
+    return 0;
+  },
+});
+
+const SUPPRESSIONS_FLAGS = {
+  number: { type: "string", value: "<number>", description: "Only this number" },
+  limit: LIMIT,
+  json: { type: "boolean", description: "One suppression per line, as JSON" },
+} as const satisfies Flags;
+
+export const smsSuppressionsListCommand: Command = defineCommand({
+  name: "sms suppressions list",
+  summary: "List numbers that won't be texted",
+  description: "Lists suppressed numbers: opted out with STOP, added by you, or invalid.",
+  flags: SUPPRESSIONS_FLAGS,
+  run: async ({ values, context }: CommandInput<typeof SUPPRESSIONS_FLAGS>) => {
+    const coss = await client(context);
+    const { data, error } = await coss.sms.suppressions.list({
+      ...(values.number !== undefined && { phone_number: values.number }),
+      ...(values.limit !== undefined && { limit: limitOf(values.limit) }),
+    });
+    if (error) throw apiError("Couldn't list the suppressions", error);
+    printList(context.out, data.data, {
+      empty: "No suppressions.",
+      header: ["ID", "NUMBER", "REASON", "SINCE"],
+      row: (item) => [item.id, item.phone_number, item.reason, when(item.created_at)],
+    });
+    return 0;
+  },
+});
+
+const SUPPRESSION_FLAGS = {
+  json: { type: "boolean", description: "Print the answer as JSON" },
+} as const satisfies Flags;
+
+export const smsSuppressionsAddCommand: Command = defineCommand({
+  name: "sms suppressions add",
+  summary: "Stop texting a number",
+  usage: "<number>",
+  description: "Adds a number, in E.164 form, to the environment's suppressions.",
+  flags: SUPPRESSION_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof SUPPRESSION_FLAGS>) => {
+    const [number] = requireArgs(positionals, 1, "sms suppressions add <number>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.sms.suppressions.add({ phone_number: number });
+    if (error) throw apiError("Couldn't add the suppression", error);
+    if (context.out.json) context.out.data(data);
+    else context.out.line(`${context.out.style("green", "✔")} ${data.id} ${data.phone_number}`);
+    return 0;
+  },
+});
+
+export const smsSuppressionsRemoveCommand: Command = defineCommand({
+  name: "sms suppressions remove",
+  summary: "Text a suppressed number again",
+  usage: "<suppression>",
+  description:
+    "Removes a suppression, by id (`coss sms suppressions list`). Someone who texted STOP asked not to be contacted.",
+  flags: SUPPRESSION_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof SUPPRESSION_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "sms suppressions remove <suppression>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.sms.suppressions.remove(id);
+    if (error) throw apiError("Couldn't remove the suppression", error);
+    if (context.out.json) context.out.data(data);
+    else context.out.line(`${context.out.style("green", "✔")} Removed ${data.id}`);
+    return 0;
+  },
+});
+
+export const SMS_COMMANDS: readonly Command[] = [
+  smsSendCommand,
+  smsListCommand,
+  smsGetCommand,
+  smsReceivedCommand,
+  smsNumbersCommand,
+  smsSuppressionsListCommand,
+  smsSuppressionsAddCommand,
+  smsSuppressionsRemoveCommand,
+];

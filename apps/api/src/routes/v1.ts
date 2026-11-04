@@ -105,7 +105,13 @@ export function createV1Router(deps: V1Dependencies): OpenAPIHono<AppEnv> {
     }),
   );
   v1.route("/", createSignTemplateRoutes({ signService: deps.signService, signUrl: deps.signUrl }));
-  v1.route("/", createVerifyRoutes(deps.verifyService));
+  v1.route(
+    "/",
+    createVerifyRoutes({
+      verifyService: deps.verifyService,
+      liveProvider: deps.domainDeps.identity.name,
+    }),
+  );
   v1.route(
     "/",
     createFormRoutes({
@@ -147,7 +153,10 @@ export function createV1Router(deps: V1Dependencies): OpenAPIHono<AppEnv> {
   // Drain secrets use the same key ring as webhook endpoints.
   v1.route("/", createLogDrainRoutes(deps.webhookDeps));
   // Hooks endpoint secrets use the same key ring too.
-  v1.route("/", createHookRoutes({ ...deps.webhookDeps, portalUrl: deps.portalUrl }));
+  v1.route(
+    "/",
+    createHookRoutes({ ...deps.webhookDeps, portalUrl: deps.portalUrl, billing: deps.billing }),
+  );
   v1.route("/", createReceivedEmailRoutes(deps.inbound));
   v1.route(
     "/",

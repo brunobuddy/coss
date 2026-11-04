@@ -129,7 +129,9 @@ export function CreateApplicationDialog(props: EnvTarget) {
 }
 
 function CreateApplicationForm(props: EnvTarget) {
-  const [state, formAction, pending] = useActionState(createHookApplicationAction, null);
+  const [state, formAction, pending] = useActionToast(createHookApplicationAction, {
+    success: "Application added",
+  });
   if (state?.ok) {
     return (
       <>
@@ -252,7 +254,9 @@ export function CreateEndpointDialog(props: AppTarget & { eventTypes: readonly s
 }
 
 function CreateEndpointForm(props: AppTarget & { eventTypes: readonly string[] }) {
-  const [state, formAction, pending] = useActionState(createHookEndpointAction, null);
+  const [state, formAction, pending] = useActionToast(createHookEndpointAction, {
+    success: "Endpoint added",
+  });
   const { eventTypes, ...target } = props;
   if (state?.ok) {
     return (
@@ -400,7 +404,9 @@ export function RollSecretButton(props: EndpointTarget) {
 }
 
 function RollSecretForm(props: EndpointTarget) {
-  const [state, formAction, pending] = useActionState(rollHookEndpointSecretAction, null);
+  const [state, formAction, pending] = useActionToast(rollHookEndpointSecretAction, {
+    success: "Signing secret rolled",
+  });
   if (state?.ok) {
     return (
       <>

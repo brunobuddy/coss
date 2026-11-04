@@ -35,12 +35,13 @@ import {
 } from "@coss/ui/components/select";
 import { BracesIcon, FileUpIcon, UserRoundIcon } from "lucide-react";
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { DateField } from "@/components/fields/date-field";
 import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
+import { useActionToast } from "@/lib/toast";
 import { MAX_IMPORT_ROWS } from "../../email/suppressions/import-limits";
 import {
   addContactAction,
@@ -64,7 +65,9 @@ export function AddContactDialog(props: MarketingFormTarget & { base: string }) 
 }
 
 function AddContactForm(props: MarketingFormTarget & { base: string }) {
-  const [state, formAction, pending] = useActionState(addContactAction, null);
+  const [state, formAction, pending] = useActionToast(addContactAction, {
+    success: (data) => (data.created ? "Contact added" : "Contact updated"),
+  });
   if (state?.ok) {
     return (
       <>
@@ -197,7 +200,9 @@ const NO_AUDIENCE = "none";
 function ImportContactsForm(
   props: MarketingFormTarget & { audiences: { id: string; name: string }[] },
 ) {
-  const [state, formAction, pending] = useActionState(importContactsAction, null);
+  const [state, formAction, pending] = useActionToast(importContactsAction, {
+    success: "Contacts imported",
+  });
   if (state?.ok) return <ImportSummary result={state.data} />;
   return (
     <form action={formAction} className="contents">
@@ -262,7 +267,9 @@ function ImportContactsForm(
 export function DeleteContactButton(
   props: MarketingFormTarget & { contactId: string; email: string },
 ) {
-  const [state, formAction, pending] = useActionState(deleteContactAction, null);
+  const [state, formAction, pending] = useActionToast(deleteContactAction, {
+    success: "Contact deleted",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button size="sm" variant="destructive-outline" />}>
@@ -347,7 +354,9 @@ export function CreatePropertyDialog(props: MarketingFormTarget) {
 }
 
 function CreatePropertyForm(props: MarketingFormTarget) {
-  const [state, formAction, pending] = useActionState(createContactPropertyAction, null);
+  const [state, formAction, pending] = useActionToast(createContactPropertyAction, {
+    success: "Property added",
+  });
   const [type, setType] = useState("string");
   if (state?.ok) {
     return (
@@ -417,7 +426,9 @@ function CreatePropertyForm(props: MarketingFormTarget) {
 export function DeletePropertyButton(
   props: MarketingFormTarget & { propertyId: string; propertyKey: string },
 ) {
-  const [state, formAction, pending] = useActionState(deleteContactPropertyAction, null);
+  const [state, formAction, pending] = useActionToast(deleteContactPropertyAction, {
+    success: "Property deleted",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button size="xs" variant="destructive-outline" />}>

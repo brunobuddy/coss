@@ -132,6 +132,8 @@ const NOVEMBER_2026: RateCard = {
         campaign_monthly_low_volume: 1_500_000_000n,
       }),
     },
+    // $0.10 per 1,000 Hooks messages (first priced when the meter was added; it had no usage before).
+    "hooks.messages": { default: flatRate(100_000n) },
   },
 };
 

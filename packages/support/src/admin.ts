@@ -20,7 +20,9 @@ import {
 const {
   member,
   organization,
+  receivedEmail,
   supportAttachment,
+  supportIntake,
   supportMessage,
   supportSavedReply,
   supportTicket,
@@ -819,6 +821,52 @@ export async function saveSavedReply(input: {
 
 export async function deleteSavedReply(id: string): Promise<void> {
   await db.delete(supportSavedReply).where(eq(supportSavedReply.id, id));
+}
+
+/** Received mail intake gave up on. Rows whose email has been purged can't be filed any more. */
+export async function listFailedSupportIntakes(limit = 100) {
+  return db
+    .select({
+      receivedEmailId: supportIntake.receivedEmailId,
+      from: receivedEmail.from,
+      subject: receivedEmail.subject,
+      receivedAt: receivedEmail.createdAt,
+      attempts: supportIntake.attempts,
+      lastError: supportIntake.lastError,
+      failedAt: supportIntake.settledAt,
+    })
+    .from(supportIntake)
+    .innerJoin(receivedEmail, eq(receivedEmail.id, supportIntake.receivedEmailId))
+    .where(eq(supportIntake.outcome, "failed"))
+    .orderBy(desc(supportIntake.settledAt))
+    .limit(limit);
+}
+
+export async function countFailedSupportIntakes(): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(supportIntake)
+    .innerJoin(receivedEmail, eq(receivedEmail.id, supportIntake.receivedEmailId))
+    .where(eq(supportIntake.outcome, "failed"));
+  return row?.count ?? 0;
+}
+
+/** Puts a failed message back in line, with its attempts reset: the next `support` run files it. */
+export async function requeueSupportIntake(receivedEmailId: string): Promise<void> {
+  const [requeued] = await db
+    .update(supportIntake)
+    .set({
+      outcome: null,
+      settledAt: null,
+      attempts: 0,
+      lastError: null,
+      nextAttemptAt: new Date(),
+    })
+    .where(
+      and(eq(supportIntake.receivedEmailId, receivedEmailId), eq(supportIntake.outcome, "failed")),
+    )
+    .returning({ id: supportIntake.receivedEmailId });
+  if (!requeued) throw new SupportError("not_found", "This email isn't waiting to be requeued.");
 }
 
 export type SupportStats = {

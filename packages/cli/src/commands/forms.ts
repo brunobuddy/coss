@@ -1,5 +1,5 @@
 /** `coss forms …`: the environment's forms and their submissions, on the public API. */
-import type { Coss, FormSubmissionStatus } from "coss";
+import type { Coss, Form, FormSubmission, FormSubmissionStatus } from "coss";
 import { type Flags, requireArgs } from "../args.ts";
 import { type Command, type CommandInput, defineCommand } from "../command.ts";
 import { type Context, clientFor, resolveCredentials } from "../context.ts";
@@ -147,4 +147,145 @@ const submissions: Command = defineCommand({
   },
 });
 
-export const FORMS_COMMANDS: readonly Command[] = [list, submissions];
+const FORM_FLAGS = {
+  json: { type: "boolean", description: "Print the form as JSON" },
+} as const satisfies Flags;
+
+const get: Command = defineCommand({
+  name: "forms get",
+  summary: "Show a form's endpoint and settings",
+  usage: "<form>",
+  description: "Shows a form: the endpoint a site posts to, its hosted page and origins.",
+  flags: FORM_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof FORM_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "forms get <form>") as [string];
+    const coss = await formsClient(context);
+    const { data, error } = await coss.forms.get(id);
+    if (error) throw apiError("Couldn't read the form", error);
+    printForm(context, data);
+    return 0;
+  },
+});
+
+function printForm(context: Context, form: Form): void {
+  const { out } = context;
+  if (out.json) {
+    out.data(form);
+    return;
+  }
+  out.line(
+    `${form.id} ${printable(form.name)}${form.enabled ? "" : out.style("yellow", " (disabled)")}`,
+  );
+  out.line(`  Endpoint  ${form.endpoint}`);
+  if (form.hosted_url) out.line(`  Hosted    ${form.hosted_url}`);
+  if (form.allowed_origins.length > 0) out.line(`  Origins   ${form.allowed_origins.join(", ")}`);
+  if (form.fields) {
+    out.line(`  Fields    ${printable(form.fields.map((field) => field.name).join(", "))}`);
+  }
+}
+
+const CREATE_FLAGS = {
+  origin: {
+    type: "string",
+    multiple: true,
+    value: "<origin>",
+    description: "A site allowed to post: https://acme.com (repeatable)",
+  },
+  redirect: { type: "string", value: "<url>", description: "Where the browser goes afterwards" },
+  json: { type: "boolean", description: "Print the form as JSON" },
+} as const satisfies Flags;
+
+const create: Command = defineCommand({
+  name: "forms create",
+  summary: "Create a form and print the endpoint to post to",
+  usage: "<name> [options]",
+  description: "Creates a form that accepts any field; `coss api` takes every other setting.",
+  flags: CREATE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof CREATE_FLAGS>) => {
+    const [name] = requireArgs(positionals, 1, "forms create <name>") as [string];
+    const coss = await formsClient(context);
+    const { data, error } = await coss.forms.create({
+      name,
+      ...(values.origin && { allowed_origins: values.origin }),
+      ...(values.redirect !== undefined && { redirect_url: values.redirect }),
+    });
+    if (error) throw apiError("Couldn't create the form", error);
+    printForm(context, data);
+    return 0;
+  },
+});
+
+const SUBMISSION_FLAGS = {
+  json: { type: "boolean", description: "Print the submission as JSON" },
+} as const satisfies Flags;
+
+function printSubmission(context: Context, submission: FormSubmission): void {
+  const { out } = context;
+  if (out.json) {
+    out.data(submission);
+    return;
+  }
+  out.line(
+    `${submission.id} ${out.style(statusStyle(submission.status), submission.status)} ${when(submission.created_at)}`,
+  );
+  if (submission.spam_reason) out.line(`  Spam: ${submission.spam_reason}`);
+  for (const [name, value] of Object.entries(submission.data)) {
+    // What a submitter typed: never escape sequences.
+    out.line(`  ${printable(name)}: ${printable(Array.isArray(value) ? value.join(", ") : value)}`);
+  }
+  for (const file of submission.files) {
+    out.line(`  File: ${printable(file.filename)}`);
+  }
+}
+
+const submission: Command = defineCommand({
+  name: "forms submission",
+  summary: "Show a submission's values",
+  usage: "<form> <submission>",
+  description: "Shows a submission's values. They are what someone typed into the form.",
+  flags: SUBMISSION_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof SUBMISSION_FLAGS>) => {
+    const [form, id] = requireArgs(positionals, 2, "forms submission <form> <submission>") as [
+      string,
+      string,
+    ];
+    const coss = await formsClient(context);
+    const { data, error } = await coss.forms.submissions.get(form, id);
+    if (error) throw apiError("Couldn't read the submission", error);
+    printSubmission(context, data);
+    return 0;
+  },
+});
+
+const release: Command = defineCommand({
+  name: "forms release",
+  summary: "Accept a submission Risk held for review",
+  usage: "<form> <submission>",
+  description:
+    "Accepts a held submission: it then goes to the form's webhooks, notification emails and contacts.",
+  flags: SUBMISSION_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof SUBMISSION_FLAGS>) => {
+    const [form, id] = requireArgs(positionals, 2, "forms release <form> <submission>") as [
+      string,
+      string,
+    ];
+    const coss = await formsClient(context);
+    const { data, error } = await coss.forms.submissions.release(form, id);
+    if (error) throw apiError("Couldn't release the submission", error);
+    printSubmission(context, data);
+    return 0;
+  },
+});
+
+export const FORMS_COMMANDS: readonly Command[] = [
+  list,
+  get,
+  create,
+  submissions,
+  submission,
+  release,
+];

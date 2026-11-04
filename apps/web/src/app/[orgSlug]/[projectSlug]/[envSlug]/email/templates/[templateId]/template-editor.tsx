@@ -28,10 +28,11 @@ import {
 } from "@coss/ui/components/select";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@coss/ui/components/tabs";
 import { Textarea } from "@coss/ui/components/textarea";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { Panel, PanelBody } from "@/components/panel";
+import { useActionToast } from "@/lib/toast";
 import { saveDraftAction } from "../actions";
 import { TemplatePreview } from "../template-preview";
 import { PublishButton } from "./publish-button";
@@ -202,7 +203,7 @@ export function TemplateEditor(props: {
   });
   const [saved, setSaved] = useState({ revision: props.draft.revision, payload });
   const submitted = useRef(payload);
-  const [state, formAction, pending] = useActionState(saveDraftAction, null);
+  const [state, formAction, pending] = useActionToast(saveDraftAction, { success: "Draft saved" });
   useEffect(() => {
     if (state?.ok) setSaved({ revision: state.data.revision, payload: submitted.current });
   }, [state]);

@@ -31,6 +31,7 @@ import { Segmented } from "@/components/fields/segmented";
 import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
+import { useActionToast } from "@/lib/toast";
 import { deleteSegmentAction, previewSegmentAction, saveSegmentAction } from "./actions";
 
 type PropertyType = "string" | "number" | "boolean" | "date";
@@ -369,7 +370,9 @@ export function SegmentEditor(
   const filterJson = nested
     ? json
     : JSON.stringify({ version: 1, match, conditions: rows.map((row) => conditionOf(row, types)) });
-  const [saveState, saveAction, saving] = useActionState(saveSegmentAction, null);
+  const [saveState, saveAction, saving] = useActionToast(saveSegmentAction, {
+    success: "Segment saved",
+  });
   const [previewState, previewAction, previewing] = useActionState(previewSegmentAction, null);
   const disabled = !props.canEdit;
   const update = (id: number, change: Partial<Row>) =>
@@ -566,7 +569,9 @@ export function SegmentEditor(
 export function DeleteSegmentButton(
   props: MarketingFormTarget & { segmentId: string; name: string },
 ) {
-  const [state, formAction, pending] = useActionState(deleteSegmentAction, null);
+  const [state, formAction, pending] = useActionToast(deleteSegmentAction, {
+    success: "Segment deleted",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button size="sm" variant="destructive-outline" />}>

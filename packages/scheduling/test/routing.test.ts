@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { db, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
+import { eq, sql } from "drizzle-orm";
 import {
   createBooking,
   createEventType,
@@ -337,6 +341,62 @@ describe("routing to a specialist", () => {
       actor,
     );
     expect(await hostOf(env, next.booking.id)).toBe(ids.found);
+  });
+
+  test("the backfill unassigns only hosts a filter found", async () => {
+    const { env, ids } = await setUp({
+      named: { attributes: { team: "other" } },
+      found: { attributes: { team: "urgent-care" } },
+    });
+    const eventType = await createEventType(env, {
+      title: "Consultation",
+      kind: "pool",
+      duration_minutes: 30,
+      hosts: [{ host: ids.named, role: "member", weight: 100, schedule: null }],
+      host_filter: { team: "urgent-care" },
+    } as never);
+    for (const [host, start] of [
+      ["found", "09:00"],
+      ["named", "10:00"],
+    ] as const) {
+      await createBooking(
+        env,
+        { eventType: eventType.id, startMs: at(start), host, attendee: attendee(host) },
+        deps,
+        actor,
+      );
+    }
+    const rows = eq(schema.schedulingEventTypeHost.eventTypeId, eventType.id);
+    // What migration 0121 left: every existing row looked named.
+    await db.update(schema.schedulingEventTypeHost).set({ assigned: true }).where(rows);
+
+    const migrations = fileURLToPath(new URL("../../db/migrations/", import.meta.url));
+    const file = readdirSync(migrations).find((name) =>
+      name.endsWith("_scheduling_unassign_filter_hosts.sql"),
+    );
+    await db.execute(sql.raw(readFileSync(`${migrations}${file}`, "utf8")));
+
+    const assigned = await db
+      .select({
+        host: schema.schedulingEventTypeHost.hostId,
+        assigned: schema.schedulingEventTypeHost.assigned,
+      })
+      .from(schema.schedulingEventTypeHost)
+      .where(rows);
+    expect(Object.fromEntries(assigned.map((row) => [row.host, row.assigned]))).toEqual({
+      [ids.named as string]: true,
+      [ids.found as string]: false,
+    });
+    await updateHost(env, ids.found as string, { attributes: { team: "elsewhere" } } as never);
+    const search = await searchAvailability(env, {
+      eventTypeRef: eventType.id,
+      fromMs: at("00:00"),
+      toMs: at("23:59"),
+      nowMs: NOW.getTime(),
+      slotsPerHost: 1,
+      limit: 10,
+    });
+    expect(search.data.map((row) => row.uid)).toEqual(["named"]);
   });
 
   test("taken off the list by name stays off, whatever the filter says", async () => {

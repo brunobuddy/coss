@@ -59,6 +59,7 @@ export default async function SignTemplatesPage({
           <PanelBody flush>
             <EmptyState
               compact
+              action={can({ sign: ["create"] }) ? <NewTemplateButton {...target} /> : null}
               description="Create one here, or with coss.sign.templates.create()."
               icon={LayoutTemplateIcon}
               title={after ? "No more templates" : "No templates yet"}

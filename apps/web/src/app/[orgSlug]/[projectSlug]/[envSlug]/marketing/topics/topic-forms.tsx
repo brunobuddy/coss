@@ -25,11 +25,12 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { TagIcon } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
+import { useActionToast } from "@/lib/toast";
 import { deleteTopicAction, saveTopicAction } from "./actions";
 
 type TopicValues = {
@@ -93,7 +94,9 @@ export function TopicDialog(props: MarketingFormTarget & { topic?: TopicValues }
 }
 
 function TopicForm(props: MarketingFormTarget & { topic?: TopicValues; onDone: () => void }) {
-  const [state, formAction, pending] = useActionState(saveTopicAction, null);
+  const [state, formAction, pending] = useActionToast(saveTopicAction, {
+    success: props.topic ? "Topic saved" : "Topic created",
+  });
   const { onDone } = props;
   useEffect(() => {
     if (state?.ok) onDone();
@@ -165,7 +168,9 @@ function TopicForm(props: MarketingFormTarget & { topic?: TopicValues; onDone: (
 }
 
 export function DeleteTopicButton(props: MarketingFormTarget & { topicId: string; name: string }) {
-  const [state, formAction, pending] = useActionState(deleteTopicAction, null);
+  const [state, formAction, pending] = useActionToast(deleteTopicAction, {
+    success: "Topic deleted",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button size="xs" variant="destructive-outline" />}>

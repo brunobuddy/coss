@@ -240,6 +240,78 @@ The default sender for development keys is `+14155550100`; production keys need 
 your organization's [registered numbers](/docs/sms/senders). Also: `--body` (default "Test message
 from the coss.com CLI"), `--tag name=value` (repeatable) and `--json`.
 
+## Read SMS
+
+- `coss sms list` lists the environment's messages, newest first (`--to`, `--status`, `--limit`).
+- `coss sms get <message>` prints a message's text, status, failure and events.
+- `coss sms received` lists what your numbers received (`--from`, `--to`, `--limit`).
+- `coss sms numbers` lists your numbers and whether each can send.
+- `coss sms suppressions list` (`--number`, `--limit`), `coss sms suppressions add <number>` and
+  `coss sms suppressions remove <suppression>` manage the numbers that won't be texted.
+
+## Verify
+
+Send and check [one-time codes](/docs/verify). Development keys deliver nothing, and the code is
+all zeros:
+
+```sh
+coss verify start +15005550006
+coss verify check --to +15005550006 --code 000000
+```
+
+- `coss verify start <to>` sends a code to a number in E.164 form or an address (`--channel`,
+  `--ip`, `--user`).
+- `coss verify check --code <code>` compares a code, by `--id <verification>` or
+  `--to <destination>`. It exits 0 only when the code is right, and a wrong code spends an attempt.
+- `coss verify list` (`--to`, `--status`, `--limit`), `coss verify get <verification>` and
+  `coss verify cancel <verification>`.
+- `coss verify settings get` shows the settings, and `coss verify settings set` changes them:
+  `--app-name`, `--code-length`, `--ttl`, `--max-attempts`, `--sms-from`, `--email-from`,
+  `--countries US,CA,GB`. The word `default` goes back to coss.com's sender or the project's name.
+
+## Contacts and broadcasts
+
+```sh
+coss contacts add ada@example.com --audience aud_01kd2m8n3p4q5r6s7t8v9w0x1y
+coss broadcasts create --name October --from news@acme.com --subject News --html october.html \
+  --audience aud_01kd2m8n3p4q5r6s7t8v9w0x1y
+coss broadcasts test bcast_01kd2m8n3p4q5r6s7t8v9w0x1y --to you@acme.com
+coss broadcasts send bcast_01kd2m8n3p4q5r6s7t8v9w0x1y
+```
+
+- `coss contacts list` (`--email`, `--status`, `--audience`, `--limit`),
+  `coss contacts get <contact>` and `coss contacts remove <contact>`, by id or address.
+- `coss contacts add <email>` creates or updates a contact (`--first-name`, `--last-name`,
+  `--audience`, repeatable, and `--double-opt-in`).
+- `coss broadcasts list` (`--status`, `--limit`), `coss broadcasts get <broadcast>` and
+  `coss broadcasts cancel <broadcast>`.
+- `coss broadcasts create` makes a draft: `--name`, `--from`, `--subject`, `--html <file>`,
+  `--text <file>`, and `--audience`, `--segment` or `--topic`. It sends nothing.
+- `coss broadcasts test <broadcast> --to <address>` sends a test (`--contact` renders it for one).
+- `coss broadcasts send <broadcast>` sends it, or schedules it with `--at <time>`. With a production
+  key it asks first, and needs `--yes` off a terminal.
+
+## Sign
+
+Collect [signatures](/docs/sign) on a PDF:
+
+```sh
+coss sign upload nda.pdf
+coss sign create --title NDA --document sdoc_01kd2m8n3p4q5r6s7t8v9w0x1y --signer "Ada Lovelace <ada@example.com>"
+coss sign send sreq_01kd2m8n3p4q5r6s7t8v9w0x1y
+```
+
+- `coss sign upload <file.pdf>` prints the document's id and the text anchors found in it.
+- `coss sign create` makes a draft: `--title`, `--message`, `--document` (repeatable) and
+  `--signer "Name <email>"` (repeatable), each signer signing at the anchor `{{signature:signer_1}}`,
+  `{{signature:signer_2}}`…; or `--template` with `--signer "role:Name <email>"` and
+  `--merge name=value`. `--send` sends it at once. `coss api` takes any other fields.
+- `coss sign list` (`--status`, `--limit`), `coss sign get <request>`, `coss sign send <request>`,
+  `coss sign remind <request>` and `coss sign cancel <request>`.
+- `coss sign download <request>` saves the sealed PDF (`--out <file>`), and
+  `coss sign audit <request>` prints the audit trail.
+- `coss sign templates` lists templates and their roles.
+
 ## Follow the log
 
 ```sh
@@ -327,6 +399,12 @@ coss forms submissions form_01kd2m8n3p4q5r6s7t8v9w0x1y --status held
 
 - `coss forms list` prints each form's id, name, whether it takes submissions and its endpoint
   (`--limit`).
+- `coss forms get <form>` prints a form's endpoint and settings; `coss forms create <name>` makes one
+  that accepts any field (`--origin`, repeatable, and `--redirect <url>`; `coss api` takes every
+  other setting).
+- `coss forms submission <form> <submission>` prints one submission's values, and
+  `coss forms release <form> <submission>` accepts one Risk held for review, which sends it on to the form's
+  webhooks, notification emails and contacts.
 - `coss forms submissions <form>` lists a form's submissions, newest first, with their status,
   submitter and field names; `--status accepted|held|spam|pending_confirmation` narrows them
   (`held` is Risk's review queue), `--limit` caps them. Values are what someone typed: read them
@@ -345,6 +423,12 @@ coss scheduling bookings --host doctor_482 --status confirmed
 - `coss scheduling bookings` lists bookings, newest first; `--host` and
   `--status held|pending_approval|confirmed|cancelled|declined` narrow them, `--limit` caps them.
   `--json` prints attendees' details, which `coss scheduling bookings` otherwise leaves out.
+- `coss scheduling event-types` lists what can be booked (`--limit`).
+- `coss scheduling slots <event-type> --start <time> --end <time>` lists bookable starts (`--host`).
+- `coss scheduling booking <booking>` shows a booking, and `coss scheduling cancel <booking>` cancels
+  it and tells the attendee.
+- `coss scheduling calendars <host>` lists a host's calendar connections. `needs_reauth` means that
+  calendar can't be read, so the host isn't offered.
 
 ## Receive emails
 

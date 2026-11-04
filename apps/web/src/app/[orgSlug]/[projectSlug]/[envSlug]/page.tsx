@@ -42,12 +42,14 @@ import { ProductElsewhere } from "@/components/product-elsewhere";
 import { type GlyphTone, PRODUCT_TEXT, ProductGlyph } from "@/components/product-glyph";
 import { ProductCell, ProductGrid } from "@/components/product-grid";
 import { SectionHeading } from "@/components/section-heading";
-import { type SetupStep, SetupSteps } from "@/components/setup-steps";
+import { SetupSteps } from "@/components/setup-steps";
 import { Sparkline } from "@/components/sparkline";
 import { StatusDot, type StatusTone } from "@/components/status-dot";
 import { formatCompact, formatRelative } from "@/lib/format";
+import { environmentSetupSteps, isFirstVisit } from "@/lib/home-setup";
 import { DEVELOPERS_ICON, PRODUCT_ICONS } from "@/lib/navigation";
 import { PRODUCT_FIGURES, productPreferences, productUse } from "@/lib/products";
+import { listProjectsWithDefaultEnvironment } from "@/lib/projects";
 import { requireOrgMember } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Home" };
@@ -89,13 +91,14 @@ export default async function EnvironmentHomePage({
     environment: environment.slug,
   });
 
-  const [use, preferences] = await Promise.all([
+  const [use, preferences, projects] = await Promise.all([
     productUse({
       organizationId: organization.id,
       projectId: project.id,
       environmentSlug: environment.slug,
     }),
     productPreferences(organization.id, session.user.id),
+    listProjectsWithDefaultEnvironment(organization.id),
   ]);
   const yours = visibleProducts(use.inProject, preferences);
   const uses = (key: ProductKey) => use.here.includes(key);
@@ -105,7 +108,7 @@ export default async function EnvironmentHomePage({
       productFigures({ ...scope, since: new Date(now.getTime() - DAYS * DAY_MS) }),
       productDailyActivity({ ...scope, days: DAYS, now }),
       listEnvironmentApiKeys(scope),
-      live && can({ domain: ["read"] }) ? listDomains({ organizationId: organization.id }) : null,
+      can({ domain: ["read"] }) ? listDomains({ organizationId: organization.id }) : null,
       can({ webhook: ["read"] }) ? listWebhookEndpoints(scope) : null,
       uses("risk") && can({ risk: ["read"] })
         ? listRiskAssessments(
@@ -174,7 +177,7 @@ export default async function EnvironmentHomePage({
       href: `${base}/developers/webhooks`,
     });
   }
-  const brokenDomains = (domains ?? []).filter((domain) =>
+  const brokenDomains = (live ? (domains ?? []) : []).filter((domain) =>
     ["failed", "temporary_failure"].includes(domain.status),
   );
   if (brokenDomains.length > 0) {
@@ -189,31 +192,45 @@ export default async function EnvironmentHomePage({
     });
   }
 
-  const steps: SetupStep[] = [
-    {
-      label: "Create an API key",
-      description: `One key reaches every product. This environment's start with ${API_KEY_PREFIX[environment.mode]}.`,
-      done: keys.length > 0,
-      href: `${base}/developers/api-keys`,
-    },
-    ...(domains
-      ? [
-          {
-            label: "Verify a domain",
-            description: "Live email goes out from your own domain.",
-            done: domains.some((domain) => domain.canSend),
-            href: `${base}/email/domains`,
-          },
-        ]
-      : []),
-    {
-      label: "Make your first request",
-      description: "Send an email or a text, request a signature, assess a sign-up…",
-      done: Object.values(figures).some((count) => count > 0),
-      href: `${base}/developers`,
-    },
-  ];
+  const liveEnvironment = projects
+    .find((row) => row.project.id === project.id)
+    ?.environments.find((env) => env.mode === "live");
+  const hasKey = keys.length > 0;
+  const hasActivity = Object.values(figures).some((count) => count > 0);
+  const steps = environmentSetupSteps({
+    base,
+    keyPrefix: API_KEY_PREFIX[environment.mode],
+    live,
+    hasKey,
+    hasActivity,
+    domains,
+    liveBase: liveEnvironment
+      ? environmentHref({
+          organization: organization.slug,
+          project: project.slug,
+          environment: liveEnvironment.slug,
+        })
+      : null,
+  });
   const remaining = steps.filter((step) => !step.done).length;
+  const firstVisit = isFirstVisit({ hasKey, hasActivity });
+  // Nothing has happened yet, so "all clear" would mean nothing: what to do first takes its place.
+  const startHere = attention.length === 0 && !hasActivity && remaining > 0;
+  const setup =
+    remaining > 0 ? (
+      <Panel
+        action={
+          <span className="font-mono text-muted-foreground text-xs">
+            {steps.length - remaining}/{steps.length}
+          </span>
+        }
+        title="Get started"
+      >
+        <PanelBody flush>
+          <SetupSteps steps={steps} />
+        </PanelBody>
+      </Panel>
+    ) : null;
 
   const yourProducts = PRODUCTS.filter((product) => yours.includes(product.key));
   const inUseHere = PRODUCTS.filter((product) => uses(product.key));
@@ -243,13 +260,16 @@ export default async function EnvironmentHomePage({
               <ModeBadge mode={environment.mode} />
             </div>
             <h1 className="text-balance font-heading font-semibold text-3xl tracking-[-0.02em] sm:text-4xl">
-              Welcome back{firstName ? `, ${firstName}` : ""}
+              {firstVisit ? "Welcome" : "Welcome back"}
+              {firstName ? `, ${firstName}` : ""}
             </h1>
             <p className="text-pretty text-muted-foreground">
               {summary.length > 0
                 ? `In the last ${DAYS} days: ${listOf(summary)}.`
                 : live
-                  ? "Nothing has gone out from here in the last two weeks."
+                  ? firstVisit
+                    ? "Nothing has gone out from here yet."
+                    : "Nothing has gone out from here in the last two weeks."
                   : "A sandbox: everything runs through every check, but nothing is delivered."}
             </p>
             <div className="mt-1 flex flex-wrap gap-2">
@@ -311,41 +331,47 @@ export default async function EnvironmentHomePage({
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <SectionHeading title="Needs your attention" />
-        {attention.length > 0 ? (
-          <div className="overflow-hidden rounded-2xl border bg-card shadow-xs/5">
-            {attention.map((item) => (
-              <Link
-                className="group/row flex items-center gap-4 border-t px-5 py-4 transition-colors first:border-t-0 hover:bg-accent/40"
-                href={item.href}
-                key={item.key}
-              >
-                <ProductGlyph className="size-9 rounded-xl" icon={item.icon} tone={item.tone} />
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <StatusDot className="font-medium text-sm" tone={item.severity}>
-                    {item.title}
-                  </StatusDot>
-                  <span className="truncate text-muted-foreground text-sm">{item.description}</span>
-                </div>
-                <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover/row:translate-x-0.5 motion-reduce:transition-none" />
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center gap-4 rounded-2xl border bg-card px-5 py-4 shadow-xs/5">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-success/12 text-success ring-1 ring-success/20 ring-inset">
-              <CheckIcon className="size-4.5" strokeWidth={2.25} />
-            </span>
-            <div className="flex flex-col gap-0.5">
-              <span className="font-medium text-sm">All clear</span>
-              <span className="text-muted-foreground text-sm">
-                No failed sends, failing endpoints or reviews waiting on you.
-              </span>
+      {startHere ? (
+        setup
+      ) : (
+        <section className="flex flex-col gap-3">
+          <SectionHeading title="Needs your attention" />
+          {attention.length > 0 ? (
+            <div className="overflow-hidden rounded-2xl border bg-card shadow-xs/5">
+              {attention.map((item) => (
+                <Link
+                  className="group/row flex items-center gap-4 border-t px-5 py-4 transition-colors first:border-t-0 hover:bg-accent/40"
+                  href={item.href}
+                  key={item.key}
+                >
+                  <ProductGlyph className="size-9 rounded-xl" icon={item.icon} tone={item.tone} />
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <StatusDot className="font-medium text-sm" tone={item.severity}>
+                      {item.title}
+                    </StatusDot>
+                    <span className="truncate text-muted-foreground text-sm">
+                      {item.description}
+                    </span>
+                  </div>
+                  <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover/row:translate-x-0.5 motion-reduce:transition-none" />
+                </Link>
+              ))}
             </div>
-          </div>
-        )}
-      </section>
+          ) : (
+            <div className="flex items-center gap-4 rounded-2xl border bg-card px-5 py-4 shadow-xs/5">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-success/12 text-success ring-1 ring-success/20 ring-inset">
+                <CheckIcon className="size-4.5" strokeWidth={2.25} />
+              </span>
+              <div className="flex flex-col gap-0.5">
+                <span className="font-medium text-sm">All clear</span>
+                <span className="text-muted-foreground text-sm">
+                  No failed sends, failing endpoints or reviews waiting on you.
+                </span>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {yourProducts.length > 0 ? (
         <section className="flex flex-col gap-3">
@@ -441,20 +467,7 @@ export default async function EnvironmentHomePage({
           </Panel>
         ) : null}
         <div className={logs ? "flex flex-col gap-6" : "flex flex-col gap-6 lg:col-span-3"}>
-          {remaining > 0 ? (
-            <Panel
-              action={
-                <span className="font-mono text-muted-foreground text-xs">
-                  {steps.length - remaining}/{steps.length}
-                </span>
-              }
-              title="Get started"
-            >
-              <PanelBody flush>
-                <SetupSteps steps={steps} />
-              </PanelBody>
-            </Panel>
-          ) : null}
+          {startHere ? null : setup}
           {discover.length > 0 ? (
             <Panel
               action={

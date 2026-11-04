@@ -48,6 +48,15 @@ A send that goes over a quota fails with `429 quota_exceeded` (a replay of an ea
 answers). Deliveries over an endpoint's or a destination host's rate wait instead of failing.
 Contact support for higher limits.
 
+## Pricing
+
+Each live message is <Rate meter="hooks.messages" />, charged once when it's accepted, however many
+endpoints it goes to. Retries, recoveries, test sends and sandbox environments are free, and so is
+a replay of an earlier send. The Free plan includes <Included meter="hooks.messages" />; past that a
+live send fails with `402 usage_limit_exceeded` until the next month or an upgrade. Billing holds
+and budgets refuse live sends with `402 billing_hold` and `402 budget_exceeded`. See
+[Billing](/docs/billing).
+
 ## Reputation
 
 coss.com watches the share of live deliveries that fail for good. A very high rate warns your

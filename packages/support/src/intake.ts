@@ -4,6 +4,7 @@
  * keeps failing is retried a few times, reported and set aside. System-level: scans one environment.
  */
 import { db, type Executor, schema } from "@coss/db";
+import { enqueueNotification } from "@coss/notifications";
 import { and, asc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { matchSender, type SupportPlanFor } from "./matching.ts";
 import {
@@ -33,6 +34,8 @@ const {
   supportMessage,
   supportTicket,
 } = schema;
+
+export const SUPPORT_INTAKE_FAILED_KIND = "support.intake_failed";
 
 const MINUTE = 60 * 1000;
 const MAX_INTAKE_ATTEMPTS = 5;
@@ -313,16 +316,29 @@ async function fileNewTicket(
   return "created";
 }
 
-async function fileReceivedEmail(
-  row: Received,
+function settle(
+  tx: Executor,
+  receivedEmailId: string,
   now: Date,
-  deps: SupportIntakeDeps,
-): Promise<{ outcome: string; ticketId: string | null }> {
+  result: { outcome: string; ticketId: string | null },
+) {
+  return tx
+    .update(supportIntake)
+    .set({ ...result, settledAt: now, nextAttemptAt: null, lastError: null })
+    .where(eq(supportIntake.receivedEmailId, receivedEmailId));
+}
+
+/** Files a message and settles its intake together: filed twice would mean two tickets. */
+async function fileReceivedEmail(row: Received, now: Date, deps: SupportIntakeDeps): Promise<void> {
   const recipient = supportRecipient(row.recipients);
-  if (!recipient) return { outcome: "not_support", ticketId: null };
+  if (!recipient) {
+    await settle(db, row.id, now, { outcome: "not_support", ticketId: null });
+    return;
+  }
   const address = bareAddress(row.from);
   if (!address || deps.ownAddresses.includes(address)) {
-    return { outcome: "no_sender", ticketId: null };
+    await settle(db, row.id, now, { outcome: "no_sender", ticketId: null });
+    return;
   }
   const headers = row.headers as ReceivedHeader[];
   const sender = {
@@ -332,13 +348,21 @@ async function fileReceivedEmail(
   };
   const automated = isAutomated({ mailFrom: row.mailFrom, from: address, headers });
   const spam = row.spamVerdict === "fail";
-  return db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
+    // A run that outlived its lease holds this row: the second one waits, then finds it settled.
+    const [intake] = await tx
+      .select({ settledAt: supportIntake.settledAt })
+      .from(supportIntake)
+      .where(eq(supportIntake.receivedEmailId, row.id))
+      .for("update");
+    if (intake?.settledAt) return;
     const ticket =
       (recipient.token ? await ticketByToken(tx, recipient.token) : null) ??
       (await ticketByReference(tx, row));
     if (ticket) {
       const outcome = await fileReply(tx, row, ticket, sender, spam || automated, now, deps);
-      return { outcome, ticketId: ticket.id };
+      await settle(tx, row.id, now, { outcome, ticketId: ticket.id });
+      return;
     }
     const reason = spam ? "spam" : automated ? "auto" : null;
     const outcome = await fileNewTicket(tx, row, sender, { reason }, now, deps);
@@ -346,7 +370,7 @@ async function fileReceivedEmail(
       .select({ id: supportMessage.ticketId })
       .from(supportMessage)
       .where(eq(supportMessage.receivedEmailId, row.id));
-    return { outcome, ticketId: created?.id ?? null };
+    await settle(tx, row.id, now, { outcome, ticketId: created?.id ?? null });
   });
 }
 
@@ -386,24 +410,32 @@ export async function ingestSupportEmails(
       .returning({ attempts: supportIntake.attempts });
     if (!claim) continue;
     try {
-      const { outcome, ticketId } = await fileReceivedEmail(received, now, deps);
-      await db
-        .update(supportIntake)
-        .set({ outcome, ticketId, settledAt: now, nextAttemptAt: null, lastError: null })
-        .where(eq(supportIntake.receivedEmailId, received.id));
+      await fileReceivedEmail(received, now, deps);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`[support] Couldn't file received email ${received.id}:`, error);
       const gaveUp = claim.attempts >= MAX_INTAKE_ATTEMPTS;
-      await db
-        .update(supportIntake)
-        .set({
-          lastError: message,
-          outcome: gaveUp ? "failed" : null,
-          settledAt: gaveUp ? now : null,
-          nextAttemptAt: gaveUp ? null : new Date(now.getTime() + 2 ** claim.attempts * MINUTE),
-        })
-        .where(eq(supportIntake.receivedEmailId, received.id));
+      await db.transaction(async (tx) => {
+        await tx
+          .update(supportIntake)
+          .set({
+            lastError: message,
+            outcome: gaveUp ? "failed" : null,
+            settledAt: gaveUp ? now : null,
+            nextAttemptAt: gaveUp ? null : new Date(now.getTime() + 2 ** claim.attempts * MINUTE),
+          })
+          .where(eq(supportIntake.receivedEmailId, received.id));
+        if (gaveUp) {
+          // The support environment is coss.com's own organization, whose notifications these are.
+          await enqueueNotification(tx, {
+            organizationId: received.organizationId,
+            kind: SUPPORT_INTAKE_FAILED_KIND,
+            dedupeKey: `${received.id}:${now.toISOString()}`,
+            payload: { receivedEmailId: received.id },
+            now,
+          });
+        }
+      });
     }
   }
   return candidates.length;

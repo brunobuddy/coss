@@ -95,7 +95,7 @@ export type { SubaccountsResource } from "./resources/subaccounts.ts";
 export type { SuppressionResource } from "./resources/suppressions.ts";
 export type { TrackingResource } from "./resources/tracking.ts";
 export type { TrackingDomainsResource } from "./resources/tracking-domains.ts";
-export type { VerifyResource } from "./resources/verify.ts";
+export type { VerifyResource, VerifySettingsResource } from "./resources/verify.ts";
 export type { WebhookDeliveriesResource } from "./resources/webhook-deliveries.ts";
 export type { WebhookEndpointsResource } from "./resources/webhook-endpoints.ts";
 export type { WebhookEventsResource } from "./resources/webhook-events.ts";
@@ -559,6 +559,7 @@ export type {
   CheckVerificationParams,
   ListVerificationsParams,
   StartVerificationParams,
+  UpdateVerifySettingsParams,
   Verification,
   VerificationCheck,
   VerificationReason,
@@ -568,6 +569,7 @@ export type {
   VerificationWebhookEventData,
   VerifyChannel,
   VerifySendRoute,
+  VerifySettings,
   VerifyWebhookEventType,
 } from "./types/verify.ts";
 export type {

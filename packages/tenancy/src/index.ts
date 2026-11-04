@@ -81,7 +81,9 @@ export {
   setProductPreference,
 } from "./products.ts";
 export {
+  createFirstProject,
   createProject,
+  FIRST_PROJECT_NAME,
   getProject,
   listProjects,
   listProjectsWithEnvironments,

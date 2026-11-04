@@ -63,6 +63,8 @@ export const ZONE_ROUTES = [
   { zone: "site", path: "/pricing.md", prefix: false },
   { zone: "site", path: "/about.md", prefix: false },
   { zone: "site", path: "/changelog", prefix: true },
+  { zone: "site", path: "/status", prefix: false },
+  { zone: "site", path: "/contact", prefix: false },
   // The coss ui repository's apps, deployed outside AWS (Vercel): coss ui and Origin UI.
   { zone: "ui", path: "/ui", prefix: true },
   { zone: "origin", path: "/origin", prefix: true },
@@ -162,7 +164,6 @@ const FUTURE_SITE_SEGMENTS = [
   "pricing",
   "plans",
   "blog",
-  "changelog",
   "roadmap",
   "about",
   "company",
@@ -173,7 +174,6 @@ const FUTURE_SITE_SEGMENTS = [
   "case-studies",
   "stories",
   "showcase",
-  "contact",
   "contact-sales",
   "sales",
   "demo",
@@ -227,7 +227,6 @@ const FUTURE_SITE_SEGMENTS = [
   "sdk",
   "sdks",
   "cli",
-  "status",
   "uptime",
   // Legal and trust
   "legal",

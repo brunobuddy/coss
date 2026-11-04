@@ -351,22 +351,100 @@ export const ListVerificationsQuery = z
 
 export type ListVerificationsQueryOutput = z.output<typeof ListVerificationsQuery>;
 
-// Settings (the dashboard's for now).
+// Settings.
+
+export const VerifySettingsObject = z
+  .object({
+    object: z.literal("verify_settings"),
+    app_name: z.string().meta({ description: "The name codes are sent for." }),
+    app_name_is_default: z
+      .boolean()
+      .meta({ description: "Whether `app_name` is the project's: no name of its own is set." }),
+    code_length: z.number().int().meta({ description: "Digits in a code." }),
+    ttl_seconds: z.number().int().meta({ description: "How long a code works." }),
+    max_attempts: z
+      .number()
+      .int()
+      .meta({ description: "Wrong codes before a verification fails." }),
+    sms_from: z.string().nullable().meta({
+      description: "One of the organization's numbers; `null`: coss.com's shared numbers.",
+    }),
+    email_from: z.string().nullable().meta({
+      description: "An address on one of the organization's verified domains; `null`: coss.com's.",
+    }),
+    allowed_countries: z.array(z.string()).meta({
+      description: "ISO 3166 countries SMS codes may go to.",
+    }),
+  })
+  .meta({
+    id: "VerifySettings",
+    description: "An environment's Verify settings.",
+    examples: [
+      {
+        object: "verify_settings",
+        app_name: "Acme",
+        app_name_is_default: false,
+        code_length: 6,
+        ttl_seconds: 600,
+        max_attempts: 5,
+        sms_from: "+14155550100",
+        email_from: "codes@acme.com",
+        allowed_countries: ["CA", "US"],
+      },
+    ],
+  });
 
 export const UpdateVerifySettingsRequest = z
   .strictObject({
-    app_name: z.string().trim().min(1).max(MAX_APP_NAME_LENGTH).nullable().optional(),
-    code_length: z.number().int().min(MIN_CODE_LENGTH).max(MAX_CODE_LENGTH).optional(),
-    ttl_seconds: z.number().int().min(MIN_TTL_SECONDS).max(MAX_TTL_SECONDS).optional(),
-    max_attempts: z.number().int().min(1).max(MAX_ATTEMPTS_LIMIT).optional(),
-    sms_from: z.string().regex(E164).nullable().optional(),
-    email_from: z.email().nullable().optional(),
+    app_name: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MAX_APP_NAME_LENGTH)
+      .nullable()
+      .optional()
+      .meta({ description: "The name codes are sent for; `null`: the project's." }),
+    code_length: z
+      .number()
+      .int()
+      .min(MIN_CODE_LENGTH)
+      .max(MAX_CODE_LENGTH)
+      .optional()
+      .meta({ description: `Digits in a code, ${MIN_CODE_LENGTH}-${MAX_CODE_LENGTH}.` }),
+    ttl_seconds: z
+      .number()
+      .int()
+      .min(MIN_TTL_SECONDS)
+      .max(MAX_TTL_SECONDS)
+      .optional()
+      .meta({ description: `How long a code works, ${MIN_TTL_SECONDS}-${MAX_TTL_SECONDS} s.` }),
+    max_attempts: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_ATTEMPTS_LIMIT)
+      .optional()
+      .meta({ description: `Wrong codes before a verification fails, 1-${MAX_ATTEMPTS_LIMIT}.` }),
+    sms_from: z.string().regex(E164).nullable().optional().meta({
+      description: "One of the organization's numbers; `null`: coss.com's shared numbers.",
+    }),
+    email_from: z.email().nullable().optional().meta({
+      description:
+        "An address on one of the organization's verified domains (live keys); `null`: coss.com's.",
+    }),
     allowed_countries: z
       .array(z.string().regex(/^[A-Z]{2}$/))
       .max(250)
-      .optional(),
+      .optional()
+      .meta({ description: "ISO 3166 countries SMS codes may go to." }),
   })
-  .meta({ id: "UpdateVerifySettingsRequest", description: "Only the fields given change." });
+  .meta({
+    id: "UpdateVerifySettingsRequest",
+    description: "Only the fields given change.",
+    examples: [{ sms_from: "+14155550100", allowed_countries: ["CA", "GB", "US"] }],
+  });
+
+export type VerifySettingsWire = z.output<typeof VerifySettingsObject>;
 
 export type UpdateVerifySettingsRequestOutput = z.output<typeof UpdateVerifySettingsRequest>;
 

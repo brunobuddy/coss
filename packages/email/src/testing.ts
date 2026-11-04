@@ -503,6 +503,7 @@ function cloudFrontError(name: string): Error {
 
 export type FakeCloudFrontTenant = {
   id: string;
+  distributionId: string;
   name: string;
   hostname: string;
   enabled: boolean;
@@ -524,6 +525,8 @@ export class FakeCloudFrontTenantsApi implements CloudFrontTenantsApi {
   readonly calls: { operation: string; input: unknown }[] = [];
   /** Makes the next call fail with an error of this name. */
   failNext: string | null = null;
+  /** The next `create` succeeds at CloudFront, but its answer never arrives. */
+  loseNextCreateAnswer = false;
   #next = 0;
 
   #record(operation: string, input: unknown): void {
@@ -538,6 +541,8 @@ export class FakeCloudFrontTenantsApi implements CloudFrontTenantsApi {
   #view(tenant: FakeCloudFrontTenant): CloudFrontTenant {
     return {
       id: tenant.id,
+      distributionId: tenant.distributionId,
+      hostname: tenant.hostname,
       enabled: tenant.enabled,
       domainStatus: tenant.domainStatus,
       certificateArn: tenant.attachedCertificateArn,
@@ -563,6 +568,7 @@ export class FakeCloudFrontTenantsApi implements CloudFrontTenantsApi {
     }
     const created: FakeCloudFrontTenant = {
       id: `dt-${++this.#next}`,
+      distributionId: input.distributionId,
       name: input.name,
       hostname: input.hostname,
       enabled: true,
@@ -574,12 +580,18 @@ export class FakeCloudFrontTenantsApi implements CloudFrontTenantsApi {
       etag: `etag-${++this.#next}`,
     };
     this.tenants.set(created.id, created);
+    if (this.loseNextCreateAnswer) {
+      this.loseNextCreateAnswer = false;
+      throw cloudFrontError("TimeoutError");
+    }
     return this.#view(created);
   }
 
-  async get(id: string): Promise<CloudFrontTenant | null> {
-    this.#record("get", { id });
-    const tenant = this.tenants.get(id);
+  async get(identifier: string): Promise<CloudFrontTenant | null> {
+    this.#record("get", { id: identifier });
+    const tenant =
+      this.tenants.get(identifier) ??
+      [...this.tenants.values()].find((candidate) => candidate.name === identifier);
     return tenant ? this.#view(tenant) : null;
   }
 

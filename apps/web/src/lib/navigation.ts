@@ -162,6 +162,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   email: "Email",
   support: "Support",
   "saved-replies": "Saved replies",
+  intake: "Unfiled mail",
   messages: "Emails",
   storage: "Content storage",
   numbers: "Phone numbers",

@@ -25,11 +25,12 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { UsersRoundIcon } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { ListInput } from "@/components/fields/list-input";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
+import { useActionToast } from "@/lib/toast";
 import {
   addAudienceMembersAction,
   createAudienceAction,
@@ -50,7 +51,9 @@ export function CreateAudienceDialog(props: MarketingFormTarget) {
 }
 
 function NameForm(props: MarketingFormTarget) {
-  const [state, formAction, pending] = useActionState(createAudienceAction, null);
+  const [state, formAction, pending] = useActionToast(createAudienceAction, {
+    success: "Audience created",
+  });
   if (state?.ok) {
     return (
       <>
@@ -95,7 +98,9 @@ function NameForm(props: MarketingFormTarget) {
 export function RenameAudienceForm(
   props: MarketingFormTarget & { audienceId: string; name: string },
 ) {
-  const [state, formAction, pending] = useActionState(renameAudienceAction, null);
+  const [state, formAction, pending] = useActionToast(renameAudienceAction, {
+    success: "Audience renamed",
+  });
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <TargetInputs {...props} />
@@ -115,7 +120,14 @@ export function RenameAudienceForm(
 }
 
 export function AddMembersForm(props: MarketingFormTarget & { audienceId: string }) {
-  const [state, formAction, pending] = useActionState(addAudienceMembersAction, null);
+  const [state, formAction, pending] = useActionToast(addAudienceMembersAction, {
+    success: (data) =>
+      data.added === 0
+        ? { title: "No contacts added", type: "info" }
+        : data.added === 1
+          ? "Contact added"
+          : `${data.added} contacts added`,
+  });
   const [round, setRound] = useState(0);
   useEffect(() => {
     if (state?.ok) setRound((current) => current + 1);
@@ -161,7 +173,9 @@ export function AddMembersForm(props: MarketingFormTarget & { audienceId: string
 export function RemoveMemberButton(
   props: MarketingFormTarget & { audienceId: string; contactId: string },
 ) {
-  const [state, formAction, pending] = useActionState(removeAudienceMemberAction, null);
+  const [state, formAction, pending] = useActionToast(removeAudienceMemberAction, {
+    success: "Contact removed",
+  });
   return (
     <form action={formAction}>
       <TargetInputs {...props} />
@@ -178,7 +192,9 @@ export function RemoveMemberButton(
 export function DeleteAudienceButton(
   props: MarketingFormTarget & { audienceId: string; name: string },
 ) {
-  const [state, formAction, pending] = useActionState(deleteAudienceAction, null);
+  const [state, formAction, pending] = useActionToast(deleteAudienceAction, {
+    success: "Audience deleted",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button size="sm" variant="destructive-outline" />}>

@@ -57,7 +57,9 @@ export function UpgradeButton(props: { orgSlug: string; plan: string; label: str
 
 /** Adds an add-on now (prorated); reports a payment that needs confirming or failed. */
 export function AddOnButton(props: { orgSlug: string; addOn: string; label: string }) {
-  const [state, formAction, pending] = useActionState(addAddOnAction, null);
+  const [state, formAction, pending] = useActionToast(addAddOnAction, {
+    success: (outcome) => (outcome.status === "active" ? "Add-on added" : null),
+  });
   return (
     <form action={formAction} className="flex flex-col gap-2">
       <input name="orgSlug" type="hidden" value={props.orgSlug} />
@@ -104,7 +106,9 @@ export function RemoveAddOnButton(props: {
   name: string;
   description: string;
 }) {
-  const [state, formAction, pending] = useActionState(removeAddOnAction, null);
+  const [state, formAction, pending] = useActionToast(removeAddOnAction, {
+    success: "Add-on removal scheduled",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button size="sm" variant="outline" />}>

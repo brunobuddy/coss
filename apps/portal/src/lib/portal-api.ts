@@ -134,7 +134,7 @@ export async function handlePortalRequest(
     if (error instanceof HookError) {
       return json(
         { error: { code: error.code, message: error.message, param: error.param ?? null } },
-        error.status === 404 ? 404 : error.status === 403 ? 403 : 422,
+        error.status === 402 || error.status === 403 || error.status === 404 ? error.status : 422,
       );
     }
     console.error(`[portal] ${request.method} ${path.join("/")} failed:`, error);

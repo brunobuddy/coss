@@ -21,7 +21,8 @@ Not to be confused with [webhooks](/docs/webhooks), which tell **you** about you
 | Delivery        | One message sent to one endpoint, with every HTTP attempt.                                     |
 
 Everything belongs to the API key's [environment](/docs/environments): sandbox (`coss_test_…`)
-keys deliver to real URLs too, under much lower limits.
+keys deliver to real URLs too, under much lower limits. A live message is <Rate meter="hooks.messages" />,
+once however many endpoints it goes to; [Delivery](/docs/hooks/delivery#pricing) has the details.
 
 ## Quickstart
 

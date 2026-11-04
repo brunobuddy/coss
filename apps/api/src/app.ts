@@ -1,4 +1,5 @@
 import type { PlanGate, UsageGate } from "@coss/billing/gate";
+import { db } from "@coss/db";
 import type { DomainDeps, EmailService, LinkKeyRing } from "@coss/email";
 import type { InboundRuntime } from "@coss/email/runtime";
 import { FakeFormFileStore, type FormFileStore, hostedPageScreening } from "@coss/forms";
@@ -168,6 +169,8 @@ const CORS_EXPOSE_HEADERS = ["X-Request-Id", "Idempotent-Replayed", "Retry-After
  * Builds the public API. Free of side effects (no env validation, no server), so tests can
  * create as many instances as they need and call `app.request()`.
  */
+const READINESS_TIMEOUT_MS = 3000;
+
 export function createApp(opts: CreateAppOptions) {
   const { emailService } = opts;
   // Cheap (in-memory fakes), and only used when no domain or inbound dependencies were injected.
@@ -251,6 +254,19 @@ export function createApp(opts: CreateAppOptions) {
   );
 
   app.get("/health", (c) => c.json({ ok: true }));
+
+  // For uptime monitors only: load balancer health checks stay on `/health`, so a database outage
+  // never takes every task out of service.
+  app.get("/health/ready", async (c) => {
+    const ready = await Promise.race([
+      db.execute("select 1").then(
+        () => true,
+        () => false,
+      ),
+      Bun.sleep(READINESS_TIMEOUT_MS).then(() => false),
+    ]);
+    return c.json({ ok: ready }, ready ? 200 : 503);
+  });
 
   // Public and unauthenticated (fetched by mail clients); not part of the OpenAPI document. The
   // preference center first: `/t` would otherwise answer its paths with a 404.
