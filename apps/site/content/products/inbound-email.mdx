@@ -125,10 +125,10 @@ each verdict, and use `coss listen` to forward the webhook to your local handler
 
 </Section>
 
-<Section title="Pricing" lede="Received email is billed per message and environment it is stored in. Spam and viruses are free.">
+<Section title="Pricing" lede="Received email is billed per message and environment it is stored in, and by the MB past a message's first. Spam and viruses are free.">
 
-<UsageRates meters="email.received" />
+<UsageRates meters="email.received,email.received_data" />
 
-Free includes <Included meter="email.received" />. See [pricing](/pricing) for the plans.
+Free includes <Included meter="email.received" /> and <Included meter="email.received_data" />. See [pricing](/pricing) for the plans.
 
 </Section>

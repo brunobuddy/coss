@@ -134,6 +134,11 @@ const NOVEMBER_2026: RateCard = {
     },
     // $0.10 per 1,000 Hooks messages (first priced when the meter was added; it had no usage before).
     "hooks.messages": { default: flatRate(100_000n) },
+    // Past each email's first MB: $0.25 per 1,000 MB of attachments sent (SES: $0.12 per GB) and
+    // $0.75 per 1,000 MB received (SES: about $0.37 per GB, plus keeping the content). First
+    // priced when the meters were added; they had no usage before.
+    "email.attachment_data": { default: flatRate(250_000n) },
+    "email.received_data": { default: flatRate(750_000n) },
   },
 };
 

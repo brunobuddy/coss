@@ -1607,7 +1607,9 @@
                     "enum": [
                       "email.recipients",
                       "email.dedicated_ip",
+                      "email.attachment_data",
                       "email.received",
+                      "email.received_data",
                       "email.inboxes",
                       "sms.segments",
                       "sms.received_segments",
@@ -2267,7 +2269,9 @@
             "enum": [
               "email.recipients",
               "email.dedicated_ip",
+              "email.attachment_data",
               "email.received",
+              "email.received_data",
               "email.inboxes",
               "sms.segments",
               "sms.received_segments",
@@ -2296,7 +2300,9 @@
               "enum": [
                 "email.recipients",
                 "email.dedicated_ip",
+                "email.attachment_data",
                 "email.received",
+                "email.received_data",
                 "email.inboxes",
                 "sms.segments",
                 "sms.received_segments",
@@ -26447,7 +26453,9 @@
                   "enum": [
                     "email.recipients",
                     "email.dedicated_ip",
+                    "email.attachment_data",
                     "email.received",
+                    "email.received_data",
                     "email.inboxes",
                     "sms.segments",
                     "sms.received_segments",
@@ -26827,7 +26835,9 @@
             "enum": [
               "email.recipients",
               "email.dedicated_ip",
+              "email.attachment_data",
               "email.received",
+              "email.received_data",
               "email.inboxes",
               "sms.segments",
               "sms.received_segments",
@@ -27248,7 +27258,9 @@
             "enum": [
               "email.recipients",
               "email.dedicated_ip",
+              "email.attachment_data",
               "email.received",
+              "email.received_data",
               "email.inboxes",
               "sms.segments",
               "sms.received_segments",
@@ -90756,7 +90768,9 @@
               "enum": [
                 "email.recipients",
                 "email.dedicated_ip",
+                "email.attachment_data",
                 "email.received",
+                "email.received_data",
                 "email.inboxes",
                 "sms.segments",
                 "sms.received_segments",

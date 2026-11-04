@@ -63,7 +63,12 @@ import { env } from "./env.ts";
 import { formContactSink } from "./form-contacts.ts";
 import { formMailer, formVerificationQuota } from "./form-mailer.ts";
 import { hookThrottle } from "./hooks-throttle.ts";
-import { dmarcReportQuota, inboundQuota, type SesInboundDeps } from "./inbound.ts";
+import {
+  dmarcReportQuota,
+  inboundDataQuota,
+  inboundQuota,
+  type SesInboundDeps,
+} from "./inbound.ts";
 import { type SupportWorkerDeps, startJobs, WORKER_LOOP_NAMES } from "./jobs.ts";
 import { monitoredDispatch } from "./monitoring.ts";
 import { schedulingNotifier } from "./scheduling-notifier.ts";
@@ -148,6 +153,7 @@ if (config.provider === "ses" && email.inbound && config.inbound?.bucket) {
       store: email.inbound.store,
       managedDomain: email.inbound.managedDomain,
       quota: inboundQuota(rateLimits.limiter),
+      dataQuota: inboundDataQuota(rateLimits.limiter),
       dmarcQuota: dmarcReportQuota(rateLimits.limiter),
       // Free's allowance of received email.
       billing: usage,
