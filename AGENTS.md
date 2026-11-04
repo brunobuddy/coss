@@ -35,8 +35,8 @@ text it shows is a gist that must match `CLA.md`: change both together, as a new
 
 | Path | Package | What |
 |---|---|---|
-| `apps/web` | `@coss/web` | Next.js 16 dashboard (:3000). Hosts Better Auth at `/api/auth/*`. |
-| `apps/api` | `@coss/api` | Hono on Bun public API (:3001): `/v1/*`, `/openapi.json`, `/health`. Commits its OpenAPI document as `openapi.json`. |
+| `apps/web` | `@coss/web` | Next.js 16 dashboard (:3000). Hosts Better Auth at `/api/auth/*`. See `apps/web/AGENTS.md`. |
+| `apps/api` | `@coss/api` | Hono on Bun public API (:3001): `/v1/*`, `/openapi.json`, `/health`. Commits its OpenAPI document as `openapi.json`. See `apps/api/AGENTS.md`. |
 | `apps/site` | `@coss/site` | coss.com (:3002): placeholder landing page, Shipyard's landing page and docs at `/shipyard`, kloq's pages at `/kloq` (landing page, demo, tools, comparisons, docs, shadcn registry) + Fumadocs docs at `/docs` (guides, Twoslash-checked SDK docs, API reference generated from `apps/api/openapi.json`). See `apps/site/AGENTS.md`. |
 | `apps/portal` | `@coss/portal` | The Hooks portal (:3003) on its own domain (production: `portal.cosshooks.com`, CloudFront → ALB, `PORTAL_HOST` in `infra/aws/routing.ts`): customers' users manage one application's endpoints and see its deliveries, signed in by a session the customer's backend creates (token in the URL fragment, never a cookie). See `apps/portal/AGENTS.md`. |
 | `apps/sign` | `@coss/sign-app` | Sign's signing page (:3004) on its own domain (`cosssign.com`, CloudFront → ALB, `SIGN_HOST` in `infra/aws/routing.ts`): one signer, signed in by a session the customer's backend creates (token in the URL fragment, never a cookie), embedded with `coss/sign`'s `mountSigning` or opened on its own; consent, the documents (pdf.js), fields, a typed or drawn signature, decline; and the embedded template builder (`/b/<id>`). See `apps/sign/AGENTS.md`. |
@@ -73,15 +73,15 @@ text it shows is a gist that must match `CLA.md`: change both together, as a new
 | `packages/companion` | `@coss/companion` | Wire types of the dashboard's iOS app API (`/api/mobile/v1/*`): plain TypeScript types, zero deps, client-safe. |
 | `packages/retention` | `@coss/retention` | The data retention policy: `RETENTION_POLICY` (published by the docs and the dashboard) and `RETENTION_DAYS` (enforced by each package's purge, run by the worker). Zero deps, client-safe. |
 | `packages/ui` | `@coss/ui` | coss ui components (shadcn `@coss` registry, Base UI) + `theme.css` (tokens), `globals.css` (the dashboard's stylesheet) and `./fonts` (`next/font/local`: Cal Sans as `fontSans`/`fontHeading` and, upright only, `fontCalSans`; Paper Mono as `fontMono`). |
-| `packages/sdk` | `coss` | **Public** SDK. Zero deps, ESM-only, built with tsdown. `coss/device` is its browser-only entry (risk's device tokens) and `coss/sign` another (`mountSigning`: Sign's signing page in an iframe); `coss/diagnose` explains an email's delivery (used by the MCP server and the CLI); `coss/nodemailer`, `coss/better-auth` and `coss/authjs` are the integrations (docs: `/docs/integrations`). |
-| `packages/mcp` | `coss-mcp` | **Public** MCP server (`npx coss-mcp`, stdio, Node): tools for coding agents built only on the published `coss` SDK — search and read the docs (no key needed), find emails and diagnose delivery (the SDK's `coss/diagnose`), send, suppressions, domains, webhook deliveries, received emails, logs, account status. See "MCP server" below. |
+| `packages/sdk` | `coss` | **Public** SDK. Zero deps, ESM-only, built with tsdown. `coss/device` is its browser-only entry (risk's device tokens) and `coss/sign` another (`mountSigning`: Sign's signing page in an iframe); `coss/diagnose` explains an email's delivery (used by the MCP server and the CLI); `coss/nodemailer`, `coss/better-auth` and `coss/authjs` are the integrations (docs: `/docs/integrations`). See `packages/sdk/AGENTS.md`. |
+| `packages/mcp` | `coss-mcp` | **Public** MCP server (`npx coss-mcp`, stdio, Node): tools for coding agents built only on the published `coss` SDK — search and read the docs (no key needed), find emails and diagnose delivery (the SDK's `coss/diagnose`), send, suppressions, domains, webhook deliveries, received emails, logs, account status. See `packages/mcp/AGENTS.md`. |
 | `plugins/coss` | — | **Public** Claude Code plugin (marketplace: the root `.claude-plugin/marketplace.json`; `/plugin install coss --marketplace cosscom/coss`) with the `coss` Agent Skill (`skills/coss/SKILL.md`, also installed into other agents by `npx skills add cosscom/coss`) and the MCP server (`.mcp.json`, `npx -y coss-mcp`). Plain files, not a workspace; served from main. See "Coding agents" below. |
-| `packages/cli` | `coss-cli` | **Public** CLI (`npm i -g coss-cli`, command `coss`, Node): `login` (browser PKCE or `--manual`), `logout`, `whoami`, `emails send`, `logs tail`, `listen` (forwards webhook events to localhost), built only on the published `coss` SDK. See "CLI" below. |
+| `packages/cli` | `coss-cli` | **Public** CLI (`npm i -g coss-cli`, command `coss`, Node): `login` (browser PKCE or `--manual`), `logout`, `whoami`, `emails send`, `logs tail`, `listen` (forwards webhook events to localhost), built only on the published `coss` SDK. See `packages/cli/AGENTS.md`. |
 | `packages/kloq` | `kloq` | The kloq library (the `cosscom/calendar` repository's `packages/kloq/src`, tests left out): the `<Kloq>` calendar, its themes, settings dialog, design mode and stylesheet. Vendored (excluded from Biome, `noUncheckedIndexedAccess` off); also what `/kloq/r/kloq.json` serves as source. Used only by `apps/site`. |
 | `tooling/typescript` | `@coss/tsconfig` | Shared tsconfig bases. |
 | `tooling/sdkgen` | `@coss/sdkgen` | Builds the generated SDKs: `SDK_METHODS` (every operation's SDK method, named as in the TypeScript SDK) and `NO_RETRY` (`src/methods.ts`), the derive step that turns `apps/api/openapi.json` into the spec Fern generates from (`src/derive.ts`), the post-processing of each generator's output (`src/languages.ts`), the API reference's code samples (`snippets.json`, from each SDK's `reference.md`); `scripts/generate.ts` (`bun run sdks:generate`, needs Docker). See `sdks/AGENTS.md`. |
 | `sdks/{python,go,ruby,php,java,dotnet}` | `cosscom` (PyPI, `import coss`), `github.com/cosscom/coss-go`, `coss` (gem), `coss/coss` (Composer), `com.coss:coss` (Maven), `Coss` (NuGet) | **Public** SDKs generated from the OpenAPI document by Fern's open-source generators (`sdks/fern/generators.yml`), each with a few hand-written files kept by its `.fernignore` (webhook verification, tests, metadata). Not workspaces. Regenerated on main by the "Regenerate SDKs" PR; released by `release-sdks.yml`. See `sdks/AGENTS.md`. |
-| `integrations/{laravel,rails,django}` | `coss/laravel`, `coss-rails`, `coss-django` | **Public** framework mail drivers (PHP/Composer, Ruby gem, Python/PyPI), each sending its framework's messages to `POST /v1/emails` with a small HTTP client of its own. Not Bun workspaces (turbo, Biome and the images never see them). Shared rules in `integrations/README.md`, shared test scenarios in `integrations/conformance/*.json`. |
+| `integrations/{laravel,rails,django}` | `coss/laravel`, `coss-rails`, `coss-django` | **Public** framework mail drivers (PHP/Composer, Ruby gem, Python/PyPI), each sending its framework's messages to `POST /v1/emails` with a small HTTP client of its own. Not Bun workspaces (turbo, Biome and the images never see them). Shared rules in `integrations/README.md`, shared test scenarios in `integrations/conformance/*.json`. See `integrations/AGENTS.md`. |
 | `infra` | `@coss/infra` | AWS deployment spec (ECS services, env vars, ALB rules, CloudFront behaviours), checked by tests, the production Terraform + deploy scripts that apply it, and the management account's Terraform (`infra/organization`). See `infra/AGENTS.md`. |
 
 Runtime dependencies: `observability` (no workspace deps) ← `api`, `worker`, `web`, `site`, `portal`, `smtp`, `infra`, `mobile` (only `./scrub`, bundled by Metro: keep it dependency-free); `signals` (no workspace deps) ← `auth`, `tenancy` (logos), `webhooks`, `risk`; `db ← auth ← tenancy`,
@@ -304,182 +304,18 @@ instead (today `NODE_ENV`, `NEXT_DEPLOYMENT_ID`; `infra/test` pins the list): th
 and laptops and CI must compute the same hashes to share the remote cache (README, "Remote cache"). Runtime values
 are never inlined into builds (no `NEXT_PUBLIC_*`), which is what makes pass-through safe.
 
-## Public API (`apps/api`)
+## Rules next to the code
 
-- `createApp(opts)` (`src/app.ts`) is side-effect free; services are injected via `CreateAppOptions` and `src/index.ts`
-  wires env (`webhookDeps` is required — a throwaway secrets key would make the endpoints it creates
-  undeliverable; `emailService` is required — `src/index.ts` builds it on the pg-boss queue; `domainDeps` defaults to
-  the fake provider). Middleware order: request id → `secureHeaders` → `bodyLimit` (5 MB; `POST /v1/emails` uses its own 40 MB limit after authentication) → `logger` (off under test). Every
-  response carries a server-generated `X-Request-Id: req_…` (client values are ignored).
-- The only unauthenticated routes are `/health`, `/openapi.json` and the tracking endpoints `GET /t/o/:token`
-  (open pixel, always a GIF) and `GET /t/c/:token/:position` (302 to the stored link, else a plain-text 404)
-  (`src/routes/tracking.ts`). They are plain Hono routes outside `/v1` and the OpenAPI document, never return the
-  error envelope, record nothing for HEAD, and get `Cross-Origin-Resource-Policy: cross-origin` (everything else keeps
-  `same-origin`).
-- Errors are always the envelope `{ error: { type, code, message, param?, issues?, hint?, request_id } }`, built only by
-  `errorResponse` (`src/errors.ts`). Throw `new ApiError(status, { type, code, message, param? })` with `type` from
-  `ERROR_TYPES`, or a product error mapped in `toApiError`; anything else is logged and returned as a generic 500. Never
-  hand-build error JSON.
-- New endpoint: `createRoute({ …, security: [{ bearerAuth: [] }], middleware: [requireApiKey({ <product>: ["<action>"] }), rateLimit("api.read" | "api.write" | "api.send")] })`
-  + `router.openapi(route, handler)`, mounted in `createV1Router` (`src/routes/v1.ts`). Auth goes in `middleware` so it
-  runs before validation (401 beats 422). Tenancy comes only from `c.var.auth` — environment-scoped resources filter by
-  `environmentId`, organization-scoped ones (domains, audit events, billing) only by `organizationId`. Document responses with
-  `jsonDoc`/`errorDoc`/`commonErrors` (`src/routes/docs.ts`, includes 429). The root `validationHook` turns zod failures into 422 + `issues`;
-  a per-route hook must end with `validationHook(result)`. `test/app.test.ts` asserts the exact OpenAPI path list.
-- Every operation needs an `operationId` (it names its docs page). Wire schemas carry a whole-object
-  `.meta({ examples: [...] })` (OpenAPI 3.1 form; the singular `example` is ignored by the docs), checked by
-  `packages/{email,webhooks}/test/schema-examples.test.ts`; they feed the reference's samples and playground. After route changes
-  run `bun run openapi:generate`, add the operation's SDK sample in `apps/site/src/lib/sdk-samples.ts` and its method
-  to `SDK_METHODS` in `tooling/sdkgen/src/methods.ts` (the same name; to `NO_RETRY` too when the API doesn't
-  deduplicate it, like the TypeScript SDK's `retry: false`) — tests enforce all three. The generated SDKs
-  (`sdks/*`) and their docs samples (`tooling/sdkgen/snippets.json`) follow in main's "Regenerate SDKs" PR.
-  Webhook event schemas no route returns are listed in `src/webhook-events.ts` (components of the document, so the
-  generated SDKs type them).
-- **Versions** (`Coss-Version: YYYY-MM-DD`, `@coss/versioning`): handlers always build the latest shape. The
-  `apiVersion` middleware (`src/middleware/api-version.ts`, on `/v1/*`) rejects unknown versions (400
-  `invalid_api_version`, before authentication), echoes `Coss-Version` and renders 2xx JSON bodies in the caller's
-  version; `requireApiKey` resolves `c.var.apiVersion` (header, else the org pin from `authenticateApiKey`). Routes
-  with a JSON body end their `middleware` with `upgradeRequestBody("<METHOD> /v1/<path template>")` (after the body
-  limit, before validation). Error envelopes, CSV and `/t/*` are never versioned. The OpenAPI `Coss-Version`
-  parameter/header and `info.version` are added by `withApiVersionDocs` (`src/openapi-versions.ts`).
-- Long polls (`POST /v1/webhook_listeners/{id}/poll`, `coss listen`) wait at most 25 s (CloudFront's and the ALB's
-  60 s) and end on `AbortSignal.any([c.req.raw.signal, shutdownSignal])`: `src/index.ts` aborts `shutdownSignal`
-  on SIGTERM before draining, so they never hold a deploy up. They aren't request-logged (`request-log.ts`) or
-  traced (`@coss/observability`). `GET /v1/environment` and `DELETE /v1/api_key` take any valid key
-  (`requireApiKey({})`): a key can always describe and revoke itself.
-- **Trace context**: `traceContext` (`src/middleware/trace-context.ts`, on `/v1/*`) reads the W3C `traceparent`
-  (`parseTraceparent` from `@coss/webhooks/schemas`: invalid ones ignored, never refused; stored as version 00) into
-  `c.var.traceparent`. Sends pass it to the service (`SendEmailInput`/`SendEmailBatchInput`/`InboxSendInput`/
-  `SendSmsInput.traceparent`, never part of the request hash), which stores it on `email.traceparent` /
-  `sms_message.traceparent`; event log lines and webhook payloads echo it (`data.traceparent`, only when set), and
-  webhook delivery sends it as a `traceparent` header (`traceparentOf`).
-- CORS: only `/v1/*`, only `API_CORS_ORIGINS`, never `credentials` — the API authenticates with bearer keys and must
-  never accept the dashboard's session cookie (that would need CSRF protection on every endpoint). The one exception
-  is `/scheduling/client/*`, outside `/v1`: open preflights, since a session token is its only authority, with real
-  requests checked against the environment's `allowed_origins`.
+Read the file before changing that code. Each loads when you open files in its directory, so read it yourself when you
+work on it from elsewhere.
 
-## SDK (`packages/sdk`, published as `coss`)
-
-- `Coss` (`src/client.ts`) → one `HttpClient` (`src/core/http.ts`: bearer auth, JSON, per-attempt timeout, retries on
-  network/timeout/409/429/5xx honoring `Retry-After`, an `Idempotency-Key` on every POST reused across retries) → one
-  resource per product or managed resource (`src/resources/*.ts`: `email`, `domains`, `webhookEndpoints`;
-  sub-resources hang off their parent, e.g. `coss.email.suppressions`, `coss.webhookEndpoints.deliveries`). Methods return `{ data, error }` and never
-  throw for API/network failures. Webhook endpoint creation disables
-  automatic retries because the API does not deduplicate it, even with an `Idempotency-Key`.
-- Must run unchanged on Node, Bun, Deno and Workers: no `node:*`, no `Bun.*`, only guarded `globalThis.process`
-  access, zero runtime deps. `isolatedDeclarations` is on (exported functions need explicit types).
-- React Email (`src/react.ts`): a send's `react` is rendered into `html`/`text` by `@react-email/render`, an
-  **optional peer** loaded with a literal `import()` inside try/catch (bundlers include it when installed, only
-  warn when not) — never make it a dependency or import React types (`ReactEmailElement` is structural). `react`
-  is SDK-only: `contract-types.ts` compares `Omit<SendEmailParams, "react">` with the API's schema.
-- **Integrations** (`src/nodemailer.ts`, `src/better-auth.ts`, `src/authjs.ts`; shared code in `src/core/integration.ts`
-  + `src/core/mime.ts`): each is its own tsdown entry and describes its host library **structurally** (no import
-  from it in `src/`, so no runtime or type dependency; the libraries are optional `peerDependencies` and pinned
-  devDependencies). `test/integration-types.ts` (typecheck only) assigns them to the libraries' real types, so
-  drift fails `typecheck`; `apps/api/test/integrations-contract.test.ts` runs the built ones against the app. They
-  throw `CossSendError` (the libraries report failures by throwing), create their client lazily (a missing key
-  fails the first send, not a build), tag `User-Agent` via the internal `INTEGRATION` symbol (never a
-  `CossOptions` field), drop the API's reserved headers (`isReservedHeader` mirrors `RESERVED_HEADERS`; the
-  contract test sends every one) and refuse what coss.com can't send (raw MIME, custom envelopes, `sender`, AMP)
-  rather than dropping it. Auth emails (Better Auth, Auth.js) always send `category: "account"` with tracking
-  off — click tracking would route secret links through `/t/c/…` — and derive idempotency keys only from
-  single-use tokens (hashed), never from OTP codes or invitation ids, which are legitimately resent.
-- **Framework drivers** (`integrations/*`, not part of the SDK): Laravel, Rails and Django follow the same mapping and
-  retry rules as the JS integrations, written down in `integrations/README.md` and checked by every driver's tests
-  against `integrations/conformance/{http,message}.json` (`webhooks.json` is the generated SDKs', checked against
-  `verifyWebhook` by `packages/sdk/test/webhooks-conformance.test.ts`) (generated from `src/core/mime.ts`'s behaviour: change the
-  README, the JSON, the SDK and all three drivers together). Each keeps `Coss-Version` and the reserved-header list as
-  hand mirrors of `API_VERSION` and `RESERVED_HEADERS`. Releases: `.github/workflows/release-integrations.yml` (below).
-- **Tracing** (`src/core/tracing.ts`): `@opentelemetry/api` is an optional peer loaded like React Email's renderer
-  (literal `import()` in try/catch, described structurally; `test/integration-types.ts` checks the real API fits).
-  One client span per call, retries included, named `<METHOD> <route>` (`routeTemplate` matches the API's own
-  templates, `src/core/routes.generated.ts`, written by `bun run openapi:generate` from `apps/api/openapi.json`;
-  an undocumented path is `<METHOD>` alone; no `url.full`, its query and path can name people). Only the W3C trace
-  headers the propagator writes go out (`traceparent`, `tracestate`: the API's CORS allows nothing else, and
-  `baggage` is the app's own data), never over one of the SDK's own. `tracing: false` turns it off.
-- Error types are listed in three places: `ERROR_TYPES` (`apps/api/src/errors.ts`) and `CossErrorType` +
-  `API_ERROR_TYPES` (`packages/sdk/src/core/errors.ts`).
-- The api contract tests import the SDK's built `dist`: turbo builds it first, but outside turbo run
-  `bun run --cwd packages/sdk build` before api typecheck/tests. `src/version.ts` must equal `package.json` `version`.
-- `verifyWebhook` (`src/webhooks.ts`, Web Crypto only) is the one SDK function that throws (`WebhookVerificationError`):
-  a failed signature check must not be ignorable. The event body's wire types live in `src/types/webhook.ts`; endpoint
-  management's in `src/types/webhook-endpoint.ts`.
-- Every request sends `Coss-Version`: `API_VERSION` (`src/api-version.ts`, a hand mirror of `API_VERSIONS`; the
-  contract tests keep them equal), overridable with the `apiVersion` client option. The SDK's wire types describe
-  `API_VERSION` only.
-- Releases: Changesets 3 (`.changeset/`, the SDK, `coss-mcp` and `coss-cli` — every other workspace is private and never versioned).
-  `bun run version-packages` also rewrites `src/version.ts` (`scripts/sync-version.ts`) and refreshes `bun.lock`
-  (it records workspace versions; CI installs with `--frozen-lockfile`).
-- **Publishing** (`.github/workflows/release.yml`): merging the "Version packages" PR publishes `coss` to npm
-  from CI only — npm trusted publishing (GitHub OIDC, no npm token anywhere) with provenance, trusted for exactly
-  `cosscom/coss` → `release.yml` → the `npm` environment (deployable from `main`); `npm trust list coss` shows it.
-  The publish job builds the SDK and runs `npm publish --provenance` itself, skipping a version already on npm,
-  waits until the registry serves the new one (usually a minute or two, up to 15 minutes) and tags it. Never
-  publish from a laptop. npm owners: baileypumfleet, peer_rich, keithwillcode (versions 0.0.1–0.0.5 are a previous
-  owner's unrelated, deprecated package).
-- **Publishing the framework drivers** (`.github/workflows/release-integrations.yml`, on pushes to `main` touching
-  `integrations/**`): a driver whose version file (`laravel/src/Version.php`, `rails/lib/coss/rails/version.rb`,
-  `django/src/coss_django/__init__.py`, with its `CHANGELOG.md`) names a version its registry doesn't have is tested,
-  published and tagged `coss-<driver>@<version>`. PyPI (`pypi` environment) and RubyGems (`rubygems` environment) use
-  trusted publishing; Packagist reads `cosscom/coss-laravel`, a read-only mirror the job pushes `git subtree split
-  --prefix integrations/laravel` and a `v<version>` tag to with the deploy key `COSS_LARAVEL_DEPLOY_KEY` (`packagist`
-  environment) — never commit to the mirror. Every job is skipped until the repository variable
-  `INTEGRATIONS_PUBLISH` is `true`.
-- **CLI binaries** (the `cli-*` jobs of `release.yml`, after `publish`): for the `coss-cli@<version>` tag (built
-  from the tag, never a newer main) whose GitHub release has no `SHA256SUMS` yet, `packages/cli/scripts/binaries.ts`
-  cross-compiles standalone executables (`bun build --compile`, 7 targets: macOS, glibc/musl Linux, Windows; macOS
-  ones come out ad-hoc signed). With the repository variable `CLI_MACOS_NOTARIZE` `true`, `cli-binaries-notarize`
-  (macOS runner, `apple` environment: `APPLE_DEVELOPER_ID_P12` (base64 `.p12` of the Developer ID Application
-  certificate and key) + `APPLE_DEVELOPER_ID_P12_PASSWORD`, `APPLE_NOTARY_KEY` (an App Store Connect API key's
-  `.p8`) + `APPLE_NOTARY_KEY_ID` + `APPLE_NOTARY_ISSUER_ID`) re-signs them with the hardened runtime and Bun's JIT
-  entitlements, has Apple notarize them (`scripts/notarize.ts`; a bare executable can't be stapled, so Gatekeeper
-  checks online) and archives them again with a new `SHA256SUMS`; the smoke tests then run the notarized builds,
-  quarantined on macOS as a browser download is, and `codesign --check-notarization` asks Apple about them. Running
-  `release.yml` by hand on main (`gh workflow run release.yml`) is a dry run: it builds the executables from main,
-  notarizes and smoke-tests them, and publishes nothing (no npm, release or tap), so the `apple` secrets can be
-  checked between releases. Releases are notarized since coss-cli 0.3.0 (the CLI's README and `cli.mdx` say so;
-  turning `CLI_MACOS_NOTARIZE` off means putting back their `xattr -d com.apple.quarantine` note). The certificate
-  is Cal.com, Inc.'s (team `ADWKXDJV75`, G2 Sub-CA) and expires 2027-11-18: replace the two `.p12` secrets before
-  then. The notary key is the App Store Connect team key "coss-cli notarization" (Developer role).
-  `scripts/smoke-binary.ts` runs them on their own OS (musl in Alpine,
-  which needs `libstdc++`), and the release gets the archives + `SHA256SUMS`, marked latest (`install.sh` and
-  `releases/latest` rely on the CLI being the only package with GitHub releases). Then `scripts/homebrew.ts` renders
-  `Formula/coss.rb` from that `SHA256SUMS` and pushes it to `cosscom/homebrew-tap` with the deploy key
-  `HOMEBREW_TAP_DEPLOY_KEY` (`homebrew` environment) — never edit the tap by hand. Every job is skipped until the
-  repository variable `CLI_BINARIES_PUBLISH` is `true`; each checks the release first, so a rerun fills in what's
-  missing. `packages/cli/install.sh` (served from main's raw URL) is the `curl | sh` installer: it verifies the
-  archive against `SHA256SUMS`.
-
-## MCP server (`packages/mcp`, published as `coss-mcp`)
-
-- `createCossMcpServer({ coss, apiKey })` (`src/server.ts`) registers every tool on an `McpServer`
-  (`@modelcontextprotocol/server` v2); `src/cli.ts` serves it over stdio (`serveStdio`). Configuration comes from the
-  environment only (`COSS_API_KEY`, `COSS_BASE_URL`), never argv; stdout is the protocol, so log to stderr. With no
-  `COSS_API_KEY`, `cli.ts` reads a `coss_test_` key from the project's `.env.local` or `.env` (`project-env.ts`) and
-  never loads a `coss_live_` key from that file.
-- Tools (`src/tools/*.ts`) call only the public SDK — never workspace packages (AGPL) or the database — so anything a
-  tool needs must exist in the public API first. The exception is `search_docs`/`read_docs` (`tools/docs.ts`), which
-  fetch coss.com's public docs (`/docs/search.json`, `<page>.md`, nothing outside `/docs`) and work without a key:
-  with no `COSS_API_KEY` the server registers only them. Every tool carries annotations (`READ_ONLY`, `WRITE`,
-  `DESTRUCTIVE`, `SENDS` in `tools/shared.ts`); clients rely on them to prompt (full-access keys hold every
-  permission; a restricted key's 403 hint points at `get_account_status`, which lists what it holds).
-- Answers stay small: lists drop content (`compact`, `emailListItem`), bodies are cut (`truncate`), API failures
-  become `isError` results with a hint (`result.ts`; the API's `error.hint` wins over the local one). `get_setup`
-  (`tools/setup.ts`, `describeSetup` in the SDK) is the readiness answer. Risk, Hooks, inboxes
-  (`tools/inboxes.ts`: an agent's own address, its threads with each message's `extracted_text`, sends and
-  replies) and template drafts have tools that call only the public SDK. `publish_email_template` publishes the revision it just read.
-  `create_webhook_endpoint` registers a URL once and writes `COSS_WEBHOOK_SECRET` into the project
-  env file (the same file the CLI uses; a repeat for that URL does not create another endpoint).
-  Third-party text (email content, received mail, bounce and
-  webhook responses) is labelled untrusted, and the server's `instructions` say so.
-- Delivery diagnosis is the SDK's `coss/diagnose` (`packages/sdk/src/diagnose.ts`, shared with `coss emails
-  diagnose`): `diagnoseEmail` is pure (email + events + best-effort context → verdict), `diagnose` fetches first;
-  next steps name the server's tools through `references`. Its explanations of failure codes and recipient
-  statuses must match the email product's behaviour: change both together.
-- Dependencies are explicit versions (`npm publish` doesn't rewrite `workspace:`/`catalog:`); `coss` is a caret
-  range that changesets moves when the SDK's version leaves it. The release job publishes it after `coss`.
-- Tests: `packages/mcp/test` (in-memory client, fake `fetch`) and `apps/api/test/mcp-contract.test.ts` (built
-  server against the in-process app; turbo builds it first).
+- `apps/api/AGENTS.md`: the public API (app wiring, the error envelope, adding endpoints, versions, long polls, trace
+  context, CORS).
+- `apps/web/AGENTS.md`: the dashboard (pages, server actions, toasts, coss ui, URLs and routes).
+- `packages/sdk/AGENTS.md`: the SDK (client, runtimes, React Email, integrations, tracing, wire types, releases, npm
+  publishing).
+- `packages/mcp/AGENTS.md`: the MCP server. `packages/cli/AGENTS.md`: the CLI and its standalone executables.
+- `integrations/AGENTS.md`: the Laravel, Rails and Django drivers and their publishing.
 
 ## Coding agents
 
@@ -489,120 +325,10 @@ What an agent pointed at coss.com reads, all describing the same facts — chang
   (`apps/site/AGENTS.md`); API reference pages render the OpenAPI document (`operation-markdown.ts`).
 - The landing page's prompt (`AGENT_PROMPT`, `apps/site/src/lib/site.ts`), quoted by `/docs/agents`.
 - The `coss` skill (`plugins/coss/skills/coss/SKILL.md`), the notes `coss init` writes into a project's
-  AGENTS.md (`agentNotes`, `packages/cli/src/commands/init.ts`) and the MCP server's instructions (`src/server.ts`).
+  AGENTS.md (`agentNotes`, `packages/cli/src/commands/init.ts`) and the MCP server's instructions (`packages/mcp/src/server.ts`).
 - `claude plugin validate .` and `claude plugin validate plugins/coss` check the marketplace and the plugin. The
   plugin has no `version` on purpose: installs follow main. Its MCP server takes the key from the plugin's optional
   `api_key` (`userConfig`); without one `coss-mcp` serves only the docs tools.
-
-## CLI (`packages/cli`, published as `coss-cli`, command `coss`)
-
-- `run(argv, io)` (`src/run.ts`) dispatches commands (`src/commands/*.ts`); everything outside the process (env,
-  streams, `fetch`, clock, browser, prompts, cwd, child processes, config dir, the Ctrl-C signal) comes through `CliIo` (`src/io.ts`), so
-  tests run commands in process. `src/cli.ts` is the bin (`nodeIo()`). Results go to stdout (`--json`: one object per
-  line), progress and warnings to stderr. Usage errors exit 2, failures 1, Ctrl-C 130.
-- Calls only the public SDK (`clientFor` always passes `apiKey`, `baseUrl` and `fetch`, so the SDK never reads
-  `process.env` itself) — never workspace packages (AGPL) or the database; anything a command needs must exist in the
-  public API first. No flag takes an API key (command lines are visible to other processes): `COSS_API_KEY`, else
-  the profile (`--profile`, `COSS_PROFILE`, the saved default) in `config.json` (`src/config.ts`: XDG/APPDATA/
-  `~/.config/coss`, 0600, written atomically). Login remembers a non-default `COSS_BASE_URL`/`COSS_DASHBOARD_URL`.
-- `login`: the dashboard's CLI sign-in (`packages/auth/AGENTS.md`, "CLI sign-in") — PKCE with a 127.0.0.1 loopback
-  server (`src/auth/loopback.ts`), or `mode=code` (pasted) with `--no-browser` and over SSH; `verificationCode`
-  (`src/auth/pkce.ts`) must equal `cliVerificationCode` (`@coss/auth/cli`; both tests pin `DZ93-GPCX`). Keys it
-  created (`login: "browser"`) are revoked by `logout` and by the next login of the profile (`coss.apiKey.revoke()`, at the
-  profile's saved origin, never `COSS_BASE_URL`'s). Polling commands retry only transient errors (`isTransient`).
-- `init` reuses login's browser flow with a `project` hint (the approval page then offers sandbox environments
-  only and names the key after the project; `apps/web/src/app/app/authorize/cli/params.ts`), checks the key's
-  environment again (a live key is revoked, never written) and writes it to the project's env file, never the
-  profile. Agent notes are on by default (`--no-agents` skips them). It detects Nodemailer, Better Auth, Auth.js,
-  Laravel, Rails and Django (`project-stack.ts`) and prints that drop-in, then `fetchSetupReport` (`describeSetup`
-  in the SDK) as the one next step (`--json` includes it as `setup`; a failed list is a warning and still returns
-  a next step). The update notice (`src/update-check.ts`) asks the npm registry at most once a day, runs alongside the
-  command and is dropped if it hasn't answered when the command ends; never with `--json`, in CI, off a TTY or with
-  `COSS_NO_UPDATE_CHECK`.
-- `listen`: opens a webhook listener (`packages/webhooks/AGENTS.md`), long-polls (`wait_ms` 20 s, SDK timeout 35 s,
-  no SDK retries), forwards each body byte for byte to `--forward-to`, signed with `COSS_WEBHOOK_SECRET` from the
-  project env file (an existing valid secret is kept; otherwise the profile's `listen_secret`, otherwise a new
-  `whsec_` from `src/listen/sign.ts`, Standard Webhooks). It writes that secret into the env file, and into the
-  profile when the CLI key came from the profile. `webhook-id` = the event id
-  (and `traceparent` = the body's `data.traceparent`, like the real delivery), and acks results in the next poll; Ctrl-C acks what was forwarded and deletes the listener. Live environments
-  need `--live`.
-- `trigger <type>`: `POST /v1/webhook_events/test` (`coss.webhookEvents.test`; `sendTestWebhookEvent` in
-  `packages/email/src/test-events.ts`): a sample event built from the type's schema example, fresh ids, `data`
-  merged over it and checked against the schema (unknown fields refused), fanned out through the outbox like a
-  real one. Sandbox environments only, never the live-only `domain.*`/`account.*`/`billing.*`; nothing in the body
-  marks it as a test. The SDK's `WEBHOOK_EVENT_TYPES`/`TEST_WEBHOOK_EVENT_TYPES` (completion) are hand mirrors of
-  `@coss/email`'s, kept equal by `sdk-contract.test.ts`. `webhooks list|add|deliveries|retry` wrap the endpoint API.
-  `webhooks add` writes the new endpoint's signing secret to the project env file as `COSS_WEBHOOK_SECRET`.
-- `inboxes list|create|threads|thread|reply` wrap `coss.inboxes` (`src/commands/inboxes.ts`; `thread` prints each
-  message's `extracted_text` unless `--full`); `inbox` (singular) follows every received email.
-- `logs tail` polls `GET /v1/logs` like the dashboard's live mode (re-reads from a minute before the newest line,
-  prints unseen ids oldest first, `src/logs/tail.ts`); `emails send --simulate` uses the mailbox simulator addresses
-  (`src/emails/simulate.ts`, must match `packages/email/src/providers/fake.ts`).
-- Dependencies are explicit versions, `coss` a caret range (like the MCP server); the release job publishes it after
-  `coss`. Tests: `packages/cli/test` (fake `fetch`, real loopback and receiver servers) and
-  `apps/api/test/cli-contract.test.ts` (built CLI against the in-process app; turbo builds it first).
-- It also ships as a standalone executable (Bun's compiled runtime, not Node: `bun run build:binaries`, output in
-  the git-ignored `packages/cli/binaries/`; releases under "CLI binaries" above). Keep `src/` to what both run:
-  `test/binaries.test.ts` compiles this machine's binary, installs it with `install.sh` and runs
-  `scripts/smoke-binary.ts` on it (stdin, pipes flushed on exit, the config file, Ctrl-C, the browser sign-in's
-  loopback server).
-
-## Dashboard (`apps/web`)
-
-- Pages use the generated `PageProps<"/…">`/`LayoutProps` globals and `await params`. Call `requireOrgMember(orgSlug)`
-  (`src/lib/session.ts`; non-members get a 404) and gate controls with its `can(…)` (the role check, read-only while
-  the org is suspended). Read data straight
-  from `@coss/tenancy` / `@coss/email` (the dashboard never calls the public API). Server code uses `auth` from
-  `@/lib/auth`; client code uses `authClient` from `@/lib/auth-client`.
-- Layout follows coss.com's docs (`apps/site/DESIGN.md`: grayscale, Cal Sans/Paper Mono, hue only for status):
-  `AppShell` (`src/components/shell/`) is the sidebar + framed page with breadcrumbs and ⌘K, used by the
-  `[orgSlug]`, `/settings` and `/admin` layouts. An organization's sidebar (`ConsoleSidebar`) is a rail of the
-  member's products (what any environment of the project uses, `productActivityByEnvironment` and
-  `productUseInProject`, labelled "In use in Production" where only another one does, plus what they pinned,
-  `product_preference`; `visibleProducts`) beside a panel with the current product's pages; the header starts with
-  the project/environment switcher. `@coss/dashboard-routes` is the one list of products and their pages (the
-  rail, panel, breadcrumbs, ⌘K, All products, emails' links; the CLI's `coss open` mirrors it) — add a page there;
-  `src/lib/navigation.ts` adds icons and keeps the account and admin lists. Its items carry icon components, so
-  server components pass an area name (`SubNav nav=…`, `AreaSidebar area=…`), never the lists. Pages compose `PageHeader`, `Panel`
-  (`<Table variant="card">` or `PanelBody` inside), `EmptyState`, `SpecList`, `StatRow`, `StatusDot`; no back
-  links (breadcrumbs). `data-page-width="full"` on a page lifts the shell's `max-w-6xl`.
-- Mutations live in a colocated `actions.ts` (`"use server"`): `(prev: ActionResult<T> | null, formData) => runAction(…)`
-  (`src/lib/actions.ts`). Start with `requireOrgPermission(formString(formData, "orgSlug"), {…})`, re-check that target
-  ids belong to that org (`getKeyBinding`, `getOrganizationMember`, `getPendingInvitation`, `getDomain`,
-  `getWebhookEndpoint` + its `environmentId`), `refresh()` after writes.
-  Throw `ActionError` for user-facing messages. Clients use `useActionToast(action, { success })` (`src/lib/toast.ts`,
-  `useActionState` that toasts) + `<FormError>`: every user-triggered mutation toasts its success (short, past
-  tense, no period; redirecting actions too, with a static message), failures stay inline in forms and dialogs
-  (`errors: "toast"` for one-click buttons); `toast.*` for client-side calls (`authClient`). Pure reads don't toast.
-  Hidden inputs carry slugs/ids only.
-- coss ui is **Base UI, not Radix**: compose with `render` (`<DialogTrigger render={<Button />}>`), never `asChild`.
-  A `<form>` inside `DialogPopup`/`AlertDialogPopup` needs `className="contents"` (otherwise the footer renders outside the
-  popup). Popups unmount on close. Add components with `bunx shadcn@latest add @coss/<name>` from `packages/ui`;
-  dashboard-specific compositions go in `apps/web/src/components`.
-- URLs are product-first: environment pages at `/<org>/<project>/<env>/<product>/…` (Home at the environment
-  itself, the catalog at `/products`, Developers at `/developers/…`), organization pages at `/<org>/settings/…`.
-  Pages of the organization's own data that belong to a product (domains, dedicated IPs, reputation, SMS numbers)
-  live in that product, in any environment. `/<org>` opens the environment last used (cookie `coss_env.<org>`),
-  and `/<org>?to=/email/domains` a page in it: links made without an environment (emails) use `orgLinkHref`.
-- Routes: a new top-level segment must be added to `RESERVED_ORG_SLUGS` (`packages/auth/src/slugs.ts`), a new static
-  segment under `[orgSlug]` to `RESERVED_PROJECT_SLUGS` (`@coss/dashboard-routes`; projects share that level), a
-  new page below an environment to its product in `@coss/dashboard-routes` (`test/dashboard-routes.test.ts`), signed-out pages to
-  `PUBLIC_PATH_PREFIXES` (`src/proxy.ts`). The entry page is `/dashboard` (`DASHBOARD_PATH`), never `/` (the site's
-  landing page): use it for every "go to the dashboard" link and as the post-sign-in default (`safeRedirectPath`).
-  The dashboard has no root files (icon, robots, sitemap): the site serves them.
-- Domain management uses `emailRuntime().domainDeps` (`src/lib/email-runtime.ts`) and webhook management
-  `webhookManagementDeps()` (`src/lib/webhooks.ts`); domain/webhook errors carry user-facing messages. Revealing a
-  webhook secret needs `webhook:update` (members can read endpoints but never see secrets).
-- Org settings (`[orgSlug]/settings`: rename, slug change, leave, 2FA requirement; `settings/sso`: SSO provider and
-  requirement; `settings/scim`: directory sync) and account settings (top-level `/settings`: name and
-  verification email; `/settings/security`: password, connected accounts, two-factor, passkeys;
-  `/settings/sessions`) call `auth.api.*` server-side — their HTTP routes stay disabled
-  (`disabledPaths`, below). `canRemoveOrgMember`/`assignableOrgRoles` mirror Better Auth's owner rules for the UI; Better
-  Auth alone protects the last owner. Account actions refuse while impersonating.
-- Session-bound Better Auth calls made while *rendering* pass `authHeaders()` (`src/lib/session.ts`), not raw
-  `headers()`: after an action replaces the session cookie (password change), Next re-renders with the new cookies
-  but the old request headers.
-- When driving the dashboard in a browser, wait for hydration before typing or submitting.
 
 ## coss.com zones
 
@@ -762,7 +488,8 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
 - The `<!-- BEGIN:*-agent-rules -->` blocks at the end of this file and in `apps/{web,site}/AGENTS.md` are rewritten by `turbo`
   and `next dev`: never edit inside them, keep project text above them, and commit tool changes to them.
 - Agent docs: `AGENTS.md` files are the source of truth; each `CLAUDE.md` contains only `@AGENTS.md`. A new nested
-  `AGENTS.md` needs a sibling `CLAUDE.md` shim, or Claude Code never sees it.
+  `AGENTS.md` needs a sibling `CLAUDE.md` shim, or Claude Code never sees it. Claude Code warns when the files it loads at
+  start pass 150k characters, so detail about one app or package goes in that directory's file, not the root.
 
 ## Guardrails (verified against the versions in the root catalog — re-verify a bullet when bumping that library)
 

@@ -57,7 +57,7 @@ the macro API, `staticSource` and code-usage APIs are recent.
   (`tooling/sdkgen/src/methods.ts`); `test/sdk-samples.test.ts` fails for any operation without one, a sample naming
   a method missing from the `Coss` client, or the two tables disagreeing. The other languages' tabs of a new
   endpoint appear with main's "Regenerate SDKs" PR (`tooling/sdkgen/snippets.json`). Samples and the playground
-  start from the schemas' `examples` (see the root AGENTS.md); without them they show `"string"` placeholders.
+  start from the schemas' `examples` (see `apps/api/AGENTS.md`); without them they show `"string"` placeholders.
 - **No per-method SDK pages:** each endpoint's SDK call is its API reference page's TypeScript tab. The SDK pages
   cover only what isn't an endpoint (client setup, results and errors, retries, `verifyWebhook`); guides show SDK
   usage in context.
