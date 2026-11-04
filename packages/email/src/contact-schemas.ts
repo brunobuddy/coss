@@ -301,7 +301,11 @@ export type ContactImportEntryInput = z.input<typeof ContactImportEntry>;
 
 export const ImportContactsRequest = z
   .strictObject({
-    contacts: z.array(ContactImportEntry).min(1).max(MAX_CONTACT_IMPORT_ENTRIES),
+    contacts: z
+      .array(ContactImportEntry)
+      .min(1)
+      .max(MAX_CONTACT_IMPORT_ENTRIES)
+      .meta({ description: "The contacts to create or update, at most 1,000." }),
     audience_id: z
       .string()
       .optional()
@@ -399,7 +403,13 @@ export const ContactTopics = z
 export type ContactTopicsOutput = z.output<typeof ContactTopics>;
 
 export const UpdateContactTopicsRequest = z
-  .strictObject({ topics: z.array(TopicChoice).min(1).max(100) })
+  .strictObject({
+    topics: z
+      .array(TopicChoice)
+      .min(1)
+      .max(100)
+      .meta({ description: "The contact's choices per topic. Topics not listed keep theirs." }),
+  })
   .meta({
     id: "UpdateContactTopicsRequest",
     examples: [{ topics: [{ topic: "product", status: "opted_out" }] }],
@@ -865,10 +875,17 @@ export const TopicList = z
     examples: [{ object: "list", data: [TOPIC_EXAMPLE], has_more: false }],
   });
 
-export const CreateTopicRequest = z.strictObject({ key: Category, ...TopicFields }).meta({
-  id: "CreateTopicRequest",
-  examples: [{ key: "newsletter", name: "Newsletter", default_subscription: "opt_in" }],
-});
+export const CreateTopicRequest = z
+  .strictObject({
+    key: Category.meta({
+      description: "The `category` of the emails about this topic. Can't change.",
+    }),
+    ...TopicFields,
+  })
+  .meta({
+    id: "CreateTopicRequest",
+    examples: [{ key: "newsletter", name: "Newsletter", default_subscription: "opt_in" }],
+  });
 
 export const UpdateTopicRequest = z
   .strictObject({
@@ -1009,7 +1026,11 @@ export const UpdateMarketingSettingsRequest = z
       .url({ protocol: /^https$/ })
       .max(2000)
       .nullable()
-      .optional(),
+      .optional()
+      .meta({
+        description:
+          "Where a confirmed contact is sent, an https URL. `null`: coss.com's own page.",
+      }),
   })
   .meta({
     id: "UpdateMarketingSettingsRequest",

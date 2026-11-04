@@ -530,7 +530,10 @@ export type HookEndpointRecoveryObjectOutput = z.output<typeof HookEndpointRecov
 
 export const SendHookTestRequest = z
   .strictObject({
-    event_type: EventTypeName.meta({ examples: ["invoice.paid"] }),
+    event_type: EventTypeName.meta({
+      description: "The event type to send as.",
+      examples: ["invoice.paid"],
+    }),
     payload: z.record(z.string(), z.unknown()).optional().meta({
       description: "Defaults to the event type's first example.",
     }),

@@ -1035,7 +1035,10 @@ const CreatedSessionBody = z
 const CreateHostSessionRequest = z
   .strictObject({
     expires_in: SessionExpiry,
-    read_only: z.boolean().optional(),
+    read_only: z
+      .boolean()
+      .optional()
+      .meta({ description: "The host can look but not change anything." }),
   })
   .meta({ id: "CreateSchedulingHostSessionRequest", examples: [{ expires_in: 3600 }] });
 

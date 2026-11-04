@@ -82,7 +82,7 @@ export const HostStatus = z.enum(["active", "disabled"]);
 export const CreateHostRequest = z
   .strictObject({
     uid: HostUid.optional(),
-    name: z.string().min(1).max(100),
+    name: z.string().min(1).max(100).meta({ description: "The host's name." }),
     email: z.email().max(320).optional().meta({
       description: "Where this host's notifications go. Not an identity, and need not be unique.",
     }),
@@ -107,8 +107,13 @@ export type CreateHostRequestOutput = z.output<typeof CreateHostRequest>;
 export const UpdateHostRequest = z
   .strictObject({
     uid: HostUid.nullable().optional(),
-    name: z.string().min(1).max(100).optional(),
-    email: z.email().max(320).nullable().optional(),
+    name: z.string().min(1).max(100).optional().meta({ description: "The host's name." }),
+    email: z
+      .email()
+      .max(320)
+      .nullable()
+      .optional()
+      .meta({ description: "Where this host's notifications go. `null` removes it." }),
     time_zone: TimeZone.optional(),
     attributes: Attributes.optional(),
     metadata: Metadata.optional(),
@@ -141,7 +146,7 @@ export const HostObject = z
       description:
         "Your own id for this host, unique in the environment, accepted wherever a host id is. `null` when none is set.",
     }),
-    name: z.string(),
+    name: z.string().meta({ description: "The host's name." }),
     email: z.string().nullable().meta({
       description:
         "Where this host's notifications go. `null` when none is set. Not an identity, and need not be unique.",

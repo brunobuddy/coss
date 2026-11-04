@@ -360,7 +360,12 @@ export const SmsEventData = z
       .optional()
       .meta({ description: "The provider's or carrier's own error code, e.g. `30007`." }),
     suppression: z
-      .object({ id: z.string(), reason: z.enum(SMS_SUPPRESSION_REASONS) })
+      .object({
+        id: z.string().meta({ description: "The suppression's id." }),
+        reason: z
+          .enum(SMS_SUPPRESSION_REASONS)
+          .meta({ description: "Why the number is suppressed." }),
+      })
       .optional()
       .meta({ description: "`sms.suppressed`: the entry that made coss.com skip the number." }),
   })
