@@ -38,6 +38,7 @@ import { redirect } from "next/navigation";
 import type { ActionResult } from "@/lib/action-result";
 import { ActionError, formString, runAction } from "@/lib/actions";
 import { recordAudit } from "@/lib/audit";
+import { planGate } from "@/lib/billing";
 import { schedulingCalendarDeps, schedulingDeps, schedulingUrl } from "@/lib/scheduling";
 import { eventTypeChanges, issueLabel, parseJsonObject } from "@/lib/scheduling-edit";
 import { type OrgContext, requireOrgPermission } from "@/lib/session";
@@ -137,6 +138,8 @@ function secretExpiry(formData: FormData): string | undefined {
   return date.toISOString();
 }
 
+const delegationDeps = () => ({ ...schedulingCalendarDeps(), plans: planGate() });
+
 export async function createDelegationAction(_prev: ActionResult | null, formData: FormData) {
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "update");
@@ -165,7 +168,7 @@ export async function createDelegationAction(_prev: ActionResult | null, formDat
               match_host_email: matchHostEmail,
               service_account_key: formString(formData, "serviceAccountKey"),
             },
-        schedulingCalendarDeps(),
+        delegationDeps(),
       ),
     );
     await audit(context, "scheduling_calendar_delegation.created", {
@@ -186,7 +189,7 @@ export async function verifyDelegationAction(_prev: ActionResult | null, formDat
         env,
         formString(formData, "delegationId"),
         { account: formString(formData, "account") },
-        schedulingCalendarDeps(),
+        delegationDeps(),
       ),
     );
     await audit(context, "scheduling_calendar_delegation.verified", {
@@ -218,7 +221,7 @@ export async function updateDelegationAction(_prev: ActionResult | null, formDat
             ? { secret_expires_at: secretExpiresAt ?? null }
             : {}),
         },
-        schedulingCalendarDeps(),
+        delegationDeps(),
       ),
     );
     await audit(context, "scheduling_calendar_delegation.updated", {

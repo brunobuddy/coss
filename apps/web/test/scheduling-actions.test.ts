@@ -28,6 +28,7 @@ mock.module("@coss/tenancy", () => ({
 }));
 const recordAudit = mock(async (_session: unknown, _input: unknown) => {});
 mock.module("@/lib/audit", () => ({ recordAudit }));
+mock.module("@/lib/billing", () => ({ planGate: () => ({}) }));
 mock.module("@/lib/scheduling", () => ({
   schedulingDeps: () => ({
     dataKeys: [],
