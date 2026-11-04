@@ -190,19 +190,28 @@ export function SlotPicker(props: {
               >
                 {times.map((slot) => (
                   <Button
-                    className="px-1 tabular-nums"
+                    className={
+                      slot.seats_left != null
+                        ? "h-auto px-1 py-1.5 tabular-nums"
+                        : "px-1 tabular-nums"
+                    }
                     disabled={busy}
                     key={slot.start}
                     onClick={() => onPick(slot)}
                     type="button"
                     variant="outline"
                   >
-                    {timeFormat.format(new Date(slot.start))}
                     {slot.seats_left != null ? (
-                      <span className="ms-1.5 font-normal text-muted-foreground text-xs">
-                        {seatsLabel(slot.seats_left)}
+                      // Stacked: three columns on a phone leave no room for it beside the time.
+                      <span className="flex flex-col items-center leading-tight">
+                        {timeFormat.format(new Date(slot.start))}
+                        <span className="font-normal text-muted-foreground text-xs">
+                          {seatsLabel(slot.seats_left)}
+                        </span>
                       </span>
-                    ) : null}
+                    ) : (
+                      timeFormat.format(new Date(slot.start))
+                    )}
                   </Button>
                 ))}
               </fieldset>
