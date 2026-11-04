@@ -161,6 +161,8 @@ export const schedulingHost = pgTable(
     // Where notifications go; never an identity, and not unique.
     email: text("email"),
     timeZone: text("time_zone").notNull(),
+    // What this host's notifications are written in. Null: English.
+    locale: text("locale"),
     attributes: jsonb("attributes")
       .$type<Record<string, string | string[]>>()
       .notNull()

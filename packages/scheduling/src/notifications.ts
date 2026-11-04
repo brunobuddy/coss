@@ -15,6 +15,7 @@ import { decryptContact } from "./attendees.ts";
 import { accentColors } from "./branding.ts";
 import { buildIcs } from "./calendar/ical.ts";
 import { withSessionLocation } from "./group-sessions.ts";
+import { dateLocale, type MessageKey, messageLanguage, translator } from "./i18n.ts";
 import { getLogoRow, LOGO_CONTENT_ID, type SchedulingLogoRow } from "./logo.ts";
 import { createHostInvitationSession, createManageSession } from "./sessions.ts";
 import type { SchedulingDeps } from "./types.ts";
@@ -266,7 +267,7 @@ const MEETING_LINK_RETRY_MS = 15_000;
 
 const formatWhen = (at: Date, timeZone: string, locale: string | null): string => {
   try {
-    return new Intl.DateTimeFormat(locale ?? "en-US", {
+    return new Intl.DateTimeFormat(dateLocale(locale), {
       timeZone,
       dateStyle: "full",
       timeStyle: "short",
@@ -287,47 +288,42 @@ function locationLine(booking: BookingRow): string | null {
   return null;
 }
 
-const SUBJECTS: Record<NotificationEvent, (title: string) => string> = {
-  confirmed: (title) => `Confirmed: ${title}`,
-  pending_approval: (title) => `Requested: ${title}`,
-  rescheduled: (title) => `Rescheduled: ${title}`,
-  cancelled: (title) => `Cancelled: ${title}`,
-  declined: (title) => `Not confirmed: ${title}`,
-  reminder: (title) => `Reminder: ${title}`,
+const SUBJECTS: Record<NotificationEvent, MessageKey> = {
+  confirmed: "subject_confirmed",
+  pending_approval: "subject_pending_approval",
+  rescheduled: "subject_rescheduled",
+  cancelled: "subject_cancelled",
+  declined: "subject_declined",
+  reminder: "subject_reminder",
 };
 
-const LEADS: Record<NotificationEvent, { attendee: string; host: string; guest: string }> = {
-  // Guests hear nothing until there's something to come to, so they have no line for these two.
+// Guests hear nothing until there's something to come to, so they have no line for two of these.
+const LEADS: Record<
+  NotificationEvent,
+  { attendee: MessageKey; host: MessageKey; guest: MessageKey | null }
+> = {
   confirmed: {
-    attendee: "Your booking is confirmed.",
-    host: "You have a new booking.",
-    guest: "You've been added to this booking.",
+    attendee: "lead_confirmed_attendee",
+    host: "lead_confirmed_host",
+    guest: "lead_confirmed_guest",
   },
   pending_approval: {
-    attendee: "Your request has been received. You'll hear back once it's approved.",
-    host: "A new booking is waiting for approval.",
-    guest: "",
+    attendee: "lead_pending_approval_attendee",
+    host: "lead_pending_approval_host",
+    guest: null,
   },
   rescheduled: {
-    attendee: "Your booking has moved.",
-    host: "A booking has moved.",
-    guest: "A booking you're a guest of has moved.",
+    attendee: "lead_rescheduled_attendee",
+    host: "lead_rescheduled_host",
+    guest: "lead_rescheduled_guest",
   },
   cancelled: {
-    attendee: "Your booking is cancelled.",
-    host: "A booking was cancelled.",
-    guest: "A booking you're a guest of was cancelled.",
+    attendee: "lead_cancelled_attendee",
+    host: "lead_cancelled_host",
+    guest: "lead_cancelled_guest",
   },
-  declined: {
-    attendee: "Your request couldn't be confirmed.",
-    host: "A request was declined.",
-    guest: "",
-  },
-  reminder: {
-    attendee: "This is coming up.",
-    host: "This is coming up.",
-    guest: "This is coming up.",
-  },
+  declined: { attendee: "lead_declined_attendee", host: "lead_declined_host", guest: null },
+  reminder: { attendee: "lead_reminder", host: "lead_reminder", guest: "lead_reminder" },
 };
 
 /** Whether a guest has heard of this booking, or has any reason to hear about it now. */
@@ -512,27 +508,28 @@ async function sendBookingEmail(
               now,
             })
           : null;
+      const t = translator(attendee.locale);
+      const lead = guest ? LEADS[event].guest : LEADS[event].attendee;
       const blocks: EmailBlock[] = [
-        { paragraph: guest ? LEADS[event].guest : LEADS[event].attendee },
+        { paragraph: lead ? t(lead) : "" },
         {
           details: [
-            { label: "What", value: titleOf(booking) },
-            { label: "When", value: await when(attendee.timeZone, attendee.locale) },
+            { label: t("label_what"), value: titleOf(booking) },
+            { label: t("label_when"), value: await when(attendee.timeZone, attendee.locale) },
             ...(locationLine(booking)
-              ? [{ label: "Where", value: locationLine(booking) as string }]
+              ? [{ label: t("label_where"), value: locationLine(booking) as string }]
               : []),
           ],
         },
         ...(manage?.url
-          ? [{ button: { label: "Reschedule or cancel", url: manage.url } } as EmailBlock]
+          ? [{ button: { label: t("button_manage"), url: manage.url } } as EmailBlock]
           : []),
       ];
       const message = renderMessage(branding, senderName, {
-        subject: SUBJECTS[event](titleOf(booking)),
+        lang: messageLanguage(attendee.locale),
+        subject: t(SUBJECTS[event], { title: titleOf(booking) }),
         blocks,
-        reason: guest
-          ? `You're receiving this because you were added as a guest to a booking with ${senderName}.`
-          : `You're receiving this because of your booking with ${senderName}.`,
+        reason: t(guest ? "reason_guest" : "reason_attendee", { sender: senderName }),
       });
       await deps.notifier.email({
         environment: env,
@@ -558,6 +555,7 @@ async function sendBookingEmail(
       email: schedulingHost.email,
       name: schedulingHost.name,
       timeZone: schedulingHost.timeZone,
+      locale: schedulingHost.locale,
       id: schedulingHost.id,
     })
     .from(schedulingBookingHost)
@@ -571,22 +569,24 @@ async function sendBookingEmail(
   let sent = false;
   for (const host of hosts) {
     if (!host.email) continue;
+    const t = translator(host.locale);
     const blocks: EmailBlock[] = [
-      { paragraph: LEADS[event].host },
+      { paragraph: t(LEADS[event].host) },
       {
         details: [
-          { label: "What", value: titleOf(booking) },
-          { label: "When", value: await when(host.timeZone, null) },
+          { label: t("label_what"), value: titleOf(booking) },
+          { label: t("label_when"), value: await when(host.timeZone, host.locale) },
           ...(locationLine(booking)
-            ? [{ label: "Where", value: locationLine(booking) as string }]
+            ? [{ label: t("label_where"), value: locationLine(booking) as string }]
             : []),
         ],
       },
     ];
     const message = renderMessage(branding, senderName, {
-      subject: SUBJECTS[event](titleOf(booking)),
+      lang: messageLanguage(host.locale),
+      subject: t(SUBJECTS[event], { title: titleOf(booking) }),
       blocks,
-      reason: `You're receiving this as a host with ${senderName}.`,
+      reason: t("reason_host", { sender: senderName }),
     });
     await deps.notifier.email({
       environment: env,
@@ -630,13 +630,14 @@ async function sendBookingSms(
   for (const attendee of attendees) {
     const contact = decryptContact(attendee.encryptedContact, deps);
     if (!contact.phone) continue;
-    const brand = oneLine(settings.brandName ?? "Your booking");
+    const t = translator(attendee.locale);
+    const brand = oneLine(settings.brandName ?? t("sms_brand_fallback"));
     try {
       await deps.notifier.sms({
         environment: env,
         from: settings.smsFrom,
         to: contact.phone,
-        body: `${brand}: ${SUBJECTS[event](titleOf(booking))}, ${formatWhen(booking.startAt, attendee.timeZone, attendee.locale)}. Reply STOP to opt out.`,
+        body: `${brand}: ${t(SUBJECTS[event], { title: titleOf(booking) })}, ${formatWhen(booking.startAt, attendee.timeZone, attendee.locale)}. ${t("sms_opt_out")}`,
         idempotencyKey: `scheduling:${row.id}:${attendee.id}`,
       });
     } catch (error) {
@@ -661,31 +662,29 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
   if (!host?.email) return "no_address";
   const branding = await brandingOf(row);
   const { settings } = branding;
-  const senderName = oneLine(settings?.brandName ?? "Your bookings");
+  const t = translator(host.locale);
+  const senderName = oneLine(settings?.brandName ?? t("sender_fallback"));
   const session = deps.publicUrl
     ? await createHostInvitationSession(env, host.id, deps.publicUrl, now)
     : null;
   const zoom = row.kind === "zoom_needs_reauth";
   const message = renderMessage(branding, senderName, {
-    subject: zoom ? "Your Zoom account needs reconnecting" : "Your calendar needs reconnecting",
+    lang: messageLanguage(host.locale),
+    subject: t(zoom ? "zoom_subject" : "calendar_subject"),
     blocks: [
-      {
-        paragraph: zoom
-          ? "We can't reach your Zoom account any more, so new bookings won't get a Zoom link. You're still being offered, and existing links keep working."
-          : "We can't read your calendar any more, so you aren't being offered for new bookings. Existing bookings stay as they are.",
-      },
+      { paragraph: t(zoom ? "zoom_body" : "calendar_body") },
       ...(session?.url
         ? [
             {
               button: {
-                label: zoom ? "Reconnect Zoom" : "Reconnect your calendar",
+                label: t(zoom ? "zoom_button" : "calendar_button"),
                 url: session.url,
               },
             } as EmailBlock,
           ]
-        : [{ paragraph: `Please reconnect it through ${senderName}.` } as EmailBlock]),
+        : [{ paragraph: t("reconnect_through", { sender: senderName }) } as EmailBlock]),
     ],
-    reason: `You're receiving this as a host with ${senderName}.`,
+    reason: t("reason_host", { sender: senderName }),
   });
   await deps.notifier.email({
     environment: env,
