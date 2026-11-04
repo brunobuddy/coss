@@ -162,7 +162,7 @@ export const Contact = z
       description: "When it last became `subscribed`. `null`: it hasn't.",
     }),
     unsubscribed_at: NullableTimestamp.meta({
-      description: "When it last became `unsubscribed`. `null`: it hasn't.",
+      description: "When it became `unsubscribed`. `null` unless it is.",
     }),
     confirmed_at: NullableTimestamp.meta({
       description: "When the contact confirmed a double opt-in.",

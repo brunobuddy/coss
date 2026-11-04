@@ -13570,7 +13570,7 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 200,
-                  "description": "Shown on the signing page and in the audit trail."
+                  "description": "Shown on the signing page and on the certificate."
                 },
                 "email": {
                   "type": "string",
@@ -13916,7 +13916,7 @@
               "completed",
               "sealed"
             ],
-            "description": "What happened. `created`, `sent`, `canceled`, `expired` and `reminded` concern the request; `notified`, `viewed`, `consented`, `signed` and `declined` a signer; `completed` is the last signature and `sealed` the sealed document being ready."
+            "description": "What happened. `created`, `sent`, `canceled` and `expired` concern the request; `notified`, `reminded`, `viewed`, `consented`, `signed` and `declined` a signer; `completed` is the last signature and `sealed` the sealed document being ready."
           },
           "signer_id": {
             "type": [
@@ -15292,7 +15292,7 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 200,
-                  "description": "Shown on the signing page and in the audit trail."
+                  "description": "Shown on the signing page and on the certificate."
                 },
                 "email": {
                   "type": "string",
@@ -22271,7 +22271,7 @@
               "null"
             ],
             "format": "date-time",
-            "description": "When it last became `unsubscribed`. `null`: it hasn't."
+            "description": "When it became `unsubscribed`. `null` unless it is."
           },
           "confirmed_at": {
             "type": [

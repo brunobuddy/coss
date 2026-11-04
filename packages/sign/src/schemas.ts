@@ -277,7 +277,7 @@ const SignerInput = z.strictObject({
     .trim()
     .min(1)
     .max(200)
-    .meta({ description: "Shown on the signing page and in the audit trail." }),
+    .meta({ description: "Shown on the signing page and on the certificate." }),
   email: z.email().max(254).meta({
     description: "Where a `delivery: email` signer gets their link. Unique within a request.",
   }),
@@ -644,7 +644,7 @@ export const SignEventObject = z
     sequence: z.number().int().meta({ description: "1-based position in the request's trail." }),
     type: z.enum(SIGN_EVENT_TYPES).meta({
       description:
-        "What happened. `created`, `sent`, `canceled`, `expired` and `reminded` concern the request; `notified`, `viewed`, `consented`, `signed` and `declined` a signer; `completed` is the last signature and `sealed` the sealed document being ready.",
+        "What happened. `created`, `sent`, `canceled` and `expired` concern the request; `notified`, `reminded`, `viewed`, `consented`, `signed` and `declined` a signer; `completed` is the last signature and `sealed` the sealed document being ready.",
     }),
     signer_id: z
       .string()
@@ -1256,7 +1256,7 @@ export const CreateSignRequestFromTemplateRequest = z
             .trim()
             .min(1)
             .max(200)
-            .meta({ description: "Shown on the signing page and in the audit trail." }),
+            .meta({ description: "Shown on the signing page and on the certificate." }),
           email: z
             .email()
             .max(254)
