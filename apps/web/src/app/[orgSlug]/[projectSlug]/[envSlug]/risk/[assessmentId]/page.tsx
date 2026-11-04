@@ -67,7 +67,9 @@ export default async function RiskAssessmentPage({
         <Stat
           detail={
             assessment.degraded.length > 0
-              ? `made without: ${assessment.degraded.join(", ")}`
+              ? `made without: ${assessment.degraded
+                  .map((signal) => (signal === "usage_limit" ? "plan's included usage" : signal))
+                  .join(", ")}`
               : "all signals collected"
           }
           label="Reasons"

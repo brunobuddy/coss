@@ -32,7 +32,9 @@ faq:
   - question: Can I check an email address or IP address without an assessment?
     answer: Yes. coss.risk.checkEmail(), checkIp(), checkPhone() and classify() return the same signals on their own. They store and count nothing about the address, number or text.
   - question: How much does coss.com Risk cost?
-    answer: Live phone checks are billed per lookup that got an answer, and every plan includes a monthly allowance of them. Sandbox checks are free. The pricing page lists the current rates.
+    answer: Live assessments are billed per 1,000, with a monthly allowance on every plan, and decisions that block are free. Live phone checks are billed per lookup that got an answer. Sandbox calls are always free, and email, IP and rate limit checks are part of every plan. The pricing page lists the current rates.
+  - question: What happens when the Free plan's assessments run out?
+    answer: Assessments keep answering, free, without velocity, memory of earlier events or content checks, and list usage_limit in degraded. Your lists, rules and stateless email and IP signals still decide. They never fail over billing, so a limit can't switch your protection off.
 ---
 
 <HeroSample>
@@ -161,10 +163,10 @@ Sandbox keys see fixed [test inputs](/docs/risk/testing) (`192.0.2.x` addresses,
 
 </Section>
 
-<Section title="Pricing" lede="Assessments, email, IP and content checks are part of your plan. Live phone checks are billed per lookup that got an answer.">
+<Section title="Pricing" lede="Assessments and content checks are billed per 1,000, with a monthly allowance on every plan. Blocked decisions never cost anything. Email, IP and rate limit checks are part of every plan.">
 
-<UsageRates meters="risk.phone_checks" />
+<UsageRates meters="risk.assessments,risk.content_checks,risk.phone_checks" />
 
-Every plan includes <Included meter="risk.phone_checks" />. Numbers that aren't E.164, failed lookups and sandbox checks are free. See [pricing](/pricing) for the plans.
+The Free plan includes <Included meter="risk.assessments" />, <Included meter="risk.content_checks" /> and <Included meter="risk.phone_checks" />; Pro includes <Included meter="risk.assessments" plan="pro" /> and Scale <Included meter="risk.assessments" plan="scale" />. Past Free's allowance, assessments keep answering for free, without velocity, memory of earlier events or content checks, so a limit never turns your protection off. Decisions that block, replays and sandbox calls are free. Assessments Forms makes for its submissions are part of the submission. See [pricing](/pricing) for the plans.
 
 </Section>

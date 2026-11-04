@@ -554,6 +554,7 @@ function fromRiskError(error: RiskError): ApiError {
     case "limit_bucket_name_taken":
       return invalidRequest(error.code, error.message, error.param);
     case "billing_hold":
+    case "budget_exceeded":
       // As billing's own holds: 402, never retried by the SDK.
       return new ApiError(402, { type: "billing_error", code: error.code, message: error.message });
     case "classification_unavailable":

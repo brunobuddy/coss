@@ -20,7 +20,10 @@ export type RiskList = (typeof RISK_LISTS)[number];
 export const RISK_LIST_ENTRY_TYPES = ["email", "domain", "ip", "asn", "country", "user"] as const;
 export type RiskListEntryType = (typeof RISK_LIST_ENTRY_TYPES)[number];
 
-/** Signal groups that can be missing from an assessment (a lookup failed or timed out). */
+/**
+ * Signal groups that can be missing from an assessment (a lookup failed or timed out), and
+ * `usage_limit`: it ran reduced, past the plan's allowance, on a billing hold or over a budget.
+ */
 export const RISK_DEGRADED_SIGNALS = [
   "email_dns",
   "domain_age",
@@ -29,6 +32,7 @@ export const RISK_DEGRADED_SIGNALS = [
   "captcha",
   "content",
   "ip_privacy",
+  "usage_limit",
 ] as const;
 export type RiskDegradedSignal = (typeof RISK_DEGRADED_SIGNALS)[number];
 
@@ -1054,7 +1058,10 @@ export const RiskAssessment = z
     ip: z.string().nullable().meta({ description: "`null` once removed (90 days after)." }),
     degraded: z.array(z.enum(RISK_DEGRADED_SIGNALS)).meta({
       description:
-        "Signal groups that were unavailable for this assessment (it was made without them).",
+        "Signal groups that were unavailable for this assessment (it was made without them). " +
+        "`usage_limit` means the plan's included assessments are used up, or a billing hold or " +
+        "budget applies: the assessment was free and made without velocity, memory of earlier " +
+        "events, content or address-level IP data.",
     }),
     outcome: z.union([RiskOutcomeEnum, z.null()]).meta({
       description: "The latest outcome you reported with feedback.",
