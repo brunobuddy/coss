@@ -896,7 +896,8 @@ function changesOf(
     params.start !== undefined ||
     params.end !== undefined ||
     params.start_date !== undefined ||
-    params.end_date !== undefined;
+    params.end_date !== undefined ||
+    params.time_zone !== undefined;
   const window = moving ? windowOf(whenOfChange(row, params), host) : null;
   return {
     ...(window ?? {}),
@@ -923,7 +924,19 @@ function changesOf(
 
 /** A change can give half a window: the other half is what the entry has. */
 function whenOfChange(row: OutOfOfficeRow, params: UpdateOutOfOfficeRequestOutput): When {
-  if (params.start_date !== undefined || params.end_date !== undefined) {
+  if (params.time_zone !== undefined && params.start_date === undefined && !row.startDate) {
+    // Times are instants, and don't mean anything else in another zone.
+    throw new SchedulingError(
+      "invalid_out_of_office",
+      "`time_zone` goes with whole dates, and this entry has times.",
+      { param: "time_zone" },
+    );
+  }
+  if (
+    params.start_date !== undefined ||
+    params.end_date !== undefined ||
+    params.time_zone !== undefined
+  ) {
     return {
       start_date: params.start_date ?? row.startDate ?? undefined,
       end_date: params.end_date ?? row.endDate ?? undefined,

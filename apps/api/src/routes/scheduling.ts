@@ -181,7 +181,7 @@ import { requireApiKey } from "../middleware/api-key.ts";
 import { upgradeRequestBody } from "../middleware/api-version.ts";
 import { rateLimit } from "../middleware/rate-limit.ts";
 import type { AppEnv } from "../types.ts";
-import { commonErrors, errorDoc, jsonDoc, requestIdHeader } from "./docs.ts";
+import { billingErrorDoc, commonErrors, errorDoc, jsonDoc, requestIdHeader } from "./docs.ts";
 import { idempotencyHeaders, idempotencyHook, idempotentReplayedHeader } from "./idempotency.ts";
 
 const TAG_HOSTS = "Scheduling hosts";
@@ -1155,6 +1155,9 @@ export const createCalendarDelegationRoute = createRoute({
     201: jsonDoc("The delegation.", CalendarDelegationObject),
     ...commonErrors,
     ...bodyErrors,
+    402: billingErrorDoc(
+      "The organization's plan doesn't include calendar delegations (`plan_feature_unavailable`)",
+    ),
     422: refusedDelegation,
   },
 });
@@ -1214,6 +1217,9 @@ export const updateCalendarDelegationRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
+    402: billingErrorDoc(
+      "The organization's plan doesn't include calendar delegations (`plan_feature_unavailable`)",
+    ),
     422: refusedDelegation,
   },
 });
@@ -1241,6 +1247,9 @@ export const verifyCalendarDelegationRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
+    402: billingErrorDoc(
+      "The organization's plan doesn't include calendar delegations (`plan_feature_unavailable`)",
+    ),
     422: refusedDelegation,
   },
 });
@@ -2737,7 +2746,10 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   });
 
   router.openapi(createCalendarDelegationRoute, async (c) => {
-    const delegation = await createCalendarDelegation(c.var.auth, c.req.valid("json"), calendars());
+    const delegation = await createCalendarDelegation(c.var.auth, c.req.valid("json"), {
+      ...calendars(),
+      plans: c.var.plans ?? undefined,
+    });
     await recordApiAudit(c, {
       action: "scheduling_calendar_delegation.created",
       target: {
@@ -2763,7 +2775,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       c.var.auth,
       c.req.valid("param").id,
       c.req.valid("json"),
-      calendars(),
+      { ...calendars(), plans: c.var.plans ?? undefined },
     );
     await recordApiAudit(c, {
       action: "scheduling_calendar_delegation.updated",
@@ -2781,7 +2793,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       c.var.auth,
       c.req.valid("param").id,
       c.req.valid("json"),
-      calendars(),
+      { ...calendars(), plans: c.var.plans ?? undefined },
     );
     await recordApiAudit(c, {
       action: "scheduling_calendar_delegation.verified",

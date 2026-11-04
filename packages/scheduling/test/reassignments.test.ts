@@ -17,6 +17,7 @@ import {
   createOutOfOffice,
   createReassignment,
   createSchedule,
+  deleteOutOfOffice,
   eraseAttendee,
   getReassignment,
   listReassignmentItems,
@@ -1741,6 +1742,17 @@ describe("going out of office", () => {
     );
     await drain(env);
     expect(await hostsOf(theirs.id)).not.toEqual([b.id]);
+  });
+
+  test("time away taken back before its run gets there moves nothing", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const type = await pool(env, [a, b]);
+    const booking = await book(env, type.id, at("10:00"), a.id);
+    const [entry] = await away(env, a.id, { existing_bookings: "reassign" });
+    await deleteOutOfOffice(env, entry?.id as string, plain);
+    await drain(env);
+    expect(await hostsOf(booking.id)).toEqual([a.id]);
   });
 
   test("a new target needs no repeating that bookings move", async () => {

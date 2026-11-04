@@ -1,13 +1,16 @@
 import { listCalendarDelegations } from "@coss/scheduling";
 import { Alert, AlertDescription, AlertTitle } from "@coss/ui/components/alert";
+import { Button } from "@coss/ui/components/button";
 import { CalendarCheckIcon } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CopyValue } from "@/components/copy-value";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
 import { SpecItem, SpecList } from "@/components/spec-list";
 import { StatusDot, type StatusTone } from "@/components/status-dot";
+import { planHas } from "@/lib/billing";
 import { schedulingPageContext } from "../page-context";
 import {
   DeleteDelegationButton,
@@ -31,8 +34,21 @@ export default async function CalendarDelegationPage({
   params,
 }: PageProps<"/[orgSlug]/[projectSlug]/[envSlug]/scheduling/calendar-delegation">) {
   const { scope, can, target } = await schedulingPageContext(await params);
-  const delegations = await listCalendarDelegations(scope);
-  const canUpdate = can({ scheduling: ["update"] });
+  const [delegations, planAllows] = await Promise.all([
+    listCalendarDelegations(scope),
+    planHas(scope.organizationId, "calendarDelegation"),
+  ]);
+  const canDelete = can({ scheduling: ["update"] });
+  const canUpdate = canDelete && planAllows;
+  const comparePlans = (
+    <Button
+      render={<Link href={`/${target.orgSlug}/settings/billing/plans`} />}
+      size="sm"
+      variant="outline"
+    >
+      Compare plans
+    </Button>
+  );
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -40,7 +56,27 @@ export default async function CalendarDelegationPage({
         description="Authorize a whole domain once, and every host on it gets their calendar with no consent screen."
         title="Calendar delegation"
       />
-      {delegations.length === 0 ? (
+      {delegations.length > 0 && !planAllows ? (
+        <Alert variant="warning">
+          <AlertTitle>Your plan doesn't include calendar delegation</AlertTitle>
+          <AlertDescription>
+            Connected hosts keep working, but changing or verifying a delegation needs the Scale
+            plan or above. You can still delete one.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {delegations.length === 0 && !planAllows ? (
+        <Panel>
+          <PanelBody>
+            <EmptyState
+              action={comparePlans}
+              description="Calendar delegation is part of the Scale plan and above. Until then, hosts connect their own calendars."
+              icon={CalendarCheckIcon}
+              title="Upgrade to delegate calendars"
+            />
+          </PanelBody>
+        </Panel>
+      ) : delegations.length === 0 ? (
         <Panel>
           <PanelBody>
             <EmptyState
@@ -68,16 +104,18 @@ export default async function CalendarDelegationPage({
                       <StatusDot tone={status.tone}>{status.label}</StatusDot>
                     </span>
                   </div>
-                  {canUpdate && delegation.status !== "deleting" ? (
+                  {canDelete && delegation.status !== "deleting" ? (
                     <div className="flex gap-1">
-                      <EditDelegationDialog
-                        {...target}
-                        delegationId={delegation.id}
-                        domain={delegation.domain}
-                        matchHostEmail={delegation.match_host_email}
-                        provider={delegation.provider}
-                        secretExpiresAt={delegation.secret_expires_at}
-                      />
+                      {canUpdate ? (
+                        <EditDelegationDialog
+                          {...target}
+                          delegationId={delegation.id}
+                          domain={delegation.domain}
+                          matchHostEmail={delegation.match_host_email}
+                          provider={delegation.provider}
+                          secretExpiresAt={delegation.secret_expires_at}
+                        />
+                      ) : null}
                       <DeleteDelegationButton
                         {...target}
                         delegationId={delegation.id}

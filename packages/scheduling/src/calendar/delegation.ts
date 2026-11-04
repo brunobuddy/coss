@@ -6,6 +6,7 @@
  * A connection's mailbox is stamped when it's made. `email` is "never an identity", so changing it
  * later moves nothing: only `calendar_account` does, and not while bookings are live (`hosts.ts`).
  */
+import type { PlanGate } from "@coss/billing/gate";
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
 import { enqueueNotification } from "@coss/notifications";
@@ -75,6 +76,13 @@ const {
 } = schema;
 
 type Scope = Pick<SchedulingEnvironment, "organizationId" | "environmentId">;
+
+/**
+ * Setting one up, changing it and ending its outage take a plan with the feature, in every
+ * environment: a sandbox's delegation reaches real calendars too. Deleting never does, and the
+ * worker doesn't ask: what's connected stays connected, as a log drain keeps delivering.
+ */
+type PlanDeps = { plans?: PlanGate | undefined };
 type Scan = { limit?: number; scope?: { organizationIds: readonly string[] } };
 
 const DAY_MS = 86_400_000;
@@ -233,8 +241,9 @@ function credentialsFrom(params: CreateCalendarDelegationRequestOutput): Delegat
 export async function createCalendarDelegation(
   env: SchedulingEnvironment,
   params: CreateCalendarDelegationRequestOutput,
-  deps: Pick<CalendarDeps, "secretsKeys">,
+  deps: Pick<CalendarDeps, "secretsKeys"> & PlanDeps,
 ): Promise<CalendarDelegationObjectOutput> {
+  await deps.plans?.requireFeature(env.organizationId, "calendarDelegation");
   const credentials = credentialsFrom(params);
   try {
     const [row] = await db
@@ -269,8 +278,9 @@ export async function verifyCalendarDelegation(
   scope: Scope,
   id: string,
   params: { account: string },
-  deps: CalendarDeps,
+  deps: CalendarDeps & PlanDeps,
 ): Promise<CalendarDelegationObjectOutput> {
+  await deps.plans?.requireFeature(scope.organizationId, "calendarDelegation");
   const delegation = await findDelegation(db, scope, id);
   if (delegation.status === "deleting") {
     throw new SchedulingError("not_found", `No calendar delegation "${id}" here.`);
@@ -333,8 +343,9 @@ export async function updateCalendarDelegation(
   scope: Scope,
   id: string,
   params: UpdateCalendarDelegationRequestOutput,
-  deps: CalendarDeps,
+  deps: CalendarDeps & PlanDeps,
 ): Promise<CalendarDelegationObjectOutput> {
+  await deps.plans?.requireFeature(scope.organizationId, "calendarDelegation");
   const delegation = await findDelegation(db, scope, id);
   if (delegation.status === "deleting") {
     throw new SchedulingError("not_found", `No calendar delegation "${id}" here.`);
@@ -1090,6 +1101,21 @@ export async function runDueCalendarDelegations(
 }
 
 /** For the dashboard's banner: which delegations are refused right now. */
+/** Whether a downgrade would leave a delegation behind. One being deleted is already gone. */
+export async function hasCalendarDelegations(organizationId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: schedulingCalendarDelegation.id })
+    .from(schedulingCalendarDelegation)
+    .where(
+      and(
+        eq(schedulingCalendarDelegation.organizationId, organizationId),
+        ne(schedulingCalendarDelegation.status, "deleting"),
+      ),
+    )
+    .limit(1);
+  return row !== undefined;
+}
+
 export async function failingCalendarDelegations(scope: Scope): Promise<string[]> {
   const rows = await db
     .select({ domain: schedulingCalendarDelegation.domain })

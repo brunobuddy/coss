@@ -243,6 +243,10 @@ so an event on a calendar that's stopped being one still goes. Slots for moving 
 `calendar/delegation.ts`, `delegation-failures.ts`, `delegation-tokens.ts` (no database). An admin authorizes a domain
 once, and every host on it gets their calendar with no consent screen.
 
+- **It takes a plan with `calendarDelegation`** (Scale and above, through an injected `PlanGate`) to create, update or
+  verify one, in every environment, since a sandbox's delegation reaches real calendars. Deleting never does, a
+  self-serve downgrade is refused while one exists, and the worker doesn't check: an organization that loses the
+  feature through a contract keeps what's connected, as a log drain keeps delivering.
 - **Credentials are the customer's own**: a service account from their Cloud project, or a single-tenant Entra app. The
   provider confines either to that Workspace or tenant, so there's no domain ownership check. That argument only holds
   for customer-owned credentials: a coss.com-owned service account shared between customers would let any customer

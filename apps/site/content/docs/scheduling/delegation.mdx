@@ -12,6 +12,11 @@ Microsoft Entra tenant. Google and Microsoft keep those credentials to your Work
 reach anyone else's calendars. If you serve several organizations, add a delegation for each of their domains.
 Each environment has its own delegations.
 
+Calendar delegation is part of the <PlansWith feature="calendarDelegation" /> plans, in sandbox environments
+too, since a sandbox's delegation reaches real calendars. On another plan, creating, updating or verifying one
+answers `402` with `plan_feature_unavailable`. A plan without it can't be chosen while you have a delegation, so
+delete yours before downgrading.
+
 Coss.com reads and writes the same things as it does for any other calendar, and
 [no more](/docs/scheduling/calendars#what-cosscom-reads-and-writes).
 

@@ -429,6 +429,41 @@ describe("many hosts at once", () => {
   });
 });
 
+describe("changing only an entry's zone", () => {
+  test("whole dates mean those dates there", async () => {
+    const env = await environment();
+    const doctor = await host(env);
+    const [entry] = await away(env, {
+      host: doctor.id,
+      start_date: "2031-01-06",
+      end_date: "2031-01-06",
+      time_zone: "UTC",
+    });
+    const changed = await updateOutOfOffice(
+      env,
+      entry?.id as string,
+      { time_zone: "America/New_York" },
+      plain,
+      actor,
+    );
+    expect(changed.all_day).toMatchObject({
+      start_date: "2031-01-06",
+      end_date: "2031-01-06",
+      time_zone: "America/New_York",
+    });
+    expect(changed.start).toBe("2031-01-06T05:00:00.000Z");
+  });
+
+  test("times are refused, since they don't change", async () => {
+    const env = await environment();
+    const doctor = await host(env);
+    const [entry] = await away(env, { host: doctor.id, start: iso("09:00"), end: iso("17:00") });
+    await expect(
+      updateOutOfOffice(env, entry?.id as string, { time_zone: "America/New_York" }, plain, actor),
+    ).rejects.toMatchObject({ code: "invalid_out_of_office", param: "time_zone" });
+  });
+});
+
 describe("deleting an entry that's moving", () => {
   test("a session can't delete what's just become someone else's", async () => {
     const env = await environment();

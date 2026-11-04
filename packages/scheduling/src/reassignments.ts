@@ -159,6 +159,8 @@ async function selectionConditions(
           and(
             eq(schedulingOutOfOffice.id, selection.out_of_office_id),
             eq(schedulingOutOfOffice.organizationId, scope.organizationId),
+            // Taken back before a run got to it: nobody's away any more, so nothing has to move.
+            isNull(schedulingOutOfOffice.deletedAt),
           ),
         )
     : [];
