@@ -93,25 +93,33 @@ function destinations(
     ? "Unknown: the form couldn't be read."
     : !form.contacts.enabled
       ? "None: the form doesn't add contacts."
-      : accepted
-        ? "Added to contacts in the background."
-        : "Waiting: a contact is only added once it is accepted.";
+      : !submission.submitter_email
+        ? "None: a contact needs the submitter's address, and this submission has none."
+        : accepted
+          ? "Added to contacts in the background."
+          : "Waiting: a contact is only added once it is accepted.";
   return { webhooks, notifications, contacts };
 }
 
+/**
+ * What the post was answered, from its status now and how it got there
+ * (`publicStatus` in `apps/api/src/routes/forms-public.ts`): on a verifying form everything but an
+ * outright accept looks pending, and elsewhere everything looks received.
+ */
 function submitterSaw(submission: FormSubmission, form: Form | undefined): string {
-  if (submission.status === "held") {
-    return "A normal success: a held submission is answered like an accepted one.";
+  if (submission.status === "pending_confirmation") return 'A "check your email" pending answer.';
+  if (submission.confirmed_at) {
+    return 'A "check your email" pending answer, then the confirmation page when they followed the link.';
   }
-  if (submission.status === "spam") {
-    return form?.submitter.verify
-      ? 'A normal "check your email" pending answer: spam on a verifying form is answered like any other post, and no email goes out.'
-      : "A normal success: spam is answered exactly like an accepted submission.";
+  const flagged = submission.status === "held" || submission.status === "spam";
+  if (!flagged && !submission.released_at) return "A normal success.";
+  const when = submission.released_at ? "It was released later, which tells them nothing. " : "";
+  if (form === undefined) {
+    return `${when}A normal success, or a "check your email" pending answer if the form verifies submitters: flagged submissions are answered like any other, and no email says otherwise.`;
   }
-  if (submission.status === "pending_confirmation") {
-    return 'A "check your email" pending answer.';
-  }
-  return "A normal success.";
+  return form.submitter.verify
+    ? `${when}A normal "check your email" pending answer: on a verifying form a flagged submission is answered like any other, and no email goes out.`
+    : `${when}A normal success: a flagged submission is answered exactly like an accepted one.`;
 }
 
 function adviceFor(
@@ -127,10 +135,12 @@ function adviceFor(
           ? `Accepted when someone released it at ${submission.released_at}.`
           : submission.confirmed_at
             ? `Accepted when the submitter confirmed their address at ${submission.confirmed_at}.`
-            : `Accepted at ${submission.accepted_at}: it passed the honeypot, Risk and the content check.`,
+            : `Accepted at ${submission.accepted_at}: ${acceptedBecause(submission)}`,
         next_steps: form?.notifications.recipients.length
           ? [
-              `If a notification didn't arrive, look for its email (${ref.find_emails} with the recipient's address), and at the log (${ref.search_logs}).`,
+              submission.sandbox || form.notifications.from
+                ? `If a notification didn't arrive, look for its email (${ref.find_emails} with the recipient's address), and at the log (${ref.search_logs}).`
+                : `If a notification didn't arrive: it goes from coss.com's own sender because the form has no \`notifications.from\`, so it isn't among this environment's emails. Ask the recipient to check spam, and check that they're a verified member or on a verified domain. Setting \`notifications.from\` (${ref.update_form}) makes these emails visible.`,
             ]
           : [],
       };
@@ -179,10 +189,20 @@ function adviceFor(
             ]
           : [
               `Look for the verification email (${ref.find_emails} with the submitter's address): it goes out only from the form's own verified sender, never coss.com's.`,
-              release,
             ],
       };
   }
+}
+
+/** Why an accepted submission got through, from the assessment it carries (Risk fails open). */
+function acceptedBecause(submission: FormSubmission): string {
+  const decision = submission.risk?.decision ?? null;
+  if (decision === null) {
+    return "no Risk assessment ran (assessments fail open), so nothing flagged it.";
+  }
+  return decision === "review"
+    ? "Risk's decision was `review`, and the form's `on_review` is `deliver`."
+    : "it passed the honeypot, Risk and the content check.";
 }
 
 function summarize(submission: FormSubmission): string {

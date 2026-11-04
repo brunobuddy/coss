@@ -116,36 +116,44 @@ function adviceFor(
       next_steps: steps,
     };
   }
-  // Failed. These three never reached the endpoint (`failWithoutAttempt`).
+  // Failed: `failWithoutAttempt`'s three reasons first.
+  // These three stop a delivery without a request: earlier attempts may still have happened.
+  const sent = delivery.attempt_count;
+  const soFar = sent === 0 ? "" : ` after ${sent} attempt(s)`;
   if (delivery.last_error === "The endpoint is disabled.") {
     return {
       explanation:
         endpoint?.disabled_reason === "failing"
-          ? "The endpoint was disabled because its deliveries failed every attempt for five days, so this one was never sent."
-          : "The endpoint is disabled, so this delivery failed without being sent.",
+          ? `The endpoint was disabled because its deliveries failed every attempt for five days, so this delivery stopped${soFar}${sent === 0 ? " without being sent" : ""}.`
+          : `The endpoint is disabled, so this delivery stopped${soFar}${sent === 0 ? " without being sent" : ""}.`,
       next_steps: [
         `Fix what it answers, then enable it (${ref.enable_hook_endpoint}). That clears its failing record.`,
-        `Then recover what it missed (${ref.recover_hook_endpoint}), or retry this one (${ref.retry_hook_delivery}).`,
+        `Then retry this one (${ref.retry_hook_delivery}), or recover the deliveries that failed (${ref.recover_hook_endpoint}). Messages sent while it was disabled made no delivery, so recovery can't reach them: send those again.`,
       ],
     };
   }
   if (delivery.last_error === "The endpoint was deleted.") {
     return {
-      explanation: "The endpoint was deleted before this delivery was attempted.",
+      explanation:
+        sent === 0
+          ? "The endpoint was deleted before this delivery was attempted."
+          : `The endpoint was deleted before this delivery's next attempt${soFar}.`,
       next_steps: ["Nothing to retry: a delivery goes only to its own endpoint."],
     };
   }
   if (delivery.last_error === "The message no longer exists.") {
     return {
       explanation:
-        "The message's day of storage was dropped by retention before this delivery was attempted.",
+        sent === 0
+          ? "The message's day of storage was dropped by retention before this delivery was attempted."
+          : `The message's day of storage was dropped by retention before this delivery's next attempt${soFar}.`,
       next_steps: ["Send the message again."],
     };
   }
   return {
     explanation: `${answerAdvice(delivery)} Every one of its ${delivery.attempt_count} attempts failed, so coss.com stopped trying.`,
     next_steps: [
-      `Fix the endpoint, then retry (${ref.retry_hook_delivery}), or recover everything it missed since then (${ref.recover_hook_endpoint}).`,
+      `Fix the endpoint, then retry (${ref.retry_hook_delivery}), or recover every delivery that failed since then (${ref.recover_hook_endpoint}).`,
     ],
   };
 }
@@ -173,7 +181,7 @@ function warningsFor(
   if (endpoint === null) warnings.push("Its endpoint no longer exists.");
   if (endpoint && !endpoint.enabled) {
     warnings.push(
-      `The endpoint is disabled (${endpoint.disabled_reason ?? "manual"}), so new deliveries to it fail at once (${ref.enable_hook_endpoint}).`,
+      `The endpoint is disabled (${endpoint.disabled_reason ?? "manual"}): new messages make no delivery for it, and what's pending fails at its next attempt (${ref.enable_hook_endpoint}).`,
     );
   }
   if (endpoint?.enabled && endpoint.failing_since) {

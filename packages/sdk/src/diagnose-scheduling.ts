@@ -123,12 +123,15 @@ function readCalendars(connection: SchedulingCalendarConnection) {
   return connection.calendars.filter((calendar) => calendar.read_busy);
 }
 
-const STALE_CALENDAR_MS = 7 * 60 * 60 * 1000;
+/** How long a calendar with push notifications is trusted since it was read. */
+const PUSH_CALENDAR_STALE_MS = 7 * 60 * 60 * 1000;
+/** The same without them. The API doesn't say which a calendar is, so between the two is unclear. */
+const POLLED_CALENDAR_STALE_MS = 20 * 60 * 1000;
 
 /** Findings that are about all of the hosts: only `likely` when some weren't looked at. */
 const ABOUT_ALL_HOSTS = new Set([
   "hosts_disabled",
-  "required_host_disabled",
+  "members_disabled",
   "no_schedule",
   "duration_longer_than_hours",
   "calendar_needs_reauth",
@@ -222,6 +225,7 @@ function findingsFor(
       );
     }
     const disabled = hosts.filter((entry) => entry.host.status !== "active");
+    const members = hosts.filter((entry) => entry.role !== "required");
     if (hosts.length > 0 && disabled.length === hosts.length) {
       add(
         "certain",
@@ -229,12 +233,16 @@ function findingsFor(
         `Every host is disabled (${disabled.map((entry) => entry.host.name).join(", ")}): a disabled host isn't offered.`,
         [`Set a host's status to active (${ref.save_scheduling_host}).`],
       );
-    } else if (disabled.some((entry) => entry.role === "required")) {
+    } else if (
+      members.length > 0 &&
+      members.every((entry) => entry.host.status !== "active") &&
+      disabled.length < hosts.length
+    ) {
       add(
         "certain",
-        "required_host_disabled",
-        "A required host is disabled: required hosts must all be free, so nothing is offered.",
-        [`Set their status to active (${ref.save_scheduling_host}).`],
+        "members_disabled",
+        `Every member is disabled (${members.map((entry) => entry.host.name).join(", ")}), and a required host is never booked alone in place of one.`,
+        [`Set a member's status to active (${ref.save_scheduling_host}).`],
       );
     }
     const active = hosts.filter((entry) => entry.host.status === "active");
@@ -294,19 +302,20 @@ function findingsFor(
         ],
       );
     }
+    const readCalendarAges = (entry: SchedulingSlotsHostInput): number[] =>
+      (entry.calendars ?? []).flatMap((connection) =>
+        connection.provider === "zoom" || connection.provider === "simulated"
+          ? []
+          : readCalendars(connection).map((calendar) =>
+              calendar.verified_at === null
+                ? Number.POSITIVE_INFINITY
+                : now.getTime() - Date.parse(calendar.verified_at),
+            ),
+      );
     const stale = active.filter(
       (entry) =>
         !needsReauth.includes(entry) &&
-        entry.calendars?.some(
-          (connection) =>
-            connection.provider !== "zoom" &&
-            connection.provider !== "simulated" &&
-            readCalendars(connection).some(
-              (calendar) =>
-                calendar.verified_at === null ||
-                now.getTime() - Date.parse(calendar.verified_at) > STALE_CALENDAR_MS,
-            ),
-        ),
+        readCalendarAges(entry).some((age) => age > PUSH_CALENDAR_STALE_MS),
     );
     if (stale.length > 0 && hidesOnFailure) {
       add(
@@ -316,6 +325,20 @@ function findingsFor(
         [
           `Look at the connection (${ref.list_scheduling_calendars}). A new connection is read within moments; one that stays this way can be connected again (${ref.authorize_scheduling_calendar}).`,
         ],
+      );
+    }
+    const perhapsStale = active.filter(
+      (entry) =>
+        !needsReauth.includes(entry) &&
+        !stale.includes(entry) &&
+        readCalendarAges(entry).some((age) => age > POLLED_CALENDAR_STALE_MS),
+    );
+    if (perhapsStale.length > 0 && hidesOnFailure) {
+      add(
+        "possible",
+        "calendar_maybe_stale",
+        `${perhapsStale.map((entry) => entry.host.name).join(", ")} has a calendar last read over 20 minutes ago. A calendar without push notifications counts as out of date after 20 minutes, which hides its host; one with them after 7 hours. The API doesn't say which this is.`,
+        [`Look at the connection (${ref.list_scheduling_calendars}).`],
       );
     }
     const closed = active.flatMap((entry) =>
@@ -438,17 +461,19 @@ const MAX_HOSTS = 10;
 /** How far past the range to look for the next slot. */
 const NEXT_SLOT_DAYS = 31;
 
-function attributesMatch(
-  have: Record<string, string | string[]>,
-  wanted: Record<string, string | string[]>,
+/**
+ * Whether a host is in a pool: for every key the filter names, the host holds at least one of the
+ * wanted values (docs: Scheduling, pools and groups).
+ */
+function inPool(
+  host: SchedulingHost,
+  filter: NonNullable<SchedulingEventType["host_filter"]>,
 ): boolean {
-  return Object.entries(wanted).every(([key, value]) => {
-    const found = have[key];
-    if (found === undefined) return false;
-    const haves = Array.isArray(found) ? found : [found];
-    const wants = Array.isArray(value) ? value : [value];
-    return wants.some((want) => haves.includes(want));
-  });
+  for (const key of Object.keys(filter)) {
+    const held = new Set([host.attributes[key] ?? []].flat());
+    if (![filter[key] ?? []].flat().some((value) => held.has(value))) return false;
+  }
+  return true;
 }
 
 /**
@@ -509,10 +534,11 @@ export async function fetchSchedulingSlotsDiagnosis(
   const filter = eventType.data.host_filter;
   if (!options.host && eventType.data.kind === "pool" && filter) {
     const everyone = await softly(coss.scheduling.hosts.list({ limit: 100 }, read));
-    if (!everyone) hostsKnown = false;
+    // Hosts past this page could match too.
+    if (!everyone || everyone.has_more) hostsKnown = false;
     for (const host of everyone?.data ?? []) {
       if (hosts.some((entry) => entry.host.id === host.id)) continue;
-      if (host.status !== "active" || !attributesMatch(host.attributes, filter)) continue;
+      if (host.status !== "active" || !inPool(host, filter)) continue;
       if (hosts.length >= MAX_HOSTS) {
         truncated = true;
         break;

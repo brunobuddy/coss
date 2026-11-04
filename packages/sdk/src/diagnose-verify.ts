@@ -56,22 +56,23 @@ export interface VerificationDiagnosis extends ProductDiagnosis<VerificationVerd
   created_at: string;
 }
 
-/** The fraud guard's reasons (`VERIFICATION_REASONS` in `@coss/risk/schemas`). */
+/** What each fraud guard reason means, in this SDK's words (its codes are `apps/api`-checked). */
 export const VERIFICATION_REASON_EXPLANATIONS: Readonly<Record<string, string>> = {
-  "list.blocked": "An entry of the environment's Risk block list matched.",
-  "ip.tor": "The end user's IP address is a Tor exit node.",
+  "list.blocked": "Your Risk block list has an entry for this user, address, number or country.",
+  "ip.tor": "The request came through Tor (the `ip` you passed is an exit node).",
   "phone.premium_rate":
-    "A premium-rate or shared-cost number: texting it earns its owner money (SMS pumping).",
-  "phone.not_mobile": "A toll-free, pager, voicemail or similar number that can't get a text.",
+    "Someone gets paid for each text to this number, the signature of SMS pumping.",
+  "phone.not_mobile":
+    "This kind of number can't receive a text (for example toll-free or a pager).",
   "verify.prefix_velocity":
-    "Many verifications to numbers sharing this one's prefix in the last hour.",
+    "An unusual burst of codes went to neighbouring numbers this past hour.",
   "verify.prefix_low_conversion":
-    "Verifications to numbers sharing this one's prefix are rarely approved in the last hour.",
+    "Few codes sent to neighbouring numbers this past hour were entered: real people enter theirs.",
   "verify.country_low_conversion":
-    "Verifications to this country are rarely approved in the last hour.",
+    "Few codes sent to this country this past hour were entered: real people enter theirs.",
   "velocity.verifications_per_ip_1h":
-    "Many verifications from the end user's IP address in the last hour.",
-  "velocity.verifications_per_user_1h": "Many verifications for the same user in the last hour.",
+    "An unusual number of codes for this IP address this past hour.",
+  "velocity.verifications_per_user_1h": "An unusual number of codes for this user this past hour.",
 };
 
 const ROUTES: Record<VerificationSend["route"], string> = {
@@ -101,7 +102,9 @@ function failureAdvice(verification: Verification, code: string, ref: ProductRef
             ? "The number is on the environment's SMS suppression list (it opted out, or can't receive SMS), so no code went out."
             : "The address is on the environment's suppression list (an earlier hard bounce or complaint), so no code went out.",
         next_steps: [
-          `Look at the entry (${verification.channel === "sms" ? ref.check_sms_suppression : ref.check_email_suppression}). An opt-out is lifted when the person texts START, never by you.`,
+          verification.channel === "sms"
+            ? `Look at the entry (${ref.check_sms_suppression}). If it's an opt-out, only the person can lift it, by texting START; don't remove it yourself.`
+            : `Look at the entry (${ref.check_email_suppression}), and only remove it if the address works again.`,
         ],
       };
     case "send_failed":
@@ -218,7 +221,7 @@ function adviceFor(
         explanation:
           "The fraud guard stopped it before anything was sent or billed (`verification_blocked`).",
         next_steps: [
-          `If this is a real user, add them, their IP address or their country to the Risk allow list (${ref.add_risk_list_entry}): an allow-list match lets a verification through.`,
+          `If this is a real user, add them${verification.channel === "sms" ? ", their IP address or their country" : " or their IP address"} to the Risk allow list (${ref.add_risk_list_entry}): an allow-list match lets a verification through.`,
           "Otherwise tell the user you can't send a code right now; don't retry in a loop.",
         ],
       };

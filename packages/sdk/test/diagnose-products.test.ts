@@ -4,6 +4,7 @@ import {
   diagnoseHookDelivery,
   diagnoseSchedulingSlots,
   diagnoseSignRequest,
+  diagnoseSms,
   diagnoseVerification,
   fetchFormSubmissionDiagnosis,
   fetchHookDeliveryDiagnosis,
@@ -116,6 +117,46 @@ describe("diagnoseVerification", () => {
     expect(diagnosis.warnings).toEqual([]);
     // The body holds the code: a diagnosis never carries it.
     expect(JSON.stringify(diagnosis)).not.toContain("482913");
+  });
+
+  test("an email destination is told about its own suppression and allow list", () => {
+    const email = verification({
+      channel: "email",
+      to: "ada@example.com",
+      country: null,
+      sends: [],
+    });
+    const suppressed = diagnoseVerification({
+      verification: {
+        ...email,
+        status: "failed",
+        failure: { code: "recipient_suppressed", message: "Suppressed." },
+      },
+      now: NOW,
+    });
+    expect(suppressed.next_steps[0]).toContain(PRODUCT_SDK_REFERENCES.check_email_suppression);
+    expect(suppressed.next_steps[0]).not.toContain("START");
+    const blocked = diagnoseVerification({
+      verification: { ...email, status: "blocked", reasons: [{ code: "list.blocked" }] },
+      now: NOW,
+    });
+    expect(blocked.next_steps[0]).not.toContain("country");
+    const smsBlocked = diagnoseVerification({
+      verification: verification({ status: "blocked", reasons: [{ code: "ip.tor" }] }),
+      now: NOW,
+    });
+    expect(smsBlocked.next_steps[0]).toContain("country");
+  });
+
+  test("a suppressed number's opt-out isn't assumed", () => {
+    const { next_steps } = diagnoseVerification({
+      verification: verification({
+        status: "failed",
+        failure: { code: "recipient_suppressed", message: "Suppressed." },
+      }),
+      now: NOW,
+    });
+    expect(next_steps[0]).toContain("If it's an opt-out");
   });
 
   test("wrong codes so far say the latest code is the only one that works", () => {
@@ -241,7 +282,48 @@ describe("diagnoseSignRequest", () => {
     ]);
     const steps = diagnosis.next_steps.join(" ");
     expect(steps).toContain(PRODUCT_SDK_REFERENCES.create_sign_session);
-    expect(steps).toContain("60 minutes ago");
+    expect(steps).toContain("for 60 minutes");
+  });
+
+  test("a sequential signer's wait counts from when their turn began", () => {
+    const request = signRequest({
+      signing_order: "sequential",
+      sent_at: "2026-10-12T12:00:00.000Z",
+      signers: [
+        signer({ id: "s1", status: "signed", signed_at: "2026-10-15T11:55:00.000Z" }),
+        signer({ id: "s2", name: "Grace", order: 2, status: "pending" }),
+      ],
+    });
+    const recent = diagnoseSignRequest({ request, context: { events: [] }, now: NOW });
+    expect(recent.next_steps.join(" ")).toContain("Check again in a minute");
+    const later = diagnoseSignRequest({
+      request,
+      context: { events: [] },
+      now: new Date("2026-10-15T12:25:00.000Z"),
+    });
+    expect(later.next_steps.join(" ")).toContain("for 30 minutes");
+  });
+
+  test("find_emails only for mail this key can see", () => {
+    const slow = (context: Parameters<typeof diagnoseSignRequest>[0]["context"], sandbox = false) =>
+      diagnoseSignRequest({
+        request: signRequest({
+          sandbox,
+          sent_at: "2026-10-15T11:00:00.000Z",
+          signers: [signer({ status: "pending" })],
+        }),
+        context: { events: [], ...context },
+        now: NOW,
+      }).next_steps.join(" ");
+    const lookup = PRODUCT_SDK_REFERENCES.find_emails;
+    expect(slow({ settings: { email_from: "sign@acme.com" } })).toContain(
+      `Check the email (${lookup})`,
+    );
+    expect(slow({ settings: { email_from: null } }, true)).toContain(`Check the email (${lookup})`);
+    const coss = slow({ settings: { email_from: null } });
+    expect(coss).toContain("coss.com's sender");
+    expect(coss).not.toContain(lookup);
+    expect(slow({})).toContain("With an `email_from`");
   });
 
   test("declined keeps the signer's reason; completed without a seal is still sealing", () => {
@@ -336,7 +418,7 @@ describe("diagnoseFormSubmission", () => {
     });
     expect(diagnosis.verdict).toBe("spam");
     expect(diagnosis.summary).toContain("even though the submitter saw a success");
-    expect(diagnosis.submitter_saw).toContain("exactly like an accepted submission");
+    expect(diagnosis.submitter_saw).toContain("exactly like an accepted one");
     expect(diagnosis.destinations.webhooks).toContain("form.submission.flagged");
     expect(diagnosis.destinations.notifications).toContain("only emailed once it is accepted");
     expect(diagnosis.next_steps[0]).toContain(PRODUCT_SDK_REFERENCES.release_form_submission);
@@ -361,6 +443,72 @@ describe("diagnoseFormSubmission", () => {
     expect(diagnosis.submitter_saw).toContain("check your email");
   });
 
+  test("what the submitter saw follows the public answer", () => {
+    const verifying = form({
+      submitter: { email_field: "email", verify: true, confirmation_from: "hi@acme.com" },
+    });
+    const saw = (overrides: Parameters<typeof submission>[0], withForm = form()) =>
+      diagnoseFormSubmission({
+        submission: submission({ accepted_at: null, ...overrides }),
+        context: { form: withForm },
+      }).submitter_saw;
+    expect(saw({ status: "held", spam_reason: "risk_review" }, verifying)).toContain(
+      "check your email",
+    );
+    expect(saw({ status: "held", spam_reason: "risk_review" })).toContain("A normal success");
+    expect(saw({ status: "accepted", confirmed_at: "t" }, verifying)).toContain(
+      "confirmation page",
+    );
+    expect(saw({ status: "accepted", released_at: "t" }, verifying)).toContain("check your email");
+    expect(saw({ status: "accepted" })).toBe("A normal success.");
+    const unread = diagnoseFormSubmission({
+      submission: submission({ status: "spam", spam_reason: "risk_block", accepted_at: null }),
+    }).submitter_saw;
+    expect(unread).toContain("if the form verifies submitters");
+  });
+
+  test("accepted says why, and only points at emails this key can see", () => {
+    const steps = (from: string | null, sandbox = false) =>
+      diagnoseFormSubmission({
+        submission: submission({ sandbox }),
+        context: { form: form({ notifications: { recipients: ["a@acme.com"], from } }) },
+      }).next_steps.join(" ");
+    expect(steps("forms@acme.com")).toContain(PRODUCT_SDK_REFERENCES.find_emails);
+    expect(steps(null, true)).toContain(PRODUCT_SDK_REFERENCES.find_emails);
+    expect(steps(null)).not.toContain(PRODUCT_SDK_REFERENCES.find_emails);
+    expect(steps(null)).toContain("coss.com's own sender");
+    const why = (risk: Parameters<typeof submission>[0]) =>
+      diagnoseFormSubmission({ submission: submission(risk) }).explanation;
+    expect(why({})).toContain("passed the honeypot, Risk");
+    expect(why({ risk: { assessment_id: "r", decision: "review", score: 0.6 } })).toContain(
+      "`on_review` is `deliver`",
+    );
+    expect(why({ risk: { assessment_id: null, decision: null, score: null } })).toContain(
+      "fail open",
+    );
+    expect(why({ risk: null })).not.toContain("passed");
+  });
+
+  test("no contact without the submitter's address", () => {
+    const { destinations } = diagnoseFormSubmission({
+      submission: submission({ submitter_email: null }),
+      context: {
+        form: form({
+          contacts: {
+            enabled: true,
+            audience_ids: [],
+            topics: [],
+            double_opt_in: null,
+            first_name_field: null,
+            last_name_field: null,
+            properties: {},
+          },
+        }),
+      },
+    });
+    expect(destinations.contacts).toContain("has none");
+  });
+
   test("held waits for someone; pending waits for the submitter", () => {
     const held = diagnoseFormSubmission({
       submission: submission({ status: "held", spam_reason: "risk_review", accepted_at: null }),
@@ -374,6 +522,10 @@ describe("diagnoseFormSubmission", () => {
     });
     expect(pending.explanation).toContain("7 days");
     expect(pending.next_steps[0]).toContain("never coss.com's");
+    // `releaseSubmission` refuses anything but held and spam.
+    expect(pending.next_steps.join(" ")).not.toContain(
+      PRODUCT_SDK_REFERENCES.release_form_submission,
+    );
     const sandbox = diagnoseFormSubmission({
       submission: submission({ status: "pending_confirmation", accepted_at: null, sandbox: true }),
     });
@@ -445,6 +597,44 @@ describe("diagnoseHookDelivery", () => {
     });
     expect(gone.next_steps[0]).toContain("Send the message again");
     expect("endpoint" in gone).toBe(false);
+  });
+
+  test("attempts before the endpoint went away are still attempts", () => {
+    const failed = { status: "failed", attempt_count: 3, next_attempt_at: null } as const;
+    const disabled = diagnoseHookDelivery({
+      delivery: hookDelivery({ ...failed, last_error: "The endpoint is disabled." }),
+      context: { endpoint: hookEndpoint({ enabled: false, disabled_reason: "manual" }) },
+      now: NOW,
+    });
+    expect(disabled.explanation).toContain("after 3 attempt(s)");
+    expect(disabled.explanation).not.toContain("without being sent");
+    const deleted = diagnoseHookDelivery({
+      delivery: hookDelivery({ ...failed, last_error: "The endpoint was deleted." }),
+      now: NOW,
+    });
+    expect(deleted.explanation).toContain("next attempt after 3 attempt(s)");
+    const gone = diagnoseHookDelivery({
+      delivery: hookDelivery({ ...failed, last_error: "The message no longer exists." }),
+      now: NOW,
+    });
+    expect(gone.explanation).toContain("next attempt");
+    expect(gone.explanation).not.toContain("was attempted");
+  });
+
+  test("a disabled endpoint gets no new deliveries, and recovery can't reach those messages", () => {
+    const diagnosis = diagnoseHookDelivery({
+      delivery: hookDelivery({
+        status: "failed",
+        attempt_count: 0,
+        next_attempt_at: null,
+        last_error: "The endpoint is disabled.",
+      }),
+      context: { endpoint: hookEndpoint({ enabled: false, disabled_reason: "manual" }) },
+      now: NOW,
+    });
+    expect(diagnosis.warnings[0]).toContain("new messages make no delivery");
+    expect(diagnosis.warnings[0]).not.toContain("fail at once");
+    expect(diagnosis.next_steps[1]).toContain("recovery can't reach them");
   });
 
   test("each kind of answer has its own advice, and excerpts are cut", () => {
@@ -580,6 +770,71 @@ describe("diagnoseSchedulingSlots", () => {
         ],
       }),
     ).toContain("duration_longer_than_hours");
+  });
+
+  test("a disabled required host isn't offered, but doesn't stop the others", () => {
+    const required = {
+      host: schedulingHost({ id: "r", name: "Lead", status: "disabled" }),
+      role: "required" as const,
+      schedules: [schedulingSchedule()],
+    };
+    const member = {
+      host: schedulingHost({ id: "m", name: "Grace" }),
+      role: "member" as const,
+      schedules: [schedulingSchedule()],
+    };
+    expect(codes({ hosts: [required, member] })).not.toContain("members_disabled");
+    expect(codes({ hosts: [required, member] })).not.toContain("hosts_disabled");
+    // `candidatesOf`: a pool's required hosts come with a member, or nobody's offered.
+    const lead = { ...required, host: schedulingHost({ id: "r", name: "Lead" }) };
+    const off = { ...member, host: schedulingHost({ id: "m", name: "Grace", status: "disabled" }) };
+    expect(codes({ hosts: [lead, off] })).toContain("members_disabled");
+    expect(codes({ hosts: [lead] })).not.toContain("members_disabled");
+  });
+
+  test("how long a calendar is trusted depends on what the API doesn't say", () => {
+    const calendars = (minutes: number | null) => [
+      {
+        object: "scheduling.calendar_connection" as const,
+        id: "scc_1",
+        host: "shost_1",
+        provider: "caldav" as const,
+        account: "g",
+        status: "active" as const,
+        calendars: [
+          {
+            id: "c",
+            external_id: "e",
+            read_busy: true,
+            write_target: false,
+            verified_at:
+              minutes === null ? null : new Date(NOW.getTime() - minutes * 60_000).toISOString(),
+          },
+        ],
+        created_at: "t",
+      },
+    ];
+    const findings = (minutes: number | null) =>
+      diagnoseSchedulingSlots({
+        eventType: schedulingEventType(),
+        range,
+        slots: [],
+        hosts: [
+          {
+            host: schedulingHost(),
+            schedules: [schedulingSchedule()],
+            calendars: calendars(minutes),
+          },
+        ],
+        now: NOW,
+      }).findings;
+    const of = (minutes: number | null) => findings(minutes).map((finding) => finding.code);
+    expect(of(5)).not.toContain("calendar_maybe_stale");
+    expect(of(60)).toContain("calendar_maybe_stale");
+    expect(findings(60).find((f) => f.code === "calendar_maybe_stale")?.certainty).toBe("possible");
+    expect(of(60)).not.toContain("calendar_not_verified");
+    expect(of(8 * 60)).toContain("calendar_not_verified");
+    expect(of(null)).toContain("calendar_not_verified");
   });
 
   test("a calendar that needs reauthorizing hides a host, unless it keeps last known times", () => {
@@ -730,6 +985,45 @@ describe("diagnoseSchedulingSlots", () => {
     expect(data?.findings.map((finding) => finding.code)).not.toContain("no_hosts");
   });
 
+  test("a pool with more hosts than a page has no certain findings about them", async () => {
+    const eventType = schedulingEventType({
+      kind: "pool",
+      hosts: [],
+      host_filter: { team: "sales" },
+    });
+    const { coss } = fakeCoss({
+      "GET /v1/scheduling/event_types/set_1": eventType,
+      "GET /v1/scheduling/event_types/set_1/slots": list([]),
+      "GET /v1/scheduling/hosts": {
+        object: "list",
+        data: [
+          schedulingHost({ id: "a", attributes: { team: ["sales", "emea"] } }),
+          schedulingHost({ id: "b", attributes: { team: "support" } }),
+        ],
+        has_more: true,
+      },
+      "GET /v1/scheduling/hosts/a/schedules": list([]),
+      "GET /v1/scheduling/hosts/a/calendar_connections": list([]),
+      "GET /v1/scheduling/bookings": list([]),
+    });
+    const { data } = await fetchSchedulingSlotsDiagnosis(coss, "set_1", { now: NOW });
+    expect(data?.hosts.map((host) => host.id)).toEqual(["a"]);
+    expect(data?.findings.find((f) => f.code === "no_schedule")?.certainty).toBe("likely");
+    expect(data?.warnings).toEqual(["Only some of the hosts could be looked at."]);
+
+    const none = fakeCoss({
+      "GET /v1/scheduling/event_types/set_1": eventType,
+      "GET /v1/scheduling/event_types/set_1/slots": list([]),
+      "GET /v1/scheduling/hosts": {
+        object: "list",
+        data: [schedulingHost({ id: "b", attributes: {} })],
+        has_more: true,
+      },
+    });
+    const unknown = await fetchSchedulingSlotsDiagnosis(none.coss, "set_1", { now: NOW });
+    expect(unknown.data?.findings.map((f) => f.code)).not.toContain("filter_matches_nobody");
+  });
+
   test("with no slots it reads the hosts' schedules, calendars and bookings", async () => {
     const { coss, asked } = fakeCoss({
       "GET /v1/scheduling/event_types/set_1": schedulingEventType(),
@@ -743,6 +1037,22 @@ describe("diagnoseSchedulingSlots", () => {
     expect(data?.findings[0]?.code).toBe("no_schedule");
     expect(asked).toContain("GET /v1/scheduling/bookings");
     expect(data?.hosts[0]).toMatchObject({ id: "shost_1", schedules: 0, bookings_in_range: 0 });
+  });
+});
+
+describe("SMS failures", () => {
+  test("HIPAA mode's refusal has its own explanation", () => {
+    const failure = {
+      code: "hipaa_mode_restriction",
+      message: "HIPAA mode only sends SMS to US numbers.",
+    };
+    const diagnosis = diagnoseSms({
+      sms: sms({ status: "failed", delivered_at: null, failure }),
+      events: [smsEvent("sms.failed", { failure })],
+      now: NOW,
+    });
+    expect(diagnosis.explanation).toContain("HIPAA mode");
+    expect(diagnosis.next_steps[0]).toContain("Don't work around it");
   });
 });
 

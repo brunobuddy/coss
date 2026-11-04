@@ -202,6 +202,13 @@ export function smsFailures(ref: ProductReferences): Readonly<Record<string, Adv
         "When the scheduled message was due, the sending number's carrier registration wasn't approved.",
       next_steps: [REGISTRATION_STEP, "Send again once it can send."],
     },
+    hipaa_mode_restriction: {
+      explanation:
+        "The organization is in HIPAA mode, which only sends SMS to some countries, and this number isn't in one of them (the message says which). No API key changes that.",
+      next_steps: [
+        "Don't work around it: tell the user what was refused, and reach this person another way.",
+      ],
+    },
     account_suspended: {
       explanation:
         "Live sending is suspended for the organization because of its sending reputation.",

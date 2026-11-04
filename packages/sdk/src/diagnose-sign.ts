@@ -84,6 +84,8 @@ export interface SignRequestDiagnosisContext {
   /** The audit trail, oldest first (`coss.sign.requests.auditTrail`). */
   events?: SignEvent[];
   reputation?: { status: ReputationStatus; reason: string | null } | null;
+  /** Whether signing emails come from your own sender (`coss.sign.settings.get()`). */
+  settings?: { email_from: string | null } | null;
 }
 
 const DAY_MINUTES = 24 * 60;
@@ -140,6 +142,40 @@ function signerState(request: SignRequest, signer: SignSigner): SignSignerDiagno
     : answer("invitation_pending", "It's their turn, and coss.com hasn't emailed them yet.");
 }
 
+/**
+ * When a signer's turn began: the request's sending, or in sequential order the last signature
+ * before theirs. Their invitation can't go out any earlier.
+ */
+function turnBeganAt(request: SignRequest, signerId: string): string | null {
+  const signer = request.signers.find((candidate) => candidate.id === signerId);
+  const earlier =
+    request.signing_order === "sequential" && signer
+      ? request.signers.flatMap((other) =>
+          other.order < signer.order && other.signed_at ? [other.signed_at] : [],
+        )
+      : [];
+  return [request.sent_at, ...earlier].reduce<string | null>((latest, at) => {
+    if (at === null || Number.isNaN(Date.parse(at))) return latest;
+    return latest === null || Date.parse(at) > Date.parse(latest) ? at : latest;
+  }, null);
+}
+
+/**
+ * Where to look for a signer's email. In a live environment with no `email_from`, it goes through
+ * coss.com's own environment, where this key can't see it.
+ */
+function whereToLook(
+  request: SignRequest,
+  context: SignRequestDiagnosisContext,
+  ref: ProductReferences,
+): string {
+  if (request.sandbox || context.settings?.email_from)
+    return `Check the email (${ref.find_emails}).`;
+  return context.settings === undefined
+    ? `With an \`email_from\` in your Sign settings it's among this environment's emails (${ref.find_emails}); without one it goes from coss.com's sender, where you can't see it.`
+    : "It goes from coss.com's sender because your Sign settings have no `email_from`, so it isn't among this environment's emails.";
+}
+
 function verdictOf(request: SignRequest): SignRequestVerdict {
   switch (request.status) {
     case "draft":
@@ -161,6 +197,7 @@ function adviceFor(
   request: SignRequest,
   verdict: SignRequestVerdict,
   signers: SignSignerDiagnosis[],
+  context: SignRequestDiagnosisContext,
   now: Date,
   ref: ProductReferences,
 ): { explanation: string; next_steps: string[] } {
@@ -190,10 +227,18 @@ function adviceFor(
         );
       }
       if (signers.some((s) => s.state === "invitation_pending")) {
-        const waited = request.sent_at ? minutesSince(request.sent_at, now) : 0;
+        const waited = Math.max(
+          0,
+          ...signers
+            .filter((s) => s.state === "invitation_pending")
+            .map((s) => {
+              const began = turnBeganAt(request, s.id);
+              return began ? minutesSince(began, now) : 0;
+            }),
+        );
         steps.push(
           waited >= SLOW_INVITATION_MINUTES
-            ? `Sent ${waited} minutes ago and an invitation still hasn't gone out: a failed email is retried with backoff, and a suspended organization's signers get nothing. Check the email (${ref.find_emails}) and the account status (${ref.get_account_status}).`
+            ? `It has been their turn for ${waited} minutes and an invitation still hasn't gone out: a failed email is retried with backoff, and a suspended organization's signers get nothing. ${whereToLook(request, context, ref)} Check the account status too (${ref.get_account_status}).`
             : "Check again in a minute: invitations go out in the background.",
         );
       }
@@ -313,7 +358,7 @@ export function diagnoseSignRequest(input: {
   const signers = [...request.signers]
     .sort((a, b) => a.order - b.order)
     .map((signer) => signerState(request, signer));
-  const advice = adviceFor(request, verdict, signers, now, ref);
+  const advice = adviceFor(request, verdict, signers, context, now, ref);
   return {
     sign_request_id: request.id,
     title: request.title,
@@ -346,7 +391,10 @@ export function diagnoseSignRequest(input: {
   };
 }
 
-/** Reads a request, then best effort its audit trail and reputation. Fails only on the request. */
+/**
+ * Reads a request, then best effort its audit trail, the Sign settings and the reputation. Fails
+ * only on the request.
+ */
 export async function fetchSignRequestDiagnosis(
   coss: Coss,
   id: string,
@@ -355,15 +403,17 @@ export async function fetchSignRequestDiagnosis(
   const read = { signal: options.signal };
   const request = await coss.sign.requests.get(id, read);
   if (request.error) return request;
-  const [trail, reputation] = await Promise.all([
+  const [trail, reputation, settings] = await Promise.all([
     softly(coss.sign.requests.auditTrail(id, read)),
     softly(coss.reputation.get(read)),
+    softly(coss.sign.settings.get(read)),
   ]);
   return {
     data: diagnoseSignRequest({
       request: request.data,
       context: {
         ...(trail ? { events: trail.data } : {}),
+        ...(settings ? { settings: { email_from: settings.email_from } } : {}),
         ...(reputation
           ? { reputation: { status: reputation.status, reason: reputation.reason } }
           : {}),
