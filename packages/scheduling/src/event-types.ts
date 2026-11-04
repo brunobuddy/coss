@@ -11,7 +11,13 @@ import type {
   EventTypeObjectOutput,
   UpdateEventTypeRequestOutput,
 } from "./schemas.ts";
-import { refuseLinks, type SetupScreening, screenSetup } from "./screening.ts";
+import {
+  locationText,
+  refuseLinks,
+  refuseLinksInAddresses,
+  type SetupScreening,
+  screenSetup,
+} from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
 const {
@@ -266,6 +272,11 @@ const uidTaken = (uid: string | null | undefined) =>
     param: "uid",
   });
 
+/** Addresses and links land in attendees' emails, where nothing screens them per email. */
+function locationsText(locations: readonly Parameters<typeof locationText>[0][] | undefined) {
+  return (locations ?? []).map(locationText).filter(Boolean).join("\n");
+}
+
 function setupText(values: {
   title?: string | undefined;
   questions?: readonly { label: string; options: readonly string[] }[] | undefined;
@@ -342,7 +353,9 @@ export async function createEventType(
   opts: { screen?: SetupScreening | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
+  refuseLinksInAddresses(params.locations);
   await screenSetup(env, setupText(params), opts.screen, "title");
+  await screenSetup(env, locationsText(params.locations), opts.screen, "locations");
   await checkHostCalendarDetails(env.environmentId, params.host_calendar_details);
   checkShape(
     {
@@ -490,6 +503,7 @@ export async function updateEventType(
   opts: { screen?: SetupScreening | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
+  refuseLinksInAddresses(params.locations);
   await checkHostCalendarDetails(scope.environmentId, params.host_calendar_details);
   if (scope.mode && (params.title !== undefined || params.questions !== undefined)) {
     await screenSetup(
@@ -497,6 +511,14 @@ export async function updateEventType(
       setupText(params),
       opts.screen,
       "title",
+    );
+  }
+  if (scope.mode) {
+    await screenSetup(
+      { organizationId: scope.organizationId, mode: scope.mode },
+      locationsText(params.locations),
+      opts.screen,
+      "locations",
     );
   }
   try {

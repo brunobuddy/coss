@@ -18,9 +18,15 @@ import {
   type SchedulingEnvironment,
   SchedulingError,
   updateBookingLocation,
+  updateEventType,
   updateHost,
 } from "../src/index.ts";
-import { CreateHostRequest, UpdateHostRequest } from "../src/schemas.ts";
+import {
+  CreateHostRequest,
+  Location,
+  UpdateBookingLocationRequest,
+  UpdateHostRequest,
+} from "../src/schemas.ts";
 import { testSchedulingDeps } from "../src/testing.ts";
 
 const at = (time: string, date = "2031-01-06") => Date.parse(`${date}T${time}:00Z`);
@@ -488,6 +494,84 @@ describe("moving a booking to another host", () => {
       actor,
     );
     expect(moved.location).toEqual(OFFICE_A);
+  });
+});
+
+describe("an event type's own locations", () => {
+  const room = { type: "link" as const, url: "https://video.example/room" };
+  const create = (
+    env: SchedulingEnvironment,
+    locations: readonly unknown[],
+    screen?: (input: { text: string }) => Promise<boolean>,
+  ) =>
+    createEventType(
+      env,
+      { title: "Visit", kind: "one_on_one", duration_minutes: 30, locations, hosts: [] } as never,
+      screen ? { screen } : {},
+    );
+
+  test("an address can't hold a link, on create or update", async () => {
+    const env = await tenantEnv();
+    const links = [{ type: "in_person", address: "Go to https://evil.example/login" }];
+    expect(await code(create(env, links))).toBe("content_refused");
+    const eventType = await create(env, [OFFICE_A]);
+    expect(await code(updateEventType(env, eventType.id, { locations: links } as never))).toBe(
+      "content_refused",
+    );
+  });
+
+  test("live addresses and links are screened, naming the field that was refused", async () => {
+    const env = await tenantEnv("live");
+    const seen: string[] = [];
+    const screen = async ({ text }: { text: string }) => {
+      seen.push(text);
+      return !text.includes(OFFICE_B.address);
+    };
+    const eventType = await create(env, [OFFICE_A, room], screen);
+    expect(seen).toEqual(["Visit", `${OFFICE_A.address}\n${room.url}`]);
+
+    seen.length = 0;
+    const refused = await updateEventType(env, eventType.id, { locations: [OFFICE_B] } as never, {
+      screen,
+    }).catch((error: SchedulingError) => error);
+    expect(refused).toMatchObject({ code: "content_refused", param: "locations" });
+    expect(seen).toEqual([OFFICE_B.address]);
+  });
+
+  test("nothing to read means nothing goes to the classifier", async () => {
+    const env = await tenantEnv("live");
+    const seen: string[] = [];
+    const screen = async ({ text }: { text: string }) => {
+      seen.push(text);
+      return true;
+    };
+    const eventType = await create(env, [BLANK, { type: "phone", number: "+12125550100" }], screen);
+    expect(seen).toEqual(["Visit"]);
+    seen.length = 0;
+    await updateEventType(env, eventType.id, { duration_minutes: 45 } as never, { screen });
+    expect(seen).toEqual([]);
+  });
+
+  test("sandbox addresses aren't screened", async () => {
+    const env = await tenantEnv();
+    const eventType = await create(env, [OFFICE_A], async () => false);
+    expect(eventType.locations).toEqual([OFFICE_A]);
+  });
+
+  test("links must be https, on an event type and on a booking", () => {
+    const parse = (url: string) => Location.safeParse({ type: "link", url }).success;
+    expect(parse("https://video.example/room")).toBe(true);
+    expect(parse("http://video.example/room")).toBe(false);
+    expect(parse("javascript:alert(1)")).toBe(false);
+    expect(parse("data:text/html,hi")).toBe(false);
+    expect(Location.safeParse({ type: "link", url: null }).success).toBe(true);
+    expect(Location.safeParse({ type: "zoom", url: "javascript:alert(1)" }).success).toBe(false);
+    expect(UpdateBookingLocationRequest.safeParse({ location: room }).success).toBe(true);
+    expect(
+      UpdateBookingLocationRequest.safeParse({
+        location: { type: "link", url: "javascript:alert(1)" },
+      }).success,
+    ).toBe(false);
   });
 });
 

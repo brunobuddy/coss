@@ -18,6 +18,18 @@ export function refuseLinks(value: string | null | undefined, param: string): vo
   }
 }
 
+type Place = { type: string; address?: string | null; url?: string | null };
+
+/** What a location adds to attendees' emails. A phone number has no room to say anything. */
+export function locationText(location: Place): string | null {
+  return location.address ?? location.url ?? null;
+}
+
+/** An address can't hold a link. A meeting link is one, so only screening judges it. */
+export function refuseLinksInAddresses(locations: readonly Place[] | undefined): void {
+  for (const location of locations ?? []) refuseLinks(location.address, "locations");
+}
+
 export async function screenSetup(
   env: { organizationId: string; mode: "live" | "sandbox" },
   text: string,
