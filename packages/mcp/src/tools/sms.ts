@@ -1,7 +1,9 @@
-import type { CossResult, ReceivedSms, Sms, SmsStatus } from "coss";
+import type { ReceivedSms, Sms, SmsStatus } from "coss";
+import { diagnoseSms, smsDiagnosisContext } from "coss/diagnose";
 import { z } from "zod";
-import { diagnoseSms, type SmsDiagnosisContext } from "../diagnose-sms.ts";
 import { failWith, ok, respond, run, truncate, unwrap } from "../result.ts";
+import { TOOL_REFERENCES } from "./diagnose-references.ts";
+import { SMS_DIAGNOSIS_OUTPUT } from "./output-schemas.ts";
 import {
   compact,
   cursorSchema,
@@ -89,37 +91,6 @@ function modeNote(ctx: ToolContext): string {
 }
 
 /** Context for a diagnosis, best effort: a call that fails (or a key without access) is skipped. */
-async function diagnosisContext(ctx: ToolContext, sms: Sms): Promise<SmsDiagnosisContext> {
-  const soft = async <T>(call: Promise<CossResult<T>>): Promise<T | undefined> => {
-    const result = await call;
-    return result.error ? undefined : result.data;
-  };
-  const [check, numbers, reputation, billing] = await Promise.all([
-    soft(ctx.coss.sms.suppressions.check({ phone_number: sms.to })),
-    sms.sandbox ? undefined : soft(ctx.coss.sms.numbers.list()),
-    soft(ctx.coss.reputation.get()),
-    soft(ctx.coss.billing.get()),
-  ]);
-  const number = numbers
-    ? (numbers.data.find((n) => n.phone_number === sms.from) ?? null)
-    : undefined;
-  return {
-    ...(check ? { suppression: check.suppression } : {}),
-    ...(number !== undefined
-      ? {
-          number: number && {
-            phone_number: number.phone_number,
-            status: number.status,
-            registration_status: number.registration_status,
-            can_send: number.can_send,
-            receives_here: number.receives_here,
-          },
-        }
-      : {}),
-    ...(reputation ? { reputation: { status: reputation.status, reason: reputation.reason } } : {}),
-    ...(billing ? { billing: { status: billing.status, holds: billing.holds } } : {}),
-  };
-}
 
 export function registerSmsTools(ctx: ToolContext): void {
   const { server, coss } = ctx;
@@ -271,6 +242,7 @@ export function registerSmsTools(ctx: ToolContext): void {
           .describe("The recipient's number (E.164), when the id isn't known."),
         since: timeSchema("Only messages created at or after this"),
       }),
+      outputSchema: SMS_DIAGNOSIS_OUTPUT,
       annotations: READ_ONLY,
     },
     (args) =>
@@ -310,13 +282,14 @@ export function registerSmsTools(ctx: ToolContext): void {
         }
         const [events, context] = await Promise.all([
           coss.sms.listEvents(sms.id),
-          diagnosisContext(ctx, sms),
+          smsDiagnosisContext(coss, sms),
         ]);
         const diagnosis = diagnoseSms({
           sms,
           events: unwrap(events).data,
           context,
           now: ctx.now(),
+          references: TOOL_REFERENCES,
         });
         return ok({
           ...diagnosis,

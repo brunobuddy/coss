@@ -2,6 +2,7 @@ import type { Email, EmailSummary } from "coss";
 import { type DiagnosisReferences, diagnoseEmail, diagnosisContext } from "coss/diagnose";
 import { z } from "zod";
 import { DEFAULT_TEXT_LIMIT, failWith, ok, run, truncate, unwrap } from "../result.ts";
+import { EMAIL_DIAGNOSIS_OUTPUT } from "./output-schemas.ts";
 import {
   compact,
   cursorSchema,
@@ -48,7 +49,7 @@ export function emailListItem(email: EmailSummary | Email): object {
 }
 
 /** Next steps point at this server's tools. */
-const TOOL_REFERENCES: DiagnosisReferences = {
+export const EMAIL_TOOL_REFERENCES: DiagnosisReferences = {
   check_suppression: "check_suppression",
   remove_suppression: "remove_suppression",
   list_domains: "list_domains",
@@ -196,6 +197,7 @@ export function registerEmailTools(ctx: ToolContext): void {
         query: z.string().optional().describe("Text in the subject, to narrow down `to`."),
         since: timeSchema("Only emails created at or after this"),
       }),
+      outputSchema: EMAIL_DIAGNOSIS_OUTPUT,
       annotations: READ_ONLY,
     },
     (args) =>
@@ -242,7 +244,7 @@ export function registerEmailTools(ctx: ToolContext): void {
           events: unwrap(events).data,
           context,
           now: ctx.now(),
-          references: TOOL_REFERENCES,
+          references: EMAIL_TOOL_REFERENCES,
         });
         return ok({
           ...diagnosis,

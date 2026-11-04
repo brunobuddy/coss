@@ -1,6 +1,10 @@
 import type { Verification } from "coss";
+import { fetchVerificationDiagnosis } from "coss/diagnose";
 import { z } from "zod";
-import { respond } from "../result.ts";
+import { fail, failWith, ok, respond, run, unwrap } from "../result.ts";
+import { TOOL_REFERENCES } from "./diagnose-references.ts";
+import { EMAIL_TOOL_REFERENCES } from "./emails.ts";
+import { VERIFICATION_DIAGNOSIS_OUTPUT } from "./output-schemas.ts";
 import {
   compact,
   cursorSchema,
@@ -110,6 +114,55 @@ export function registerVerifyTools(ctx: ToolContext): void {
       annotations: READ_ONLY,
     },
     ({ id: verificationId }) => respond(coss.verify.get(verificationId)),
+  );
+
+  server.registerTool(
+    "diagnose_verification",
+    {
+      title: "Diagnose a verification",
+      description:
+        'Answers "why didn\'t the code arrive?" and "why did the check fail?". Give a ' +
+        "verification id, or the destination to diagnose its newest one. Returns a verdict, what " +
+        "it means (blocked with the fraud guard's reasons, expired, too many attempts, the route " +
+        "each code took), the latest code's SMS or email delivery when it's in this environment, " +
+        "sender problems and next steps. Never shows a code.",
+      inputSchema: z.object({
+        id: z.string().optional().describe("The verification's id (vrf_…)."),
+        to: z.string().optional().describe("The phone number or address, when the id isn't known."),
+      }),
+      outputSchema: VERIFICATION_DIAGNOSIS_OUTPUT,
+      annotations: READ_ONLY,
+    },
+    ({ id: verificationId, to }) =>
+      run(async () => {
+        let target = verificationId;
+        let olderMatches: object[] = [];
+        if (!target) {
+          if (!to) return failWith("Pass `id`, or `to` to find the newest verification to it.");
+          const [newest, ...rest] = unwrap(await coss.verify.list({ to, limit: 5 })).data;
+          if (!newest) {
+            return failWith("No verification to that destination in this API key's environment.", {
+              hint:
+                "Sandbox and live verifications are separate, and they're kept 30 days. A start " +
+                "the API refused (a country that isn't allowed, a quota) creates nothing: search_logs " +
+                'with route "/v1/verifications" and status ["4xx"] shows it.',
+            });
+          }
+          target = newest.id;
+          olderMatches = rest.map(({ id: other, status, created_at }) => ({
+            id: other,
+            status,
+            created_at,
+          }));
+        }
+        const { data, error } = await fetchVerificationDiagnosis(coss, target, {
+          now: ctx.now(),
+          references: TOOL_REFERENCES,
+          emailReferences: EMAIL_TOOL_REFERENCES,
+        });
+        if (error) return fail(error);
+        return ok({ ...data, ...(olderMatches.length > 0 ? { older_matches: olderMatches } : {}) });
+      }),
   );
 
   server.registerTool(
