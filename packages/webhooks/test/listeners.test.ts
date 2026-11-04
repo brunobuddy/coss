@@ -107,11 +107,16 @@ describe("webhook listeners", () => {
       deliveries: must(first).deliveries,
       acknowledged: must(first).acknowledged,
     });
-    expect(first?.deliveries.map((d) => [d.event_id, d.event_type, d.attempt])).toEqual([
-      [delivered.id, "email.delivered", 1],
-      [bounced.id, "email.bounced", 1],
-    ]);
-    expect(JSON.parse(first?.deliveries[0]?.body ?? "{}")).toEqual({
+    // Two events in one millisecond can come back in either order.
+    const handed = must(first).deliveries;
+    expect(handed.map((d) => [d.event_id, d.event_type, d.attempt])).toHaveLength(2);
+    expect(handed.map((d) => [d.event_id, d.event_type, d.attempt])).toEqual(
+      expect.arrayContaining([
+        [delivered.id, "email.delivered", 1],
+        [bounced.id, "email.bounced", 1],
+      ]),
+    );
+    expect(JSON.parse(handed.find((d) => d.event_id === delivered.id)?.body ?? "{}")).toEqual({
       id: delivered.id,
       object: "event",
       type: "email.delivered",
@@ -208,7 +213,9 @@ describe("webhook listeners", () => {
     await enqueue(tenant, "email.bounced");
     const started = new Date();
     const handed = (await poll(tenant, listener))?.deliveries ?? [];
-    const [ok, broken] = handed;
+    // Two events in one millisecond can come back in either order.
+    const ok = handed.find((delivery) => delivery.event_type === "email.delivered");
+    const broken = handed.find((delivery) => delivery.event_type === "email.bounced");
     const acked = await poll(tenant, listener, {
       acks: [
         {
