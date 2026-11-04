@@ -36,6 +36,7 @@ const PLURAL_FEATURES: ReadonlySet<FeatureKey> = new Set([
   "logDrains",
   "dedicatedIps",
   "subaccounts",
+  "calendarDelegation",
   "schedulingHolds",
   "schedulingWhiteLabel",
 ]);
