@@ -6,7 +6,7 @@ import { descriptionParts } from "@coss/scheduling/description-links";
  */
 export function EventTypeDescription(props: { text: string }) {
   return (
-    <p className="whitespace-pre-line text-pretty text-muted-foreground text-sm">
+    <p className="wrap-anywhere whitespace-pre-line text-pretty text-muted-foreground text-sm">
       {descriptionParts(props.text).map((part, index) =>
         part.kind === "link" ? (
           <a

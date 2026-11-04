@@ -15,7 +15,9 @@ import type {
 import {
   isWithinDomains,
   linkedHosts,
+  locationText,
   refuseLinks,
+  refuseLinksInAddresses,
   type SetupScreening,
   screenSetup,
 } from "./screening.ts";
@@ -293,7 +295,16 @@ async function replaceHosts(
       })
       .onConflictDoUpdate({
         target: [schedulingEventTypeHost.eventTypeId, schedulingEventTypeHost.hostId],
-        set: values,
+        set: {
+          ...values,
+          // Not there when this read: a booker just made it for a host its filter found, and it
+          // already holds their counter.
+          ...(existing
+            ? {}
+            : {
+                fairUnits: sql`scheduling_event_type_host.fair_units * ${input.weight}::double precision / scheduling_event_type_host.weight`,
+              }),
+        },
       });
   }
 }
@@ -346,6 +357,11 @@ async function checkDescription(
   }
 }
 
+/** Addresses and links land in attendees' emails, where nothing screens them per email. */
+function locationsText(locations: readonly Parameters<typeof locationText>[0][] | undefined) {
+  return (locations ?? []).map(locationText).filter(Boolean).join("\n");
+}
+
 function setupText(values: {
   title?: string | undefined;
   description?: string | null | undefined;
@@ -353,7 +369,7 @@ function setupText(values: {
 }): string {
   return [
     values.title ?? "",
-    values.description ?? "",
+    ...(values.description ? [values.description] : []),
     ...(values.questions ?? []).flatMap((question) => [question.label, ...question.options]),
   ].join("\n");
 }
@@ -425,7 +441,9 @@ export async function createEventType(
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
   await checkDescription(env.organizationId, params.description);
+  refuseLinksInAddresses(params.locations);
   await screenSetup(env, setupText(params), opts.screen, "title");
+  await screenSetup(env, locationsText(params.locations), opts.screen, "locations");
   await checkHostCalendarDetails(env.environmentId, params.host_calendar_details);
   checkShape(
     {
@@ -576,6 +594,7 @@ export async function updateEventType(
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
   await checkDescription(scope.organizationId, params.description);
+  refuseLinksInAddresses(params.locations);
   await checkHostCalendarDetails(scope.environmentId, params.host_calendar_details);
   if (
     scope.mode &&
@@ -588,6 +607,14 @@ export async function updateEventType(
       setupText(params),
       opts.screen,
       "title",
+    );
+  }
+  if (scope.mode) {
+    await screenSetup(
+      { organizationId: scope.organizationId, mode: scope.mode },
+      locationsText(params.locations),
+      opts.screen,
+      "locations",
     );
   }
   try {

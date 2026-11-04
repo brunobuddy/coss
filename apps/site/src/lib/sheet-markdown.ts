@@ -6,6 +6,7 @@ export function renderSheetComponents(markdown: string): string {
   const attribute = (tag: string, name: string) =>
     new RegExp(`${name}="([^"]*)"`).exec(tag)?.[1] ?? "";
   return markdown
+    .replace(/<HeroSample>[\s\S]*?<\/HeroSample>\s*/g, "")
     .replace(/<Section\b[^>]*>/g, (tag) => {
       const lede = attribute(tag, "lede");
       return `## ${attribute(tag, "title")}${lede ? `\n\n${lede}` : ""}`;

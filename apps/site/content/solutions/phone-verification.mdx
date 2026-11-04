@@ -27,6 +27,31 @@ faq:
     answer: Use a sandbox key. The code is always zeros, messages go to the SMS simulator and appear in the dashboard, and nothing is billed. The fraud guard still runs, so a premium-rate test number is blocked as in live environments.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const form: { phone: string; code: string };
+declare const request: { ip: string };
+// ---cut---
+// [!code word:coss.verify.start]
+// 1. Send a code. The fraud guard runs first.
+await coss.verify.start({
+  to: form.phone,
+  ip: request.ip, // the end user's address, not your server's
+  user_id: "user_42",
+});
+
+// 2. Check the code they typed, on your backend.
+const { data: check } = await coss.verify.check({
+  to: form.phone,
+  code: form.code,
+});
+```
+
+</HeroSample>
+
 <Section title="The problem" lede="Texting a code is the easy part. The hard parts are getting a sender past carriers, storing nothing worth stealing, and not paying for fraud.">
 
 Phone verification proves someone has a number, at sign-up or before a sensitive action. It also attracts SMS pumping: scripts request codes for numbers whose owners earn money from every text, and you pay for messages nobody reads. Building it yourself means generating and hashing codes, counting attempts, handling resends and expiry, and working out who's abusing your form.
