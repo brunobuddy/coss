@@ -9,6 +9,7 @@ import { markDelegationFailing } from "../src/calendar/delegation-failures.ts";
 import {
   type CalendarDeps,
   type CalendarWriteDeps,
+  cancelBooking,
   completeCalendarAuthorization,
   createBooking,
   createCalendarDelegation,
@@ -558,6 +559,32 @@ describe("a host's email and mailbox", () => {
     await updateHost(env, ana.id, { calendar_account: null });
     await run(env, deps);
     expect(await listConnections(env, ana.id)).toMatchObject([{ account: `ana@${DOMAIN}` }]);
+  });
+
+  test("a move waits for a cancellation that hasn't reached the old calendar", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    const eventType = await eventTypeFor(env, [ana.id]);
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    const plain = testSchedulingDeps({ now: () => NOW });
+    const { booking } = await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("09:00"), attendee },
+      plain,
+      actor,
+    );
+    await runDueCalendarWrites(deps, { scope: scope(env) });
+    await cancelBooking(env, booking.id, plain, actor);
+    const moved = { calendar_account: `ana.new@${DOMAIN}` };
+    expect(await code(updateHost(env, ana.id, moved))).toBe("host_has_live_bookings");
+    expect([...api.events.values()][0]?.deleted).toBeFalsy();
+    await runDueCalendarWrites(deps, { scope: scope(env) });
+    expect([...api.events.values()][0]?.deleted).toBe(true);
+    await updateHost(env, ana.id, moved);
+    expect(await listConnections(env, ana.id)).toEqual([]);
   });
 
   test("setting calendar_account to the mailbox already connected changes nothing", async () => {
@@ -1266,6 +1293,26 @@ describe("deleting", () => {
     expect(await code(getCalendarDelegation(env, delegation.id))).toBe("not_found");
   });
 
+  test("a verify doesn't vouch for credentials replaced while it was checking", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const delegation = await createCalendarDelegation(
+      env,
+      { provider: "google", domain: DOMAIN, service_account_key: account.key },
+      deps,
+    );
+    const held = api.hold("POST", /token$/, "after");
+    const slow = code(
+      verifyCalendarDelegation(env, delegation.id, { account: `boss@${DOMAIN}` }, deps),
+    );
+    await held.arrived;
+    await updateCalendarDelegation(env, delegation.id, { service_account_key: account.key }, deps);
+    held.release();
+    expect(await slow).toBe("calendar_unavailable");
+    expect((await getCalendarDelegation(env, delegation.id)).status).toBe("pending");
+  });
+
   test("a verify that was already running doesn't undo a deletion", async () => {
     const env = await environment();
     const api = new FakeGoogleCalendarApi();
@@ -1540,6 +1587,38 @@ describe("Microsoft 365", () => {
       deps,
     );
     expect(await render()).toMatchObject({ skip: expect.any(String) });
+  });
+
+  test("everyone else being gone doesn't clear a refused mailbox", async () => {
+    const env = await environment();
+    const api = new FakeGraphApi();
+    const deps = graphDeps(api);
+    const ana = await hostOn(env, "ana");
+    const delegation = await createCalendarDelegation(
+      env,
+      {
+        provider: "microsoft",
+        domain: DOMAIN,
+        tenant_id: api.tenantId,
+        client_id: randomUUID(),
+        client_secret: api.clientSecret,
+      },
+      deps,
+    );
+    await verifyCalendarDelegation(env, delegation.id, { account: `left@${DOMAIN}` }, deps);
+    await run(env, deps);
+    api.goneMailboxes.add(`left@${DOMAIN}`);
+    api.deniedMailboxes.add(`ana@${DOMAIN}`);
+    await db
+      .update(schema.schedulingCalendar)
+      .set({ nextSyncAt: new Date(0) })
+      .where(eq(schema.schedulingCalendar.hostId, ana.id));
+    await runDueCalendarSyncs(deps, { scope: scope(env) });
+    expect((await getCalendarDelegation(env, delegation.id)).status).toBe("failing");
+    const emails = (await listNotifications(env.organizationId)).filter(
+      (row) => row.kind === "scheduling.delegation_failing",
+    );
+    expect(emails).toHaveLength(1);
   });
 
   test("an expired secret is the delegation's problem, not each host's", async () => {

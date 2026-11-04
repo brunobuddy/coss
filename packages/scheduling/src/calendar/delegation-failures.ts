@@ -194,11 +194,11 @@ export async function checkMailbox(
 }
 
 /**
- * Asks about the mailbox known to work, then a couple of others, leaving out the one in question,
- * unless it's the only one there is. A mailbox that's simply gone says nothing about the credentials,
- * so that alone is never `refused`. With one mailbox a revocation can't be told from a problem of its
- * own, so that counts as the delegation's: the owners hear, and it recovers by itself. Nothing checked
- * says nothing, so that's `inconclusive`.
+ * Asks about the mailbox known to work, then a couple of others, and only then the one in question.
+ * A mailbox that's simply gone says nothing about the credentials, so that alone is never `refused`.
+ * With nobody else to go on a revocation can't be told from a problem of its own, so that counts as
+ * the delegation's: the owners hear, and it recovers by itself. Nothing checked says nothing, so
+ * that's `inconclusive`.
  */
 export async function probeDelegation(
   delegation: DelegationRow,
@@ -227,7 +227,8 @@ export async function probeDelegation(
       ...others.map((row) => row.account),
     ]),
   ].slice(0, PROBE_MAILBOXES);
-  const mailboxes = candidates.length > 0 || !opts.except ? candidates : [opts.except];
+  // The one in question last: if everyone else is simply gone, that's all there is to go on.
+  const mailboxes = opts.except ? [...candidates, opts.except] : candidates;
   if (mailboxes.length === 0) return { result: "inconclusive" };
   let refused: CalendarError | undefined;
   let inconclusive = false;

@@ -79,7 +79,8 @@ project and key restricted to the people who administer your Workspace.
 
 As granted, that permission covers every mailbox in your tenant. To limit it to some of them, use
 [RBAC for Applications](https://learn.microsoft.com/en-us/exchange/permissions-exo/application-rbac) in Exchange
-Online.
+Online, and **remove the `Calendars.ReadWrite` grant from Entra**: the two add together, so scoping one while the
+other stands limits nothing. A mailbox left out of the scope is refused, and shows up as a host with a problem.
 
 Entra's client secrets expire. With `secret_expires_at`, your organization's owners and admins are warned 14 days
 before. Paste a new one with `coss.scheduling.calendarDelegations.update`: it's tried first, so a bad paste can't

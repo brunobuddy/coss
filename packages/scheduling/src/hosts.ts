@@ -21,8 +21,10 @@ import type { SchedulingEnvironment } from "./types.ts";
 const {
   schedulingBooking,
   schedulingBookingHost,
+  schedulingCalendar,
   schedulingCalendarConnection,
   schedulingCalendarDelegation,
+  schedulingCalendarEvent,
   schedulingClaim,
   schedulingHost,
 } = schema;
@@ -353,6 +355,28 @@ async function releaseOldMailbox(
       "host_has_live_bookings",
       "This host has upcoming bookings or holds on their current calendar. Cancel or finish them before moving it.",
     );
+  }
+  // A cancellation not written yet would stay on the old calendar for good, since this takes its
+  // ledger row with it. Nothing's ever written to a calendar that can't be reached, so no waiting then.
+  if (connection.status === "active") {
+    const [owed] = await tx
+      .select({ id: schedulingCalendarEvent.id })
+      .from(schedulingCalendarEvent)
+      .innerJoin(schedulingCalendar, eq(schedulingCalendar.id, schedulingCalendarEvent.calendarId))
+      .where(
+        and(
+          eq(schedulingCalendar.connectionId, connection.id),
+          eq(schedulingCalendarEvent.organizationId, connection.organizationId),
+          sql`${schedulingCalendarEvent.appliedVersion} < ${schedulingCalendarEvent.desiredVersion}`,
+        ),
+      )
+      .limit(1);
+    if (owed) {
+      throw new SchedulingError(
+        "host_has_live_bookings",
+        "Changes to this host's calendar are still being written. Try again in a moment.",
+      );
+    }
   }
   await recordCalendarEvent(tx, connection, "scheduling.calendar.disconnected", new Date());
   await tx

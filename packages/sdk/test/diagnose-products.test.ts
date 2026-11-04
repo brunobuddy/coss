@@ -796,6 +796,7 @@ describe("diagnoseSchedulingSlots", () => {
     const calendars = (minutes: number | null) => [
       {
         object: "scheduling.calendar_connection" as const,
+        delegation: null,
         id: "scc_1",
         host: "shost_1",
         provider: "caldav" as const,
@@ -841,6 +842,7 @@ describe("diagnoseSchedulingSlots", () => {
     const calendars = [
       {
         object: "scheduling.calendar_connection" as const,
+        delegation: null,
         id: "scc_1",
         host: "shost_1",
         provider: "google" as const,
@@ -878,6 +880,7 @@ describe("diagnoseSchedulingSlots", () => {
   test("a Zoom connection never hides anyone, and a simulated one is never stale", () => {
     const connection = (provider: "zoom" | "simulated") => ({
       object: "scheduling.calendar_connection" as const,
+      delegation: null,
       id: "scc_1",
       host: "shost_1",
       provider,
@@ -916,6 +919,7 @@ describe("diagnoseSchedulingSlots", () => {
           calendars: [
             {
               object: "scheduling.calendar_connection",
+              delegation: null,
               id: "scc_1",
               host: "shost_1",
               provider: "google",

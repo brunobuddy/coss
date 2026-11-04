@@ -292,7 +292,8 @@ export async function verifyCalendarDelegation(
     }
     throw new SchedulingError("calendar_unavailable", "The provider didn't answer. Try again.");
   }
-  // On the row as it is now: that check took a while, and it may have been deleted during it.
+  // On the row as it is now: that check took a while, and it may have been deleted during it, or
+  // been given credentials this didn't check, which it mustn't vouch for.
   const [verified] = await db
     .update(schedulingCalendarDelegation)
     .set({
@@ -305,10 +306,20 @@ export async function verifyCalendarDelegation(
       and(
         eq(schedulingCalendarDelegation.id, delegation.id),
         ne(schedulingCalendarDelegation.status, "deleting"),
+        eq(schedulingCalendarDelegation.encryptedCredentials, delegation.encryptedCredentials),
       ),
     )
     .returning({ status: schedulingCalendarDelegation.status });
-  if (!verified) throw new SchedulingError("not_found", `No calendar delegation "${id}" here.`);
+  if (!verified) {
+    const now = await findDelegation(db, scope, id);
+    if (now.status === "deleting") {
+      throw new SchedulingError("not_found", `No calendar delegation "${id}" here.`);
+    }
+    throw new SchedulingError(
+      "calendar_unavailable",
+      "These credentials changed while they were being checked. Try again.",
+    );
+  }
   if (verified.status === "failing") await restoreDelegation(delegation, deps);
   await retryLostMailboxes(delegation);
   return getCalendarDelegation(scope, id);
