@@ -19,6 +19,9 @@ await coss.scheduling.settings.update({
 });
 ```
 
+Give a reminder a `key` if you'll change its timing later. Without one, its key comes from its timing, so a
+new timing is a new reminder, and what was waiting for the old one is dropped. The dashboard keeps a key for you.
+
 There's nothing else to set up. Upcoming bookings pick up a new list within a minute, for moments still ahead (saving a list never sends anything right away), and an edit or a
 removal applies to anything still waiting.
 

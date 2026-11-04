@@ -1974,6 +1974,26 @@ describe("a waiting reminder whose timing is edited", () => {
     expect((await outcome(s, booking.id))?.outcome).toBe("sent");
   });
 
+  test("saved as the dashboard saves it, with its key, it keeps going", async () => {
+    const s = await setUp();
+    const generated = (after_minutes: number) =>
+      rule({
+        key: "confirmed-after-60",
+        anchor: "confirmed",
+        after_minutes,
+        send: ["email_attendee"],
+      });
+    await updateSettings(s.env, { reminders: [generated(60)] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [generated(120)] });
+    await runAt(s, NOW.getTime() + 60 * MINUTE);
+    await runAt(s, NOW.getTime() + 120 * MINUTE);
+    const found = (await rows(s, booking.id)).filter(
+      (row) => row.reminder_key === "confirmed-after-60",
+    );
+    expect(found.map((row) => row.outcome)).toEqual(["sent"]);
+  });
+
   test("goes to whoever it's for by then", async () => {
     const s = await setUp();
     const to = (send: string[], email_to: string[] = []) =>

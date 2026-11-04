@@ -81,10 +81,11 @@ describe("what the reminder dialog saves", () => {
     expect(ruleOf({ ...draftOf(withThem), metadata: "" }).only_if).toBeNull();
   });
 
-  test("a key made from the timing follows the timing, and a chosen one stays", () => {
+  test("a new reminder's key comes from its timing, and editing keeps it", () => {
     const made = ruleOf({ ...NEW_DRAFT, amount: "2" });
     expect(made.key).toBe("start-120");
-    expect(ruleOf({ ...draftOf(made), amount: "3" }).key).toBe("start-180");
+    // What's waiting for it is found by its key: a new one would be a different reminder.
+    expect(ruleOf({ ...draftOf(made), amount: "3" }).key).toBe("start-120");
     const named = ruleOf({ ...NEW_DRAFT, key: "nudge" });
     expect(ruleOf({ ...draftOf(named), amount: "3" }).key).toBe("nudge");
   });

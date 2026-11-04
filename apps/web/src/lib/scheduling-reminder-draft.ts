@@ -76,8 +76,9 @@ export function draftOf(rule: ReminderRule): Draft {
     .join("\n");
   const { amount, unit } = bestUnit(rule.before_minutes ?? rule.after_minutes ?? 0);
   return {
-    // A key made from the timing is made again from the new timing, or it'd say the wrong thing.
-    key: rule.key === reminderKeyOf({ ...rule, key: undefined }) ? "" : rule.key,
+    // Kept whatever the new timing, even one made from the old: it's what the rows waiting for this
+    // reminder are found by, so a new one would be a different reminder, and they'd be dropped.
+    key: rule.key,
     anchor: rule.anchor,
     direction: before ? "before" : "after",
     amount: String(amount),
