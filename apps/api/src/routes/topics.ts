@@ -96,6 +96,7 @@ export const getTopicRoute = createRoute({
   operationId: "getTopic",
   tags: ["Topics"],
   summary: "Retrieve a topic",
+  description: "One topic of the API key's environment.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ contact: ["read"] }), rateLimit("api.read")],
   request: { params: TopicParams },

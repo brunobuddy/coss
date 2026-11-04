@@ -141,6 +141,7 @@ export const getBroadcastRoute = createRoute({
   operationId: "getBroadcast",
   tags: ["Broadcasts"],
   summary: "Retrieve a broadcast",
+  description: "One broadcast of the API key's environment, with its status and stats.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ broadcast: ["read"] }), rateLimit("api.read")],
   request: { params: BroadcastParams },

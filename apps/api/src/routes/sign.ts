@@ -154,6 +154,8 @@ export const getSignDocumentRoute = createRoute({
   operationId: "getSignDocument",
   tags: [TAG_DOCUMENTS],
   summary: "Retrieve a document",
+  description:
+    "An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ sign: ["read"] }), rateLimit("api.read")],
   request: { params: DocumentIdParams },
@@ -262,6 +264,8 @@ export const getSignRequestRoute = createRoute({
   operationId: "getSignRequest",
   tags: [TAG_REQUESTS],
   summary: "Retrieve a signature request",
+  description:
+    "A signature request with its documents, signers and fields, and `signed_document` once it's sealed.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ sign: ["read"] }), rateLimit("api.read")],
   request: { params: RequestIdParams },

@@ -188,6 +188,7 @@ export const getInboxRoute = createRoute({
   operationId: "getInbox",
   tags: [TAG],
   summary: "Retrieve an inbox",
+  description: "One inbox of the API key's environment.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ inbox: ["read"] }), rateLimit("api.read")],
   request: { params: InboxParams },

@@ -111,6 +111,8 @@ export const getSignTemplateRoute = createRoute({
   operationId: "getSignTemplate",
   tags: [TAG],
   summary: "Retrieve a template",
+  description:
+    "A template with its documents, roles and fields. `ready` says whether requests can be made from it.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ sign: ["read"] }), rateLimit("api.read")],
   request: { params: TemplateIdParams },

@@ -96,6 +96,7 @@ export const getSegmentRoute = createRoute({
   operationId: "getSegment",
   tags: ["Segments"],
   summary: "Retrieve a segment",
+  description: "One segment of the API key's environment, with its filter.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ contact: ["read"] }), rateLimit("api.read")],
   request: { params: SegmentParams },
@@ -108,6 +109,7 @@ export const updateSegmentRoute = createRoute({
   operationId: "updateSegment",
   tags: ["Segments"],
   summary: "Update a segment",
+  description: "Changes a segment's name or filter. Only the fields given change.",
   security: [{ bearerAuth: [] }],
   middleware: [
     requireApiKey({ contact: ["update"] }),
@@ -133,6 +135,7 @@ export const deleteSegmentRoute = createRoute({
   operationId: "deleteSegment",
   tags: ["Segments"],
   summary: "Delete a segment",
+  description: "Deletes a segment. The contacts it matched stay.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ contact: ["delete"] }), rateLimit("api.write")],
   request: { params: SegmentParams },
