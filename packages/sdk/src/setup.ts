@@ -68,22 +68,32 @@ export interface SetupSmsNumber {
 
 /** What one product's answer read. `null`: the read failed (and `warning` says so). */
 export interface SetupFacts {
-  sms?: { numbers: SetupSmsNumber[] | null };
+  sms?: { numbers: SetupSmsNumber[] | null; hasMore?: boolean };
   verify?: {
     settings: { sms_from: string | null; email_from: string | null } | null;
     numbers: SetupSmsNumber[] | null;
+    hasMoreNumbers?: boolean;
   };
   sign?: { settings: { allowed_origins: string[]; email_from: string | null } | null };
-  forms?: { forms: { id: string; name: string; endpoint: string; enabled: boolean }[] | null };
+  forms?: {
+    forms: { id: string; name: string; endpoint: string; enabled: boolean }[] | null;
+    hasMore?: boolean;
+  };
   scheduling?: {
     hosts: { id: string; name: string; status: string }[] | null;
     eventTypes: { id: string; title: string; status: string }[] | null;
+    hasMoreHosts?: boolean;
+    hasMoreEventTypes?: boolean;
     /** Whether the first active host has a schedule; `null`: no host, or the read failed. */
     hostHasSchedule: boolean | null;
   };
-  inboxes?: { inboxes: { id: string; address: string; can_send: boolean }[] | null };
+  inboxes?: {
+    inboxes: { id: string; address: string; can_send: boolean }[] | null;
+    hasMore?: boolean;
+  };
   hooks?: {
     applications: { id: string; uid: string | null; name: string }[] | null;
+    hasMoreApplications?: boolean;
     /** The first application's endpoints. */
     endpoints: { id: string; url: string; enabled: boolean }[] | null;
   };
@@ -109,7 +119,10 @@ export interface SetupInput {
 
 /** Where one product stands in this environment. */
 export interface ProductSetup {
-  /** `ready`: it can be used now. `needs_setup`: `next` says what's missing. `unknown`: a read failed. */
+  /**
+   * `ready`: it can be used now. `needs_setup`: `next` says what's missing. `unknown`: couldn't tell,
+   * because a read failed or there was more than was read.
+   */
   status: "ready" | "needs_setup" | "unknown";
   /** The single thing to do now for this product. */
   next: string;
@@ -253,6 +266,13 @@ function smsAnswer(mode: SetupInput["mode"], facts: SetupFacts): ProductSetup {
   if (ready) {
     return { status: "ready", next: `Ready to send from ${ready.phone_number}.`, details };
   }
+  if (facts.sms?.hasMore) {
+    return {
+      status: "unknown",
+      next: "None of the first numbers can send, and there are more: list_sms_numbers (or `npx coss-cli sms numbers`).",
+      details,
+    };
+  }
   if (numbers.length > 0) {
     const pending = numbers
       .map(
@@ -304,6 +324,13 @@ function verifyAnswer(mode: SetupInput["mode"], facts: SetupFacts): ProductSetup
     };
   }
   const sender = numbers?.find((number) => number.phone_number === settings.sms_from);
+  if (numbers && !sender && facts.verify?.hasMoreNumbers) {
+    return {
+      status: "unknown",
+      next: `\`sms_from\` is ${settings.sms_from}, which isn't among the first numbers: list_sms_numbers (or \`npx coss-cli sms numbers\`) shows whether it can send.`,
+      details,
+    };
+  }
   if (numbers && !sender?.can_send) {
     return {
       status: "needs_setup",
@@ -332,7 +359,8 @@ function signAnswer(mode: SetupInput["mode"], facts: SetupFacts): ProductSetup {
   const settings = facts.sign?.settings;
   const embedding = settings && settings.allowed_origins.length === 0;
   return {
-    status: "ready",
+    // The steps hold whatever the settings say; `unknown` only says they couldn't be read.
+    status: settings ? "ready" : "unknown",
     next: `${steps}${embedding ? " To embed the signing page, add your site to `allowed_origins` first (update_sign_settings)." : ""}`,
     ...(settings
       ? { details: { allowed_origins: settings.allowed_origins, email_from: settings.email_from } }
@@ -356,6 +384,13 @@ function formsAnswer(mode: SetupInput["mode"], facts: SetupFacts): ProductSetup 
   const details = {
     forms: forms.map(({ id, name, endpoint, enabled }) => ({ id, name, endpoint, enabled })),
   };
+  if (!usable && facts.forms?.hasMore) {
+    return {
+      status: "unknown",
+      next: `The first forms are disabled, and there are more: list_forms (or \`npx coss-cli forms list\`) shows them.${testing}`,
+      details,
+    };
+  }
   if (!usable) {
     return {
       status: "needs_setup",
@@ -388,25 +423,48 @@ function schedulingAnswer(mode: SetupInput["mode"], facts: SetupFacts): ProductS
   const { hosts, eventTypes, hostHasSchedule } = scheduling;
   const active = hosts.filter((host) => host.status === "active");
   const details = { hosts, event_types: eventTypes, host_has_schedule: hostHasSchedule };
+  if (active.length === 0 && scheduling.hasMoreHosts) {
+    return {
+      status: "unknown",
+      next: `The first hosts are disabled, and there are more: list_scheduling_hosts shows them.${testing}`,
+      details,
+    };
+  }
   if (active.length === 0) {
     return {
       status: "needs_setup",
-      next: `Create a host: save_scheduling_host, then save_scheduling_schedule for their working hours and save_scheduling_event_type.${testing}`,
+      next:
+        hosts.length > 0
+          ? `Every host is disabled, and a disabled host isn't offered: set one active (save_scheduling_host).${testing}`
+          : `Create a host: save_scheduling_host, then save_scheduling_schedule for their working hours and save_scheduling_event_type.${testing}`,
       details,
     };
   }
   if (hostHasSchedule === false) {
+    const others = active.length > 1 || scheduling.hasMoreHosts === true;
     return {
-      status: "needs_setup",
-      next: `${active[0]?.name} has no working hours: save_scheduling_schedule, then save_scheduling_event_type.${testing}`,
+      status: others ? "unknown" : "needs_setup",
+      next: others
+        ? `${active[0]?.name} has no working hours (save_scheduling_schedule), and the other hosts weren't checked: list_scheduling_schedules shows theirs.${testing}`
+        : `${active[0]?.name} has no working hours: save_scheduling_schedule, then save_scheduling_event_type.${testing}`,
       details,
     };
   }
   const eventType = eventTypes.find((candidate) => candidate.status === "active");
+  if (!eventType && scheduling.hasMoreEventTypes) {
+    return {
+      status: "unknown",
+      next: `The first event types are archived, and there are more: list_scheduling_event_types shows them.${testing}`,
+      details,
+    };
+  }
   if (!eventType) {
     return {
       status: "needs_setup",
-      next: `Create an event type that names the host: save_scheduling_event_type.${testing}`,
+      next:
+        eventTypes.length > 0
+          ? `Every event type is archived: make one active, or create another that names the host (save_scheduling_event_type).${testing}`
+          : `Create an event type that names the host: save_scheduling_event_type.${testing}`,
       details,
     };
   }
@@ -432,6 +490,13 @@ function inboxesAnswer(mode: SetupInput["mode"], facts: SetupFacts): ProductSetu
         mode === "live"
           ? `${create} An inbox at coss.com's inbound domain only receives in a live environment: to reply from it, create it at a receiving domain under a verified domain.`
           : `${create} Mail sent to a sandbox inbox is still received, so you can test the whole loop with your own mail client; sends from it deliver nothing.`,
+      details,
+    };
+  }
+  if (mode === "live" && !inboxes.some((inbox) => inbox.can_send) && facts.inboxes?.hasMore) {
+    return {
+      status: "unknown",
+      next: `The first inboxes only receive, and there are more: list_inboxes shows whether one can send.`,
       details,
     };
   }
@@ -466,10 +531,17 @@ function hooksAnswer(facts: SetupFacts): ProductSetup {
       details,
     };
   }
-  if (endpoints !== null && endpoints.length === 0) {
+  if (endpoints !== null && !endpoints.some((endpoint) => endpoint.enabled)) {
+    const others = applications.length > 1 || hooks.hasMoreApplications === true;
+    const problem =
+      endpoints.length === 0
+        ? `${application.name} has no endpoints, so its messages go nowhere`
+        : `${application.name}'s endpoints are all disabled, so its messages make no deliveries`;
     return {
-      status: "needs_setup",
-      next: `${application.name} has no endpoints, so its messages go nowhere: create_hook_endpoint (or \`npx coss-cli hooks endpoints add ${application.uid ?? application.id} --url <url>\`), or give its users the portal (create_hook_portal_session).`,
+      status: others ? "unknown" : "needs_setup",
+      next: others
+        ? `${problem}, and the other applications weren't checked: list_hook_endpoints shows theirs.`
+        : `${problem}: create_hook_endpoint (or \`npx coss-cli hooks endpoints add ${application.uid ?? application.id} --url <url>\`), or give its users the portal (create_hook_portal_session).`,
       details,
     };
   }
@@ -625,13 +697,15 @@ async function readFacts(
   warnings: string[],
 ): Promise<SetupFacts> {
   const live = mode === "live";
-  const numbers = () =>
-    read("the SMS numbers", warnings, () => coss.sms?.numbers.list()).then((list) =>
-      list ? list.data.map(smsNumberFact) : null,
-    );
+  const numbers = () => read("the SMS numbers", warnings, () => coss.sms?.numbers.list());
   switch (product) {
-    case "sms":
-      return live ? { sms: { numbers: await numbers() } } : {};
+    case "sms": {
+      if (!live) return {};
+      const list = await numbers();
+      return {
+        sms: { numbers: list ? list.data.map(smsNumberFact) : null, hasMore: list?.has_more },
+      };
+    }
     case "verify":
       if (!live) return {};
       {
@@ -639,7 +713,13 @@ async function readFacts(
           read("the Verify settings", warnings, () => coss.verify?.settings.get()),
           numbers(),
         ]);
-        return { verify: { settings, numbers: list } };
+        return {
+          verify: {
+            settings,
+            numbers: list ? list.data.map(smsNumberFact) : null,
+            hasMoreNumbers: list?.has_more,
+          },
+        };
       }
     case "sign":
       if (!live) return {};
@@ -650,7 +730,7 @@ async function readFacts(
       };
     case "forms": {
       const list = await read("the forms", warnings, () => coss.forms?.list({ limit: 5 }));
-      return { forms: { forms: list ? list.data : null } };
+      return { forms: { forms: list ? list.data : null, hasMore: list?.has_more } };
     }
     case "scheduling": {
       const [hosts, eventTypes] = await Promise.all([
@@ -669,13 +749,15 @@ async function readFacts(
           eventTypes: eventTypes
             ? eventTypes.data.map(({ id, title, status }) => ({ id, title, status }))
             : null,
+          hasMoreHosts: hosts?.has_more,
+          hasMoreEventTypes: eventTypes?.has_more,
           hostHasSchedule: host && schedules ? schedules.data.length > 0 : null,
         },
       };
     }
     case "inboxes": {
       const list = await read("the inboxes", warnings, () => coss.inboxes?.list({ limit: 5 }));
-      return { inboxes: { inboxes: list ? list.data : null } };
+      return { inboxes: { inboxes: list ? list.data : null, hasMore: list?.has_more } };
     }
     case "hooks": {
       const applications = await read("the Hooks applications", warnings, () =>
@@ -692,6 +774,7 @@ async function readFacts(
           applications: applications
             ? applications.data.map(({ id, uid, name }) => ({ id, uid, name }))
             : null,
+          hasMoreApplications: applications?.has_more,
           endpoints: endpoints
             ? endpoints.data.map(({ id, url, enabled }) => ({ id, url, enabled }))
             : null,

@@ -408,10 +408,94 @@ describe("per-product setup", () => {
 
   test("Sign reads as available; a failed read is only a warning", async () => {
     const report = await fetchSetupReport(fakeCoss("live").coss, { product: "sign" });
-    expect(report.products.sign?.status).toBe("ready");
+    expect(report.products.sign?.status).toBe("unknown");
     expect(report.next).toContain("upload_sign_document");
     expect(report.warning).toContain("Couldn't read the Sign settings");
     expect(`${report.next} ${report.warning}`).not.toContain("deployment");
+    const read = await fetchSetupReport(
+      fakeCoss("live", {
+        "GET /v1/sign/settings": { allowed_origins: [], email_from: null },
+      }).coss,
+      { product: "sign" },
+    );
+    expect(read.products.sign?.status).toBe("ready");
+    expect(read.next).toContain("allowed_origins");
+  });
+
+  test("what wasn't read isn't taken for missing", async () => {
+    const page = (data: unknown[]) => ({ object: "list", data, has_more: true });
+    const ask = (product: SetupProduct, routes: Record<string, unknown>, mode = "sandbox") =>
+      fetchSetupReport(fakeCoss(mode as "live" | "sandbox", routes).coss, { product });
+    const disabledForm = { id: "f", name: "F", endpoint: "https://f", enabled: false };
+    expect(
+      (await ask("forms", { "GET /v1/forms": page([disabledForm]) })).products.forms?.status,
+    ).toBe("unknown");
+    expect(
+      (await ask("forms", { "GET /v1/forms": list([disabledForm]) })).products.forms?.status,
+    ).toBe("needs_setup");
+
+    const disabled = { id: "h1", name: "Grace", status: "disabled" };
+    const noEventTypes = { "GET /v1/scheduling/event_types": list([]) };
+    const scheduling = await ask("scheduling", {
+      ...noEventTypes,
+      "GET /v1/scheduling/hosts": page([disabled]),
+    });
+    expect(scheduling.products.scheduling?.status).toBe("unknown");
+    const allDisabled = await ask("scheduling", {
+      ...noEventTypes,
+      "GET /v1/scheduling/hosts": list([disabled]),
+    });
+    expect(allDisabled.products.scheduling?.status).toBe("needs_setup");
+    expect(allDisabled.next).toContain("Every host is disabled");
+    expect(allDisabled.next).not.toContain("Create a host");
+
+    const active = (id: string) => ({ id, name: id, status: "active" });
+    const severalHosts = await ask("scheduling", {
+      ...noEventTypes,
+      "GET /v1/scheduling/hosts": list([active("h1"), active("h2")]),
+      "GET /v1/scheduling/hosts/h1/schedules": list([]),
+    });
+    expect(severalHosts.products.scheduling?.status).toBe("unknown");
+    expect(severalHosts.next).toContain("weren't checked");
+    const archived = await ask("scheduling", {
+      "GET /v1/scheduling/hosts": list([active("h1")]),
+      "GET /v1/scheduling/hosts/h1/schedules": list([{ id: "s" }]),
+      "GET /v1/scheduling/event_types": page([{ id: "e", title: "E", status: "archived" }]),
+    });
+    expect(archived.products.scheduling?.status).toBe("unknown");
+
+    const application = { id: "happ_1", uid: null, name: "Acme" };
+    const endpoints = "GET /v1/hooks/applications/happ_1/endpoints";
+    const moreApps = await ask("hooks", {
+      "GET /v1/hooks/applications": page([application]),
+      [endpoints]: list([]),
+    });
+    expect(moreApps.products.hooks?.status).toBe("unknown");
+    const offEndpoints = await ask("hooks", {
+      "GET /v1/hooks/applications": list([application]),
+      [endpoints]: list([{ id: "hep_1", url: "https://e", enabled: false }]),
+    });
+    expect(offEndpoints.products.hooks?.status).toBe("needs_setup");
+    expect(offEndpoints.next).toContain("all disabled");
+
+    const receiveOnly = { id: "inb_1", address: "a@x", can_send: false };
+    expect(
+      (await ask("inboxes", { "GET /v1/inboxes": page([receiveOnly]) }, "live")).products.inboxes
+        ?.status,
+    ).toBe("unknown");
+    expect(
+      (await ask("sms", { "GET /v1/sms/numbers": page([number("+1", false)]) }, "live")).products
+        .sms?.status,
+    ).toBe("unknown");
+    const senderElsewhere = await ask(
+      "verify",
+      {
+        "GET /v1/verify/settings": { sms_from: "+2", email_from: null },
+        "GET /v1/sms/numbers": page([number("+1", true)]),
+      },
+      "live",
+    );
+    expect(senderElsewhere.products.verify?.status).toBe("unknown");
   });
 
   test("a failing read becomes a warning, never a thrown error", async () => {
