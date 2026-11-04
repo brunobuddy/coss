@@ -1,7 +1,8 @@
 -- Fractional, so rescaling for a new weight can't round someone into a backlog.
 ALTER TABLE "scheduling_event_type_host" ALTER COLUMN "fair_units" SET DATA TYPE double precision;--> statement-breakpoint
 ALTER TABLE "scheduling_booking_host" ADD COLUMN "fair_share" double precision;--> statement-breakpoint
--- What coming pool bookings added, for when they're cancelled after a weight changes. The weight when
+-- What pool bookings that can still be cancelled added, even past ones, which can be moved into the
+-- future, for when they're cancelled after a weight changes. The weight when
 -- each was booked is gone, so this is today's, which is what their counter has counted in so far.
 UPDATE "scheduling_booking_host" AS "added"
 SET "fair_share" = 1.0 / "member"."weight"
@@ -12,8 +13,7 @@ WHERE "added"."booking_id" = "booking"."id"
   AND "member"."host_id" = "added"."host_id"
   AND "added"."role" = 'member'
   AND "event_type"."kind" = 'pool'
-  AND "booking"."status" IN ('held', 'pending_approval', 'confirmed')
-  AND "booking"."start_at" > now();--> statement-breakpoint
+  AND "booking"."status" IN ('held', 'pending_approval', 'confirmed');--> statement-breakpoint
 -- Hosts who joined a running pool and haven't been booked yet, so their first booking doesn't start
 -- a run of every booking until they've caught up: see `startingUnits`.
 UPDATE "scheduling_event_type_host" AS "joining"
