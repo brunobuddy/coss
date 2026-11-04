@@ -1,8 +1,10 @@
 import "server-only";
 import { COMPARE_ROUTE, COMPETITORS, compareMarkdown } from "./compare";
 import { marketingMarkdown, productPages, solutionPages } from "./marketing";
-import { SITE_URL } from "./site";
+import { aboutMarkdown, pricingMarkdown } from "./page-markdown";
+import { markdownResponse, SITE_URL } from "./site";
 import { type DocsPage, docsLlms, markdownUrl, operationOf, pageMarkdown, source } from "./source";
+import { FREE_TOOLS, TOOLS_ROUTE } from "./tools";
 
 const link = (path: string) => `${SITE_URL}${markdownUrl(path)}`;
 
@@ -14,7 +16,7 @@ const link = (path: string) => `${SITE_URL}${markdownUrl(path)}`;
  */
 export const AGENT_BRIEF = `# coss.com
 
-> One API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, Verify (one-time codes by SMS or email), Hooks (webhooks as a service for your own users) and Risk (sign-up, login and payment risk decisions). These docs are written for people and coding agents alike.
+> One API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, Verify (one-time codes by SMS or email), Forms (hosted form endpoints), Scheduling (bookings and calendars), Hooks (webhooks as a service for your own users) and Risk (sign-up, login and payment risk decisions, and rate limiting). These docs are written for people and coding agents alike.
 
 ## Reading these docs
 
@@ -74,6 +76,23 @@ function marketingIndex(): string {
       entry(`coss.com vs ${c.name}`, `${COMPARE_ROUTE}/${c.slug}`, c.verdict),
     ),
     "",
+    "## Company",
+    "",
+    entry("Pricing", "/pricing", "Plans, usage rates, add-ons and what each plan includes."),
+    entry("About", "/about", "What coss.com is and who builds it."),
+    `- [Changelog](${SITE_URL}/changelog/index.md): What shipped, newest first.`,
+    "",
+    "## Free tools",
+    "",
+    ...FREE_TOOLS.map(
+      (tool) => `- [${tool.name}](${SITE_URL}${TOOLS_ROUTE}/${tool.slug}): ${tool.description}`,
+    ),
+    "",
+    "## More from coss.com",
+    "",
+    `- [kloq](${SITE_URL}/kloq/llms.txt): a React calendar component, with its own llms.txt.`,
+    `- [Shipyard](${SITE_URL}/shipyard/docs): coding agents on your own machines, with its own docs.`,
+    "",
   ].join("\n");
 }
 
@@ -86,12 +105,11 @@ export async function llmsFull(): Promise<string> {
   const comparisons = COMPETITORS.map((c) =>
     compareMarkdown(c, `${SITE_URL}${COMPARE_ROUTE}/${c.slug}`),
   );
-  return `${AGENT_BRIEF}${[...pages, ...comparisons].join("\n\n")}\n`;
+  const company = [pricingMarkdown(), aboutMarkdown()];
+  return `${AGENT_BRIEF}${[...pages, ...comparisons, ...company].join("\n\n")}\n`;
 }
 
 /** A docs page's `.md` (src/app/docs/md). */
-export async function markdownResponse(page: DocsPage): Promise<Response> {
-  return new Response(await pageMarkdown(page), {
-    headers: { "Content-Type": "text/markdown; charset=utf-8" },
-  });
+export async function docsMarkdownResponse(page: DocsPage): Promise<Response> {
+  return markdownResponse(await pageMarkdown(page), page.url);
 }

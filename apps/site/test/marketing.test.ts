@@ -12,6 +12,7 @@ import { COMPARE_ROUTE, COMPETITORS } from "../src/lib/compare";
 import { MARKS, PRODUCT_GROUPS } from "../src/lib/marks";
 import { FOOTER_COLUMNS, PRODUCT_COLUMNS } from "../src/lib/nav";
 import { renderSheetComponents } from "../src/lib/sheet-markdown";
+import { TOOLS_ROUTE } from "../src/lib/tools";
 
 const ROOT = path.resolve(import.meta.dir, "..");
 
@@ -77,13 +78,16 @@ function resolves(href: string): boolean {
   if (!pathname) return false;
   if (pathname.startsWith("/docs")) return docsPageExists(pathname);
   const [, section, slug] = pathname.split("/");
+  if (pathname === TOOLS_ROUTE || pathname.startsWith(`${TOOLS_ROUTE}/`)) return true;
   if (section === "products") return slug === undefined || productSlugs.has(slug);
   if (section === "solutions") return slug === undefined || solutionSlugs.has(slug);
   if (section === "compare") return slug === undefined || competitorSlugs.has(slug);
   if (section === "legal") {
     return slug === undefined || existsSync(path.join(ROOT, "content/legal", `${slug}.mdx`));
   }
-  return ["/", "/pricing", "/about", "/llms.txt", "/llms-full.txt"].includes(pathname);
+  return ["/", "/pricing", "/about", "/changelog", "/llms.txt", "/llms-full.txt"].includes(
+    pathname,
+  );
 }
 
 /** `$` and a digit: a typed-in price (prices come from the catalog's components). */
@@ -231,7 +235,11 @@ describe("navigation", () => {
           .filter((link) => !link.zone && !link.href.startsWith("/#"))
           .map((link) => link.href),
       ),
-    ].filter((href) => !href.startsWith("/kloq") && !href.startsWith("/shipyard"));
+    ].filter(
+      (href) =>
+        !href.startsWith("http") &&
+        !["/kloq", "/shipyard", "/ui", "/origin", "/qnot"].some((zone) => href.startsWith(zone)),
+    );
     for (const href of hrefs) {
       expect({ href, resolves: resolves(href) }).toEqual({ href, resolves: true });
     }

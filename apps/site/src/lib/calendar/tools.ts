@@ -88,7 +88,7 @@ export const TOOLS: Tool[] = [
     short: "zone map",
     title: "Time zone meeting planner — find the overlapping hours",
     description:
-      "A day-and-night map of your team's time zones on one timeline. See where working hours overlap, what time it is everywhere right now, and which hour to put the meeting in.",
+      "A day-and-night map of your team's time zones on one timeline. See where working hours overlap and which hour to put the meeting in.",
     lede: "Not a map of the world — a map of the day. Each row is one zone's clock across your day, midnight to midnight, on a shared timeline, so night steps across the rows the way a terminator sweeps a globe, and the hours when everyone is at work are the ones worth booking.",
     built: "the zone layer from kloq — zoneOffsetMinutes(), zoneAbbr() and formatInZone()",
     docs: "/kloq/docs/time-zones",

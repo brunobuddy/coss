@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
     "@coss/observability",
     "@coss/ratelimit",
     "@coss/reputation",
+    "@coss/sms",
     "kloq",
   ],
   // Twoslash drives the TypeScript compiler while MDX compiles; it must not be bundled.
@@ -62,6 +63,8 @@ const nextConfig: NextConfig = {
       { source: "/products/:slug.md", destination: "/products/md/:slug" },
       { source: "/solutions/:slug.md", destination: "/solutions/md/:slug" },
       { source: "/compare/:slug.md", destination: "/compare/md/:slug" },
+      { source: "/pricing.md", destination: "/pricing/md" },
+      { source: "/about.md", destination: "/about/md" },
       // In production the dashboard's zone serves /api/auth and browser monitoring on the same origin.
       ...(dev
         ? [

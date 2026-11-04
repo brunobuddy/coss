@@ -2,24 +2,34 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { OpenAPIPage } from "@/components/api-page";
 import { DocsPageFrame } from "@/components/docs-frame";
-import { DocsSections } from "@/components/docs-sections";
+import { ApiOperations, DocsSections } from "@/components/docs-sections";
 import { JsonLd } from "@/components/json-ld";
 import { getMDXComponents } from "@/components/mdx";
+import { contentDate } from "@/lib/content-dates";
+import { docsDescription, docsRelated, docsSection, docsTitle } from "@/lib/docs-seo";
 import { neighbours, sectionsOf } from "@/lib/docs-tree";
-import { articleSchema, breadcrumbSchema, DEFAULT_IMAGE } from "@/lib/seo";
-import { SITE_NAME } from "@/lib/site";
+import { singleOperationProps } from "@/lib/openapi-single-operation";
+import { articleSchema, breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { type DocsPage, markdownUrl, pageMarkdown, source } from "@/lib/source";
+
+/** When an MDX page last changed. API operations all share one file, so they have no date. */
+function pageDate(page: DocsPage): string | undefined {
+  return page.type === "openapi" ? undefined : contentDate(`content/docs/${page.path}`);
+}
 
 /** A docs page as a TechArticle, with its trail through the docs. */
 function DocsJsonLd({ page }: { page: DocsPage }) {
+  const section = docsSection(page);
+  const name = page.data.title ?? "";
   return (
     <>
       <JsonLd
         data={articleSchema({
           type: "TechArticle",
           title: page.data.title ?? "",
-          description: page.data.description,
+          description: docsDescription(page),
           path: page.url,
+          modified: pageDate(page),
         })}
       />
       <JsonLd
@@ -28,7 +38,10 @@ function DocsJsonLd({ page }: { page: DocsPage }) {
             ? [["Docs", "/docs"]]
             : [
                 ["Docs", "/docs"],
-                [page.data.title ?? "", page.url],
+                ...(section && section.url !== page.url
+                  ? [[String(section.name), section.url] as const]
+                  : []),
+                [name, page.url],
               ],
         )}
       />
@@ -53,11 +66,12 @@ export default async function Page({ params }: PageProps<"/docs/[[...slug]]">) {
         <DocsPageFrame
           markdown={markdown}
           neighbours={around}
+          related={docsRelated(page)}
           title={page.data.title}
           toc={page.data.toc}
         >
           <div className="prose max-w-none">
-            <OpenAPIPage {...page.data.getOpenAPIPageProps()} />
+            <OpenAPIPage {...singleOperationProps(page.data.getOpenAPIPageProps())} />
           </div>
         </DocsPageFrame>
       </>
@@ -70,14 +84,19 @@ export default async function Page({ params }: PageProps<"/docs/[[...slug]]">) {
       <DocsJsonLd page={page} />
       <DocsPageFrame
         description={page.data.description}
+        lastUpdated={pageDate(page)}
         markdown={markdown}
         neighbours={around}
+        related={docsRelated(page)}
         title={page.data.title}
         toc={page.data.toc}
       >
         <MDX
           components={getMDXComponents({
             DocsSections: () => <DocsSections current={page.url} sections={sectionsOf(tree)} />,
+            ApiOperations: () => (
+              <ApiOperations section={sectionsOf(tree).find((s) => s.url === page.url)} />
+            ),
           })}
         />
       </DocsPageFrame>
@@ -99,18 +118,12 @@ export async function generateMetadata({
   const { slug } = await params;
   const page = source.getPage(slug);
   if (!page) notFound();
-  return {
-    title: page.data.title,
-    description: page.data.description,
+  return pageMetadata({
+    title: docsTitle(page),
+    description: docsDescription(page),
+    path: page.url,
+    type: "article",
     // The page as Markdown, for agents that land on the HTML.
-    alternates: { canonical: page.url, types: { "text/markdown": markdownUrl(page.url) } },
-    openGraph: {
-      type: "article",
-      url: page.url,
-      siteName: SITE_NAME,
-      title: page.data.title,
-      description: page.data.description,
-      images: [DEFAULT_IMAGE],
-    },
-  };
+    markdown: markdownUrl(page.url),
+  });
 }

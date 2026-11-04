@@ -60,6 +60,9 @@ export const ZONE_ROUTES = [
   { zone: "site", path: "/compare", prefix: true },
   { zone: "site", path: "/solutions", prefix: true },
   { zone: "site", path: "/opengraph-image", prefix: false },
+  { zone: "site", path: "/pricing.md", prefix: false },
+  { zone: "site", path: "/about.md", prefix: false },
+  { zone: "site", path: "/changelog", prefix: true },
   // The coss ui repository's apps, deployed outside AWS (Vercel): coss ui and Origin UI.
   { zone: "ui", path: "/ui", prefix: true },
   { zone: "origin", path: "/origin", prefix: true },

@@ -1,8 +1,10 @@
 import { InlineTOC } from "fumadocs-ui/components/inline-toc";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
 import { getMDXComponents } from "@/components/mdx";
 import { formatLegalDate, legalSource } from "@/lib/legal";
+import { articleSchema, breadcrumbSchema, pageMetadata } from "@/lib/seo";
 
 export default async function LegalPage({ params }: PageProps<"/legal/[slug]">) {
   const { slug } = await params;
@@ -12,6 +14,20 @@ export default async function LegalPage({ params }: PageProps<"/legal/[slug]">) 
   const MDX = page.data.body;
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-12 sm:py-16">
+      <JsonLd
+        data={articleSchema({
+          title: page.data.title ?? "",
+          description: page.data.description,
+          path: page.url,
+          modified: page.data.lastUpdated,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          ["Legal", "/legal"],
+          [page.data.title ?? "", page.url],
+        ])}
+      />
       <header className="flex flex-col gap-3">
         <h1 className="font-semibold text-3xl tracking-tight sm:text-4xl">{page.data.title}</h1>
         <p className="text-muted-foreground text-sm">
@@ -37,5 +53,10 @@ export async function generateMetadata({ params }: PageProps<"/legal/[slug]">): 
   const { slug } = await params;
   const page = legalSource.getPage([slug]);
   if (!page) notFound();
-  return { title: page.data.title, description: page.data.description };
+  return pageMetadata({
+    title: `${page.data.title} · coss.com`,
+    description: page.data.description ?? "",
+    path: page.url,
+    type: "article",
+  });
 }

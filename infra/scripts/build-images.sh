@@ -28,6 +28,9 @@ if ! aws ecr describe-images --repository-name coss/base/bun --image-ids "imageT
     || aws ecr describe-images --repository-name coss/base/bun --image-ids "imageTag=$bun_version-slim" >/dev/null
 fi
 docker buildx create --use --driver docker-container >/dev/null
+case " $* " in
+  *" site "*) infra/scripts/site-content-dates.sh ;;
+esac
 
 build() {
   local service="$1" image="$REGISTRY/coss/$1" release_arg deps cache cache_to=()

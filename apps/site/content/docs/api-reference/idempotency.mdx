@@ -1,6 +1,6 @@
 ---
 title: Idempotency
-description: Retry POST requests without sending twice.
+description: "Retry POST requests without sending twice, using the Idempotency-Key header: for 24 hours, a repeat with the same key returns the original result."
 ---
 
 `POST /v1/emails` accepts an `Idempotency-Key` header (1–256 characters). For 24 hours, a repeated

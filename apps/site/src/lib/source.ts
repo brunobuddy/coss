@@ -2,7 +2,7 @@ import "server-only";
 import spec from "@coss/api/openapi.json";
 import snippets from "@coss/sdkgen/snippets.json";
 import { llms, loader } from "fumadocs-core/source";
-import { sectionsMarkdown } from "../components/docs-sections";
+import { operationsMarkdown, sectionsMarkdown } from "../components/docs-sections";
 import { renderApiKeyComponents } from "./api-key-permissions-text";
 import { renderBillingComponents } from "./billing-text";
 import { docs } from "./collections";
@@ -117,10 +117,13 @@ export async function pageMarkdown(
       : operationMarkdown.full(operation, { snippets });
     return `${heading}\n\n${body}`;
   }
-  const body = (await page.data.getText("processed")).replaceAll(
-    "<DocsSections />",
-    sectionsMarkdown(sectionsOf(source.getPageTree())),
-  );
+  const sections = sectionsOf(source.getPageTree());
+  const body = (await page.data.getText("processed"))
+    .replaceAll("<DocsSections />", sectionsMarkdown(sections))
+    .replaceAll(
+      "<ApiOperations />",
+      operationsMarkdown(sections.find((section) => section.url === page.url)),
+    );
   return `${heading}\n\n${renderTableComponents(body)}`;
 }
 

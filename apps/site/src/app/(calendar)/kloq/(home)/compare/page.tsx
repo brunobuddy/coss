@@ -7,10 +7,13 @@ import { InstallCta } from "@/components/calendar/landing/plan-copy";
 import { Reveal } from "@/components/calendar/landing/reveal";
 import { PageHero } from "@/components/calendar/site/page-hero";
 import { Mono, Section, SectionHead } from "@/components/calendar/site/section";
+import { JsonLd } from "@/components/json-ld";
+import { CALENDAR } from "@/lib/calendar";
 import { CHECKED, competitors } from "@/lib/calendar/compare";
-import { abs, canonical } from "@/lib/calendar/site";
+import { abs, canonical, OG_IMAGE } from "@/lib/calendar/site";
+import { breadcrumbSchema, itemListSchema } from "@/lib/seo";
 
-const TITLE = "kloq compared — FullCalendar, react-big-calendar and Schedule-X";
+const TITLE = "kloq compared with FullCalendar and other React calendars";
 const DESCRIPTION =
   "Three honest comparisons against the React calendars developers actually shortlist, with the rows kloq loses left in and every number sourced.";
 
@@ -18,14 +21,34 @@ export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   alternates: canonical("/kloq/compare"),
-  openGraph: { type: "website", title: TITLE, description: DESCRIPTION, url: abs("/kloq/compare") },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
+  openGraph: {
+    images: [OG_IMAGE],
+    type: "website",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: abs("/kloq/compare"),
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [OG_IMAGE],
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 export default function Compare() {
   const all = competitors();
   return (
     <div className="flex flex-1 flex-col">
+      <JsonLd
+        data={breadcrumbSchema([
+          [CALENDAR.name, CALENDAR.path],
+          ["Compare", "/kloq/compare"],
+        ])}
+      />
+      <JsonLd
+        data={itemListSchema(all.map((c) => [`kloq vs ${c.name}`, `/kloq/compare/${c.slug}`]))}
+      />
       <main className="flex flex-1 flex-col">
         <PageHero
           eyebrow={[

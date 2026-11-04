@@ -1,3 +1,11 @@
 {
-  "pages": ["ai-agents", "platforms", "authentication", "notifications"]
+  "pages": [
+    "ai-agents",
+    "platforms",
+    "authentication",
+    "notifications",
+    "booking",
+    "phone-verification",
+    "contact-forms"
+  ]
 }

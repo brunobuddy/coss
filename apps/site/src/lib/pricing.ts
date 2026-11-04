@@ -19,6 +19,9 @@ import { RETENTION_DAYS } from "@coss/retention";
 
 const EMAIL: MeterKey = "email.recipients";
 
+/** Priced in the catalog, but the product hasn't shipped: public rate tables leave them out. */
+export const UNRELEASED_METERS: ReadonlySet<MeterKey> = new Set(["video.participant_minutes"]);
+
 /** The plans the estimator compares (Enterprise is priced per contract). */
 export const ESTIMATED_PLANS = ["free", "pro", "scale"] as const satisfies readonly PlanKey[];
 export type EstimatedPlan = (typeof ESTIMATED_PLANS)[number];
@@ -168,6 +171,7 @@ export function rateTables(): RateTable[] {
   const card = RATE_CARDS.at(-1);
   if (!card) return [];
   return METER_KEYS.flatMap((meter): RateTable[] => {
+    if (UNRELEASED_METERS.has(meter)) return [];
     const definition = METERS[meter];
     const rates = card.rates[meter];
     if (!rates) return [];

@@ -13,7 +13,9 @@ export const SHIPYARD = {
   url: `${SITE_URL}/shipyard`,
   title: "Shipyard - coding agents on your own boxes",
   description:
-    "Shipyard runs Claude Code, Codex and other coding agents on your own machines, each in a worktree with its own terminals and dev server. Close the laptop, and they keep going.",
+    "Shipyard runs Claude Code, Codex and other coding agents on your own machines, each in its own worktree. Close the laptop and they keep going.",
+  /** A public file, so every page can name it: a page's `openGraph` drops its parents' image. */
+  image: "/shipyard/og.jpg",
   githubRepo: "cosscom/shipyard",
   github: "https://github.com/cosscom/shipyard",
   /** The docs (content/shipyard, src/lib/shipyard-docs.ts) and their own search index. */

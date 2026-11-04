@@ -8,7 +8,9 @@
  */
 
 import { EMAIL_COMPETITORS } from "./compare-data/email";
+import { MESSAGING_COMPETITORS } from "./compare-data/messaging";
 import { OTHERS_COMPETITORS } from "./compare-data/others";
+import { TRUST_COMPETITORS } from "./compare-data/trust";
 
 export interface CompareRow {
   label: string;
@@ -42,7 +44,12 @@ export interface Competitor {
 
 export const COMPARE_ROUTE = "/compare";
 
-export const COMPETITORS: readonly Competitor[] = [...EMAIL_COMPETITORS, ...OTHERS_COMPETITORS];
+export const COMPETITORS: readonly Competitor[] = [
+  ...EMAIL_COMPETITORS,
+  ...MESSAGING_COMPETITORS,
+  ...OTHERS_COMPETITORS,
+  ...TRUST_COMPETITORS,
+];
 
 export function competitorBySlug(slug: string): Competitor | undefined {
   return COMPETITORS.find((competitor) => competitor.slug === slug);

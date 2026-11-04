@@ -3,13 +3,13 @@ import { LinkGrid, MarketingClose, Sheet } from "@/components/marketing-page";
 import { SectionHead } from "@/components/sheet";
 import { COMPARE_ROUTE, COMPETITORS } from "@/lib/compare";
 import { productBySlug } from "@/lib/marketing";
-import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
+import { breadcrumbSchema, itemListSchema, pageMetadata } from "@/lib/seo";
 
 const DESCRIPTION =
   "coss.com compared with Resend, SendGrid, Postmark, Mailgun, Amazon SES, Twilio, Svix, DocuSign and more: features, pricing and when each is the better choice.";
 
 export const metadata = pageMetadata({
-  title: "Compare coss.com: alternatives to Resend, SendGrid, Twilio and more",
+  title: "Compare coss.com with Resend, SendGrid, Twilio and more",
   description: DESCRIPTION,
   path: COMPARE_ROUTE,
   ownImage: true,
@@ -19,6 +19,11 @@ export default function CompareIndex() {
   return (
     <Sheet>
       <JsonLd data={breadcrumbSchema([["Compare", COMPARE_ROUTE]])} />
+      <JsonLd
+        data={itemListSchema(
+          COMPETITORS.map((c) => [`coss.com vs ${c.name}`, `${COMPARE_ROUTE}/${c.slug}`]),
+        )}
+      />
       <section className="border-b">
         <SectionHead as="h1" id="compare-title" title="Compare">
           <p>

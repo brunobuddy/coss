@@ -15,7 +15,7 @@ const INSET = (SOCKET - MODULE_SIZE) / 2;
 
 // Grid position of each product, back to front (drawing order).
 const CELLS: [PartId, number, number][] = [
-  ["video", 0, 0],
+  ["inboxes", 0, 0],
   ["sms", 1, 0],
   ["scheduling", 0, 1],
   ["email", 1, 1],

@@ -23,7 +23,7 @@ import { Mono, Row, Section, SectionHead, Sheet } from "@/components/calendar/si
 import { TEXT_LINK } from "@/components/calendar/site/text-link";
 import { JsonLd } from "@/components/json-ld";
 import { CALENDAR } from "@/lib/calendar";
-import { abs, canonical } from "@/lib/calendar/site";
+import { abs, canonical, OG_IMAGE } from "@/lib/calendar/site";
 import { softwareSchema, websiteSchema } from "@/lib/calendar/structured-data";
 
 const TRY = [
@@ -115,13 +115,19 @@ const TITLE = CALENDAR.title;
 
 export async function generateMetadata(): Promise<Metadata> {
   const cta = CTA;
-  const description = `Hand-tuned drag physics, a design mode that annotates its own craft, and a command palette that reaches everything. One React component, ${cta.siteDescription}.`;
+  const description = `A React calendar with hand-tuned drag physics, a design mode and a ⌘K command palette. One component, ${cta.siteDescription}.`;
   return {
     title: { absolute: TITLE },
     description,
     alternates: canonical("/kloq"),
-    openGraph: { type: "website", url: abs("/kloq"), title: TITLE, description },
-    twitter: { card: "summary_large_image", title: TITLE, description },
+    openGraph: {
+      images: [OG_IMAGE],
+      type: "website",
+      url: abs("/kloq"),
+      title: TITLE,
+      description,
+    },
+    twitter: { card: "summary_large_image", images: [OG_IMAGE], title: TITLE, description },
   };
 }
 
@@ -154,8 +160,7 @@ export default async function Home() {
 
             <Row>
               <h1 className="landing-display landing-rise py-8 [animation-delay:80ms] sm:py-12">
-                <span className="sr-only">A calendar obsessed with micro-perfection.</span>
-                <span aria-hidden>A calendar obsessed with micro-perfection.</span>
+                A calendar obsessed with micro-perfection.
               </h1>
             </Row>
 

@@ -12,15 +12,18 @@ import { PricingFaq, pricingFaq } from "@/components/pricing/pricing-faq";
 import { SmsRateTable } from "@/components/pricing/sms-rates";
 import { UsageRateCards } from "@/components/pricing/usage-rates";
 import { formatPrice, smsRates } from "@/lib/pricing";
-import { faqSchema, pageMetadata } from "@/lib/seo";
+import { breadcrumbSchema, faqSchema, pageMetadata, pricingSchema } from "@/lib/seo";
 import { SALES_EMAIL } from "@/lib/site";
 
 const FREE_EMAILS = (PLANS.free.includedUnits["email.recipients"] ?? 0).toLocaleString("en-US");
 
+const DESCRIPTION = `Start free with ${FREE_EMAILS} emails a month. Paid plans turn their monthly fee into credit for usage of any coss.com product.`;
+
 export const metadata: Metadata = pageMetadata({
-  title: "Pricing · coss.com",
-  description: `Start free with ${FREE_EMAILS} emails a month. Paid plans turn their monthly fee into credit for usage of any coss.com product.`,
+  title: "Pricing: free plan and usage rates · coss.com",
+  description: DESCRIPTION,
   path: "/pricing",
+  markdown: "/pricing.md",
 });
 
 function Section({
@@ -51,6 +54,8 @@ export default function PricingPage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-20 px-4 py-16 sm:py-24">
       <JsonLd data={faqSchema(pricingFaq())} />
+      <JsonLd data={pricingSchema(DESCRIPTION)} />
+      <JsonLd data={breadcrumbSchema([["Pricing", "/pricing"]])} />
       <div className="flex flex-col gap-12">
         <header className="flex max-w-2xl flex-col gap-4">
           <h1 className="font-semibold text-4xl tracking-tight sm:text-5xl">Pricing</h1>

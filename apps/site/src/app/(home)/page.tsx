@@ -20,23 +20,61 @@ import { PRODUCTS } from "@/components/home/parts";
 import { PlatformAssembly } from "@/components/home/platform-assembly";
 import { VendorDrawing } from "@/components/home/vendor-drawing";
 import { JsonLd } from "@/components/json-ld";
-import { RuledGrid } from "@/components/marketing-page";
+import { Faq, RuledGrid } from "@/components/marketing-page";
 import { CheckList, SectionHead } from "@/components/sheet";
 import { ShipyardHarbour } from "@/components/shipyard/harbour";
 import { ShipyardNewTask } from "@/components/shipyard/new-task";
 import { SignUpButton } from "@/components/sign-up-button";
 import { CALENDAR } from "@/lib/calendar";
-import { organizationSchema, pageMetadata, websiteSchema } from "@/lib/seo";
+import { faqSchema, organizationSchema, pageMetadata, websiteSchema } from "@/lib/seo";
 import { SHIPYARD } from "@/lib/shipyard";
 import { SITE_DESCRIPTION } from "@/lib/site";
 
 const FREE_EMAILS = (PLANS.free.includedUnits["email.recipients"] ?? 0).toLocaleString("en-US");
 
 export const metadata = pageMetadata({
-  title: "coss.com: email, SMS, inboxes, e-signatures and more on one API",
+  title: "coss.com: one API for email, SMS, AI agent inboxes and more",
   description: SITE_DESCRIPTION,
   path: "/",
 });
+
+/** Plain answers to what people ask about coss.com, on the page and in its FAQPage JSON-LD. */
+const FAQ = [
+  {
+    question: "What is coss.com?",
+    answer:
+      "coss.com is a developer platform: one API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, one-time codes, forms, scheduling, webhooks for your own users, and risk checks with rate limiting. It is built by the team behind Cal.com.",
+  },
+  {
+    question: "How much does coss.com cost?",
+    answer: `You can start free with ${FREE_EMAILS} emails a month, and sandbox keys are never billed. Paid plans turn their monthly fee into credit for usage of any coss.com product.`,
+  },
+  {
+    question: "Is coss.com open source?",
+    answer:
+      "Yes. The platform is open source under the AGPL, and the SDK, MCP server and CLI are MIT licensed.",
+  },
+  {
+    question: "Which languages and frameworks does coss.com support?",
+    answer:
+      "There are SDKs for TypeScript, Python, Go, Ruby, PHP, Java and .NET, and drop-in integrations for Nodemailer, Better Auth, Auth.js, Laravel, Rails and Django. Apps that can't call an API can send email through the SMTP relay.",
+  },
+  {
+    question: "Can I test without sending real messages?",
+    answer:
+      "Yes. Development keys (coss_test_) work with every API and record every email and SMS with their events and webhooks, and deliver nothing.",
+  },
+  {
+    question: "Can I move to coss.com from Resend, SendGrid or Postmark?",
+    answer:
+      "Yes. An import brings over your domains, templates, contacts, suppressions and webhooks from any of the three.",
+  },
+  {
+    question: "Does coss.com work with coding agents?",
+    answer:
+      "Yes. Every docs page is Markdown at its URL plus .md, /llms.txt indexes them, npx coss-cli init gets a development key approved in the browser, and an MCP server lets agents search the docs and explain deliveries.",
+  },
+];
 
 export default function HomePage() {
   return (
@@ -44,6 +82,7 @@ export default function HomePage() {
     <main className="mx-auto w-full max-w-[1440px] flex-1">
       <JsonLd data={organizationSchema()} />
       <JsonLd data={websiteSchema()} />
+      <JsonLd data={faqSchema(FAQ)} />
       <Hero />
       <Catalog />
       <SameKey />
@@ -51,6 +90,7 @@ export default function HomePage() {
       <Agents />
       <Investigate />
       <MoreFromCoss />
+      <Faq faq={FAQ} />
       <Close />
     </main>
   );
@@ -68,8 +108,9 @@ function Hero() {
         </h1>
         <div className="flex flex-col gap-6 lg:col-span-4 lg:pb-2">
           <p className="max-w-md text-lg text-muted-foreground leading-snug">
-            Email, SMS, video and scheduling, behind one SDK and one API key. Give your coding agent
-            one prompt and every part is wired in, so you ship the product only you can build.
+            Email, SMS, inboxes, scheduling and more, behind one SDK and one API key. Give your
+            coding agent one prompt and every part is wired in, so you ship the product only you can
+            build.
           </p>
           <div className="flex flex-wrap gap-2.5">
             <SignUpButton />
@@ -137,13 +178,6 @@ function Catalog() {
 /** The products beyond the catalog's parts, each on its own page. */
 const SAME_KEY: { mark: Mark; call: string; name: string; summary: string; href: string }[] = [
   {
-    mark: "inboxes",
-    call: "coss.inboxes",
-    name: "Inboxes",
-    summary: "Email addresses for AI agents, with threads and replies.",
-    href: "/products/inboxes",
-  },
-  {
     mark: "sign",
     call: "coss.sign",
     name: "Sign",
@@ -178,6 +212,13 @@ const SAME_KEY: { mark: Mark; call: string; name: string; summary: string; href:
     summary: "Allow, review or block sign-ups, logins and payments.",
     href: "/products/risk",
   },
+  {
+    mark: "limits",
+    call: "coss.risk.limit",
+    name: "Rate limiting",
+    summary: "A hosted rate limiter for your own endpoints.",
+    href: "/products/rate-limiting",
+  },
 ];
 
 /** Everything else on the same key: the products without a catalog part, linked to their pages. */
@@ -185,8 +226,9 @@ function SameKey() {
   return (
     <section aria-labelledby="same-key-title" className="border-b">
       <SectionHead id="same-key-title" title="Also on the same key">
-        Agent inboxes, signatures, one-time codes, forms, webhooks for your own users and risk
-        decisions: the same key, SDK, events and logs. <Link href="/products">Every product</Link>.
+        Signatures, one-time codes, forms, webhooks for your own users, risk decisions and rate
+        limits: the same key, SDK, events and logs. <Link href="/products">Every product</Link>, and{" "}
+        <Link href="/solutions">what teams build with them</Link>.
       </SectionHead>
       <RuledGrid>
         {SAME_KEY.map((product) => (
@@ -227,7 +269,8 @@ function OneVendor() {
     <section aria-labelledby="one-vendor-title" className="border-b">
       <SectionHead id="one-vendor-title" title="One vendor, not four">
         Every channel you add usually means another account, another SDK, another dashboard and
-        another invoice. With coss.com, the next one is already set up.
+        another invoice. With coss.com, the next one is already set up.{" "}
+        <Link href="/compare">See how coss.com compares</Link>.
       </SectionHead>
       <div className="grid grid-cols-1 border-t md:grid-cols-2">
         {(["apart", "together"] as const).map((side) => {
@@ -568,6 +611,9 @@ function Close() {
           <SignUpButton size="lg" />
           <Button className="px-5" render={<Link href="/docs" />} size="lg" variant="outline">
             Read the docs
+          </Button>
+          <Button className="px-5" render={<Link href="/pricing" />} size="lg" variant="ghost">
+            Pricing
           </Button>
         </div>
       </div>

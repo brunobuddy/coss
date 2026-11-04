@@ -132,6 +132,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.prepare.outputs.tag }}
+          # The site's pages carry the day they last changed (infra/scripts/site-content-dates.sh).
+          fetch-depth: ${{ matrix.images == 'site' && '0' || '1' }}
       - name: Build and push ${{ matrix.images }}
         env:
           TAG: ${{ needs.prepare.outputs.tag }}

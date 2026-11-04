@@ -25,7 +25,7 @@ import {
   SUPPORT_TIERS,
 } from "@coss/billing/catalog";
 import { formatCents, formatUnitPrice } from "@coss/billing/money";
-import { emailTierCharges, formatPrice, METER_NOTES } from "./pricing";
+import { emailTierCharges, formatPrice, METER_NOTES, UNRELEASED_METERS } from "./pricing";
 
 /** "3,000 email recipients a month"; inbox-days read as the inboxes they cover. */
 function includedText(meter: MeterKey, n: number): string {
@@ -190,6 +190,7 @@ export function rateRows(
   const card = RATE_CARDS.at(-1);
   if (!card) return [];
   return METER_KEYS.flatMap((meter) => {
+    if (UNRELEASED_METERS.has(meter)) return [];
     const definition = METERS[meter];
     if (typeof only === "string" && definition.product !== only) return [];
     if (Array.isArray(only) && !only.includes(meter)) return [];

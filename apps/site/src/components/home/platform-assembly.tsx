@@ -66,8 +66,8 @@ export function PlatformAssembly({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <title id="platform-title">
-        The coss.com platform: email, SMS, video and scheduling seated along the front of one base,
-        with the keys, domains, webhooks and logs they share seated behind them.
+        The coss.com platform: email, SMS, inboxes and scheduling seated along the front of one
+        base, with the keys, domains, webhooks and logs they share seated behind them.
       </title>
       <Block box={BASE} />
       <text
@@ -107,7 +107,7 @@ export function PlatformAssembly({ className }: { className?: string }) {
           "left",
         )}
         label="Products"
-        note="email · sms · video · scheduling"
+        note="email · sms · inboxes · scheduling"
         side="left"
       />
       <Callout
