@@ -55,8 +55,13 @@ export const WebhookEndpointObject = z
   .object({
     object: z.literal("webhook_endpoint"),
     id: z.string().meta({ examples: [ENDPOINT_ID_EXAMPLE] }),
-    url: z.string().meta({ examples: ["https://example.com/webhooks/coss"] }),
-    description: z.string().nullable(),
+    url: z
+      .string()
+      .meta({
+        description: "Where events are posted.",
+        examples: ["https://example.com/webhooks/coss"],
+      }),
+    description: z.string().nullable().meta({ description: "Your note about it. `null`: none." }),
     event_types: z.array(z.string()).meta({ description: EVENT_TYPES_DESCRIPTION }),
     api_version: z
       .string()
@@ -72,7 +77,10 @@ export const WebhookEndpointObject = z
           "`manual`: someone disabled it. `failing`: its deliveries failed every attempt for five " +
           "days, so coss.com disabled it. `null` while enabled.",
       }),
-    disabled_at: z.iso.datetime().nullable(),
+    disabled_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was disabled. `null` while enabled." }),
     failing_since: z.iso
       .datetime()
       .nullable()
@@ -325,13 +333,13 @@ export const WebhookAttemptObject = z
   .object({
     object: z.literal("webhook_attempt"),
     id: z.string(),
-    attempted_at: z.iso.datetime(),
+    attempted_at: z.iso.datetime().meta({ description: "When the attempt ran." }),
     status_code: z
       .number()
       .int()
       .nullable()
       .meta({ description: "The endpoint's HTTP status; `null` when no response arrived." }),
-    duration_ms: z.number().int(),
+    duration_ms: z.number().int().meta({ description: "How long it took, in milliseconds." }),
     error: z.string().nullable().meta({
       description: "Why the attempt failed (e.g. `HTTP 500`, a timeout); `null` on success.",
     }),
@@ -348,19 +356,31 @@ export const WebhookDeliveryObject = z
   .object({
     object: z.literal("webhook_delivery"),
     id: z.string().meta({ examples: [DELIVERY_ID_EXAMPLE] }),
-    endpoint_id: z.string(),
+    endpoint_id: z.string().meta({ description: "The id of the endpoint it's delivered to." }),
     event_id: z.string().meta({
       description: "The event's id: the `id` of the payload and the `webhook-id` header.",
     }),
     event_type: z.string().meta({ examples: ["email.delivered"] }),
     status: WebhookDeliveryStatusEnum,
-    attempt_count: z.number().int(),
+    attempt_count: z.number().int().meta({ description: "How many attempts were made so far." }),
     next_attempt_at: z.iso
       .datetime()
       .nullable()
       .meta({ description: "When the next attempt is due; `null` once the delivery is finished." }),
-    last_status_code: z.number().int().nullable(),
-    last_error: z.string().nullable(),
+    last_status_code: z
+      .number()
+      .int()
+      .nullable()
+      .meta({
+        description:
+          "The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.",
+      }),
+    last_error: z
+      .string()
+      .nullable()
+      .meta({
+        description: "Why the latest attempt failed. `null`: it didn't, or no attempt yet.",
+      }),
     payload: z
       .record(z.string(), z.unknown())
       .meta({ description: "The event body, exactly as posted to the endpoint." }),
@@ -500,7 +520,10 @@ export const WebhookListenerObject = z
     event_types: z.array(z.string()).meta({
       description: "Event types the listener receives. An empty array means every event type.",
     }),
-    description: z.string().nullable(),
+    description: z
+      .string()
+      .nullable()
+      .meta({ description: "Your note about it, such as the machine it's on. `null`: none." }),
     expires_at: z.iso.datetime().meta({
       description:
         "When the listener closes unless it is polled again; every poll moves it 10 minutes ahead.",
