@@ -838,14 +838,26 @@ export async function disconnectCalendar(
 ): Promise<{ id: string }> {
   const host = await resolveHost(db, scope, hostRef);
   const connection = await findConnection(scope, host.id, connectionId);
-  if (connection.delegationId) {
-    throw new SchedulingError(
+  const managed = () =>
+    new SchedulingError(
       "calendar_managed",
       "A calendar delegation manages this connection. Delete the delegation to end it.",
     );
-  }
+  if (connection.delegationId) throw managed();
   await releaseConnection(connection, deps);
   await db.transaction(async (tx) => {
+    // A delegation may have taken it over during that, and this would delete its events' ledger.
+    const [current] = await tx
+      .select({ delegationId: schedulingCalendarConnection.delegationId })
+      .from(schedulingCalendarConnection)
+      .where(
+        and(
+          eq(schedulingCalendarConnection.id, connection.id),
+          eq(schedulingCalendarConnection.organizationId, connection.organizationId),
+        ),
+      )
+      .for("update");
+    if (current?.delegationId) throw managed();
     await recordCalendarEvent(
       tx,
       connection,

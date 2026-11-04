@@ -720,6 +720,77 @@ describe("a host who already connected by OAuth", () => {
     ).toMatchObject({ write_target: true });
   });
 
+  test("a disconnect racing the takeover leaves the delegation's row and ledger", async () => {
+    const { env, api, deps, ana } = await connectedByOAuth();
+    const eventType = await eventTypeFor(env, [ana.id]);
+    await runDueCalendarSyncs(deps, { scope: scope(env) });
+    await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("09:00"), attendee },
+      testSchedulingDeps({ now: () => NOW }),
+      actor,
+    );
+    await runDueCalendarWrites(deps, { scope: scope(env) });
+    await activeGoogle(env, deps);
+    const [connection] = await listConnections(env, ana.id);
+    const held = api.hold("POST", /revoke$/);
+    const leaving = code(disconnectCalendar(env, ana.id, connection?.id as string, deps));
+    await held.arrived;
+    await run(env, deps);
+    held.release();
+    expect(await leaving).toBe("calendar_managed");
+    expect((await listConnections(env, ana.id))[0]?.delegation).toBeTruthy();
+    const events = await db
+      .select()
+      .from(schema.schedulingCalendarEvent)
+      .where(eq(schema.schedulingCalendarEvent.hostId, ana.id));
+    expect(events).toHaveLength(1);
+  });
+
+  test("a sync finishing during the takeover keeps what it read", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    let now = NOW;
+    const deps = googleDeps(api, () => now);
+    const ana = await hostOn(env, "ana");
+    api.calendars.length = 0;
+    api.calendars.push({ id: `ana@${DOMAIN}`, summary: "Ana", primary: true, accessRole: "owner" });
+    const { url } = await startCalendarAuthorization(
+      env,
+      ana.id,
+      { provider: "google", returnUrl: null },
+      deps,
+    );
+    await completeCalendarAuthorization(
+      {
+        provider: "google",
+        state: new URL(url).searchParams.get("state") as string,
+        code: "code",
+        error: null,
+      },
+      deps,
+    );
+    await activeGoogle(env, deps);
+    // The takeover's read is answered with nothing, and held on its way back.
+    const held = api.hold("POST", /freeBusy$/, "after");
+    const running = run(env, deps);
+    await held.arrived;
+    const meeting = {
+      start: new Date(at("09:00")).toISOString(),
+      end: new Date(at("09:30")).toISOString(),
+    };
+    api.busy.set(`ana@${DOMAIN}`, [meeting]);
+    now = new Date(NOW.getTime() + 60_000);
+    await runDueCalendarSyncs(deps, { scope: scope(env) });
+    held.release();
+    await running;
+    const busy = await db
+      .select()
+      .from(schema.schedulingBusyInterval)
+      .where(eq(schema.schedulingBusyInterval.hostId, ana.id));
+    expect(busy.map((row) => row.startAt.getTime())).toEqual([at("09:00")]);
+  });
+
   test("a consent racing the takeover leaves the delegation's row as it is", async () => {
     const { env, deps, ana } = await connectedByOAuth();
     const delegation = await createCalendarDelegation(

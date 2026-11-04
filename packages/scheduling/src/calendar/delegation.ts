@@ -661,18 +661,28 @@ async function connectHost(
         )
         .for("update");
       if (calendar?.readBusy) {
-        await tx
-          .delete(schedulingBusyInterval)
-          .where(eq(schedulingBusyInterval.calendarId, calendar.id));
-        await insertBusyIntervals(tx, calendar, intervals);
+        // An OAuth row's sync may have read it since this began, and a slower fetch never overwrites
+        // a newer one. The channel is still worth keeping, and it's read again straight after anyway.
+        const overtaken =
+          calendar.lastFetchStartedAt !== null && calendar.lastFetchStartedAt > startedAt;
+        if (!overtaken) {
+          await tx
+            .delete(schedulingBusyInterval)
+            .where(eq(schedulingBusyInterval.calendarId, calendar.id));
+          await insertBusyIntervals(tx, calendar, intervals);
+        }
         await tx
           .update(schedulingCalendar)
           .set({
-            verifiedAt: startedAt,
-            lastFetchStartedAt: startedAt,
-            coveredUntil: new Date(startedAt.getTime() + SYNC_HORIZON_DAYS * DAY_MS),
-            dirtyAt: null,
-            syncFailures: 0,
+            ...(overtaken
+              ? {}
+              : {
+                  verifiedAt: startedAt,
+                  lastFetchStartedAt: startedAt,
+                  coveredUntil: new Date(startedAt.getTime() + SYNC_HORIZON_DAYS * DAY_MS),
+                  dirtyAt: null,
+                  syncFailures: 0,
+                }),
             leaseUntil: null,
             nextSyncAt: now,
             ...(channel ?? {}),
