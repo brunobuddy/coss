@@ -201,15 +201,15 @@ describe("threshold charges", () => {
     await f.close();
     const [charge] = await f.invoices("threshold");
     const invoiceId = charge?.id ?? "";
-    const voiding = voidInvoice({
-      organizationId: f.organizationId,
-      invoiceId,
-      actor: null,
-      reason: "Test",
-      now,
-    });
-    expect(voiding).rejects.toThrow("credit note");
-    await voiding.catch(() => {});
+    await expect(
+      voidInvoice({
+        organizationId: f.organizationId,
+        invoiceId,
+        actor: null,
+        reason: "Test",
+        now,
+      }),
+    ).rejects.toThrow("credit note");
     expect((await getInvoice(f.organizationId, invoiceId))?.status).toBe("open");
 
     // If the month's invoice is voided instead, the credit is given back and so is the choice.
