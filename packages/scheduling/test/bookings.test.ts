@@ -962,6 +962,164 @@ describe("pools", () => {
     expect(counts.get(b?.id as string)).toBeGreaterThanOrEqual(3);
   });
 
+  describe("joining a pool that's already running", () => {
+    const fairUnits = async (eventTypeId: string, hostId: string) => {
+      const [row] = await db
+        .select({ units: schema.schedulingEventTypeHost.fairUnits })
+        .from(schema.schedulingEventTypeHost)
+        .where(
+          and(
+            eq(schema.schedulingEventTypeHost.eventTypeId, eventTypeId),
+            eq(schema.schedulingEventTypeHost.hostId, hostId),
+          ),
+        );
+      return row?.units;
+    };
+    const setUnits = (eventTypeId: string, units: number, hostId?: string) =>
+      db
+        .update(schema.schedulingEventTypeHost)
+        .set({ fairUnits: units, lastAssignedAt: new Date() })
+        .where(
+          and(
+            eq(schema.schedulingEventTypeHost.eventTypeId, eventTypeId),
+            hostId ? eq(schema.schedulingEventTypeHost.hostId, hostId) : undefined,
+          ),
+        );
+    const member = (host: string, weight = 100) => ({
+      host,
+      role: "member" as const,
+      weight,
+      schedule: null,
+    });
+    const poolOf = (env: SchedulingEnvironment, hosts: string[]) =>
+      eventTypeFor(
+        env,
+        hosts.map((host) => ({ host })),
+        { kind: "pool", duration_minutes: 15 },
+      );
+    const bookTurns = async (env: SchedulingEnvironment, eventTypeId: string, turns: number) => {
+      const counts = new Map<string, number>();
+      for (let index = 0; index < turns; index++) {
+        const start = at("09:00") + index * 15 * 60_000;
+        const { booking } = await createBooking(env, request(eventTypeId, start), deps, actor);
+        const hostId = booking.hosts[0] as string;
+        counts.set(hostId, (counts.get(hostId) ?? 0) + 1);
+      }
+      return counts;
+    };
+    const threeHosts = async (env: SchedulingEnvironment) => {
+      const hosts = await Promise.all([hostWithHours(env), hostWithHours(env), hostWithHours(env)]);
+      return hosts.map((host) => host?.id as string) as [string, string, string];
+    };
+
+    test("a new host takes their turn instead of every booking", async () => {
+      const env = await tenantEnv();
+      const [a, b, late] = await threeHosts(env);
+      const eventType = await poolOf(env, [a, b]);
+      await setUnits(eventType.id, 50);
+      await updateEventType(env, eventType.id, { hosts: [member(a), member(b), member(late)] });
+
+      const counts = await bookTurns(env, eventType.id, 9);
+
+      expect(await fairUnits(eventType.id, late)).toBe(53);
+      expect(counts.get(a)).toBe(3);
+      expect(counts.get(b)).toBe(3);
+      expect(counts.get(late)).toBe(3);
+    });
+
+    test("a new host's weight still counts once they've joined", async () => {
+      const env = await tenantEnv();
+      const [a, heavy] = await threeHosts(env);
+      const eventType = await poolOf(env, [a]);
+      await setUnits(eventType.id, 10);
+      await updateEventType(env, eventType.id, { hosts: [member(a), member(heavy, 300)] });
+
+      const counts = await bookTurns(env, eventType.id, 8);
+
+      expect(counts.get(heavy)).toBe(6);
+      expect(counts.get(a)).toBe(2);
+    });
+
+    test("someone removed and added back owes nothing", async () => {
+      const env = await tenantEnv();
+      const [a, back] = await threeHosts(env);
+      const eventType = await poolOf(env, [a, back]);
+      await setUnits(eventType.id, 5);
+      await updateEventType(env, eventType.id, { hosts: [member(a)] });
+      await setUnits(eventType.id, 40, a);
+      await updateEventType(env, eventType.id, { hosts: [member(a), member(back)] });
+      expect(await fairUnits(eventType.id, back)).toBe(40);
+
+      const counts = await bookTurns(env, eventType.id, 4);
+
+      expect(counts.get(a)).toBe(2);
+      expect(counts.get(back)).toBe(2);
+    });
+
+    test("a host a filter finds later joins level too", async () => {
+      const env = await tenantEnv();
+      const [a] = await threeHosts(env);
+      const eventType = await eventTypeFor(env, [{ host: a }], {
+        kind: "pool",
+        duration_minutes: 15,
+        host_filter: { team: "urgent" },
+      });
+      await setUnits(eventType.id, 30);
+      const found = await createHost(env, {
+        name: "Found",
+        time_zone: "UTC",
+        attributes: { team: "urgent" },
+      });
+      await createSchedule(env, found.id, {
+        rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+      });
+
+      const counts = await bookTurns(env, eventType.id, 6);
+
+      expect(counts.get(a)).toBe(3);
+      expect(counts.get(found.id)).toBe(3);
+      expect(await fairUnits(eventType.id, found.id)).toBe(33);
+    });
+
+    test("a pool's first members aren't treated as joining", async () => {
+      const env = await tenantEnv();
+      const [a, b] = await threeHosts(env);
+      const eventType = await poolOf(env, [a, b]);
+      expect(await fairUnits(eventType.id, a)).toBe(0);
+      expect(await fairUnits(eventType.id, b)).toBe(0);
+    });
+
+    test("changing a weight keeps everyone's place", async () => {
+      const env = await tenantEnv();
+      const [a, b] = await threeHosts(env);
+      const eventType = await poolOf(env, [a, b]);
+      await setUnits(eventType.id, 50);
+      await updateEventType(env, eventType.id, { hosts: [member(a, 200), member(b)] });
+      expect(await fairUnits(eventType.id, a)).toBe(100);
+      expect(await fairUnits(eventType.id, b)).toBe(50);
+
+      const counts = await bookTurns(env, eventType.id, 6);
+
+      expect(counts.get(a)).toBe(4);
+      expect(counts.get(b)).toBe(2);
+    });
+
+    test("a cancellation before the start gives the turn back", async () => {
+      const env = await tenantEnv();
+      const [a, late] = await threeHosts(env);
+      const eventType = await poolOf(env, [a]);
+      await setUnits(eventType.id, 20);
+      await updateEventType(env, eventType.id, { hosts: [member(a), member(late)] });
+      const { booking } = await createBooking(env, request(eventType.id, at("09:00")), deps, actor);
+      expect(booking.hosts).toEqual([late]);
+      expect(await fairUnits(eventType.id, late)).toBe(21);
+
+      await cancelBooking(env, booking.id, deps, actor);
+
+      expect(await fairUnits(eventType.id, late)).toBe(20);
+    });
+  });
+
   test("attributes narrow who can be chosen", async () => {
     const env = await tenantEnv();
     const ny = await createHost(env, {

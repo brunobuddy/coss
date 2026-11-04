@@ -2,7 +2,21 @@
 import { HipaaModeError, hipaaModeApplies } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
-import { and, asc, desc, eq, gt, inArray, isNull, lt, notInArray, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNull,
+  lt,
+  notInArray,
+  or,
+  type SQL,
+  sql,
+} from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { notZoomMeeting } from "./calendar/zoom.ts";
 import { SchedulingError } from "./errors.ts";
 import { checkTimeZone, type HostRow, resolveHost } from "./hosts.ts";
@@ -234,6 +248,7 @@ async function replaceHosts(
       ),
     );
   for (const { input, host } of resolved.sort((a, b) => (a.host.id < b.host.id ? -1 : 1))) {
+    const starting = poolStartingUnits(row, input.weight);
     const values = {
       role: input.role,
       weight: input.weight,
@@ -248,12 +263,47 @@ async function replaceHosts(
         hostId: host.id,
         organizationId: row.organizationId,
         ...values,
+        fairUnits: starting,
       })
       .onConflictDoUpdate({
         target: [schedulingEventTypeHost.eventTypeId, schedulingEventTypeHost.hostId],
-        set: values,
+        set: {
+          ...values,
+          // Coming back, or newly taking bookings, is joining. A new weight applies from now on,
+          // so it keeps their place rather than leaving them with a backlog to catch up on.
+          fairUnits: sql`case
+            when ${schedulingEventTypeHost.removedAt} is not null
+              or ${schedulingEventTypeHost.role} <> 'member'
+            then ${starting}
+            else round(
+              ${schedulingEventTypeHost.fairUnits}::numeric * ${input.weight}
+                / ${schedulingEventTypeHost.weight}
+            )::integer
+          end`,
+        },
       });
   }
+}
+
+/**
+ * Where someone new to a pool starts on its fairness counter: level with whoever's furthest behind
+ * their share, so they take their turns rather than every booking until they've caught up. A pool
+ * no one has been booked in yet starts at zero.
+ */
+export function poolStartingUnits(
+  eventType: { id: string; organizationId: string },
+  weight: number,
+): SQL<number> {
+  const member = alias(schedulingEventTypeHost, "pool_member");
+  return sql<number>`coalesce(ceil((
+    select min(${member.fairUnits}::numeric / ${member.weight})
+    from ${schedulingEventTypeHost} as ${sql.identifier("pool_member")}
+    where ${member.eventTypeId} = ${eventType.id}
+      and ${member.organizationId} = ${eventType.organizationId}
+      and ${member.role} = 'member'
+      and ${member.removedAt} is null
+      and ${member.fairUnits} > 0
+  ) * ${weight}), 0)::integer`;
 }
 
 function isUniqueViolation(error: unknown): boolean {

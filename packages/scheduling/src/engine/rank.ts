@@ -16,8 +16,9 @@ function hashToUnit(seed: string, hostId: string): number {
 
 /**
  * Who should get the next booking: furthest behind their weighted share, then waiting longest,
- * then a stable tie-break from `seed`, so a retry of one request ranks the same way. New members
- * count as being level with the pool, otherwise they'd take every booking until they caught up.
+ * then a stable tie-break from `seed`, so a retry of one request ranks the same way. A member yet
+ * to be booked counts as level with the pool, which also keeps a pool's first bookings in weight
+ * order. People who join a running pool are started level by `poolStartingUnits`.
  */
 export function rankCandidates(members: readonly PoolMember[], seed: string): string[] {
   const established = members.filter((member) => member.fairUnits > 0);

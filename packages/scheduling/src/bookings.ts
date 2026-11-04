@@ -71,7 +71,7 @@ import {
 } from "./engine/slots.ts";
 import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
-import { type EventTypeRow, resolveEventType } from "./event-types.ts";
+import { type EventTypeRow, poolStartingUnits, resolveEventType } from "./event-types.ts";
 import { confirmedSeats, withSessionLocation } from "./group-sessions.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
 import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
@@ -383,6 +383,7 @@ async function lockHostsAndMemberships(
         hostId,
         organizationId: eventType.organizationId,
         assigned: false,
+        fairUnits: poolStartingUnits(eventType, 100),
       })
       .onConflictDoNothing();
   }

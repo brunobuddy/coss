@@ -24,6 +24,10 @@ Hosts come from `hosts`, plus any active host matching all of `host_filter` righ
 free, and a booking goes to whoever's furthest behind their share (`weight`), then whoever's waited
 longest. If they've just been taken, it moves on to the next.
 
+Someone who joins an existing pool, or comes back to it, starts level with the others rather than
+owing a backlog, so they join the rotation instead of taking every booking until they've caught up.
+Changing a host's `weight` applies from then on, in the same way.
+
 Narrow one booking with `attributes`, such as who's licensed in the patient's state:
 
 ```ts twoslash
