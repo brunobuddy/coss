@@ -34,6 +34,21 @@ faq:
     answer: Yes. Inboxes give an agent its own address, keep the mail it receives as threads and send its replies from the same address. The MCP server has tools to create inboxes, read threads and reply.
 ---
 
+<HeroSample>
+
+```sh
+# A development key, approved in your browser.
+npx coss-cli init --agents
+
+# Tools for finding emails and explaining deliveries.
+claude mcp add coss -e COSS_API_KEY=coss_test_… -- npx -y coss-mcp
+
+# The Agent Skill, for Cursor, Codex and other agents.
+npx skills add cosscom/coss
+```
+
+</HeroSample>
+
 <Section title="One prompt" lede="Paste this into Claude Code, Cursor, Codex or any coding agent. It reads the docs, gets a sandbox key and tests what it builds.">
 
 ```text

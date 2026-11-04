@@ -391,7 +391,7 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
   },
   "POST /v1/scheduling/bookings/{id}/cancel": {
     method: "scheduling.bookings.cancel",
-    args: (r) => [pathId(r)],
+    args: (r) => [pathId(r), ...(r.body ? [tsValue(r.body)] : [])],
   },
   "POST /v1/scheduling/bookings/{id}/approve": {
     method: "scheduling.bookings.approve",

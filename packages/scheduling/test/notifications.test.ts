@@ -402,6 +402,62 @@ describe("reminders", () => {
   });
 });
 
+describe("rows of a shape this worker doesn't know", () => {
+  const unknownRow = async (
+    s: Awaited<ReturnType<typeof setUp>>,
+    bookingId: string,
+    values: { kind: string; dedupeKey: string },
+  ) => {
+    const [row] = await db
+      .insert(schema.schedulingNotification)
+      .values({
+        organizationId: s.env.organizationId,
+        environmentId: s.env.environmentId,
+        bookingId,
+        channel: "email",
+        recipient: "attendee",
+        bookingVersion: 1,
+        dueAt: NOW,
+        ...values,
+      })
+      .returning();
+    return row?.id as string;
+  };
+
+  test("wait for one that does, rather than going to the wrong person", async () => {
+    const s = await setUp();
+    const { booking } = await book(s);
+    const later = await unknownRow(s, booking.id, {
+      kind: "started",
+      dedupeKey: `started:webhook:endpoint:${booking.id}:1`,
+    });
+    const rule = await unknownRow(s, booking.id, {
+      kind: "reminder",
+      dedupeKey: `reminder:day:-1440:email:attendee:${booking.id}:1`,
+    });
+    const n = notifier();
+    await run(s.env, n.notification);
+    const rows = await db
+      .select()
+      .from(schema.schedulingNotification)
+      .where(eq(schema.schedulingNotification.bookingId, booking.id));
+    for (const id of [later, rule]) {
+      const row = rows.find((found) => found.id === id);
+      expect(row?.finishedAt).toBeNull();
+      expect(row?.attempts).toBe(0);
+    }
+    expect(n.emails.some((email) => email.subject.startsWith("Reminder"))).toBe(false);
+  });
+
+  test("today's own reminders are still claimed", async () => {
+    const s = await setUp();
+    await book(s);
+    const n = notifier(() => new Date(at("09:00") - 24 * 3_600_000 + 1000));
+    await run(s.env, n.notification);
+    expect(n.emails.filter((email) => email.subject.startsWith("Reminder")).length).toBe(1);
+  });
+});
+
 describe("meeting links", () => {
   test("a confirmation waits for a Meet link, then goes without", async () => {
     const s = await setUp({ locations: [{ type: "google_meet" }] });

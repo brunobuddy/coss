@@ -76,21 +76,23 @@ export function SupportTable() {
 
 /** The list usage rates per product (or of one `product`'s meters, or of `meters`: comma-separated). */
 export function UsageRates({ product, meters }: { product?: Product; meters?: string }) {
+  const rows = rateRows(meters ? (meters.split(",") as MeterKey[]) : product);
+  const notes = rows.some((row) => row.note);
   return (
     <DocsTable>
       <thead>
         <DocsTr>
           <DocsTh>Product</DocsTh>
           <DocsTh>Rate</DocsTh>
-          <DocsTh />
+          {notes ? <DocsTh>Note</DocsTh> : null}
         </DocsTr>
       </thead>
       <tbody>
-        {rateRows(meters ? (meters.split(",") as MeterKey[]) : product).map((row) => (
+        {rows.map((row) => (
           <DocsTr key={row.product}>
             <DocsTd>{row.product}</DocsTd>
             <DocsTd>{row.rate}</DocsTd>
-            <DocsTd>{row.note}</DocsTd>
+            {notes ? <DocsTd>{row.note}</DocsTd> : null}
           </DocsTr>
         ))}
       </tbody>
@@ -107,7 +109,7 @@ export function AddOns() {
           <DocsTh>Add-on</DocsTh>
           <DocsTh>Price</DocsTh>
           <DocsTh>Plans</DocsTh>
-          <DocsTh />
+          <DocsTh>What you get</DocsTh>
         </DocsTr>
       </thead>
       <tbody>

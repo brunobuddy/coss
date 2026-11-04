@@ -1,17 +1,24 @@
+import { Button } from "@coss/ui/components/button";
+import { ArrowUpRightIcon } from "lucide-react";
 import Link from "next/link";
 import type { Competitor } from "@/lib/compare";
+import { briefCell } from "@/lib/compare-briefs";
 import { productBySlug } from "@/lib/marketing";
 import { articleSchema, breadcrumbSchema, faqSchema } from "@/lib/seo";
 import { JsonLd } from "../json-ld";
 import {
-  Faq,
+  Band,
+  Close,
+  Crumbs,
+  FaqList,
+  Heading,
+  Hero,
   HeroActions,
-  LinkGrid,
-  MarketingClose,
-  MarketingHero,
-  Sheet,
-} from "../marketing-page";
-import { SectionHead } from "../sheet";
+  OnwardLinks,
+  Page,
+  Tray,
+} from "../marketing/kit";
+import { CompareRows } from "./compare-rows";
 
 /** "2026-10-30" → "October 30, 2026". */
 function formatDate(isoDate: string): string {
@@ -20,20 +27,30 @@ function formatDate(isoDate: string): string {
   );
 }
 
+/** "2026-10-30" → "Oct 30, 2026". */
+function shortDate(isoDate: string): string {
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(
+    new Date(`${isoDate}T00:00:00Z`),
+  );
+}
+
+/** A side's cell: stacked under the row's label on a phone, named by `data-side`. */
+
 /**
- * A comparison (/compare/<slug>), drawn on the catalog's sheet: the verdict, the table side by
- * side, when to choose each, how to move, the FAQ and the sources with the date they were checked.
- * Grayscale like the rest of coss.com: no win/loss colours, the rows speak for themselves.
+ * A comparison (/compare/<slug>): the verdict, the table side by side, when to choose each, how to
+ * move, the FAQ and the sources with the date they were checked. Grayscale, with no win/loss
+ * colours: the rows speak for themselves.
  */
 export function ComparePage({ competitor: c, url }: { competitor: Competitor; url: string }) {
   const products = c.products.flatMap((slug) => {
     const page = productBySlug(slug);
-    return page ? [page] : [];
+    return page ? [{ slug, page }] : [];
   });
-  const lead = products[0];
+  const lead = products[0]?.page;
   const title = `coss.com vs ${c.name}`;
+  const checked = <time dateTime={c.checked}>{formatDate(c.checked)}</time>;
   return (
-    <Sheet>
+    <Page>
       <JsonLd
         data={articleSchema({ title, description: c.verdict, path: url, modified: c.checked })}
       />
@@ -44,157 +61,133 @@ export function ComparePage({ competitor: c, url }: { competitor: Competitor; ur
         ])}
       />
       <JsonLd data={faqSchema(c.faq)} />
-      <MarketingHero
+      <Crumbs trail={[["Compare", "/compare"], [`vs ${c.name}`]]} />
+      <Hero
         actions={<HeroActions docs={lead?.data.docs ?? "/docs"} />}
-        call={lead?.data.call ?? "coss.com"}
         headline={title}
-        lede={
-          <>
-            <p className="text-foreground">{c.verdict}</p>
-            <p className="mt-3">{c.lede}</p>
-          </>
-        }
-        mark={lead?.data.mark ?? "keys"}
-      />
+        lede={<p>{c.verdict}</p>}
+      >
+        <Tray
+          flush
+          meta={
+            <>
+              Checked <time dateTime={c.checked}>{shortDate(c.checked)}</time>.{" "}
+              <a className="underline underline-offset-4" href="#sources">
+                Sources
+              </a>
+            </>
+          }
+          title="At a glance"
+        >
+          <CompareRows
+            name={c.name}
+            rows={c.rows.map((row) => ({
+              ...row,
+              coss: briefCell(row.coss),
+              them: briefCell(row.them),
+            }))}
+          />
+        </Tray>
+      </Hero>
 
-      <section aria-labelledby="glance-title" className="border-b">
-        <SectionHead id="glance-title" title="At a glance">
-          <p>
-            {c.name}'s side was checked on <time dateTime={c.checked}>{formatDate(c.checked)}</time>{" "}
-            against <a href="#sources">its own pages</a>. Prices are list prices.
-          </p>
-        </SectionHead>
-        <div className="overflow-x-auto border-t">
-          <table className="w-full min-w-[40rem] border-collapse text-left">
-            <thead>
-              <tr className="border-b">
-                <th className="w-1/4 px-4 py-4 font-normal text-muted-foreground text-sm sm:px-8">
-                  <span className="sr-only">Feature</span>
-                </th>
-                <th className="w-[37.5%] border-l px-4 py-4 font-semibold sm:px-8" scope="col">
-                  coss.com
-                </th>
-                <th
-                  className="w-[37.5%] border-l px-4 py-4 font-semibold text-muted-foreground sm:px-8"
-                  scope="col"
-                >
-                  {c.name}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {c.rows.map((row) => (
-                <tr className="border-b align-top last:border-b-0" key={row.label}>
-                  <th className="px-4 py-4 font-medium sm:px-8" scope="row">
-                    {row.label}
-                    {row.note ? (
-                      <span className="mt-1 block font-normal text-muted-foreground text-xs">
-                        {row.note}
-                      </span>
-                    ) : null}
-                  </th>
-                  <td className="border-l px-4 py-4 sm:px-8">{row.coss}</td>
-                  <td className="border-l px-4 py-4 text-muted-foreground sm:px-8">{row.them}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section aria-labelledby="choose-title" className="border-b">
-        <SectionHead id="choose-title" title="Which to choose">
-          <p>Both are good at what they do. Here is where each one fits better.</p>
-        </SectionHead>
-        <div className="grid grid-cols-1 border-t md:grid-cols-2">
+      <Band>
+        <Heading
+          id="choose-title"
+          lede="Both are good at what they do. Here is where each one fits better."
+          title="Which to choose"
+        />
+        <div className="grid gap-6 md:grid-cols-2">
           {(
             [
               [`Choose ${c.name} when`, c.chooseThem],
               ["Choose coss.com when", c.chooseCoss],
             ] as const
-          ).map(([heading, items], index) => (
-            <div className={index === 0 ? "border-b md:border-r md:border-b-0" : ""} key={heading}>
-              <h3 className="border-b px-4 py-5 font-semibold text-2xl tracking-[-0.02em] sm:px-8">
-                {heading}
-              </h3>
-              <ul className="flex flex-col px-4 sm:px-8">
+          ).map(([heading, items]) => (
+            <Tray key={heading} title={heading}>
+              <ul className="flex flex-col gap-4">
                 {items.map((item) => (
-                  <li className="border-b py-5 last:border-b-0" key={item.title}>
+                  <li key={item.title}>
                     <p className="font-medium">{item.title}</p>
-                    <p className="mt-1 text-muted-foreground leading-snug">{item.body}</p>
+                    <p className="mt-0.5 text-muted-foreground text-sm leading-snug">{item.body}</p>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Tray>
           ))}
         </div>
-      </section>
+      </Band>
 
-      <section aria-labelledby="move-title" className="border-b">
-        <SectionHead id="move-title" title={`Moving from ${c.name}`} />
-        <ol className="grid border-t md:grid-cols-3">
+      <Band muted>
+        <Heading id="move-title" title={`Moving from ${c.name}`} />
+        <ol className="grid gap-x-8 gap-y-6 md:grid-cols-3">
           {c.migration.map((step, index) => (
-            <li
-              className="flex flex-col gap-3 border-b px-4 py-8 last:border-b-0 sm:px-8 md:border-r md:border-b-0 md:last:border-r-0"
-              key={step.title}
-            >
-              <span className="flex size-7 items-center justify-center rounded-full border font-mono text-xs">
+            <li className="flex gap-3" key={step.title}>
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full border bg-card font-mono text-xs tabular-nums shadow-xs/5">
                 {index + 1}
               </span>
-              <h3 className="font-semibold text-xl tracking-[-0.01em]">{step.title}</h3>
-              <p className="text-muted-foreground leading-snug">{step.body}</p>
-              {step.href ? (
-                <Link className="font-medium text-sm underline underline-offset-4" href={step.href}>
-                  Read the guide
-                </Link>
-              ) : null}
+              <div className="flex min-w-0 flex-col gap-1">
+                <h3 className="font-medium">{step.title}</h3>
+                <p className="text-muted-foreground text-sm leading-snug">{step.body}</p>
+                {step.href ? (
+                  <Link
+                    className="w-fit font-medium text-sm underline underline-offset-4"
+                    href={step.href}
+                  >
+                    Read the guide
+                  </Link>
+                ) : null}
+              </div>
             </li>
           ))}
         </ol>
-      </section>
+      </Band>
 
-      <Faq faq={c.faq} />
+      <FaqList faq={c.faq} />
 
-      <section aria-labelledby="sources-title" className="scroll-mt-14 border-b" id="sources">
-        <SectionHead id="sources-title" title="Sources">
-          <p>
-            {c.name}'s facts were checked on{" "}
-            <time dateTime={c.checked}>{formatDate(c.checked)}</time>; their pages are the final
-            word on their prices and features.
-          </p>
-        </SectionHead>
-        <ul className="border-t px-4 py-6 sm:px-8">
-          {c.sources.map((source) => (
-            <li className="border-b py-3 last:border-b-0" key={source.href}>
-              <a
-                className="underline underline-offset-4"
-                href={source.href}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {source.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <Band className="sm:pt-0" id="sources">
+        <div className="grid gap-6 lg:grid-cols-12 lg:gap-12">
+          <div className="lg:col-span-4">
+            <Heading
+              id="sources-title"
+              lede={
+                <>
+                  {c.name}'s facts were checked on {checked}. Their pages are the final word on
+                  their prices and features.
+                </>
+              }
+              title="Sources"
+            />
+          </div>
+          <ul className="flex flex-col gap-1 lg:col-span-8">
+            {c.sources.map((source) => (
+              <li key={source.href}>
+                <Button
+                  className="h-auto min-h-8 w-full justify-between whitespace-normal py-1.5 text-left"
+                  render={<a href={source.href} rel="noopener noreferrer" target="_blank" />}
+                  variant="ghost"
+                >
+                  {source.label}
+                  <ArrowUpRightIcon aria-hidden />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Band>
 
-      <LinkGrid
+      <OnwardLinks
         id="products-title"
-        links={products.map((page) => ({
-          href: page.url,
-          title: page.data.title,
-          description: page.data.description ?? "",
-          mark: page.data.mark,
-          call: page.data.call,
+        links={products.map((product) => ({
+          href: product.page.url,
+          title: product.page.data.title,
         }))}
         title="The coss.com side"
       />
-      <MarketingClose title={`Try coss.com next to ${c.name}.`}>
+      <Close title={`Try coss.com next to ${c.name}.`}>
         <p>
           A development key costs nothing and delivers nothing, so you can compare with real code.
         </p>
-      </MarketingClose>
-    </Sheet>
+      </Close>
+    </Page>
   );
 }

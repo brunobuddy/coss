@@ -301,16 +301,20 @@ const bookingEvents: Command = defineCommand({
   run: async ({ positionals, context }: CommandInput<typeof EVENTS_FLAGS>) => {
     const [id] = requireArgs(positionals, 1, "scheduling booking-events <booking>") as [string];
     const coss = await client(context);
-    const { data, error } = await coss.scheduling.bookings.events(id, { limit: 100 });
-    if (error) throw apiError("Couldn't list the booking's history", error);
     const { out } = context;
-    if (out.json) {
-      for (const event of data.data) out.data(event);
-      return 0;
-    }
-    for (const event of data.data) {
-      out.line(`${when(event.occurred_at)}  ${event.type}  ${event.actor.kind}`);
-    }
+    let after: string | undefined;
+    do {
+      const { data, error } = await coss.scheduling.bookings.events(id, {
+        limit: 100,
+        ...(after ? { after } : {}),
+      });
+      if (error) throw apiError("Couldn't list the booking's history", error);
+      for (const event of data.data) {
+        if (out.json) out.data(event);
+        else out.line(`${when(event.occurred_at)}  ${event.type}  ${event.actor.kind}`);
+      }
+      after = data.has_more ? data.data.at(-1)?.id : undefined;
+    } while (after);
     return 0;
   },
 });

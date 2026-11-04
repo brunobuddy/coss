@@ -180,9 +180,7 @@ export function Manage({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
                         () =>
                           call<Booking>("/booking/cancel", {
                             method: "POST",
-                            body: JSON.stringify(
-                              cancelReason.trim() ? { reason: cancelReason.trim() } : {},
-                            ),
+                            body: cancelReason.trim() ? { reason: cancelReason.trim() } : {},
                           }),
                         (value) => {
                           setConfirmingCancel(false);

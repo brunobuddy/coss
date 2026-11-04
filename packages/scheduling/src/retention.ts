@@ -90,6 +90,7 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
           isNull(schedulingBooking.redactedAt),
         ),
       )
+      .orderBy(asc(schedulingBooking.id))
       .for("update");
     if (locked.length === 0) return 0;
     const ids = locked.map((row) => row.id);

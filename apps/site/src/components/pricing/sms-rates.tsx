@@ -23,40 +23,42 @@ export function SmsRateTable({ rates }: { rates: SmsRate[] }) {
     : rates;
 
   return (
-    <div className="flex flex-col gap-4">
-      <label className="sr-only" htmlFor={searchId}>
-        Search countries
-      </label>
-      <Input
-        className="max-w-xs"
-        id={searchId}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search countries"
-        type="search"
-        value={query}
-      />
-      <div className="max-h-112 overflow-y-auto rounded-lg border">
+    <div className="flex flex-col">
+      <div className="border-b p-3">
+        <label className="sr-only" htmlFor={searchId}>
+          Search countries
+        </label>
+        <Input
+          className="max-w-xs"
+          id={searchId}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search countries"
+          type="search"
+          value={query}
+        />
+      </div>
+      <div className="max-h-112 overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Country</TableHead>
+              <TableHead className="ps-4">Country</TableHead>
               <TableHead className="text-right">Sent, per segment</TableHead>
-              <TableHead className="text-right">Received, per segment</TableHead>
+              <TableHead className="pe-4 text-right">Received, per segment</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {shown.map((rate) => (
               <TableRow key={rate.code}>
-                <TableCell>{rate.country}</TableCell>
+                <TableCell className="ps-4">{rate.country}</TableCell>
                 <TableCell className="text-right tabular-nums">{rate.outbound}</TableCell>
-                <TableCell className="text-right text-muted-foreground tabular-nums">
+                <TableCell className="pe-4 text-right text-muted-foreground tabular-nums">
                   {rate.inbound ?? "—"}
                 </TableCell>
               </TableRow>
             ))}
             {shown.length === 0 && (
               <TableRow>
-                <TableCell className="text-muted-foreground" colSpan={3}>
+                <TableCell className="ps-4 text-muted-foreground" colSpan={3}>
                   No country matches “{query}”. SMS can only be sent where it is priced.
                 </TableCell>
               </TableRow>
