@@ -984,8 +984,14 @@ export async function updateOutOfOffice(
       ...(await coveringOf(tx, found)),
       ...(delegates ?? []),
     ]);
+    // It can have gone to someone else while this waited, and bookers hold that host's row.
+    const latest = await entryRow(tx, env, found.id, only);
+    if (latest.hostId !== found.hostId) {
+      refuseSelfCover(delegates, latest.hostId);
+      await lockHosts(tx, env, [latest.hostId, ...(await coveringOf(tx, latest))]);
+    }
     // First: a run this change starts prefers whoever's covering, and reads them from here.
-    if (delegates) await setDelegates(tx, found, delegates);
+    if (delegates) await setDelegates(tx, latest, delegates);
     return applyChange(tx, env, found.id, params, deps, actor, now, strategy, only, opts);
   });
   return objectOf(db, row, deps);

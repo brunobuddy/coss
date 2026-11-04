@@ -54,6 +54,7 @@ import {
   resolveHost,
   type SchedulingDeps,
   SchedulingError,
+  schedulingSessionRefused,
   sessionActor,
   sessionAttributes,
   startCalendarAuthorization,
@@ -84,6 +85,7 @@ import {
   UpdateOutOfOfficeRequest,
   UpsertScheduleRequest,
 } from "@coss/scheduling/schemas";
+import { memberStillHolds } from "@coss/tenancy";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { z } from "zod";
 import { ApiError } from "../errors.ts";
@@ -268,6 +270,23 @@ export function createSchedulingClientRoutes(opts: {
   };
 
   router.use(authenticated);
+
+  // A team page a dashboard member opened reaches every host, on their say-so, so it lasts only as
+  // long as they could still do that. Refused like any session that's over.
+  router.use("/manager/*", async (c, next) => {
+    const { session, env } = c.var.session;
+    if (
+      session.createdByUserId &&
+      !(await memberStillHolds({
+        organizationId: env.organizationId,
+        userId: session.createdByUserId,
+        permissions: { scheduling: ["update"] },
+      }))
+    ) {
+      throw schedulingSessionRefused();
+    }
+    await next();
+  });
 
   const hostOf = (c: Context<ClientEnv>): string => {
     const { session } = c.var.session;

@@ -316,6 +316,9 @@ export type AuthenticatedSession = {
 const refused = () =>
   new SchedulingError("not_found", "This link has expired or isn't valid any more.");
 
+/** What a session that's over is told: nothing about why. */
+export const schedulingSessionRefused = refused;
+
 /**
  * System-level: the token finds the session. Every failure looks the same, so nothing says whether
  * a session ever existed. A deleted organization's sessions are refused along with it.

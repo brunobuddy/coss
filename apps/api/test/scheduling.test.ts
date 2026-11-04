@@ -17,7 +17,12 @@ import {
 } from "@coss/scheduling";
 import { testPng, testSchedulingDeps } from "@coss/scheduling/testing";
 import { createEnvironmentApiKey } from "@coss/tenancy";
-import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
+import {
+  addMember,
+  createTestTenant,
+  createTestUser,
+  type TestTenant,
+} from "@coss/tenancy/testing";
 import { Hono } from "hono";
 import { createSchedulingCallbackRoutes } from "../src/routes/scheduling-callbacks.ts";
 import type { AppEnv } from "../src/types.ts";
@@ -1705,6 +1710,45 @@ describe("out of office", () => {
       expect(((await after.json()) as { hosts: string[] }).hosts).toEqual([
         items[0]?.to_host as string,
       ]);
+    });
+
+    test("the dashboard's team page lasts only as long as the member can", async () => {
+      const { tenant, app, host } = await team();
+      const env = {
+        organizationId: tenant.organization.id,
+        projectId: tenant.project.id,
+        environmentId: tenant.development.id,
+        mode: "sandbox" as const,
+      };
+      const admin = await createTestUser();
+      await addMember({
+        organizationId: tenant.organization.id,
+        userId: admin.id,
+        role: "admin",
+      });
+      const session = await createDashboardSession(env, {
+        createdByUserId: admin.id,
+        publicUrl: null,
+      });
+      const hosts = () =>
+        app.request("/scheduling/client/manager/hosts", {
+          headers: { authorization: `Bearer ${session.token}` },
+        });
+      expect(((await (await hosts()).json()) as { data: { id: string }[] }).data).toContainEqual(
+        expect.objectContaining({ id: host.id }),
+      );
+      const ids = [admin.id, tenant.organization.id];
+      const setRole = (role: string) =>
+        pool.query("update member set role = $1 where user_id = $2 and organization_id = $3", [
+          role,
+          ...ids,
+        ]);
+      await setRole("member");
+      expect((await hosts()).status).toBe(404);
+      await setRole("admin");
+      expect((await hosts()).status).toBe(200);
+      await pool.query("delete from member where user_id = $1 and organization_id = $2", ids);
+      expect((await hosts()).status).toBe(404);
     });
 
     test("an empty scope is refused, and so is giving both", async () => {

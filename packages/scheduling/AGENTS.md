@@ -309,7 +309,9 @@ once, and every host on it gets their calendar with no consent screen.
 `manager.ts`: a `manager` session reaches the hosts it names, or those matching `manager_host_filter` on every request
 (`managedHosts`). There's no team table: who manages whom is the customer's to say, when they mint one. An empty filter
 is refused at minting, since `{}` matches everyone. The exception is `createDashboardSession`: a dashboard member who opens
-this page reaches every host of the environment, for an hour, acting as themselves, and it's in the audit log.
+this page reaches every host of the environment, for an hour, acting as themselves, and it's in the audit log. The API
+asks on every request whether they can still change Scheduling (`memberStillHolds`), since leaving an organization doesn't
+end a session.
 
 - It's checked before anything's read, and **again with the booking locked** (`fromHosts`, `toHosts` in `reassign.ts`):
   until then, a booking may have moved to someone out of reach. Someone else's looks like it doesn't exist.

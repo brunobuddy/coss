@@ -429,6 +429,63 @@ describe("many hosts at once", () => {
   });
 });
 
+describe("changing an entry that's moving", () => {
+  test("waits for whoever it's moved to, as well as who it was with", async () => {
+    const env = await environment();
+    const [a, b] = [await host(env), await host(env)];
+    const [entry] = await away(env, { host: a.id, start: iso("09:00"), end: iso("17:00") });
+    const locked = (hostId: string, then?: (tx: never) => Promise<unknown>) => {
+      let release = () => {};
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      let holding = () => {};
+      const held = new Promise<void>((resolve) => {
+        holding = resolve;
+      });
+      const done = db.transaction(async (tx) => {
+        await tx
+          .select({ id: schema.schedulingHost.id })
+          .from(schema.schedulingHost)
+          .where(eq(schema.schedulingHost.id, hostId))
+          .for("share");
+        holding();
+        await gate;
+        await then?.(tx as never);
+      });
+      return { release: () => release(), held, done };
+    };
+    // A booker holds the new host. Something holds the old one, and moves the entry as it finishes.
+    const booker = locked(b.id);
+    const mover = locked(a.id, (tx) =>
+      (tx as unknown as typeof db)
+        .update(schema.schedulingOutOfOffice)
+        .set({ hostId: b.id })
+        .where(eq(schema.schedulingOutOfOffice.id, entry?.id as string)),
+    );
+    await Promise.all([booker.held, mover.held]);
+    let finished = false;
+    const change = updateOutOfOffice(
+      env,
+      entry?.id as string,
+      { end: iso("18:00") },
+      plain,
+      actor,
+    ).then(() => {
+      finished = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    mover.release();
+    await mover.done;
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(finished).toBe(false);
+    booker.release();
+    await booker.done;
+    await change;
+    expect(finished).toBe(true);
+  });
+});
+
 describe("changing only an entry's zone", () => {
   test("whole dates mean those dates there", async () => {
     const env = await environment();
