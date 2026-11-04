@@ -443,6 +443,9 @@ const understoodRow = () =>
       "reminder",
       "zoom_needs_reauth",
       "calendar_needs_reauth",
+      "reassigned",
+      "reassignment_summary",
+      "out_of_office_conflicts",
     ]),
     or(
       ne(schedulingNotification.kind, "reminder"),

@@ -222,7 +222,7 @@ it can't supply its own link or address.
 A booking's ledger row can come back when a host leaves and returns, and its `key_generation` makes a key not yet used
 (`eventKey`). Removing an event (`setCalendarState` with `absent`) goes by the ledger's rows, not today's write target,
 so an event on a calendar that's stopped being one still goes. Slots for moving a booking come from the hosts it has
-(`listBookingSlots`), never `candidatesOf`, which answers who'd take a new one.
+(`listRescheduleSlots`), never `candidatesOf`, which answers who'd take a new one.
 
 ## Team pages
 
