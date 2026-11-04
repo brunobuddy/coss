@@ -31,6 +31,7 @@ import {
   listEventTypeSlots,
   listOutOfOffice,
   listOutOfOfficeConflicts,
+  listPossibleDelegates,
   listSchedules,
   listUpcomingHostBookings,
   logoDataUrl,
@@ -523,14 +524,25 @@ export function createSchedulingClientRoutes(opts: {
     });
   });
 
+  /** Who they can name to cover for them. Ids and names, and only of people they share work with. */
+  const delegatesFor = async (env: AuthenticatedSession["env"], hostId: string) =>
+    (await listPossibleDelegates(env, hostId)).map((host) => host.id);
+
+  router.get("/host/delegates", async (c) => {
+    const data = await listPossibleDelegates(c.var.session.env, hostOf(c));
+    return c.json({ object: "list" as const, data, has_more: false });
+  });
+
   router.post("/host/out_of_office", async (c) => {
     const hostId = writableHost(c);
+    const { env } = c.var.session;
     const [entry] = await createOutOfOffice(
-      c.var.session.env,
+      env,
       { ...(await parsed(c, HostOutOfOfficeRequest)), host: hostId },
       deps,
       sessionActor(c.var.session.session),
       "host",
+      { allowedDelegates: await delegatesFor(env, hostId) },
     );
     return c.json(entry, 201);
   });
@@ -544,6 +556,7 @@ export function createSchedulingClientRoutes(opts: {
       deps,
       sessionActor(c.var.session.session),
       { hostId },
+      { allowedDelegates: await delegatesFor(c.var.session.env, hostId) },
     );
     return c.json(entry);
   });

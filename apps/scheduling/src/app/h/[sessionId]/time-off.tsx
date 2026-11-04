@@ -38,6 +38,7 @@ type Entry = {
   public_message: string | null;
   notes: string | null;
   source: string;
+  delegates: string[];
 };
 
 type EntryList = { data: Entry[]; reasons: { key: string; label: string }[] };
@@ -57,8 +58,15 @@ function Conflicts(props: { call: ClientCall; entryId: string }) {
   );
 }
 
-function NewEntry(props: { call: ClientCall; reasons: EntryList["reasons"]; onSaved: () => void }) {
-  const { call, reasons, onSaved } = props;
+type Colleague = { id: string; name: string };
+
+function NewEntry(props: {
+  call: ClientCall;
+  reasons: EntryList["reasons"];
+  colleagues: readonly Colleague[];
+  onSaved: () => void;
+}) {
+  const { call, reasons, colleagues, onSaved } = props;
   const [wholeDays, setWholeDays] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -68,6 +76,7 @@ function NewEntry(props: { call: ClientCall; reasons: EntryList["reasons"]; onSa
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState("");
   const [onCalendar, setOnCalendar] = useState(true);
+  const [delegate, setDelegate] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -84,6 +93,7 @@ function NewEntry(props: { call: ClientCall; reasons: EntryList["reasons"]; onSa
             : { start: new Date(start).toISOString(), end: new Date(end).toISOString() }),
           reason,
           show_on_calendar: onCalendar,
+          ...(delegate ? { delegates: [delegate] } : {}),
           ...(message.trim() ? { public_message: message.trim() } : {}),
           ...(notes.trim() ? { notes: notes.trim() } : {}),
         },
@@ -94,6 +104,7 @@ function NewEntry(props: { call: ClientCall; reasons: EntryList["reasons"]; onSa
       setEnd("");
       setMessage("");
       setNotes("");
+      setDelegate(null);
       onSaved();
     } catch (error) {
       setProblem((error as Error).message);
@@ -198,6 +209,34 @@ function NewEntry(props: { call: ClientCall; reasons: EntryList["reasons"]; onSa
           value={notes}
         />
       </div>
+      {colleagues.length > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <Label>Who covers for you</Label>
+          <Select
+            items={[
+              { value: null, label: "Nobody" },
+              ...colleagues.map((entry) => ({ value: entry.id, label: entry.name })),
+            ]}
+            onValueChange={(next) => setDelegate(next ? String(next) : null)}
+            value={delegate}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Nobody" />
+            </SelectTrigger>
+            <SelectPopup>
+              <SelectItem value={null}>Nobody</SelectItem>
+              {colleagues.map((entry) => (
+                <SelectItem key={entry.id} value={entry.id}>
+                  {entry.name}
+                </SelectItem>
+              ))}
+            </SelectPopup>
+          </Select>
+          <p className="text-muted-foreground text-xs">
+            People can book them in your place while you're away.
+          </p>
+        </div>
+      ) : null}
       <div className="flex items-center gap-2">
         <Switch checked={onCalendar} id="on-calendar" onCheckedChange={setOnCalendar} />
         <Label htmlFor="on-calendar">Show on my calendar</Label>
@@ -218,6 +257,7 @@ function NewEntry(props: { call: ClientCall; reasons: EntryList["reasons"]; onSa
 export function TimeOff(props: { call: ClientCall; session: HostSession }) {
   const { call, session } = props;
   const [list, setList] = useState<EntryList | null>(null);
+  const [colleagues, setColleagues] = useState<Colleague[]>([]);
   const [loadFailed, setLoadFailed] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const timeZone = session.host.time_zone;
@@ -228,6 +268,12 @@ export function TimeOff(props: { call: ClientCall; session: HostSession }) {
       .catch((error: Error) => setLoadFailed(error.message));
   }, [call]);
   useEffect(load, [load]);
+  useEffect(() => {
+    call<{ data: Colleague[] }>("/host/delegates")
+      .then((response) => setColleagues(response.data))
+      // Only an option: time off can be added without naming anyone.
+      .catch(() => setColleagues([]));
+  }, [call]);
 
   const remove = async (id: string) => {
     setProblem(null);
@@ -280,7 +326,9 @@ export function TimeOff(props: { call: ClientCall; session: HostSession }) {
         You aren't offered for new bookings during time off. Bookings you already have stay as they
         are until someone moves them.
       </p>
-      {session.read_only ? null : <NewEntry call={call} onSaved={load} reasons={list.reasons} />}
+      {session.read_only ? null : (
+        <NewEntry call={call} colleagues={colleagues} onSaved={load} reasons={list.reasons} />
+      )}
       {problem ? (
         <p className="text-destructive-foreground text-sm" role="alert">
           {problem}
@@ -301,6 +349,17 @@ export function TimeOff(props: { call: ClientCall; session: HostSession }) {
                   <Conflicts call={call} entryId={entry.id} />
                 </span>
                 <span className="text-muted-foreground">{labelOf(entry.reason)}</span>
+                {entry.delegates.length > 0 ? (
+                  <span className="text-muted-foreground">
+                    Covered by{" "}
+                    {entry.delegates
+                      .map(
+                        (id) =>
+                          colleagues.find((person) => person.id === id)?.name ?? "someone else",
+                      )
+                      .join(", ")}
+                  </span>
+                ) : null}
                 {entry.public_message ? (
                   <span className="text-muted-foreground">"{entry.public_message}"</span>
                 ) : null}

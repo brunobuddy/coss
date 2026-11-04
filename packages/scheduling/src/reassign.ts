@@ -65,6 +65,7 @@ const {
   LostSlot,
   assignFairly,
   bumped,
+  coverageWindows,
   locationWithoutHost,
   lockBooking,
   lockHostsAndMemberships,
@@ -110,6 +111,8 @@ export function skipsOfOverrides(
   overrides: ReassignBookingRequestOutput["overrides"],
 ): NotBookableReason[] {
   const skipped: NotBookableReason[] = [...ALREADY_DECIDED];
+  // Standing in is a reason someone who doesn't take this could; `any_host` doesn't need one.
+  if (overrides?.includes("any_host")) skipped.push("outside_coverage");
   for (const override of overrides ?? []) {
     if (override in OVERRIDE_REASONS) {
       skipped.push(OVERRIDE_REASONS[override as keyof typeof OVERRIDE_REASONS]);
@@ -373,6 +376,7 @@ async function reassignOne(
     failureMode: await calendarFailureModeOf(tx, env),
     ttlSeconds: null,
     skip: skipsOfOverrides(input.overrides),
+    coverage: coverageWindows(candidates),
   };
   const schedules = schedulesOf(candidates);
   const taken = new Set(rows.map((row) => row.hostId));
@@ -644,6 +648,7 @@ async function reassignSession(
     failureMode: await calendarFailureModeOf(tx, env),
     ttlSeconds: null,
     skip: skipsOfOverrides(input.overrides),
+    coverage: coverageWindows(candidates),
   };
   const schedules = schedulesOf(candidates);
   let target: HostRow | null = null;
@@ -896,6 +901,7 @@ export async function listReassignCandidates(
       return (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0) || a.name.localeCompare(b.name);
     });
   const chosen = others.slice(0, MAX_CANDIDATES);
+  const coverage = coverageWindows(candidates);
   const schedules = schedulesOf(candidates);
   const startMs = booking.startAt.getTime();
   const durationMinutes = (booking.endAt.getTime() - startMs) / MINUTE_MS;
@@ -910,6 +916,7 @@ export async function listReassignCandidates(
       id: host.id,
       timeZone: host.timeZone,
       scheduleId: schedules.get(host.id) ?? null,
+      onlyWithin: coverage.get(host.id),
     })),
     eventTypeId: eventType.id,
     fromMs: startMs,

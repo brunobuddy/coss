@@ -12,7 +12,7 @@ const EMPTY_MONTHS_TO_SKIP = 2;
 
 export type Slot = { start: string; end: string };
 /** The only person who could take this is away. Never says why. */
-type AwayNotice = { until: string; message: string | null };
+type AwayNotice = { until: string; message: string | null; covered: boolean };
 
 /** A day in the attendee's own zone, as a stable key. */
 function dayKey(iso: string, timeZone: string): string {
@@ -129,13 +129,18 @@ export function SlotPicker(props: {
 
   return (
     <div className="@container flex flex-col gap-4">
-      {away ? (
+      {away && (!away.covered || away.message) ? (
         <p className="text-pretty rounded-xl border bg-muted/50 p-3 text-sm">
-          Away until{" "}
-          {new Intl.DateTimeFormat(undefined, { timeZone, dateStyle: "long" }).format(
-            new Date(away.until),
+          {away.covered ? null : (
+            <>
+              Away until{" "}
+              {new Intl.DateTimeFormat(undefined, { timeZone, dateStyle: "long" }).format(
+                new Date(away.until),
+              )}
+              .{away.message ? " " : ""}
+            </>
           )}
-          .{away.message ? ` ${away.message}` : ""}
+          {away.message ?? ""}
         </p>
       ) : null}
       <div className="grid @xl:grid-cols-[auto_minmax(0,1fr)] gap-x-8 gap-y-6">

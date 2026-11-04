@@ -261,7 +261,13 @@ const outOfOfficeExisting = {
   }),
 };
 
+const outOfOfficeDelegates = z.array(z.string()).max(10).meta({
+  description:
+    "Who can be booked in this host's place during it, by id or uid, in the order to try them. They still have to fit how a booking's routed.",
+});
+
 const outOfOfficeDetails = {
+  delegates: outOfOfficeDelegates.optional(),
   reason: OutOfOfficeReasonKey.optional(),
   notes: z.string().max(2000).optional().meta({
     description: "For people who manage this host. Encrypted, and never shown to a booker.",
@@ -342,6 +348,7 @@ export const UpdateOutOfOfficeRequest = z
     notes: z.string().max(2000).nullable().optional(),
     public_message: z.string().max(300).nullable().optional(),
     show_on_calendar: z.boolean().optional(),
+    delegates: outOfOfficeDelegates.optional(),
     ...outOfOfficeExisting,
   })
   .meta({
@@ -361,6 +368,7 @@ const OUT_OF_OFFICE_EXAMPLE = {
   notes: null,
   public_message: "Back on the 16th.",
   show_on_calendar: true,
+  delegates: ["host_01kd2m9a0b1c2d3e4f5g6h7j8n"],
   existing_bookings: "leave" as const,
   external_id: null,
   group: null,
@@ -384,6 +392,7 @@ export const OutOfOfficeObject = z
     notes: z.string().nullable(),
     public_message: z.string().nullable(),
     show_on_calendar: z.boolean(),
+    delegates: z.array(z.string()).meta({ description: "Who can be booked in their place." }),
     existing_bookings: z.enum(["leave", "reassign"]),
     external_id: z.string().nullable(),
     group: z.string().nullable().meta({

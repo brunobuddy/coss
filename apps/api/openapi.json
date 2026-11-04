@@ -19066,6 +19066,9 @@
                 "notes": null,
                 "public_message": "Back on the 16th.",
                 "show_on_calendar": true,
+                "delegates": [
+                  "host_01kd2m9a0b1c2d3e4f5g6h7j8n"
+                ],
                 "existing_bookings": "leave",
                 "external_id": null,
                 "group": null,
@@ -19140,6 +19143,13 @@
           "show_on_calendar": {
             "type": "boolean"
           },
+          "delegates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Who can be booked in their place."
+          },
           "existing_bookings": {
             "type": "string",
             "enum": [
@@ -19188,6 +19198,7 @@
           "notes",
           "public_message",
           "show_on_calendar",
+          "delegates",
           "existing_bookings",
           "external_id",
           "group",
@@ -19211,6 +19222,9 @@
             "notes": null,
             "public_message": "Back on the 16th.",
             "show_on_calendar": true,
+            "delegates": [
+              "host_01kd2m9a0b1c2d3e4f5g6h7j8n"
+            ],
             "existing_bookings": "leave",
             "external_id": null,
             "group": null,
@@ -19293,6 +19307,14 @@
             "examples": [
               "America/New_York"
             ]
+          },
+          "delegates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "description": "Who can be booked in this host's place during it, by id or uid, in the order to try them. They still have to fit how a booking's routed."
           },
           "reason": {
             "type": "string",
@@ -19439,6 +19461,14 @@
           "show_on_calendar": {
             "type": "boolean"
           },
+          "delegates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "description": "Who can be booked in this host's place during it, by id or uid, in the order to try them. They still have to fit how a booking's routed."
+          },
           "existing_bookings": {
             "type": "string",
             "enum": [
@@ -19527,6 +19557,14 @@
             "examples": [
               "America/New_York"
             ]
+          },
+          "delegates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "description": "Who can be booked in this host's place during it, by id or uid, in the order to try them. They still have to fit how a booking's routed."
           },
           "reason": {
             "type": "string",

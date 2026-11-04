@@ -788,6 +788,7 @@ describe("telling bookers", () => {
     expect(await awayNoticeOf(env, doctor.id, later)).toEqual({
       until: iso("13:00"),
       message: "Back after lunch",
+      covered: false,
     });
   });
 

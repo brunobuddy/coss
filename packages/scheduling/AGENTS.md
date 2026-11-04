@@ -66,6 +66,19 @@ that was already there skips the check, and those bookings show up as conflicts.
 - The calendar block is a ledger row with a third kind of owner (`out_of_office_id`), titled "Out of office", which
   `flagExternalConflicts` subtracts like any event of ours, and `checkHostEditedEvents` ignores.
 
+Delegates (`scheduling_out_of_office_delegate`) are new-booking candidates only: `candidatesOf`'s last step adds them,
+sets `coverage`, and `HostInputs.onlyWithin` keeps them to meetings that touch the principal's time away, in `isBookable`,
+so slots and booking can't disagree. Each caller of `loadHostInputs` passes it through (`hostInputOf`, `ClaimPlan.coverage`).
+
+- `candidatesOf` asks nothing about time but "hasn't ended yet": a principal has to be a candidate themselves
+  (routing narrowing applies to them first), and a delegate must match a pool's filter and the narrowed attributes and
+  not be removed by name. Required hosts have no delegates, and it isn't transitive.
+- A delegate ranks at `max(own ratio, principal's ratio)`: their own low count would otherwise make them take everything.
+- A group has one host, but picks them by time, in `createOne`: the first of its host and their delegates who can take it.
+  Coverage is checked on every join, like being away.
+- `levelReturningHost` raises a pool member's `fair_units` to the lowest peer's ratio when an entry ends, once
+  (`fairness_leveled_at`), never downward, and not while another entry has them away.
+
 ## Reassigning
 
 `reassign.ts`: a booking goes to another host, keeping its id and time, for every kind. The target is claimed **before**

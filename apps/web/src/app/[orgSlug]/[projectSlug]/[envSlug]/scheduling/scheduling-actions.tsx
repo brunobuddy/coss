@@ -206,6 +206,7 @@ type Candidate = {
 
 const WHY_NOT: Record<string, string> = {
   out_of_office: "Out of office",
+  outside_coverage: "Only covers for someone at other times",
   outside_availability: "Outside their hours",
   host_busy: "Busy on their calendar",
   limit_reached: "At their booking limit",
@@ -475,6 +476,20 @@ export function NewOutOfOfficeDialog(props: EnvTarget & { hosts: { id: string; n
               <Checkbox defaultChecked name="showOnCalendar" />
               Show on their calendar
             </Label>
+            <Field>
+              <FieldLabel>Who covers for them</FieldLabel>
+              <div className="flex max-h-32 w-full flex-col gap-2 overflow-y-auto rounded-lg border p-3">
+                {hosts.map((host) => (
+                  <Label className="font-normal" key={host.id}>
+                    <Checkbox name="delegateId" value={host.id} />
+                    {host.name}
+                  </Label>
+                ))}
+              </div>
+              <FieldDescription>
+                Optional. They can be booked in their place during this, if they fit the booking.
+              </FieldDescription>
+            </Field>
             <Label className="font-normal">
               <Checkbox name="moveBookings" />
               Move bookings already in this time to whoever's free

@@ -35,9 +35,12 @@ const {
   schedulingBookingHost,
   schedulingCalendar,
   schedulingCalendarEvent,
+  schedulingEventType,
+  schedulingEventTypeHost,
   schedulingHost,
   schedulingNotification,
   schedulingOutOfOffice,
+  schedulingOutOfOfficeDelegate,
 } = schema;
 
 export type OutOfOfficeRow = typeof schedulingOutOfOffice.$inferSelect;
@@ -49,7 +52,11 @@ type Source = OutOfOfficeRow["source"];
 /** Keeps a caller to one host's entries: a host session's. */
 type Only = { hostId?: string | undefined };
 
-export function toOutOfOfficeObject(row: OutOfOfficeRow, keys: Keys): OutOfOfficeObjectOutput {
+export function toOutOfOfficeObject(
+  row: OutOfOfficeRow,
+  keys: Keys,
+  delegates: readonly string[],
+): OutOfOfficeObjectOutput {
   return {
     object: "scheduling.out_of_office",
     id: row.id,
@@ -64,6 +71,7 @@ export function toOutOfOfficeObject(row: OutOfOfficeRow, keys: Keys): OutOfOffic
     notes: row.encryptedNotes ? decryptSecret(row.encryptedNotes, keys.dataKeys) : null,
     public_message: row.publicMessage,
     show_on_calendar: row.showOnCalendar,
+    delegates: [...delegates],
     existing_bookings: row.existingBookings,
     external_id: row.externalId,
     group: row.groupId,
@@ -88,6 +96,8 @@ type Window = {
   endDate: string | null;
   allDayZone: string | null;
 };
+
+const MAX_EVENT_TYPES_TO_ASK = 100;
 
 const invalid = (message: string, param: string) =>
   new SchedulingError("invalid_time", message, { param });
@@ -146,6 +156,147 @@ function windowOf(when: When, host: Pick<HostRow, "timeZone">): Window {
     endDate: when.end_date,
     allDayZone: zone,
   };
+}
+
+async function delegatesOf(
+  executor: Executor,
+  rows: readonly Pick<OutOfOfficeRow, "id" | "organizationId">[],
+): Promise<Map<string, string[]>> {
+  const found = new Map<string, string[]>();
+  const [first] = rows;
+  if (!first) return found;
+  const delegates = await executor
+    .select({
+      entry: schedulingOutOfOfficeDelegate.outOfOfficeId,
+      hostId: schedulingOutOfOfficeDelegate.hostId,
+    })
+    .from(schedulingOutOfOfficeDelegate)
+    .where(
+      and(
+        eq(schedulingOutOfOfficeDelegate.organizationId, first.organizationId),
+        inArray(
+          schedulingOutOfOfficeDelegate.outOfOfficeId,
+          rows.map((row) => row.id),
+        ),
+      ),
+    )
+    .orderBy(asc(schedulingOutOfOfficeDelegate.position));
+  for (const row of delegates) found.set(row.entry, [...(found.get(row.entry) ?? []), row.hostId]);
+  return found;
+}
+
+async function objectsOf(
+  executor: Executor,
+  rows: readonly OutOfOfficeRow[],
+  keys: Keys,
+): Promise<OutOfOfficeObjectOutput[]> {
+  const delegates = await delegatesOf(executor, rows);
+  return rows.map((row) => toOutOfOfficeObject(row, keys, delegates.get(row.id) ?? []));
+}
+
+async function objectOf(
+  executor: Executor,
+  row: OutOfOfficeRow,
+  keys: Keys,
+): Promise<OutOfOfficeObjectOutput> {
+  const [object] = await objectsOf(executor, [row], keys);
+  return object as OutOfOfficeObjectOutput;
+}
+
+/** References become ids once, in the order given, so a later rename doesn't change who was meant. */
+async function delegateIdsOf(
+  scope: Scope,
+  refs: readonly string[] | undefined,
+  allowed: readonly string[] | undefined,
+): Promise<string[] | undefined> {
+  if (refs === undefined) return undefined;
+  const ids: string[] = [];
+  for (const ref of refs) {
+    const host = await resolveHost(db, scope, ref);
+    if (allowed && !allowed.includes(host.id)) {
+      throw new SchedulingError("invalid_out_of_office", "That host can't cover for you.", {
+        param: "delegates",
+      });
+    }
+    if (!ids.includes(host.id)) ids.push(host.id);
+  }
+  return ids;
+}
+
+/** Someone can't cover for themselves. Across many hosts, that only drops them from their own list. */
+async function setDelegates(
+  tx: Executor,
+  row: Pick<OutOfOfficeRow, "id" | "organizationId" | "hostId">,
+  hostIds: readonly string[],
+): Promise<void> {
+  await tx
+    .delete(schedulingOutOfOfficeDelegate)
+    .where(
+      and(
+        eq(schedulingOutOfOfficeDelegate.outOfOfficeId, row.id),
+        eq(schedulingOutOfOfficeDelegate.organizationId, row.organizationId),
+      ),
+    );
+  const delegates = hostIds.filter((id) => id !== row.hostId);
+  if (delegates.length === 0) return;
+  await tx.insert(schedulingOutOfOfficeDelegate).values(
+    delegates.map((hostId, position) => ({
+      outOfOfficeId: row.id,
+      organizationId: row.organizationId,
+      hostId,
+      position,
+    })),
+  );
+}
+
+function refuseSelfCover(hostIds: readonly string[] | undefined, hostId: string): void {
+  if (hostIds?.includes(hostId)) {
+    throw new SchedulingError("invalid_out_of_office", "A host can't cover for themselves.", {
+      param: "delegates",
+    });
+  }
+}
+
+/**
+ * Who a host could name to cover for them: whoever could also be booked for what they do. Only ids
+ * and names: this is what a host's own page may know about the others.
+ */
+export async function listPossibleDelegates(
+  scope: Scope,
+  hostId: string,
+): Promise<{ id: string; name: string }[]> {
+  const rows = await db
+    .select({ eventTypeId: schedulingEventTypeHost.eventTypeId })
+    .from(schedulingEventTypeHost)
+    .where(
+      and(
+        eq(schedulingEventTypeHost.organizationId, scope.organizationId),
+        eq(schedulingEventTypeHost.hostId, hostId),
+        eq(schedulingEventTypeHost.assigned, true),
+        isNull(schedulingEventTypeHost.removedAt),
+      ),
+    )
+    .limit(MAX_EVENT_TYPES_TO_ASK);
+  if (rows.length === 0) return [];
+  const peers = await db
+    .select({ id: schedulingHost.id, name: schedulingHost.name })
+    .from(schedulingEventTypeHost)
+    .innerJoin(schedulingHost, eq(schedulingHost.id, schedulingEventTypeHost.hostId))
+    .where(
+      and(
+        eq(schedulingEventTypeHost.organizationId, scope.organizationId),
+        inArray(
+          schedulingEventTypeHost.eventTypeId,
+          rows.map((row) => row.eventTypeId),
+        ),
+        eq(schedulingEventTypeHost.assigned, true),
+        isNull(schedulingEventTypeHost.removedAt),
+        eq(schedulingHost.status, "active"),
+        eq(schedulingHost.environmentId, scope.environmentId),
+      ),
+    );
+  const named = new Map(peers.filter((peer) => peer.id !== hostId).map((peer) => [peer.id, peer]));
+  return [...named.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 async function checkReason(scope: Scope, reason: string | undefined): Promise<void> {
@@ -428,7 +579,12 @@ async function noteConflicts(
       projectId: env.projectId,
       environmentId: row.environmentId,
       selection: { host_id: row.hostId, out_of_office_id: row.id },
-      strategy: row.reassignStrategy ?? { kind: "auto", preferred_host_ids: [], otherwise: "auto" },
+      // Whoever they named to cover for them first, unless the entry said how.
+      strategy: row.reassignStrategy ?? {
+        kind: "auto",
+        preferred_host_ids: (await delegatesOf(tx, [row])).get(row.id) ?? [],
+        otherwise: "auto",
+      },
       reasonCode: "out_of_office",
       outOfOfficeId: row.id,
       actor,
@@ -457,6 +613,7 @@ export async function createOutOfOffice(
   deps: Keys & Pick<SchedulingDeps, "now" | "screenSetup">,
   actor: Actor,
   source: Source,
+  opts: { allowedDelegates?: readonly string[] | undefined } = {},
 ): Promise<OutOfOfficeObjectOutput[]> {
   const hosts = await hostsOfRequest(env, params);
   if (params.external_id && hosts.length > 1) {
@@ -473,6 +630,8 @@ export async function createOutOfOffice(
   const now = nowOf(deps);
   const groupId = hosts.length > 1 ? newId(ID_PREFIXES.schedulingOutOfOfficeGroup) : null;
   const reassignStrategy = await reassignStrategyOf(env, params);
+  const delegates = await delegateIdsOf(env, params.delegates, opts.allowedDelegates);
+  if (hosts.length === 1 && hosts[0]) refuseSelfCover(delegates, hosts[0].id);
   const encryptedNotes = params.notes ? encryptSecret(params.notes, deps.dataKeys) : null;
   try {
     const rows = await db.transaction(async (tx) => {
@@ -506,6 +665,7 @@ export async function createOutOfOffice(
           })
           .returning();
         const inserted = row as OutOfOfficeRow;
+        await setDelegates(tx, inserted, delegates ?? []);
         await setOutOfOfficeCalendar(tx, inserted, now);
         await recordEvent(tx, inserted, "scheduling.out_of_office.created", now);
         await noteConflicts(tx, env, inserted, actor, now);
@@ -513,7 +673,7 @@ export async function createOutOfOffice(
       }
       return created;
     });
-    return rows.map((row) => toOutOfOfficeObject(row, deps));
+    return objectsOf(db, rows, deps);
   } catch (error) {
     if (isExternalIdTaken(error)) throw externalIdTaken(params.external_id);
     throw error;
@@ -558,7 +718,7 @@ export async function getOutOfOffice(
   keys: Keys,
   only: Only = {},
 ): Promise<OutOfOfficeObjectOutput> {
-  return toOutOfOfficeObject(await entryRow(db, scope, id, only), keys);
+  return objectOf(db, await entryRow(db, scope, id, only), keys);
 }
 
 export async function listOutOfOffice(
@@ -595,7 +755,7 @@ export async function listOutOfOffice(
     .orderBy(desc(schedulingOutOfOffice.id))
     .limit(query.limit + 1);
   return {
-    data: rows.slice(0, query.limit).map((row) => toOutOfOfficeObject(row, keys)),
+    data: await objectsOf(db, rows.slice(0, query.limit), keys),
     hasMore: rows.length > query.limit,
   };
 }
@@ -660,6 +820,7 @@ export async function updateOutOfOffice(
   deps: Keys & Pick<SchedulingDeps, "now" | "screenSetup">,
   actor: Actor,
   only: Only = {},
+  opts: { allowedDelegates?: readonly string[] | undefined } = {},
 ): Promise<OutOfOfficeObjectOutput> {
   await checkReason(env, params.reason);
   await checkMessage(env, params.public_message, deps.screenSetup);
@@ -667,11 +828,15 @@ export async function updateOutOfOffice(
   const found = await entryRow(db, env, id, only);
   const strategy =
     params.existing_bookings === undefined ? undefined : await reassignStrategyOf(env, params);
+  const delegates = await delegateIdsOf(env, params.delegates, opts.allowedDelegates);
+  refuseSelfCover(delegates, found.hostId);
   const row = await db.transaction(async (tx) => {
     await lockHosts(tx, env, [found.hostId]);
-    return applyChange(tx, env, found.id, params, deps, actor, now, strategy, only);
+    const changed = await applyChange(tx, env, found.id, params, deps, actor, now, strategy, only);
+    if (delegates) await setDelegates(tx, changed, delegates);
+    return changed;
   });
-  return toOutOfOfficeObject(row, deps);
+  return objectOf(db, row, deps);
 }
 
 async function applyChange(
@@ -731,6 +896,8 @@ export async function putOutOfOffice(
     existingBookings: params.existing_bookings ?? ("leave" as const),
     reassignStrategy: await reassignStrategyOf(env, params),
   };
+  const delegates = await delegateIdsOf(env, params.delegates, undefined);
+  refuseSelfCover(delegates, host.id);
   try {
     return await db.transaction(async (tx) => {
       const [existing] = await tx
@@ -786,10 +953,11 @@ export async function putOutOfOffice(
               ),
             );
         }
+        await setDelegates(tx, updated, delegates ?? []);
         await setOutOfOfficeCalendar(tx, updated, now);
         await recordEvent(tx, updated, "scheduling.out_of_office.updated", now);
         await noteConflicts(tx, env, updated, actor, now, existing);
-        return { entry: toOutOfOfficeObject(updated, deps), created: false };
+        return { entry: await objectOf(tx, updated, deps), created: false };
       }
       const [row] = await tx
         .insert(schedulingOutOfOffice)
@@ -805,10 +973,11 @@ export async function putOutOfOffice(
         })
         .returning();
       const inserted = row as OutOfOfficeRow;
+      await setDelegates(tx, inserted, delegates ?? []);
       await setOutOfOfficeCalendar(tx, inserted, now);
       await recordEvent(tx, inserted, "scheduling.out_of_office.created", now);
       await noteConflicts(tx, env, inserted, actor, now);
-      return { entry: toOutOfOfficeObject(inserted, deps), created: true };
+      return { entry: await objectOf(tx, inserted, deps), created: true };
     });
   } catch (error) {
     if (isExternalIdTaken(error)) throw externalIdTaken(externalId);
@@ -950,7 +1119,7 @@ export async function hostsAwayDuring(
   return new Set(rows.map((row) => row.hostId));
 }
 
-export type AwayNotice = { until: string; message: string | null };
+export type AwayNotice = { until: string; message: string | null; covered: boolean };
 
 /**
  * What a booker's told when the only host they could get is away right now. When the host's back,
@@ -963,6 +1132,8 @@ export async function awayNoticeOf(
 ): Promise<AwayNotice | null> {
   const rows = await db
     .select({
+      id: schedulingOutOfOffice.id,
+      organizationId: schedulingOutOfOffice.organizationId,
       startAt: schedulingOutOfOffice.startAt,
       endAt: schedulingOutOfOffice.endAt,
       publicMessage: schedulingOutOfOffice.publicMessage,
@@ -988,7 +1159,84 @@ export async function awayNoticeOf(
     if (row.endAt > until) until = row.endAt;
     message = row.publicMessage ?? message;
   }
-  return { until: until.toISOString(), message };
+  // Who's actually available decides what's offered: this only keeps it from reading as nobody.
+  const delegates = await delegatesOf(db, [first]);
+  return {
+    until: until.toISOString(),
+    message,
+    covered: (delegates.get(first.id)?.length ?? 0) > 0,
+  };
+}
+
+/**
+ * Someone back from two weeks away is far behind their pool, and without this would take nearly
+ * every booking until they caught up. They come back level with the lowest of their peers, once.
+ * Only ever upward, and not while another entry still has them away: that one's end does this.
+ */
+async function levelReturningHost(tx: Executor, row: OutOfOfficeRow, now: Date): Promise<void> {
+  const [claimed] = await tx
+    .update(schedulingOutOfOffice)
+    .set({ fairnessLeveledAt: now })
+    .where(
+      and(
+        eq(schedulingOutOfOffice.id, row.id),
+        eq(schedulingOutOfOffice.organizationId, row.organizationId),
+        isNull(schedulingOutOfOffice.fairnessLeveledAt),
+      ),
+    )
+    .returning({ id: schedulingOutOfOffice.id });
+  if (!claimed) return;
+  const [stillAway] = await tx
+    .select({ id: schedulingOutOfOffice.id })
+    .from(schedulingOutOfOffice)
+    .where(
+      and(
+        eq(schedulingOutOfOffice.organizationId, row.organizationId),
+        eq(schedulingOutOfOffice.hostId, row.hostId),
+        isNull(schedulingOutOfOffice.deletedAt),
+        lte(schedulingOutOfOffice.startAt, now),
+        gt(schedulingOutOfOffice.endAt, now),
+      ),
+    )
+    .limit(1);
+  if (stillAway) return;
+  const memberships = await tx
+    .select({ eventTypeId: schedulingEventTypeHost.eventTypeId })
+    .from(schedulingEventTypeHost)
+    .innerJoin(schedulingEventType, eq(schedulingEventType.id, schedulingEventTypeHost.eventTypeId))
+    .where(
+      and(
+        eq(schedulingEventTypeHost.organizationId, row.organizationId),
+        eq(schedulingEventTypeHost.hostId, row.hostId),
+        isNull(schedulingEventTypeHost.removedAt),
+        eq(schedulingEventType.kind, "pool"),
+      ),
+    )
+    .orderBy(asc(schedulingEventTypeHost.eventTypeId));
+  for (const { eventTypeId } of memberships) {
+    // Peers with bookings of their own: someone new counts as level with the pool, not below it.
+    await tx
+      .update(schedulingEventTypeHost)
+      .set({
+        fairUnits: sql`greatest(${schedulingEventTypeHost.fairUnits}, coalesce(ceil((
+          select min(peer.fair_units::float8 / peer.weight)
+          from scheduling_event_type_host peer
+          where peer.event_type_id = ${eventTypeId}
+            and peer.organization_id = ${row.organizationId}
+            and peer.host_id <> ${row.hostId}
+            and peer.removed_at is null
+            and peer.weight > 0
+            and peer.fair_units > 0
+        ) * ${schedulingEventTypeHost.weight})::int, 0))`,
+      })
+      .where(
+        and(
+          eq(schedulingEventTypeHost.eventTypeId, eventTypeId),
+          eq(schedulingEventTypeHost.organizationId, row.organizationId),
+          eq(schedulingEventTypeHost.hostId, row.hostId),
+        ),
+      );
+  }
 }
 
 /** Lets customers' systems react when someone's time off actually begins and ends. */
@@ -1026,6 +1274,7 @@ export async function announceDueOutOfOffice(
       // Over by the time this ran, so it's only said once it's ended.
       if (ended) {
         await recordEvent(tx, row, "scheduling.out_of_office.ended", now);
+        await levelReturningHost(tx, row, now);
       } else {
         await recordEvent(tx, row, "scheduling.out_of_office.started", now);
       }

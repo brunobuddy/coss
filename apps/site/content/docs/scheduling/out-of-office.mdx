@@ -96,6 +96,34 @@ To move them, [reassign](/docs/scheduling/reassigning) one, or [many at once](/d
 A hold that was already there can still be confirmed, and a request can still be approved, during an entry. Both show
 up as conflicts.
 
+## Name who covers
+
+Delegates can be booked in a host's place while they're away, inside the same event type:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.outOfOffice.create({
+  host: "doctor_482",
+  start_date: "2027-08-02",
+  end_date: "2027-08-13",
+  delegates: ["doctor_518", "doctor_530"],
+});
+```
+
+Bookers see slots as usual, and the first of them who's free gets the booking, in the order you named them. A pool still
+picks fairly, with a delegate ranked no better than the host they're covering, so someone with few bookings doesn't take
+all of them. This only applies to meetings that touch the time away, and only to hosts a booking could otherwise have:
+a required host still has to be there.
+
+A delegate still has to fit how a booking's routed. They need to match a pool's `host_filter` and whatever narrowed the
+booking, and a host taken out of the event type by name stays out. It doesn't chain: a delegate who's also away just has
+no slots. A host choosing their own on their page can only name people they share an event type with.
+
+When a host comes back, their count in each pool moves up to the lowest of their peers, once, so they don't take every
+booking until they've caught up.
+
 ## Move what it's in the way of
 
 Existing bookings only move if you say so:
@@ -115,7 +143,7 @@ await coss.scheduling.outOfOffice.create({
 
 That starts a [reassignment](/docs/scheduling/reassigning#many-at-once) when there's anything to move, and again if the
 entry's times change later. `reassign` takes `to_host`, or `preferred_hosts` and `otherwise`; without it, each goes to
-the fairest who's free. A booking nobody can take stays where it is. The host's email comes a little later and only
+one of its delegates if they're free, and otherwise the fairest who is. A booking nobody can take stays where it is. The host's email comes a little later and only
 counts what's left.
 
 ## What people booking see

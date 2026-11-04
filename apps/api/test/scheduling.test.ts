@@ -823,6 +823,43 @@ describe("out of office", () => {
     expect((await mine(`/host/out_of_office/${entry.id}`, "DELETE")).status).toBe(204);
   });
 
+  test("a host names who covers for them, only from those they share work with", async () => {
+    const { send, host, tokenFor, client } = await booker();
+    const peer = (await (
+      await send("/hosts", "POST", { name: "Dr. Peer", time_zone: "UTC" })
+    ).json()) as { id: string };
+    const stranger = (await (
+      await send("/hosts", "POST", { name: "Dr. Stranger", time_zone: "UTC" })
+    ).json()) as { id: string };
+    await send("/event_types", "POST", {
+      title: "Shared",
+      kind: "pool",
+      duration_minutes: 30,
+      hosts: [{ host: host.id }, { host: peer.id }],
+    });
+    const mine = client(await tokenFor(`/hosts/${host.id}/sessions`, {}));
+    const listed = (await (await mine("/host/delegates")).json()) as {
+      data: Record<string, unknown>[];
+    };
+    // Only what it takes to choose: no attributes, emails or anything else about them.
+    expect(listed.data).toEqual([{ id: peer.id, name: "Dr. Peer" }]);
+
+    const when = { start_date: "2031-01-06", end_date: "2031-01-06" };
+    const named = await mine("/host/out_of_office", "POST", { ...when, delegates: [peer.id] });
+    expect(named.status).toBe(201);
+    const entry = (await named.json()) as { id: string; delegates: string[] };
+    expect(entry.delegates).toEqual([peer.id]);
+    const refused = await mine("/host/out_of_office", "POST", {
+      ...when,
+      delegates: [stranger.id],
+    });
+    expect(refused.status).toBe(422);
+    const changing = await mine(`/host/out_of_office/${entry.id}`, "PATCH", {
+      delegates: [stranger.id],
+    });
+    expect(changing.status).toBe(422);
+  });
+
   test("a read-only host session can look but not change anything", async () => {
     const { host, tokenFor, client } = await booker();
     const session = client(await tokenFor(`/hosts/${host.id}/sessions`, { read_only: true }));

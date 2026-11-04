@@ -40,6 +40,7 @@ import {
   type Candidates,
   calendarFailureModeOf,
   candidatesOf,
+  hostInputOf,
   loadHostInputs,
   slotRuleOf,
   takeTurn,
@@ -58,6 +59,7 @@ import {
   releaseSessionClaim,
   tryClaim,
 } from "./claims.ts";
+import { type Interval, overlapsAny } from "./engine/intervals.ts";
 import { type PoolMember, rankCandidates } from "./engine/rank.ts";
 import { expandRecurrence } from "./engine/recurrence.ts";
 import {
@@ -285,7 +287,8 @@ function checkStart(startMs: number): void {
 const slotLost = (reason?: string) =>
   new SchedulingError(
     "slot_unavailable",
-    reason && reason !== "out_of_office"
+    // Neither says anything a booker should learn: that someone's away, or who's covering for them.
+    reason && reason !== "out_of_office" && reason !== "outside_coverage"
       ? `That time isn't available (${reason}).`
       : "That time isn't available.",
     { param: "start" },
@@ -384,6 +387,8 @@ export type ClaimPlan = {
   ttlSeconds: number | null;
   /** Reassigning: what a booking that exists doesn't have to answer again, and any overrides. */
   skip?: readonly NotBookableReason[] | undefined;
+  /** Who's only standing in for someone, and when. */
+  coverage?: ReadonlyMap<string, readonly Interval[]> | undefined;
 };
 
 /** What's committed now says about each host. Null: not found. */
@@ -400,6 +405,7 @@ async function verdictsOf(
       id: host.id,
       timeZone: host.timeZone,
       scheduleId: schedules.get(host.id) ?? null,
+      onlyWithin: plan.coverage?.get(host.id),
     })),
     eventTypeId: eventType.id,
     fromMs: startMs,
@@ -468,12 +474,23 @@ function schedulesOf(candidates: Candidates): Map<string, string | null> {
   );
 }
 
+/** Who's only here standing in for someone, and when. */
+function coverageWindows(candidates: Candidates): Map<string, Interval[]> {
+  return new Map(
+    candidates.members.flatMap((entry) =>
+      entry.coverage ? [[entry.host.id, entry.coverage.windows] as const] : [],
+    ),
+  );
+}
+
 function ranked(candidates: Candidates, seed: string): HostRow[] {
-  const members: PoolMember[] = candidates.members.map(({ host, membership }) => ({
+  const members: PoolMember[] = candidates.members.map(({ host, membership, coverage }) => ({
     hostId: host.id,
     weight: membership?.weight ?? 100,
     fairUnits: membership?.fairUnits ?? 0,
     lastAssignedAtMs: membership?.lastAssignedAt?.getTime() ?? null,
+    atLeastRatio: coverage?.principalRatio,
+    coverPosition: coverage?.position,
   }));
   const byId = new Map(candidates.members.map((entry) => [entry.host.id, entry.host]));
   return rankCandidates(members, seed).map((id) => byId.get(id) as HostRow);
@@ -1023,6 +1040,8 @@ async function joinGroupSession(
   const endMs = startMs + rule.durationMinutes * MINUTE_MS;
   const away = await hostsAwayDuring(tx, eventType, [host.id], startMs, endMs);
   if (away.has(host.id)) throw new LostSlot("out_of_office");
+  const covering = plan.coverage?.get(host.id);
+  if (covering && !overlapsAny(covering, startMs, endMs)) throw new LostSlot("outside_coverage");
   await settleSessionLocation(tx, session, liveSeats, location);
   const ttlSeconds = plan.ttlSeconds;
   const sessionClaim = { organizationId: eventType.organizationId, groupSessionId: session.id };
@@ -1031,7 +1050,7 @@ async function joinGroupSession(
     if (claimed) await releaseSessionClaim(tx, sessionClaim);
     const loaded = await loadHostInputs(tx, {
       scope,
-      hosts: [{ id: host.id, timeZone: host.timeZone, scheduleId }],
+      hosts: [{ id: host.id, timeZone: host.timeZone, scheduleId, onlyWithin: covering }],
       eventTypeId: eventType.id,
       fromMs: startMs,
       toMs: startMs + rule.durationMinutes * MINUTE_MS,
@@ -1222,29 +1241,37 @@ async function createOne(
   let won: { hosts: HostRow[]; liveUntil: Date | null };
   let current = booking;
   if (eventType.kind === "group") {
-    const entry = candidates.members[0] ?? candidates.required[0];
-    if (!entry) throw slotLost("no_hosts");
+    // A group has one host, but someone may be standing in: whoever can have this time, in order.
+    const entries = [...candidates.members, ...candidates.required];
+    if (entries.length === 0) throw slotLost("no_hosts");
     const chosen = sharedLocation(eventType, chooseLocation(eventType, request.location), actor);
-    try {
-      const joined = await tx.transaction((savepoint) =>
-        joinGroupSession(
-          savepoint,
-          plan,
-          booking,
-          entry.host,
-          entry.membership?.scheduleId ?? null,
-          {
-            chosen,
-            wanted: request.location,
-          },
-        ),
-      );
-      won = { hosts: [entry.host], liveUntil: joined.liveUntil };
-      current = { ...booking, groupSessionId: joined.sessionId };
-    } catch (error) {
-      if (error instanceof LostSlot) throw slotLost(error.reason);
-      throw error;
+    let lost: string | undefined;
+    let joined: { host: HostRow; liveUntil: Date | null; sessionId: string } | null = null;
+    for (const entry of entries) {
+      try {
+        const session = await tx.transaction((savepoint) =>
+          joinGroupSession(
+            savepoint,
+            plan,
+            booking,
+            entry.host,
+            entry.membership?.scheduleId ?? null,
+            {
+              chosen,
+              wanted: request.location,
+            },
+          ),
+        );
+        joined = { host: entry.host, ...session };
+        break;
+      } catch (error) {
+        if (!(error instanceof LostSlot)) throw error;
+        lost = error.reason;
+      }
     }
+    if (!joined) throw slotLost(lost);
+    won = { hosts: [joined.host], liveUntil: joined.liveUntil };
+    current = { ...booking, groupSessionId: joined.sessionId };
   } else {
     won = await assignAndClaim(tx, plan, candidates, booking.id, booking.id);
   }
@@ -1422,6 +1449,7 @@ async function book(
     nowMs: now.getTime(),
     failureMode,
     ttlSeconds,
+    coverage: coverageWindows(candidates),
   };
   const context: NewBookingContext = { env, eventType, deps, actor, now };
   const hash = hashRequest({ wantHold, request: { ...request, idempotencyKey: undefined } });
@@ -1962,6 +1990,7 @@ export async function approveBooking(
 
 /** What `reassign.ts` builds on. Not part of the package's interface. */
 export const bookingInternals = {
+  coverageWindows,
   LostSlot,
   assignFairly,
   bumped,
@@ -2019,6 +2048,7 @@ export async function rescheduleBooking(
     const member = rows.find((row) => row.role === "member");
     // Asking for the host it has is just moving the booking.
     const replacing = replacement && replacement.id !== member?.hostId ? replacement : null;
+    let replacementCoverage: Map<string, Interval[]> | undefined;
     if (replacement && !member) {
       throw new SchedulingError("invalid_event_type", "This booking's hosts can't be changed.", {
         param: "host",
@@ -2026,11 +2056,13 @@ export async function rescheduleBooking(
     }
     if (replacement) {
       const { members } = await candidatesOf(tx, env, eventType, { hostRef: replacement.id });
-      if (!members.some((candidate) => candidate.host.id === replacement.id)) {
+      const entry = members.find((candidate) => candidate.host.id === replacement.id);
+      if (!entry) {
         throw new SchedulingError("invalid_event_type", "That host can't take this event type.", {
           param: "host",
         });
       }
+      if (entry.coverage) replacementCoverage = new Map([[replacement.id, entry.coverage.windows]]);
     }
     const hosts = replacing
       ? [...current.filter((host) => host.id !== member?.hostId), replacing]
@@ -2067,6 +2099,7 @@ export async function rescheduleBooking(
       nowMs: now.getTime(),
       failureMode: await calendarFailureModeOf(tx, env),
       ttlSeconds,
+      coverage: replacementCoverage,
     };
     try {
       await tx.transaction(async (savepoint) => {
@@ -2513,11 +2546,7 @@ export async function previewSeries(
   for (const startMs of starts) {
     const loaded = await loadHostInputs(db, {
       scope: env,
-      hosts: entries.map((entry) => ({
-        id: entry.host.id,
-        timeZone: entry.host.timeZone,
-        scheduleId: entry.membership?.scheduleId ?? null,
-      })),
+      hosts: entries.map(hostInputOf),
       eventTypeId: eventType.id,
       fromMs: startMs,
       toMs: startMs + durationMinutes * MINUTE_MS,
@@ -2575,12 +2604,14 @@ async function seriesChoices(
   const { starts, rule, nowMs } = input;
   const required = candidates.required.map((entry) => entry.host);
   const schedules = schedulesOf(candidates);
+  const coverage = coverageWindows(candidates);
   const loaded = await loadHostInputs(db, {
     scope: env,
     hosts: [...required, ...members].map((host) => ({
       id: host.id,
       timeZone: host.timeZone,
       scheduleId: schedules.get(host.id) ?? null,
+      onlyWithin: coverage.get(host.id),
     })),
     eventTypeId: input.eventTypeId,
     fromMs: Math.min(...starts),
@@ -2676,6 +2707,7 @@ export async function createSeries(
         nowMs: now.getTime(),
         failureMode,
         ttlSeconds,
+        coverage: coverageWindows(candidates),
       };
       try {
         const created = await inSavepoint(tx, async (savepoint) => {

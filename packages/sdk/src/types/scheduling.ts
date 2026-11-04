@@ -766,6 +766,8 @@ interface SchedulingOutOfOfficeDetails {
   public_message?: string;
   /** Put a private "Out of office" event on the host's calendar. Default: true. */
   show_on_calendar?: boolean;
+  /** Who can be booked in this host's place during it, in the order to try them. */
+  delegates?: string[];
   /** Bookings already in the way: `leave` (the default) only reports them, `reassign` moves them. */
   existing_bookings?: "leave" | "reassign";
   /** With `existing_bookings: reassign`: who they go to. Default: the fairest who's free. */
@@ -799,6 +801,7 @@ export interface UpdateSchedulingOutOfOfficeParams extends SchedulingOutOfOffice
   notes?: string | null;
   public_message?: string | null;
   show_on_calendar?: boolean;
+  delegates?: string[];
   existing_bookings?: "leave" | "reassign";
   reassign?: SchedulingOutOfOfficeDetails["reassign"];
 }
@@ -825,6 +828,8 @@ export interface SchedulingOutOfOffice {
   notes: string | null;
   public_message: string | null;
   show_on_calendar: boolean;
+  /** Who can be booked in their place. */
+  delegates: string[];
   existing_bookings: "leave" | "reassign";
   external_id: string | null;
   /** Shared by the entries one request made for several hosts. */

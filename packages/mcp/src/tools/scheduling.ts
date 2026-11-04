@@ -664,6 +664,16 @@ export function registerSchedulingTools(ctx: ToolContext): void {
       description:
         "Stops hosts being offered during some time: start_date and end_date for whole days (the last one included), or start and end instants for part of a day. Give one of host, hosts and host_filter. Existing bookings stay: see list_scheduling_out_of_office_conflicts. public_message is shown to people booking, and can't hold a link.",
       inputSchema: z.object({
+        delegates: z
+          .array(z.string())
+          .optional()
+          .describe("Who can be booked in their place during it, in order."),
+        existing_bookings: z
+          .enum(["leave", "reassign"])
+          .optional()
+          .describe(
+            "Bookings already in the way: only report them (the default), or move them to whoever's free.",
+          ),
         host: z.string().optional(),
         hosts: z.array(z.string()).optional(),
         host_filter: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),

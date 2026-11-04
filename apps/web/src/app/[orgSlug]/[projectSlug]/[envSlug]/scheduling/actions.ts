@@ -183,6 +183,7 @@ export async function createOutOfOfficeAction(_prev: ActionResult | null, formDa
           notes: optional("notes"),
           show_on_calendar: formData.get("showOnCalendar") === "on",
           existing_bookings: formData.get("moveBookings") === "on" ? "reassign" : "leave",
+          delegates: formData.getAll("delegateId").map(String),
         },
         configuredDeps(),
         actorOf(context),

@@ -33,6 +33,8 @@ export type HostInputs = {
   calendarVerified: boolean;
   /** Time off. Nothing can be booked in it, joining a session already running included. */
   away?: readonly Interval[];
+  /** Standing in for someone: only a meeting that touches their time away. Unset: any time. */
+  onlyWithin?: readonly Interval[] | undefined;
   /** Group event types: sessions already running, which people can join rather than start. */
   sessions?: readonly GroupSessionState[];
 };
@@ -44,6 +46,7 @@ export type NotBookableReason =
   | "too_soon"
   | "outside_booking_window"
   | "out_of_office"
+  | "outside_coverage"
   | "calendar_unverified"
   | "outside_availability"
   | "host_busy"
@@ -138,6 +141,13 @@ export function isBookable(
     return { ok: false, reason: "outside_booking_window" };
   }
   const endMs = startMs + rule.durationMinutes * MINUTE_MS;
+  if (
+    checks("outside_coverage") &&
+    host.onlyWithin &&
+    !overlapsAny(host.onlyWithin, startMs, endMs)
+  ) {
+    return { ok: false, reason: "outside_coverage" };
+  }
   // Before the calendar's verdict, so the reason's honest: reconnecting wouldn't make this bookable.
   if (checks("out_of_office") && host.away && overlapsAny(host.away, startMs, endMs)) {
     return { ok: false, reason: "out_of_office" };

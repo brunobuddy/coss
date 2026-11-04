@@ -52,7 +52,7 @@ type Keys = Pick<SchedulingDeps, "dataKeys" | "now">;
 type BookingRow = typeof schedulingBooking.$inferSelect;
 type ItemRow = typeof schedulingReassignmentItem.$inferSelect;
 
-const { ranked } = bookingInternals;
+const { coverageWindows, ranked } = bookingInternals;
 
 export const MAX_REASSIGNMENT_BOOKINGS = 5000;
 export const MAX_PREVIEW_BOOKINGS = 500;
@@ -618,12 +618,14 @@ export async function previewReassignment(
         entry.membership?.scheduleId ?? null,
       ]),
     );
+    const coverage = coverageWindows(unrouted);
     const loaded = await loadHostInputs(db, {
       scope: env,
       hosts: [...everyone.values()].map((host) => ({
         id: host.id,
         timeZone: host.timeZone,
         scheduleId: scheduleOf.get(host.id) ?? null,
+        onlyWithin: anyHost ? undefined : coverage.get(host.id),
       })),
       eventTypeId,
       fromMs: Math.min(...group.map((booking) => booking.startAt.getTime())),

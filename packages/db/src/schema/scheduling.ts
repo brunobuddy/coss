@@ -291,6 +291,37 @@ export const schedulingOutOfOffice = pgTable(
   ],
 );
 
+/**
+ * Who can be booked in someone's place while they're away, in order. A row only says who: the time
+ * comes from the entry, and whether they fit a booking from how it's routed.
+ */
+export const schedulingOutOfOfficeDelegate = pgTable(
+  "scheduling_out_of_office_delegate",
+  {
+    outOfOfficeId: text("out_of_office_id").notNull(),
+    hostId: text("host_id").notNull(),
+    organizationId: text("organization_id").notNull(),
+    position: integer("position").notNull(),
+  },
+  (t) => [
+    primaryKey({
+      name: "scheduling_out_of_office_delegate_pk",
+      columns: [t.outOfOfficeId, t.hostId],
+    }),
+    foreignKey({
+      name: "scheduling_out_of_office_delegate_entry_fk",
+      columns: [t.outOfOfficeId, t.organizationId],
+      foreignColumns: [schedulingOutOfOffice.id, schedulingOutOfOffice.organizationId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "scheduling_out_of_office_delegate_host_fk",
+      columns: [t.hostId, t.organizationId],
+      foreignColumns: [schedulingHost.id, schedulingHost.organizationId],
+    }).onDelete("cascade"),
+    index("scheduling_out_of_office_delegate_host_idx").on(t.hostId),
+  ],
+);
+
 export const schedulingSchedule = pgTable(
   "scheduling_schedule",
   {

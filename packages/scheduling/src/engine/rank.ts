@@ -3,6 +3,10 @@ export type PoolMember = {
   weight: number;
   fairUnits: number;
   lastAssignedAtMs: number | null;
+  /** Standing in for someone: they rank no better than that person would. */
+  atLeastRatio?: number | undefined;
+  /** Standing in: the order they were named in. Everyone else comes first, all else equal. */
+  coverPosition?: number | undefined;
 };
 
 function hashToUnit(seed: string, hostId: string): number {
@@ -24,11 +28,15 @@ export function rankCandidates(members: readonly PoolMember[], seed: string): st
   const floor = established.length
     ? Math.min(...established.map((member) => member.fairUnits / member.weight))
     : 0;
-  const ratio = (member: PoolMember) => Math.max(member.fairUnits / member.weight, floor);
+  // Someone standing in with few bookings of their own would otherwise take every booking until
+  // they caught up: they're as far behind as the person they're covering, and no further.
+  const ratio = (member: PoolMember) =>
+    Math.max(member.fairUnits / member.weight, floor, member.atLeastRatio ?? 0);
   return [...members]
     .sort(
       (a, b) =>
         ratio(a) - ratio(b) ||
+        (a.coverPosition ?? -1) - (b.coverPosition ?? -1) ||
         (a.lastAssignedAtMs ?? 0) - (b.lastAssignedAtMs ?? 0) ||
         hashToUnit(seed, a.hostId) - hashToUnit(seed, b.hostId) ||
         (a.hostId < b.hostId ? -1 : 1),
