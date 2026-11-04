@@ -412,6 +412,7 @@ describe("coss-mcp server", () => {
     const { call } = await connect({
       "GET /v1/environment": {
         object: "environment",
+        organization: { id: "org_1", hipaa_mode: true },
         api_key: { id: "key_1", access: "restricted", permissions: ["email:send"] },
       },
       "GET /v1/reputation": { object: "reputation", status: "warning", reason: "bounce_rate" },
@@ -423,6 +424,7 @@ describe("coss-mcp server", () => {
       access: "restricted",
       permissions: ["email:send"],
     });
+    expect(data.hipaa_mode).toBe(true);
     expect(data.reputation.status).toBe("warning");
     expect(data.billing).toBeNull();
     expect(data.errors.billing.type).toBe("not_found_error");

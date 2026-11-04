@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { UsageGate } from "@coss/billing/gate";
 import { billingHoldExists, budgetHoldExists } from "@coss/billing/metering";
+import { hipaaModeSql } from "@coss/compliance";
 import { db, schema, type Transaction } from "@coss/db";
 import { isId } from "@coss/db/id";
 import {
@@ -108,6 +109,12 @@ export type SendEmailInput = {
    * booking emails, which name a patient and a doctor: sampling would send them to the AI Gateway).
    */
   screeningExempt?: boolean;
+  /**
+   * Internal callers only: a message in coss.com's own environment on behalf of an organization in
+   * HIPAA mode. It gets that mode's rules: no screening, no stored content, required TLS, hidden
+   * from staff.
+   */
+  hipaaOrigin?: boolean;
   /**
    * Internal callers only (the dashboard's test sends): render the template's draft, refused
    * (`template_revision_mismatch`) unless it is still at the revision the caller checked.
@@ -272,8 +279,11 @@ function bareAddress(value: string): string {
  * mail (a domain it shares included), with its dedicated IP pool when it has one.
  */
 function claimRouting(row: EmailRow, provider: string, sandbox: boolean) {
-  if (sandbox) return { dedicatedPool: false, subaccountTenant: false };
+  if (sandbox) return { dedicatedPool: false, subaccountTenant: false, requireTls: false };
   const pool = dedicatedPoolSql(row.organizationId, provider, row.stream);
+  // Decided here, not only at acceptance: the mode may have been turned on while this waited, or
+  // between this send resolving its settings and storing the row.
+  const hipaa = sql<boolean>`(${email.hipaaOrigin} or ${hipaaModeSql(row.organizationId)})`;
   const subaccountTenant = subaccountTenantSql({
     organizationId: row.organizationId,
     subaccountId: row.subaccountId,
@@ -284,6 +294,10 @@ function claimRouting(row: EmailRow, provider: string, sandbox: boolean) {
     dedicatedPool:
       subaccountTenant === false ? pool : sql<boolean>`(not (${subaccountTenant}) and ${pool})`,
     subaccountTenant,
+    requireTls: hipaa,
+    storeContent: sql<boolean>`(${email.storeContent} and not ${hipaa})`,
+    trackOpens: sql<boolean>`(${email.trackOpens} and not ${hipaa})`,
+    trackClicks: sql<boolean>`(${email.trackClicks} and not ${hipaa})`,
   };
 }
 
@@ -309,6 +323,7 @@ function toOutbound(
     tags: row.tags,
     attachments,
     dedicatedPool: row.dedicatedPool,
+    requireTls: row.requireTls,
     tenantSubaccountId: row.subaccountTenant ? row.subaccountId : null,
   };
 }
@@ -572,13 +587,13 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         id: email.id,
         dedicatedPool: email.dedicatedPool,
         subaccountTenant: email.subaccountTenant,
+        requireTls: email.requireTls,
+        storeContent: email.storeContent,
+        trackOpens: email.trackOpens,
+        trackClicks: email.trackClicks,
       });
     if (!claimed) return currentEmail(row);
-    await complete(
-      { ...row, dedicatedPool: claimed.dedicatedPool, subaccountTenant: claimed.subaccountTenant },
-      provider,
-      sandbox,
-    );
+    await complete({ ...row, ...claimed }, provider, sandbox);
     return currentEmail(row);
   }
 
@@ -1300,6 +1315,7 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
     opts: {
       discardBody?: boolean;
       screeningExempt?: boolean;
+      hipaaOrigin?: boolean;
       templateDraft?: { revision: number };
       paramPrefix?: string;
     } = {},
@@ -1391,8 +1407,9 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         html: content ? content.html : params.html,
         text: content ? content.text : params.text,
         discardBody: opts.discardBody ?? false,
-        screeningExempt: opts.screeningExempt ?? false,
-        storeContent,
+        screeningExempt: Boolean(opts.screeningExempt || opts.hipaaOrigin),
+        hipaaOrigin: opts.hipaaOrigin ?? false,
+        storeContent: storeContent && !opts.hipaaOrigin,
         headers: params.headers,
         tags: params.tags,
         category: params.category ?? null,
@@ -1501,6 +1518,7 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         {
           discardBody: input.discardBody,
           screeningExempt: input.screeningExempt,
+          hipaaOrigin: input.hipaaOrigin,
           templateDraft: input.templateDraft,
         },
       );

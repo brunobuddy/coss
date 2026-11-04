@@ -5,6 +5,7 @@
  * coss.com's notification environment as "<requester> via coss.com". Sandbox environments always
  * send in their own environment (the fake provider: nothing is delivered).
  */
+import { isHipaaMode } from "@coss/compliance";
 import { db, schema } from "@coss/db";
 import { EmailError, type EmailService, type SendEnvironment } from "@coss/email";
 import { SendEmailRequest } from "@coss/email/schemas";
@@ -58,6 +59,7 @@ export function signMailer(opts: {
     email: SignEmail,
     environment: SendEnvironment,
     from: string,
+    hipaaOrigin = false,
   ): Promise<{ replayed: boolean }> {
     const params = SendEmailRequest.parse({
       from,
@@ -88,6 +90,7 @@ export function signMailer(opts: {
         idempotencyKey: email.idempotencyKey,
         idempotencyRetentionMs: Number.POSITIVE_INFINITY,
         discardBody: true,
+        hipaaOrigin,
       });
       return { replayed: replayed === true };
     } catch (error) {
@@ -111,6 +114,8 @@ export function signMailer(opts: {
       { ...email, ...email.cossContent },
       opts.fallback.environment,
       named(`${email.requester} via coss.com`, opts.fallback.address),
+      // The row is coss.com's, so the mode's own checks can't see whose request this is.
+      await isHipaaMode(email.environment.organizationId),
     );
   }
 

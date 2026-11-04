@@ -9,6 +9,7 @@ const TITLES: Record<string, string> = {
   "/sso": "Single sign-on",
   "/scim": "Directory sync",
   "/audit": "Audit log",
+  "/compliance": "Compliance",
 };
 
 /** The title of the settings pages that don't have their own header (Projects, Members, Spend do). */

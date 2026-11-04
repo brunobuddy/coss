@@ -372,6 +372,17 @@ export default async function BillingPage({
                 <>
                   {price}
                   {catalog ? `. ${catalog.description}` : "."}
+                  {context.hipaaMode && !catalog && /hipaa/i.test(name) ? (
+                    <>
+                      {" "}
+                      <Link
+                        className="underline underline-offset-4"
+                        href={`/${organization.slug}/settings/compliance`}
+                      >
+                        See what it includes
+                      </Link>
+                    </>
+                  ) : null}
                   {waiting ? (
                     <span className="block text-foreground">
                       Waiting for its payment

@@ -4,6 +4,7 @@
  * turns it on. Each field resolves on its own: the send's `tracking`, then its category's rule,
  * then the default.
  */
+import { HipaaModeError, hipaaModeApplies } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { isId } from "@coss/db/id";
 import { and, asc, eq, isNull, or, sql } from "drizzle-orm";
@@ -78,6 +79,8 @@ export async function resolveTracking(
   category: string | null,
   override: TrackingOptionsOutput | undefined,
 ): Promise<ResolvedTracking> {
+  const hipaaMode = await hipaaModeApplies(env.environmentId, executor);
+  if (hipaaMode && (override?.opens || override?.clicks)) throw hipaaTrackingRefused();
   if (
     override?.opens !== undefined &&
     override.clicks !== undefined &&
@@ -99,10 +102,15 @@ export async function resolveTracking(
   const rule =
     rows.find((row) => row.category !== null) ?? rows.find((row) => row.category === null);
   return {
-    opens: override?.opens ?? rule?.opens ?? false,
-    clicks: override?.clicks ?? rule?.clicks ?? false,
+    opens: !hipaaMode && (override?.opens ?? rule?.opens ?? false),
+    clicks: !hipaaMode && (override?.clicks ?? rule?.clicks ?? false),
     unsubscribe: override?.unsubscribe ?? rule?.unsubscribe ?? false,
   };
+}
+
+/** Stored link URLs outlive discarded content, so HIPAA mode has no tracking to turn on. */
+export function hipaaTrackingRefused(): HipaaModeError {
+  return new HipaaModeError("HIPAA mode turns off open and click tracking in live environments.");
 }
 
 /**
@@ -130,6 +138,9 @@ export async function updateTrackingRule(
   category: string | null,
   input: UpdateTrackingRuleRequestOutput,
 ): Promise<TrackingRuleRow | null> {
+  if ((input.opens || input.clicks) && (await hipaaModeApplies(env.environmentId))) {
+    throw hipaaTrackingRefused();
+  }
   const [environment] = await db
     .select({ projectId: schema.environment.projectId })
     .from(schema.environment)

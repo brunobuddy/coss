@@ -1,5 +1,6 @@
 /** Send failures as SMTP replies: 4xx where retrying can help, 5xx where it can't. */
 import { BillingError } from "@coss/billing";
+import { HipaaModeError } from "@coss/compliance";
 import { EmailError } from "@coss/email";
 import type { SmtpReply } from "@coss/email/smtp";
 
@@ -27,6 +28,7 @@ export function reply(
 
 /** A send's expected failure as a reply, or `null` for anything unexpected (logged, then 451). */
 export function sendErrorReply(error: unknown): SmtpOutcome | null {
+  if (error instanceof HipaaModeError) return reply(550, "5.7.1", error.message, error.code);
   if (error instanceof EmailError) {
     switch (error.code) {
       case "request_in_progress":

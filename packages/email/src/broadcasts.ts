@@ -11,6 +11,7 @@
  * step is safe: an email is unique per broadcast and contact.
  */
 import type { UsageGate } from "@coss/billing/gate";
+import { hipaaModeApplies } from "@coss/compliance";
 import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { IDEMPOTENCY_KEY_TTL_MS, requestHash, withIdempotencyKey } from "@coss/db/idempotency";
@@ -69,6 +70,7 @@ import type { EmailService, SendEnvironment } from "./service.ts";
 import { resolveStoreContent } from "./storage-settings.ts";
 import { topicsByKey } from "./topics.ts";
 import { newTrackingToken } from "./tracking.ts";
+import { hipaaTrackingRefused } from "./tracking-settings.ts";
 
 const { audience, broadcast, email, emailRecipient, environment, segment } = schema;
 
@@ -384,6 +386,12 @@ export async function createBroadcast(
     if (replay) return { broadcast: replay, replayed: true };
     throw error;
   }
+  if (
+    (params.tracking?.opens || params.tracking?.clicks) &&
+    (await hipaaModeApplies(env.environmentId))
+  ) {
+    throw hipaaTrackingRefused();
+  }
   const scheduledAt = params.scheduled_at ? new Date(params.scheduled_at) : starts ? now : null;
   const projectId = await environmentProject(env);
   if (!projectId) throw new BroadcastError("not_found", "Environment not found.");
@@ -493,6 +501,12 @@ export async function updateBroadcast(
       });
     }
     assertRenderable({ html, text });
+    if (
+      (params.tracking?.opens || params.tracking?.clicks) &&
+      (await hipaaModeApplies(env.environmentId, tx))
+    ) {
+      throw hipaaTrackingRefused();
+    }
     const [saved] = await tx
       .update(broadcast)
       .set({
@@ -1331,7 +1345,11 @@ async function insertEmails(
   definitions: Awaited<ReturnType<typeof propertyDefinitions>>,
   now: Date,
 ): Promise<{ id: string; contactId: string | null }[]> {
-  const tracked = row.trackOpens || row.trackClicks;
+  // A broadcast's own settings predate its emails, so HIPAA mode applies when each is made.
+  const hipaaMode = await hipaaModeApplies(row.environmentId, tx);
+  const trackOpens = row.trackOpens && !hipaaMode;
+  const trackClicks = row.trackClicks && !hipaaMode;
+  const tracked = trackOpens || trackClicks;
   // As for any send, the environment's content storage when the email is made.
   const storeContent = await resolveStoreContent(tx, row);
   const rows = recipients.map((recipient) => {
@@ -1357,8 +1375,8 @@ async function insertEmails(
       text: null,
       category: row.topic,
       stream: "marketing" as const,
-      trackOpens: row.trackOpens,
-      trackClicks: row.trackClicks,
+      trackOpens,
+      trackClicks,
       trackingToken: tracked ? newTrackingToken() : null,
       broadcastId: row.id,
       contactId: recipient.id,

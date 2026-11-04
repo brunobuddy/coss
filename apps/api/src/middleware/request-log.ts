@@ -203,11 +203,15 @@ export function requestLog(writer: LogWriter) {
     const route = c.req.routePath.endsWith("*") ? null : c.req.routePath;
     // Only bodies the handler already parsed (no second read of a 40 MB upload); Hono caches
     // what `c.req.json()` read as text.
-    const requestText = keepsRequestBody(path)
-      ? (c.req.bodyCache.text as Promise<string> | undefined)
-      : undefined;
+    // Live traffic of an organization in HIPAA mode: metadata only, here and in its log drains.
+    const metadataOnly = auth.hipaaMode && auth.mode === "live";
+    const requestText =
+      !metadataOnly && keepsRequestBody(path)
+        ? (c.req.bodyCache.text as Promise<string> | undefined)
+        : undefined;
     const length = Number(response.headers.get("content-length") ?? Number.NaN);
     const responseCopy =
+      !metadataOnly &&
       isJson(response.headers) &&
       !(length > MAX_LOGGED_RESPONSE_BYTES) &&
       keepsResponseBody(path, status)
@@ -216,7 +220,7 @@ export function requestLog(writer: LogWriter) {
     const requestHeaders = loggedRequestHeaders(c.req.raw.headers);
     const responseHeaders = loggedResponseHeaders(response.headers);
     const { requestId, clientIp } = c.var;
-    const search = new URL(c.req.url).search;
+    const search = metadataOnly ? "" : new URL(c.req.url).search;
     const marked = c.get("discardsEmailContent") === true;
 
     void (async () => {

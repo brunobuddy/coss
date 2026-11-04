@@ -26,6 +26,7 @@ mock.module("@coss/auth/mobile", () => ({
 let role = "member";
 let environmentId = "env_1";
 mock.module("@coss/tenancy", () => ({
+  touchHipaaSession: async () => "active",
   getMembership: async () => ({
     organization: {
       id: "org_1",

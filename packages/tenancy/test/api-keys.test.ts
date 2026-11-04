@@ -145,6 +145,7 @@ describe("authenticateApiKey", () => {
         environmentId: tenant.production.id,
         ownerUserId: null,
         mode: "live",
+        hipaaMode: false,
         apiVersion: versioning.latest,
       },
     });
@@ -157,6 +158,7 @@ describe("authenticateApiKey", () => {
         environmentId: tenant.development.id,
         ownerUserId: null,
         mode: "sandbox",
+        hipaaMode: false,
         apiVersion: versioning.latest,
       },
     });

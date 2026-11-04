@@ -1,3 +1,4 @@
+import { isHipaaMode } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { desc, eq, sql } from "drizzle-orm";
 import type { PushKind } from "./schemas.ts";
@@ -21,6 +22,8 @@ export async function enqueuePush(
     now?: Date;
   },
 ): Promise<void> {
+  // Organization and project names would pass through Apple, outside the BAA.
+  if (await isHipaaMode(input.organizationId, tx)) return;
   const now = input.now ?? new Date();
   const insert = tx.insert(pushNotification).values({
     organizationId: input.organizationId,

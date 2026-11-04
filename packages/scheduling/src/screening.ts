@@ -3,6 +3,7 @@
  * what a customer can put in them is checked when it's set up: an abuser can't put phishing in an
  * event title and mail it to anyone. Live environments only; injected, like Forms' hosted pages.
  */
+import { isHipaaMode } from "@coss/compliance";
 import { SchedulingError } from "./errors.ts";
 
 export type SetupScreening = (input: { organizationId: string; text: string }) => Promise<boolean>;
@@ -24,6 +25,7 @@ export async function screenSetup(
   param: string,
 ): Promise<void> {
   if (env.mode !== "live" || !screen || !text.trim()) return;
+  if (await isHipaaMode(env.organizationId)) return;
   if (!(await screen({ organizationId: env.organizationId, text }))) {
     throw new SchedulingError(
       "content_refused",

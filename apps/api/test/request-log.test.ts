@@ -16,6 +16,7 @@ function loggedApp(response: () => Response) {
       apiKeyId: "key_test",
       ownerUserId: null,
       mode: "sandbox",
+      hipaaMode: false,
     });
     c.set("requestId", "req_test");
     c.set("clientIp", null);
@@ -160,6 +161,7 @@ describe("email content", () => {
         apiKeyId: "key_test",
         ownerUserId: null,
         mode: "sandbox",
+        hipaaMode: false,
       });
       c.set("requestId", "req_test");
       c.set("clientIp", null);

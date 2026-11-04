@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@coss/ui/components/alert";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { BillingBanner } from "@/components/billing/billing-banner";
+import { HipaaModeBanner } from "@/components/hipaa-mode-banner";
 import { ReputationBanner } from "@/components/reputation";
 import { AppShell } from "@/components/shell/app-shell";
 import { ConsoleSidebar } from "@/components/shell/console-sidebar";
@@ -21,7 +22,7 @@ import { isPlatformAdmin, requireOrgMember } from "@/lib/session";
 
 export default async function OrganizationLayout({ children, params }: LayoutProps<"/[orgSlug]">) {
   const { orgSlug } = await params;
-  const { session, organization, member, suspended, ssoBreakGlass, can } =
+  const { session, organization, member, suspended, ssoBreakGlass, hipaaMode, can } =
     await requireOrgMember(orgSlug);
   const [
     organizations,
@@ -98,13 +99,15 @@ export default async function OrganizationLayout({ children, params }: LayoutPro
     ...(can({ sso: ["read"] }) ? ["/sso"] : []),
     ...(can({ scim: ["read"] }) ? ["/scim"] : []),
     ...(can({ audit: ["read"] }) ? ["/audit"] : []),
+    "/compliance",
   ];
 
   return (
     <AppShell
       banners={
-        standing || suspended || billing || ssoBreakGlass || ownBudgetPaused ? (
+        standing || suspended || billing || ssoBreakGlass || ownBudgetPaused || hipaaMode ? (
           <div className="flex flex-col gap-3">
+            {hipaaMode ? <HipaaModeBanner orgSlug={organization.slug} /> : null}
             {standing ? (
               <ReputationBanner
                 href={orgLinkHref(organization.slug, "/email/reputation")}

@@ -7,7 +7,13 @@ import {
   UncertainSendError,
 } from "../provider.ts";
 import { parseEmailAddress } from "../schemas.ts";
-import { isSesError, type SesApi, type SesConfig, tenantNameFor } from "./api.ts";
+import {
+  isSesError,
+  requiredTlsSetFor,
+  type SesApi,
+  type SesConfig,
+  tenantNameFor,
+} from "./api.ts";
 import { encodeAddress } from "./mime.ts";
 
 /** Only tag set on SES messages: maps delivery events back to the email (never customer tags). */
@@ -114,7 +120,9 @@ export class SesEmailProvider implements EmailProvider {
       // The organization's own configuration sets send through its dedicated IP pool.
       ConfigurationSetName: message.dedicatedPool
         ? tenantNameFor(this.#config.tenantPrefix, message.organizationId, message.stream)
-        : this.#config.configurationSets[message.stream],
+        : message.requireTls
+          ? requiredTlsSetFor(this.#config.configurationSets[message.stream])
+          : this.#config.configurationSets[message.stream],
       // A sub-account's own tenant when the email goes out from its domain (never with a pool).
       TenantName: tenantNameFor(
         this.#config.tenantPrefix,

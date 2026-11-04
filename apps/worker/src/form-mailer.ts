@@ -7,6 +7,7 @@
  * into a public form gets mail only from the customer's verified sender. Sandbox environments
  * always send in their own environment (the fake provider: nothing is delivered).
  */
+import { isHipaaMode } from "@coss/compliance";
 import { db, schema } from "@coss/db";
 import { EmailError, type EmailService, type SendEnvironment } from "@coss/email";
 import { SendEmailRequest } from "@coss/email/schemas";
@@ -53,6 +54,7 @@ export function formMailer(opts: {
     email: FormEmail,
     environment: SendEnvironment,
     from: string,
+    hipaaOrigin = false,
   ): Promise<{ replayed: boolean }> {
     const params = SendEmailRequest.parse({
       from,
@@ -81,6 +83,7 @@ export function formMailer(opts: {
         idempotencyKey: email.idempotencyKey,
         idempotencyRetentionMs: Number.POSITIVE_INFINITY,
         discardBody: environment.mode === "live",
+        hipaaOrigin,
       });
       sent = replayed !== true;
       return { replayed: replayed === true };
@@ -94,7 +97,7 @@ export function formMailer(opts: {
     }
   }
 
-  function viaCoss(email: FormEmail): Promise<{ replayed: boolean }> {
+  async function viaCoss(email: FormEmail): Promise<{ replayed: boolean }> {
     if (!opts.fallback) {
       throw new Error(
         "Forms can't send this notification without the form's own sender: coss.com's sender " +
@@ -105,6 +108,8 @@ export function formMailer(opts: {
       email,
       opts.fallback.environment,
       named(`${email.senderName} via coss.com`, opts.fallback.address),
+      // The row is coss.com's, so the mode's own checks can't see whose submission this holds.
+      await isHipaaMode(email.environment.organizationId),
     );
   }
 

@@ -5,6 +5,8 @@
  * on save: pages without fields and fields asking for credentials (`checkHosted` in forms.ts);
  * in live environments the page's text is screened when it is published (`screenHostedPage`).
  */
+
+import { isHipaaMode } from "@coss/compliance";
 import { db, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
 import type { FormFieldDefinition } from "@coss/db/schema";
@@ -258,6 +260,7 @@ export function hostedPageScreening(
   riskDeps: RiskDeps,
 ): (input: { organizationId: string; text: string }) => Promise<boolean> {
   return async ({ organizationId, text }) => {
+    if (await isHipaaMode(organizationId)) return true;
     try {
       if (riskDeps.chargeClassification && !(await riskDeps.chargeClassification(organizationId))) {
         console.warn(

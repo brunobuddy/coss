@@ -20,6 +20,8 @@ export type OutboundEmail = {
   attachments: OutboundAttachment[];
   /** Send through the organization's dedicated IP pool (see `DedicatedIpProvider`). */
   dedicatedPool?: boolean;
+  /** Drop the message rather than deliver it unencrypted (HIPAA mode). */
+  requireTls?: boolean;
   /**
    * Send in this sub-account's own tenant (its From domain is the sub-account's); else the
    * organization's.
@@ -193,6 +195,12 @@ export interface DedicatedIpProvider {
   }): Promise<void>;
   /** The pool's IPs now (empty until the provider assigns the first; `[]` without a pool). */
   poolIps(organizationId: string): Promise<string[]>;
+  /** Whether the pool's configuration sets of these streams refuse unencrypted delivery. */
+  setRequireTls(input: {
+    organizationId: string;
+    streams: readonly EmailStream[];
+    require: boolean;
+  }): Promise<void>;
   /**
    * Removes the pool and what sends through it, for every stream (`tenants`: the organization's
    * tenants that still exist). Missing resources are fine.

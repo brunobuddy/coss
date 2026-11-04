@@ -3908,13 +3908,18 @@
               "api_version": {
                 "type": "string",
                 "description": "The organization's pinned API version: what requests without a `Coss-Version` header and new webhook endpoints get."
+              },
+              "hipaa_mode": {
+                "type": "boolean",
+                "description": "Whether the organization is in HIPAA mode, which refuses some requests with `hipaa_mode_restriction`. Its compliance settings page lists what the mode changes."
               }
             },
             "required": [
               "id",
               "name",
               "slug",
-              "api_version"
+              "api_version",
+              "hipaa_mode"
             ],
             "additionalProperties": false
           },

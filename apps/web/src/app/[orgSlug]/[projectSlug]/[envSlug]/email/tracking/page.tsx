@@ -1,3 +1,4 @@
+import { hipaaModeApplies } from "@coss/compliance";
 import { getTrackingSettings } from "@coss/email";
 import { getEnvironment } from "@coss/tenancy";
 import {
@@ -13,6 +14,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ModeBadge, TrackingBadge } from "@/components/email-badges";
 import { EmptyState } from "@/components/empty-state";
+import { HipaaManagedAlert } from "@/components/hipaa-managed-alert";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
 import { formatDateTime } from "@/lib/format";
@@ -44,7 +46,8 @@ export default async function TrackingPage({
     projectSlug: project.slug,
     envSlug: environment.slug,
   };
-  const canEdit = can({ environment: ["update"] });
+  const hipaaMode = await hipaaModeApplies(environment.id);
+  const canEdit = can({ environment: ["update"] }) && !hipaaMode;
 
   const code = "font-mono text-[0.8125rem]";
 
@@ -63,6 +66,13 @@ export default async function TrackingPage({
         meta={<ModeBadge mode={environment.mode} />}
         title="Open & click tracking"
       />
+
+      {hipaaMode ? (
+        <HipaaManagedAlert orgSlug={organization.slug}>
+          Open and click tracking stay off in this live environment, whatever the rules below say.
+          Unsubscribe headers still work through the API.
+        </HipaaManagedAlert>
+      ) : null}
 
       <div className="grid items-start gap-6 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">

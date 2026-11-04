@@ -36,6 +36,11 @@ export const EnvironmentObject = z
           "The organization's pinned API version: what requests without a `Coss-Version` header " +
           "and new webhook endpoints get.",
       }),
+      hipaa_mode: z.boolean().meta({
+        description:
+          "Whether the organization is in HIPAA mode, which refuses some requests with " +
+          "`hipaa_mode_restriction`. Its compliance settings page lists what the mode changes.",
+      }),
     }),
     api_key: z
       .strictObject({
@@ -156,7 +161,11 @@ export function createEnvironmentRoutes(): OpenAPIHono<AppEnv> {
         mode: environment.mode,
         project,
         // The pin, not this request's version (the SDK always sends its own).
-        organization: { ...organization, api_version: auth.apiVersion },
+        organization: {
+          ...organization,
+          api_version: auth.apiVersion,
+          hipaa_mode: auth.hipaaMode,
+        },
         api_key: {
           id: apiKey.id,
           name: apiKey.name,

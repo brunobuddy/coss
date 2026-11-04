@@ -320,6 +320,7 @@ export function authContext(overrides: Partial<ApiKeyContext> = {}): ApiKeyConte
     environmentId: "env_00000000000000000000000000",
     ownerUserId: null,
     mode: "sandbox",
+    hipaaMode: false,
     apiVersion: LATEST_API_VERSION,
     ...overrides,
   };

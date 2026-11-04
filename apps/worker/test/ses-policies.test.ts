@@ -33,7 +33,9 @@ describe("cossPolicies", () => {
         Action: ["ses:SendEmail"],
         Resource: [
           "arn:aws:ses:us-east-2:123456789012:configuration-set/coss",
+          "arn:aws:ses:us-east-2:123456789012:configuration-set/coss-tls",
           "arn:aws:ses:us-east-2:123456789012:configuration-set/coss-marketing",
+          "arn:aws:ses:us-east-2:123456789012:configuration-set/coss-marketing-tls",
           "arn:aws:ses:us-east-2:123456789012:configuration-set/coss-*",
         ],
       }),
@@ -76,7 +78,9 @@ describe("cossPolicies", () => {
         Action: ["ses:SendEmail"],
         Resource: [
           "arn:aws:ses:us-east-2:123456789012:configuration-set/coss",
+          "arn:aws:ses:us-east-2:123456789012:configuration-set/coss-tls",
           "arn:aws:ses:us-east-2:123456789012:configuration-set/coss-marketing",
+          "arn:aws:ses:us-east-2:123456789012:configuration-set/coss-marketing-tls",
           "arn:aws:ses:us-east-2:123456789012:configuration-set/coss-*",
         ],
       },

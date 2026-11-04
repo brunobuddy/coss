@@ -6,6 +6,7 @@
  */
 
 import { BillingError } from "@coss/billing";
+import { HIPAA_MODE_RESTRICTION, HipaaModeError } from "@coss/compliance";
 import {
   BroadcastError,
   ContactError,
@@ -140,6 +141,11 @@ export function hintFor(error: {
       );
     case "sandbox_only":
       return `This only works with a sandbox key. ${DOCS.environments}`;
+    case HIPAA_MODE_RESTRICTION:
+      return (
+        "This organization's HIPAA mode refuses this, to keep PHI within its BAA. Its compliance " +
+        "settings page lists what the mode changes."
+      );
     case "organization_suspended":
     case "account_suspended":
       return (
@@ -645,6 +651,13 @@ function fromSubaccountError(error: SubaccountError): ApiError {
 /** Maps known error classes to their envelope; `null` means unexpected (a bug or an outage). */
 export function toApiError(error: unknown): ApiError | null {
   if (error instanceof ApiError) return error;
+  if (error instanceof HipaaModeError) {
+    return new ApiError(403, {
+      type: "permission_error",
+      code: error.code,
+      message: error.message,
+    });
+  }
   if (error instanceof BillingError) return fromBillingError(error);
   if (error instanceof EmailError) return fromEmailError(error);
   if (error instanceof HookError) return fromHookError(error);
