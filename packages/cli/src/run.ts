@@ -30,6 +30,7 @@ import { loginCommand } from "./commands/login.ts";
 import { logoutCommand } from "./commands/logout.ts";
 import { logsTailCommand } from "./commands/logs.ts";
 import { MARKETING_COMMANDS } from "./commands/marketing.ts";
+import { MARKETING_LISTS_COMMANDS } from "./commands/marketing-lists.ts";
 import { openCommand } from "./commands/open.ts";
 import { profilesListCommand, useCommand } from "./commands/profiles.ts";
 import { RISK_COMMANDS } from "./commands/risk.ts";
@@ -80,6 +81,7 @@ export const COMMANDS: readonly Command[] = [
   ...SUPPRESSIONS_COMMANDS,
   ...SUBACCOUNTS_COMMANDS,
   ...MARKETING_COMMANDS,
+  ...MARKETING_LISTS_COMMANDS,
   ...SMS_COMMANDS,
   ...VERIFY_COMMANDS,
   logsTailCommand,
