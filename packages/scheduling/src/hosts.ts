@@ -396,6 +396,27 @@ export async function chargeDueHostFees(
   const now = opts.now ?? new Date();
   const limit = opts.limit ?? 1000;
   return db.transaction(async (tx) => {
+    // A live host without a date never counts or pays. An older task can still create one while a
+    // deploy rolls out, after the migration that set them. Due at once if the meter is priced.
+    const pricedFrom = meterPricedFrom(HOST_FEE_METER) ?? now;
+    await tx
+      .update(schedulingHost)
+      .set({ nextFeeAt: pricedFrom > now ? pricedFrom : now })
+      .where(
+        and(
+          isNull(schedulingHost.nextFeeAt),
+          opts.scope
+            ? inArray(schedulingHost.organizationId, opts.scope.organizationIds)
+            : undefined,
+          inArray(
+            schedulingHost.environmentId,
+            tx
+              .select({ id: schema.environment.id })
+              .from(schema.environment)
+              .where(eq(schema.environment.mode, "live")),
+          ),
+        ),
+      );
     const due = tx
       .select({ id: schedulingHost.id })
       .from(schedulingHost)

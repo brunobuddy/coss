@@ -423,6 +423,28 @@ describe("Scheduling's plan gates", () => {
 });
 
 describe("the host fee", () => {
+  test("a live host an older task made during a rollout still counts and pays", async () => {
+    const tenant = await onPlan("scale");
+    const app = enforced();
+    expect((await call(app, tenant.liveKey, "POST", "/hosts", hostBody("a"))).status).toBe(201);
+    expect((await call(app, tenant.sandboxKey, "POST", "/hosts", hostBody("b"))).status).toBe(201);
+    await pool.query(
+      "update scheduling_host set next_fee_at = null where organization_id = $1 and uid = 'a'",
+      [tenant.organization.id],
+    );
+    expect(await countLiveHosts(tenant.organization.id)).toBe(0);
+    const scope = { organizationIds: [tenant.organization.id] };
+    await chargeDueHostFees({ now: new Date("2026-12-01T00:00:00Z"), scope });
+    expect(await countLiveHosts(tenant.organization.id)).toBe(1);
+    const { rows } = await pool.query<{ uid: string; next_fee_at: Date | null }>(
+      "select uid, next_fee_at from scheduling_host where organization_id = $1 order by uid",
+      [tenant.organization.id],
+    );
+    expect(rows[0]?.next_fee_at).toEqual(new Date("2027-01-01T00:00:00Z"));
+    // The sandbox host is never given one.
+    expect(rows[1]?.next_fee_at).toBeNull();
+  });
+
   test("past a capped plan's allowance a new host is refused, an existing one written off", async () => {
     const tenant = await createTestTenant();
     const refusing: UsageGate = {

@@ -196,7 +196,8 @@ aren't charged; reschedules are free; cancelled stays charged.
 
 `scheduling.hosts` is one unit per day a live host exists (`next_fee_at`, its presence is what makes a host live for
 the plan's count): on creation (reserved like a new inbox: past a capped plan's allowance it's refused), then
-`chargeDueHostFees` (the worker's `scheduling-host-fees`), and `deleteHost` charges what's due (those two only ever write
+`chargeDueHostFees` (the worker's `scheduling-host-fees`, which also gives a date to any live host without one, such as
+one an older task made during a rollout), and `deleteHost` charges what's due (those two only ever write
 off past the allowance). Nothing is recorded before `meterPricedFrom` (2027-01-01): hosts wait with `next_fee_at` at that date.
 
 ## Plans and holds
