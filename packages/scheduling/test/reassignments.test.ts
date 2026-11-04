@@ -301,6 +301,29 @@ describe("what a run covers", () => {
     expect(items[0]).toMatchObject({ to_host: null, reason: "host_unavailable" });
   });
 
+  test("someone moved away is free for the next one, as they'd be by then", async () => {
+    const env = await environment();
+    const [a, b, c] = await Promise.all([host(env, "A"), host(env, "B"), host(env, "C")]);
+    const limits = [{ period: "day", max: 1, scope: "event_type" }];
+    const type = await pool(env, [a, b, c], { limits });
+    const first = await book(env, type.id, at("10:00"), a.id);
+    const second = await book(env, type.id, at("10:00"), c.id);
+    const assignments = [
+      { booking: first.id, to_host: b.id, from_host: a.id },
+      { booking: second.id, to_host: a.id, from_host: c.id },
+    ];
+    const selection = { booking_ids: [first.id, second.id] };
+    const { items } = await previewReassignment(env, request(selection, { assignments }), plain);
+    expect(Object.fromEntries(items.map((item) => [item.booking, item.to_host]))).toEqual({
+      [first.id]: b.id,
+      [second.id]: a.id,
+    });
+    await start(env, request(selection, { assignments }));
+    await drain(env);
+    expect(await hostsOf(first.id)).toEqual([b.id]);
+    expect(await hostsOf(second.id)).toEqual([a.id]);
+  });
+
   test("a limit on an event type only counts what's proposed from it", async () => {
     const env = await environment();
     const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);

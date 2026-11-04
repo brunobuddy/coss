@@ -13,7 +13,7 @@ import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, or, sql } from 
 import { decryptRouting } from "./attendees.ts";
 import { calendarFailureModeOf, candidatesOf, loadHostInputs, slotRuleOf } from "./availability.ts";
 import { type BookingActor, bookingInternals } from "./bookings.ts";
-import { type Interval, normalizeIntervals } from "./engine/intervals.ts";
+import { type Interval, normalizeIntervals, subtractIntervals } from "./engine/intervals.ts";
 import { isBookable, limitUsageKey, occupiedRange } from "./engine/slots.ts";
 import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
@@ -701,6 +701,8 @@ export async function previewReassignment(
     string,
     { eventTypeId: string; startMs: number; occupied: Interval }[]
   >();
+  // And what it's taken off them: someone moved away is free for the next one, as they'd be by then.
+  const freed = new Map<string, { eventTypeId: string; startMs: number; occupied: Interval }[]>();
   const fairness = new Map<string, number>();
   const seriesHost = new Map<string, string>();
   const byEventType = new Map<string, BookingRow[]>();
@@ -775,15 +777,20 @@ export async function previewReassignment(
         else if (!inputs || everyone.get(hostId)?.status !== "active") reason = "host_unavailable";
         else {
           const taken = proposed.get(hostId) ?? [];
+          const given = freed.get(hostId) ?? [];
           const limitUsage = { ...inputs.limitUsage };
           for (const limit of rule.limits) {
             const key = limitUsageKey(limit, inputs.timeZone, startMs);
-            const inSameBucket = taken.filter(
-              (claim) =>
-                (limit.scope === "host" || claim.eventTypeId === eventTypeId) &&
-                limitUsageKey(limit, inputs.timeZone, claim.startMs) === key,
-            ).length;
-            limitUsage[key] = (limitUsage[key] ?? 0) + inSameBucket;
+            const inSameBucket = (claims: typeof taken) =>
+              claims.filter(
+                (claim) =>
+                  (limit.scope === "host" || claim.eventTypeId === eventTypeId) &&
+                  limitUsageKey(limit, inputs.timeZone, claim.startMs) === key,
+              ).length;
+            limitUsage[key] = Math.max(
+              (limitUsage[key] ?? 0) + inSameBucket(taken) - inSameBucket(given),
+              0,
+            );
           }
           const verdict = isBookable(startMs, {
             nowMs: now.getTime(),
@@ -795,7 +802,10 @@ export async function previewReassignment(
               onlyWithin: anyHost ? undefined : coverage.get(hostId),
               limitUsage,
               claims: normalizeIntervals([
-                ...inputs.claims,
+                ...subtractIntervals(
+                  inputs.claims,
+                  given.map((claim) => claim.occupied),
+                ),
                 ...taken.map((claim) => claim.occupied),
               ]),
             },
@@ -847,6 +857,11 @@ export async function previewReassignment(
         const taken = proposed.get(to) ?? [];
         taken.push({ eventTypeId, startMs, occupied: occupiedRange(startMs, rule) });
         proposed.set(to, taken);
+        if (from) {
+          const given = freed.get(from) ?? [];
+          given.push({ eventTypeId, startMs, occupied: occupiedRange(startMs, rule) });
+          freed.set(from, given);
+        }
         if (eventType.kind === "pool") {
           const key = `${eventTypeId}:${to}`;
           fairness.set(key, (fairness.get(key) ?? 0) + 1);

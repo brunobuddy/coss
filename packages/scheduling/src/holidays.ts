@@ -410,16 +410,17 @@ async function claimDue(
       .limit(opts.limit ?? 10)
       .for("update", { of: schedulingHolidayCalendar, skipLocked: true });
     if (due.length === 0) return [];
+    const leaseUntil = new Date(now.getTime() + LEASE_MS);
     await tx
       .update(schedulingHolidayCalendar)
-      .set({ leaseUntil: new Date(now.getTime() + LEASE_MS) })
+      .set({ leaseUntil })
       .where(
         inArray(
           schedulingHolidayCalendar.id,
           due.map((entry) => entry.row.id),
         ),
       );
-    return due.map((entry) => ({ ...entry.row, mode: entry.mode }));
+    return due.map((entry) => ({ ...entry.row, leaseUntil, mode: entry.mode }));
   });
 }
 
@@ -484,6 +485,7 @@ async function reconcile(
       sourceKey: schedulingOutOfOffice.sourceKey,
       deletedAt: schedulingOutOfOffice.deletedAt,
       startDate: schedulingOutOfOffice.startDate,
+      endAt: schedulingOutOfOffice.endAt,
       existingBookings: schedulingOutOfOffice.existingBookings,
       updatedAt: schedulingOutOfOffice.updatedAt,
     })
@@ -496,12 +498,18 @@ async function reconcile(
       ),
     );
   const known = new Set(existing.map((entry) => entry.sourceKey));
+  const stillHosts = new Set(hosts.map((host) => host.id));
   let budget = ENTRIES_PER_PASS;
   // A date that's gone from the feed or a host who's left: not a tombstone, since nobody chose it.
   for (const entry of existing) {
     if (budget <= 0) return true;
     if (entry.deletedAt || wanted.has(entry.sourceKey as string)) continue;
-    if ((entry.startDate ?? today) < today) continue;
+    // Over, wherever the host is: dates are in their zone, so yesterday's can still be running.
+    if (entry.endAt <= now) continue;
+    // Feeds are read from today, so one that's started but isn't listed hasn't gone from anything.
+    const noLongerAsked =
+      row.deletedAt || !stillHosts.has((entry.sourceKey as string).split(":")[1] as string);
+    if (!noLongerAsked && (entry.startDate ?? today) < today) continue;
     await deleteOutOfOffice(env, entry.id, deps);
     await db
       .update(schedulingOutOfOffice)
@@ -520,7 +528,7 @@ async function reconcile(
       !entry.deletedAt &&
       entry.updatedAt < row.settingsChangedAt &&
       wanted.has(entry.sourceKey as string) &&
-      (entry.startDate ?? today) >= today,
+      entry.endAt > now,
   );
   const delegates = await delegatesOf(
     db,
@@ -581,22 +589,30 @@ async function syncOne(
     eq(schedulingHolidayCalendar.id, row.id),
     eq(schedulingHolidayCalendar.organizationId, row.organizationId),
   );
-  /** Whether someone's changed it since this was claimed: compared in JS, since rows hold more than a `Date`. */
-  const changedSince = async (tx: Executor, lock: boolean) => {
+  /** Compared in JS, since rows hold more than a `Date`. */
+  const stateOf = async (tx: Executor, lock: boolean) => {
     const query = tx
-      .select({ at: schedulingHolidayCalendar.settingsChangedAt })
+      .select({
+        settingsChangedAt: schedulingHolidayCalendar.settingsChangedAt,
+        leaseUntil: schedulingHolidayCalendar.leaseUntil,
+      })
       .from(schedulingHolidayCalendar)
       .where(here);
     const [latest] = await (lock ? query.for("update") : query);
-    return latest?.at.getTime() !== row.settingsChangedAt.getTime();
+    return {
+      // Reading a feed can outlast the lease, and then someone newer has this.
+      held: latest?.leaseUntil?.getTime() === row.leaseUntil?.getTime(),
+      unchanged: latest?.settingsChangedAt.getTime() === row.settingsChangedAt.getTime(),
+    };
   };
   // A change made meanwhile asked to be looked at now, and that's not this sync's to put off.
   const done = (values: Partial<typeof schedulingHolidayCalendar.$inferInsert>) =>
     db.transaction(async (tx) => {
-      const changed = await changedSince(tx, true);
+      const { held, unchanged } = await stateOf(tx, true);
+      if (!held) return;
       await tx
         .update(schedulingHolidayCalendar)
-        .set({ leaseUntil: null, ...(changed ? {} : values) })
+        .set({ leaseUntil: null, ...(unchanged ? values : {}) })
         .where(here);
     });
   const today = dayOf(now);
@@ -641,7 +657,8 @@ async function syncOne(
   }
   // Reading a feed takes a while. What it found is for the settings this started with, so a calendar
   // that's been changed or deleted starts over, and nothing's made from what it no longer says.
-  if (await changedSince(db, false)) {
+  const { held, unchanged } = await stateOf(db, false);
+  if (!held || !unchanged) {
     await done({});
     return;
   }
