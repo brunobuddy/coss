@@ -136,8 +136,9 @@ once, and every host on it gets their calendar with no consent screen.
   which could be another host's. `saveConnection` leaves a delegated row alone, or a host's consent would replace the
   delegation's token, and its upsert checks that again under its own lock, since a takeover in progress isn't visible
   before it. `markNeedsReauth` re-reads the row, so a late failure of the old tokens does nothing.
-- **Losing access**: every `auth` failure goes through `handleAccessLost`. Refused credentials flip every connection
-  to `delegation_failing` in one update (compare-and-set on the delegation: one webhook, log line and owner email), so
+- **Losing access**: every `auth` failure goes through `handleAccessLost`. Before anything flips, the credentials stored
+  now are tried, since the refusal may be of ones just replaced, and the flip is conditional on them still being stored.
+  Refused credentials flip every connection to `delegation_failing` in one update (compare-and-set on the delegation: one webhook, log line and owner email), so
   every `status = 'active'` filter works with no join in the availability path, and one update brings them back. On
   the wire that status is `needs_reauth`. One mailbox gone only marks that connection, with no email to the host, who
   can't fix it. Graph's 403 can't say which, so `probeDelegation` asks about up to three mailboxes: a person leaving

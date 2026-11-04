@@ -500,6 +500,17 @@ describe("a host's email and mailbox", () => {
     expect(await listConnections(env, free.id)).toMatchObject([{ account: `free.new@${DOMAIN}` }]);
   });
 
+  test("clearing both addresses ends the connection", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    await updateHost(env, ana.id, { calendar_account: null, email: null });
+    expect(await listConnections(env, ana.id)).toEqual([]);
+  });
+
   test("setting calendar_account to the mailbox already connected changes nothing", async () => {
     const env = await environment();
     const api = new FakeGoogleCalendarApi();
@@ -897,6 +908,22 @@ describe("losing access", () => {
     await verifyCalendarDelegation(env, delegation.id, { account: `boss@${DOMAIN}` }, deps);
     await run(env, deps);
     expect(await listConnections(env, ana.id)).toMatchObject([{ status: "active" }]);
+  });
+
+  test("a refusal already on its way when credentials are replaced causes no outage", async () => {
+    const { env, api, deps, delegation, later } = await connected();
+    api.delegationRefused = { error: "unauthorized_client" };
+    later(59);
+    await dueAll(env);
+    const held = api.hold("POST", /token$/, "after");
+    const syncing = runDueCalendarSyncs(deps, { scope: scope(env) });
+    await held.arrived;
+    api.delegationRefused = null;
+    await updateCalendarDelegation(env, delegation.id, { service_account_key: account.key }, deps);
+    held.release();
+    await syncing;
+    expect((await getCalendarDelegation(env, delegation.id)).status).toBe("active");
+    expect(await logCount(env, "scheduling.calendar_delegation.failing")).toBe(0);
   });
 
   test("new credentials are tried on whoever's left when the verified mailbox is gone", async () => {

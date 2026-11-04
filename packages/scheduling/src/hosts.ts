@@ -296,7 +296,8 @@ async function releaseOldMailbox(
       ),
     );
   if (!delegated) return;
-  const fallback = delegated.matchHostEmail ? (email ?? host.email) : null;
+  // `null` clears it: only a patch that doesn't mention it keeps the one there is.
+  const fallback = delegated.matchHostEmail ? (email === undefined ? host.email : email) : null;
   const wanted = calendarAccount ?? (fallback ? normalizeMailbox(fallback) : null);
   const { connection } = delegated;
   if (wanted === connection.accountId.toLowerCase()) return;

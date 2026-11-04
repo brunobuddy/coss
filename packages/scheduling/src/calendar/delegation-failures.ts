@@ -92,13 +92,22 @@ export async function markDelegationFailing(
   delegation: Pick<DelegationRow, "id" | "organizationId">,
   code: string,
   deps: Pick<CalendarDeps, "now">,
+  opts: { ifCredentials?: string } = {},
 ): Promise<void> {
   const now = deps.now?.() ?? new Date();
   await db.transaction(async (tx) => {
     const [changed] = await tx
       .update(schedulingCalendarDelegation)
       .set({ status: "failing", failingSince: now, lastErrorCode: code })
-      .where(and(rowOf(delegation), eq(schedulingCalendarDelegation.status, "active")))
+      .where(
+        and(
+          rowOf(delegation),
+          eq(schedulingCalendarDelegation.status, "active"),
+          opts.ifCredentials
+            ? eq(schedulingCalendarDelegation.encryptedCredentials, opts.ifCredentials)
+            : undefined,
+        ),
+      )
       .returning();
     if (!changed) return;
     await tx
@@ -244,14 +253,19 @@ export async function settleRefusal(
 ): Promise<"mailbox" | "stop"> {
   const scope = delegationFailureScope(error);
   if (scope === "mailbox") return "mailbox";
-  if (scope === "credentials") {
-    await markDelegationFailing(delegation, error.code, deps);
+  // The refusal may be of credentials that have since been replaced, by a request that was already
+  // on its way. Taking every host out needs the current ones refused, and the flip is conditional on
+  // them still being what's stored.
+  const [current] = await db.select().from(schedulingCalendarDelegation).where(rowOf(delegation));
+  if (current?.status !== "active") return "stop";
+  const { result } = await probeDelegation(current, deps, { except: mailbox });
+  if (result === "refused") {
+    await markDelegationFailing(current, error.code, deps, {
+      ifCredentials: current.encryptedCredentials,
+    });
     return "stop";
   }
-  const { result } = await probeDelegation(delegation, deps, { except: mailbox });
-  if (result === "ok") return "mailbox";
-  if (result === "refused") await markDelegationFailing(delegation, error.code, deps);
-  return "stop";
+  return result === "ok" && scope === "ambiguous" ? "mailbox" : "stop";
 }
 
 /** Where every `auth` failure of a calendar goes, delegated or not. */
