@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { db, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { LATEST_API_VERSION } from "@coss/versioning";
 import { createWebhookEndpoint } from "@coss/webhooks";
 import { testManagementDeps } from "@coss/webhooks/testing";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   approveBooking,
   cancelBooking,
@@ -1471,5 +1472,106 @@ describe("clearing a policy", () => {
     await updateSettings(s.env, { notifications: null });
     await runDueReminderSyncs({ now: () => NOW }, scope(s));
     expect((await rows(s, booking.id)).some((row) => row.reminder_key === "reminder")).toBe(true);
+  });
+});
+
+describe("the migration, for bookings from before this", () => {
+  const statements = readFileSync(
+    new URL("../../db/migrations/0128_scheduling_reminder_backfill.sql", import.meta.url),
+    "utf8",
+  )
+    .split("--> statement-breakpoint")
+    .map((statement) => statement.trim().replace(/;$/, ""));
+
+  /** The migration's own statements, narrowed to one organization of this shared database. */
+  const migrate = async (s: Setup) => {
+    const [update, seed] = statements as [string, string];
+    await db.execute(sql.raw(`${update} AND n."organization_id" = '${s.env.organizationId}'`));
+    await db.execute(sql.raw(`${seed} AND b."organization_id" = '${s.env.organizationId}'`));
+  };
+
+  /** A booking as the code before this left it: an old reminder row, and nothing for its moments. */
+  const oldBooking = async (s: Setup) => {
+    const { booking } = await book(s);
+    const notifications = schema.schedulingNotification;
+    await db
+      .delete(notifications)
+      .where(
+        and(
+          eq(notifications.bookingId, booking.id),
+          inArray(notifications.kind, ["started", "ended"]),
+        ),
+      );
+    const [stored] = await db
+      .select({ version: schema.schedulingBooking.version })
+      .from(schema.schedulingBooking)
+      .where(eq(schema.schedulingBooking.id, booking.id));
+    await db
+      .update(notifications)
+      .set({
+        reminderKey: null,
+        reminderAnchor: null,
+        reminderOffsetMinutes: null,
+        anchorAt: null,
+        dedupeKey: `reminder:email:attendee:${booking.id}:${stored?.version}`,
+      })
+      .where(and(eq(notifications.bookingId, booking.id), eq(notifications.kind, "reminder")));
+    return booking;
+  };
+
+  const scope = (s: Setup) => ({ scope: { organizationIds: [s.env.organizationId] } });
+
+  test("gives old bookings their moments, and their reminder goes out once", async () => {
+    const s = await setUp();
+    const booking = await oldBooking(s);
+    await migrate(s);
+    expect(await runDueReminderSyncs({ now: () => NOW }, scope(s))).toBe(1);
+    const found = await rows(s, booking.id);
+    expect(found.filter((row) => row.kind === "started").length).toBe(1);
+    expect(found.filter((row) => row.kind === "ended").length).toBe(1);
+    const reminders = found.filter((row) => row.reminder_key === "reminder");
+    expect(reminders.map((row) => row.outcome)).toEqual([null]);
+    const n = await runAt(s, START - 1440 * MINUTE);
+    expect(subjects(n).filter(isReminder)).toEqual(["Reminder: Consultation"]);
+  });
+
+  test("a reminder due as the walk reaches it isn't dropped", async () => {
+    const s = await setUp();
+    const booking = await oldBooking(s);
+    await migrate(s);
+    const when = START - 1439 * MINUTE;
+    await runDueReminderSyncs({ now: () => new Date(when) }, scope(s));
+    const reminder = (await rows(s, booking.id)).find((row) => row.reminder_key === "reminder");
+    expect(reminder?.outcome).toBeNull();
+    expect(subjects(await runAt(s, when + MINUTE)).filter(isReminder).length).toBe(1);
+  });
+
+  test("makes the key the rule makes, so nothing's queued twice", async () => {
+    const s = await setUp();
+    const { booking: fresh } = await book(s, "11:00");
+    const notifications = schema.schedulingNotification;
+    const key = async (bookingId: string) => {
+      const [row] = await db
+        .select({ dedupeKey: notifications.dedupeKey })
+        .from(notifications)
+        .where(and(eq(notifications.bookingId, bookingId), eq(notifications.kind, "reminder")));
+      return row?.dedupeKey;
+    };
+    const planned = await key(fresh.id);
+    const old = await oldBooking(s);
+    await migrate(s);
+    expect(await key(old.id)).toBe(
+      (planned as string).replace(fresh.id, old.id).replace(String(at("11:00")), String(START)),
+    );
+  });
+
+  test("an environment with nothing upcoming gets no walk", async () => {
+    const s = await setUp();
+    await migrate(s);
+    const syncs = await db
+      .select()
+      .from(schema.schedulingReminderSync)
+      .where(eq(schema.schedulingReminderSync.organizationId, s.env.organizationId));
+    expect(syncs).toEqual([]);
   });
 });
