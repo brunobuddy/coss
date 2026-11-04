@@ -10,7 +10,7 @@ import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { decryptSecret, encryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
-import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, notInArray, or, sql } from "drizzle-orm";
 import { DAY_MS, parseLocalDate, wallClockToInstant } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { attributesMatch, checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
@@ -513,6 +513,28 @@ async function setOutOfOfficeCalendar(tx: Executor, row: OutOfOfficeRow, now: Da
         },
       });
   }
+  // One on a calendar that's stopped being written to would stay, saying the old times.
+  await tx
+    .update(schedulingCalendarEvent)
+    .set({
+      desiredState: "absent",
+      desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
+      nextAttemptAt: sql`clock_timestamp()`,
+      attempts: 0,
+    })
+    .where(
+      and(
+        eq(schedulingCalendarEvent.outOfOfficeId, row.id),
+        eq(schedulingCalendarEvent.organizationId, row.organizationId),
+        eq(schedulingCalendarEvent.desiredState, "present"),
+        targets.length > 0
+          ? notInArray(
+              schedulingCalendarEvent.calendarId,
+              targets.map((target) => target.id),
+            )
+          : undefined,
+      ),
+    );
 }
 
 const MESSAGES: Record<OutOfOfficeWebhookEventType, string> = {

@@ -1052,6 +1052,53 @@ describe("the host's calendar", () => {
     expect(live(api)).toEqual([]);
   });
 
+  test("a block on a calendar that's stopped being written to goes", async () => {
+    const { env, doctor, deps } = await connected();
+    const [entry] = await away(env, { host: doctor.id, start: iso("12:00"), end: iso("13:00") });
+    await runDueCalendarWrites(deps, { scope: scope(env) });
+    const [old] = await db
+      .select({
+        id: schema.schedulingCalendar.id,
+        connectionId: schema.schedulingCalendar.connectionId,
+      })
+      .from(schema.schedulingCalendar)
+      .where(
+        and(
+          eq(schema.schedulingCalendar.hostId, doctor.id),
+          eq(schema.schedulingCalendar.writeTarget, true),
+        ),
+      );
+    // Only one can be the write target.
+    await db
+      .update(schema.schedulingCalendar)
+      .set({ writeTarget: false })
+      .where(eq(schema.schedulingCalendar.id, old?.id as string));
+    const [other] = await db
+      .insert(schema.schedulingCalendar)
+      .values({
+        organizationId: env.organizationId,
+        environmentId: env.environmentId,
+        hostId: doctor.id,
+        connectionId: old?.connectionId as string,
+        externalId: "second-calendar",
+        name: "Second",
+        writeTarget: true,
+      } as never)
+      .returning({ id: schema.schedulingCalendar.id });
+    await updateOutOfOffice(env, entry?.id as string, { end: iso("14:00") }, plain, actor);
+    const rows = await db
+      .select({
+        calendarId: schema.schedulingCalendarEvent.calendarId,
+        state: schema.schedulingCalendarEvent.desiredState,
+      })
+      .from(schema.schedulingCalendarEvent)
+      .where(eq(schema.schedulingCalendarEvent.outOfOfficeId, entry?.id as string));
+    expect(Object.fromEntries(rows.map((row) => [row.calendarId, row.state]))).toEqual({
+      [old?.id as string]: "absent",
+      [other?.id as string]: "present",
+    });
+  });
+
   test("can be left alone", async () => {
     const { env, doctor, api, deps } = await connected();
     const [entry] = await away(env, {

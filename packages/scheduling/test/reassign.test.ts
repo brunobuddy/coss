@@ -763,6 +763,32 @@ describe("one that's already started", () => {
   });
 });
 
+describe("a group session with nothing left holding it", () => {
+  test("can't move, rather than getting a claim that never ends", async () => {
+    const env = await environment();
+    const [first, second] = [await host(env, "First"), await host(env, "Second")];
+    const group = await eventTypeWith(env, "group", [member(first)], { capacity: 5 });
+    const real = testSchedulingDeps();
+    const { booking: hold } = await createHold(
+      env,
+      { eventType: group.id, startMs: at("10:00"), attendee },
+      real,
+      actor,
+    );
+    await db
+      .delete(schema.schedulingClaim)
+      .where(eq(schema.schedulingClaim.groupSessionId, hold.group_session as string));
+    await expect(reassign(env, hold.id, change(second.id, ANY_HOST), real)).rejects.toMatchObject({
+      code: "hold_expired",
+    });
+    const claims = await db
+      .select({ id: schema.schedulingClaim.id })
+      .from(schema.schedulingClaim)
+      .where(eq(schema.schedulingClaim.groupSessionId, hold.group_session as string));
+    expect(claims).toEqual([]);
+  });
+});
+
 describe("a group session", () => {
   async function session() {
     const env = await environment();

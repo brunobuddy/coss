@@ -738,7 +738,9 @@ async function reassignSession(
       groupSessionId: session.id,
       organizationId: session.organizationId,
     });
-    if (remaining.found && remaining.seconds !== null && remaining.seconds < 1) {
+    // No claim at all means nothing's left of it: the last live seat took it, and only firm ones
+    // can have no time on them.
+    if (!remaining.found || (remaining.seconds !== null && remaining.seconds < 1)) {
       throw new SchedulingError("hold_expired", "This session's hold has run out.");
     }
     return remaining.seconds;

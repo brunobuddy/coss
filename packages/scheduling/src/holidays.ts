@@ -455,6 +455,22 @@ async function reconcile(
   now: Date,
 ): Promise<boolean> {
   const hosts = await hostsOf(row);
+  // Someone covering can be deleted after being named, and one person gone stops nobody's holidays.
+  const stillHere = row.delegateIds.length
+    ? await db
+        .select({ id: schedulingHost.id })
+        .from(schedulingHost)
+        .where(
+          and(
+            eq(schedulingHost.organizationId, row.organizationId),
+            eq(schedulingHost.environmentId, row.environmentId),
+            inArray(schedulingHost.id, row.delegateIds),
+          ),
+        )
+    : [];
+  const here = new Set(stillHere.map((host) => host.id));
+  const coverFor = (hostId: string) =>
+    row.delegateIds.filter((id) => id !== hostId && here.has(id));
   const wanted = new Map<string, { host: HostRow; date: string }>();
   for (const host of hosts) {
     for (const holiday of holidays) {
@@ -512,7 +528,7 @@ async function reconcile(
   );
   for (const entry of stale) {
     const host = wanted.get(entry.sourceKey as string)?.host as HostRow;
-    const want = row.delegateIds.filter((id) => id !== host.id);
+    const want = coverFor(host.id);
     const have = delegates.get(entry.id) ?? [];
     const same = want.length === have.length && want.every((id, index) => id === have[index]);
     if (same && entry.existingBookings === row.existingBookings) continue;
@@ -537,7 +553,7 @@ async function reconcile(
         end_date: date,
         reason: "public_holiday",
         existing_bookings: row.existingBookings,
-        delegates: row.delegateIds.filter((id) => id !== host.id),
+        delegates: coverFor(host.id),
       },
       deps,
       { kind: "system" },

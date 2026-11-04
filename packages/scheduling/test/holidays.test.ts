@@ -14,6 +14,7 @@ import {
   createSchedule,
   type DavTransport,
   deleteHolidayCalendar,
+  deleteHost,
   deleteOutOfOffice,
   getHolidayCalendar,
   HOLIDAY_COUNTRIES,
@@ -147,6 +148,21 @@ test("an event with no date makes the whole feed unreadable, since it could be a
   expect(() =>
     holidaysFromIcs(ics(day("2031-01-05", "One"), repeating), "2031-01-01", "2032-01-01"),
   ).toThrow(UnreadableCalendarData);
+});
+
+test("someone covering who's since been deleted stops nobody's holidays", async () => {
+  const env = await environment();
+  const [a, b] = [await host(env, "A"), await host(env, "B")];
+  const created = await calendar(env, [a.id], { delegates: [b.id] });
+  await deleteHost(env, b.id);
+  await sync(env, feed(ics(day("2031-01-05", "One"))).transport);
+  expect(await datesOf(env, a.id)).toEqual(["2031-01-05"]);
+  expect((await entriesOf(env, a.id))[0]?.delegates).toEqual([]);
+  const [row] = await db
+    .select({ lastError: schema.schedulingHolidayCalendar.lastError })
+    .from(schema.schedulingHolidayCalendar)
+    .where(eq(schema.schedulingHolidayCalendar.id, created.id));
+  expect(row?.lastError).toBeNull();
 });
 
 describe("a calendar changed while its feed is being read", () => {
