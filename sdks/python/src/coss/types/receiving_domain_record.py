@@ -13,7 +13,11 @@ class ReceivingDomainRecord(UniversalBaseModel):
     The MX record to publish, with the result of the last check. Mail for the hostname is received as soon as it reaches coss.com; the check only shows what DNS serves.
     """
 
-    type: ReceivingDomainRecordType
+    type: ReceivingDomainRecordType = pydantic.Field()
+    """
+    The record's type.
+    """
+
     name: str = pydantic.Field()
     """
     The fully qualified record name to create.
@@ -24,7 +28,11 @@ class ReceivingDomainRecord(UniversalBaseModel):
     The mail exchange the record must point at.
     """
 
-    priority: int
+    priority: int = pydantic.Field()
+    """
+    The MX record's priority.
+    """
+
     status: ReceivingDomainRecordStatus = pydantic.Field()
     """
     What the last DNS check saw: `verified` once the most preferred MX records point at coss.com. `not_checked` means DNS has not been consulted yet.

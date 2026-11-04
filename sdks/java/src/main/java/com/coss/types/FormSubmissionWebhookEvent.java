@@ -80,11 +80,17 @@ public final class FormSubmissionWebhookEvent {
         return apiVersion;
     }
 
+    /**
+     * @return When the event was created.
+     */
     @JsonProperty("created_at")
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * @return The submission.
+     */
     @JsonProperty("data")
     public FormSubmissionWebhookEventData getData() {
         return data;
@@ -152,10 +158,16 @@ public final class FormSubmissionWebhookEvent {
     }
 
     public interface CreatedAtStage {
+        /**
+         * <p>When the event was created.</p>
+         */
         DataStage createdAt(@NotNull OffsetDateTime createdAt);
     }
 
     public interface DataStage {
+        /**
+         * <p>The submission.</p>
+         */
         _FinalStage data(@NotNull FormSubmissionWebhookEventData data);
     }
 
@@ -238,6 +250,10 @@ public final class FormSubmissionWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>When the event was created.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("created_at")
         public DataStage createdAt(@NotNull OffsetDateTime createdAt) {
@@ -245,6 +261,10 @@ public final class FormSubmissionWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>The submission.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("data")
         public _FinalStage data(@NotNull FormSubmissionWebhookEventData data) {

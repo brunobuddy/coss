@@ -17,12 +17,21 @@ public record HookAttempt : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The id of the delivery this attempt belongs to.
+    /// </summary>
     [JsonPropertyName("delivery_id")]
     public required string DeliveryId { get; set; }
 
+    /// <summary>
+    /// The id of the endpoint it was sent to.
+    /// </summary>
     [JsonPropertyName("endpoint_id")]
     public required string EndpointId { get; set; }
 
+    /// <summary>
+    /// When the attempt ran.
+    /// </summary>
     [JsonPropertyName("attempted_at")]
     public required DateTime AttemptedAt { get; set; }
 
@@ -33,9 +42,15 @@ public record HookAttempt : IJsonOnDeserialized
     [JsonPropertyName("status_code")]
     public long? StatusCode { get; set; }
 
+    /// <summary>
+    /// How long it took, in milliseconds.
+    /// </summary>
     [JsonPropertyName("duration_ms")]
     public required long DurationMs { get; set; }
 
+    /// <summary>
+    /// Why it failed. `null`: it didn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("error")]
     public string? Error { get; set; }

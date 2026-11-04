@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// Emails about accepted submissions. Only the fields given change.
+/// </summary>
 [Serializable]
 public record CreateFormRequestNotifications : IJsonOnDeserialized
 {

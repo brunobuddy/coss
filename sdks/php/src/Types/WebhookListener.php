@@ -35,7 +35,7 @@ class WebhookListener extends JsonSerializableType
     public array $eventTypes;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Your note about it, such as the machine it's on. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;

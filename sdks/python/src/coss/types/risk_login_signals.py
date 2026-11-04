@@ -11,8 +11,15 @@ class RiskLoginSignals(UniversalBaseModel):
     Logins of a user with history: whether the country or network is new for them.
     """
 
-    new_country: bool
-    new_network: bool
+    new_country: bool = pydantic.Field()
+    """
+    Whether this user never logged in from this country in this environment.
+    """
+
+    new_network: bool = pydantic.Field()
+    """
+    Whether this user never logged in from this network (ASN) in this environment.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -45,7 +45,9 @@ var (
 )
 
 type CreateHookEventTypeRequest struct {
-	Name        string  `json:"name" url:"-"`
+	// The type's name, which messages send as `event_type`. Letters, digits and `. _ -`.
+	Name string `json:"name" url:"-"`
+	// What this event means, shown to your users.
 	Description *string `json:"description,omitempty" url:"-"`
 	// A JSON Schema of the payload, shown to your users (not enforced).
 	Schema map[string]any `json:"schema,omitempty" url:"-"`
@@ -223,7 +225,8 @@ var (
 
 type UpdateHookEventTypeRequest struct {
 	// The event type's name.
-	Name        string  `json:"-" url:"-"`
+	Name string `json:"-" url:"-"`
+	// What this event means, shown to your users. `null` removes it.
 	Description *string `json:"description,omitempty" url:"-"`
 	// A JSON Schema of the payload, shown to your users (not enforced).
 	Schema map[string]any `json:"schema,omitempty" url:"-"`

@@ -17,6 +17,9 @@ public record EmailLink : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The email's id.
+    /// </summary>
     [JsonPropertyName("email_id")]
     public required string EmailId { get; set; }
 
@@ -26,16 +29,28 @@ public record EmailLink : IJsonOnDeserialized
     [JsonPropertyName("position")]
     public required long Position { get; set; }
 
+    /// <summary>
+    /// The original link.
+    /// </summary>
     [JsonPropertyName("url")]
     public required string Url { get; set; }
 
+    /// <summary>
+    /// Times it was clicked. Link scanners inflate it.
+    /// </summary>
     [JsonPropertyName("click_count")]
     public required long ClickCount { get; set; }
 
+    /// <summary>
+    /// When it was first clicked. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("first_clicked_at")]
     public DateTime? FirstClickedAt { get; set; }
 
+    /// <summary>
+    /// When it was last clicked. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_clicked_at")]
     public DateTime? LastClickedAt { get; set; }

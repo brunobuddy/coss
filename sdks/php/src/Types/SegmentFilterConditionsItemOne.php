@@ -14,13 +14,13 @@ class SegmentFilterConditionsItemOne extends JsonSerializableType
     public string $field;
 
     /**
-     * @var value-of<SegmentFilterConditionsItemOneOp> $op
+     * @var value-of<SegmentFilterConditionsItemOneOp> $op How to compare the contact's address.
      */
     #[JsonProperty('op')]
     public string $op;
 
     /**
-     * @var string $value
+     * @var string $value What to compare it with.
      */
     #[JsonProperty('value')]
     public string $value;

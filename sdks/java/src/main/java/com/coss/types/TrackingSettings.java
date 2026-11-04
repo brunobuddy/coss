@@ -50,6 +50,9 @@ public final class TrackingSettings {
         return object;
     }
 
+    /**
+     * @return The environment's tracking default. <code>null</code>: none is set.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("default")
     public OptionalNullable<TrackingRule> getDefault() {
@@ -115,6 +118,9 @@ public final class TrackingSettings {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The environment's tracking default. <code>null</code>: none is set.</p>
+         */
         _FinalStage default_(OptionalNullable<TrackingRule> default_);
 
         _FinalStage default_(TrackingRule default_);
@@ -196,6 +202,10 @@ public final class TrackingSettings {
             return this;
         }
 
+        /**
+         * <p>The environment's tracking default. <code>null</code>: none is set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage default_(Nullable<TrackingRule> default_) {
             if (default_.isNull()) {
@@ -208,6 +218,10 @@ public final class TrackingSettings {
             return this;
         }
 
+        /**
+         * <p>The environment's tracking default. <code>null</code>: none is set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage default_(Optional<TrackingRule> default_) {
             if (default_.isPresent()) {
@@ -218,12 +232,19 @@ public final class TrackingSettings {
             return this;
         }
 
+        /**
+         * <p>The environment's tracking default. <code>null</code>: none is set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage default_(TrackingRule default_) {
             this.default_ = OptionalNullable.of(default_);
             return this;
         }
 
+        /**
+         * <p>The environment's tracking default. <code>null</code>: none is set.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "default", nulls = Nulls.SKIP)
         public _FinalStage default_(OptionalNullable<TrackingRule> default_) {

@@ -17,14 +17,21 @@ class RiskWebhookEvent(UniversalBaseModel):
     """
 
     object: RiskWebhookEventObject
-    type: RiskWebhookEventType
+    type: RiskWebhookEventType = pydantic.Field()
+    """
+    What happened to the assessment.
+    """
+
     api_version: str = pydantic.Field()
     """
     The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
     """
 
     created_at: dt.datetime
-    data: RiskWebhookEventData
+    data: RiskWebhookEventData = pydantic.Field()
+    """
+    The assessment, without its signals.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

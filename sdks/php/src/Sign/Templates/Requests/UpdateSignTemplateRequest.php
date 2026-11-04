@@ -16,7 +16,7 @@ use Coss\Sign\Templates\Types\UpdateSignTemplateRequestFieldsItemAnchor;
 class UpdateSignTemplateRequest extends JsonSerializableType
 {
     /**
-     * @var ?string $name
+     * @var ?string $name Your name for the template.
      */
     #[JsonProperty('name')]
     public ?string $name;
@@ -34,7 +34,7 @@ class UpdateSignTemplateRequest extends JsonSerializableType
     public ?string $message;
 
     /**
-     * @var ?value-of<UpdateSignTemplateRequestSigningOrder> $signingOrder
+     * @var ?value-of<UpdateSignTemplateRequestSigningOrder> $signingOrder `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
      */
     #[JsonProperty('signing_order')]
     public ?string $signingOrder;
@@ -43,7 +43,7 @@ class UpdateSignTemplateRequest extends JsonSerializableType
      * @var ?array<(
      *    UpdateSignTemplateRequestDocumentsItemDocumentId
      *   |UpdateSignTemplateRequestDocumentsItemContent
-     * )> $documents
+     * )> $documents Uploaded documents by id, or PDFs inline (base64).
      */
     #[JsonProperty('documents'), ArrayType([new Union(UpdateSignTemplateRequestDocumentsItemDocumentId::class, UpdateSignTemplateRequestDocumentsItemContent::class)])]
     public ?array $documents;

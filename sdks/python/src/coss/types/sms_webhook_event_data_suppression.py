@@ -12,8 +12,15 @@ class SmsWebhookEventDataSuppression(UniversalBaseModel):
     `sms.suppressed`: the entry that made coss.com skip the number.
     """
 
-    id: str
-    reason: SmsWebhookEventDataSuppressionReason
+    id: str = pydantic.Field()
+    """
+    The suppression's id.
+    """
+
+    reason: SmsWebhookEventDataSuppressionReason = pydantic.Field()
+    """
+    Why the number is suppressed.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

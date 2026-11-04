@@ -11,13 +11,22 @@ public record DmarcReportRecordAuthResultsDkimItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The signing domain.
+    /// </summary>
     [JsonPropertyName("domain")]
     public required string Domain { get; set; }
 
+    /// <summary>
+    /// The selector.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("selector")]
     public string? Selector { get; set; }
 
+    /// <summary>
+    /// The result.
+    /// </summary>
     [JsonPropertyName("result")]
     public required string Result { get; set; }
 

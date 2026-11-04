@@ -3,6 +3,7 @@
 module Coss
   module Forms
     module Types
+      # How submissions are screened. Only the fields given change.
       class UpdateFormRequestSpam < Internal::Types::Model
         field :honeypot_field, -> { String }, optional: true, nullable: false
 

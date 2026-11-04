@@ -11,6 +11,9 @@ public record BillingWebhookEventFiveData : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The organization's id.
+    /// </summary>
     [JsonPropertyName("organization_id")]
     public required string OrganizationId { get; set; }
 

@@ -934,6 +934,9 @@ public partial class SubmissionsClient : ISubmissionsClient
         );
     }
 
+    /// <summary>
+    /// One submission of the form, with its data, files and Risk's assessment.
+    /// </summary>
     /// <example><code>
     /// await client.Forms.Submissions.GetAsync(
     ///     new GetSubmissionsRequest

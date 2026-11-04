@@ -15,7 +15,7 @@ class BroadcastTest extends JsonSerializableType
     public string $object;
 
     /**
-     * @var array<string> $emailIds
+     * @var array<string> $emailIds The ids of the test emails.
      */
     #[JsonProperty('email_ids'), ArrayType(['string'])]
     public array $emailIds;

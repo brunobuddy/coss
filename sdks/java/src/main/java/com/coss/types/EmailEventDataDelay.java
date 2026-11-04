@@ -44,11 +44,17 @@ public final class EmailEventDataDelay {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The provider's reason for the delay.
+     */
     @JsonProperty("type")
     public String getType() {
         return type;
     }
 
+    /**
+     * @return When the provider stops trying. <code>null</code>: not reported.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("expires_at")
     public OptionalNullable<OffsetDateTime> getExpiresAt() {
@@ -58,6 +64,9 @@ public final class EmailEventDataDelay {
         return expiresAt;
     }
 
+    /**
+     * @return What the receiving server answered. <code>null</code>: not reported.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("diagnostic_code")
     public OptionalNullable<String> getDiagnosticCode() {
@@ -111,6 +120,9 @@ public final class EmailEventDataDelay {
     }
 
     public interface TypeStage {
+        /**
+         * <p>The provider's reason for the delay.</p>
+         */
         _FinalStage type(@NotNull String type);
 
         Builder from(EmailEventDataDelay other);
@@ -123,6 +135,9 @@ public final class EmailEventDataDelay {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>When the provider stops trying. <code>null</code>: not reported.</p>
+         */
         _FinalStage expiresAt(OptionalNullable<OffsetDateTime> expiresAt);
 
         _FinalStage expiresAt(OffsetDateTime expiresAt);
@@ -131,6 +146,9 @@ public final class EmailEventDataDelay {
 
         _FinalStage expiresAt(Nullable<OffsetDateTime> expiresAt);
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         */
         _FinalStage diagnosticCode(OptionalNullable<String> diagnosticCode);
 
         _FinalStage diagnosticCode(String diagnosticCode);
@@ -161,6 +179,10 @@ public final class EmailEventDataDelay {
             return this;
         }
 
+        /**
+         * <p>The provider's reason for the delay.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public _FinalStage type(@NotNull String type) {
@@ -168,6 +190,10 @@ public final class EmailEventDataDelay {
             return this;
         }
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage diagnosticCode(Nullable<String> diagnosticCode) {
             if (diagnosticCode.isNull()) {
@@ -180,6 +206,10 @@ public final class EmailEventDataDelay {
             return this;
         }
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage diagnosticCode(Optional<String> diagnosticCode) {
             if (diagnosticCode.isPresent()) {
@@ -190,12 +220,19 @@ public final class EmailEventDataDelay {
             return this;
         }
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage diagnosticCode(String diagnosticCode) {
             this.diagnosticCode = OptionalNullable.of(diagnosticCode);
             return this;
         }
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "diagnostic_code", nulls = Nulls.SKIP)
         public _FinalStage diagnosticCode(OptionalNullable<String> diagnosticCode) {
@@ -203,6 +240,10 @@ public final class EmailEventDataDelay {
             return this;
         }
 
+        /**
+         * <p>When the provider stops trying. <code>null</code>: not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage expiresAt(Nullable<OffsetDateTime> expiresAt) {
             if (expiresAt.isNull()) {
@@ -215,6 +256,10 @@ public final class EmailEventDataDelay {
             return this;
         }
 
+        /**
+         * <p>When the provider stops trying. <code>null</code>: not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage expiresAt(Optional<OffsetDateTime> expiresAt) {
             if (expiresAt.isPresent()) {
@@ -225,12 +270,19 @@ public final class EmailEventDataDelay {
             return this;
         }
 
+        /**
+         * <p>When the provider stops trying. <code>null</code>: not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage expiresAt(OffsetDateTime expiresAt) {
             this.expiresAt = OptionalNullable.of(expiresAt);
             return this;
         }
 
+        /**
+         * <p>When the provider stops trying. <code>null</code>: not reported.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "expires_at", nulls = Nulls.SKIP)
         public _FinalStage expiresAt(OptionalNullable<OffsetDateTime> expiresAt) {

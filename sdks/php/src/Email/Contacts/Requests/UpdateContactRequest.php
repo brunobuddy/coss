@@ -12,13 +12,13 @@ use Coss\Email\Contacts\Types\UpdateContactRequestTopicsItem;
 class UpdateContactRequest extends JsonSerializableType
 {
     /**
-     * @var ?string $firstName
+     * @var ?string $firstName Their first name. `null` removes it.
      */
     #[JsonProperty('first_name')]
     public ?string $firstName;
 
     /**
-     * @var ?string $lastName
+     * @var ?string $lastName Their last name. `null` removes it.
      */
     #[JsonProperty('last_name')]
     public ?string $lastName;

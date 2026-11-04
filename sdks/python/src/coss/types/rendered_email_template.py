@@ -9,7 +9,11 @@ from .rendered_email_template_object import RenderedEmailTemplateObject
 
 class RenderedEmailTemplate(UniversalBaseModel):
     object: RenderedEmailTemplateObject
-    template_id: str
+    template_id: str = pydantic.Field()
+    """
+    The template's id.
+    """
+
     version: typing.Optional[int] = pydantic.Field(default=None)
     """
     The version rendered; `null` for the draft.
@@ -20,9 +24,20 @@ class RenderedEmailTemplate(UniversalBaseModel):
     The locale rendered.
     """
 
-    subject: str
-    html: typing.Optional[str] = None
-    text: typing.Optional[str] = None
+    subject: str = pydantic.Field()
+    """
+    The rendered subject.
+    """
+
+    html: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The rendered HTML. `null`: the template has none.
+    """
+
+    text: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The rendered plain text. `null`: the template has none.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

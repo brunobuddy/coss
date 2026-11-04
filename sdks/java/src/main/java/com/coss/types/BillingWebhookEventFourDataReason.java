@@ -13,6 +13,9 @@ public final class BillingWebhookEventFourDataReason {
     public static final BillingWebhookEventFourDataReason SPEND_LIMIT =
             new BillingWebhookEventFourDataReason(Value.SPEND_LIMIT, "spend_limit");
 
+    public static final BillingWebhookEventFourDataReason CREDIT_LIMIT =
+            new BillingWebhookEventFourDataReason(Value.CREDIT_LIMIT, "credit_limit");
+
     public static final BillingWebhookEventFourDataReason DELINQUENT =
             new BillingWebhookEventFourDataReason(Value.DELINQUENT, "delinquent");
 
@@ -53,6 +56,8 @@ public final class BillingWebhookEventFourDataReason {
                 return visitor.visitAdmin();
             case SPEND_LIMIT:
                 return visitor.visitSpendLimit();
+            case CREDIT_LIMIT:
+                return visitor.visitCreditLimit();
             case DELINQUENT:
                 return visitor.visitDelinquent();
             case UNKNOWN:
@@ -68,6 +73,8 @@ public final class BillingWebhookEventFourDataReason {
                 return ADMIN;
             case "spend_limit":
                 return SPEND_LIMIT;
+            case "credit_limit":
+                return CREDIT_LIMIT;
             case "delinquent":
                 return DELINQUENT;
             default:
@@ -80,6 +87,8 @@ public final class BillingWebhookEventFourDataReason {
 
         SPEND_LIMIT,
 
+        CREDIT_LIMIT,
+
         ADMIN,
 
         UNKNOWN
@@ -89,6 +98,8 @@ public final class BillingWebhookEventFourDataReason {
         T visitDelinquent();
 
         T visitSpendLimit();
+
+        T visitCreditLimit();
 
         T visitAdmin();
 

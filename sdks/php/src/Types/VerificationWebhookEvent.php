@@ -22,7 +22,7 @@ class VerificationWebhookEvent extends JsonSerializableType
     public string $object;
 
     /**
-     * @var value-of<VerificationWebhookEventType> $type
+     * @var value-of<VerificationWebhookEventType> $type What happened to the verification.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -34,13 +34,13 @@ class VerificationWebhookEvent extends JsonSerializableType
     public string $apiVersion;
 
     /**
-     * @var DateTime $createdAt
+     * @var DateTime $createdAt When the event was created.
      */
     #[JsonProperty('created_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $createdAt;
 
     /**
-     * @var VerificationWebhookEventData $data
+     * @var VerificationWebhookEventData $data The verification. Never its code.
      */
     #[JsonProperty('data')]
     public VerificationWebhookEventData $data;

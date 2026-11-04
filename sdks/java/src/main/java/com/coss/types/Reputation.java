@@ -91,6 +91,9 @@ public final class Reputation {
         return reason;
     }
 
+    /**
+     * @return When <code>status</code> last changed. <code>null</code>: it never has.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("status_changed_at")
     public OptionalNullable<OffsetDateTime> getStatusChangedAt() {
@@ -124,6 +127,9 @@ public final class Reputation {
         return window;
     }
 
+    /**
+     * @return The measurements behind <code>status</code>.
+     */
     @JsonProperty("checks")
     public List<ReputationCheck> getChecks() {
         return checks;
@@ -237,6 +243,9 @@ public final class Reputation {
 
         _FinalStage reason(Nullable<String> reason);
 
+        /**
+         * <p>When <code>status</code> last changed. <code>null</code>: it never has.</p>
+         */
         _FinalStage statusChangedAt(OptionalNullable<OffsetDateTime> statusChangedAt);
 
         _FinalStage statusChangedAt(OffsetDateTime statusChangedAt);
@@ -267,6 +276,9 @@ public final class Reputation {
 
         _FinalStage window(Nullable<ReputationWindow> window);
 
+        /**
+         * <p>The measurements behind <code>status</code>.</p>
+         */
         _FinalStage checks(List<ReputationCheck> checks);
 
         _FinalStage addChecks(ReputationCheck checks);
@@ -335,6 +347,10 @@ public final class Reputation {
             return this;
         }
 
+        /**
+         * <p>The measurements behind <code>status</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllChecks(List<ReputationCheck> checks) {
             if (checks != null) {
@@ -343,12 +359,19 @@ public final class Reputation {
             return this;
         }
 
+        /**
+         * <p>The measurements behind <code>status</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addChecks(ReputationCheck checks) {
             this.checks.add(checks);
             return this;
         }
 
+        /**
+         * <p>The measurements behind <code>status</code>.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "checks", nulls = Nulls.SKIP)
         public _FinalStage checks(List<ReputationCheck> checks) {
@@ -459,6 +482,10 @@ public final class Reputation {
             return this;
         }
 
+        /**
+         * <p>When <code>status</code> last changed. <code>null</code>: it never has.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage statusChangedAt(Nullable<OffsetDateTime> statusChangedAt) {
             if (statusChangedAt.isNull()) {
@@ -471,6 +498,10 @@ public final class Reputation {
             return this;
         }
 
+        /**
+         * <p>When <code>status</code> last changed. <code>null</code>: it never has.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage statusChangedAt(Optional<OffsetDateTime> statusChangedAt) {
             if (statusChangedAt.isPresent()) {
@@ -481,12 +512,19 @@ public final class Reputation {
             return this;
         }
 
+        /**
+         * <p>When <code>status</code> last changed. <code>null</code>: it never has.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage statusChangedAt(OffsetDateTime statusChangedAt) {
             this.statusChangedAt = OptionalNullable.of(statusChangedAt);
             return this;
         }
 
+        /**
+         * <p>When <code>status</code> last changed. <code>null</code>: it never has.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "status_changed_at", nulls = Nulls.SKIP)
         public _FinalStage statusChangedAt(OptionalNullable<OffsetDateTime> statusChangedAt) {

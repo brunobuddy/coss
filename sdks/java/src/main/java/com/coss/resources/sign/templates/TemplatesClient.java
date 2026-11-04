@@ -77,18 +77,30 @@ public class TemplatesClient {
         return this.rawClient.create(request, requestOptions).body();
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public SignTemplate get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public SignTemplate get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public SignTemplate get(String id, GetTemplatesRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public SignTemplate get(String id, GetTemplatesRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

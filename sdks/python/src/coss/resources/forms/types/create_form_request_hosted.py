@@ -7,15 +7,34 @@ from ....core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class CreateFormRequestHosted(UniversalBaseModel):
+    """
+    The page coss.com can serve for this form. Only the fields given change.
+    """
+
     enabled: typing.Optional[bool] = pydantic.Field(default=None)
     """
     Serve the form as a page at its `hosted_url` (needs `fields`). Default false.
     """
 
-    title: typing.Optional[str] = None
-    description: typing.Optional[str] = None
-    submit_label: typing.Optional[str] = None
-    success_message: typing.Optional[str] = None
+    title: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The page's heading. `null`: the form's name.
+    """
+
+    description: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Text under the heading. `null`: none.
+    """
+
+    submit_label: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The submit button's label. `null`: the default.
+    """
+
+    success_message: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Shown after a submission. `null`: the default.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

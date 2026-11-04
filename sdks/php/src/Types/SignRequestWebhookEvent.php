@@ -22,7 +22,7 @@ class SignRequestWebhookEvent extends JsonSerializableType
     public string $object;
 
     /**
-     * @var value-of<SignRequestWebhookEventType> $type
+     * @var value-of<SignRequestWebhookEventType> $type `sent`: sent to signers. `viewed`: a signer opened it. `signer_signed`: a signer signed. `declined`: a signer declined. `completed`: the sealed document is ready to download. `canceled` and `expired`: it ended unsigned.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -34,13 +34,13 @@ class SignRequestWebhookEvent extends JsonSerializableType
     public string $apiVersion;
 
     /**
-     * @var DateTime $createdAt
+     * @var DateTime $createdAt When the event was created.
      */
     #[JsonProperty('created_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $createdAt;
 
     /**
-     * @var SignRequestWebhookEventData $data
+     * @var SignRequestWebhookEventData $data The request. Never documents or field values.
      */
     #[JsonProperty('data')]
     public SignRequestWebhookEventData $data;

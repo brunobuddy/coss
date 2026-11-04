@@ -91,7 +91,8 @@ public class TestTest : BaseMockServerTest
                   "sandbox": true,
                   "recipient": "recipient",
                   "occurred_at": "2024-01-15T09:30:00.000Z",
-                  "subaccount_id": "subaccount_id"
+                  "subaccount_id": "subaccount_id",
+                  "traceparent": "traceparent"
                 }
               },
               "endpoints": 1000000,
@@ -205,7 +206,8 @@ public class TestTest : BaseMockServerTest
                   "sandbox": true,
                   "recipient": "ada@example.com",
                   "occurred_at": "2026-10-10T12:00:03.000Z",
-                  "subaccount_id": "subaccount_id"
+                  "subaccount_id": "subaccount_id",
+                  "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
                 }
               },
               "endpoints": 1,

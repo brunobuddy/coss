@@ -50,31 +50,49 @@ public final class SignDocumentAnchorsItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The anchor as it appears in the document.
+     */
     @JsonProperty("text")
     public String getText() {
         return text;
     }
 
+    /**
+     * @return 1-based page number.
+     */
     @JsonProperty("page")
     public long getPage() {
         return page;
     }
 
+    /**
+     * @return Left edge, in PDF points from the page's left.
+     */
     @JsonProperty("x")
     public double getX() {
         return x;
     }
 
+    /**
+     * @return Top edge, in PDF points from the page's top.
+     */
     @JsonProperty("y")
     public double getY() {
         return y;
     }
 
+    /**
+     * @return In PDF points.
+     */
     @JsonProperty("width")
     public double getWidth() {
         return width;
     }
 
+    /**
+     * @return In PDF points.
+     */
     @JsonProperty("height")
     public double getHeight() {
         return height;
@@ -115,28 +133,46 @@ public final class SignDocumentAnchorsItem {
     }
 
     public interface TextStage {
+        /**
+         * <p>The anchor as it appears in the document.</p>
+         */
         PageStage text(@NotNull String text);
 
         Builder from(SignDocumentAnchorsItem other);
     }
 
     public interface PageStage {
+        /**
+         * <p>1-based page number.</p>
+         */
         XStage page(long page);
     }
 
     public interface XStage {
+        /**
+         * <p>Left edge, in PDF points from the page's left.</p>
+         */
         YStage x(double x);
     }
 
     public interface YStage {
+        /**
+         * <p>Top edge, in PDF points from the page's top.</p>
+         */
         WidthStage y(double y);
     }
 
     public interface WidthStage {
+        /**
+         * <p>In PDF points.</p>
+         */
         HeightStage width(double width);
     }
 
     public interface HeightStage {
+        /**
+         * <p>In PDF points.</p>
+         */
         _FinalStage height(double height);
     }
 
@@ -179,6 +215,10 @@ public final class SignDocumentAnchorsItem {
             return this;
         }
 
+        /**
+         * <p>The anchor as it appears in the document.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("text")
         public PageStage text(@NotNull String text) {
@@ -186,6 +226,10 @@ public final class SignDocumentAnchorsItem {
             return this;
         }
 
+        /**
+         * <p>1-based page number.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("page")
         public XStage page(long page) {
@@ -193,6 +237,10 @@ public final class SignDocumentAnchorsItem {
             return this;
         }
 
+        /**
+         * <p>Left edge, in PDF points from the page's left.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("x")
         public YStage x(double x) {
@@ -200,6 +248,10 @@ public final class SignDocumentAnchorsItem {
             return this;
         }
 
+        /**
+         * <p>Top edge, in PDF points from the page's top.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("y")
         public WidthStage y(double y) {
@@ -207,6 +259,10 @@ public final class SignDocumentAnchorsItem {
             return this;
         }
 
+        /**
+         * <p>In PDF points.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("width")
         public HeightStage width(double width) {
@@ -214,6 +270,10 @@ public final class SignDocumentAnchorsItem {
             return this;
         }
 
+        /**
+         * <p>In PDF points.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("height")
         public _FinalStage height(double height) {

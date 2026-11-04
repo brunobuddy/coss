@@ -13,10 +13,16 @@ public record UpdateContactRequest
     [JsonIgnore]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Their first name. `null` removes it.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("first_name")]
     public Optional<string?> FirstName { get; set; }
 
+    /// <summary>
+    /// Their last name. `null` removes it.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("last_name")]
     public Optional<string?> LastName { get; set; }

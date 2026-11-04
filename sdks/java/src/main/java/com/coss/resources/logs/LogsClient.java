@@ -55,18 +55,30 @@ public class LogsClient {
         return this.rawClient.list(request, requestOptions).body();
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public Log get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public Log get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public Log get(String id, GetLogsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public Log get(String id, GetLogsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

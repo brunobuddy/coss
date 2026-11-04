@@ -19,10 +19,12 @@ var (
 )
 
 type CreateRiskListEntryRequest struct {
-	List  cossgo.RiskList          `json:"list" url:"-"`
-	Type  cossgo.RiskListEntryType `json:"type" url:"-"`
-	Value string                   `json:"value" url:"-"`
-	Note  *string                  `json:"note,omitempty" url:"-"`
+	List cossgo.RiskList          `json:"list" url:"-"`
+	Type cossgo.RiskListEntryType `json:"type" url:"-"`
+	// What to match: the address, domain, IP, CIDR range, ASN or other value of its `type`.
+	Value string `json:"value" url:"-"`
+	// Your note about it.
+	Note *string `json:"note,omitempty" url:"-"`
 	// The entry stops matching at this time (it is kept until deleted).
 	ExpiresAt *time.Time `json:"expires_at,omitempty" url:"-"`
 
@@ -139,6 +141,7 @@ var (
 )
 
 type ListListsRequest struct {
+	// Which list: `allow` or `block`.
 	List *cossgo.RiskList `json:"-" url:"list,omitempty"`
 	// `email` (matched by mailbox, dots and `+tags` folded), `domain` (subdomains included), `ip` (an address or CIDR range), `asn`, `country` (ISO 3166-1 alpha-2), `user` (your user id).
 	Type *cossgo.RiskListEntryType `json:"-" url:"type,omitempty"`

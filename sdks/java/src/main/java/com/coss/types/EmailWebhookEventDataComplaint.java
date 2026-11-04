@@ -38,6 +38,9 @@ public final class EmailWebhookEventDataComplaint {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The kind of complaint the mailbox provider reported. <code>null</code>: not reported.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("feedback_type")
     public OptionalNullable<String> getFeedbackType() {
@@ -47,6 +50,9 @@ public final class EmailWebhookEventDataComplaint {
         return feedbackType;
     }
 
+    /**
+     * @return The provider's finer classification. <code>null</code>: not reported.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("sub_type")
     public OptionalNullable<String> getSubType() {
@@ -114,6 +120,9 @@ public final class EmailWebhookEventDataComplaint {
             return this;
         }
 
+        /**
+         * <p>The kind of complaint the mailbox provider reported. <code>null</code>: not reported.</p>
+         */
         @JsonSetter(value = "feedback_type", nulls = Nulls.SKIP)
         public Builder feedbackType(OptionalNullable<String> feedbackType) {
             this.feedbackType = feedbackType;
@@ -145,6 +154,9 @@ public final class EmailWebhookEventDataComplaint {
             return this;
         }
 
+        /**
+         * <p>The provider's finer classification. <code>null</code>: not reported.</p>
+         */
         @JsonSetter(value = "sub_type", nulls = Nulls.SKIP)
         public Builder subType(OptionalNullable<String> subType) {
             this.subType = subType;

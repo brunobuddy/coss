@@ -6,6 +6,8 @@ use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 use Coss\Types\LogDrainSource;
 use Coss\Core\Types\ArrayType;
+use Coss\LogDrains\Types\CreateLogDrainRequestFormat;
+use Coss\Types\LogDrainAuthHeader;
 
 class CreateLogDrainRequest extends JsonSerializableType
 {
@@ -28,10 +30,24 @@ class CreateLogDrainRequest extends JsonSerializableType
     public ?array $sources;
 
     /**
+     * @var ?value-of<CreateLogDrainRequestFormat> $format How batches are encoded. `ndjson`: one JSON object per line (`application/x-ndjson`), for your own endpoint. `loki`: Loki's push API (`/loki/api/v1/push`, Grafana Cloud Logs). `datadog`: Datadog's log intake (`/api/v2/logs`). `otlp`: OTLP/HTTP logs in JSON (`/v1/logs`, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to `ndjson`.
+     */
+    #[JsonProperty('format')]
+    public ?string $format;
+
+    /**
+     * @var ?LogDrainAuthHeader $authHeader
+     */
+    #[JsonProperty('auth_header')]
+    public ?LogDrainAuthHeader $authHeader;
+
+    /**
      * @param array{
      *   url: string,
      *   description?: ?string,
      *   sources?: ?array<value-of<LogDrainSource>>,
+     *   format?: ?value-of<CreateLogDrainRequestFormat>,
+     *   authHeader?: ?LogDrainAuthHeader,
      * } $values
      */
     public function __construct(
@@ -45,6 +61,14 @@ class CreateLogDrainRequest extends JsonSerializableType
         $this->sources = $values['sources'] ?? null;
         if (array_key_exists('sources', $values)) {
             $this->_setField('sources');
+        }
+        $this->format = $values['format'] ?? null;
+        if (array_key_exists('format', $values)) {
+            $this->_setField('format');
+        }
+        $this->authHeader = $values['authHeader'] ?? null;
+        if (array_key_exists('authHeader', $values)) {
+            $this->_setField('authHeader');
         }
     }
 }

@@ -23,7 +23,7 @@ class InboxThread extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $inboxId
+     * @var string $inboxId The inbox's id.
      */
     #[JsonProperty('inbox_id')]
     public string $inboxId;
@@ -41,7 +41,7 @@ class InboxThread extends JsonSerializableType
     public array $participants;
 
     /**
-     * @var int $messageCount
+     * @var int $messageCount Messages in the thread.
      */
     #[JsonProperty('message_count')]
     public int $messageCount;
@@ -53,7 +53,7 @@ class InboxThread extends JsonSerializableType
     public ?string $preview;
 
     /**
-     * @var DateTime $lastMessageAt
+     * @var DateTime $lastMessageAt When its latest message was received or sent.
      */
     #[JsonProperty('last_message_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $lastMessageAt;

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # What receivers saw for DKIM and SPF.
     class DmarcReportRecordAuthResults < Internal::Types::Model
       field :dkim, -> { Internal::Types::Array[Coss::Types::DmarcReportRecordAuthResultsDkimItem] }, optional: false, nullable: false
 

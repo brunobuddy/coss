@@ -34,6 +34,9 @@ public final class TestBroadcastRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Who gets the test, at most 5 addresses.
+     */
     @JsonProperty("to")
     public List<String> getTo() {
         return to;
@@ -93,6 +96,9 @@ public final class TestBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>Who gets the test, at most 5 addresses.</p>
+         */
         @JsonSetter(value = "to", nulls = Nulls.SKIP)
         public Builder to(List<String> to) {
             this.to.clear();

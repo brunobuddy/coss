@@ -12,6 +12,9 @@ public record UpdateRiskSettingsRequestCaptcha : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The captcha provider.
+    /// </summary>
     [JsonPropertyName("provider")]
     public required UpdateRiskSettingsRequestCaptchaProvider Provider { get; set; }
 

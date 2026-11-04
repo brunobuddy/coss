@@ -17,6 +17,8 @@ public final class CreditSource {
 
     public static final CreditSource REFUND = new CreditSource(Value.REFUND, "refund");
 
+    public static final CreditSource THRESHOLD = new CreditSource(Value.THRESHOLD, "threshold");
+
     public static final CreditSource SLA = new CreditSource(Value.SLA, "sla");
 
     private final Value value;
@@ -60,6 +62,8 @@ public final class CreditSource {
                 return visitor.visitFee();
             case REFUND:
                 return visitor.visitRefund();
+            case THRESHOLD:
+                return visitor.visitThreshold();
             case SLA:
                 return visitor.visitSla();
             case UNKNOWN:
@@ -81,6 +85,8 @@ public final class CreditSource {
                 return FEE;
             case "refund":
                 return REFUND;
+            case "threshold":
+                return THRESHOLD;
             case "sla":
                 return SLA;
             default:
@@ -101,6 +107,8 @@ public final class CreditSource {
 
         SLA,
 
+        THRESHOLD,
+
         UNKNOWN
     }
 
@@ -116,6 +124,8 @@ public final class CreditSource {
         T visitRefund();
 
         T visitSla();
+
+        T visitThreshold();
 
         T visitUnknown(String unknownType);
     }

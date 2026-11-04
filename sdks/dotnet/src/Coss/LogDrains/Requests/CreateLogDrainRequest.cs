@@ -26,6 +26,17 @@ public record CreateLogDrainRequest
     [JsonPropertyName("sources")]
     public IEnumerable<LogDrainSource>? Sources { get; set; }
 
+    /// <summary>
+    /// How batches are encoded. `ndjson`: one JSON object per line (`application/x-ndjson`), for your own endpoint. `loki`: Loki's push API (`/loki/api/v1/push`, Grafana Cloud Logs). `datadog`: Datadog's log intake (`/api/v2/logs`). `otlp`: OTLP/HTTP logs in JSON (`/v1/logs`, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to `ndjson`.
+    /// </summary>
+    [Optional]
+    [JsonPropertyName("format")]
+    public CreateLogDrainRequestFormat? Format { get; set; }
+
+    [Nullable, Optional]
+    [JsonPropertyName("auth_header")]
+    public Optional<LogDrainAuthHeader?> AuthHeader { get; set; }
+
     /// <inheritdoc />
     public override string ToString()
     {

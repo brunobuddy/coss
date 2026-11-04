@@ -10,7 +10,7 @@ use Coss\Core\Types\Date;
 class ReceivedSmsWebhookEvent extends JsonSerializableType
 {
     /**
-     * @var string $id
+     * @var string $id The event id.
      */
     #[JsonProperty('id')]
     public string $id;
@@ -22,7 +22,7 @@ class ReceivedSmsWebhookEvent extends JsonSerializableType
     public string $object;
 
     /**
-     * @var value-of<ReceivedSmsWebhookEventType> $type
+     * @var value-of<ReceivedSmsWebhookEventType> $type `sms.received`: a message arrived. `sms.opted_out`: the sender replied with an opt-out keyword. `sms.opted_in`: the sender replied with an opt-in keyword.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -34,7 +34,7 @@ class ReceivedSmsWebhookEvent extends JsonSerializableType
     public string $apiVersion;
 
     /**
-     * @var DateTime $createdAt
+     * @var DateTime $createdAt When the event was created.
      */
     #[JsonProperty('created_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $createdAt;

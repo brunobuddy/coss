@@ -22,7 +22,7 @@ class Segment extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $name
+     * @var string $name Your name for the segment, unique in the environment.
      */
     #[JsonProperty('name')]
     public string $name;

@@ -8,7 +8,7 @@ use Coss\Core\Json\JsonProperty;
 class EmailWebhookEventDataDelivery extends JsonSerializableType
 {
     /**
-     * @var ?string $smtpResponse
+     * @var ?string $smtpResponse What the receiving server answered. `null`: not reported.
      */
     #[JsonProperty('smtp_response')]
     public ?string $smtpResponse;

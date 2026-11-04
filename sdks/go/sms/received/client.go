@@ -68,6 +68,8 @@ func (c *Client) List(
 	return response.Body, nil
 }
 
+// One message received on a number of the organization and routed to the API key's environment.
+//
 // Example:
 //
 //	request := &sms.GetReceivedRequest{

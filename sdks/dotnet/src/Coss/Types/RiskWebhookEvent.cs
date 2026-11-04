@@ -20,6 +20,9 @@ public record RiskWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required RiskWebhookEventObject Object { get; set; }
 
+    /// <summary>
+    /// What happened to the assessment.
+    /// </summary>
     [JsonPropertyName("type")]
     public required RiskWebhookEventType Type { get; set; }
 
@@ -32,6 +35,9 @@ public record RiskWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// The assessment, without its signals.
+    /// </summary>
     [JsonPropertyName("data")]
     public required RiskWebhookEventData Data { get; set; }
 

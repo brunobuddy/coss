@@ -20,7 +20,7 @@ class SendInboxMessageRequest extends JsonSerializableType
      * @var (
      *    string
      *   |array<string>
-     * ) $to
+     * ) $to Who it goes to.
      */
     #[JsonProperty('to'), Union('string', ['string'])]
     public string|array $to;
@@ -29,7 +29,7 @@ class SendInboxMessageRequest extends JsonSerializableType
      * @var (
      *    string
      *   |array<string>
-     * )|null $cc
+     * )|null $cc Who it's copied to.
      */
     #[JsonProperty('cc'), Union('string', ['string'], 'null')]
     public string|array|null $cc;
@@ -38,7 +38,7 @@ class SendInboxMessageRequest extends JsonSerializableType
      * @var (
      *    string
      *   |array<string>
-     * )|null $bcc
+     * )|null $bcc Who it's blind copied to.
      */
     #[JsonProperty('bcc'), Union('string', ['string'], 'null')]
     public string|array|null $bcc;
@@ -68,7 +68,7 @@ class SendInboxMessageRequest extends JsonSerializableType
     public ?array $attachments;
 
     /**
-     * @var ?array<SendInboxMessageRequestTagsItem> $tags
+     * @var ?array<SendInboxMessageRequestTagsItem> $tags Your tags on the email.
      */
     #[JsonProperty('tags'), ArrayType([SendInboxMessageRequestTagsItem::class])]
     public ?array $tags;

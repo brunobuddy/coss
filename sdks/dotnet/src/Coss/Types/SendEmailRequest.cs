@@ -18,17 +18,29 @@ public record SendEmailRequest : IJsonOnDeserialized
     [JsonPropertyName("from")]
     public required string From { get; set; }
 
+    /// <summary>
+    /// Who it goes to.
+    /// </summary>
     [JsonPropertyName("to")]
     public required OneOf<string, IEnumerable<string>> To { get; set; }
 
+    /// <summary>
+    /// Who it's copied to.
+    /// </summary>
     [Optional]
     [JsonPropertyName("cc")]
     public OneOf<string, IEnumerable<string>>? Cc { get; set; }
 
+    /// <summary>
+    /// Who it's blind copied to.
+    /// </summary>
     [Optional]
     [JsonPropertyName("bcc")]
     public OneOf<string, IEnumerable<string>>? Bcc { get; set; }
 
+    /// <summary>
+    /// Where replies go.
+    /// </summary>
     [Optional]
     [JsonPropertyName("reply_to")]
     public OneOf<string, IEnumerable<string>>? ReplyTo { get; set; }
@@ -89,6 +101,9 @@ public record SendEmailRequest : IJsonOnDeserialized
     [JsonPropertyName("headers")]
     public Dictionary<string, string>? Headers { get; set; }
 
+    /// <summary>
+    /// Your tags on the email.
+    /// </summary>
     [Optional]
     [JsonPropertyName("tags")]
     public IEnumerable<SendEmailRequestTagsItem>? Tags { get; set; }

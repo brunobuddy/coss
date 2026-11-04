@@ -184,6 +184,8 @@ class SuppressionsClient
     }
 
     /**
+     * Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+     *
      * Example:
      * ```php
      * $client->sms->suppressions->check(
@@ -242,6 +244,8 @@ class SuppressionsClient
     }
 
     /**
+     * One entry of the SMS suppression list of the API key's environment.
+     *
      * Example:
      * ```php
      * $client->sms->suppressions->get(

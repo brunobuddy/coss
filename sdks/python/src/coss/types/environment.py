@@ -22,15 +22,31 @@ class Environment(UniversalBaseModel):
     The environment's id.
     """
 
-    name: str
-    slug: str
+    name: str = pydantic.Field()
+    """
+    The environment's name.
+    """
+
+    slug: str = pydantic.Field()
+    """
+    The environment's slug, as in dashboard URLs.
+    """
+
     mode: EnvironmentMode = pydantic.Field()
     """
     `live` delivers email; `sandbox` (`coss_test_` keys) never does.
     """
 
-    project: EnvironmentProject
-    organization: EnvironmentOrganization
+    project: EnvironmentProject = pydantic.Field()
+    """
+    The project it belongs to.
+    """
+
+    organization: EnvironmentOrganization = pydantic.Field()
+    """
+    The organization it belongs to.
+    """
+
     api_key: EnvironmentApiKey = pydantic.Field()
     """
     The API key making this request.

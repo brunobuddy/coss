@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Someone asked to sign.
     class SignSigner < Internal::Types::Model
       field :object, -> { Coss::Types::SignSignerObject }, optional: false, nullable: false
 

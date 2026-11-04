@@ -22,8 +22,16 @@ class RiskListEntry(UniversalBaseModel):
     Normalized: emails as their mailbox, CIDR ranges canonical, ASNs as numbers.
     """
 
-    note: typing.Optional[str] = None
-    expires_at: typing.Optional[dt.datetime] = None
+    note: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your note about it. `null`: none.
+    """
+
+    expires_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it stops matching. `null`: never.
+    """
+
     created_at: dt.datetime
 
     if IS_PYDANTIC_V2:

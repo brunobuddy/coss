@@ -84,11 +84,17 @@ public final class RiskRule {
         return id;
     }
 
+    /**
+     * @return Your name for the rule, returned with reasons when it decides.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return <code>false</code>: it's kept, and no assessment applies it.
+     */
     @JsonProperty("enabled")
     public boolean getEnabled() {
         return enabled;
@@ -118,6 +124,9 @@ public final class RiskRule {
         return match;
     }
 
+    /**
+     * @return What must hold, by <code>match</code>.
+     */
     @JsonProperty("conditions")
     public List<RiskRuleCondition> getConditions() {
         return conditions;
@@ -199,10 +208,16 @@ public final class RiskRule {
     }
 
     public interface NameStage {
+        /**
+         * <p>Your name for the rule, returned with reasons when it decides.</p>
+         */
         EnabledStage name(@NotNull String name);
     }
 
     public interface EnabledStage {
+        /**
+         * <p><code>false</code>: it's kept, and no assessment applies it.</p>
+         */
         PositionStage enabled(boolean enabled);
     }
 
@@ -248,6 +263,9 @@ public final class RiskRule {
 
         _FinalStage addAllEvents(List<RiskEvent> events);
 
+        /**
+         * <p>What must hold, by <code>match</code>.</p>
+         */
         _FinalStage conditions(List<RiskRuleCondition> conditions);
 
         _FinalStage addConditions(RiskRuleCondition conditions);
@@ -324,6 +342,10 @@ public final class RiskRule {
             return this;
         }
 
+        /**
+         * <p>Your name for the rule, returned with reasons when it decides.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public EnabledStage name(@NotNull String name) {
@@ -331,6 +353,10 @@ public final class RiskRule {
             return this;
         }
 
+        /**
+         * <p><code>false</code>: it's kept, and no assessment applies it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("enabled")
         public PositionStage enabled(boolean enabled) {
@@ -381,6 +407,10 @@ public final class RiskRule {
             return this;
         }
 
+        /**
+         * <p>What must hold, by <code>match</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllConditions(List<RiskRuleCondition> conditions) {
             if (conditions != null) {
@@ -389,12 +419,19 @@ public final class RiskRule {
             return this;
         }
 
+        /**
+         * <p>What must hold, by <code>match</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addConditions(RiskRuleCondition conditions) {
             this.conditions.add(conditions);
             return this;
         }
 
+        /**
+         * <p>What must hold, by <code>match</code>.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "conditions", nulls = Nulls.SKIP)
         public _FinalStage conditions(List<RiskRuleCondition> conditions) {

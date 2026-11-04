@@ -990,6 +990,9 @@ public partial class LimitBucketsClient : ILimitBucketsClient
         );
     }
 
+    /// <summary>
+    /// One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+    /// </summary>
     /// <example><code>
     /// await client.Risk.LimitBuckets.GetAsync(
     ///     new GetLimitBucketsRequest { Id = "rsklb_01k7c8m4q2f3e9v6t5r1n0p8yz" }

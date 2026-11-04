@@ -22,6 +22,8 @@ public readonly record struct RiskAssessmentDegradedItem : IStringEnum
 
     public static readonly RiskAssessmentDegradedItem IpPrivacy = new(Values.IpPrivacy);
 
+    public static readonly RiskAssessmentDegradedItem UsageLimit = new(Values.UsageLimit);
+
     public RiskAssessmentDegradedItem(string value)
     {
         Value = value;
@@ -131,5 +133,7 @@ public readonly record struct RiskAssessmentDegradedItem : IStringEnum
         public const string Content = "content";
 
         public const string IpPrivacy = "ip_privacy";
+
+        public const string UsageLimit = "usage_limit";
     }
 }

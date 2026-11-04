@@ -12,8 +12,15 @@ class BillingPeriod(UniversalBaseModel):
     The current billing month (UTC).
     """
 
-    start: dt.datetime
-    end: dt.datetime
+    start: dt.datetime = pydantic.Field()
+    """
+    When the period starts (inclusive).
+    """
+
+    end: dt.datetime = pydantic.Field()
+    """
+    When the period ends (exclusive).
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -29,10 +29,16 @@ public record RiskListEntry : IJsonOnDeserialized
     [JsonPropertyName("value")]
     public required string Value { get; set; }
 
+    /// <summary>
+    /// Your note about it. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("note")]
     public string? Note { get; set; }
 
+    /// <summary>
+    /// When it stops matching. `null`: never.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("expires_at")]
     public DateTime? ExpiresAt { get; set; }

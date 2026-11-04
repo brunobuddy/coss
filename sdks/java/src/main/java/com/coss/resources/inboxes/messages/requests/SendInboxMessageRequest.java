@@ -79,16 +79,25 @@ public final class SendInboxMessageRequest {
         return idempotencyKey;
     }
 
+    /**
+     * @return Who it goes to.
+     */
     @JsonProperty("to")
     public SendInboxMessageRequestTo getTo() {
         return to;
     }
 
+    /**
+     * @return Who it's copied to.
+     */
     @JsonProperty("cc")
     public Optional<SendInboxMessageRequestCc> getCc() {
         return cc;
     }
 
+    /**
+     * @return Who it's blind copied to.
+     */
     @JsonProperty("bcc")
     public Optional<SendInboxMessageRequestBcc> getBcc() {
         return bcc;
@@ -126,6 +135,9 @@ public final class SendInboxMessageRequest {
         return attachments;
     }
 
+    /**
+     * @return Your tags on the email.
+     */
     @JsonProperty("tags")
     public Optional<List<SendInboxMessageRequestTagsItem>> getTags() {
         return tags;
@@ -178,6 +190,9 @@ public final class SendInboxMessageRequest {
     }
 
     public interface ToStage {
+        /**
+         * <p>Who it goes to.</p>
+         */
         SubjectStage to(@NotNull SendInboxMessageRequestTo to);
 
         Builder from(SendInboxMessageRequest other);
@@ -204,10 +219,16 @@ public final class SendInboxMessageRequest {
 
         _FinalStage idempotencyKey(String idempotencyKey);
 
+        /**
+         * <p>Who it's copied to.</p>
+         */
         _FinalStage cc(Optional<SendInboxMessageRequestCc> cc);
 
         _FinalStage cc(SendInboxMessageRequestCc cc);
 
+        /**
+         * <p>Who it's blind copied to.</p>
+         */
         _FinalStage bcc(Optional<SendInboxMessageRequestBcc> bcc);
 
         _FinalStage bcc(SendInboxMessageRequestBcc bcc);
@@ -233,6 +254,9 @@ public final class SendInboxMessageRequest {
 
         _FinalStage attachments(List<SendEmailAttachment> attachments);
 
+        /**
+         * <p>Your tags on the email.</p>
+         */
         _FinalStage tags(Optional<List<SendInboxMessageRequestTagsItem>> tags);
 
         _FinalStage tags(List<SendInboxMessageRequestTagsItem> tags);
@@ -277,6 +301,10 @@ public final class SendInboxMessageRequest {
             return this;
         }
 
+        /**
+         * <p>Who it goes to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("to")
         public SubjectStage to(@NotNull SendInboxMessageRequestTo to) {
@@ -295,12 +323,19 @@ public final class SendInboxMessageRequest {
             return this;
         }
 
+        /**
+         * <p>Your tags on the email.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage tags(List<SendInboxMessageRequestTagsItem> tags) {
             this.tags = Optional.ofNullable(tags);
             return this;
         }
 
+        /**
+         * <p>Your tags on the email.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "tags", nulls = Nulls.SKIP)
         public _FinalStage tags(Optional<List<SendInboxMessageRequestTagsItem>> tags) {
@@ -368,12 +403,19 @@ public final class SendInboxMessageRequest {
             return this;
         }
 
+        /**
+         * <p>Who it's blind copied to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage bcc(SendInboxMessageRequestBcc bcc) {
             this.bcc = Optional.ofNullable(bcc);
             return this;
         }
 
+        /**
+         * <p>Who it's blind copied to.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "bcc", nulls = Nulls.SKIP)
         public _FinalStage bcc(Optional<SendInboxMessageRequestBcc> bcc) {
@@ -381,12 +423,19 @@ public final class SendInboxMessageRequest {
             return this;
         }
 
+        /**
+         * <p>Who it's copied to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage cc(SendInboxMessageRequestCc cc) {
             this.cc = Optional.ofNullable(cc);
             return this;
         }
 
+        /**
+         * <p>Who it's copied to.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "cc", nulls = Nulls.SKIP)
         public _FinalStage cc(Optional<SendInboxMessageRequestCc> cc) {

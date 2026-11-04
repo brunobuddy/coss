@@ -33,11 +33,17 @@ public final class BillingScheduledChange {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return When it takes effect.
+     */
     @JsonProperty("effective_at")
     public OffsetDateTime getEffectiveAt() {
         return effectiveAt;
     }
 
+    /**
+     * @return The plan it changes to.
+     */
     @JsonProperty("plan")
     public BillingScheduledChangePlan getPlan() {
         return plan;
@@ -73,12 +79,18 @@ public final class BillingScheduledChange {
     }
 
     public interface EffectiveAtStage {
+        /**
+         * <p>When it takes effect.</p>
+         */
         PlanStage effectiveAt(@NotNull OffsetDateTime effectiveAt);
 
         Builder from(BillingScheduledChange other);
     }
 
     public interface PlanStage {
+        /**
+         * <p>The plan it changes to.</p>
+         */
         _FinalStage plan(@NotNull BillingScheduledChangePlan plan);
     }
 
@@ -108,6 +120,10 @@ public final class BillingScheduledChange {
             return this;
         }
 
+        /**
+         * <p>When it takes effect.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("effective_at")
         public PlanStage effectiveAt(@NotNull OffsetDateTime effectiveAt) {
@@ -115,6 +131,10 @@ public final class BillingScheduledChange {
             return this;
         }
 
+        /**
+         * <p>The plan it changes to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("plan")
         public _FinalStage plan(@NotNull BillingScheduledChangePlan plan) {

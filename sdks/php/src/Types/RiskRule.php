@@ -23,13 +23,13 @@ class RiskRule extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $name
+     * @var string $name Your name for the rule, returned with reasons when it decides.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var bool $enabled
+     * @var bool $enabled `false`: it's kept, and no assessment applies it.
      */
     #[JsonProperty('enabled')]
     public bool $enabled;
@@ -53,7 +53,7 @@ class RiskRule extends JsonSerializableType
     public string $match;
 
     /**
-     * @var array<RiskRuleCondition> $conditions
+     * @var array<RiskRuleCondition> $conditions What must hold, by `match`.
      */
     #[JsonProperty('conditions'), ArrayType([RiskRuleCondition::class])]
     public array $conditions;

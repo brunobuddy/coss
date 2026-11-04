@@ -188,6 +188,8 @@ class ListsClient
     }
 
     /**
+     * One allow or block list entry of the API key's environment.
+     *
      * Example:
      * ```php
      * $client->risk->lists->get(
@@ -241,6 +243,8 @@ class ListsClient
     }
 
     /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     *
      * Example:
      * ```php
      * $client->risk->lists->remove(

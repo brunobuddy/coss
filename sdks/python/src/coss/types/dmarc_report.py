@@ -14,28 +14,56 @@ from .dmarc_report_reporter import DmarcReportReporter
 class DmarcReport(UniversalBaseModel):
     object: DmarcReportObject
     id: str
-    domain_id: str
-    reporter: DmarcReportReporter
+    domain_id: str = pydantic.Field()
+    """
+    The domain's id.
+    """
+
+    reporter: DmarcReportReporter = pydantic.Field()
+    """
+    Who sent the report.
+    """
+
     report_id: str = pydantic.Field()
     """
     The reporter's own id of the report.
     """
 
-    period_start: dt.datetime
-    period_end: dt.datetime
+    period_start: dt.datetime = pydantic.Field()
+    """
+    When the period it covers starts.
+    """
+
+    period_end: dt.datetime = pydantic.Field()
+    """
+    When the period it covers ends.
+    """
+
     policy_published: DmarcReportPolicyPublished = pydantic.Field()
     """
     The policy the reporter found when it evaluated the mail.
     """
 
-    messages: int
-    passing: int
+    messages: int = pydantic.Field()
+    """
+    Messages the report covers.
+    """
+
+    passing: int = pydantic.Field()
+    """
+    Of those, how many passed DMARC.
+    """
+
     truncated: bool = pydantic.Field()
     """
     The report listed more rows than are kept (10,000); totals cover the kept rows.
     """
 
-    received_at: dt.datetime
+    received_at: dt.datetime = pydantic.Field()
+    """
+    When coss.com received it.
+    """
+
     records: typing.List[DmarcReportRecord]
 
     if IS_PYDANTIC_V2:

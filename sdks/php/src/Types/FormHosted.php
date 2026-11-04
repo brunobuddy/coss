@@ -7,40 +7,43 @@ use Coss\Core\Json\JsonProperty;
 use DateTime;
 use Coss\Core\Types\Date;
 
+/**
+ * The page coss.com can serve for this form.
+ */
 class FormHosted extends JsonSerializableType
 {
     /**
-     * @var bool $enabled
+     * @var bool $enabled Whether the page is served at `hosted_url`.
      */
     #[JsonProperty('enabled')]
     public bool $enabled;
 
     /**
-     * @var ?string $title
+     * @var ?string $title The page's heading. `null`: the form's name.
      */
     #[JsonProperty('title')]
     public ?string $title;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Text under the heading. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;
 
     /**
-     * @var ?string $submitLabel
+     * @var ?string $submitLabel The submit button's label. `null`: the default.
      */
     #[JsonProperty('submit_label')]
     public ?string $submitLabel;
 
     /**
-     * @var ?string $successMessage
+     * @var ?string $successMessage Shown after a submission. `null`: the default.
      */
     #[JsonProperty('success_message')]
     public ?string $successMessage;
 
     /**
-     * @var ?DateTime $publishedAt
+     * @var ?DateTime $publishedAt When the page was turned on, or what it shows last changed. `null`: never published.
      */
     #[JsonProperty('published_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $publishedAt;

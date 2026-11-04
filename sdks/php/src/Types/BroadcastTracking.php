@@ -5,16 +5,19 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * Which opens and clicks are tracked.
+ */
 class BroadcastTracking extends JsonSerializableType
 {
     /**
-     * @var bool $opens
+     * @var bool $opens Whether opens are tracked.
      */
     #[JsonProperty('opens')]
     public bool $opens;
 
     /**
-     * @var bool $clicks
+     * @var bool $clicks Whether clicks are tracked.
      */
     #[JsonProperty('clicks')]
     public bool $clicks;

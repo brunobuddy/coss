@@ -118,21 +118,33 @@ public final class SendEmailRequest {
         return from;
     }
 
+    /**
+     * @return Who it goes to.
+     */
     @JsonProperty("to")
     public SendEmailRequestTo getTo() {
         return to;
     }
 
+    /**
+     * @return Who it's copied to.
+     */
     @JsonProperty("cc")
     public Optional<SendEmailRequestCc> getCc() {
         return cc;
     }
 
+    /**
+     * @return Who it's blind copied to.
+     */
     @JsonProperty("bcc")
     public Optional<SendEmailRequestBcc> getBcc() {
         return bcc;
     }
 
+    /**
+     * @return Where replies go.
+     */
     @JsonProperty("reply_to")
     public Optional<SendEmailRequestReplyTo> getReplyTo() {
         return replyTo;
@@ -202,6 +214,9 @@ public final class SendEmailRequest {
         return headers;
     }
 
+    /**
+     * @return Your tags on the email.
+     */
     @JsonProperty("tags")
     public Optional<List<SendEmailRequestTagsItem>> getTags() {
         return tags;
@@ -330,6 +345,9 @@ public final class SendEmailRequest {
     }
 
     public interface ToStage {
+        /**
+         * <p>Who it goes to.</p>
+         */
         _FinalStage to(@NotNull SendEmailRequestTo to);
     }
 
@@ -340,14 +358,23 @@ public final class SendEmailRequest {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Who it's copied to.</p>
+         */
         _FinalStage cc(Optional<SendEmailRequestCc> cc);
 
         _FinalStage cc(SendEmailRequestCc cc);
 
+        /**
+         * <p>Who it's blind copied to.</p>
+         */
         _FinalStage bcc(Optional<SendEmailRequestBcc> bcc);
 
         _FinalStage bcc(SendEmailRequestBcc bcc);
 
+        /**
+         * <p>Where replies go.</p>
+         */
         _FinalStage replyTo(Optional<SendEmailRequestReplyTo> replyTo);
 
         _FinalStage replyTo(SendEmailRequestReplyTo replyTo);
@@ -408,6 +435,9 @@ public final class SendEmailRequest {
 
         _FinalStage headers(Map<String, String> headers);
 
+        /**
+         * <p>Your tags on the email.</p>
+         */
         _FinalStage tags(Optional<List<SendEmailRequestTagsItem>> tags);
 
         _FinalStage tags(List<SendEmailRequestTagsItem> tags);
@@ -535,6 +565,10 @@ public final class SendEmailRequest {
             return this;
         }
 
+        /**
+         * <p>Who it goes to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("to")
         public _FinalStage to(@NotNull SendEmailRequestTo to) {
@@ -655,12 +689,19 @@ public final class SendEmailRequest {
             return this;
         }
 
+        /**
+         * <p>Your tags on the email.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage tags(List<SendEmailRequestTagsItem> tags) {
             this.tags = Optional.ofNullable(tags);
             return this;
         }
 
+        /**
+         * <p>Your tags on the email.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "tags", nulls = Nulls.SKIP)
         public _FinalStage tags(Optional<List<SendEmailRequestTagsItem>> tags) {
@@ -828,12 +869,19 @@ public final class SendEmailRequest {
             return this;
         }
 
+        /**
+         * <p>Where replies go.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage replyTo(SendEmailRequestReplyTo replyTo) {
             this.replyTo = Optional.ofNullable(replyTo);
             return this;
         }
 
+        /**
+         * <p>Where replies go.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "reply_to", nulls = Nulls.SKIP)
         public _FinalStage replyTo(Optional<SendEmailRequestReplyTo> replyTo) {
@@ -841,12 +889,19 @@ public final class SendEmailRequest {
             return this;
         }
 
+        /**
+         * <p>Who it's blind copied to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage bcc(SendEmailRequestBcc bcc) {
             this.bcc = Optional.ofNullable(bcc);
             return this;
         }
 
+        /**
+         * <p>Who it's blind copied to.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "bcc", nulls = Nulls.SKIP)
         public _FinalStage bcc(Optional<SendEmailRequestBcc> bcc) {
@@ -854,12 +909,19 @@ public final class SendEmailRequest {
             return this;
         }
 
+        /**
+         * <p>Who it's copied to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage cc(SendEmailRequestCc cc) {
             this.cc = Optional.ofNullable(cc);
             return this;
         }
 
+        /**
+         * <p>Who it's copied to.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "cc", nulls = Nulls.SKIP)
         public _FinalStage cc(Optional<SendEmailRequestCc> cc) {

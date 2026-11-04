@@ -17,19 +17,19 @@ class SubaccountStats extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $subaccountId
+     * @var string $subaccountId The sub-account's id.
      */
     #[JsonProperty('subaccount_id')]
     public string $subaccountId;
 
     /**
-     * @var DateTime $from
+     * @var DateTime $from The first date included.
      */
     #[JsonProperty('from'), Date(Date::TYPE_DATE)]
     public DateTime $from;
 
     /**
-     * @var DateTime $to
+     * @var DateTime $to The last date included.
      */
     #[JsonProperty('to'), Date(Date::TYPE_DATE)]
     public DateTime $to;

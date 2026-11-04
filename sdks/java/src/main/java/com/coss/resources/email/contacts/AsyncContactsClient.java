@@ -191,18 +191,30 @@ public class AsyncContactsClient {
         return this.rawClient.export(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public CompletableFuture<Contact> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public CompletableFuture<Contact> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public CompletableFuture<Contact> get(String id, GetContactsRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public CompletableFuture<Contact> get(String id, GetContactsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }

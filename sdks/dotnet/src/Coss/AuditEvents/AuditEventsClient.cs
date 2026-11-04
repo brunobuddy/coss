@@ -415,6 +415,9 @@ public partial class AuditEventsClient : IAuditEventsClient
         );
     }
 
+    /// <summary>
+    /// One event of the organization's audit log.
+    /// </summary>
     /// <example><code>
     /// await client.AuditEvents.GetAsync(
     ///     new GetAuditEventsRequest { Id = "oaudit_01k7c8m4q2f3e9v6t5r1n0p8yz" }

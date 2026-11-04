@@ -18,6 +18,7 @@ import com.coss.resources.logdrains.LogDrainsClient;
 import com.coss.resources.logs.LogsClient;
 import com.coss.resources.reputation.ReputationClient;
 import com.coss.resources.risk.RiskClient;
+import com.coss.resources.scheduling.SchedulingClient;
 import com.coss.resources.sign.SignClient;
 import com.coss.resources.sms.SmsClient;
 import com.coss.resources.verify.VerifyClient;
@@ -65,6 +66,8 @@ public class Coss implements AutoCloseable {
 
     protected final Supplier<HooksClient> hooksClient;
 
+    protected final Supplier<SchedulingClient> schedulingClient;
+
     protected final Supplier<SignClient> signClient;
 
     public Coss(ClientOptions clientOptions) {
@@ -87,6 +90,7 @@ public class Coss implements AutoCloseable {
         this.inboxesClient = Suppliers.memoize(() -> new InboxesClient(clientOptions));
         this.riskClient = Suppliers.memoize(() -> new RiskClient(clientOptions));
         this.hooksClient = Suppliers.memoize(() -> new HooksClient(clientOptions));
+        this.schedulingClient = Suppliers.memoize(() -> new SchedulingClient(clientOptions));
         this.signClient = Suppliers.memoize(() -> new SignClient(clientOptions));
     }
 
@@ -160,6 +164,10 @@ public class Coss implements AutoCloseable {
 
     public HooksClient hooks() {
         return this.hooksClient.get();
+    }
+
+    public SchedulingClient scheduling() {
+        return this.schedulingClient.get();
     }
 
     public SignClient sign() {

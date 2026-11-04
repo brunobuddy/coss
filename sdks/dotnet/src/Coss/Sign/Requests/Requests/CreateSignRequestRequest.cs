@@ -43,6 +43,9 @@ public record CreateSignRequestRequest
             >
         >();
 
+    /// <summary>
+    /// Who signs, and what each fills.
+    /// </summary>
     [JsonPropertyName("signers")]
     public IEnumerable<CreateSignRequestRequestSignersItem> Signers { get; set; } =
         new List<CreateSignRequestRequestSignersItem>();

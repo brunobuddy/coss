@@ -58,6 +58,9 @@ public final class SubaccountStatsDay {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The UTC date.
+     */
     @JsonProperty("date")
     public String getDate() {
         return date;
@@ -79,21 +82,33 @@ public final class SubaccountStatsDay {
         return sent;
     }
 
+    /**
+     * @return Deliveries that day.
+     */
     @JsonProperty("delivered")
     public long getDelivered() {
         return delivered;
     }
 
+    /**
+     * @return Bounces that day.
+     */
     @JsonProperty("bounced")
     public long getBounced() {
         return bounced;
     }
 
+    /**
+     * @return Complaints that day.
+     */
     @JsonProperty("complained")
     public long getComplained() {
         return complained;
     }
 
+    /**
+     * @return Failures that day.
+     */
     @JsonProperty("failed")
     public long getFailed() {
         return failed;
@@ -152,6 +167,9 @@ public final class SubaccountStatsDay {
     }
 
     public interface DateStage {
+        /**
+         * <p>The UTC date.</p>
+         */
         RecipientsStage date(@NotNull String date);
 
         Builder from(SubaccountStatsDay other);
@@ -172,18 +190,30 @@ public final class SubaccountStatsDay {
     }
 
     public interface DeliveredStage {
+        /**
+         * <p>Deliveries that day.</p>
+         */
         BouncedStage delivered(long delivered);
     }
 
     public interface BouncedStage {
+        /**
+         * <p>Bounces that day.</p>
+         */
         ComplainedStage bounced(long bounced);
     }
 
     public interface ComplainedStage {
+        /**
+         * <p>Complaints that day.</p>
+         */
         FailedStage complained(long complained);
     }
 
     public interface FailedStage {
+        /**
+         * <p>Failures that day.</p>
+         */
         SuppressedStage failed(long failed);
     }
 
@@ -247,6 +277,10 @@ public final class SubaccountStatsDay {
             return this;
         }
 
+        /**
+         * <p>The UTC date.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("date")
         public RecipientsStage date(@NotNull String date) {
@@ -276,6 +310,10 @@ public final class SubaccountStatsDay {
             return this;
         }
 
+        /**
+         * <p>Deliveries that day.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("delivered")
         public BouncedStage delivered(long delivered) {
@@ -283,6 +321,10 @@ public final class SubaccountStatsDay {
             return this;
         }
 
+        /**
+         * <p>Bounces that day.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("bounced")
         public ComplainedStage bounced(long bounced) {
@@ -290,6 +332,10 @@ public final class SubaccountStatsDay {
             return this;
         }
 
+        /**
+         * <p>Complaints that day.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("complained")
         public FailedStage complained(long complained) {
@@ -297,6 +343,10 @@ public final class SubaccountStatsDay {
             return this;
         }
 
+        /**
+         * <p>Failures that day.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("failed")
         public SuppressedStage failed(long failed) {

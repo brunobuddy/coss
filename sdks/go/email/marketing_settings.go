@@ -20,13 +20,21 @@ var (
 )
 
 type UpdateMarketingSettingsRequest struct {
-	DisplayName          *string `json:"display_name,omitempty" url:"-"`
-	MailingAddress       *string `json:"mailing_address,omitempty" url:"-"`
-	DoubleOptInDefault   *bool   `json:"double_opt_in_default,omitempty" url:"-"`
-	ConfirmationFrom     *string `json:"confirmation_from,omitempty" url:"-"`
-	ConfirmationSubject  *string `json:"confirmation_subject,omitempty" url:"-"`
-	ConfirmationHTML     *string `json:"confirmation_html,omitempty" url:"-"`
-	ConfirmationText     *string `json:"confirmation_text,omitempty" url:"-"`
+	// The sender's name in the preference center. `null`: the organization's.
+	DisplayName *string `json:"display_name,omitempty" url:"-"`
+	// The postal address every marketing email carries (CAN-SPAM). Marketing emails can't be sent without one.
+	MailingAddress *string `json:"mailing_address,omitempty" url:"-"`
+	// Whether contacts upserted without `double_opt_in` must confirm first.
+	DoubleOptInDefault *bool `json:"double_opt_in_default,omitempty" url:"-"`
+	// The sender of confirmation emails (a verified domain's address for live keys).
+	ConfirmationFrom *string `json:"confirmation_from,omitempty" url:"-"`
+	// `null`: coss.com's default.
+	ConfirmationSubject *string `json:"confirmation_subject,omitempty" url:"-"`
+	// `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
+	ConfirmationHTML *string `json:"confirmation_html,omitempty" url:"-"`
+	// `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
+	ConfirmationText *string `json:"confirmation_text,omitempty" url:"-"`
+	// Where a confirmed contact is sent, an https URL. `null`: coss.com's own page.
 	ConfirmedRedirectURL *string `json:"confirmed_redirect_url,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

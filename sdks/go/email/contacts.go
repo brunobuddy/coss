@@ -167,6 +167,7 @@ var (
 )
 
 type ImportContactsRequest struct {
+	// The contacts to create or update, at most 1,000.
 	Contacts []*ImportContactsRequestContactsItem `json:"contacts" url:"-"`
 	// Adds every imported contact to this audience.
 	AudienceID *string `json:"audience_id,omitempty" url:"-"`
@@ -383,9 +384,11 @@ var importContactsRequestContactsItemNullableFields = map[string]*big.Int{
 
 type ImportContactsRequestContactsItem struct {
 	// The contact's address (validated on its own).
-	Email     string  `json:"email" url:"email"`
+	Email string `json:"email" url:"email"`
+	// Their first name.
 	FirstName *string `json:"first_name,omitempty" url:"first_name,omitempty"`
-	LastName  *string `json:"last_name,omitempty" url:"last_name,omitempty"`
+	// Their last name.
+	LastName *string `json:"last_name,omitempty" url:"last_name,omitempty"`
 	// Custom properties by key, checked against their definitions.
 	Properties map[string]*ImportContactsRequestContactsItemPropertiesValue `json:"properties,omitempty" url:"properties,omitempty"`
 	// `subscribed` or `unsubscribed` (anything else, like an export's `pending`, is reported in `invalid`). Omitted, a new contact is `subscribed` and an existing one keeps its status.
@@ -754,7 +757,8 @@ var (
 
 type UpdateContactRequestTopicsItem struct {
 	// The topic's key.
-	Topic  string                               `json:"topic" url:"topic"`
+	Topic string `json:"topic" url:"topic"`
+	// `opted_in` or `opted_out` of the topic.
 	Status UpdateContactRequestTopicsItemStatus `json:"status" url:"status"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -850,6 +854,7 @@ func (u *UpdateContactRequestTopicsItem) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
+// `opted_in` or `opted_out` of the topic.
 type UpdateContactRequestTopicsItemStatus string
 
 const (
@@ -879,7 +884,8 @@ var (
 
 type UpdateContactTopicsRequestTopicsItem struct {
 	// The topic's key.
-	Topic  string                                     `json:"topic" url:"topic"`
+	Topic string `json:"topic" url:"topic"`
+	// `opted_in` or `opted_out` of the topic.
 	Status UpdateContactTopicsRequestTopicsItemStatus `json:"status" url:"status"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -975,6 +981,7 @@ func (u *UpdateContactTopicsRequestTopicsItem) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
+// `opted_in` or `opted_out` of the topic.
 type UpdateContactTopicsRequestTopicsItemStatus string
 
 const (
@@ -1110,7 +1117,8 @@ var (
 
 type UpsertContactRequestTopicsItem struct {
 	// The topic's key.
-	Topic  string                               `json:"topic" url:"topic"`
+	Topic string `json:"topic" url:"topic"`
+	// `opted_in` or `opted_out` of the topic.
 	Status UpsertContactRequestTopicsItemStatus `json:"status" url:"status"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1206,6 +1214,7 @@ func (u *UpsertContactRequestTopicsItem) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
+// `opted_in` or `opted_out` of the topic.
 type UpsertContactRequestTopicsItemStatus string
 
 const (
@@ -1239,9 +1248,11 @@ var (
 
 type UpdateContactRequest struct {
 	// The contact's id, or its address (URL-encoded).
-	ID        string  `json:"-" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Their first name. `null` removes it.
 	FirstName *string `json:"first_name,omitempty" url:"-"`
-	LastName  *string `json:"last_name,omitempty" url:"-"`
+	// Their last name. `null` removes it.
+	LastName *string `json:"last_name,omitempty" url:"-"`
 	// Custom properties by key (define them first, see contact properties). Merged into the contact's existing properties; `null` removes one.
 	Properties map[string]*UpdateContactRequestPropertiesValue `json:"properties,omitempty" url:"-"`
 	// Sets the contact's consent. Omitted, a new contact is `subscribed` and an existing one keeps its status.
@@ -1331,7 +1342,8 @@ var (
 
 type UpdateContactTopicsRequest struct {
 	// The contact's id, or its address (URL-encoded).
-	ID     string                                  `json:"-" url:"-"`
+	ID string `json:"-" url:"-"`
+	// The contact's choices per topic. Topics not listed keep theirs.
 	Topics []*UpdateContactTopicsRequestTopicsItem `json:"topics" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1395,9 +1407,11 @@ var (
 
 type UpsertContactRequest struct {
 	// The contact's address. Display names are ignored; matching is case-insensitive.
-	Email     string  `json:"email" url:"-"`
+	Email string `json:"email" url:"-"`
+	// Their first name. `null` removes it.
 	FirstName *string `json:"first_name,omitempty" url:"-"`
-	LastName  *string `json:"last_name,omitempty" url:"-"`
+	// Their last name. `null` removes it.
+	LastName *string `json:"last_name,omitempty" url:"-"`
 	// Custom properties by key (define them first, see contact properties). Merged into the contact's existing properties; `null` removes one.
 	Properties map[string]*UpsertContactRequestPropertiesValue `json:"properties,omitempty" url:"-"`
 	// Sets the contact's consent. Omitted, a new contact is `subscribed` and an existing one keeps its status.

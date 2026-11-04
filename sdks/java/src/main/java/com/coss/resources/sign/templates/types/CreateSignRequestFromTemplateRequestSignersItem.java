@@ -53,33 +53,48 @@ public final class CreateSignRequestFromTemplateRequestSignersItem {
     }
 
     /**
-     * @return The role's key, e.g. <code>client</code>.
+     * @return The <code>key</code> of the template's role they sign as.
      */
     @JsonProperty("role")
     public String getRole() {
         return role;
     }
 
+    /**
+     * @return Shown on the signing page and on the certificate.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Where a <code>delivery: email</code> signer gets their link.
+     */
     @JsonProperty("email")
     public String getEmail() {
         return email;
     }
 
+    /**
+     * @return <code>email</code> (default): coss.com emails the signer a link. <code>embedded</code>: your app shows the signing page.
+     */
     @JsonProperty("delivery")
     public Optional<CreateSignRequestFromTemplateRequestSignersItemDelivery> getDelivery() {
         return delivery;
     }
 
+    /**
+     * @return With <code>sequential</code> signing, signers sign in increasing <code>order</code>.
+     */
     @JsonProperty("order")
     public Optional<Integer> getOrder() {
         return order;
     }
 
+    /**
+     * @return Your own id for the signer, recorded in the audit trail.
+     */
     @JsonProperty("client_ref")
     public Optional<String> getClientRef() {
         return clientRef;
@@ -122,7 +137,7 @@ public final class CreateSignRequestFromTemplateRequestSignersItem {
 
     public interface RoleStage {
         /**
-         * <p>The role's key, e.g. <code>client</code>.</p>
+         * <p>The <code>key</code> of the template's role they sign as.</p>
          */
         NameStage role(@NotNull String role);
 
@@ -130,10 +145,16 @@ public final class CreateSignRequestFromTemplateRequestSignersItem {
     }
 
     public interface NameStage {
+        /**
+         * <p>Shown on the signing page and on the certificate.</p>
+         */
         EmailStage name(@NotNull String name);
     }
 
     public interface EmailStage {
+        /**
+         * <p>Where a <code>delivery: email</code> signer gets their link.</p>
+         */
         _FinalStage email(@NotNull String email);
     }
 
@@ -144,14 +165,23 @@ public final class CreateSignRequestFromTemplateRequestSignersItem {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p><code>email</code> (default): coss.com emails the signer a link. <code>embedded</code>: your app shows the signing page.</p>
+         */
         _FinalStage delivery(Optional<CreateSignRequestFromTemplateRequestSignersItemDelivery> delivery);
 
         _FinalStage delivery(CreateSignRequestFromTemplateRequestSignersItemDelivery delivery);
 
+        /**
+         * <p>With <code>sequential</code> signing, signers sign in increasing <code>order</code>.</p>
+         */
         _FinalStage order(Optional<Integer> order);
 
         _FinalStage order(Integer order);
 
+        /**
+         * <p>Your own id for the signer, recorded in the audit trail.</p>
+         */
         _FinalStage clientRef(Optional<String> clientRef);
 
         _FinalStage clientRef(String clientRef);
@@ -188,7 +218,7 @@ public final class CreateSignRequestFromTemplateRequestSignersItem {
         }
 
         /**
-         * <p>The role's key, e.g. <code>client</code>.</p>
+         * <p>The <code>key</code> of the template's role they sign as.</p>
          * @return Reference to {@code this} so that method calls can be chained together.
          */
         @java.lang.Override
@@ -198,6 +228,10 @@ public final class CreateSignRequestFromTemplateRequestSignersItem {
             return this;
         }
 
+        /**
+         * <p>Shown on the signing page and on the certificate.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public EmailStage name(@NotNull String name) {
@@ -205,6 +239,10 @@ public final class CreateSignRequestFromTemplateRequestSignersItem {
             return this;
         }
 
+        /**
+         * <p>Where a <code>delivery: email</code> signer gets their link.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("email")
         public _FinalStage email(@NotNull String email) {
@@ -212,12 +250,19 @@ public final class CreateSignRequestFromTemplateRequestSignersItem {
             return this;
         }
 
+        /**
+         * <p>Your own id for the signer, recorded in the audit trail.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientRef(String clientRef) {
             this.clientRef = Optional.ofNullable(clientRef);
             return this;
         }
 
+        /**
+         * <p>Your own id for the signer, recorded in the audit trail.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "client_ref", nulls = Nulls.SKIP)
         public _FinalStage clientRef(Optional<String> clientRef) {
@@ -225,12 +270,19 @@ public final class CreateSignRequestFromTemplateRequestSignersItem {
             return this;
         }
 
+        /**
+         * <p>With <code>sequential</code> signing, signers sign in increasing <code>order</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage order(Integer order) {
             this.order = Optional.ofNullable(order);
             return this;
         }
 
+        /**
+         * <p>With <code>sequential</code> signing, signers sign in increasing <code>order</code>.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "order", nulls = Nulls.SKIP)
         public _FinalStage order(Optional<Integer> order) {
@@ -238,12 +290,19 @@ public final class CreateSignRequestFromTemplateRequestSignersItem {
             return this;
         }
 
+        /**
+         * <p><code>email</code> (default): coss.com emails the signer a link. <code>embedded</code>: your app shows the signing page.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage delivery(CreateSignRequestFromTemplateRequestSignersItemDelivery delivery) {
             this.delivery = Optional.ofNullable(delivery);
             return this;
         }
 
+        /**
+         * <p><code>email</code> (default): coss.com emails the signer a link. <code>embedded</code>: your app shows the signing page.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "delivery", nulls = Nulls.SKIP)
         public _FinalStage delivery(Optional<CreateSignRequestFromTemplateRequestSignersItemDelivery> delivery) {

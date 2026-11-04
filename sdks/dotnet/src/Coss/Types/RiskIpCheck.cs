@@ -14,27 +14,48 @@ public record RiskIpCheck : IJsonOnDeserialized
     [JsonPropertyName("version")]
     public required double Version { get; set; }
 
+    /// <summary>
+    /// Whether it's a private or reserved address.
+    /// </summary>
     [JsonPropertyName("private")]
     public required bool Private { get; set; }
 
+    /// <summary>
+    /// Whether it's a Tor exit.
+    /// </summary>
     [JsonPropertyName("tor")]
     public required bool Tor { get; set; }
 
+    /// <summary>
+    /// Whether it's in a cloud, hosting or VPN network.
+    /// </summary>
     [JsonPropertyName("hosting")]
     public required bool Hosting { get; set; }
 
+    /// <summary>
+    /// That network's operator. `null` when it isn't one.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("hosting_provider")]
     public string? HostingProvider { get; set; }
 
+    /// <summary>
+    /// `cloud`, `hosting` or `vpn`. `null` when it isn't one.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("hosting_kind")]
     public RiskIpCheckHostingKind? HostingKind { get; set; }
 
+    /// <summary>
+    /// The network's autonomous system number. `null` when unknown.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("asn")]
     public long? Asn { get; set; }
 
+    /// <summary>
+    /// The network's name. `null` when unknown.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("as_name")]
     public string? AsName { get; set; }
@@ -56,6 +77,9 @@ public record RiskIpCheck : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required RiskIpCheckObject Object { get; set; }
 
+    /// <summary>
+    /// The address checked.
+    /// </summary>
     [JsonPropertyName("ip")]
     public required string Ip { get; set; }
 

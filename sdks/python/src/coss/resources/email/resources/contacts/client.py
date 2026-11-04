@@ -127,8 +127,10 @@ class ContactsClient:
             The contact's address. Display names are ignored; matching is case-insensitive.
 
         first_name : typing.Optional[str]
+            Their first name. `null` removes it.
 
         last_name : typing.Optional[str]
+            Their last name. `null` removes it.
 
         properties : typing.Optional[typing.Dict[str, typing.Optional[UpsertContactRequestPropertiesValue]]]
             Custom properties by key (define them first, see contact properties). Merged into the contact's existing properties; `null` removes one.
@@ -274,6 +276,7 @@ class ContactsClient:
         Parameters
         ----------
         contacts : typing.Sequence[ImportContactsRequestContactsItem]
+            The contacts to create or update, at most 1,000.
 
         audience_id : typing.Optional[str]
             Adds every imported contact to this audience.
@@ -356,6 +359,8 @@ class ContactsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Contact:
         """
+        One contact of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -436,8 +441,10 @@ class ContactsClient:
             The contact's id, or its address (URL-encoded).
 
         first_name : typing.Optional[str]
+            Their first name. `null` removes it.
 
         last_name : typing.Optional[str]
+            Their last name. `null` removes it.
 
         properties : typing.Optional[typing.Dict[str, typing.Optional[UpdateContactRequestPropertiesValue]]]
             Custom properties by key (define them first, see contact properties). Merged into the contact's existing properties; `null` removes one.
@@ -528,6 +535,7 @@ class ContactsClient:
             The contact's id, or its address (URL-encoded).
 
         topics : typing.Sequence[UpdateContactTopicsRequestTopicsItem]
+            The contact's choices per topic. Topics not listed keep theirs.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -674,8 +682,10 @@ class AsyncContactsClient:
             The contact's address. Display names are ignored; matching is case-insensitive.
 
         first_name : typing.Optional[str]
+            Their first name. `null` removes it.
 
         last_name : typing.Optional[str]
+            Their last name. `null` removes it.
 
         properties : typing.Optional[typing.Dict[str, typing.Optional[UpsertContactRequestPropertiesValue]]]
             Custom properties by key (define them first, see contact properties). Merged into the contact's existing properties; `null` removes one.
@@ -845,6 +855,7 @@ class AsyncContactsClient:
         Parameters
         ----------
         contacts : typing.Sequence[ImportContactsRequestContactsItem]
+            The contacts to create or update, at most 1,000.
 
         audience_id : typing.Optional[str]
             Adds every imported contact to this audience.
@@ -945,6 +956,8 @@ class AsyncContactsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Contact:
         """
+        One contact of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -1041,8 +1054,10 @@ class AsyncContactsClient:
             The contact's id, or its address (URL-encoded).
 
         first_name : typing.Optional[str]
+            Their first name. `null` removes it.
 
         last_name : typing.Optional[str]
+            Their last name. `null` removes it.
 
         properties : typing.Optional[typing.Dict[str, typing.Optional[UpdateContactRequestPropertiesValue]]]
             Custom properties by key (define them first, see contact properties). Merged into the contact's existing properties; `null` removes one.
@@ -1149,6 +1164,7 @@ class AsyncContactsClient:
             The contact's id, or its address (URL-encoded).
 
         topics : typing.Sequence[UpdateContactTopicsRequestTopicsItem]
+            The contact's choices per topic. Topics not listed keep theirs.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.

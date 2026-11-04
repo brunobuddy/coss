@@ -18,8 +18,16 @@ from .form_submitter import FormSubmitter
 class Form(UniversalBaseModel):
     object: FormObject
     id: str
-    name: str
-    enabled: bool
+    name: str = pydantic.Field()
+    """
+    Your name for the form, shown in the dashboard and in notifications.
+    """
+
+    enabled: bool = pydantic.Field()
+    """
+    `false`: submissions are refused.
+    """
+
     endpoint: str = pydantic.Field()
     """
     Where the form posts: `<form action=…>`.
@@ -30,22 +38,66 @@ class Form(UniversalBaseModel):
     The hosted page, when `hosted.enabled`; `null` otherwise.
     """
 
-    fields: typing.Optional[typing.List[FormField]] = None
-    strict_fields: bool
-    allowed_origins: typing.List[str]
-    redirect_url: typing.Optional[str] = None
-    spam: FormSpam
-    submitter: FormSubmitter
-    notifications: FormNotifications
-    contacts: FormContacts
-    files: FormFiles
-    hosted: FormHosted
+    fields: typing.Optional[typing.List[FormField]] = pydantic.Field(default=None)
+    """
+    The form's fields. `null`: any field is accepted, without validation.
+    """
+
+    strict_fields: bool = pydantic.Field()
+    """
+    With `fields`: whether fields the form doesn't define are refused.
+    """
+
+    allowed_origins: typing.List[str] = pydantic.Field()
+    """
+    Sites that may post to the form. Empty: any.
+    """
+
+    redirect_url: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Where browsers go after an HTML post. `null`: coss.com's thank-you page.
+    """
+
+    spam: FormSpam = pydantic.Field()
+    """
+    How submissions are screened.
+    """
+
+    submitter: FormSubmitter = pydantic.Field()
+    """
+    Who the submitter is, and whether they must confirm by email.
+    """
+
+    notifications: FormNotifications = pydantic.Field()
+    """
+    Emails about accepted submissions.
+    """
+
+    contacts: FormContacts = pydantic.Field()
+    """
+    Turning submissions into contacts.
+    """
+
+    files: FormFiles = pydantic.Field()
+    """
+    File uploads.
+    """
+
+    hosted: FormHosted = pydantic.Field()
+    """
+    The page coss.com can serve for this form.
+    """
+
     disabled_by_admin: bool = pydantic.Field()
     """
     coss.com disabled the form for abuse; contact support.
     """
 
-    sandbox: bool
+    sandbox: bool = pydantic.Field()
+    """
+    Whether the form belongs to a sandbox environment.
+    """
+
     created_at: dt.datetime
     updated_at: dt.datetime
 

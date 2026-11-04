@@ -7,10 +7,29 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class FormFiles(UniversalBaseModel):
-    enabled: bool
-    max_files: int
-    max_file_bytes: int
-    allowed_types: typing.List[str]
+    """
+    File uploads.
+    """
+
+    enabled: bool = pydantic.Field()
+    """
+    Whether uploads are accepted (`multipart/form-data`).
+    """
+
+    max_files: int = pydantic.Field()
+    """
+    Most files per submission.
+    """
+
+    max_file_bytes: int = pydantic.Field()
+    """
+    Largest file, in bytes.
+    """
+
+    allowed_types: typing.List[str] = pydantic.Field()
+    """
+    MIME types accepted. Empty: images, PDFs, text and Office.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

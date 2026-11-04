@@ -225,6 +225,8 @@ class SmsClient
     }
 
     /**
+     * One message sent from the API key's environment, with its current status.
+     *
      * Example:
      * ```php
      * $client->sms->get(

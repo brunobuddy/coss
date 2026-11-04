@@ -22,13 +22,13 @@ class DmarcReportSummary extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $domainId
+     * @var string $domainId The domain's id.
      */
     #[JsonProperty('domain_id')]
     public string $domainId;
 
     /**
-     * @var DmarcReportSummaryReporter $reporter
+     * @var DmarcReportSummaryReporter $reporter Who sent the report.
      */
     #[JsonProperty('reporter')]
     public DmarcReportSummaryReporter $reporter;
@@ -40,13 +40,13 @@ class DmarcReportSummary extends JsonSerializableType
     public string $reportId;
 
     /**
-     * @var DateTime $periodStart
+     * @var DateTime $periodStart When the period it covers starts.
      */
     #[JsonProperty('period_start'), Date(Date::TYPE_DATETIME)]
     public DateTime $periodStart;
 
     /**
-     * @var DateTime $periodEnd
+     * @var DateTime $periodEnd When the period it covers ends.
      */
     #[JsonProperty('period_end'), Date(Date::TYPE_DATETIME)]
     public DateTime $periodEnd;
@@ -58,13 +58,13 @@ class DmarcReportSummary extends JsonSerializableType
     public DmarcReportSummaryPolicyPublished $policyPublished;
 
     /**
-     * @var int $messages
+     * @var int $messages Messages the report covers.
      */
     #[JsonProperty('messages')]
     public int $messages;
 
     /**
-     * @var int $passing
+     * @var int $passing Of those, how many passed DMARC.
      */
     #[JsonProperty('passing')]
     public int $passing;
@@ -76,7 +76,7 @@ class DmarcReportSummary extends JsonSerializableType
     public bool $truncated;
 
     /**
-     * @var DateTime $receivedAt
+     * @var DateTime $receivedAt When coss.com received it.
      */
     #[JsonProperty('received_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $receivedAt;

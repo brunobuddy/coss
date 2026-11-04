@@ -7,9 +7,21 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class RiskIpPrivacy(UniversalBaseModel):
-    vpn: bool
-    proxy: bool
-    relay: bool
+    vpn: bool = pydantic.Field()
+    """
+    Whether it's a VPN exit.
+    """
+
+    proxy: bool = pydantic.Field()
+    """
+    Whether it's a proxy.
+    """
+
+    relay: bool = pydantic.Field()
+    """
+    Whether it's a privacy relay.
+    """
+
     service: typing.Optional[str] = pydantic.Field(default=None)
     """
     The VPN or proxy service.

@@ -246,18 +246,30 @@ public class RawTemplatesClient {
         }
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public CossHttpResponse<SignTemplate> get(String id) {
         return get(id, GetTemplatesRequest.builder().build());
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public CossHttpResponse<SignTemplate> get(String id, RequestOptions requestOptions) {
         return get(id, GetTemplatesRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public CossHttpResponse<SignTemplate> get(String id, GetTemplatesRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public CossHttpResponse<SignTemplate> get(String id, GetTemplatesRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()

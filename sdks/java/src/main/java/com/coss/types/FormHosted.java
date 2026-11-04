@@ -55,11 +55,17 @@ public final class FormHosted {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Whether the page is served at <code>hosted_url</code>.
+     */
     @JsonProperty("enabled")
     public boolean getEnabled() {
         return enabled;
     }
 
+    /**
+     * @return The page's heading. <code>null</code>: the form's name.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("title")
     public OptionalNullable<String> getTitle() {
@@ -69,6 +75,9 @@ public final class FormHosted {
         return title;
     }
 
+    /**
+     * @return Text under the heading. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -78,6 +87,9 @@ public final class FormHosted {
         return description;
     }
 
+    /**
+     * @return The submit button's label. <code>null</code>: the default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("submit_label")
     public OptionalNullable<String> getSubmitLabel() {
@@ -87,6 +99,9 @@ public final class FormHosted {
         return submitLabel;
     }
 
+    /**
+     * @return Shown after a submission. <code>null</code>: the default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("success_message")
     public OptionalNullable<String> getSuccessMessage() {
@@ -96,6 +111,9 @@ public final class FormHosted {
         return successMessage;
     }
 
+    /**
+     * @return When the page was turned on, or what it shows last changed. <code>null</code>: never published.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("published_at")
     public OptionalNullable<OffsetDateTime> getPublishedAt() {
@@ -171,6 +189,9 @@ public final class FormHosted {
     }
 
     public interface EnabledStage {
+        /**
+         * <p>Whether the page is served at <code>hosted_url</code>.</p>
+         */
         _FinalStage enabled(boolean enabled);
 
         Builder from(FormHosted other);
@@ -183,6 +204,9 @@ public final class FormHosted {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The page's heading. <code>null</code>: the form's name.</p>
+         */
         _FinalStage title(OptionalNullable<String> title);
 
         _FinalStage title(String title);
@@ -191,6 +215,9 @@ public final class FormHosted {
 
         _FinalStage title(Nullable<String> title);
 
+        /**
+         * <p>Text under the heading. <code>null</code>: none.</p>
+         */
         _FinalStage description(OptionalNullable<String> description);
 
         _FinalStage description(String description);
@@ -199,6 +226,9 @@ public final class FormHosted {
 
         _FinalStage description(Nullable<String> description);
 
+        /**
+         * <p>The submit button's label. <code>null</code>: the default.</p>
+         */
         _FinalStage submitLabel(OptionalNullable<String> submitLabel);
 
         _FinalStage submitLabel(String submitLabel);
@@ -207,6 +237,9 @@ public final class FormHosted {
 
         _FinalStage submitLabel(Nullable<String> submitLabel);
 
+        /**
+         * <p>Shown after a submission. <code>null</code>: the default.</p>
+         */
         _FinalStage successMessage(OptionalNullable<String> successMessage);
 
         _FinalStage successMessage(String successMessage);
@@ -215,6 +248,9 @@ public final class FormHosted {
 
         _FinalStage successMessage(Nullable<String> successMessage);
 
+        /**
+         * <p>When the page was turned on, or what it shows last changed. <code>null</code>: never published.</p>
+         */
         _FinalStage publishedAt(OptionalNullable<OffsetDateTime> publishedAt);
 
         _FinalStage publishedAt(OffsetDateTime publishedAt);
@@ -254,6 +290,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>Whether the page is served at <code>hosted_url</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("enabled")
         public _FinalStage enabled(boolean enabled) {
@@ -261,6 +301,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>When the page was turned on, or what it shows last changed. <code>null</code>: never published.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage publishedAt(Nullable<OffsetDateTime> publishedAt) {
             if (publishedAt.isNull()) {
@@ -273,6 +317,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>When the page was turned on, or what it shows last changed. <code>null</code>: never published.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage publishedAt(Optional<OffsetDateTime> publishedAt) {
             if (publishedAt.isPresent()) {
@@ -283,12 +331,19 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>When the page was turned on, or what it shows last changed. <code>null</code>: never published.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage publishedAt(OffsetDateTime publishedAt) {
             this.publishedAt = OptionalNullable.of(publishedAt);
             return this;
         }
 
+        /**
+         * <p>When the page was turned on, or what it shows last changed. <code>null</code>: never published.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "published_at", nulls = Nulls.SKIP)
         public _FinalStage publishedAt(OptionalNullable<OffsetDateTime> publishedAt) {
@@ -296,6 +351,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>Shown after a submission. <code>null</code>: the default.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage successMessage(Nullable<String> successMessage) {
             if (successMessage.isNull()) {
@@ -308,6 +367,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>Shown after a submission. <code>null</code>: the default.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage successMessage(Optional<String> successMessage) {
             if (successMessage.isPresent()) {
@@ -318,12 +381,19 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>Shown after a submission. <code>null</code>: the default.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage successMessage(String successMessage) {
             this.successMessage = OptionalNullable.of(successMessage);
             return this;
         }
 
+        /**
+         * <p>Shown after a submission. <code>null</code>: the default.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "success_message", nulls = Nulls.SKIP)
         public _FinalStage successMessage(OptionalNullable<String> successMessage) {
@@ -331,6 +401,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>The submit button's label. <code>null</code>: the default.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage submitLabel(Nullable<String> submitLabel) {
             if (submitLabel.isNull()) {
@@ -343,6 +417,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>The submit button's label. <code>null</code>: the default.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage submitLabel(Optional<String> submitLabel) {
             if (submitLabel.isPresent()) {
@@ -353,12 +431,19 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>The submit button's label. <code>null</code>: the default.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage submitLabel(String submitLabel) {
             this.submitLabel = OptionalNullable.of(submitLabel);
             return this;
         }
 
+        /**
+         * <p>The submit button's label. <code>null</code>: the default.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "submit_label", nulls = Nulls.SKIP)
         public _FinalStage submitLabel(OptionalNullable<String> submitLabel) {
@@ -366,6 +451,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>Text under the heading. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Nullable<String> description) {
             if (description.isNull()) {
@@ -378,6 +467,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>Text under the heading. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Optional<String> description) {
             if (description.isPresent()) {
@@ -388,12 +481,19 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>Text under the heading. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = OptionalNullable.of(description);
             return this;
         }
 
+        /**
+         * <p>Text under the heading. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(OptionalNullable<String> description) {
@@ -401,6 +501,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>The page's heading. <code>null</code>: the form's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage title(Nullable<String> title) {
             if (title.isNull()) {
@@ -413,6 +517,10 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>The page's heading. <code>null</code>: the form's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage title(Optional<String> title) {
             if (title.isPresent()) {
@@ -423,12 +531,19 @@ public final class FormHosted {
             return this;
         }
 
+        /**
+         * <p>The page's heading. <code>null</code>: the form's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage title(String title) {
             this.title = OptionalNullable.of(title);
             return this;
         }
 
+        /**
+         * <p>The page's heading. <code>null</code>: the form's name.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "title", nulls = Nulls.SKIP)
         public _FinalStage title(OptionalNullable<String> title) {

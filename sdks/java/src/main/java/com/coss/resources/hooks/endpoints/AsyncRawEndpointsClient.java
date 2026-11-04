@@ -18,6 +18,7 @@ import com.coss.errors.ContentTooLargeError;
 import com.coss.errors.ForbiddenError;
 import com.coss.errors.InternalServerError;
 import com.coss.errors.NotFoundError;
+import com.coss.errors.PaymentRequiredError;
 import com.coss.errors.ServiceUnavailableError;
 import com.coss.errors.TooManyRequestsError;
 import com.coss.errors.UnauthorizedError;
@@ -1391,6 +1392,11 @@ public class AsyncRawEndpointsClient {
                                 return;
                             case 401:
                                 future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class),
+                                        response));
+                                return;
+                            case 402:
+                                future.completeExceptionally(new PaymentRequiredError(
                                         ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class),
                                         response));
                                 return;

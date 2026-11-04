@@ -11,283 +11,283 @@ use Coss\Core\Json\JsonProperty;
 class UpdateRiskSettingsRequestReasonWeights extends JsonSerializableType
 {
     /**
-     * @var ?float $emailInvalid
+     * @var ?float $emailInvalid This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('email.invalid')]
     public ?float $emailInvalid;
 
     /**
-     * @var ?float $emailDisposable
+     * @var ?float $emailDisposable This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('email.disposable')]
     public ?float $emailDisposable;
 
     /**
-     * @var ?float $emailUndeliverable
+     * @var ?float $emailUndeliverable This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('email.undeliverable')]
     public ?float $emailUndeliverable;
 
     /**
-     * @var ?float $emailRoleAccount
+     * @var ?float $emailRoleAccount This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('email.role_account')]
     public ?float $emailRoleAccount;
 
     /**
-     * @var ?float $emailTypo
+     * @var ?float $emailTypo This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('email.typo')]
     public ?float $emailTypo;
 
     /**
-     * @var ?float $emailDomainNew
+     * @var ?float $emailDomainNew This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('email.domain_new')]
     public ?float $emailDomainNew;
 
     /**
-     * @var ?float $ipTor
+     * @var ?float $ipTor This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('ip.tor')]
     public ?float $ipTor;
 
     /**
-     * @var ?float $ipVpnNetwork
+     * @var ?float $ipVpnNetwork This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('ip.vpn_network')]
     public ?float $ipVpnNetwork;
 
     /**
-     * @var ?float $ipHostingProvider
+     * @var ?float $ipHostingProvider This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('ip.hosting_provider')]
     public ?float $ipHostingProvider;
 
     /**
-     * @var ?float $ipVpn
+     * @var ?float $ipVpn This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('ip.vpn')]
     public ?float $ipVpn;
 
     /**
-     * @var ?float $ipProxy
+     * @var ?float $ipProxy This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('ip.proxy')]
     public ?float $ipProxy;
 
     /**
-     * @var ?float $ipRelay
+     * @var ?float $ipRelay This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('ip.relay')]
     public ?float $ipRelay;
 
     /**
-     * @var ?float $ipPrivate
+     * @var ?float $ipPrivate This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('ip.private')]
     public ?float $ipPrivate;
 
     /**
-     * @var ?float $velocitySignupsPerIp1H
+     * @var ?float $velocitySignupsPerIp1H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.signups_per_ip_1h')]
     public ?float $velocitySignupsPerIp1H;
 
     /**
-     * @var ?float $velocitySignupsPerIp24H
+     * @var ?float $velocitySignupsPerIp24H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.signups_per_ip_24h')]
     public ?float $velocitySignupsPerIp24H;
 
     /**
-     * @var ?float $velocitySignupsPerSubnet1H
+     * @var ?float $velocitySignupsPerSubnet1H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.signups_per_subnet_1h')]
     public ?float $velocitySignupsPerSubnet1H;
 
     /**
-     * @var ?float $velocitySignupsPerEmailDomain1H
+     * @var ?float $velocitySignupsPerEmailDomain1H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.signups_per_email_domain_1h')]
     public ?float $velocitySignupsPerEmailDomain1H;
 
     /**
-     * @var ?float $velocitySignupsPerMailbox24H
+     * @var ?float $velocitySignupsPerMailbox24H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.signups_per_mailbox_24h')]
     public ?float $velocitySignupsPerMailbox24H;
 
     /**
-     * @var ?float $velocitySignupsPerDevice24H
+     * @var ?float $velocitySignupsPerDevice24H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.signups_per_device_24h')]
     public ?float $velocitySignupsPerDevice24H;
 
     /**
-     * @var ?float $velocityCheckoutsPerIp1H
+     * @var ?float $velocityCheckoutsPerIp1H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.checkouts_per_ip_1h')]
     public ?float $velocityCheckoutsPerIp1H;
 
     /**
-     * @var ?float $velocityCheckoutsPerUser1H
+     * @var ?float $velocityCheckoutsPerUser1H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.checkouts_per_user_1h')]
     public ?float $velocityCheckoutsPerUser1H;
 
     /**
-     * @var ?float $velocityCheckoutsPerCard24H
+     * @var ?float $velocityCheckoutsPerCard24H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.checkouts_per_card_24h')]
     public ?float $velocityCheckoutsPerCard24H;
 
     /**
-     * @var ?float $velocityLoginsPerIp1H
+     * @var ?float $velocityLoginsPerIp1H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.logins_per_ip_1h')]
     public ?float $velocityLoginsPerIp1H;
 
     /**
-     * @var ?float $velocityLoginsPerUser1H
+     * @var ?float $velocityLoginsPerUser1H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.logins_per_user_1h')]
     public ?float $velocityLoginsPerUser1H;
 
     /**
-     * @var ?float $velocityEventsPerIp1H
+     * @var ?float $velocityEventsPerIp1H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.events_per_ip_1h')]
     public ?float $velocityEventsPerIp1H;
 
     /**
-     * @var ?float $velocityEventsPerUser1H
+     * @var ?float $velocityEventsPerUser1H This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('velocity.events_per_user_1h')]
     public ?float $velocityEventsPerUser1H;
 
     /**
-     * @var ?float $duplicateCanonicalMailbox
+     * @var ?float $duplicateCanonicalMailbox This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('duplicate.canonical_mailbox')]
     public ?float $duplicateCanonicalMailbox;
 
     /**
-     * @var ?float $duplicateDevice
+     * @var ?float $duplicateDevice This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('duplicate.device')]
     public ?float $duplicateDevice;
 
     /**
-     * @var ?float $historyFraudMailbox
+     * @var ?float $historyFraudMailbox This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('history.fraud_mailbox')]
     public ?float $historyFraudMailbox;
 
     /**
-     * @var ?float $historyFraudUser
+     * @var ?float $historyFraudUser This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('history.fraud_user')]
     public ?float $historyFraudUser;
 
     /**
-     * @var ?float $historyFraudIp
+     * @var ?float $historyFraudIp This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('history.fraud_ip')]
     public ?float $historyFraudIp;
 
     /**
-     * @var ?float $historyFraudSubnet
+     * @var ?float $historyFraudSubnet This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('history.fraud_subnet')]
     public ?float $historyFraudSubnet;
 
     /**
-     * @var ?float $historyFraudCard
+     * @var ?float $historyFraudCard This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('history.fraud_card')]
     public ?float $historyFraudCard;
 
     /**
-     * @var ?float $historyFraudDevice
+     * @var ?float $historyFraudDevice This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('history.fraud_device')]
     public ?float $historyFraudDevice;
 
     /**
-     * @var ?float $checkoutCardCountryMismatch
+     * @var ?float $checkoutCardCountryMismatch This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('checkout.card_country_mismatch')]
     public ?float $checkoutCardCountryMismatch;
 
     /**
-     * @var ?float $checkoutBillingCountryMismatch
+     * @var ?float $checkoutBillingCountryMismatch This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('checkout.billing_country_mismatch')]
     public ?float $checkoutBillingCountryMismatch;
 
     /**
-     * @var ?float $checkoutPrepaidCard
+     * @var ?float $checkoutPrepaidCard This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('checkout.prepaid_card')]
     public ?float $checkoutPrepaidCard;
 
     /**
-     * @var ?float $deviceAutomation
+     * @var ?float $deviceAutomation This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('device.automation')]
     public ?float $deviceAutomation;
 
     /**
-     * @var ?float $deviceInvalid
+     * @var ?float $deviceInvalid This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('device.invalid')]
     public ?float $deviceInvalid;
 
     /**
-     * @var ?float $loginNewCountry
+     * @var ?float $loginNewCountry This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('login.new_country')]
     public ?float $loginNewCountry;
 
     /**
-     * @var ?float $loginNewNetwork
+     * @var ?float $loginNewNetwork This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('login.new_network')]
     public ?float $loginNewNetwork;
 
     /**
-     * @var ?float $captchaFailed
+     * @var ?float $captchaFailed This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('captcha.failed')]
     public ?float $captchaFailed;
 
     /**
-     * @var ?float $captchaMissing
+     * @var ?float $captchaMissing This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('captcha.missing')]
     public ?float $captchaMissing;
 
     /**
-     * @var ?float $contentSpam
+     * @var ?float $contentSpam This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('content.spam')]
     public ?float $contentSpam;
 
     /**
-     * @var ?float $contentPhishing
+     * @var ?float $contentPhishing This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('content.phishing')]
     public ?float $contentPhishing;
 
     /**
-     * @var ?float $contentMalware
+     * @var ?float $contentMalware This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('content.malware')]
     public ?float $contentMalware;
 
     /**
-     * @var ?float $contentFraud
+     * @var ?float $contentFraud This reason's new weight. `null` restores its default.
      */
     #[JsonProperty('content.fraud')]
     public ?float $contentFraud;

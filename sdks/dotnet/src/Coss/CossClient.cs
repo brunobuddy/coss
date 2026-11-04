@@ -1,5 +1,6 @@
 using Coss.Core;
 using Coss.Hooks;
+using Coss.Scheduling;
 using Coss.Sign;
 
 namespace Coss;
@@ -25,7 +26,7 @@ public partial class CossClient : ICossClient
                 { "X-Fern-Language", "C#" },
                 { "X-Fern-SDK-Name", "Coss" },
                 { "X-Fern-SDK-Version", global::Coss.Version.Current },
-                { "User-Agent", "coss-dotnet/0.2.0" },
+                { "User-Agent", "coss-dotnet/0.3.0" },
             }
         );
         foreach (var header in platformHeaders)
@@ -66,6 +67,7 @@ public partial class CossClient : ICossClient
         Inboxes = new InboxesClient(_client);
         Risk = new RiskClient(_client);
         Hooks = new HooksClient(_client);
+        Scheduling = new SchedulingClient(_client);
         Sign = new SignClient(_client);
     }
 
@@ -104,6 +106,8 @@ public partial class CossClient : ICossClient
     public IRiskClient Risk { get; }
 
     public IHooksClient Hooks { get; }
+
+    public ISchedulingClient Scheduling { get; }
 
     public ISignClient Sign { get; }
 

@@ -34,11 +34,17 @@ public final class SegmentFilterConditionsItemConditionsConditionsItemAudience {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Whether the contact is in the audience.
+     */
     @JsonProperty("op")
     public SegmentFilterConditionsItemConditionsConditionsItemAudienceOp getOp() {
         return op;
     }
 
+    /**
+     * @return The audience's id.
+     */
     @JsonProperty("audience_id")
     public String getAudienceId() {
         return audienceId;
@@ -75,12 +81,18 @@ public final class SegmentFilterConditionsItemConditionsConditionsItemAudience {
     }
 
     public interface OpStage {
+        /**
+         * <p>Whether the contact is in the audience.</p>
+         */
         AudienceIdStage op(@NotNull SegmentFilterConditionsItemConditionsConditionsItemAudienceOp op);
 
         Builder from(SegmentFilterConditionsItemConditionsConditionsItemAudience other);
     }
 
     public interface AudienceIdStage {
+        /**
+         * <p>The audience's id.</p>
+         */
         _FinalStage audienceId(@NotNull String audienceId);
     }
 
@@ -110,6 +122,10 @@ public final class SegmentFilterConditionsItemConditionsConditionsItemAudience {
             return this;
         }
 
+        /**
+         * <p>Whether the contact is in the audience.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("op")
         public AudienceIdStage op(@NotNull SegmentFilterConditionsItemConditionsConditionsItemAudienceOp op) {
@@ -117,6 +133,10 @@ public final class SegmentFilterConditionsItemConditionsConditionsItemAudience {
             return this;
         }
 
+        /**
+         * <p>The audience's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("audience_id")
         public _FinalStage audienceId(@NotNull String audienceId) {

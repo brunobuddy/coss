@@ -32,6 +32,9 @@ public final class EmailEventDataOpen {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The client's <code>User-Agent</code>. <code>null</code>: not sent.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("user_agent")
     public OptionalNullable<String> getUserAgent() {
@@ -90,6 +93,9 @@ public final class EmailEventDataOpen {
             return this;
         }
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         */
         @JsonSetter(value = "user_agent", nulls = Nulls.SKIP)
         public Builder userAgent(OptionalNullable<String> userAgent) {
             this.userAgent = userAgent;

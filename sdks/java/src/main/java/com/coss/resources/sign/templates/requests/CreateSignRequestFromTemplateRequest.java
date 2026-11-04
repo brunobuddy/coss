@@ -92,6 +92,9 @@ public final class CreateSignRequestFromTemplateRequest {
         return title;
     }
 
+    /**
+     * @return Default: the template's message.
+     */
     @JsonProperty("message")
     public Optional<String> getMessage() {
         return message;
@@ -121,6 +124,9 @@ public final class CreateSignRequestFromTemplateRequest {
         return signingOrder;
     }
 
+    /**
+     * @return When an unfinished request expires, at most 365 days ahead.
+     */
     @JsonProperty("expires_at")
     public Optional<OffsetDateTime> getExpiresAt() {
         return expiresAt;
@@ -134,6 +140,9 @@ public final class CreateSignRequestFromTemplateRequest {
         return metadata;
     }
 
+    /**
+     * @return Days between reminders to email signers. Default: your Sign settings'. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("reminder_interval_days")
     public OptionalNullable<Integer> getReminderIntervalDays() {
@@ -274,6 +283,9 @@ public final class CreateSignRequestFromTemplateRequest {
             return this;
         }
 
+        /**
+         * <p>Default: the template's message.</p>
+         */
         @JsonSetter(value = "message", nulls = Nulls.SKIP)
         public Builder message(Optional<String> message) {
             this.message = message;
@@ -337,6 +349,9 @@ public final class CreateSignRequestFromTemplateRequest {
             return this;
         }
 
+        /**
+         * <p>When an unfinished request expires, at most 365 days ahead.</p>
+         */
         @JsonSetter(value = "expires_at", nulls = Nulls.SKIP)
         public Builder expiresAt(Optional<OffsetDateTime> expiresAt) {
             this.expiresAt = expiresAt;
@@ -362,6 +377,9 @@ public final class CreateSignRequestFromTemplateRequest {
             return this;
         }
 
+        /**
+         * <p>Days between reminders to email signers. Default: your Sign settings'. <code>null</code>: none.</p>
+         */
         @JsonSetter(value = "reminder_interval_days", nulls = Nulls.SKIP)
         public Builder reminderIntervalDays(OptionalNullable<Integer> reminderIntervalDays) {
             this.reminderIntervalDays = reminderIntervalDays;

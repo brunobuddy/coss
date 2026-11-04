@@ -90,6 +90,9 @@ public final class SignSettings {
         return displayName;
     }
 
+    /**
+     * @return The signing page's accent color, as <code>#RRGGBB</code>. <code>null</code>: the default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("accent_color")
     public OptionalNullable<String> getAccentColor() {
@@ -99,6 +102,9 @@ public final class SignSettings {
         return accentColor;
     }
 
+    /**
+     * @return The signing page's theme. <code>system</code> follows the signer's device.
+     */
     @JsonProperty("theme")
     public SignSettingsTheme getTheme() {
         return theme;
@@ -221,6 +227,9 @@ public final class SignSettings {
     }
 
     public interface ThemeStage {
+        /**
+         * <p>The signing page's theme. <code>system</code> follows the signer's device.</p>
+         */
         _FinalStage theme(@NotNull SignSettingsTheme theme);
     }
 
@@ -251,6 +260,9 @@ public final class SignSettings {
 
         _FinalStage displayName(Nullable<String> displayName);
 
+        /**
+         * <p>The signing page's accent color, as <code>#RRGGBB</code>. <code>null</code>: the default.</p>
+         */
         _FinalStage accentColor(OptionalNullable<String> accentColor);
 
         _FinalStage accentColor(String accentColor);
@@ -336,6 +348,10 @@ public final class SignSettings {
             return this;
         }
 
+        /**
+         * <p>The signing page's theme. <code>system</code> follows the signer's device.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("theme")
         public _FinalStage theme(@NotNull SignSettingsTheme theme) {
@@ -493,6 +509,10 @@ public final class SignSettings {
             return this;
         }
 
+        /**
+         * <p>The signing page's accent color, as <code>#RRGGBB</code>. <code>null</code>: the default.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage accentColor(Nullable<String> accentColor) {
             if (accentColor.isNull()) {
@@ -505,6 +525,10 @@ public final class SignSettings {
             return this;
         }
 
+        /**
+         * <p>The signing page's accent color, as <code>#RRGGBB</code>. <code>null</code>: the default.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage accentColor(Optional<String> accentColor) {
             if (accentColor.isPresent()) {
@@ -515,12 +539,19 @@ public final class SignSettings {
             return this;
         }
 
+        /**
+         * <p>The signing page's accent color, as <code>#RRGGBB</code>. <code>null</code>: the default.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage accentColor(String accentColor) {
             this.accentColor = OptionalNullable.of(accentColor);
             return this;
         }
 
+        /**
+         * <p>The signing page's accent color, as <code>#RRGGBB</code>. <code>null</code>: the default.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "accent_color", nulls = Nulls.SKIP)
         public _FinalStage accentColor(OptionalNullable<String> accentColor) {

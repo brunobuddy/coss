@@ -80,6 +80,8 @@ module Coss
         end
       end
 
+      # One line of the API key's environment log.
+      #
       # @param request_options [Hash]
       # @param params [Hash]
       # @option request_options [String] :base_url

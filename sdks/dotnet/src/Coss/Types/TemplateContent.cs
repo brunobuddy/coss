@@ -11,16 +11,28 @@ public record TemplateContent : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The BCP 47 language tag this content is for.
+    /// </summary>
     [JsonPropertyName("locale")]
     public required string Locale { get; set; }
 
+    /// <summary>
+    /// The subject template.
+    /// </summary>
     [JsonPropertyName("subject")]
     public required string Subject { get; set; }
 
+    /// <summary>
+    /// The HTML template. `null`: text only.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("html")]
     public string? Html { get; set; }
 
+    /// <summary>
+    /// The plain-text template. `null`: HTML only.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("text")]
     public string? Text { get; set; }

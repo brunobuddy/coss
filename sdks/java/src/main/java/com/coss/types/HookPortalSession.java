@@ -65,6 +65,9 @@ public final class HookPortalSession {
         return id;
     }
 
+    /**
+     * @return The id of the application this session manages.
+     */
     @JsonProperty("application_id")
     public String getApplicationId() {
         return applicationId;
@@ -86,11 +89,17 @@ public final class HookPortalSession {
         return token;
     }
 
+    /**
+     * @return Whether the user can only look.
+     */
     @JsonProperty("read_only")
     public boolean getReadOnly() {
         return readOnly;
     }
 
+    /**
+     * @return When the session stops working.
+     */
     @JsonProperty("expires_at")
     public OffsetDateTime getExpiresAt() {
         return expiresAt;
@@ -143,6 +152,9 @@ public final class HookPortalSession {
     }
 
     public interface ApplicationIdStage {
+        /**
+         * <p>The id of the application this session manages.</p>
+         */
         UrlStage applicationId(@NotNull String applicationId);
     }
 
@@ -161,10 +173,16 @@ public final class HookPortalSession {
     }
 
     public interface ReadOnlyStage {
+        /**
+         * <p>Whether the user can only look.</p>
+         */
         ExpiresAtStage readOnly(boolean readOnly);
     }
 
     public interface ExpiresAtStage {
+        /**
+         * <p>When the session stops working.</p>
+         */
         _FinalStage expiresAt(@NotNull OffsetDateTime expiresAt);
     }
 
@@ -231,6 +249,10 @@ public final class HookPortalSession {
             return this;
         }
 
+        /**
+         * <p>The id of the application this session manages.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("application_id")
         public UrlStage applicationId(@NotNull String applicationId) {
@@ -260,6 +282,10 @@ public final class HookPortalSession {
             return this;
         }
 
+        /**
+         * <p>Whether the user can only look.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("read_only")
         public ExpiresAtStage readOnly(boolean readOnly) {
@@ -267,6 +293,10 @@ public final class HookPortalSession {
             return this;
         }
 
+        /**
+         * <p>When the session stops working.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("expires_at")
         public _FinalStage expiresAt(@NotNull OffsetDateTime expiresAt) {

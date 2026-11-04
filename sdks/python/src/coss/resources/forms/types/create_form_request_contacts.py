@@ -7,8 +7,20 @@ from ....core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class CreateFormRequestContacts(UniversalBaseModel):
-    enabled: typing.Optional[bool] = None
-    audience_ids: typing.Optional[typing.List[str]] = None
+    """
+    Turning submissions into contacts. Only the fields given change.
+    """
+
+    enabled: typing.Optional[bool] = pydantic.Field(default=None)
+    """
+    Turn each accepted submission into a contact, from `submitter.email_field`. Default false.
+    """
+
+    audience_ids: typing.Optional[typing.List[str]] = pydantic.Field(default=None)
+    """
+    Audiences the contact joins. They must exist in this environment.
+    """
+
     topics: typing.Optional[typing.List[str]] = pydantic.Field(default=None)
     """
     Topic keys the contact is opted into.
@@ -21,12 +33,12 @@ class CreateFormRequestContacts(UniversalBaseModel):
 
     first_name_field: typing.Optional[str] = pydantic.Field(default=None)
     """
-    The `name` the form's input posts.
+    The field holding the contact's first name. `null`: none.
     """
 
     last_name_field: typing.Optional[str] = pydantic.Field(default=None)
     """
-    The `name` the form's input posts.
+    The field holding the contact's last name. `null`: none.
     """
 
     properties: typing.Optional[typing.Dict[str, str]] = pydantic.Field(default=None)

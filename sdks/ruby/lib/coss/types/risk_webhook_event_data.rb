@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # The assessment, without its signals.
     class RiskWebhookEventData < Internal::Types::Model
       field :assessment_id, -> { String }, optional: false, nullable: false
 

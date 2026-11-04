@@ -13,25 +13,25 @@ use Coss\Core\Types\Date;
 class BillingContract extends JsonSerializableType
 {
     /**
-     * @var string $id
+     * @var string $id The contract's id.
      */
     #[JsonProperty('id')]
     public string $id;
 
     /**
-     * @var value-of<BillingContractKind> $kind
+     * @var value-of<BillingContractKind> $kind `self_serve`: chosen in the dashboard. `sales`: agreed with coss.com. `internal`: coss.com's own.
      */
     #[JsonProperty('kind')]
     public string $kind;
 
     /**
-     * @var DateTime $effectiveFrom
+     * @var DateTime $effectiveFrom When it took effect.
      */
     #[JsonProperty('effective_from'), Date(Date::TYPE_DATETIME)]
     public DateTime $effectiveFrom;
 
     /**
-     * @var ?DateTime $effectiveUntil
+     * @var ?DateTime $effectiveUntil When it ends. `null`: no end is set.
      */
     #[JsonProperty('effective_until'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $effectiveUntil;
@@ -43,7 +43,7 @@ class BillingContract extends JsonSerializableType
     public ?DateTime $termEnd;
 
     /**
-     * @var bool $autoRenew
+     * @var bool $autoRenew Whether a committed term renews when it ends.
      */
     #[JsonProperty('auto_renew')]
     public bool $autoRenew;

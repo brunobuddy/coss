@@ -10,8 +10,15 @@ from .segment_filter_conditions_item_conditions_conditions_item_topic_op import 
 
 
 class SegmentFilterConditionsItemConditionsConditionsItemTopic(UniversalBaseModel):
-    op: SegmentFilterConditionsItemConditionsConditionsItemTopicOp
-    topic: str
+    op: SegmentFilterConditionsItemConditionsConditionsItemTopicOp = pydantic.Field()
+    """
+    Whether emails about the topic reach the contact.
+    """
+
+    topic: str = pydantic.Field()
+    """
+    The topic's key.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

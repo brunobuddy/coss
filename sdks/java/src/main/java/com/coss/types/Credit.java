@@ -107,11 +107,17 @@ public final class Credit {
         return kind;
     }
 
+    /**
+     * @return How much was granted: cents, or units for a <code>units</code> credit.
+     */
     @JsonProperty("amount")
     public long getAmount() {
         return amount;
     }
 
+    /**
+     * @return How much is left, in the same unit as <code>amount</code>.
+     */
     @JsonProperty("remaining")
     public long getRemaining() {
         return remaining;
@@ -149,21 +155,33 @@ public final class Credit {
         return appliesTo;
     }
 
+    /**
+     * @return Where it came from: <code>fee</code>, <code>commitment</code>, <code>support</code>, <code>promotion</code>, <code>refund</code> or <code>sla</code>.
+     */
     @JsonProperty("source")
     public CreditSource getSource() {
         return source;
     }
 
+    /**
+     * @return What it's for.
+     */
     @JsonProperty("description")
     public String getDescription() {
         return description;
     }
 
+    /**
+     * @return When it can start being used.
+     */
     @JsonProperty("effective_at")
     public OffsetDateTime getEffectiveAt() {
         return effectiveAt;
     }
 
+    /**
+     * @return When what's left expires. <code>null</code>: never.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("expires_at")
     public OptionalNullable<OffsetDateTime> getExpiresAt() {
@@ -173,6 +191,9 @@ public final class Credit {
         return expiresAt;
     }
 
+    /**
+     * @return When it was voided. <code>null</code>: it wasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("voided_at")
     public OptionalNullable<OffsetDateTime> getVoidedAt() {
@@ -285,10 +306,16 @@ public final class Credit {
     }
 
     public interface AmountStage {
+        /**
+         * <p>How much was granted: cents, or units for a <code>units</code> credit.</p>
+         */
         RemainingStage amount(long amount);
     }
 
     public interface RemainingStage {
+        /**
+         * <p>How much is left, in the same unit as <code>amount</code>.</p>
+         */
         AppliesToStage remaining(long remaining);
     }
 
@@ -300,14 +327,23 @@ public final class Credit {
     }
 
     public interface SourceStage {
+        /**
+         * <p>Where it came from: <code>fee</code>, <code>commitment</code>, <code>support</code>, <code>promotion</code>, <code>refund</code> or <code>sla</code>.</p>
+         */
         DescriptionStage source(@NotNull CreditSource source);
     }
 
     public interface DescriptionStage {
+        /**
+         * <p>What it's for.</p>
+         */
         EffectiveAtStage description(@NotNull String description);
     }
 
     public interface EffectiveAtStage {
+        /**
+         * <p>When it can start being used.</p>
+         */
         CreatedAtStage effectiveAt(@NotNull OffsetDateTime effectiveAt);
     }
 
@@ -344,6 +380,9 @@ public final class Credit {
 
         _FinalStage meters(Nullable<List<CreditMetersItem>> meters);
 
+        /**
+         * <p>When what's left expires. <code>null</code>: never.</p>
+         */
         _FinalStage expiresAt(OptionalNullable<OffsetDateTime> expiresAt);
 
         _FinalStage expiresAt(OffsetDateTime expiresAt);
@@ -352,6 +391,9 @@ public final class Credit {
 
         _FinalStage expiresAt(Nullable<OffsetDateTime> expiresAt);
 
+        /**
+         * <p>When it was voided. <code>null</code>: it wasn't.</p>
+         */
         _FinalStage voidedAt(OptionalNullable<OffsetDateTime> voidedAt);
 
         _FinalStage voidedAt(OffsetDateTime voidedAt);
@@ -451,6 +493,10 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>How much was granted: cents, or units for a <code>units</code> credit.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("amount")
         public RemainingStage amount(long amount) {
@@ -458,6 +504,10 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>How much is left, in the same unit as <code>amount</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("remaining")
         public AppliesToStage remaining(long remaining) {
@@ -476,6 +526,10 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>Where it came from: <code>fee</code>, <code>commitment</code>, <code>support</code>, <code>promotion</code>, <code>refund</code> or <code>sla</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("source")
         public DescriptionStage source(@NotNull CreditSource source) {
@@ -483,6 +537,10 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>What it's for.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("description")
         public EffectiveAtStage description(@NotNull String description) {
@@ -490,6 +548,10 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>When it can start being used.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("effective_at")
         public CreatedAtStage effectiveAt(@NotNull OffsetDateTime effectiveAt) {
@@ -504,6 +566,10 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>When it was voided. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage voidedAt(Nullable<OffsetDateTime> voidedAt) {
             if (voidedAt.isNull()) {
@@ -516,6 +582,10 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>When it was voided. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage voidedAt(Optional<OffsetDateTime> voidedAt) {
             if (voidedAt.isPresent()) {
@@ -526,12 +596,19 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>When it was voided. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage voidedAt(OffsetDateTime voidedAt) {
             this.voidedAt = OptionalNullable.of(voidedAt);
             return this;
         }
 
+        /**
+         * <p>When it was voided. <code>null</code>: it wasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "voided_at", nulls = Nulls.SKIP)
         public _FinalStage voidedAt(OptionalNullable<OffsetDateTime> voidedAt) {
@@ -539,6 +616,10 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>When what's left expires. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage expiresAt(Nullable<OffsetDateTime> expiresAt) {
             if (expiresAt.isNull()) {
@@ -551,6 +632,10 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>When what's left expires. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage expiresAt(Optional<OffsetDateTime> expiresAt) {
             if (expiresAt.isPresent()) {
@@ -561,12 +646,19 @@ public final class Credit {
             return this;
         }
 
+        /**
+         * <p>When what's left expires. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage expiresAt(OffsetDateTime expiresAt) {
             this.expiresAt = OptionalNullable.of(expiresAt);
             return this;
         }
 
+        /**
+         * <p>When what's left expires. <code>null</code>: never.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "expires_at", nulls = Nulls.SKIP)
         public _FinalStage expiresAt(OptionalNullable<OffsetDateTime> expiresAt) {

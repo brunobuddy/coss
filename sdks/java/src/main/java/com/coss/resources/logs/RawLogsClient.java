@@ -190,18 +190,30 @@ public class RawLogsClient {
         }
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public CossHttpResponse<Log> get(String id) {
         return get(id, GetLogsRequest.builder().build());
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public CossHttpResponse<Log> get(String id, RequestOptions requestOptions) {
         return get(id, GetLogsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public CossHttpResponse<Log> get(String id, GetLogsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public CossHttpResponse<Log> get(String id, GetLogsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()

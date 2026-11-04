@@ -14,6 +14,9 @@ public record HookEndpointSecret : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required HookEndpointSecretObject Object { get; set; }
 
+    /// <summary>
+    /// The endpoint's `whsec_…` signing secret (Standard Webhooks).
+    /// </summary>
     [JsonPropertyName("secret")]
     public required string Secret { get; set; }
 

@@ -11,10 +11,25 @@ class UpdateRiskSettingsRequestContentThresholds(UniversalBaseModel):
     Changes the categories given: a score in (0, 1] sets the threshold, `null` removes it.
     """
 
-    spam: typing.Optional[float] = None
-    phishing: typing.Optional[float] = None
-    malware: typing.Optional[float] = None
-    fraud: typing.Optional[float] = None
+    spam: typing.Optional[float] = pydantic.Field(default=None)
+    """
+    The score at which `content.spam` fires. `null` removes it.
+    """
+
+    phishing: typing.Optional[float] = pydantic.Field(default=None)
+    """
+    The score at which `content.phishing` fires. `null` removes it.
+    """
+
+    malware: typing.Optional[float] = pydantic.Field(default=None)
+    """
+    The score at which `content.malware` fires. `null` removes it.
+    """
+
+    fraud: typing.Optional[float] = pydantic.Field(default=None)
+    """
+    The score at which `content.fraud` fires. `null` removes it.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

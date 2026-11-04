@@ -49,31 +49,49 @@ public final class BillingFeatures {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Custom tracking domains.
+     */
     @JsonProperty("tracking_domains")
     public boolean getTrackingDomains() {
         return trackingDomains;
     }
 
+    /**
+     * @return The organization's audit log.
+     */
     @JsonProperty("audit_log")
     public boolean getAuditLog() {
         return auditLog;
     }
 
+    /**
+     * @return Log drains.
+     */
     @JsonProperty("log_drains")
     public boolean getLogDrains() {
         return logDrains;
     }
 
+    /**
+     * @return Single sign-on.
+     */
     @JsonProperty("sso")
     public boolean getSso() {
         return sso;
     }
 
+    /**
+     * @return Directory sync (SCIM).
+     */
     @JsonProperty("scim")
     public boolean getScim() {
         return scim;
     }
 
+    /**
+     * @return Dedicated IP pools.
+     */
     @JsonProperty("dedicated_ips")
     public boolean getDedicatedIps() {
         return dedicatedIps;
@@ -115,28 +133,46 @@ public final class BillingFeatures {
     }
 
     public interface TrackingDomainsStage {
+        /**
+         * <p>Custom tracking domains.</p>
+         */
         AuditLogStage trackingDomains(boolean trackingDomains);
 
         Builder from(BillingFeatures other);
     }
 
     public interface AuditLogStage {
+        /**
+         * <p>The organization's audit log.</p>
+         */
         LogDrainsStage auditLog(boolean auditLog);
     }
 
     public interface LogDrainsStage {
+        /**
+         * <p>Log drains.</p>
+         */
         SsoStage logDrains(boolean logDrains);
     }
 
     public interface SsoStage {
+        /**
+         * <p>Single sign-on.</p>
+         */
         ScimStage sso(boolean sso);
     }
 
     public interface ScimStage {
+        /**
+         * <p>Directory sync (SCIM).</p>
+         */
         DedicatedIpsStage scim(boolean scim);
     }
 
     public interface DedicatedIpsStage {
+        /**
+         * <p>Dedicated IP pools.</p>
+         */
         _FinalStage dedicatedIps(boolean dedicatedIps);
     }
 
@@ -185,6 +221,10 @@ public final class BillingFeatures {
             return this;
         }
 
+        /**
+         * <p>Custom tracking domains.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("tracking_domains")
         public AuditLogStage trackingDomains(boolean trackingDomains) {
@@ -192,6 +232,10 @@ public final class BillingFeatures {
             return this;
         }
 
+        /**
+         * <p>The organization's audit log.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("audit_log")
         public LogDrainsStage auditLog(boolean auditLog) {
@@ -199,6 +243,10 @@ public final class BillingFeatures {
             return this;
         }
 
+        /**
+         * <p>Log drains.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("log_drains")
         public SsoStage logDrains(boolean logDrains) {
@@ -206,6 +254,10 @@ public final class BillingFeatures {
             return this;
         }
 
+        /**
+         * <p>Single sign-on.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sso")
         public ScimStage sso(boolean sso) {
@@ -213,6 +265,10 @@ public final class BillingFeatures {
             return this;
         }
 
+        /**
+         * <p>Directory sync (SCIM).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("scim")
         public DedicatedIpsStage scim(boolean scim) {
@@ -220,6 +276,10 @@ public final class BillingFeatures {
             return this;
         }
 
+        /**
+         * <p>Dedicated IP pools.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("dedicated_ips")
         public _FinalStage dedicatedIps(boolean dedicatedIps) {

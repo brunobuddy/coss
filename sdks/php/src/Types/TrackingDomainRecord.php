@@ -12,7 +12,7 @@ use Coss\Core\Types\ArrayType;
 class TrackingDomainRecord extends JsonSerializableType
 {
     /**
-     * @var value-of<TrackingDomainRecordType> $type
+     * @var value-of<TrackingDomainRecordType> $type The record's type.
      */
     #[JsonProperty('type')]
     public string $type;

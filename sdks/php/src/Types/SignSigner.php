@@ -7,6 +7,9 @@ use Coss\Core\Json\JsonProperty;
 use DateTime;
 use Coss\Core\Types\Date;
 
+/**
+ * Someone asked to sign.
+ */
 class SignSigner extends JsonSerializableType
 {
     /**
@@ -34,13 +37,13 @@ class SignSigner extends JsonSerializableType
     public string $email;
 
     /**
-     * @var int $order
+     * @var int $order Where they come in `signing_order: sequential`. Lower signs first.
      */
     #[JsonProperty('order')]
     public int $order;
 
     /**
-     * @var value-of<SignSignerDelivery> $delivery
+     * @var value-of<SignSignerDelivery> $delivery `email`: coss.com emails them a link. `embedded`: your app shows the signing page.
      */
     #[JsonProperty('delivery')]
     public string $delivery;
@@ -52,37 +55,37 @@ class SignSigner extends JsonSerializableType
     public string $authentication;
 
     /**
-     * @var value-of<SignSignerStatus> $status
+     * @var value-of<SignSignerStatus> $status `pending`: not contacted yet. `notified`: emailed their link. `viewed`: opened the signing page. `signed`: done. `declined`: refused, which declines the whole request.
      */
     #[JsonProperty('status')]
     public string $status;
 
     /**
-     * @var ?string $clientRef
+     * @var ?string $clientRef Your own id for the signer. `null`: none given.
      */
     #[JsonProperty('client_ref')]
     public ?string $clientRef;
 
     /**
-     * @var ?DateTime $viewedAt
+     * @var ?DateTime $viewedAt When they first opened the signing page. `null`: not yet.
      */
     #[JsonProperty('viewed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $viewedAt;
 
     /**
-     * @var ?DateTime $signedAt
+     * @var ?DateTime $signedAt When they signed. `null`: not yet.
      */
     #[JsonProperty('signed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $signedAt;
 
     /**
-     * @var ?DateTime $declinedAt
+     * @var ?DateTime $declinedAt When they declined. `null`: they haven't.
      */
     #[JsonProperty('declined_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $declinedAt;
 
     /**
-     * @var ?string $declineReason
+     * @var ?string $declineReason The reason they gave. `null`: none given.
      */
     #[JsonProperty('decline_reason')]
     public ?string $declineReason;

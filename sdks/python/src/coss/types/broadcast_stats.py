@@ -7,20 +7,40 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class BroadcastStats(UniversalBaseModel):
+    """
+    How its emails fared so far.
+    """
+
     recipients: int = pydantic.Field()
     """
     Emails made so far (one per reached contact).
     """
 
-    sent: int
-    delivered: int
+    sent: int = pydantic.Field()
+    """
+    Emails accepted by the provider.
+    """
+
+    delivered: int = pydantic.Field()
+    """
+    Emails delivered to recipients' servers.
+    """
+
     bounced: int = pydantic.Field()
     """
     Permanent bounces.
     """
 
-    complained: int
-    failed: int
+    complained: int = pydantic.Field()
+    """
+    Emails marked as spam by recipients.
+    """
+
+    failed: int = pydantic.Field()
+    """
+    Emails that couldn't be sent.
+    """
+
     opened: int = pydantic.Field()
     """
     Emails opened at least once (with open tracking).

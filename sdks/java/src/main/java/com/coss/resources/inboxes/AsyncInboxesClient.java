@@ -98,18 +98,30 @@ public class AsyncInboxesClient {
         return this.rawClient.create(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public CompletableFuture<Inbox> get(String inboxId) {
         return this.rawClient.get(inboxId).thenApply(response -> response.body());
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public CompletableFuture<Inbox> get(String inboxId, RequestOptions requestOptions) {
         return this.rawClient.get(inboxId, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public CompletableFuture<Inbox> get(String inboxId, GetInboxesRequest request) {
         return this.rawClient.get(inboxId, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public CompletableFuture<Inbox> get(String inboxId, GetInboxesRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(inboxId, request, requestOptions).thenApply(response -> response.body());
     }

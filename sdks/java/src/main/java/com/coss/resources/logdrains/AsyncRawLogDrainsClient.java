@@ -159,14 +159,14 @@ public class AsyncRawLogDrainsClient {
     }
 
     /**
-     * Streams the environment's logs to a URL: every line <code>GET /v1/logs</code> returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed NDJSON batches of up to 500 lines or 1 MB, usually within seconds. Log drains belong to the API key's own environment: a <code>coss_test_…</code> key only ever sees sandbox drains, and a <code>coss_live_…</code> key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every batch with it (<code>verifyLogDrainBatch</code> in the SDK).
+     * Streams the environment's logs to a URL: every line <code>GET /v1/logs</code> returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed batches of up to 500 lines or 1 MB, usually within seconds. <code>format</code> picks the body: NDJSON for your own endpoint, or the intake API of Loki (Grafana Cloud), Datadog or an OTLP/HTTP collector, with <code>auth_header</code> carrying its key. Log drains belong to the API key's own environment: a <code>coss_test_…</code> key only ever sees sandbox drains, and a <code>coss_live_…</code> key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every NDJSON batch with it (<code>verifyLogDrainBatch</code> in the SDK).
      */
     public CompletableFuture<CossHttpResponse<LogDrainWithSecret>> create(CreateLogDrainRequest request) {
         return create(request, null);
     }
 
     /**
-     * Streams the environment's logs to a URL: every line <code>GET /v1/logs</code> returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed NDJSON batches of up to 500 lines or 1 MB, usually within seconds. Log drains belong to the API key's own environment: a <code>coss_test_…</code> key only ever sees sandbox drains, and a <code>coss_live_…</code> key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every batch with it (<code>verifyLogDrainBatch</code> in the SDK).
+     * Streams the environment's logs to a URL: every line <code>GET /v1/logs</code> returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed batches of up to 500 lines or 1 MB, usually within seconds. <code>format</code> picks the body: NDJSON for your own endpoint, or the intake API of Loki (Grafana Cloud), Datadog or an OTLP/HTTP collector, with <code>auth_header</code> carrying its key. Log drains belong to the API key's own environment: a <code>coss_test_…</code> key only ever sees sandbox drains, and a <code>coss_live_…</code> key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every NDJSON batch with it (<code>verifyLogDrainBatch</code> in the SDK).
      */
     public CompletableFuture<CossHttpResponse<LogDrainWithSecret>> create(
             CreateLogDrainRequest request, RequestOptions requestOptions) {
@@ -543,28 +543,28 @@ public class AsyncRawLogDrainsClient {
     }
 
     /**
-     * Changes the URL, description, sources or <code>enabled</code> flag. Omitted fields keep their current value, and the signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
+     * Changes the URL, description, sources, format, auth header or <code>enabled</code> flag. Omitted fields keep their current value (<code>auth_header: null</code> removes the header), and the signing secret stays the same. A batch being retried goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
      */
     public CompletableFuture<CossHttpResponse<LogDrain>> update(String id) {
         return update(id, UpdateLogDrainRequest.builder().build());
     }
 
     /**
-     * Changes the URL, description, sources or <code>enabled</code> flag. Omitted fields keep their current value, and the signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
+     * Changes the URL, description, sources, format, auth header or <code>enabled</code> flag. Omitted fields keep their current value (<code>auth_header: null</code> removes the header), and the signing secret stays the same. A batch being retried goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
      */
     public CompletableFuture<CossHttpResponse<LogDrain>> update(String id, RequestOptions requestOptions) {
         return update(id, UpdateLogDrainRequest.builder().build(), requestOptions);
     }
 
     /**
-     * Changes the URL, description, sources or <code>enabled</code> flag. Omitted fields keep their current value, and the signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
+     * Changes the URL, description, sources, format, auth header or <code>enabled</code> flag. Omitted fields keep their current value (<code>auth_header: null</code> removes the header), and the signing secret stays the same. A batch being retried goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
      */
     public CompletableFuture<CossHttpResponse<LogDrain>> update(String id, UpdateLogDrainRequest request) {
         return update(id, request, null);
     }
 
     /**
-     * Changes the URL, description, sources or <code>enabled</code> flag. Omitted fields keep their current value, and the signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
+     * Changes the URL, description, sources, format, auth header or <code>enabled</code> flag. Omitted fields keep their current value (<code>auth_header: null</code> removes the header), and the signing secret stays the same. A batch being retried goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
      */
     public CompletableFuture<CossHttpResponse<LogDrain>> update(
             String id, UpdateLogDrainRequest request, RequestOptions requestOptions) {

@@ -55,12 +55,21 @@ public record Usage : IJsonOnDeserialized
     [JsonPropertyName("user_id")]
     public string? UserId { get; set; }
 
+    /// <summary>
+    /// When this bucket starts (inclusive).
+    /// </summary>
     [JsonPropertyName("start")]
     public required DateTime Start { get; set; }
 
+    /// <summary>
+    /// When this bucket ends (exclusive).
+    /// </summary>
     [JsonPropertyName("end")]
     public required DateTime End { get; set; }
 
+    /// <summary>
+    /// Units used in this bucket.
+    /// </summary>
     [JsonPropertyName("quantity")]
     public required long Quantity { get; set; }
 

@@ -105,16 +105,25 @@ public final class HookEndpoint {
         return id;
     }
 
+    /**
+     * @return The id of the application it belongs to.
+     */
     @JsonProperty("application_id")
     public String getApplicationId() {
         return applicationId;
     }
 
+    /**
+     * @return Where deliveries are sent.
+     */
     @JsonProperty("url")
     public String getUrl() {
         return url;
     }
 
+    /**
+     * @return Your note about it. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -124,11 +133,17 @@ public final class HookEndpoint {
         return description;
     }
 
+    /**
+     * @return Only these event types are delivered. Empty: every type.
+     */
     @JsonProperty("filter_types")
     public List<String> getFilterTypes() {
         return filterTypes;
     }
 
+    /**
+     * @return At most this many requests per second to this endpoint. <code>null</code>: no limit of its own.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("rate_limit_per_second")
     public OptionalNullable<Long> getRateLimitPerSecond() {
@@ -138,6 +153,9 @@ public final class HookEndpoint {
         return rateLimitPerSecond;
     }
 
+    /**
+     * @return Whether new messages are delivered to it.
+     */
     @JsonProperty("enabled")
     public boolean getEnabled() {
         return enabled;
@@ -155,6 +173,9 @@ public final class HookEndpoint {
         return disabledReason;
     }
 
+    /**
+     * @return When it was disabled. <code>null</code>: it's enabled.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("disabled_at")
     public OptionalNullable<OffsetDateTime> getDisabledAt() {
@@ -188,6 +209,9 @@ public final class HookEndpoint {
         return previousSecretExpiresAt;
     }
 
+    /**
+     * @return Your own key-value pairs.
+     */
     @JsonProperty("metadata")
     public Map<String, String> getMetadata() {
         return metadata;
@@ -308,14 +332,23 @@ public final class HookEndpoint {
     }
 
     public interface ApplicationIdStage {
+        /**
+         * <p>The id of the application it belongs to.</p>
+         */
         UrlStage applicationId(@NotNull String applicationId);
     }
 
     public interface UrlStage {
+        /**
+         * <p>Where deliveries are sent.</p>
+         */
         EnabledStage url(@NotNull String url);
     }
 
     public interface EnabledStage {
+        /**
+         * <p>Whether new messages are delivered to it.</p>
+         */
         CreatedAtStage enabled(boolean enabled);
     }
 
@@ -334,6 +367,9 @@ public final class HookEndpoint {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         */
         _FinalStage description(OptionalNullable<String> description);
 
         _FinalStage description(String description);
@@ -342,12 +378,18 @@ public final class HookEndpoint {
 
         _FinalStage description(Nullable<String> description);
 
+        /**
+         * <p>Only these event types are delivered. Empty: every type.</p>
+         */
         _FinalStage filterTypes(List<String> filterTypes);
 
         _FinalStage addFilterTypes(String filterTypes);
 
         _FinalStage addAllFilterTypes(List<String> filterTypes);
 
+        /**
+         * <p>At most this many requests per second to this endpoint. <code>null</code>: no limit of its own.</p>
+         */
         _FinalStage rateLimitPerSecond(OptionalNullable<Long> rateLimitPerSecond);
 
         _FinalStage rateLimitPerSecond(Long rateLimitPerSecond);
@@ -367,6 +409,9 @@ public final class HookEndpoint {
 
         _FinalStage disabledReason(Nullable<HookEndpointDisabledReason> disabledReason);
 
+        /**
+         * <p>When it was disabled. <code>null</code>: it's enabled.</p>
+         */
         _FinalStage disabledAt(OptionalNullable<OffsetDateTime> disabledAt);
 
         _FinalStage disabledAt(OffsetDateTime disabledAt);
@@ -397,6 +442,9 @@ public final class HookEndpoint {
 
         _FinalStage previousSecretExpiresAt(Nullable<OffsetDateTime> previousSecretExpiresAt);
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         */
         _FinalStage metadata(Map<String, String> metadata);
 
         _FinalStage putAllMetadata(Map<String, String> metadata);
@@ -483,6 +531,10 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>The id of the application it belongs to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("application_id")
         public UrlStage applicationId(@NotNull String applicationId) {
@@ -490,6 +542,10 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Where deliveries are sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("url")
         public EnabledStage url(@NotNull String url) {
@@ -497,6 +553,10 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Whether new messages are delivered to it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("enabled")
         public CreatedAtStage enabled(boolean enabled) {
@@ -518,12 +578,20 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage metadata(String key, String value) {
             this.metadata.put(key, value);
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage putAllMetadata(Map<String, String> metadata) {
             if (metadata != null) {
@@ -532,6 +600,9 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "metadata", nulls = Nulls.SKIP)
         public _FinalStage metadata(Map<String, String> metadata) {
@@ -642,6 +713,10 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>When it was disabled. <code>null</code>: it's enabled.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage disabledAt(Nullable<OffsetDateTime> disabledAt) {
             if (disabledAt.isNull()) {
@@ -654,6 +729,10 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>When it was disabled. <code>null</code>: it's enabled.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage disabledAt(Optional<OffsetDateTime> disabledAt) {
             if (disabledAt.isPresent()) {
@@ -664,12 +743,19 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>When it was disabled. <code>null</code>: it's enabled.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage disabledAt(OffsetDateTime disabledAt) {
             this.disabledAt = OptionalNullable.of(disabledAt);
             return this;
         }
 
+        /**
+         * <p>When it was disabled. <code>null</code>: it's enabled.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "disabled_at", nulls = Nulls.SKIP)
         public _FinalStage disabledAt(OptionalNullable<OffsetDateTime> disabledAt) {
@@ -727,6 +813,10 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>At most this many requests per second to this endpoint. <code>null</code>: no limit of its own.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage rateLimitPerSecond(Nullable<Long> rateLimitPerSecond) {
             if (rateLimitPerSecond.isNull()) {
@@ -739,6 +829,10 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>At most this many requests per second to this endpoint. <code>null</code>: no limit of its own.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage rateLimitPerSecond(Optional<Long> rateLimitPerSecond) {
             if (rateLimitPerSecond.isPresent()) {
@@ -749,12 +843,19 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>At most this many requests per second to this endpoint. <code>null</code>: no limit of its own.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage rateLimitPerSecond(Long rateLimitPerSecond) {
             this.rateLimitPerSecond = OptionalNullable.of(rateLimitPerSecond);
             return this;
         }
 
+        /**
+         * <p>At most this many requests per second to this endpoint. <code>null</code>: no limit of its own.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "rate_limit_per_second", nulls = Nulls.SKIP)
         public _FinalStage rateLimitPerSecond(OptionalNullable<Long> rateLimitPerSecond) {
@@ -762,6 +863,10 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Only these event types are delivered. Empty: every type.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllFilterTypes(List<String> filterTypes) {
             if (filterTypes != null) {
@@ -770,12 +875,19 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Only these event types are delivered. Empty: every type.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addFilterTypes(String filterTypes) {
             this.filterTypes.add(filterTypes);
             return this;
         }
 
+        /**
+         * <p>Only these event types are delivered. Empty: every type.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "filter_types", nulls = Nulls.SKIP)
         public _FinalStage filterTypes(List<String> filterTypes) {
@@ -786,6 +898,10 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Nullable<String> description) {
             if (description.isNull()) {
@@ -798,6 +914,10 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Optional<String> description) {
             if (description.isPresent()) {
@@ -808,12 +928,19 @@ public final class HookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = OptionalNullable.of(description);
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(OptionalNullable<String> description) {

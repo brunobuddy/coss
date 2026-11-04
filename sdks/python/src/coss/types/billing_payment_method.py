@@ -7,9 +7,24 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class BillingPaymentMethod(UniversalBaseModel):
-    type: str
-    brand: typing.Optional[str] = None
-    last4: typing.Optional[str] = None
+    """
+    The payment method on file. `null`: none.
+    """
+
+    type: str = pydantic.Field()
+    """
+    Its type, such as `card`.
+    """
+
+    brand: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The card's brand. `null` for other types.
+    """
+
+    last4: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The card's last four digits. `null` for other types.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

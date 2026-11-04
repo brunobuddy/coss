@@ -9,7 +9,10 @@ from .broadcast_test_object import BroadcastTestObject
 
 class BroadcastTest(UniversalBaseModel):
     object: BroadcastTestObject
-    email_ids: typing.List[str]
+    email_ids: typing.List[str] = pydantic.Field()
+    """
+    The ids of the test emails.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

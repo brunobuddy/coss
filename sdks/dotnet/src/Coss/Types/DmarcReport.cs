@@ -17,9 +17,15 @@ public record DmarcReport : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The domain's id.
+    /// </summary>
     [JsonPropertyName("domain_id")]
     public required string DomainId { get; set; }
 
+    /// <summary>
+    /// Who sent the report.
+    /// </summary>
     [JsonPropertyName("reporter")]
     public required DmarcReportReporter Reporter { get; set; }
 
@@ -29,9 +35,15 @@ public record DmarcReport : IJsonOnDeserialized
     [JsonPropertyName("report_id")]
     public required string ReportId { get; set; }
 
+    /// <summary>
+    /// When the period it covers starts.
+    /// </summary>
     [JsonPropertyName("period_start")]
     public required DateTime PeriodStart { get; set; }
 
+    /// <summary>
+    /// When the period it covers ends.
+    /// </summary>
     [JsonPropertyName("period_end")]
     public required DateTime PeriodEnd { get; set; }
 
@@ -41,9 +53,15 @@ public record DmarcReport : IJsonOnDeserialized
     [JsonPropertyName("policy_published")]
     public required DmarcReportPolicyPublished PolicyPublished { get; set; }
 
+    /// <summary>
+    /// Messages the report covers.
+    /// </summary>
     [JsonPropertyName("messages")]
     public required long Messages { get; set; }
 
+    /// <summary>
+    /// Of those, how many passed DMARC.
+    /// </summary>
     [JsonPropertyName("passing")]
     public required long Passing { get; set; }
 
@@ -53,6 +71,9 @@ public record DmarcReport : IJsonOnDeserialized
     [JsonPropertyName("truncated")]
     public required bool Truncated { get; set; }
 
+    /// <summary>
+    /// When coss.com received it.
+    /// </summary>
     [JsonPropertyName("received_at")]
     public required DateTime ReceivedAt { get; set; }
 

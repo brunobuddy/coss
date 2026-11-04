@@ -26,14 +26,26 @@ class ReceivedSms(UniversalBaseModel):
     Your number that received it.
     """
 
-    body: str
-    segments: int
+    body: str = pydantic.Field()
+    """
+    The text.
+    """
+
+    segments: int = pydantic.Field()
+    """
+    Segments the text took.
+    """
+
     keyword: typing.Optional[ReceivedSmsKeyword] = pydantic.Field(default=None)
     """
     `stop`: an opt-out (the sender is suppressed in every live environment), `start`: an opt-in again, `help`: a request for help. Twilio answers each.
     """
 
-    sandbox: bool
+    sandbox: bool = pydantic.Field()
+    """
+    Whether it's a simulated message of a sandbox environment.
+    """
+
     created_at: dt.datetime
 
     if IS_PYDANTIC_V2:

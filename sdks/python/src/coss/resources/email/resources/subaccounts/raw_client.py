@@ -605,6 +605,7 @@ class RawSubaccountsClient:
             The sub-account's `id` (`sub_…`) or your `uid` for it.
 
         name : typing.Optional[str]
+            Your name for it.
 
         uid : typing.Optional[str]
             `null` removes it.
@@ -1611,6 +1612,7 @@ class AsyncRawSubaccountsClient:
             The sub-account's `id` (`sub_…`) or your `uid` for it.
 
         name : typing.Optional[str]
+            Your name for it.
 
         uid : typing.Optional[str]
             `null` removes it.

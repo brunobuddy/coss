@@ -9,7 +9,7 @@ use Coss\Core\Types\ArrayType;
 class UpdateHookEventTypeRequest extends JsonSerializableType
 {
     /**
-     * @var ?string $description
+     * @var ?string $description What this event means, shown to your users. `null` removes it.
      */
     #[JsonProperty('description')]
     public ?string $description;

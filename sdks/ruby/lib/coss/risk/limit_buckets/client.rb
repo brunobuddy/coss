@@ -90,6 +90,8 @@ module Coss
           end
         end
 
+        # One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

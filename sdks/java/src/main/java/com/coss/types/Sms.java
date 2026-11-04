@@ -108,16 +108,25 @@ public final class Sms {
         return id;
     }
 
+    /**
+     * @return The number it's sent from, in E.164.
+     */
     @JsonProperty("from")
     public String getFrom() {
         return from;
     }
 
+    /**
+     * @return The recipient's number, in E.164.
+     */
     @JsonProperty("to")
     public String getTo() {
         return to;
     }
 
+    /**
+     * @return The text. Empty once discarded.
+     */
     @JsonProperty("body")
     public String getBody() {
         return body;
@@ -139,6 +148,9 @@ public final class Sms {
         return segments;
     }
 
+    /**
+     * @return <code>gsm7</code> fits the basic alphabet; <code>ucs2</code> is used for anything else, with smaller segments.
+     */
     @JsonProperty("encoding")
     public SmsEncoding getEncoding() {
         return encoding;
@@ -152,6 +164,9 @@ public final class Sms {
         return country;
     }
 
+    /**
+     * @return Your tags on the message.
+     */
     @JsonProperty("tags")
     public List<SmsTagsItem> getTags() {
         return tags;
@@ -177,6 +192,9 @@ public final class Sms {
         return sandbox;
     }
 
+    /**
+     * @return When it's set to send. <code>null</code>: it was sent at once.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("scheduled_at")
     public OptionalNullable<OffsetDateTime> getScheduledAt() {
@@ -186,6 +204,9 @@ public final class Sms {
         return scheduledAt;
     }
 
+    /**
+     * @return When it was handed to the carrier. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("sent_at")
     public OptionalNullable<OffsetDateTime> getSentAt() {
@@ -195,6 +216,9 @@ public final class Sms {
         return sentAt;
     }
 
+    /**
+     * @return When the carrier reported delivery. <code>null</code>: not delivered, or not reported.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("delivered_at")
     public OptionalNullable<OffsetDateTime> getDeliveredAt() {
@@ -304,14 +328,23 @@ public final class Sms {
     }
 
     public interface FromStage {
+        /**
+         * <p>The number it's sent from, in E.164.</p>
+         */
         ToStage from(@NotNull String from);
     }
 
     public interface ToStage {
+        /**
+         * <p>The recipient's number, in E.164.</p>
+         */
         BodyStage to(@NotNull String to);
     }
 
     public interface BodyStage {
+        /**
+         * <p>The text. Empty once discarded.</p>
+         */
         StatusStage body(@NotNull String body);
     }
 
@@ -330,6 +363,9 @@ public final class Sms {
     }
 
     public interface EncodingStage {
+        /**
+         * <p><code>gsm7</code> fits the basic alphabet; <code>ucs2</code> is used for anything else, with smaller segments.</p>
+         */
         CountryStage encoding(@NotNull SmsEncoding encoding);
     }
 
@@ -358,6 +394,9 @@ public final class Sms {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your tags on the message.</p>
+         */
         _FinalStage tags(List<SmsTagsItem> tags);
 
         _FinalStage addTags(SmsTagsItem tags);
@@ -375,6 +414,9 @@ public final class Sms {
 
         _FinalStage failure(Nullable<SmsFailure> failure);
 
+        /**
+         * <p>When it's set to send. <code>null</code>: it was sent at once.</p>
+         */
         _FinalStage scheduledAt(OptionalNullable<OffsetDateTime> scheduledAt);
 
         _FinalStage scheduledAt(OffsetDateTime scheduledAt);
@@ -383,6 +425,9 @@ public final class Sms {
 
         _FinalStage scheduledAt(Nullable<OffsetDateTime> scheduledAt);
 
+        /**
+         * <p>When it was handed to the carrier. <code>null</code>: not yet.</p>
+         */
         _FinalStage sentAt(OptionalNullable<OffsetDateTime> sentAt);
 
         _FinalStage sentAt(OffsetDateTime sentAt);
@@ -391,6 +436,9 @@ public final class Sms {
 
         _FinalStage sentAt(Nullable<OffsetDateTime> sentAt);
 
+        /**
+         * <p>When the carrier reported delivery. <code>null</code>: not delivered, or not reported.</p>
+         */
         _FinalStage deliveredAt(OptionalNullable<OffsetDateTime> deliveredAt);
 
         _FinalStage deliveredAt(OffsetDateTime deliveredAt);
@@ -486,6 +534,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>The number it's sent from, in E.164.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("from")
         public ToStage from(@NotNull String from) {
@@ -493,6 +545,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>The recipient's number, in E.164.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("to")
         public BodyStage to(@NotNull String to) {
@@ -500,6 +556,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>The text. Empty once discarded.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("body")
         public StatusStage body(@NotNull String body) {
@@ -529,6 +589,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p><code>gsm7</code> fits the basic alphabet; <code>ucs2</code> is used for anything else, with smaller segments.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("encoding")
         public CountryStage encoding(@NotNull SmsEncoding encoding) {
@@ -565,6 +629,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>When the carrier reported delivery. <code>null</code>: not delivered, or not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage deliveredAt(Nullable<OffsetDateTime> deliveredAt) {
             if (deliveredAt.isNull()) {
@@ -577,6 +645,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>When the carrier reported delivery. <code>null</code>: not delivered, or not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage deliveredAt(Optional<OffsetDateTime> deliveredAt) {
             if (deliveredAt.isPresent()) {
@@ -587,12 +659,19 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>When the carrier reported delivery. <code>null</code>: not delivered, or not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage deliveredAt(OffsetDateTime deliveredAt) {
             this.deliveredAt = OptionalNullable.of(deliveredAt);
             return this;
         }
 
+        /**
+         * <p>When the carrier reported delivery. <code>null</code>: not delivered, or not reported.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "delivered_at", nulls = Nulls.SKIP)
         public _FinalStage deliveredAt(OptionalNullable<OffsetDateTime> deliveredAt) {
@@ -600,6 +679,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>When it was handed to the carrier. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage sentAt(Nullable<OffsetDateTime> sentAt) {
             if (sentAt.isNull()) {
@@ -612,6 +695,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>When it was handed to the carrier. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage sentAt(Optional<OffsetDateTime> sentAt) {
             if (sentAt.isPresent()) {
@@ -622,12 +709,19 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>When it was handed to the carrier. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage sentAt(OffsetDateTime sentAt) {
             this.sentAt = OptionalNullable.of(sentAt);
             return this;
         }
 
+        /**
+         * <p>When it was handed to the carrier. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "sent_at", nulls = Nulls.SKIP)
         public _FinalStage sentAt(OptionalNullable<OffsetDateTime> sentAt) {
@@ -635,6 +729,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>When it's set to send. <code>null</code>: it was sent at once.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage scheduledAt(Nullable<OffsetDateTime> scheduledAt) {
             if (scheduledAt.isNull()) {
@@ -647,6 +745,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>When it's set to send. <code>null</code>: it was sent at once.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage scheduledAt(Optional<OffsetDateTime> scheduledAt) {
             if (scheduledAt.isPresent()) {
@@ -657,12 +759,19 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>When it's set to send. <code>null</code>: it was sent at once.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage scheduledAt(OffsetDateTime scheduledAt) {
             this.scheduledAt = OptionalNullable.of(scheduledAt);
             return this;
         }
 
+        /**
+         * <p>When it's set to send. <code>null</code>: it was sent at once.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "scheduled_at", nulls = Nulls.SKIP)
         public _FinalStage scheduledAt(OptionalNullable<OffsetDateTime> scheduledAt) {
@@ -720,6 +829,10 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>Your tags on the message.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllTags(List<SmsTagsItem> tags) {
             if (tags != null) {
@@ -728,12 +841,19 @@ public final class Sms {
             return this;
         }
 
+        /**
+         * <p>Your tags on the message.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addTags(SmsTagsItem tags) {
             this.tags.add(tags);
             return this;
         }
 
+        /**
+         * <p>Your tags on the message.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "tags", nulls = Nulls.SKIP)
         public _FinalStage tags(List<SmsTagsItem> tags) {

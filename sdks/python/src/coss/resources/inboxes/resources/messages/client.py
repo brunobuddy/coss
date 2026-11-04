@@ -111,6 +111,7 @@ class MessagesClient:
             The inbox's id.
 
         to : SendInboxMessageRequestTo
+            Who it goes to.
 
         subject : str
             The new thread's subject.
@@ -119,8 +120,10 @@ class MessagesClient:
             Makes the send safe to retry: a repeat with the same key and body returns the first message instead of sending again (keys are per inbox). 1-256 characters.
 
         cc : typing.Optional[SendInboxMessageRequestCc]
+            Who it's copied to.
 
         bcc : typing.Optional[SendInboxMessageRequestBcc]
+            Who it's blind copied to.
 
         text : typing.Optional[str]
             Plain-text body. Without it, an `html` email goes out with a text part generated from the HTML.
@@ -132,6 +135,7 @@ class MessagesClient:
             Up to 20 files, at most 25 MB combined.
 
         tags : typing.Optional[typing.Sequence[SendInboxMessageRequestTagsItem]]
+            Your tags on the email.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -290,8 +294,10 @@ class MessagesClient:
             Also reply to everyone else on the message (its `to` and `cc`, but the inbox). Default `false`: only the sender (its `Reply-To`, when it has one).
 
         cc : typing.Optional[ReplyInboxMessageRequestCc]
+            Who it's copied to.
 
         bcc : typing.Optional[ReplyInboxMessageRequestBcc]
+            Who it's blind copied to.
 
         text : typing.Optional[str]
             Plain-text body. Without it, an `html` email goes out with a text part generated from the HTML.
@@ -303,6 +309,7 @@ class MessagesClient:
             Up to 20 files, at most 25 MB combined.
 
         tags : typing.Optional[typing.Sequence[ReplyInboxMessageRequestTagsItem]]
+            Your tags on the email.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -441,6 +448,7 @@ class AsyncMessagesClient:
             The inbox's id.
 
         to : SendInboxMessageRequestTo
+            Who it goes to.
 
         subject : str
             The new thread's subject.
@@ -449,8 +457,10 @@ class AsyncMessagesClient:
             Makes the send safe to retry: a repeat with the same key and body returns the first message instead of sending again (keys are per inbox). 1-256 characters.
 
         cc : typing.Optional[SendInboxMessageRequestCc]
+            Who it's copied to.
 
         bcc : typing.Optional[SendInboxMessageRequestBcc]
+            Who it's blind copied to.
 
         text : typing.Optional[str]
             Plain-text body. Without it, an `html` email goes out with a text part generated from the HTML.
@@ -462,6 +472,7 @@ class AsyncMessagesClient:
             Up to 20 files, at most 25 MB combined.
 
         tags : typing.Optional[typing.Sequence[SendInboxMessageRequestTagsItem]]
+            Your tags on the email.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -647,8 +658,10 @@ class AsyncMessagesClient:
             Also reply to everyone else on the message (its `to` and `cc`, but the inbox). Default `false`: only the sender (its `Reply-To`, when it has one).
 
         cc : typing.Optional[ReplyInboxMessageRequestCc]
+            Who it's copied to.
 
         bcc : typing.Optional[ReplyInboxMessageRequestBcc]
+            Who it's blind copied to.
 
         text : typing.Optional[str]
             Plain-text body. Without it, an `html` email goes out with a text part generated from the HTML.
@@ -660,6 +673,7 @@ class AsyncMessagesClient:
             Up to 20 files, at most 25 MB combined.
 
         tags : typing.Optional[typing.Sequence[ReplyInboxMessageRequestTagsItem]]
+            Your tags on the email.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.

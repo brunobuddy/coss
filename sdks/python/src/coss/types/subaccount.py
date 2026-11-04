@@ -19,8 +19,16 @@ class Subaccount(UniversalBaseModel):
     Your own id for it (e.g. your user's id), unique in the environment. Every path and send that takes a sub-account accepts its `id` or its `uid`.
     """
 
-    name: str
-    metadata: typing.Dict[str, str]
+    name: str = pydantic.Field()
+    """
+    Your name for it.
+    """
+
+    metadata: typing.Dict[str, str] = pydantic.Field()
+    """
+    Your own key-value pairs.
+    """
+
     status: SubaccountStatus = pydantic.Field()
     """
     `disabled`: you turned it off (its sends are refused). `deleting`: its domains are being released.

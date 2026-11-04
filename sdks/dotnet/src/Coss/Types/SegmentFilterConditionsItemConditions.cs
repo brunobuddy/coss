@@ -11,9 +11,15 @@ public record SegmentFilterConditionsItemConditions : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// `all`: every condition must hold; `any`: one is enough.
+    /// </summary>
     [JsonPropertyName("match")]
     public required SegmentFilterConditionsItemConditionsMatch Match { get; set; }
 
+    /// <summary>
+    /// The group's conditions.
+    /// </summary>
     [JsonPropertyName("conditions")]
     public IEnumerable<SegmentFilterConditionsItemConditionsConditionsItem> Conditions { get; set; } =
         new List<SegmentFilterConditionsItemConditionsConditionsItem>();

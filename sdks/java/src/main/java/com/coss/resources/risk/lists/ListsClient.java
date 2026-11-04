@@ -72,34 +72,58 @@ public class ListsClient {
         return this.rawClient.add(request, requestOptions).body();
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public RiskListEntry get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public RiskListEntry get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public RiskListEntry get(String id, GetListsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public RiskListEntry get(String id, GetListsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public DeletedRiskListEntry remove(String id) {
         return this.rawClient.remove(id).body();
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public DeletedRiskListEntry remove(String id, RequestOptions requestOptions) {
         return this.rawClient.remove(id, requestOptions).body();
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public DeletedRiskListEntry remove(String id, RemoveListsRequest request) {
         return this.rawClient.remove(id, request).body();
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public DeletedRiskListEntry remove(String id, RemoveListsRequest request, RequestOptions requestOptions) {
         return this.rawClient.remove(id, request, requestOptions).body();
     }

@@ -13,14 +13,26 @@ from .email_event_type import EmailEventType
 class EmailEvent(UniversalBaseModel):
     object: EmailEventObject
     id: str
-    email_id: str
-    type: EmailEventType
+    email_id: str = pydantic.Field()
+    """
+    The email's id.
+    """
+
+    type: EmailEventType = pydantic.Field()
+    """
+    What happened, such as `email.delivered` or `email.bounced`.
+    """
+
     recipient: typing.Optional[str] = pydantic.Field(default=None)
     """
     The recipient this event is about; `null` for the whole email.
     """
 
-    occurred_at: dt.datetime
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When it happened.
+    """
+
     data: EmailEventData
 
     if IS_PYDANTIC_V2:

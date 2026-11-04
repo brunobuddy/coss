@@ -11,9 +11,15 @@ public record EmailWebhookEventDataFailure : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Machine-readable reason.
+    /// </summary>
     [JsonPropertyName("code")]
     public required string Code { get; set; }
 
+    /// <summary>
+    /// Human-readable explanation.
+    /// </summary>
     [JsonPropertyName("message")]
     public required string Message { get; set; }
 

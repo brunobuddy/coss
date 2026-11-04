@@ -81,6 +81,9 @@ public final class ReceivingDomain {
         return createdAt;
     }
 
+    /**
+     * @return When it was last checked. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_checked_at")
     public OptionalNullable<OffsetDateTime> getLastCheckedAt() {
@@ -163,6 +166,9 @@ public final class ReceivingDomain {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>When it was last checked. <code>null</code>: not yet.</p>
+         */
         _FinalStage lastCheckedAt(OptionalNullable<OffsetDateTime> lastCheckedAt);
 
         _FinalStage lastCheckedAt(OffsetDateTime lastCheckedAt);
@@ -240,6 +246,10 @@ public final class ReceivingDomain {
             return this;
         }
 
+        /**
+         * <p>When it was last checked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastCheckedAt(Nullable<OffsetDateTime> lastCheckedAt) {
             if (lastCheckedAt.isNull()) {
@@ -252,6 +262,10 @@ public final class ReceivingDomain {
             return this;
         }
 
+        /**
+         * <p>When it was last checked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastCheckedAt(Optional<OffsetDateTime> lastCheckedAt) {
             if (lastCheckedAt.isPresent()) {
@@ -262,12 +276,19 @@ public final class ReceivingDomain {
             return this;
         }
 
+        /**
+         * <p>When it was last checked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastCheckedAt(OffsetDateTime lastCheckedAt) {
             this.lastCheckedAt = OptionalNullable.of(lastCheckedAt);
             return this;
         }
 
+        /**
+         * <p>When it was last checked. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_checked_at", nulls = Nulls.SKIP)
         public _FinalStage lastCheckedAt(OptionalNullable<OffsetDateTime> lastCheckedAt) {

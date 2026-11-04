@@ -42,6 +42,9 @@ public final class UpdateEmailTemplateRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Shown in the dashboard.
+     */
     @JsonProperty("name")
     public Optional<String> getName() {
         return name;
@@ -59,6 +62,9 @@ public final class UpdateEmailTemplateRequest {
         return alias;
     }
 
+    /**
+     * @return Your note about it. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -129,6 +135,9 @@ public final class UpdateEmailTemplateRequest {
             return this;
         }
 
+        /**
+         * <p>Shown in the dashboard.</p>
+         */
         @JsonSetter(value = "name", nulls = Nulls.SKIP)
         public Builder name(Optional<String> name) {
             this.name = name;
@@ -174,6 +183,9 @@ public final class UpdateEmailTemplateRequest {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public Builder description(OptionalNullable<String> description) {
             this.description = description;

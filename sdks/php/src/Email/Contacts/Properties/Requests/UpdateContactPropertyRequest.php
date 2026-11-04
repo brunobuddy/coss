@@ -13,7 +13,7 @@ class UpdateContactPropertyRequest extends JsonSerializableType
      *    string
      *   |float
      *   |bool
-     * )|null $fallback
+     * )|null $fallback Used in templates for contacts without a value. `null` removes it.
      */
     #[JsonProperty('fallback'), Union('string', 'float', 'bool', 'null')]
     public string|float|bool|null $fallback;

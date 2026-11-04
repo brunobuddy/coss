@@ -88,6 +88,9 @@ public final class EmailTemplateVersion {
         return object;
     }
 
+    /**
+     * @return The template's id.
+     */
     @JsonProperty("template_id")
     public String getTemplateId() {
         return templateId;
@@ -113,21 +116,33 @@ public final class EmailTemplateVersion {
         return revision;
     }
 
+    /**
+     * @return The locale sends fall back to when they ask for none, or for one without content.
+     */
     @JsonProperty("default_locale")
     public String getDefaultLocale() {
         return defaultLocale;
     }
 
+    /**
+     * @return The variables the template uses, with their types.
+     */
     @JsonProperty("variables")
     public List<TemplateVariable> getVariables() {
         return variables;
     }
 
+    /**
+     * @return Example values for previews and test sends in the dashboard.
+     */
     @JsonProperty("sample_variables")
     public Map<String, Object> getSampleVariables() {
         return sampleVariables;
     }
 
+    /**
+     * @return The subject, HTML and text per locale.
+     */
     @JsonProperty("contents")
     public List<TemplateContent> getContents() {
         return contents;
@@ -141,6 +156,9 @@ public final class EmailTemplateVersion {
         return problems;
     }
 
+    /**
+     * @return When this version was published. <code>null</code> for the draft.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("published_at")
     public OptionalNullable<OffsetDateTime> getPublishedAt() {
@@ -231,6 +249,9 @@ public final class EmailTemplateVersion {
     }
 
     public interface TemplateIdStage {
+        /**
+         * <p>The template's id.</p>
+         */
         RevisionStage templateId(@NotNull String templateId);
     }
 
@@ -242,6 +263,9 @@ public final class EmailTemplateVersion {
     }
 
     public interface DefaultLocaleStage {
+        /**
+         * <p>The locale sends fall back to when they ask for none, or for one without content.</p>
+         */
         CreatedAtStage defaultLocale(@NotNull String defaultLocale);
     }
 
@@ -271,18 +295,27 @@ public final class EmailTemplateVersion {
 
         _FinalStage version(Nullable<Long> version);
 
+        /**
+         * <p>The variables the template uses, with their types.</p>
+         */
         _FinalStage variables(List<TemplateVariable> variables);
 
         _FinalStage addVariables(TemplateVariable variables);
 
         _FinalStage addAllVariables(List<TemplateVariable> variables);
 
+        /**
+         * <p>Example values for previews and test sends in the dashboard.</p>
+         */
         _FinalStage sampleVariables(Map<String, Object> sampleVariables);
 
         _FinalStage putAllSampleVariables(Map<String, Object> sampleVariables);
 
         _FinalStage sampleVariables(String key, Object value);
 
+        /**
+         * <p>The subject, HTML and text per locale.</p>
+         */
         _FinalStage contents(List<TemplateContent> contents);
 
         _FinalStage addContents(TemplateContent contents);
@@ -298,6 +331,9 @@ public final class EmailTemplateVersion {
 
         _FinalStage addAllProblems(List<TemplateProblem> problems);
 
+        /**
+         * <p>When this version was published. <code>null</code> for the draft.</p>
+         */
         _FinalStage publishedAt(OptionalNullable<OffsetDateTime> publishedAt);
 
         _FinalStage publishedAt(OffsetDateTime publishedAt);
@@ -369,6 +405,10 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>The template's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("template_id")
         public RevisionStage templateId(@NotNull String templateId) {
@@ -387,6 +427,10 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>The locale sends fall back to when they ask for none, or for one without content.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("default_locale")
         public CreatedAtStage defaultLocale(@NotNull String defaultLocale) {
@@ -408,6 +452,10 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>When this version was published. <code>null</code> for the draft.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage publishedAt(Nullable<OffsetDateTime> publishedAt) {
             if (publishedAt.isNull()) {
@@ -420,6 +468,10 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>When this version was published. <code>null</code> for the draft.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage publishedAt(Optional<OffsetDateTime> publishedAt) {
             if (publishedAt.isPresent()) {
@@ -430,12 +482,19 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>When this version was published. <code>null</code> for the draft.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage publishedAt(OffsetDateTime publishedAt) {
             this.publishedAt = OptionalNullable.of(publishedAt);
             return this;
         }
 
+        /**
+         * <p>When this version was published. <code>null</code> for the draft.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "published_at", nulls = Nulls.SKIP)
         public _FinalStage publishedAt(OptionalNullable<OffsetDateTime> publishedAt) {
@@ -478,6 +537,10 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>The subject, HTML and text per locale.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllContents(List<TemplateContent> contents) {
             if (contents != null) {
@@ -486,12 +549,19 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>The subject, HTML and text per locale.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addContents(TemplateContent contents) {
             this.contents.add(contents);
             return this;
         }
 
+        /**
+         * <p>The subject, HTML and text per locale.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "contents", nulls = Nulls.SKIP)
         public _FinalStage contents(List<TemplateContent> contents) {
@@ -502,12 +572,20 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>Example values for previews and test sends in the dashboard.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage sampleVariables(String key, Object value) {
             this.sampleVariables.put(key, value);
             return this;
         }
 
+        /**
+         * <p>Example values for previews and test sends in the dashboard.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage putAllSampleVariables(Map<String, Object> sampleVariables) {
             if (sampleVariables != null) {
@@ -516,6 +594,9 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>Example values for previews and test sends in the dashboard.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "sample_variables", nulls = Nulls.SKIP)
         public _FinalStage sampleVariables(Map<String, Object> sampleVariables) {
@@ -526,6 +607,10 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>The variables the template uses, with their types.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllVariables(List<TemplateVariable> variables) {
             if (variables != null) {
@@ -534,12 +619,19 @@ public final class EmailTemplateVersion {
             return this;
         }
 
+        /**
+         * <p>The variables the template uses, with their types.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addVariables(TemplateVariable variables) {
             this.variables.add(variables);
             return this;
         }
 
+        /**
+         * <p>The variables the template uses, with their types.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "variables", nulls = Nulls.SKIP)
         public _FinalStage variables(List<TemplateVariable> variables) {

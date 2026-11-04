@@ -10,7 +10,11 @@ from .verification_send_route import VerificationSendRoute
 
 
 class VerificationSend(UniversalBaseModel):
-    channel: VerificationSendChannel
+    channel: VerificationSendChannel = pydantic.Field()
+    """
+    `sms` or `email`.
+    """
+
     route: VerificationSendRoute = pydantic.Field()
     """
     `own_number`: one of your numbers; `shared_number`: coss.com's; `email`: your sender; `coss_email`: coss.com's sender.

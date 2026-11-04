@@ -17,6 +17,9 @@ public record Log : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// When it happened.
+    /// </summary>
     [JsonPropertyName("occurred_at")]
     public required DateTime OccurredAt { get; set; }
 
@@ -45,14 +48,23 @@ public record Log : IJsonOnDeserialized
     [JsonPropertyName("request_id")]
     public string? RequestId { get; set; }
 
+    /// <summary>
+    /// The API key that made the request. `null`: not an API request.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("api_key_id")]
     public string? ApiKeyId { get; set; }
 
+    /// <summary>
+    /// The HTTP method. `null`: not an HTTP line.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("method")]
     public string? Method { get; set; }
 
+    /// <summary>
+    /// The request's path. `null`: not an API request.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("path")]
     public string? Path { get; set; }
@@ -71,18 +83,30 @@ public record Log : IJsonOnDeserialized
     [JsonPropertyName("status_code")]
     public long? StatusCode { get; set; }
 
+    /// <summary>
+    /// How long it took, in milliseconds. `null`: not timed.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("duration_ms")]
     public long? DurationMs { get; set; }
 
+    /// <summary>
+    /// The caller's address. `null`: not an API request.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("client_ip")]
     public string? ClientIp { get; set; }
 
+    /// <summary>
+    /// The caller's `User-Agent`. `null`: not sent.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("user_agent")]
     public string? UserAgent { get; set; }
 
+    /// <summary>
+    /// The error's `code`. `null`: no error.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("error_code")]
     public string? ErrorCode { get; set; }
@@ -94,10 +118,16 @@ public record Log : IJsonOnDeserialized
     [JsonPropertyName("resource_type")]
     public string? ResourceType { get; set; }
 
+    /// <summary>
+    /// The id of what it's about. `null`: nothing in particular.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("resource_id")]
     public string? ResourceId { get; set; }
 
+    /// <summary>
+    /// The recipient an email event is about. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("recipient")]
     public string? Recipient { get; set; }

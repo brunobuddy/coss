@@ -197,6 +197,8 @@ class InboxesClient
     }
 
     /**
+     * One inbox of the API key's environment.
+     *
      * Example:
      * ```php
      * $client->inboxes->get(

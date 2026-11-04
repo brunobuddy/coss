@@ -9,7 +9,7 @@ use Coss\Core\Types\ArrayType;
 class UpdateHookApplicationRequest extends JsonSerializableType
 {
     /**
-     * @var ?string $name
+     * @var ?string $name Shown to the application's users in the portal.
      */
     #[JsonProperty('name')]
     public ?string $name;

@@ -37,7 +37,7 @@ class ReceivingDomain extends JsonSerializableType
     public DateTime $createdAt;
 
     /**
-     * @var ?DateTime $lastCheckedAt
+     * @var ?DateTime $lastCheckedAt When it was last checked. `null`: not yet.
      */
     #[JsonProperty('last_checked_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $lastCheckedAt;

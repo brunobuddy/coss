@@ -11,31 +11,31 @@ use Coss\Core\Json\JsonProperty;
 class SignRequestWebhookEventDataSigner extends JsonSerializableType
 {
     /**
-     * @var string $id
+     * @var string $id The signer's id.
      */
     #[JsonProperty('id')]
     public string $id;
 
     /**
-     * @var string $name
+     * @var string $name The signer's name.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var string $email
+     * @var string $email The signer's email address.
      */
     #[JsonProperty('email')]
     public string $email;
 
     /**
-     * @var ?string $clientRef
+     * @var ?string $clientRef Your own id for the signer. `null`: none given.
      */
     #[JsonProperty('client_ref')]
     public ?string $clientRef;
 
     /**
-     * @var value-of<SignRequestWebhookEventDataSignerStatus> $status
+     * @var value-of<SignRequestWebhookEventDataSignerStatus> $status The signer's status after the event.
      */
     #[JsonProperty('status')]
     public string $status;

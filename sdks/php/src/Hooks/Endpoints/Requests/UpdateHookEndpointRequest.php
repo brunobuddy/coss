@@ -9,13 +9,13 @@ use Coss\Core\Types\ArrayType;
 class UpdateHookEndpointRequest extends JsonSerializableType
 {
     /**
-     * @var ?string $url
+     * @var ?string $url Where deliveries are sent.
      */
     #[JsonProperty('url')]
     public ?string $url;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Your note about it. `null` removes it.
      */
     #[JsonProperty('description')]
     public ?string $description;
@@ -39,7 +39,7 @@ class UpdateHookEndpointRequest extends JsonSerializableType
     public ?array $metadata;
 
     /**
-     * @var ?bool $enabled
+     * @var ?bool $enabled `false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.
      */
     #[JsonProperty('enabled')]
     public ?bool $enabled;

@@ -11,49 +11,49 @@ use Coss\Core\Json\JsonProperty;
 class DmarcReportPolicyPublished extends JsonSerializableType
 {
     /**
-     * @var string $domain
+     * @var string $domain The domain the policy was published for.
      */
     #[JsonProperty('domain')]
     public string $domain;
 
     /**
-     * @var ?string $p
+     * @var ?string $p The domain's policy tag.
      */
     #[JsonProperty('p')]
     public ?string $p;
 
     /**
-     * @var ?string $sp
+     * @var ?string $sp The subdomain policy tag.
      */
     #[JsonProperty('sp')]
     public ?string $sp;
 
     /**
-     * @var ?string $np
+     * @var ?string $np The policy tag for non-existent subdomains.
      */
     #[JsonProperty('np')]
     public ?string $np;
 
     /**
-     * @var ?string $adkim
+     * @var ?string $adkim The DKIM alignment tag.
      */
     #[JsonProperty('adkim')]
     public ?string $adkim;
 
     /**
-     * @var ?string $aspf
+     * @var ?string $aspf The SPF alignment tag.
      */
     #[JsonProperty('aspf')]
     public ?string $aspf;
 
     /**
-     * @var ?int $pct
+     * @var ?int $pct The percentage tag.
      */
     #[JsonProperty('pct')]
     public ?int $pct;
 
     /**
-     * @var ?string $testing
+     * @var ?string $testing The testing tag.
      */
     #[JsonProperty('testing')]
     public ?string $testing;

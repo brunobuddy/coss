@@ -65,6 +65,9 @@ public final class SignRequestWebhookEventData {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The signature request's id.
+     */
     @JsonProperty("sign_request_id")
     public String getSignRequestId() {
         return signRequestId;
@@ -78,11 +81,17 @@ public final class SignRequestWebhookEventData {
         return status;
     }
 
+    /**
+     * @return The request's title.
+     */
     @JsonProperty("title")
     public String getTitle() {
         return title;
     }
 
+    /**
+     * @return Your own key-value pairs.
+     */
     @JsonProperty("metadata")
     public Map<String, String> getMetadata() {
         return metadata;
@@ -112,11 +121,17 @@ public final class SignRequestWebhookEventData {
         return reason;
     }
 
+    /**
+     * @return Whether it belongs to a sandbox environment.
+     */
     @JsonProperty("sandbox")
     public boolean getSandbox() {
         return sandbox;
     }
 
+    /**
+     * @return When it happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -179,6 +194,9 @@ public final class SignRequestWebhookEventData {
     }
 
     public interface SignRequestIdStage {
+        /**
+         * <p>The signature request's id.</p>
+         */
         StatusStage signRequestId(@NotNull String signRequestId);
 
         Builder from(SignRequestWebhookEventData other);
@@ -192,14 +210,23 @@ public final class SignRequestWebhookEventData {
     }
 
     public interface TitleStage {
+        /**
+         * <p>The request's title.</p>
+         */
         SandboxStage title(@NotNull String title);
     }
 
     public interface SandboxStage {
+        /**
+         * <p>Whether it belongs to a sandbox environment.</p>
+         */
         OccurredAtStage sandbox(boolean sandbox);
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When it happened.</p>
+         */
         _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -210,6 +237,9 @@ public final class SignRequestWebhookEventData {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         */
         _FinalStage metadata(Map<String, String> metadata);
 
         _FinalStage putAllMetadata(Map<String, String> metadata);
@@ -276,6 +306,10 @@ public final class SignRequestWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The signature request's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sign_request_id")
         public StatusStage signRequestId(@NotNull String signRequestId) {
@@ -294,6 +328,10 @@ public final class SignRequestWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The request's title.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("title")
         public SandboxStage title(@NotNull String title) {
@@ -301,6 +339,10 @@ public final class SignRequestWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Whether it belongs to a sandbox environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sandbox")
         public OccurredAtStage sandbox(boolean sandbox) {
@@ -308,6 +350,10 @@ public final class SignRequestWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>When it happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt) {
@@ -415,12 +461,20 @@ public final class SignRequestWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage metadata(String key, String value) {
             this.metadata.put(key, value);
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage putAllMetadata(Map<String, String> metadata) {
             if (metadata != null) {
@@ -429,6 +483,9 @@ public final class SignRequestWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "metadata", nulls = Nulls.SKIP)
         public _FinalStage metadata(Map<String, String> metadata) {

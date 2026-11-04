@@ -13,7 +13,11 @@ from .contact_property_type import ContactPropertyType
 class ContactProperty(UniversalBaseModel):
     object: ContactPropertyObject
     id: str
-    key: str
+    key: str = pydantic.Field()
+    """
+    How contacts and templates name it (`{{{contact.<key>}}}`). Can't change.
+    """
+
     type: ContactPropertyType = pydantic.Field()
     """
     `date` values are ISO 8601 strings.

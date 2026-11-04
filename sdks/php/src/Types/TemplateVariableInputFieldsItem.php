@@ -8,19 +8,19 @@ use Coss\Core\Json\JsonProperty;
 class TemplateVariableInputFieldsItem extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name Used inside `{{#each}}` as `{{name}}`.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var value-of<TemplateVariableInputFieldsItemType> $type
+     * @var value-of<TemplateVariableInputFieldsItemType> $type The field's type.
      */
     #[JsonProperty('type')]
     public string $type;
 
     /**
-     * @var ?bool $required
+     * @var ?bool $required Whether each item must have it. Defaults to true.
      */
     #[JsonProperty('required')]
     public ?bool $required;

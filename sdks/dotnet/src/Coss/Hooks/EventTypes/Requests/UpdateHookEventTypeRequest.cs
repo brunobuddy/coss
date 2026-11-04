@@ -12,6 +12,9 @@ public record UpdateHookEventTypeRequest
     [JsonIgnore]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// What this event means, shown to your users. `null` removes it.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("description")]
     public Optional<string?> Description { get; set; }

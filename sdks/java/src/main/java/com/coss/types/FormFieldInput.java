@@ -89,6 +89,9 @@ public final class FormFieldInput {
         return required;
     }
 
+    /**
+     * @return Shown in the empty input on hosted pages.
+     */
     @JsonProperty("placeholder")
     public Optional<String> getPlaceholder() {
         return placeholder;
@@ -102,6 +105,9 @@ public final class FormFieldInput {
         return options;
     }
 
+    /**
+     * @return The longest value accepted, in characters.
+     */
     @JsonProperty("max_length")
     public Optional<Integer> getMaxLength() {
         return maxLength;
@@ -180,6 +186,9 @@ public final class FormFieldInput {
 
         _FinalStage required(Boolean required);
 
+        /**
+         * <p>Shown in the empty input on hosted pages.</p>
+         */
         _FinalStage placeholder(Optional<String> placeholder);
 
         _FinalStage placeholder(String placeholder);
@@ -191,6 +200,9 @@ public final class FormFieldInput {
 
         _FinalStage options(List<String> options);
 
+        /**
+         * <p>The longest value accepted, in characters.</p>
+         */
         _FinalStage maxLength(Optional<Integer> maxLength);
 
         _FinalStage maxLength(Integer maxLength);
@@ -251,12 +263,19 @@ public final class FormFieldInput {
             return this;
         }
 
+        /**
+         * <p>The longest value accepted, in characters.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage maxLength(Integer maxLength) {
             this.maxLength = Optional.ofNullable(maxLength);
             return this;
         }
 
+        /**
+         * <p>The longest value accepted, in characters.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "max_length", nulls = Nulls.SKIP)
         public _FinalStage maxLength(Optional<Integer> maxLength) {
@@ -284,12 +303,19 @@ public final class FormFieldInput {
             return this;
         }
 
+        /**
+         * <p>Shown in the empty input on hosted pages.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage placeholder(String placeholder) {
             this.placeholder = Optional.ofNullable(placeholder);
             return this;
         }
 
+        /**
+         * <p>Shown in the empty input on hosted pages.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "placeholder", nulls = Nulls.SKIP)
         public _FinalStage placeholder(Optional<String> placeholder) {

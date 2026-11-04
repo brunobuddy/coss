@@ -82,18 +82,30 @@ public class AsyncBroadcastsClient {
         return this.rawClient.create(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One broadcast of the API key's environment, with its status and stats.
+     */
     public CompletableFuture<Broadcast> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One broadcast of the API key's environment, with its status and stats.
+     */
     public CompletableFuture<Broadcast> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One broadcast of the API key's environment, with its status and stats.
+     */
     public CompletableFuture<Broadcast> get(String id, GetBroadcastsRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One broadcast of the API key's environment, with its status and stats.
+     */
     public CompletableFuture<Broadcast> get(String id, GetBroadcastsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }

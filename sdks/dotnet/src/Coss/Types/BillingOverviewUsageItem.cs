@@ -17,6 +17,9 @@ public record BillingOverviewUsageItem : IJsonOnDeserialized
     [JsonPropertyName("meter")]
     public required BillingOverviewUsageItemMeter Meter { get; set; }
 
+    /// <summary>
+    /// Units used so far this month.
+    /// </summary>
     [JsonPropertyName("quantity")]
     public required long Quantity { get; set; }
 

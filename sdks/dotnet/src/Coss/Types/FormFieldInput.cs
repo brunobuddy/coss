@@ -37,6 +37,9 @@ public record FormFieldInput : IJsonOnDeserialized
     [JsonPropertyName("required")]
     public bool? Required { get; set; }
 
+    /// <summary>
+    /// Shown in the empty input on hosted pages.
+    /// </summary>
     [Optional]
     [JsonPropertyName("placeholder")]
     public string? Placeholder { get; set; }
@@ -48,6 +51,9 @@ public record FormFieldInput : IJsonOnDeserialized
     [JsonPropertyName("options")]
     public IEnumerable<string>? Options { get; set; }
 
+    /// <summary>
+    /// The longest value accepted, in characters.
+    /// </summary>
     [Optional]
     [JsonPropertyName("max_length")]
     public int? MaxLength { get; set; }

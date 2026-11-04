@@ -85,18 +85,24 @@ public final class InvoiceLine {
         return id;
     }
 
+    /**
+     * @return What it's for: <code>plan_fee</code>, <code>proration</code>, <code>usage</code>, <code>credit</code>, <code>discount</code>, <code>commitment_fee</code>, <code>commitment_shortfall</code>, <code>add_on</code>, <code>adjustment</code> or <code>write_off</code>.
+     */
     @JsonProperty("kind")
     public InvoiceLineKind getKind() {
         return kind;
     }
 
+    /**
+     * @return The line as it reads on the invoice.
+     */
     @JsonProperty("description")
     public String getDescription() {
         return description;
     }
 
     /**
-     * @return What is counted, e.g. <code>email.recipients</code>.
+     * @return The meter of a <code>usage</code> line. <code>null</code> for other lines.
      */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("meter")
@@ -107,6 +113,9 @@ public final class InvoiceLine {
         return meter;
     }
 
+    /**
+     * @return What the meter is split by, such as <code>country=US</code>. <code>null</code>: not split.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("dimension")
     public OptionalNullable<String> getDimension() {
@@ -116,6 +125,9 @@ public final class InvoiceLine {
         return dimension;
     }
 
+    /**
+     * @return Units on this line. <code>null</code> when it isn't priced by the unit.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("quantity")
     public OptionalNullable<Long> getQuantity() {
@@ -157,6 +169,9 @@ public final class InvoiceLine {
         return amount;
     }
 
+    /**
+     * @return What period it covers.
+     */
     @JsonProperty("period")
     public InvoiceLinePeriod getPeriod() {
         return period;
@@ -253,10 +268,16 @@ public final class InvoiceLine {
     }
 
     public interface KindStage {
+        /**
+         * <p>What it's for: <code>plan_fee</code>, <code>proration</code>, <code>usage</code>, <code>credit</code>, <code>discount</code>, <code>commitment_fee</code>, <code>commitment_shortfall</code>, <code>add_on</code>, <code>adjustment</code> or <code>write_off</code>.</p>
+         */
         DescriptionStage kind(@NotNull InvoiceLineKind kind);
     }
 
     public interface DescriptionStage {
+        /**
+         * <p>The line as it reads on the invoice.</p>
+         */
         AmountStage description(@NotNull String description);
     }
 
@@ -268,6 +289,9 @@ public final class InvoiceLine {
     }
 
     public interface PeriodStage {
+        /**
+         * <p>What period it covers.</p>
+         */
         _FinalStage period(@NotNull InvoiceLinePeriod period);
     }
 
@@ -279,7 +303,7 @@ public final class InvoiceLine {
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
         /**
-         * <p>What is counted, e.g. <code>email.recipients</code>.</p>
+         * <p>The meter of a <code>usage</code> line. <code>null</code> for other lines.</p>
          */
         _FinalStage meter(OptionalNullable<InvoiceLineMeter> meter);
 
@@ -289,6 +313,9 @@ public final class InvoiceLine {
 
         _FinalStage meter(Nullable<InvoiceLineMeter> meter);
 
+        /**
+         * <p>What the meter is split by, such as <code>country=US</code>. <code>null</code>: not split.</p>
+         */
         _FinalStage dimension(OptionalNullable<String> dimension);
 
         _FinalStage dimension(String dimension);
@@ -297,6 +324,9 @@ public final class InvoiceLine {
 
         _FinalStage dimension(Nullable<String> dimension);
 
+        /**
+         * <p>Units on this line. <code>null</code> when it isn't priced by the unit.</p>
+         */
         _FinalStage quantity(OptionalNullable<Long> quantity);
 
         _FinalStage quantity(Long quantity);
@@ -388,6 +418,10 @@ public final class InvoiceLine {
             return this;
         }
 
+        /**
+         * <p>What it's for: <code>plan_fee</code>, <code>proration</code>, <code>usage</code>, <code>credit</code>, <code>discount</code>, <code>commitment_fee</code>, <code>commitment_shortfall</code>, <code>add_on</code>, <code>adjustment</code> or <code>write_off</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("kind")
         public DescriptionStage kind(@NotNull InvoiceLineKind kind) {
@@ -395,6 +429,10 @@ public final class InvoiceLine {
             return this;
         }
 
+        /**
+         * <p>The line as it reads on the invoice.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("description")
         public AmountStage description(@NotNull String description) {
@@ -413,6 +451,10 @@ public final class InvoiceLine {
             return this;
         }
 
+        /**
+         * <p>What period it covers.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("period")
         public _FinalStage period(@NotNull InvoiceLinePeriod period) {
@@ -520,6 +562,10 @@ public final class InvoiceLine {
             return this;
         }
 
+        /**
+         * <p>Units on this line. <code>null</code> when it isn't priced by the unit.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage quantity(Nullable<Long> quantity) {
             if (quantity.isNull()) {
@@ -532,6 +578,10 @@ public final class InvoiceLine {
             return this;
         }
 
+        /**
+         * <p>Units on this line. <code>null</code> when it isn't priced by the unit.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage quantity(Optional<Long> quantity) {
             if (quantity.isPresent()) {
@@ -542,12 +592,19 @@ public final class InvoiceLine {
             return this;
         }
 
+        /**
+         * <p>Units on this line. <code>null</code> when it isn't priced by the unit.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage quantity(Long quantity) {
             this.quantity = OptionalNullable.of(quantity);
             return this;
         }
 
+        /**
+         * <p>Units on this line. <code>null</code> when it isn't priced by the unit.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "quantity", nulls = Nulls.SKIP)
         public _FinalStage quantity(OptionalNullable<Long> quantity) {
@@ -555,6 +612,10 @@ public final class InvoiceLine {
             return this;
         }
 
+        /**
+         * <p>What the meter is split by, such as <code>country=US</code>. <code>null</code>: not split.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage dimension(Nullable<String> dimension) {
             if (dimension.isNull()) {
@@ -567,6 +628,10 @@ public final class InvoiceLine {
             return this;
         }
 
+        /**
+         * <p>What the meter is split by, such as <code>country=US</code>. <code>null</code>: not split.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage dimension(Optional<String> dimension) {
             if (dimension.isPresent()) {
@@ -577,12 +642,19 @@ public final class InvoiceLine {
             return this;
         }
 
+        /**
+         * <p>What the meter is split by, such as <code>country=US</code>. <code>null</code>: not split.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage dimension(String dimension) {
             this.dimension = OptionalNullable.of(dimension);
             return this;
         }
 
+        /**
+         * <p>What the meter is split by, such as <code>country=US</code>. <code>null</code>: not split.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "dimension", nulls = Nulls.SKIP)
         public _FinalStage dimension(OptionalNullable<String> dimension) {
@@ -591,7 +663,7 @@ public final class InvoiceLine {
         }
 
         /**
-         * <p>What is counted, e.g. <code>email.recipients</code>.</p>
+         * <p>The meter of a <code>usage</code> line. <code>null</code> for other lines.</p>
          * @return Reference to {@code this} so that method calls can be chained together.
          */
         @java.lang.Override
@@ -607,7 +679,7 @@ public final class InvoiceLine {
         }
 
         /**
-         * <p>What is counted, e.g. <code>email.recipients</code>.</p>
+         * <p>The meter of a <code>usage</code> line. <code>null</code> for other lines.</p>
          * @return Reference to {@code this} so that method calls can be chained together.
          */
         @java.lang.Override
@@ -621,7 +693,7 @@ public final class InvoiceLine {
         }
 
         /**
-         * <p>What is counted, e.g. <code>email.recipients</code>.</p>
+         * <p>The meter of a <code>usage</code> line. <code>null</code> for other lines.</p>
          * @return Reference to {@code this} so that method calls can be chained together.
          */
         @java.lang.Override
@@ -631,7 +703,7 @@ public final class InvoiceLine {
         }
 
         /**
-         * <p>What is counted, e.g. <code>email.recipients</code>.</p>
+         * <p>The meter of a <code>usage</code> line. <code>null</code> for other lines.</p>
          */
         @java.lang.Override
         @JsonSetter(value = "meter", nulls = Nulls.SKIP)

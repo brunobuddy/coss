@@ -14,9 +14,20 @@ class RiskRuleCondition(UniversalBaseModel):
     A test of one field. A field without a value (no IP, no email…) never matches, whatever the operator.
     """
 
-    field: RiskRuleConditionField
-    operator: RiskRuleConditionOperator
-    value: RiskRuleConditionValue
+    field: RiskRuleConditionField = pydantic.Field()
+    """
+    The signal to test, such as `email.disposable` or `ip.country`.
+    """
+
+    operator: RiskRuleConditionOperator = pydantic.Field()
+    """
+    How to compare. Booleans use `is`, numbers `eq` to `lte`, and strings `eq`, `neq`, `in` and `not_in`.
+    """
+
+    value: RiskRuleConditionValue = pydantic.Field()
+    """
+    What to compare it with: its type follows the field, and `in` and `not_in` take a list of strings.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -8,9 +8,20 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class EmailEventDataDelay(UniversalBaseModel):
-    type: str
-    expires_at: typing.Optional[dt.datetime] = None
-    diagnostic_code: typing.Optional[str] = None
+    type: str = pydantic.Field()
+    """
+    The provider's reason for the delay.
+    """
+
+    expires_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When the provider stops trying. `null`: not reported.
+    """
+
+    diagnostic_code: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    What the receiving server answered. `null`: not reported.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

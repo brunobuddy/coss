@@ -13,14 +13,25 @@ class BillingAddOnsItem(UniversalBaseModel):
     e.g. `dedicated_ips`.
     """
 
-    name: str
-    quantity: int
+    name: str = pydantic.Field()
+    """
+    The add-on's name.
+    """
+
+    quantity: int = pydantic.Field()
+    """
+    How many units are on the contract.
+    """
+
     unit_amount: int = pydantic.Field()
     """
     The price per unit and interval, in cents.
     """
 
-    interval: BillingAddOnsItemInterval
+    interval: BillingAddOnsItemInterval = pydantic.Field()
+    """
+    How often it's charged.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -34,7 +34,11 @@ class AuditEvent(UniversalBaseModel):
     What was changed: `domain`, `api_key`, `member`…
     """
 
-    target_id: typing.Optional[str] = None
+    target_id: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The id of what it acted on. `null`: nothing in particular.
+    """
+
     target_label: typing.Optional[str] = pydantic.Field(default=None)
     """
     A readable name for the target when it was changed.
@@ -55,8 +59,15 @@ class AuditEvent(UniversalBaseModel):
     Details of the change; API changes include their `request_id`.
     """
 
-    client_ip: typing.Optional[str] = None
-    user_agent: typing.Optional[str] = None
+    client_ip: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The actor's address. `null`: unknown.
+    """
+
+    user_agent: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The actor's `User-Agent`. `null`: unknown.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

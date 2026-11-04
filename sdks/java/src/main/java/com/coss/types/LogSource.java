@@ -19,6 +19,8 @@ public final class LogSource {
 
     public static final LogSource VERIFY = new LogSource(Value.VERIFY, "verify");
 
+    public static final LogSource SCHEDULING = new LogSource(Value.SCHEDULING, "scheduling");
+
     public static final LogSource FORMS = new LogSource(Value.FORMS, "forms");
 
     public static final LogSource API = new LogSource(Value.API, "api");
@@ -68,6 +70,8 @@ public final class LogSource {
                 return visitor.visitSms();
             case VERIFY:
                 return visitor.visitVerify();
+            case SCHEDULING:
+                return visitor.visitScheduling();
             case FORMS:
                 return visitor.visitForms();
             case API:
@@ -95,6 +99,8 @@ public final class LogSource {
                 return SMS;
             case "verify":
                 return VERIFY;
+            case "scheduling":
+                return SCHEDULING;
             case "forms":
                 return FORMS;
             case "api":
@@ -125,6 +131,8 @@ public final class LogSource {
 
         FORMS,
 
+        SCHEDULING,
+
         UNKNOWN
     }
 
@@ -146,6 +154,8 @@ public final class LogSource {
         T visitVerify();
 
         T visitForms();
+
+        T visitScheduling();
 
         T visitUnknown(String unknownType);
     }

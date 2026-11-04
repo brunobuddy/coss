@@ -23,73 +23,73 @@ class Email extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $from
+     * @var string $from Who it's sent from.
      */
     #[JsonProperty('from')]
     public string $from;
 
     /**
-     * @var array<string> $to
+     * @var array<string> $to The `To` addresses.
      */
     #[JsonProperty('to'), ArrayType(['string'])]
     public array $to;
 
     /**
-     * @var array<string> $cc
+     * @var array<string> $cc The `Cc` addresses.
      */
     #[JsonProperty('cc'), ArrayType(['string'])]
     public array $cc;
 
     /**
-     * @var array<string> $bcc
+     * @var array<string> $bcc The `Bcc` addresses.
      */
     #[JsonProperty('bcc'), ArrayType(['string'])]
     public array $bcc;
 
     /**
-     * @var array<string> $replyTo
+     * @var array<string> $replyTo The `Reply-To` addresses.
      */
     #[JsonProperty('reply_to'), ArrayType(['string'])]
     public array $replyTo;
 
     /**
-     * @var string $subject
+     * @var string $subject The subject, rendered if it came from a template.
      */
     #[JsonProperty('subject')]
     public string $subject;
 
     /**
-     * @var ?string $html
+     * @var ?string $html The HTML part. `null`: none, or the body was discarded.
      */
     #[JsonProperty('html')]
     public ?string $html;
 
     /**
-     * @var ?string $text
+     * @var ?string $text The plain text part. `null`: none, or the body was discarded.
      */
     #[JsonProperty('text')]
     public ?string $text;
 
     /**
-     * @var array<string, string> $headers
+     * @var array<string, string> $headers The custom headers it was sent with.
      */
     #[JsonProperty('headers'), ArrayType(['string' => 'string'])]
     public array $headers;
 
     /**
-     * @var array<EmailTagsItem> $tags
+     * @var array<EmailTagsItem> $tags Your tags on the email.
      */
     #[JsonProperty('tags'), ArrayType([EmailTagsItem::class])]
     public array $tags;
 
     /**
-     * @var ?string $category
+     * @var ?string $category The email's category, which suppressions and tracking rules can scope to. `null`: none.
      */
     #[JsonProperty('category')]
     public ?string $category;
 
     /**
-     * @var value-of<EmailStream> $stream
+     * @var value-of<EmailStream> $stream `transactional` or `marketing`.
      */
     #[JsonProperty('stream')]
     public string $stream;
@@ -107,7 +107,7 @@ class Email extends JsonSerializableType
     public ?EmailFailure $failure;
 
     /**
-     * @var array<EmailRecipient> $recipients
+     * @var array<EmailRecipient> $recipients Each recipient, with how delivery to them went.
      */
     #[JsonProperty('recipients'), ArrayType([EmailRecipient::class])]
     public array $recipients;
@@ -137,7 +137,7 @@ class Email extends JsonSerializableType
     public DateTime $createdAt;
 
     /**
-     * @var ?DateTime $sentAt
+     * @var ?DateTime $sentAt When it was handed to the provider. `null`: not yet.
      */
     #[JsonProperty('sent_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $sentAt;

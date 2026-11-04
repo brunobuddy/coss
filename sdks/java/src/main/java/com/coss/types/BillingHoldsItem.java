@@ -33,11 +33,17 @@ public final class BillingHoldsItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return <code>delinquent</code>: an invoice is past its grace period. <code>spend_limit</code>: the spend limit was reached. <code>credit_limit</code>: the credit limit was reached, or a usage charge failed. <code>admin</code>: placed by coss.com.
+     */
     @JsonProperty("reason")
     public BillingHoldsItemReason getReason() {
         return reason;
     }
 
+    /**
+     * @return When the hold began.
+     */
     @JsonProperty("since")
     public OffsetDateTime getSince() {
         return since;
@@ -73,12 +79,18 @@ public final class BillingHoldsItem {
     }
 
     public interface ReasonStage {
+        /**
+         * <p><code>delinquent</code>: an invoice is past its grace period. <code>spend_limit</code>: the spend limit was reached. <code>credit_limit</code>: the credit limit was reached, or a usage charge failed. <code>admin</code>: placed by coss.com.</p>
+         */
         SinceStage reason(@NotNull BillingHoldsItemReason reason);
 
         Builder from(BillingHoldsItem other);
     }
 
     public interface SinceStage {
+        /**
+         * <p>When the hold began.</p>
+         */
         _FinalStage since(@NotNull OffsetDateTime since);
     }
 
@@ -108,6 +120,10 @@ public final class BillingHoldsItem {
             return this;
         }
 
+        /**
+         * <p><code>delinquent</code>: an invoice is past its grace period. <code>spend_limit</code>: the spend limit was reached. <code>credit_limit</code>: the credit limit was reached, or a usage charge failed. <code>admin</code>: placed by coss.com.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("reason")
         public SinceStage reason(@NotNull BillingHoldsItemReason reason) {
@@ -115,6 +131,10 @@ public final class BillingHoldsItem {
             return this;
         }
 
+        /**
+         * <p>When the hold began.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("since")
         public _FinalStage since(@NotNull OffsetDateTime since) {

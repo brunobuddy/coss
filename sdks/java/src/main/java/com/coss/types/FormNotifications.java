@@ -38,11 +38,17 @@ public final class FormNotifications {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Who gets an email for each accepted submission.
+     */
     @JsonProperty("recipients")
     public List<String> getRecipients() {
         return recipients;
     }
 
+    /**
+     * @return The notification's sender. <code>null</code>: coss.com, as &quot;&lt;form name&gt; via coss.com&quot;.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("from")
     public OptionalNullable<String> getFrom() {
@@ -104,6 +110,9 @@ public final class FormNotifications {
             return this;
         }
 
+        /**
+         * <p>Who gets an email for each accepted submission.</p>
+         */
         @JsonSetter(value = "recipients", nulls = Nulls.SKIP)
         public Builder recipients(List<String> recipients) {
             this.recipients.clear();
@@ -125,6 +134,9 @@ public final class FormNotifications {
             return this;
         }
 
+        /**
+         * <p>The notification's sender. <code>null</code>: coss.com, as &quot;&lt;form name&gt; via coss.com&quot;.</p>
+         */
         @JsonSetter(value = "from", nulls = Nulls.SKIP)
         public Builder from(OptionalNullable<String> from) {
             this.from = from;

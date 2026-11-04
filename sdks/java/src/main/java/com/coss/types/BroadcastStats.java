@@ -69,11 +69,17 @@ public final class BroadcastStats {
         return recipients;
     }
 
+    /**
+     * @return Emails accepted by the provider.
+     */
     @JsonProperty("sent")
     public long getSent() {
         return sent;
     }
 
+    /**
+     * @return Emails delivered to recipients' servers.
+     */
     @JsonProperty("delivered")
     public long getDelivered() {
         return delivered;
@@ -87,11 +93,17 @@ public final class BroadcastStats {
         return bounced;
     }
 
+    /**
+     * @return Emails marked as spam by recipients.
+     */
     @JsonProperty("complained")
     public long getComplained() {
         return complained;
     }
 
+    /**
+     * @return Emails that couldn't be sent.
+     */
     @JsonProperty("failed")
     public long getFailed() {
         return failed;
@@ -177,10 +189,16 @@ public final class BroadcastStats {
     }
 
     public interface SentStage {
+        /**
+         * <p>Emails accepted by the provider.</p>
+         */
         DeliveredStage sent(long sent);
     }
 
     public interface DeliveredStage {
+        /**
+         * <p>Emails delivered to recipients' servers.</p>
+         */
         BouncedStage delivered(long delivered);
     }
 
@@ -192,10 +210,16 @@ public final class BroadcastStats {
     }
 
     public interface ComplainedStage {
+        /**
+         * <p>Emails marked as spam by recipients.</p>
+         */
         FailedStage complained(long complained);
     }
 
     public interface FailedStage {
+        /**
+         * <p>Emails that couldn't be sent.</p>
+         */
         OpenedStage failed(long failed);
     }
 
@@ -288,6 +312,10 @@ public final class BroadcastStats {
             return this;
         }
 
+        /**
+         * <p>Emails accepted by the provider.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sent")
         public DeliveredStage sent(long sent) {
@@ -295,6 +323,10 @@ public final class BroadcastStats {
             return this;
         }
 
+        /**
+         * <p>Emails delivered to recipients' servers.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("delivered")
         public BouncedStage delivered(long delivered) {
@@ -313,6 +345,10 @@ public final class BroadcastStats {
             return this;
         }
 
+        /**
+         * <p>Emails marked as spam by recipients.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("complained")
         public FailedStage complained(long complained) {
@@ -320,6 +356,10 @@ public final class BroadcastStats {
             return this;
         }
 
+        /**
+         * <p>Emails that couldn't be sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("failed")
         public OpenedStage failed(long failed) {

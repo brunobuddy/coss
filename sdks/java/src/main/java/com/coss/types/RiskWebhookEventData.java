@@ -70,6 +70,9 @@ public final class RiskWebhookEventData {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The assessment's id.
+     */
     @JsonProperty("assessment_id")
     public String getAssessmentId() {
         return assessmentId;
@@ -80,6 +83,9 @@ public final class RiskWebhookEventData {
         return event;
     }
 
+    /**
+     * @return Your name for a <code>custom</code> event. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("event_name")
     public OptionalNullable<String> getEventName() {
@@ -94,16 +100,25 @@ public final class RiskWebhookEventData {
         return decision;
     }
 
+    /**
+     * @return 0-1: how risky the signals are together.
+     */
     @JsonProperty("score")
     public double getScore() {
         return score;
     }
 
+    /**
+     * @return Why, most significant first.
+     */
     @JsonProperty("reasons")
     public List<RiskReason> getReasons() {
         return reasons;
     }
 
+    /**
+     * @return Your user id. <code>null</code>: none given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("user_id")
     public OptionalNullable<String> getUserId() {
@@ -125,6 +140,9 @@ public final class RiskWebhookEventData {
         return outcome;
     }
 
+    /**
+     * @return When this happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -195,6 +213,9 @@ public final class RiskWebhookEventData {
     }
 
     public interface AssessmentIdStage {
+        /**
+         * <p>The assessment's id.</p>
+         */
         EventStage assessmentId(@NotNull String assessmentId);
 
         Builder from(RiskWebhookEventData other);
@@ -209,10 +230,16 @@ public final class RiskWebhookEventData {
     }
 
     public interface ScoreStage {
+        /**
+         * <p>0-1: how risky the signals are together.</p>
+         */
         OccurredAtStage score(double score);
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When this happened.</p>
+         */
         _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -223,6 +250,9 @@ public final class RiskWebhookEventData {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your name for a <code>custom</code> event. <code>null</code>: none.</p>
+         */
         _FinalStage eventName(OptionalNullable<String> eventName);
 
         _FinalStage eventName(String eventName);
@@ -231,12 +261,18 @@ public final class RiskWebhookEventData {
 
         _FinalStage eventName(Nullable<String> eventName);
 
+        /**
+         * <p>Why, most significant first.</p>
+         */
         _FinalStage reasons(List<RiskReason> reasons);
 
         _FinalStage addReasons(RiskReason reasons);
 
         _FinalStage addAllReasons(List<RiskReason> reasons);
 
+        /**
+         * <p>Your user id. <code>null</code>: none given.</p>
+         */
         _FinalStage userId(OptionalNullable<String> userId);
 
         _FinalStage userId(String userId);
@@ -297,6 +333,10 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The assessment's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("assessment_id")
         public EventStage assessmentId(@NotNull String assessmentId) {
@@ -318,6 +358,10 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>0-1: how risky the signals are together.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("score")
         public OccurredAtStage score(double score) {
@@ -325,6 +369,10 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>When this happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt) {
@@ -382,6 +430,10 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your user id. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userId(Nullable<String> userId) {
             if (userId.isNull()) {
@@ -394,6 +446,10 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your user id. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userId(Optional<String> userId) {
             if (userId.isPresent()) {
@@ -404,12 +460,19 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your user id. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userId(String userId) {
             this.userId = OptionalNullable.of(userId);
             return this;
         }
 
+        /**
+         * <p>Your user id. <code>null</code>: none given.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "user_id", nulls = Nulls.SKIP)
         public _FinalStage userId(OptionalNullable<String> userId) {
@@ -417,6 +480,10 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why, most significant first.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllReasons(List<RiskReason> reasons) {
             if (reasons != null) {
@@ -425,12 +492,19 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why, most significant first.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addReasons(RiskReason reasons) {
             this.reasons.add(reasons);
             return this;
         }
 
+        /**
+         * <p>Why, most significant first.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "reasons", nulls = Nulls.SKIP)
         public _FinalStage reasons(List<RiskReason> reasons) {
@@ -441,6 +515,10 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your name for a <code>custom</code> event. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage eventName(Nullable<String> eventName) {
             if (eventName.isNull()) {
@@ -453,6 +531,10 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your name for a <code>custom</code> event. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage eventName(Optional<String> eventName) {
             if (eventName.isPresent()) {
@@ -463,12 +545,19 @@ public final class RiskWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your name for a <code>custom</code> event. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage eventName(String eventName) {
             this.eventName = OptionalNullable.of(eventName);
             return this;
         }
 
+        /**
+         * <p>Your name for a <code>custom</code> event. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "event_name", nulls = Nulls.SKIP)
         public _FinalStage eventName(OptionalNullable<String> eventName) {

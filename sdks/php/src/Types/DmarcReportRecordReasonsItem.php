@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class DmarcReportRecordReasonsItem extends JsonSerializableType
 {
     /**
-     * @var string $type
+     * @var string $type The kind of override.
      */
     #[JsonProperty('type')]
     public string $type;
 
     /**
-     * @var ?string $comment
+     * @var ?string $comment The receiver's comment.
      */
     #[JsonProperty('comment')]
     public ?string $comment;

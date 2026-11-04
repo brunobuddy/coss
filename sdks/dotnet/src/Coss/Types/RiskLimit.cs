@@ -14,6 +14,9 @@ public record RiskLimit : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required RiskLimitObject Object { get; set; }
 
+    /// <summary>
+    /// The bucket's name.
+    /// </summary>
     [JsonPropertyName("bucket")]
     public required string Bucket { get; set; }
 

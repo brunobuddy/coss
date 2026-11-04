@@ -136,6 +136,8 @@ module Coss
           end
         end
 
+        # A template with its documents, roles and fields. `ready` says whether requests can be made from it.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

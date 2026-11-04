@@ -28,6 +28,9 @@ public final class CreateSmsSuppressionRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The number to suppress, in E.164.
+     */
     @JsonProperty("phone_number")
     public String getPhoneNumber() {
         return phoneNumber;
@@ -63,6 +66,9 @@ public final class CreateSmsSuppressionRequest {
     }
 
     public interface PhoneNumberStage {
+        /**
+         * <p>The number to suppress, in E.164.</p>
+         */
         _FinalStage phoneNumber(@NotNull String phoneNumber);
 
         Builder from(CreateSmsSuppressionRequest other);
@@ -91,6 +97,10 @@ public final class CreateSmsSuppressionRequest {
             return this;
         }
 
+        /**
+         * <p>The number to suppress, in E.164.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("phone_number")
         public _FinalStage phoneNumber(@NotNull String phoneNumber) {

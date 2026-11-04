@@ -159,10 +159,16 @@ public class RawAudiencesClient {
         }
     }
 
+    /**
+     * Creates a static contact list in the API key's environment. Names are unique within it (<code>name_taken</code>). Add its members with <code>POST /v1/audiences/{id}/contacts</code>.
+     */
     public CossHttpResponse<Audience> create(CreateAudienceRequest request) {
         return create(request, null);
     }
 
+    /**
+     * Creates a static contact list in the API key's environment. Names are unique within it (<code>name_taken</code>). Add its members with <code>POST /v1/audiences/{id}/contacts</code>.
+     */
     public CossHttpResponse<Audience> create(CreateAudienceRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()
@@ -245,18 +251,30 @@ public class RawAudiencesClient {
         }
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public CossHttpResponse<Audience> get(String id) {
         return get(id, GetAudiencesRequest.builder().build());
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public CossHttpResponse<Audience> get(String id, RequestOptions requestOptions) {
         return get(id, GetAudiencesRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public CossHttpResponse<Audience> get(String id, GetAudiencesRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public CossHttpResponse<Audience> get(String id, GetAudiencesRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()
@@ -431,10 +449,16 @@ public class RawAudiencesClient {
         }
     }
 
+    /**
+     * Renames an audience. Its members stay.
+     */
     public CossHttpResponse<Audience> update(String id, UpdateAudienceRequest request) {
         return update(id, request, null);
     }
 
+    /**
+     * Renames an audience. Its members stay.
+     */
     public CossHttpResponse<Audience> update(String id, UpdateAudienceRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()
@@ -738,22 +762,34 @@ public class RawAudiencesClient {
         }
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public CossHttpResponse<RemoveContactAudiencesResponse> removeContact(String id, String contactId) {
         return removeContact(
                 id, contactId, RemoveContactAudiencesRequest.builder().build());
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public CossHttpResponse<RemoveContactAudiencesResponse> removeContact(
             String id, String contactId, RequestOptions requestOptions) {
         return removeContact(
                 id, contactId, RemoveContactAudiencesRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public CossHttpResponse<RemoveContactAudiencesResponse> removeContact(
             String id, String contactId, RemoveContactAudiencesRequest request) {
         return removeContact(id, contactId, request, null);
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public CossHttpResponse<RemoveContactAudiencesResponse> removeContact(
             String id, String contactId, RemoveContactAudiencesRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

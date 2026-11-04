@@ -12,8 +12,16 @@ from .dmarc_report_record_spf import DmarcReportRecordSpf
 
 
 class DmarcReportRecord(UniversalBaseModel):
-    source_ip: str
-    count: int
+    source_ip: str = pydantic.Field()
+    """
+    The address the messages came from.
+    """
+
+    count: int = pydantic.Field()
+    """
+    How many messages this line covers.
+    """
+
     disposition: DmarcReportRecordDisposition = pydantic.Field()
     """
     What the receiver did with the messages.
@@ -29,12 +37,35 @@ class DmarcReportRecord(UniversalBaseModel):
     Aligned SPF result.
     """
 
-    dmarc_pass: bool
-    header_from: str
-    envelope_from: typing.Optional[str] = None
-    via_coss: bool
-    auth_results: DmarcReportRecordAuthResults
-    reasons: typing.List[DmarcReportRecordReasonsItem]
+    dmarc_pass: bool = pydantic.Field()
+    """
+    Whether they passed DMARC.
+    """
+
+    header_from: str = pydantic.Field()
+    """
+    The domain in their `From` header.
+    """
+
+    envelope_from: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The domain in their envelope sender.
+    """
+
+    via_coss: bool = pydantic.Field()
+    """
+    Whether they were sent through coss.com, by its DKIM selectors or bounce domain.
+    """
+
+    auth_results: DmarcReportRecordAuthResults = pydantic.Field()
+    """
+    What receivers saw for DKIM and SPF.
+    """
+
+    reasons: typing.List[DmarcReportRecordReasonsItem] = pydantic.Field()
+    """
+    Why receivers overrode the policy.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

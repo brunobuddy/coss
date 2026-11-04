@@ -16,6 +16,7 @@ var (
 )
 
 type UpdateRiskSettingsRequestCaptcha struct {
+	// The captcha provider.
 	Provider UpdateRiskSettingsRequestCaptchaProvider `json:"provider" url:"provider"`
 	// The provider's secret key. Required when setting a provider for the first time or changing it; stored encrypted and never returned.
 	Secret *string `json:"secret,omitempty" url:"secret,omitempty"`
@@ -129,6 +130,7 @@ func (u *UpdateRiskSettingsRequestCaptcha) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
+// The captcha provider.
 type UpdateRiskSettingsRequestCaptchaProvider string
 
 const (
@@ -168,10 +170,14 @@ var updateRiskSettingsRequestContentThresholdsNullableFields = map[string]*big.I
 
 // Changes the categories given: a score in (0, 1] sets the threshold, `null` removes it.
 type UpdateRiskSettingsRequestContentThresholds struct {
-	Spam     *float64 `json:"spam,omitempty" url:"spam,omitempty"`
+	// The score at which `content.spam` fires. `null` removes it.
+	Spam *float64 `json:"spam,omitempty" url:"spam,omitempty"`
+	// The score at which `content.phishing` fires. `null` removes it.
 	Phishing *float64 `json:"phishing,omitempty" url:"phishing,omitempty"`
-	Malware  *float64 `json:"malware,omitempty" url:"malware,omitempty"`
-	Fraud    *float64 `json:"fraud,omitempty" url:"fraud,omitempty"`
+	// The score at which `content.malware` fires. `null` removes it.
+	Malware *float64 `json:"malware,omitempty" url:"malware,omitempty"`
+	// The score at which `content.fraud` fires. `null` removes it.
+	Fraud *float64 `json:"fraud,omitempty" url:"fraud,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -549,53 +555,100 @@ var updateRiskSettingsRequestReasonWeightsNullableFields = map[string]*big.Int{
 
 // Changes the reasons given: a weight in [0, 0.99] replaces the default, `null` goes back to it.
 type UpdateRiskSettingsRequestReasonWeights struct {
-	EmailInvalid                    *float64 `json:"email.invalid,omitempty" url:"email.invalid,omitempty"`
-	EmailDisposable                 *float64 `json:"email.disposable,omitempty" url:"email.disposable,omitempty"`
-	EmailUndeliverable              *float64 `json:"email.undeliverable,omitempty" url:"email.undeliverable,omitempty"`
-	EmailRoleAccount                *float64 `json:"email.role_account,omitempty" url:"email.role_account,omitempty"`
-	EmailTypo                       *float64 `json:"email.typo,omitempty" url:"email.typo,omitempty"`
-	EmailDomainNew                  *float64 `json:"email.domain_new,omitempty" url:"email.domain_new,omitempty"`
-	IPTor                           *float64 `json:"ip.tor,omitempty" url:"ip.tor,omitempty"`
-	IPVpnNetwork                    *float64 `json:"ip.vpn_network,omitempty" url:"ip.vpn_network,omitempty"`
-	IPHostingProvider               *float64 `json:"ip.hosting_provider,omitempty" url:"ip.hosting_provider,omitempty"`
-	IPVpn                           *float64 `json:"ip.vpn,omitempty" url:"ip.vpn,omitempty"`
-	IPProxy                         *float64 `json:"ip.proxy,omitempty" url:"ip.proxy,omitempty"`
-	IPRelay                         *float64 `json:"ip.relay,omitempty" url:"ip.relay,omitempty"`
-	IPPrivate                       *float64 `json:"ip.private,omitempty" url:"ip.private,omitempty"`
-	VelocitySignupsPerIP1H          *float64 `json:"velocity.signups_per_ip_1h,omitempty" url:"velocity.signups_per_ip_1h,omitempty"`
-	VelocitySignupsPerIP24H         *float64 `json:"velocity.signups_per_ip_24h,omitempty" url:"velocity.signups_per_ip_24h,omitempty"`
-	VelocitySignupsPerSubnet1H      *float64 `json:"velocity.signups_per_subnet_1h,omitempty" url:"velocity.signups_per_subnet_1h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	EmailInvalid *float64 `json:"email.invalid,omitempty" url:"email.invalid,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	EmailDisposable *float64 `json:"email.disposable,omitempty" url:"email.disposable,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	EmailUndeliverable *float64 `json:"email.undeliverable,omitempty" url:"email.undeliverable,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	EmailRoleAccount *float64 `json:"email.role_account,omitempty" url:"email.role_account,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	EmailTypo *float64 `json:"email.typo,omitempty" url:"email.typo,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	EmailDomainNew *float64 `json:"email.domain_new,omitempty" url:"email.domain_new,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	IPTor *float64 `json:"ip.tor,omitempty" url:"ip.tor,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	IPVpnNetwork *float64 `json:"ip.vpn_network,omitempty" url:"ip.vpn_network,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	IPHostingProvider *float64 `json:"ip.hosting_provider,omitempty" url:"ip.hosting_provider,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	IPVpn *float64 `json:"ip.vpn,omitempty" url:"ip.vpn,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	IPProxy *float64 `json:"ip.proxy,omitempty" url:"ip.proxy,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	IPRelay *float64 `json:"ip.relay,omitempty" url:"ip.relay,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	IPPrivate *float64 `json:"ip.private,omitempty" url:"ip.private,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocitySignupsPerIP1H *float64 `json:"velocity.signups_per_ip_1h,omitempty" url:"velocity.signups_per_ip_1h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocitySignupsPerIP24H *float64 `json:"velocity.signups_per_ip_24h,omitempty" url:"velocity.signups_per_ip_24h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocitySignupsPerSubnet1H *float64 `json:"velocity.signups_per_subnet_1h,omitempty" url:"velocity.signups_per_subnet_1h,omitempty"`
+	// This reason's new weight. `null` restores its default.
 	VelocitySignupsPerEmailDomain1H *float64 `json:"velocity.signups_per_email_domain_1h,omitempty" url:"velocity.signups_per_email_domain_1h,omitempty"`
-	VelocitySignupsPerMailbox24H    *float64 `json:"velocity.signups_per_mailbox_24h,omitempty" url:"velocity.signups_per_mailbox_24h,omitempty"`
-	VelocitySignupsPerDevice24H     *float64 `json:"velocity.signups_per_device_24h,omitempty" url:"velocity.signups_per_device_24h,omitempty"`
-	VelocityCheckoutsPerIP1H        *float64 `json:"velocity.checkouts_per_ip_1h,omitempty" url:"velocity.checkouts_per_ip_1h,omitempty"`
-	VelocityCheckoutsPerUser1H      *float64 `json:"velocity.checkouts_per_user_1h,omitempty" url:"velocity.checkouts_per_user_1h,omitempty"`
-	VelocityCheckoutsPerCard24H     *float64 `json:"velocity.checkouts_per_card_24h,omitempty" url:"velocity.checkouts_per_card_24h,omitempty"`
-	VelocityLoginsPerIP1H           *float64 `json:"velocity.logins_per_ip_1h,omitempty" url:"velocity.logins_per_ip_1h,omitempty"`
-	VelocityLoginsPerUser1H         *float64 `json:"velocity.logins_per_user_1h,omitempty" url:"velocity.logins_per_user_1h,omitempty"`
-	VelocityEventsPerIP1H           *float64 `json:"velocity.events_per_ip_1h,omitempty" url:"velocity.events_per_ip_1h,omitempty"`
-	VelocityEventsPerUser1H         *float64 `json:"velocity.events_per_user_1h,omitempty" url:"velocity.events_per_user_1h,omitempty"`
-	DuplicateCanonicalMailbox       *float64 `json:"duplicate.canonical_mailbox,omitempty" url:"duplicate.canonical_mailbox,omitempty"`
-	DuplicateDevice                 *float64 `json:"duplicate.device,omitempty" url:"duplicate.device,omitempty"`
-	HistoryFraudMailbox             *float64 `json:"history.fraud_mailbox,omitempty" url:"history.fraud_mailbox,omitempty"`
-	HistoryFraudUser                *float64 `json:"history.fraud_user,omitempty" url:"history.fraud_user,omitempty"`
-	HistoryFraudIP                  *float64 `json:"history.fraud_ip,omitempty" url:"history.fraud_ip,omitempty"`
-	HistoryFraudSubnet              *float64 `json:"history.fraud_subnet,omitempty" url:"history.fraud_subnet,omitempty"`
-	HistoryFraudCard                *float64 `json:"history.fraud_card,omitempty" url:"history.fraud_card,omitempty"`
-	HistoryFraudDevice              *float64 `json:"history.fraud_device,omitempty" url:"history.fraud_device,omitempty"`
-	CheckoutCardCountryMismatch     *float64 `json:"checkout.card_country_mismatch,omitempty" url:"checkout.card_country_mismatch,omitempty"`
-	CheckoutBillingCountryMismatch  *float64 `json:"checkout.billing_country_mismatch,omitempty" url:"checkout.billing_country_mismatch,omitempty"`
-	CheckoutPrepaidCard             *float64 `json:"checkout.prepaid_card,omitempty" url:"checkout.prepaid_card,omitempty"`
-	DeviceAutomation                *float64 `json:"device.automation,omitempty" url:"device.automation,omitempty"`
-	DeviceInvalid                   *float64 `json:"device.invalid,omitempty" url:"device.invalid,omitempty"`
-	LoginNewCountry                 *float64 `json:"login.new_country,omitempty" url:"login.new_country,omitempty"`
-	LoginNewNetwork                 *float64 `json:"login.new_network,omitempty" url:"login.new_network,omitempty"`
-	CaptchaFailed                   *float64 `json:"captcha.failed,omitempty" url:"captcha.failed,omitempty"`
-	CaptchaMissing                  *float64 `json:"captcha.missing,omitempty" url:"captcha.missing,omitempty"`
-	ContentSpam                     *float64 `json:"content.spam,omitempty" url:"content.spam,omitempty"`
-	ContentPhishing                 *float64 `json:"content.phishing,omitempty" url:"content.phishing,omitempty"`
-	ContentMalware                  *float64 `json:"content.malware,omitempty" url:"content.malware,omitempty"`
-	ContentFraud                    *float64 `json:"content.fraud,omitempty" url:"content.fraud,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocitySignupsPerMailbox24H *float64 `json:"velocity.signups_per_mailbox_24h,omitempty" url:"velocity.signups_per_mailbox_24h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocitySignupsPerDevice24H *float64 `json:"velocity.signups_per_device_24h,omitempty" url:"velocity.signups_per_device_24h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocityCheckoutsPerIP1H *float64 `json:"velocity.checkouts_per_ip_1h,omitempty" url:"velocity.checkouts_per_ip_1h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocityCheckoutsPerUser1H *float64 `json:"velocity.checkouts_per_user_1h,omitempty" url:"velocity.checkouts_per_user_1h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocityCheckoutsPerCard24H *float64 `json:"velocity.checkouts_per_card_24h,omitempty" url:"velocity.checkouts_per_card_24h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocityLoginsPerIP1H *float64 `json:"velocity.logins_per_ip_1h,omitempty" url:"velocity.logins_per_ip_1h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocityLoginsPerUser1H *float64 `json:"velocity.logins_per_user_1h,omitempty" url:"velocity.logins_per_user_1h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocityEventsPerIP1H *float64 `json:"velocity.events_per_ip_1h,omitempty" url:"velocity.events_per_ip_1h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	VelocityEventsPerUser1H *float64 `json:"velocity.events_per_user_1h,omitempty" url:"velocity.events_per_user_1h,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	DuplicateCanonicalMailbox *float64 `json:"duplicate.canonical_mailbox,omitempty" url:"duplicate.canonical_mailbox,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	DuplicateDevice *float64 `json:"duplicate.device,omitempty" url:"duplicate.device,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	HistoryFraudMailbox *float64 `json:"history.fraud_mailbox,omitempty" url:"history.fraud_mailbox,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	HistoryFraudUser *float64 `json:"history.fraud_user,omitempty" url:"history.fraud_user,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	HistoryFraudIP *float64 `json:"history.fraud_ip,omitempty" url:"history.fraud_ip,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	HistoryFraudSubnet *float64 `json:"history.fraud_subnet,omitempty" url:"history.fraud_subnet,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	HistoryFraudCard *float64 `json:"history.fraud_card,omitempty" url:"history.fraud_card,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	HistoryFraudDevice *float64 `json:"history.fraud_device,omitempty" url:"history.fraud_device,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	CheckoutCardCountryMismatch *float64 `json:"checkout.card_country_mismatch,omitempty" url:"checkout.card_country_mismatch,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	CheckoutBillingCountryMismatch *float64 `json:"checkout.billing_country_mismatch,omitempty" url:"checkout.billing_country_mismatch,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	CheckoutPrepaidCard *float64 `json:"checkout.prepaid_card,omitempty" url:"checkout.prepaid_card,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	DeviceAutomation *float64 `json:"device.automation,omitempty" url:"device.automation,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	DeviceInvalid *float64 `json:"device.invalid,omitempty" url:"device.invalid,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	LoginNewCountry *float64 `json:"login.new_country,omitempty" url:"login.new_country,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	LoginNewNetwork *float64 `json:"login.new_network,omitempty" url:"login.new_network,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	CaptchaFailed *float64 `json:"captcha.failed,omitempty" url:"captcha.failed,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	CaptchaMissing *float64 `json:"captcha.missing,omitempty" url:"captcha.missing,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	ContentSpam *float64 `json:"content.spam,omitempty" url:"content.spam,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	ContentPhishing *float64 `json:"content.phishing,omitempty" url:"content.phishing,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	ContentMalware *float64 `json:"content.malware,omitempty" url:"content.malware,omitempty"`
+	// This reason's new weight. `null` restores its default.
+	ContentFraud *float64 `json:"content.fraud,omitempty" url:"content.fraud,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1337,8 +1390,11 @@ var (
 )
 
 type UpdateRiskSettingsRequest struct {
-	ReviewThreshold *float64                                       `json:"review_threshold,omitempty" url:"-"`
-	BlockThreshold  *float64                                       `json:"block_threshold,omitempty" url:"-"`
+	// Scores at or above it are `review`.
+	ReviewThreshold *float64 `json:"review_threshold,omitempty" url:"-"`
+	// Scores at or above it are `block`.
+	BlockThreshold *float64 `json:"block_threshold,omitempty" url:"-"`
+	// Reasons that never fire in this environment. Replaces the list.
 	DisabledReasons []UpdateRiskSettingsRequestDisabledReasonsItem `json:"disabled_reasons,omitempty" url:"-"`
 	// `null` turns captcha verification off and deletes the secret.
 	Captcha *UpdateRiskSettingsRequestCaptcha `json:"captcha,omitempty" url:"-"`

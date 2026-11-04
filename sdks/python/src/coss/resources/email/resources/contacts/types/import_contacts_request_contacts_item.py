@@ -13,8 +13,16 @@ class ImportContactsRequestContactsItem(UniversalBaseModel):
     The contact's address (validated on its own).
     """
 
-    first_name: typing.Optional[str] = None
-    last_name: typing.Optional[str] = None
+    first_name: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Their first name.
+    """
+
+    last_name: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Their last name.
+    """
+
     properties: typing.Optional[typing.Dict[str, typing.Optional[ImportContactsRequestContactsItemPropertiesValue]]] = (
         pydantic.Field(default=None)
     )

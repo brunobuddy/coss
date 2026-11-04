@@ -11,26 +11,46 @@ from .risk_email_check_object import RiskEmailCheckObject
 
 class RiskEmailCheck(UniversalBaseModel):
     object: RiskEmailCheckObject
-    email: str
+    email: str = pydantic.Field()
+    """
+    The address checked.
+    """
+
     valid: bool = pydantic.Field()
     """
     Syntactically valid (the rest assumes it is).
     """
 
-    domain: typing.Optional[str] = None
+    domain: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Its domain. `null` when it isn't valid.
+    """
+
     canonical: typing.Optional[str] = pydantic.Field(default=None)
     """
     The mailbox with the provider's aliasing folded (dots and `+tags` at Gmail…): two addresses with the same canonical form reach one inbox.
     """
 
-    disposable: bool
+    disposable: bool = pydantic.Field()
+    """
+    Whether its domain is a known burner service.
+    """
+
     deliverability: RiskEmailCheckDeliverability = pydantic.Field()
     """
     From DNS (MX, A, AAAA). `unknown` when the lookup failed or timed out.
     """
 
-    role_account: bool
-    free_provider: bool
+    role_account: bool = pydantic.Field()
+    """
+    Whether it's a role mailbox, like `info@`.
+    """
+
+    free_provider: bool = pydantic.Field()
+    """
+    Whether its domain is a free mailbox provider.
+    """
+
     suggestion: typing.Optional[str] = pydantic.Field(default=None)
     """
     The likely intended domain when this one looks like a typo of a popular one.

@@ -175,16 +175,19 @@ type ReplyInboxMessageRequest struct {
 	// The message's id.
 	MessageID string `json:"-" url:"-"`
 	// Also reply to everyone else on the message (its `to` and `cc`, but the inbox). Default `false`: only the sender (its `Reply-To`, when it has one).
-	ReplyAll *bool                        `json:"reply_all,omitempty" url:"-"`
-	Cc       *ReplyInboxMessageRequestCc  `json:"cc,omitempty" url:"-"`
-	Bcc      *ReplyInboxMessageRequestBcc `json:"bcc,omitempty" url:"-"`
+	ReplyAll *bool `json:"reply_all,omitempty" url:"-"`
+	// Who it's copied to.
+	Cc *ReplyInboxMessageRequestCc `json:"cc,omitempty" url:"-"`
+	// Who it's blind copied to.
+	Bcc *ReplyInboxMessageRequestBcc `json:"bcc,omitempty" url:"-"`
 	// Plain-text body. Without it, an `html` email goes out with a text part generated from the HTML.
 	Text *string `json:"text,omitempty" url:"-"`
 	// HTML body. Provide `html`, `text`, or both.
 	HTML *string `json:"html,omitempty" url:"-"`
 	// Up to 20 files, at most 25 MB combined.
-	Attachments []*cossgo.SendEmailAttachment       `json:"attachments,omitempty" url:"-"`
-	Tags        []*ReplyInboxMessageRequestTagsItem `json:"tags,omitempty" url:"-"`
+	Attachments []*cossgo.SendEmailAttachment `json:"attachments,omitempty" url:"-"`
+	// Your tags on the email.
+	Tags []*ReplyInboxMessageRequestTagsItem `json:"tags,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -307,10 +310,13 @@ type SendInboxMessageRequest struct {
 	// Makes the send safe to retry: a repeat with the same key and body returns the first message instead of sending again (keys are per inbox). 1-256 characters.
 	IdempotencyKey *string `json:"-" url:"-"`
 	// The inbox's id.
-	InboxID string                      `json:"-" url:"-"`
-	To      *SendInboxMessageRequestTo  `json:"to" url:"-"`
-	Cc      *SendInboxMessageRequestCc  `json:"cc,omitempty" url:"-"`
-	Bcc     *SendInboxMessageRequestBcc `json:"bcc,omitempty" url:"-"`
+	InboxID string `json:"-" url:"-"`
+	// Who it goes to.
+	To *SendInboxMessageRequestTo `json:"to" url:"-"`
+	// Who it's copied to.
+	Cc *SendInboxMessageRequestCc `json:"cc,omitempty" url:"-"`
+	// Who it's blind copied to.
+	Bcc *SendInboxMessageRequestBcc `json:"bcc,omitempty" url:"-"`
 	// The new thread's subject.
 	Subject string `json:"subject" url:"-"`
 	// Plain-text body. Without it, an `html` email goes out with a text part generated from the HTML.
@@ -318,8 +324,9 @@ type SendInboxMessageRequest struct {
 	// HTML body. Provide `html`, `text`, or both.
 	HTML *string `json:"html,omitempty" url:"-"`
 	// Up to 20 files, at most 25 MB combined.
-	Attachments []*cossgo.SendEmailAttachment      `json:"attachments,omitempty" url:"-"`
-	Tags        []*SendInboxMessageRequestTagsItem `json:"tags,omitempty" url:"-"`
+	Attachments []*cossgo.SendEmailAttachment `json:"attachments,omitempty" url:"-"`
+	// Your tags on the email.
+	Tags []*SendInboxMessageRequestTagsItem `json:"tags,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -448,6 +455,7 @@ func (l ListMessagesRequestDirection) Ptr() *ListMessagesRequestDirection {
 	return &l
 }
 
+// Who it's blind copied to.
 type ReplyInboxMessageRequestBcc struct {
 	// An email address, optionally with a display name: "Acme <hello@acme.com>".
 	String     string
@@ -511,6 +519,7 @@ func (r *ReplyInboxMessageRequestBcc) Accept(visitor ReplyInboxMessageRequestBcc
 	return fmt.Errorf("type %T does not include a non-empty union type", r)
 }
 
+// Who it's copied to.
 type ReplyInboxMessageRequestCc struct {
 	// An email address, optionally with a display name: "Acme <hello@acme.com>".
 	String     string
@@ -580,7 +589,9 @@ var (
 )
 
 type ReplyInboxMessageRequestTagsItem struct {
-	Name  string `json:"name" url:"name"`
+	// The tag's name, unique on the email.
+	Name string `json:"name" url:"name"`
+	// The tag's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -676,6 +687,7 @@ func (r *ReplyInboxMessageRequestTagsItem) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// Who it's blind copied to.
 type SendInboxMessageRequestBcc struct {
 	// An email address, optionally with a display name: "Acme <hello@acme.com>".
 	String     string
@@ -739,6 +751,7 @@ func (s *SendInboxMessageRequestBcc) Accept(visitor SendInboxMessageRequestBccVi
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
+// Who it's copied to.
 type SendInboxMessageRequestCc struct {
 	// An email address, optionally with a display name: "Acme <hello@acme.com>".
 	String     string
@@ -808,7 +821,9 @@ var (
 )
 
 type SendInboxMessageRequestTagsItem struct {
-	Name  string `json:"name" url:"name"`
+	// The tag's name, unique on the email.
+	Name string `json:"name" url:"name"`
+	// The tag's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -904,6 +919,7 @@ func (s *SendInboxMessageRequestTagsItem) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// Who it goes to.
 type SendInboxMessageRequestTo struct {
 	// An email address, optionally with a display name: "Acme <hello@acme.com>".
 	String     string

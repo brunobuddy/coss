@@ -219,18 +219,30 @@ public class RawPropertiesClient {
         }
     }
 
+    /**
+     * One contact property of the API key's environment: its key, type and fallback.
+     */
     public CossHttpResponse<ContactProperty> get(String id) {
         return get(id, GetPropertiesRequest.builder().build());
     }
 
+    /**
+     * One contact property of the API key's environment: its key, type and fallback.
+     */
     public CossHttpResponse<ContactProperty> get(String id, RequestOptions requestOptions) {
         return get(id, GetPropertiesRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One contact property of the API key's environment: its key, type and fallback.
+     */
     public CossHttpResponse<ContactProperty> get(String id, GetPropertiesRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One contact property of the API key's environment: its key, type and fallback.
+     */
     public CossHttpResponse<ContactProperty> get(
             String id, GetPropertiesRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
@@ -407,10 +419,16 @@ public class RawPropertiesClient {
         }
     }
 
+    /**
+     * Changes the value used when a contact has none for this property. Its key and type can't change.
+     */
     public CossHttpResponse<ContactProperty> update(String id, UpdateContactPropertyRequest request) {
         return update(id, request, null);
     }
 
+    /**
+     * Changes the value used when a contact has none for this property. Its key and type can't change.
+     */
     public CossHttpResponse<ContactProperty> update(
             String id, UpdateContactPropertyRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

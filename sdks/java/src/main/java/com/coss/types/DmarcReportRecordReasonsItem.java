@@ -37,11 +37,17 @@ public final class DmarcReportRecordReasonsItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The kind of override.
+     */
     @JsonProperty("type")
     public String getType() {
         return type;
     }
 
+    /**
+     * @return The receiver's comment.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("comment")
     public OptionalNullable<String> getComment() {
@@ -87,6 +93,9 @@ public final class DmarcReportRecordReasonsItem {
     }
 
     public interface TypeStage {
+        /**
+         * <p>The kind of override.</p>
+         */
         _FinalStage type(@NotNull String type);
 
         Builder from(DmarcReportRecordReasonsItem other);
@@ -99,6 +108,9 @@ public final class DmarcReportRecordReasonsItem {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The receiver's comment.</p>
+         */
         _FinalStage comment(OptionalNullable<String> comment);
 
         _FinalStage comment(String comment);
@@ -126,6 +138,10 @@ public final class DmarcReportRecordReasonsItem {
             return this;
         }
 
+        /**
+         * <p>The kind of override.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public _FinalStage type(@NotNull String type) {
@@ -133,6 +149,10 @@ public final class DmarcReportRecordReasonsItem {
             return this;
         }
 
+        /**
+         * <p>The receiver's comment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage comment(Nullable<String> comment) {
             if (comment.isNull()) {
@@ -145,6 +165,10 @@ public final class DmarcReportRecordReasonsItem {
             return this;
         }
 
+        /**
+         * <p>The receiver's comment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage comment(Optional<String> comment) {
             if (comment.isPresent()) {
@@ -155,12 +179,19 @@ public final class DmarcReportRecordReasonsItem {
             return this;
         }
 
+        /**
+         * <p>The receiver's comment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage comment(String comment) {
             this.comment = OptionalNullable.of(comment);
             return this;
         }
 
+        /**
+         * <p>The receiver's comment.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "comment", nulls = Nulls.SKIP)
         public _FinalStage comment(OptionalNullable<String> comment) {

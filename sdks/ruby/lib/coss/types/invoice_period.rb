@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # What period it covers.
     class InvoicePeriod < Internal::Types::Model
       field :start, -> { String }, optional: false, nullable: false
 

@@ -105,6 +105,9 @@ public final class RiskAssessment {
         return event;
     }
 
+    /**
+     * @return Your name for a <code>custom</code> event. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("event_name")
     public OptionalNullable<String> getEventName() {
@@ -135,11 +138,17 @@ public final class RiskAssessment {
         return reasons;
     }
 
+    /**
+     * @return What the assessment saw, by group. A group is <code>null</code> when it had nothing to go on.
+     */
     @JsonProperty("signals")
     public RiskAssessmentSignals getSignals() {
         return signals;
     }
 
+    /**
+     * @return Who it's about.
+     */
     @JsonProperty("user")
     public RiskAssessmentUser getUser() {
         return user;
@@ -158,7 +167,7 @@ public final class RiskAssessment {
     }
 
     /**
-     * @return Signal groups that were unavailable for this assessment (it was made without them).
+     * @return Signal groups that were unavailable for this assessment (it was made without them). <code>usage_limit</code> means the plan's included assessments are used up, or a billing hold or budget applies: the assessment was free and made without velocity, memory of earlier events, content or address-level IP data.
      */
     @JsonProperty("degraded")
     public List<RiskAssessmentDegradedItem> getDegraded() {
@@ -300,10 +309,16 @@ public final class RiskAssessment {
     }
 
     public interface SignalsStage {
+        /**
+         * <p>What the assessment saw, by group. A group is <code>null</code> when it had nothing to go on.</p>
+         */
         UserStage signals(@NotNull RiskAssessmentSignals signals);
     }
 
     public interface UserStage {
+        /**
+         * <p>Who it's about.</p>
+         */
         CreatedAtStage user(@NotNull RiskAssessmentUser user);
     }
 
@@ -318,6 +333,9 @@ public final class RiskAssessment {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your name for a <code>custom</code> event. <code>null</code>: none.</p>
+         */
         _FinalStage eventName(OptionalNullable<String> eventName);
 
         _FinalStage eventName(String eventName);
@@ -347,7 +365,7 @@ public final class RiskAssessment {
         _FinalStage ip(Nullable<String> ip);
 
         /**
-         * <p>Signal groups that were unavailable for this assessment (it was made without them).</p>
+         * <p>Signal groups that were unavailable for this assessment (it was made without them). <code>usage_limit</code> means the plan's included assessments are used up, or a billing hold or budget applies: the assessment was free and made without velocity, memory of earlier events, content or address-level IP data.</p>
          */
         _FinalStage degraded(List<RiskAssessmentDegradedItem> degraded);
 
@@ -480,6 +498,10 @@ public final class RiskAssessment {
             return this;
         }
 
+        /**
+         * <p>What the assessment saw, by group. A group is <code>null</code> when it had nothing to go on.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("signals")
         public UserStage signals(@NotNull RiskAssessmentSignals signals) {
@@ -487,6 +509,10 @@ public final class RiskAssessment {
             return this;
         }
 
+        /**
+         * <p>Who it's about.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("user")
         public CreatedAtStage user(@NotNull RiskAssessmentUser user) {
@@ -602,7 +628,7 @@ public final class RiskAssessment {
         }
 
         /**
-         * <p>Signal groups that were unavailable for this assessment (it was made without them).</p>
+         * <p>Signal groups that were unavailable for this assessment (it was made without them). <code>usage_limit</code> means the plan's included assessments are used up, or a billing hold or budget applies: the assessment was free and made without velocity, memory of earlier events, content or address-level IP data.</p>
          * @return Reference to {@code this} so that method calls can be chained together.
          */
         @java.lang.Override
@@ -614,7 +640,7 @@ public final class RiskAssessment {
         }
 
         /**
-         * <p>Signal groups that were unavailable for this assessment (it was made without them).</p>
+         * <p>Signal groups that were unavailable for this assessment (it was made without them). <code>usage_limit</code> means the plan's included assessments are used up, or a billing hold or budget applies: the assessment was free and made without velocity, memory of earlier events, content or address-level IP data.</p>
          * @return Reference to {@code this} so that method calls can be chained together.
          */
         @java.lang.Override
@@ -624,7 +650,7 @@ public final class RiskAssessment {
         }
 
         /**
-         * <p>Signal groups that were unavailable for this assessment (it was made without them).</p>
+         * <p>Signal groups that were unavailable for this assessment (it was made without them). <code>usage_limit</code> means the plan's included assessments are used up, or a billing hold or budget applies: the assessment was free and made without velocity, memory of earlier events, content or address-level IP data.</p>
          */
         @java.lang.Override
         @JsonSetter(value = "degraded", nulls = Nulls.SKIP)
@@ -721,6 +747,10 @@ public final class RiskAssessment {
             return this;
         }
 
+        /**
+         * <p>Your name for a <code>custom</code> event. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage eventName(Nullable<String> eventName) {
             if (eventName.isNull()) {
@@ -733,6 +763,10 @@ public final class RiskAssessment {
             return this;
         }
 
+        /**
+         * <p>Your name for a <code>custom</code> event. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage eventName(Optional<String> eventName) {
             if (eventName.isPresent()) {
@@ -743,12 +777,19 @@ public final class RiskAssessment {
             return this;
         }
 
+        /**
+         * <p>Your name for a <code>custom</code> event. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage eventName(String eventName) {
             this.eventName = OptionalNullable.of(eventName);
             return this;
         }
 
+        /**
+         * <p>Your name for a <code>custom</code> event. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "event_name", nulls = Nulls.SKIP)
         public _FinalStage eventName(OptionalNullable<String> eventName) {

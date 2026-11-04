@@ -38,16 +38,25 @@ public final class BroadcastWebhookEventDataBroadcast {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The broadcast's id.
+     */
     @JsonProperty("id")
     public String getId() {
         return id;
     }
 
+    /**
+     * @return Its name.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Its status after this event.
+     */
     @JsonProperty("status")
     public BroadcastWebhookEventDataBroadcastStatus getStatus() {
         return status;
@@ -84,16 +93,25 @@ public final class BroadcastWebhookEventDataBroadcast {
     }
 
     public interface IdStage {
+        /**
+         * <p>The broadcast's id.</p>
+         */
         NameStage id(@NotNull String id);
 
         Builder from(BroadcastWebhookEventDataBroadcast other);
     }
 
     public interface NameStage {
+        /**
+         * <p>Its name.</p>
+         */
         StatusStage name(@NotNull String name);
     }
 
     public interface StatusStage {
+        /**
+         * <p>Its status after this event.</p>
+         */
         _FinalStage status(@NotNull BroadcastWebhookEventDataBroadcastStatus status);
     }
 
@@ -126,6 +144,10 @@ public final class BroadcastWebhookEventDataBroadcast {
             return this;
         }
 
+        /**
+         * <p>The broadcast's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("id")
         public NameStage id(@NotNull String id) {
@@ -133,6 +155,10 @@ public final class BroadcastWebhookEventDataBroadcast {
             return this;
         }
 
+        /**
+         * <p>Its name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public StatusStage name(@NotNull String name) {
@@ -140,6 +166,10 @@ public final class BroadcastWebhookEventDataBroadcast {
             return this;
         }
 
+        /**
+         * <p>Its status after this event.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("status")
         public _FinalStage status(@NotNull BroadcastWebhookEventDataBroadcastStatus status) {

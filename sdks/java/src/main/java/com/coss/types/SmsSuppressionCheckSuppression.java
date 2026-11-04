@@ -66,6 +66,9 @@ public final class SmsSuppressionCheckSuppression {
         return id;
     }
 
+    /**
+     * @return The suppressed number, in E.164.
+     */
     @JsonProperty("phone_number")
     public String getPhoneNumber() {
         return phoneNumber;
@@ -147,6 +150,9 @@ public final class SmsSuppressionCheckSuppression {
     }
 
     public interface PhoneNumberStage {
+        /**
+         * <p>The suppressed number, in E.164.</p>
+         */
         ReasonStage phoneNumber(@NotNull String phoneNumber);
     }
 
@@ -225,6 +231,10 @@ public final class SmsSuppressionCheckSuppression {
             return this;
         }
 
+        /**
+         * <p>The suppressed number, in E.164.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("phone_number")
         public ReasonStage phoneNumber(@NotNull String phoneNumber) {

@@ -8,19 +8,19 @@ use Coss\Core\Json\JsonProperty;
 class DmarcReportRecordAuthResultsSpfItem extends JsonSerializableType
 {
     /**
-     * @var string $domain
+     * @var string $domain The checked domain.
      */
     #[JsonProperty('domain')]
     public string $domain;
 
     /**
-     * @var ?string $scope
+     * @var ?string $scope What it was checked against.
      */
     #[JsonProperty('scope')]
     public ?string $scope;
 
     /**
-     * @var string $result
+     * @var string $result The result.
      */
     #[JsonProperty('result')]
     public string $result;

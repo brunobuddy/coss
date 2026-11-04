@@ -11,19 +11,19 @@ use Coss\Core\Json\JsonProperty;
 class CreateSubaccountRequestQuotas extends JsonSerializableType
 {
     /**
-     * @var ?int $recipientsPerDay
+     * @var ?int $recipientsPerDay Most recipients a day. `null` removes the limit.
      */
     #[JsonProperty('recipients_per_day')]
     public ?int $recipientsPerDay;
 
     /**
-     * @var ?int $recipientsPerSecond
+     * @var ?int $recipientsPerSecond Most recipients a second. `null` removes the limit.
      */
     #[JsonProperty('recipients_per_second')]
     public ?int $recipientsPerSecond;
 
     /**
-     * @var ?int $burst
+     * @var ?int $burst How many recipients a moment may take before the per-second rate applies. `null` removes it.
      */
     #[JsonProperty('burst')]
     public ?int $burst;

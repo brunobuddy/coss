@@ -16,11 +16,31 @@ class ReceivedEmailVerdicts(UniversalBaseModel):
     What the receiving server concluded: `pass`, `fail`, `gray` (could not decide) or `processing_failed`; `null` when the check did not run.
     """
 
-    spam: typing.Optional[ReceivedEmailVerdictsSpam] = None
-    virus: typing.Optional[ReceivedEmailVerdictsVirus] = None
-    spf: typing.Optional[ReceivedEmailVerdictsSpf] = None
-    dkim: typing.Optional[ReceivedEmailVerdictsDkim] = None
-    dmarc: typing.Optional[ReceivedEmailVerdictsDmarc] = None
+    spam: typing.Optional[ReceivedEmailVerdictsSpam] = pydantic.Field(default=None)
+    """
+    The spam verdict.
+    """
+
+    virus: typing.Optional[ReceivedEmailVerdictsVirus] = pydantic.Field(default=None)
+    """
+    The virus verdict.
+    """
+
+    spf: typing.Optional[ReceivedEmailVerdictsSpf] = pydantic.Field(default=None)
+    """
+    The SPF verdict.
+    """
+
+    dkim: typing.Optional[ReceivedEmailVerdictsDkim] = pydantic.Field(default=None)
+    """
+    The DKIM verdict.
+    """
+
+    dmarc: typing.Optional[ReceivedEmailVerdictsDmarc] = pydantic.Field(default=None)
+    """
+    The DMARC verdict.
+    """
+
     dmarc_policy: typing.Optional[str] = pydantic.Field(default=None)
     """
     The sender domain's DMARC policy (`none`, `quarantine` or `reject`) when DMARC failed.

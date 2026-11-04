@@ -17,23 +17,41 @@ public record HookEndpointWithSecret : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The id of the application it belongs to.
+    /// </summary>
     [JsonPropertyName("application_id")]
     public required string ApplicationId { get; set; }
 
+    /// <summary>
+    /// Where deliveries are sent.
+    /// </summary>
     [JsonPropertyName("url")]
     public required string Url { get; set; }
 
+    /// <summary>
+    /// Your note about it. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("description")]
     public string? Description { get; set; }
 
+    /// <summary>
+    /// Only these event types are delivered. Empty: every type.
+    /// </summary>
     [JsonPropertyName("filter_types")]
     public IEnumerable<string> FilterTypes { get; set; } = new List<string>();
 
+    /// <summary>
+    /// At most this many requests per second to this endpoint. `null`: no limit of its own.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("rate_limit_per_second")]
     public long? RateLimitPerSecond { get; set; }
 
+    /// <summary>
+    /// Whether new messages are delivered to it.
+    /// </summary>
     [JsonPropertyName("enabled")]
     public required bool Enabled { get; set; }
 
@@ -44,6 +62,9 @@ public record HookEndpointWithSecret : IJsonOnDeserialized
     [JsonPropertyName("disabled_reason")]
     public HookEndpointWithSecretDisabledReason? DisabledReason { get; set; }
 
+    /// <summary>
+    /// When it was disabled. `null`: it's enabled.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("disabled_at")]
     public DateTime? DisabledAt { get; set; }
@@ -62,6 +83,9 @@ public record HookEndpointWithSecret : IJsonOnDeserialized
     [JsonPropertyName("previous_secret_expires_at")]
     public DateTime? PreviousSecretExpiresAt { get; set; }
 
+    /// <summary>
+    /// Your own key-value pairs.
+    /// </summary>
     [JsonPropertyName("metadata")]
     public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
 

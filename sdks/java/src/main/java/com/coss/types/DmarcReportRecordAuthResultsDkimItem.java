@@ -40,11 +40,17 @@ public final class DmarcReportRecordAuthResultsDkimItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The signing domain.
+     */
     @JsonProperty("domain")
     public String getDomain() {
         return domain;
     }
 
+    /**
+     * @return The selector.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("selector")
     public OptionalNullable<String> getSelector() {
@@ -54,6 +60,9 @@ public final class DmarcReportRecordAuthResultsDkimItem {
         return selector;
     }
 
+    /**
+     * @return The result.
+     */
     @JsonProperty("result")
     public String getResult() {
         return result;
@@ -96,12 +105,18 @@ public final class DmarcReportRecordAuthResultsDkimItem {
     }
 
     public interface DomainStage {
+        /**
+         * <p>The signing domain.</p>
+         */
         ResultStage domain(@NotNull String domain);
 
         Builder from(DmarcReportRecordAuthResultsDkimItem other);
     }
 
     public interface ResultStage {
+        /**
+         * <p>The result.</p>
+         */
         _FinalStage result(@NotNull String result);
     }
 
@@ -112,6 +127,9 @@ public final class DmarcReportRecordAuthResultsDkimItem {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The selector.</p>
+         */
         _FinalStage selector(OptionalNullable<String> selector);
 
         _FinalStage selector(String selector);
@@ -142,6 +160,10 @@ public final class DmarcReportRecordAuthResultsDkimItem {
             return this;
         }
 
+        /**
+         * <p>The signing domain.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("domain")
         public ResultStage domain(@NotNull String domain) {
@@ -149,6 +171,10 @@ public final class DmarcReportRecordAuthResultsDkimItem {
             return this;
         }
 
+        /**
+         * <p>The result.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("result")
         public _FinalStage result(@NotNull String result) {
@@ -156,6 +182,10 @@ public final class DmarcReportRecordAuthResultsDkimItem {
             return this;
         }
 
+        /**
+         * <p>The selector.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage selector(Nullable<String> selector) {
             if (selector.isNull()) {
@@ -168,6 +198,10 @@ public final class DmarcReportRecordAuthResultsDkimItem {
             return this;
         }
 
+        /**
+         * <p>The selector.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage selector(Optional<String> selector) {
             if (selector.isPresent()) {
@@ -178,12 +212,19 @@ public final class DmarcReportRecordAuthResultsDkimItem {
             return this;
         }
 
+        /**
+         * <p>The selector.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage selector(String selector) {
             this.selector = OptionalNullable.of(selector);
             return this;
         }
 
+        /**
+         * <p>The selector.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "selector", nulls = Nulls.SKIP)
         public _FinalStage selector(OptionalNullable<String> selector) {

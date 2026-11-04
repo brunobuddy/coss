@@ -1003,6 +1003,9 @@ public partial class RulesClient : IRulesClient
         );
     }
 
+    /// <summary>
+    /// One rule of the API key's environment.
+    /// </summary>
     /// <example><code>
     /// await client.Risk.Rules.GetAsync(new GetRulesRequest { Id = "rskrule_01k7c8m4q2f3e9v6t5r1n0p8yz" });
     /// </code></example>
@@ -1015,6 +1018,9 @@ public partial class RulesClient : IRulesClient
         return new WithRawResponseTask<RiskRule>(GetAsyncCore(request, options, cancellationToken));
     }
 
+    /// <summary>
+    /// Deletes a rule. Later assessments no longer apply it.
+    /// </summary>
     /// <example><code>
     /// await client.Risk.Rules.DeleteAsync(
     ///     new DeleteRulesRequest { Id = "rskrule_01k7c8m4q2f3e9v6t5r1n0p8yz" }

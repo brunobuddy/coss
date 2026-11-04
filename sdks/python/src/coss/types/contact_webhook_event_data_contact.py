@@ -8,9 +8,20 @@ from .contact_webhook_event_data_contact_status import ContactWebhookEventDataCo
 
 
 class ContactWebhookEventDataContact(UniversalBaseModel):
-    id: str
-    email: str
-    status: ContactWebhookEventDataContactStatus
+    id: str = pydantic.Field()
+    """
+    The contact's id.
+    """
+
+    email: str = pydantic.Field()
+    """
+    The contact's address.
+    """
+
+    status: ContactWebhookEventDataContactStatus = pydantic.Field()
+    """
+    Its consent after this event.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -961,6 +961,9 @@ public partial class SuppressionsClient : ISuppressionsClient
         );
     }
 
+    /// <summary>
+    /// Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+    /// </summary>
     /// <example><code>
     /// await client.Sms.Suppressions.CheckAsync(
     ///     new Coss.Sms_.CheckSuppressionsRequest { PhoneNumber = "phone_number" }
@@ -977,6 +980,9 @@ public partial class SuppressionsClient : ISuppressionsClient
         );
     }
 
+    /// <summary>
+    /// One entry of the SMS suppression list of the API key's environment.
+    /// </summary>
     /// <example><code>
     /// await client.Sms.Suppressions.GetAsync(
     ///     new Coss.Sms_.GetSuppressionsRequest { Id = "smssup_01k7c8m4q2f3e9v6t5r1n0p8yz" }

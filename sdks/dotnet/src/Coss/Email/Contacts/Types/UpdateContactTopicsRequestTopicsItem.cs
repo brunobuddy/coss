@@ -18,6 +18,9 @@ public record UpdateContactTopicsRequestTopicsItem : IJsonOnDeserialized
     [JsonPropertyName("topic")]
     public required string Topic { get; set; }
 
+    /// <summary>
+    /// `opted_in` or `opted_out` of the topic.
+    /// </summary>
     [JsonPropertyName("status")]
     public required UpdateContactTopicsRequestTopicsItemStatus Status { get; set; }
 

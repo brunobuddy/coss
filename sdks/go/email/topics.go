@@ -19,8 +19,11 @@ var (
 )
 
 type CreateTopicRequest struct {
-	Key         string  `json:"key" url:"-"`
-	Name        string  `json:"name" url:"-"`
+	// The `category` of the emails about this topic. Can't change.
+	Key string `json:"key" url:"-"`
+	// Shown in the preference center.
+	Name string `json:"name" url:"-"`
+	// Shown in the preference center under its name. `null`: none.
 	Description *string `json:"description,omitempty" url:"-"`
 	// `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.
 	DefaultSubscription CreateTopicRequestDefaultSubscription `json:"default_subscription" url:"-"`
@@ -302,8 +305,10 @@ var (
 
 type UpdateTopicRequest struct {
 	// The topic's id.
-	ID          string  `json:"-" url:"-"`
-	Name        *string `json:"name,omitempty" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Shown in the preference center.
+	Name *string `json:"name,omitempty" url:"-"`
+	// Shown in the preference center under its name. `null`: none.
 	Description *string `json:"description,omitempty" url:"-"`
 	// `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.
 	DefaultSubscription *UpdateTopicRequestDefaultSubscription `json:"default_subscription,omitempty" url:"-"`

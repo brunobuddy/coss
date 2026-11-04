@@ -17,9 +17,15 @@ public record WebhookEndpoint : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Where events are posted.
+    /// </summary>
     [JsonPropertyName("url")]
     public required string Url { get; set; }
 
+    /// <summary>
+    /// Your note about it. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("description")]
     public string? Description { get; set; }
@@ -49,6 +55,9 @@ public record WebhookEndpoint : IJsonOnDeserialized
     [JsonPropertyName("disabled_reason")]
     public WebhookEndpointDisabledReason? DisabledReason { get; set; }
 
+    /// <summary>
+    /// When it was disabled. `null` while enabled.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("disabled_at")]
     public DateTime? DisabledAt { get; set; }

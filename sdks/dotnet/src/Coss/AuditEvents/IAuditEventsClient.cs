@@ -11,6 +11,9 @@ public partial interface IAuditEventsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One event of the organization's audit log.
+    /// </summary>
     WithRawResponseTask<AuditEvent> GetAsync(
         GetAuditEventsRequest request,
         RequestOptions? options = null,

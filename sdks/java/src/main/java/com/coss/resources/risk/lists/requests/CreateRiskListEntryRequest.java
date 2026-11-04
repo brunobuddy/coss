@@ -61,11 +61,17 @@ public final class CreateRiskListEntryRequest {
         return type;
     }
 
+    /**
+     * @return What to match: the address, domain, IP, CIDR range, ASN or other value of its <code>type</code>.
+     */
     @JsonProperty("value")
     public String getValue() {
         return value;
     }
 
+    /**
+     * @return Your note about it.
+     */
     @JsonProperty("note")
     public Optional<String> getNote() {
         return note;
@@ -123,6 +129,9 @@ public final class CreateRiskListEntryRequest {
     }
 
     public interface ValueStage {
+        /**
+         * <p>What to match: the address, domain, IP, CIDR range, ASN or other value of its <code>type</code>.</p>
+         */
         _FinalStage value(@NotNull String value);
     }
 
@@ -133,6 +142,9 @@ public final class CreateRiskListEntryRequest {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your note about it.</p>
+         */
         _FinalStage note(Optional<String> note);
 
         _FinalStage note(String note);
@@ -186,6 +198,10 @@ public final class CreateRiskListEntryRequest {
             return this;
         }
 
+        /**
+         * <p>What to match: the address, domain, IP, CIDR range, ASN or other value of its <code>type</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("value")
         public _FinalStage value(@NotNull String value) {
@@ -213,12 +229,19 @@ public final class CreateRiskListEntryRequest {
             return this;
         }
 
+        /**
+         * <p>Your note about it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage note(String note) {
             this.note = Optional.ofNullable(note);
             return this;
         }
 
+        /**
+         * <p>Your note about it.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "note", nulls = Nulls.SKIP)
         public _FinalStage note(Optional<String> note) {

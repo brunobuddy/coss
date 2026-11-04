@@ -23,13 +23,13 @@ class LogDrain extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $url
+     * @var string $url Where batches are posted.
      */
     #[JsonProperty('url')]
     public string $url;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Your note about it. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;
@@ -39,6 +39,18 @@ class LogDrain extends JsonSerializableType
      */
     #[JsonProperty('sources'), ArrayType(['string'])]
     public array $sources;
+
+    /**
+     * @var value-of<LogDrainFormat> $format
+     */
+    #[JsonProperty('format')]
+    public string $format;
+
+    /**
+     * @var ?string $authHeaderName The header sent with every batch to authenticate it (e.g. `Authorization`, `DD-API-KEY`), or `null`. Its value is never returned.
+     */
+    #[JsonProperty('auth_header_name')]
+    public ?string $authHeaderName;
 
     /**
      * @var bool $enabled A disabled drain receives nothing, and lines logged while it is disabled are not kept for it.
@@ -53,7 +65,7 @@ class LogDrain extends JsonSerializableType
     public ?string $disabledReason;
 
     /**
-     * @var ?DateTime $disabledAt
+     * @var ?DateTime $disabledAt When it was disabled. `null` while enabled.
      */
     #[JsonProperty('disabled_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $disabledAt;
@@ -76,10 +88,12 @@ class LogDrain extends JsonSerializableType
      *   id: string,
      *   url: string,
      *   sources: array<value-of<LogDrainSource>>,
+     *   format: value-of<LogDrainFormat>,
      *   enabled: bool,
      *   createdAt: DateTime,
      *   updatedAt: DateTime,
      *   description?: ?string,
+     *   authHeaderName?: ?string,
      *   disabledReason?: ?value-of<LogDrainDisabledReason>,
      *   disabledAt?: ?DateTime,
      * } $values
@@ -95,6 +109,11 @@ class LogDrain extends JsonSerializableType
             $this->_setField('description');
         }
         $this->sources = $values['sources'];
+        $this->format = $values['format'];
+        $this->authHeaderName = $values['authHeaderName'] ?? null;
+        if (array_key_exists('authHeaderName', $values)) {
+            $this->_setField('authHeaderName');
+        }
         $this->enabled = $values['enabled'];
         $this->disabledReason = $values['disabledReason'] ?? null;
         if (array_key_exists('disabledReason', $values)) {

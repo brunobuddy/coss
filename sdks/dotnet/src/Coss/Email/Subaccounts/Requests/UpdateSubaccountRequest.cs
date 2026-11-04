@@ -12,6 +12,9 @@ public record UpdateSubaccountRequest
     [JsonIgnore]
     public required string Subaccount { get; set; }
 
+    /// <summary>
+    /// Your name for it.
+    /// </summary>
     [Optional]
     [JsonPropertyName("name")]
     public string? Name { get; set; }

@@ -37,9 +37,21 @@ class InboxMessage(UniversalBaseModel):
     The `From` header.
     """
 
-    to: typing.List[str]
-    cc: typing.List[str]
-    subject: typing.Optional[str] = None
+    to: typing.List[str] = pydantic.Field()
+    """
+    Addresses in the `To` header.
+    """
+
+    cc: typing.List[str] = pydantic.Field()
+    """
+    Addresses in the `Cc` header.
+    """
+
+    subject: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The subject. `null`: none.
+    """
+
     preview: typing.Optional[str] = pydantic.Field(default=None)
     """
     The start of the message's own text (without the quoted conversation).
@@ -70,15 +82,31 @@ class InboxMessage(UniversalBaseModel):
     When it was received or sent.
     """
 
-    reply_to: typing.List[str]
+    reply_to: typing.List[str] = pydantic.Field()
+    """
+    Addresses in the `Reply-To` header.
+    """
+
     message_id: typing.Optional[str] = pydantic.Field(default=None)
     """
     An inbound message's `Message-ID` header (outbound ones get theirs at sending).
     """
 
-    in_reply_to: typing.Optional[str] = None
-    references: typing.List[str]
-    text: typing.Optional[str] = None
+    in_reply_to: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The message it answers, by `Message-ID`. `null`: none.
+    """
+
+    references: typing.List[str] = pydantic.Field()
+    """
+    The `Message-ID`s of the conversation so far.
+    """
+
+    text: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The plain text part. `null`: none.
+    """
+
     extracted_text: typing.Optional[str] = pydantic.Field(default=None)
     """
     The message's own text: `text` without the quoted conversation and signature below it (a heuristic; when nothing is left, all of `text`). Made from `html` when there is no `text`.

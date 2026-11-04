@@ -100,6 +100,8 @@ module Coss
           end
         end
 
+        # An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

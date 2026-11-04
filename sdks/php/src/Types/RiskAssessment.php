@@ -29,7 +29,7 @@ class RiskAssessment extends JsonSerializableType
     public string $event;
 
     /**
-     * @var ?string $eventName
+     * @var ?string $eventName Your name for a `custom` event. `null`: none.
      */
     #[JsonProperty('event_name')]
     public ?string $eventName;
@@ -53,13 +53,13 @@ class RiskAssessment extends JsonSerializableType
     public array $reasons;
 
     /**
-     * @var RiskAssessmentSignals $signals
+     * @var RiskAssessmentSignals $signals What the assessment saw, by group. A group is `null` when it had nothing to go on.
      */
     #[JsonProperty('signals')]
     public RiskAssessmentSignals $signals;
 
     /**
-     * @var RiskAssessmentUser $user
+     * @var RiskAssessmentUser $user Who it's about.
      */
     #[JsonProperty('user')]
     public RiskAssessmentUser $user;
@@ -71,7 +71,7 @@ class RiskAssessment extends JsonSerializableType
     public ?string $ip;
 
     /**
-     * @var array<value-of<RiskAssessmentDegradedItem>> $degraded Signal groups that were unavailable for this assessment (it was made without them).
+     * @var array<value-of<RiskAssessmentDegradedItem>> $degraded Signal groups that were unavailable for this assessment (it was made without them). `usage_limit` means the plan's included assessments are used up, or a billing hold or budget applies: the assessment was free and made without velocity, memory of earlier events, content or address-level IP data.
      */
     #[JsonProperty('degraded'), ArrayType(['string'])]
     public array $degraded;

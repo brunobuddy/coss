@@ -120,6 +120,9 @@ public final class ReceivedEmailSummary {
         return status;
     }
 
+    /**
+     * @return Why it's <code>blocked</code>. <code>null</code>: it isn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("blocked_reason")
     public OptionalNullable<ReceivedEmailSummaryBlockedReason> getBlockedReason() {
@@ -173,6 +176,9 @@ public final class ReceivedEmailSummary {
         return cc;
     }
 
+    /**
+     * @return The <code>Subject</code> header. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("subject")
     public OptionalNullable<String> getSubject() {
@@ -194,6 +200,9 @@ public final class ReceivedEmailSummary {
         return messageId;
     }
 
+    /**
+     * @return Its attachments, without their bytes.
+     */
     @JsonProperty("attachments")
     public List<ReceivedEmailAttachment> getAttachments() {
         return attachments;
@@ -228,6 +237,9 @@ public final class ReceivedEmailSummary {
         return sandbox;
     }
 
+    /**
+     * @return When it arrived.
+     */
     @JsonProperty("received_at")
     public OffsetDateTime getReceivedAt() {
         return receivedAt;
@@ -369,6 +381,9 @@ public final class ReceivedEmailSummary {
     }
 
     public interface ReceivedAtStage {
+        /**
+         * <p>When it arrived.</p>
+         */
         _FinalStage receivedAt(@NotNull OffsetDateTime receivedAt);
     }
 
@@ -379,6 +394,9 @@ public final class ReceivedEmailSummary {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Why it's <code>blocked</code>. <code>null</code>: it isn't.</p>
+         */
         _FinalStage blockedReason(OptionalNullable<ReceivedEmailSummaryBlockedReason> blockedReason);
 
         _FinalStage blockedReason(ReceivedEmailSummaryBlockedReason blockedReason);
@@ -425,6 +443,9 @@ public final class ReceivedEmailSummary {
 
         _FinalStage addAllCc(List<String> cc);
 
+        /**
+         * <p>The <code>Subject</code> header. <code>null</code>: none.</p>
+         */
         _FinalStage subject(OptionalNullable<String> subject);
 
         _FinalStage subject(String subject);
@@ -444,6 +465,9 @@ public final class ReceivedEmailSummary {
 
         _FinalStage messageId(Nullable<String> messageId);
 
+        /**
+         * <p>Its attachments, without their bytes.</p>
+         */
         _FinalStage attachments(List<ReceivedEmailAttachment> attachments);
 
         _FinalStage addAttachments(ReceivedEmailAttachment attachments);
@@ -600,6 +624,10 @@ public final class ReceivedEmailSummary {
             return this;
         }
 
+        /**
+         * <p>When it arrived.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("received_at")
         public _FinalStage receivedAt(@NotNull OffsetDateTime receivedAt) {
@@ -607,6 +635,10 @@ public final class ReceivedEmailSummary {
             return this;
         }
 
+        /**
+         * <p>Its attachments, without their bytes.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllAttachments(List<ReceivedEmailAttachment> attachments) {
             if (attachments != null) {
@@ -615,12 +647,19 @@ public final class ReceivedEmailSummary {
             return this;
         }
 
+        /**
+         * <p>Its attachments, without their bytes.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAttachments(ReceivedEmailAttachment attachments) {
             this.attachments.add(attachments);
             return this;
         }
 
+        /**
+         * <p>Its attachments, without their bytes.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "attachments", nulls = Nulls.SKIP)
         public _FinalStage attachments(List<ReceivedEmailAttachment> attachments) {
@@ -681,6 +720,10 @@ public final class ReceivedEmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>Subject</code> header. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subject(Nullable<String> subject) {
             if (subject.isNull()) {
@@ -693,6 +736,10 @@ public final class ReceivedEmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>Subject</code> header. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subject(Optional<String> subject) {
             if (subject.isPresent()) {
@@ -703,12 +750,19 @@ public final class ReceivedEmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>Subject</code> header. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subject(String subject) {
             this.subject = OptionalNullable.of(subject);
             return this;
         }
 
+        /**
+         * <p>The <code>Subject</code> header. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "subject", nulls = Nulls.SKIP)
         public _FinalStage subject(OptionalNullable<String> subject) {
@@ -871,6 +925,10 @@ public final class ReceivedEmailSummary {
             return this;
         }
 
+        /**
+         * <p>Why it's <code>blocked</code>. <code>null</code>: it isn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage blockedReason(Nullable<ReceivedEmailSummaryBlockedReason> blockedReason) {
             if (blockedReason.isNull()) {
@@ -883,6 +941,10 @@ public final class ReceivedEmailSummary {
             return this;
         }
 
+        /**
+         * <p>Why it's <code>blocked</code>. <code>null</code>: it isn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage blockedReason(Optional<ReceivedEmailSummaryBlockedReason> blockedReason) {
             if (blockedReason.isPresent()) {
@@ -893,12 +955,19 @@ public final class ReceivedEmailSummary {
             return this;
         }
 
+        /**
+         * <p>Why it's <code>blocked</code>. <code>null</code>: it isn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage blockedReason(ReceivedEmailSummaryBlockedReason blockedReason) {
             this.blockedReason = OptionalNullable.of(blockedReason);
             return this;
         }
 
+        /**
+         * <p>Why it's <code>blocked</code>. <code>null</code>: it isn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "blocked_reason", nulls = Nulls.SKIP)
         public _FinalStage blockedReason(OptionalNullable<ReceivedEmailSummaryBlockedReason> blockedReason) {

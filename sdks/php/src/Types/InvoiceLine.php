@@ -20,31 +20,31 @@ class InvoiceLine extends JsonSerializableType
     public string $id;
 
     /**
-     * @var value-of<InvoiceLineKind> $kind
+     * @var value-of<InvoiceLineKind> $kind What it's for: `plan_fee`, `proration`, `usage`, `credit`, `discount`, `commitment_fee`, `commitment_shortfall`, `add_on`, `adjustment` or `write_off`.
      */
     #[JsonProperty('kind')]
     public string $kind;
 
     /**
-     * @var string $description
+     * @var string $description The line as it reads on the invoice.
      */
     #[JsonProperty('description')]
     public string $description;
 
     /**
-     * @var ?value-of<InvoiceLineMeter> $meter What is counted, e.g. `email.recipients`.
+     * @var ?value-of<InvoiceLineMeter> $meter The meter of a `usage` line. `null` for other lines.
      */
     #[JsonProperty('meter')]
     public ?string $meter;
 
     /**
-     * @var ?string $dimension
+     * @var ?string $dimension What the meter is split by, such as `country=US`. `null`: not split.
      */
     #[JsonProperty('dimension')]
     public ?string $dimension;
 
     /**
-     * @var ?int $quantity
+     * @var ?int $quantity Units on this line. `null` when it isn't priced by the unit.
      */
     #[JsonProperty('quantity')]
     public ?int $quantity;
@@ -68,7 +68,7 @@ class InvoiceLine extends JsonSerializableType
     public int $amount;
 
     /**
-     * @var InvoiceLinePeriod $period
+     * @var InvoiceLinePeriod $period What period it covers.
      */
     #[JsonProperty('period')]
     public InvoiceLinePeriod $period;

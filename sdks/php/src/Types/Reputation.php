@@ -29,7 +29,7 @@ class Reputation extends JsonSerializableType
     public ?string $reason;
 
     /**
-     * @var ?DateTime $statusChangedAt
+     * @var ?DateTime $statusChangedAt When `status` last changed. `null`: it never has.
      */
     #[JsonProperty('status_changed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $statusChangedAt;
@@ -47,7 +47,7 @@ class Reputation extends JsonSerializableType
     public ?ReputationWindow $window;
 
     /**
-     * @var array<ReputationCheck> $checks
+     * @var array<ReputationCheck> $checks The measurements behind `status`.
      */
     #[JsonProperty('checks'), ArrayType([ReputationCheck::class])]
     public array $checks;

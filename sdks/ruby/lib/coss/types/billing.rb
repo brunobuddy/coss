@@ -29,6 +29,8 @@ module Coss
 
       field :spend_limit, -> { Integer }, optional: false, nullable: true
 
+      field :credit_limit, -> { Coss::Types::BillingCreditLimit }, optional: false, nullable: true
+
       field :payment_method, -> { Coss::Types::BillingPaymentMethod }, optional: false, nullable: true
 
       field :add_ons, -> { Internal::Types::Array[Coss::Types::BillingAddOnsItem] }, optional: false, nullable: false

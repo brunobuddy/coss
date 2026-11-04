@@ -11,6 +11,9 @@ public record RiskCalibrationReason : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The reason's code.
+    /// </summary>
     [JsonPropertyName("code")]
     public required RiskCalibrationReasonCode Code { get; set; }
 
@@ -39,6 +42,9 @@ public record RiskCalibrationReason : IJsonOnDeserialized
     [JsonPropertyName("precision")]
     public double? Precision { get; set; }
 
+    /// <summary>
+    /// Its weight unless this environment changes it.
+    /// </summary>
     [JsonPropertyName("default_weight")]
     public required double DefaultWeight { get; set; }
 

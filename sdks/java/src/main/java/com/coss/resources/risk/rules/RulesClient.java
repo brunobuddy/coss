@@ -58,34 +58,58 @@ public class RulesClient {
         return this.rawClient.create(request, requestOptions).body();
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public RiskRule get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public RiskRule get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public RiskRule get(String id, GetRulesRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public RiskRule get(String id, GetRulesRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public DeletedRiskRule delete(String id) {
         return this.rawClient.delete(id).body();
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public DeletedRiskRule delete(String id, RequestOptions requestOptions) {
         return this.rawClient.delete(id, requestOptions).body();
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public DeletedRiskRule delete(String id, DeleteRulesRequest request) {
         return this.rawClient.delete(id, request).body();
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public DeletedRiskRule delete(String id, DeleteRulesRequest request, RequestOptions requestOptions) {
         return this.rawClient.delete(id, request, requestOptions).body();
     }

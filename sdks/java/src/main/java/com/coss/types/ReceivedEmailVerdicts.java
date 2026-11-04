@@ -54,6 +54,9 @@ public final class ReceivedEmailVerdicts {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The spam verdict.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("spam")
     public OptionalNullable<ReceivedEmailVerdictsSpam> getSpam() {
@@ -63,6 +66,9 @@ public final class ReceivedEmailVerdicts {
         return spam;
     }
 
+    /**
+     * @return The virus verdict.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("virus")
     public OptionalNullable<ReceivedEmailVerdictsVirus> getVirus() {
@@ -72,6 +78,9 @@ public final class ReceivedEmailVerdicts {
         return virus;
     }
 
+    /**
+     * @return The SPF verdict.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("spf")
     public OptionalNullable<ReceivedEmailVerdictsSpf> getSpf() {
@@ -81,6 +90,9 @@ public final class ReceivedEmailVerdicts {
         return spf;
     }
 
+    /**
+     * @return The DKIM verdict.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("dkim")
     public OptionalNullable<ReceivedEmailVerdictsDkim> getDkim() {
@@ -90,6 +102,9 @@ public final class ReceivedEmailVerdicts {
         return dkim;
     }
 
+    /**
+     * @return The DMARC verdict.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("dmarc")
     public OptionalNullable<ReceivedEmailVerdictsDmarc> getDmarc() {
@@ -210,6 +225,9 @@ public final class ReceivedEmailVerdicts {
             return this;
         }
 
+        /**
+         * <p>The spam verdict.</p>
+         */
         @JsonSetter(value = "spam", nulls = Nulls.SKIP)
         public Builder spam(OptionalNullable<ReceivedEmailVerdictsSpam> spam) {
             this.spam = spam;
@@ -241,6 +259,9 @@ public final class ReceivedEmailVerdicts {
             return this;
         }
 
+        /**
+         * <p>The virus verdict.</p>
+         */
         @JsonSetter(value = "virus", nulls = Nulls.SKIP)
         public Builder virus(OptionalNullable<ReceivedEmailVerdictsVirus> virus) {
             this.virus = virus;
@@ -272,6 +293,9 @@ public final class ReceivedEmailVerdicts {
             return this;
         }
 
+        /**
+         * <p>The SPF verdict.</p>
+         */
         @JsonSetter(value = "spf", nulls = Nulls.SKIP)
         public Builder spf(OptionalNullable<ReceivedEmailVerdictsSpf> spf) {
             this.spf = spf;
@@ -303,6 +327,9 @@ public final class ReceivedEmailVerdicts {
             return this;
         }
 
+        /**
+         * <p>The DKIM verdict.</p>
+         */
         @JsonSetter(value = "dkim", nulls = Nulls.SKIP)
         public Builder dkim(OptionalNullable<ReceivedEmailVerdictsDkim> dkim) {
             this.dkim = dkim;
@@ -334,6 +361,9 @@ public final class ReceivedEmailVerdicts {
             return this;
         }
 
+        /**
+         * <p>The DMARC verdict.</p>
+         */
         @JsonSetter(value = "dmarc", nulls = Nulls.SKIP)
         public Builder dmarc(OptionalNullable<ReceivedEmailVerdictsDmarc> dmarc) {
             this.dmarc = dmarc;

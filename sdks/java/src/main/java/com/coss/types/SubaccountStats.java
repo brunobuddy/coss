@@ -54,16 +54,25 @@ public final class SubaccountStats {
         return object;
     }
 
+    /**
+     * @return The sub-account's id.
+     */
     @JsonProperty("subaccount_id")
     public String getSubaccountId() {
         return subaccountId;
     }
 
+    /**
+     * @return The first date included.
+     */
     @JsonProperty("from")
     public String getFrom() {
         return from;
     }
 
+    /**
+     * @return The last date included.
+     */
     @JsonProperty("to")
     public String getTo() {
         return to;
@@ -117,14 +126,23 @@ public final class SubaccountStats {
     }
 
     public interface SubaccountIdStage {
+        /**
+         * <p>The sub-account's id.</p>
+         */
         FromStage subaccountId(@NotNull String subaccountId);
     }
 
     public interface FromStage {
+        /**
+         * <p>The first date included.</p>
+         */
         ToStage from(@NotNull String from);
     }
 
     public interface ToStage {
+        /**
+         * <p>The last date included.</p>
+         */
         _FinalStage to(@NotNull String to);
     }
 
@@ -179,6 +197,10 @@ public final class SubaccountStats {
             return this;
         }
 
+        /**
+         * <p>The sub-account's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("subaccount_id")
         public FromStage subaccountId(@NotNull String subaccountId) {
@@ -186,6 +208,10 @@ public final class SubaccountStats {
             return this;
         }
 
+        /**
+         * <p>The first date included.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("from")
         public ToStage from(@NotNull String from) {
@@ -193,6 +219,10 @@ public final class SubaccountStats {
             return this;
         }
 
+        /**
+         * <p>The last date included.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("to")
         public _FinalStage to(@NotNull String to) {

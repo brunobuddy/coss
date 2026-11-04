@@ -124,6 +124,8 @@ class AudiencesClient
     }
 
     /**
+     * Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+     *
      * Example:
      * ```php
      * $client->email->audiences->create(
@@ -184,6 +186,8 @@ class AudiencesClient
     }
 
     /**
+     * One audience of the API key's environment.
+     *
      * Example:
      * ```php
      * $client->email->audiences->get(
@@ -292,6 +296,8 @@ class AudiencesClient
     }
 
     /**
+     * Renames an audience. Its members stay.
+     *
      * Example:
      * ```php
      * $client->email->audiences->update(
@@ -481,6 +487,8 @@ class AudiencesClient
     }
 
     /**
+     * Takes a contact out of the audience. The contact itself stays.
+     *
      * Example:
      * ```php
      * $client->email->audiences->removeContact(

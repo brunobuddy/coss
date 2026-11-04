@@ -38,7 +38,7 @@ class TemplateVariableInput extends JsonSerializableType
     public string|float|bool|null $default;
 
     /**
-     * @var ?string $description
+     * @var ?string $description What it's for, shown in the dashboard.
      */
     #[JsonProperty('description')]
     public ?string $description;

@@ -22,7 +22,7 @@ class SmsWebhookEvent extends JsonSerializableType
     public string $object;
 
     /**
-     * @var value-of<SmsWebhookEventType> $type
+     * @var value-of<SmsWebhookEventType> $type What happened to the message.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -34,7 +34,7 @@ class SmsWebhookEvent extends JsonSerializableType
     public string $apiVersion;
 
     /**
-     * @var DateTime $createdAt
+     * @var DateTime $createdAt When the event was created.
      */
     #[JsonProperty('created_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $createdAt;

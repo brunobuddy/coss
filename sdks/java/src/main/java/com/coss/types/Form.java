@@ -124,11 +124,17 @@ public final class Form {
         return id;
     }
 
+    /**
+     * @return Your name for the form, shown in the dashboard and in notifications.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return <code>false</code>: submissions are refused.
+     */
     @JsonProperty("enabled")
     public boolean getEnabled() {
         return enabled;
@@ -154,6 +160,9 @@ public final class Form {
         return hostedUrl;
     }
 
+    /**
+     * @return The form's fields. <code>null</code>: any field is accepted, without validation.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("fields")
     public OptionalNullable<List<FormField>> getFields() {
@@ -163,16 +172,25 @@ public final class Form {
         return fields;
     }
 
+    /**
+     * @return With <code>fields</code>: whether fields the form doesn't define are refused.
+     */
     @JsonProperty("strict_fields")
     public boolean getStrictFields() {
         return strictFields;
     }
 
+    /**
+     * @return Sites that may post to the form. Empty: any.
+     */
     @JsonProperty("allowed_origins")
     public List<String> getAllowedOrigins() {
         return allowedOrigins;
     }
 
+    /**
+     * @return Where browsers go after an HTML post. <code>null</code>: coss.com's thank-you page.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("redirect_url")
     public OptionalNullable<String> getRedirectUrl() {
@@ -182,31 +200,49 @@ public final class Form {
         return redirectUrl;
     }
 
+    /**
+     * @return How submissions are screened.
+     */
     @JsonProperty("spam")
     public FormSpam getSpam() {
         return spam;
     }
 
+    /**
+     * @return Who the submitter is, and whether they must confirm by email.
+     */
     @JsonProperty("submitter")
     public FormSubmitter getSubmitter() {
         return submitter;
     }
 
+    /**
+     * @return Emails about accepted submissions.
+     */
     @JsonProperty("notifications")
     public FormNotifications getNotifications() {
         return notifications;
     }
 
+    /**
+     * @return Turning submissions into contacts.
+     */
     @JsonProperty("contacts")
     public FormContacts getContacts() {
         return contacts;
     }
 
+    /**
+     * @return File uploads.
+     */
     @JsonProperty("files")
     public FormFiles getFiles() {
         return files;
     }
 
+    /**
+     * @return The page coss.com can serve for this form.
+     */
     @JsonProperty("hosted")
     public FormHosted getHosted() {
         return hosted;
@@ -220,6 +256,9 @@ public final class Form {
         return disabledByAdmin;
     }
 
+    /**
+     * @return Whether the form belongs to a sandbox environment.
+     */
     @JsonProperty("sandbox")
     public boolean getSandbox() {
         return sandbox;
@@ -332,10 +371,16 @@ public final class Form {
     }
 
     public interface NameStage {
+        /**
+         * <p>Your name for the form, shown in the dashboard and in notifications.</p>
+         */
         EnabledStage name(@NotNull String name);
     }
 
     public interface EnabledStage {
+        /**
+         * <p><code>false</code>: submissions are refused.</p>
+         */
         EndpointStage enabled(boolean enabled);
     }
 
@@ -347,30 +392,51 @@ public final class Form {
     }
 
     public interface StrictFieldsStage {
+        /**
+         * <p>With <code>fields</code>: whether fields the form doesn't define are refused.</p>
+         */
         SpamStage strictFields(boolean strictFields);
     }
 
     public interface SpamStage {
+        /**
+         * <p>How submissions are screened.</p>
+         */
         SubmitterStage spam(@NotNull FormSpam spam);
     }
 
     public interface SubmitterStage {
+        /**
+         * <p>Who the submitter is, and whether they must confirm by email.</p>
+         */
         NotificationsStage submitter(@NotNull FormSubmitter submitter);
     }
 
     public interface NotificationsStage {
+        /**
+         * <p>Emails about accepted submissions.</p>
+         */
         ContactsStage notifications(@NotNull FormNotifications notifications);
     }
 
     public interface ContactsStage {
+        /**
+         * <p>Turning submissions into contacts.</p>
+         */
         FilesStage contacts(@NotNull FormContacts contacts);
     }
 
     public interface FilesStage {
+        /**
+         * <p>File uploads.</p>
+         */
         HostedStage files(@NotNull FormFiles files);
     }
 
     public interface HostedStage {
+        /**
+         * <p>The page coss.com can serve for this form.</p>
+         */
         DisabledByAdminStage hosted(@NotNull FormHosted hosted);
     }
 
@@ -382,6 +448,9 @@ public final class Form {
     }
 
     public interface SandboxStage {
+        /**
+         * <p>Whether the form belongs to a sandbox environment.</p>
+         */
         CreatedAtStage sandbox(boolean sandbox);
     }
 
@@ -411,6 +480,9 @@ public final class Form {
 
         _FinalStage hostedUrl(Nullable<String> hostedUrl);
 
+        /**
+         * <p>The form's fields. <code>null</code>: any field is accepted, without validation.</p>
+         */
         _FinalStage fields(OptionalNullable<List<FormField>> fields);
 
         _FinalStage fields(List<FormField> fields);
@@ -419,12 +491,18 @@ public final class Form {
 
         _FinalStage fields(Nullable<List<FormField>> fields);
 
+        /**
+         * <p>Sites that may post to the form. Empty: any.</p>
+         */
         _FinalStage allowedOrigins(List<String> allowedOrigins);
 
         _FinalStage addAllowedOrigins(String allowedOrigins);
 
         _FinalStage addAllAllowedOrigins(List<String> allowedOrigins);
 
+        /**
+         * <p>Where browsers go after an HTML post. <code>null</code>: coss.com's thank-you page.</p>
+         */
         _FinalStage redirectUrl(OptionalNullable<String> redirectUrl);
 
         _FinalStage redirectUrl(String redirectUrl);
@@ -537,6 +615,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>Your name for the form, shown in the dashboard and in notifications.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public EnabledStage name(@NotNull String name) {
@@ -544,6 +626,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p><code>false</code>: submissions are refused.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("enabled")
         public EndpointStage enabled(boolean enabled) {
@@ -562,6 +648,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>With <code>fields</code>: whether fields the form doesn't define are refused.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("strict_fields")
         public SpamStage strictFields(boolean strictFields) {
@@ -569,6 +659,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>How submissions are screened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("spam")
         public SubmitterStage spam(@NotNull FormSpam spam) {
@@ -576,6 +670,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>Who the submitter is, and whether they must confirm by email.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("submitter")
         public NotificationsStage submitter(@NotNull FormSubmitter submitter) {
@@ -583,6 +681,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>Emails about accepted submissions.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("notifications")
         public ContactsStage notifications(@NotNull FormNotifications notifications) {
@@ -590,6 +692,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>Turning submissions into contacts.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("contacts")
         public FilesStage contacts(@NotNull FormContacts contacts) {
@@ -597,6 +703,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>File uploads.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("files")
         public HostedStage files(@NotNull FormFiles files) {
@@ -604,6 +714,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>The page coss.com can serve for this form.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("hosted")
         public DisabledByAdminStage hosted(@NotNull FormHosted hosted) {
@@ -622,6 +736,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>Whether the form belongs to a sandbox environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sandbox")
         public CreatedAtStage sandbox(boolean sandbox) {
@@ -643,6 +761,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>Where browsers go after an HTML post. <code>null</code>: coss.com's thank-you page.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage redirectUrl(Nullable<String> redirectUrl) {
             if (redirectUrl.isNull()) {
@@ -655,6 +777,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>Where browsers go after an HTML post. <code>null</code>: coss.com's thank-you page.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage redirectUrl(Optional<String> redirectUrl) {
             if (redirectUrl.isPresent()) {
@@ -665,12 +791,19 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>Where browsers go after an HTML post. <code>null</code>: coss.com's thank-you page.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage redirectUrl(String redirectUrl) {
             this.redirectUrl = OptionalNullable.of(redirectUrl);
             return this;
         }
 
+        /**
+         * <p>Where browsers go after an HTML post. <code>null</code>: coss.com's thank-you page.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "redirect_url", nulls = Nulls.SKIP)
         public _FinalStage redirectUrl(OptionalNullable<String> redirectUrl) {
@@ -678,6 +811,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>Sites that may post to the form. Empty: any.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllAllowedOrigins(List<String> allowedOrigins) {
             if (allowedOrigins != null) {
@@ -686,12 +823,19 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>Sites that may post to the form. Empty: any.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllowedOrigins(String allowedOrigins) {
             this.allowedOrigins.add(allowedOrigins);
             return this;
         }
 
+        /**
+         * <p>Sites that may post to the form. Empty: any.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "allowed_origins", nulls = Nulls.SKIP)
         public _FinalStage allowedOrigins(List<String> allowedOrigins) {
@@ -702,6 +846,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>The form's fields. <code>null</code>: any field is accepted, without validation.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage fields(Nullable<List<FormField>> fields) {
             if (fields.isNull()) {
@@ -714,6 +862,10 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>The form's fields. <code>null</code>: any field is accepted, without validation.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage fields(Optional<List<FormField>> fields) {
             if (fields.isPresent()) {
@@ -724,12 +876,19 @@ public final class Form {
             return this;
         }
 
+        /**
+         * <p>The form's fields. <code>null</code>: any field is accepted, without validation.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage fields(List<FormField> fields) {
             this.fields = OptionalNullable.of(fields);
             return this;
         }
 
+        /**
+         * <p>The form's fields. <code>null</code>: any field is accepted, without validation.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "fields", nulls = Nulls.SKIP)
         public _FinalStage fields(OptionalNullable<List<FormField>> fields) {

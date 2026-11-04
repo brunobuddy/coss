@@ -20,6 +20,7 @@ if typing.TYPE_CHECKING:
         logs,
         reputation,
         risk,
+        scheduling,
         sign,
         sms,
         verify,
@@ -46,6 +47,7 @@ if typing.TYPE_CHECKING:
         UpdateFormRequestSpamOnReview,
         UpdateFormRequestSubmitter,
     )
+    from .log_drains import CreateLogDrainRequestFormat
     from .risk import (
         CreateRiskAssessmentRequestCaptcha,
         CreateRiskAssessmentRequestContent,
@@ -71,6 +73,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "CreateFormRequestSpamCaptcha": ".forms",
     "CreateFormRequestSpamOnReview": ".forms",
     "CreateFormRequestSubmitter": ".forms",
+    "CreateLogDrainRequestFormat": ".log_drains",
     "CreateRiskAssessmentRequestCaptcha": ".risk",
     "CreateRiskAssessmentRequestContent": ".risk",
     "CreateRiskAssessmentRequestDevice": ".risk",
@@ -110,6 +113,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "logs": ".logs",
     "reputation": ".reputation",
     "risk": ".risk",
+    "scheduling": ".scheduling",
     "sign": ".sign",
     "sms": ".sms",
     "verify": ".verify",
@@ -149,6 +153,7 @@ __all__ = [
     "CreateFormRequestSpamCaptcha",
     "CreateFormRequestSpamOnReview",
     "CreateFormRequestSubmitter",
+    "CreateLogDrainRequestFormat",
     "CreateRiskAssessmentRequestCaptcha",
     "CreateRiskAssessmentRequestContent",
     "CreateRiskAssessmentRequestDevice",
@@ -188,6 +193,7 @@ __all__ = [
     "logs",
     "reputation",
     "risk",
+    "scheduling",
     "sign",
     "sms",
     "verify",

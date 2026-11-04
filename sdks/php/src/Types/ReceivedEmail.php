@@ -29,7 +29,7 @@ class ReceivedEmail extends JsonSerializableType
     public string $status;
 
     /**
-     * @var ?value-of<ReceivedEmailBlockedReason> $blockedReason
+     * @var ?value-of<ReceivedEmailBlockedReason> $blockedReason Why it's `blocked`. `null`: it isn't.
      */
     #[JsonProperty('blocked_reason')]
     public ?string $blockedReason;
@@ -65,7 +65,7 @@ class ReceivedEmail extends JsonSerializableType
     public array $cc;
 
     /**
-     * @var ?string $subject
+     * @var ?string $subject The `Subject` header. `null`: none.
      */
     #[JsonProperty('subject')]
     public ?string $subject;
@@ -77,7 +77,7 @@ class ReceivedEmail extends JsonSerializableType
     public ?string $messageId;
 
     /**
-     * @var array<ReceivedEmailAttachment> $attachments
+     * @var array<ReceivedEmailAttachment> $attachments Its attachments, without their bytes.
      */
     #[JsonProperty('attachments'), ArrayType([ReceivedEmailAttachment::class])]
     public array $attachments;
@@ -107,19 +107,19 @@ class ReceivedEmail extends JsonSerializableType
     public bool $sandbox;
 
     /**
-     * @var DateTime $receivedAt
+     * @var DateTime $receivedAt When it arrived.
      */
     #[JsonProperty('received_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $receivedAt;
 
     /**
-     * @var array<string> $replyTo
+     * @var array<string> $replyTo The `Reply-To` header's addresses.
      */
     #[JsonProperty('reply_to'), ArrayType(['string'])]
     public array $replyTo;
 
     /**
-     * @var ?string $inReplyTo
+     * @var ?string $inReplyTo The `In-Reply-To` header. `null`: none.
      */
     #[JsonProperty('in_reply_to')]
     public ?string $inReplyTo;
@@ -143,13 +143,13 @@ class ReceivedEmail extends JsonSerializableType
     public array $headers;
 
     /**
-     * @var ?string $text
+     * @var ?string $text The plain text body. `null`: none, or it's `blocked`.
      */
     #[JsonProperty('text')]
     public ?string $text;
 
     /**
-     * @var ?string $html
+     * @var ?string $html The HTML body. `null`: none, or it's `blocked`.
      */
     #[JsonProperty('html')]
     public ?string $html;

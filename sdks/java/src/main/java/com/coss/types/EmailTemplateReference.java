@@ -40,6 +40,9 @@ public final class EmailTemplateReference {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The template's id.
+     */
     @JsonProperty("id")
     public String getId() {
         return id;
@@ -57,6 +60,9 @@ public final class EmailTemplateReference {
         return version;
     }
 
+    /**
+     * @return The locale the email was rendered in.
+     */
     @JsonProperty("locale")
     public String getLocale() {
         return locale;
@@ -98,12 +104,18 @@ public final class EmailTemplateReference {
     }
 
     public interface IdStage {
+        /**
+         * <p>The template's id.</p>
+         */
         LocaleStage id(@NotNull String id);
 
         Builder from(EmailTemplateReference other);
     }
 
     public interface LocaleStage {
+        /**
+         * <p>The locale the email was rendered in.</p>
+         */
         _FinalStage locale(@NotNull String locale);
     }
 
@@ -147,6 +159,10 @@ public final class EmailTemplateReference {
             return this;
         }
 
+        /**
+         * <p>The template's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("id")
         public LocaleStage id(@NotNull String id) {
@@ -154,6 +170,10 @@ public final class EmailTemplateReference {
             return this;
         }
 
+        /**
+         * <p>The locale the email was rendered in.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("locale")
         public _FinalStage locale(@NotNull String locale) {

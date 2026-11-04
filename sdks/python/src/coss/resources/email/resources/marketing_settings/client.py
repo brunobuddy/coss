@@ -72,20 +72,28 @@ class MarketingSettingsClient:
         Parameters
         ----------
         display_name : typing.Optional[str]
+            The sender's name in the preference center. `null`: the organization's.
 
         mailing_address : typing.Optional[str]
+            The postal address every marketing email carries (CAN-SPAM). Marketing emails can't be sent without one.
 
         double_opt_in_default : typing.Optional[bool]
+            Whether contacts upserted without `double_opt_in` must confirm first.
 
         confirmation_from : typing.Optional[str]
+            The sender of confirmation emails (a verified domain's address for live keys).
 
         confirmation_subject : typing.Optional[str]
+            `null`: coss.com's default.
 
         confirmation_html : typing.Optional[str]
+            `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
 
         confirmation_text : typing.Optional[str]
+            `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
 
         confirmed_redirect_url : typing.Optional[str]
+            Where a confirmed contact is sent, an https URL. `null`: coss.com's own page.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -190,20 +198,28 @@ class AsyncMarketingSettingsClient:
         Parameters
         ----------
         display_name : typing.Optional[str]
+            The sender's name in the preference center. `null`: the organization's.
 
         mailing_address : typing.Optional[str]
+            The postal address every marketing email carries (CAN-SPAM). Marketing emails can't be sent without one.
 
         double_opt_in_default : typing.Optional[bool]
+            Whether contacts upserted without `double_opt_in` must confirm first.
 
         confirmation_from : typing.Optional[str]
+            The sender of confirmation emails (a verified domain's address for live keys).
 
         confirmation_subject : typing.Optional[str]
+            `null`: coss.com's default.
 
         confirmation_html : typing.Optional[str]
+            `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
 
         confirmation_text : typing.Optional[str]
+            `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
 
         confirmed_redirect_url : typing.Optional[str]
+            Where a confirmed contact is sent, an https URL. `null`: coss.com's own page.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.

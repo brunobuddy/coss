@@ -17,12 +17,21 @@ public record HookEndpointRecovery : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The id of the endpoint being recovered.
+    /// </summary>
     [JsonPropertyName("endpoint_id")]
     public required string EndpointId { get; set; }
 
+    /// <summary>
+    /// Deliveries of messages sent from this time on are requeued.
+    /// </summary>
     [JsonPropertyName("since")]
     public required DateTime Since { get; set; }
 
+    /// <summary>
+    /// Up to this time: when the recovery was asked for.
+    /// </summary>
     [JsonPropertyName("until")]
     public required DateTime Until { get; set; }
 
@@ -41,6 +50,9 @@ public record HookEndpointRecovery : IJsonOnDeserialized
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// When requeueing finished. `null`: still `pending`.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("completed_at")]
     public DateTime? CompletedAt { get; set; }

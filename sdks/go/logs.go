@@ -238,8 +238,9 @@ var logNullableFields = map[string]*big.Int{
 }
 
 type Log struct {
-	Object     LogObject `json:"object" url:"object"`
-	ID         string    `json:"id" url:"id"`
+	Object LogObject `json:"object" url:"object"`
+	ID     string    `json:"id" url:"id"`
+	// When it happened.
 	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
 	Source     LogSource `json:"source" url:"source"`
 	Level      LogLevel  `json:"level" url:"level"`
@@ -249,21 +250,30 @@ type Log struct {
 	Message string `json:"message" url:"message"`
 	// The `X-Request-Id` of the API request this line belongs to.
 	RequestID *string `json:"request_id,omitempty" url:"request_id,omitempty"`
-	APIKeyID  *string `json:"api_key_id,omitempty" url:"api_key_id,omitempty"`
-	Method    *string `json:"method,omitempty" url:"method,omitempty"`
-	Path      *string `json:"path,omitempty" url:"path,omitempty"`
+	// The API key that made the request. `null`: not an API request.
+	APIKeyID *string `json:"api_key_id,omitempty" url:"api_key_id,omitempty"`
+	// The HTTP method. `null`: not an HTTP line.
+	Method *string `json:"method,omitempty" url:"method,omitempty"`
+	// The request's path. `null`: not an API request.
+	Path *string `json:"path,omitempty" url:"path,omitempty"`
 	// The matched route, e.g. `/v1/emails/:id`.
 	Route *string `json:"route,omitempty" url:"route,omitempty"`
 	// The API response status, or the webhook endpoint's response status.
-	StatusCode *int64  `json:"status_code,omitempty" url:"status_code,omitempty"`
-	DurationMs *int64  `json:"duration_ms,omitempty" url:"duration_ms,omitempty"`
-	ClientIP   *string `json:"client_ip,omitempty" url:"client_ip,omitempty"`
-	UserAgent  *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
-	ErrorCode  *string `json:"error_code,omitempty" url:"error_code,omitempty"`
+	StatusCode *int64 `json:"status_code,omitempty" url:"status_code,omitempty"`
+	// How long it took, in milliseconds. `null`: not timed.
+	DurationMs *int64 `json:"duration_ms,omitempty" url:"duration_ms,omitempty"`
+	// The caller's address. `null`: not an API request.
+	ClientIP *string `json:"client_ip,omitempty" url:"client_ip,omitempty"`
+	// The caller's `User-Agent`. `null`: not sent.
+	UserAgent *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
+	// The error's `code`. `null`: no error.
+	ErrorCode *string `json:"error_code,omitempty" url:"error_code,omitempty"`
 	// What the line is about: `email`, `domain`, `webhook_endpoint`…
 	ResourceType *string `json:"resource_type,omitempty" url:"resource_type,omitempty"`
-	ResourceID   *string `json:"resource_id,omitempty" url:"resource_id,omitempty"`
-	Recipient    *string `json:"recipient,omitempty" url:"recipient,omitempty"`
+	// The id of what it's about. `null`: nothing in particular.
+	ResourceID *string `json:"resource_id,omitempty" url:"resource_id,omitempty"`
+	// The recipient an email event is about. `null`: none.
+	Recipient *string `json:"recipient,omitempty" url:"recipient,omitempty"`
 	// Details: redacted request and response bodies for API requests (secrets, attachment contents and long strings are never stored), event data for emails and webhooks.
 	Attributes map[string]any `json:"attributes" url:"attributes"`
 
@@ -827,15 +837,16 @@ func (l LogObject) Ptr() *LogObject {
 type LogSource string
 
 const (
-	LogSourceAPI     LogSource = "api"
-	LogSourceEmail   LogSource = "email"
-	LogSourceWebhook LogSource = "webhook"
-	LogSourceRisk    LogSource = "risk"
-	LogSourceSMTP    LogSource = "smtp"
-	LogSourceSms     LogSource = "sms"
-	LogSourceSign    LogSource = "sign"
-	LogSourceVerify  LogSource = "verify"
-	LogSourceForms   LogSource = "forms"
+	LogSourceAPI        LogSource = "api"
+	LogSourceEmail      LogSource = "email"
+	LogSourceWebhook    LogSource = "webhook"
+	LogSourceRisk       LogSource = "risk"
+	LogSourceSMTP       LogSource = "smtp"
+	LogSourceSms        LogSource = "sms"
+	LogSourceSign       LogSource = "sign"
+	LogSourceVerify     LogSource = "verify"
+	LogSourceForms      LogSource = "forms"
+	LogSourceScheduling LogSource = "scheduling"
 )
 
 func NewLogSourceFromString(s string) (LogSource, error) {
@@ -858,6 +869,8 @@ func NewLogSourceFromString(s string) (LogSource, error) {
 		return LogSourceVerify, nil
 	case "forms":
 		return LogSourceForms, nil
+	case "scheduling":
+		return LogSourceScheduling, nil
 	}
 	var t LogSource
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

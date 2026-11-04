@@ -20,6 +20,8 @@ public readonly record struct CreditSource : IStringEnum
 
     public static readonly CreditSource Sla = new(Values.Sla);
 
+    public static readonly CreditSource Threshold = new(Values.Threshold);
+
     public CreditSource(string value)
     {
         Value = value;
@@ -127,5 +129,7 @@ public readonly record struct CreditSource : IStringEnum
         public const string Refund = "refund";
 
         public const string Sla = "sla";
+
+        public const string Threshold = "threshold";
     }
 }

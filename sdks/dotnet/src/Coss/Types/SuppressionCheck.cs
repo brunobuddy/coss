@@ -14,6 +14,9 @@ public record SuppressionCheck : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required SuppressionCheckObject Object { get; set; }
 
+    /// <summary>
+    /// The address checked.
+    /// </summary>
     [JsonPropertyName("address")]
     public required string Address { get; set; }
 

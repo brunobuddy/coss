@@ -41,6 +41,9 @@ public final class SegmentFilter {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The filter's format. Always 1.
+     */
     @JsonProperty("version")
     public double getVersion() {
         return version;
@@ -54,6 +57,9 @@ public final class SegmentFilter {
         return match;
     }
 
+    /**
+     * @return Conditions, or <code>{ match, conditions }</code> groups of them. At most 20 in all.
+     */
     @JsonProperty("conditions")
     public List<SegmentFilterConditionsItem> getConditions() {
         return conditions;
@@ -89,6 +95,9 @@ public final class SegmentFilter {
     }
 
     public interface VersionStage {
+        /**
+         * <p>The filter's format. Always 1.</p>
+         */
         MatchStage version(double version);
 
         Builder from(SegmentFilter other);
@@ -108,6 +117,9 @@ public final class SegmentFilter {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Conditions, or <code>{ match, conditions }</code> groups of them. At most 20 in all.</p>
+         */
         _FinalStage conditions(List<SegmentFilterConditionsItem> conditions);
 
         _FinalStage addConditions(SegmentFilterConditionsItem conditions);
@@ -136,6 +148,10 @@ public final class SegmentFilter {
             return this;
         }
 
+        /**
+         * <p>The filter's format. Always 1.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("version")
         public MatchStage version(double version) {
@@ -154,6 +170,10 @@ public final class SegmentFilter {
             return this;
         }
 
+        /**
+         * <p>Conditions, or <code>{ match, conditions }</code> groups of them. At most 20 in all.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllConditions(List<SegmentFilterConditionsItem> conditions) {
             if (conditions != null) {
@@ -162,12 +182,19 @@ public final class SegmentFilter {
             return this;
         }
 
+        /**
+         * <p>Conditions, or <code>{ match, conditions }</code> groups of them. At most 20 in all.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addConditions(SegmentFilterConditionsItem conditions) {
             this.conditions.add(conditions);
             return this;
         }
 
+        /**
+         * <p>Conditions, or <code>{ match, conditions }</code> groups of them. At most 20 in all.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "conditions", nulls = Nulls.SKIP)
         public _FinalStage conditions(List<SegmentFilterConditionsItem> conditions) {

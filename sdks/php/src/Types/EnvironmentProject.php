@@ -5,6 +5,9 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * The project it belongs to.
+ */
 class EnvironmentProject extends JsonSerializableType
 {
     /**

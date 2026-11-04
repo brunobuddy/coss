@@ -11,9 +11,15 @@ public record DomainDmarcNext : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The kind of step this is.
+    /// </summary>
     [JsonPropertyName("kind")]
     public required DomainDmarcNextKind Kind { get; set; }
 
+    /// <summary>
+    /// The policy that step gets to.
+    /// </summary>
     [JsonPropertyName("policy")]
     public required DomainDmarcNextPolicy Policy { get; set; }
 

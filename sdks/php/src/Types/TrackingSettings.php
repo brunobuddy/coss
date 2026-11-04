@@ -18,7 +18,7 @@ class TrackingSettings extends JsonSerializableType
     public string $object;
 
     /**
-     * @var ?TrackingRule $default
+     * @var ?TrackingRule $default The environment's tracking default. `null`: none is set.
      */
     #[JsonProperty('default')]
     public ?TrackingRule $default;

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Used when a send leaves it out.
     class TemplateVariableDefault < Internal::Types::Model
       extend Coss::Internal::Types::Union
 

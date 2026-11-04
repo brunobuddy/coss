@@ -198,12 +198,14 @@ type Reputation struct {
 	// `good`, `warning` (a rate is approaching the suspension threshold) or `suspended` (live sending is refused until coss.com support reinstates the organization).
 	Status ReputationStatus `json:"status" url:"status"`
 	// The trigger behind a `warning` or `suspended` status.
-	Reason          *string    `json:"reason,omitempty" url:"reason,omitempty"`
+	Reason *string `json:"reason,omitempty" url:"reason,omitempty"`
+	// When `status` last changed. `null`: it never has.
 	StatusChangedAt *time.Time `json:"status_changed_at,omitempty" url:"status_changed_at,omitempty"`
 	// When the checks below were computed; `null` before the first evaluation.
 	EvaluatedAt *time.Time `json:"evaluated_at,omitempty" url:"evaluated_at,omitempty"`
 	// The period the checks cover (live environments only).
-	Window    *ReputationWindow  `json:"window,omitempty" url:"window,omitempty"`
+	Window *ReputationWindow `json:"window,omitempty" url:"window,omitempty"`
+	// The measurements behind `status`.
 	Checks    []*ReputationCheck `json:"checks" url:"checks"`
 	Marketing *MarketingStanding `json:"marketing" url:"marketing"`
 
@@ -716,8 +718,10 @@ var (
 
 // The period the checks cover (live environments only).
 type ReputationWindow struct {
+	// When the period starts.
 	Start time.Time `json:"start" url:"start"`
-	End   time.Time `json:"end" url:"end"`
+	// When the period ends.
+	End time.Time `json:"end" url:"end"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`

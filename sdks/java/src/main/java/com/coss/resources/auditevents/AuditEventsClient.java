@@ -55,18 +55,30 @@ public class AuditEventsClient {
         return this.rawClient.list(request, requestOptions).body();
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public AuditEvent get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public AuditEvent get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public AuditEvent get(String id, GetAuditEventsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public AuditEvent get(String id, GetAuditEventsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

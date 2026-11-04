@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// The organization it belongs to.
+/// </summary>
 [Serializable]
 public record EnvironmentOrganization : IJsonOnDeserialized
 {
@@ -34,6 +37,12 @@ public record EnvironmentOrganization : IJsonOnDeserialized
     /// </summary>
     [JsonPropertyName("api_version")]
     public required string ApiVersion { get; set; }
+
+    /// <summary>
+    /// Whether the organization is in HIPAA mode, which refuses some requests with `hipaa_mode_restriction`. Its compliance settings page lists what the mode changes.
+    /// </summary>
+    [JsonPropertyName("hipaa_mode")]
+    public required bool HipaaMode { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

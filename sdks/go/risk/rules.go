@@ -21,13 +21,17 @@ var (
 )
 
 type CreateRiskRuleRequest struct {
-	Name    string `json:"name" url:"-"`
-	Enabled *bool  `json:"enabled,omitempty" url:"-"`
+	// Your name for the rule, returned with reasons when it decides.
+	Name string `json:"name" url:"-"`
+	// Default `true`.
+	Enabled *bool `json:"enabled,omitempty" url:"-"`
 	// Default 0.
-	Position *int               `json:"position,omitempty" url:"-"`
-	Events   []cossgo.RiskEvent `json:"events,omitempty" url:"-"`
+	Position *int `json:"position,omitempty" url:"-"`
+	// Events it applies to. Default: every event.
+	Events []cossgo.RiskEvent `json:"events,omitempty" url:"-"`
 	// Default `all`.
-	Match      *CreateRiskRuleRequestMatch `json:"match,omitempty" url:"-"`
+	Match *CreateRiskRuleRequestMatch `json:"match,omitempty" url:"-"`
+	// What must hold, by `match`.
 	Conditions []*cossgo.RiskRuleCondition `json:"conditions" url:"-"`
 	Action     cossgo.RiskDecision         `json:"action" url:"-"`
 
@@ -193,6 +197,7 @@ func (c CreateRiskRuleRequestMatch) Ptr() *CreateRiskRuleRequestMatch {
 	return &c
 }
 
+// `all`: every condition must hold. `any`: one is enough.
 type UpdateRiskRuleRequestMatch string
 
 const (
@@ -228,12 +233,18 @@ var (
 
 type UpdateRiskRuleRequest struct {
 	// The rule's id.
-	ID         string                      `json:"-" url:"-"`
-	Name       *string                     `json:"name,omitempty" url:"-"`
-	Enabled    *bool                       `json:"enabled,omitempty" url:"-"`
-	Position   *int                        `json:"position,omitempty" url:"-"`
-	Events     []cossgo.RiskEvent          `json:"events,omitempty" url:"-"`
-	Match      *UpdateRiskRuleRequestMatch `json:"match,omitempty" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Your name for the rule.
+	Name *string `json:"name,omitempty" url:"-"`
+	// `false` keeps it, and stops applying it.
+	Enabled *bool `json:"enabled,omitempty" url:"-"`
+	// Rules are tried in ascending order.
+	Position *int `json:"position,omitempty" url:"-"`
+	// Events it applies to. Empty: every event.
+	Events []cossgo.RiskEvent `json:"events,omitempty" url:"-"`
+	// `all`: every condition must hold. `any`: one is enough.
+	Match *UpdateRiskRuleRequestMatch `json:"match,omitempty" url:"-"`
+	// What must hold, by `match`.
 	Conditions []*cossgo.RiskRuleCondition `json:"conditions,omitempty" url:"-"`
 	Action     *cossgo.RiskDecision        `json:"action,omitempty" url:"-"`
 

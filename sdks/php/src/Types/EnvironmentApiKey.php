@@ -18,7 +18,7 @@ class EnvironmentApiKey extends JsonSerializableType
     public string $id;
 
     /**
-     * @var ?string $name
+     * @var ?string $name The key's name. `null`: none.
      */
     #[JsonProperty('name')]
     public ?string $name;

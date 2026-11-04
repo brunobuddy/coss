@@ -22,7 +22,7 @@ class ContactWebhookEvent extends JsonSerializableType
     public string $object;
 
     /**
-     * @var value-of<ContactWebhookEventType> $type
+     * @var value-of<ContactWebhookEventType> $type What happened to the contact.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -34,13 +34,13 @@ class ContactWebhookEvent extends JsonSerializableType
     public string $apiVersion;
 
     /**
-     * @var DateTime $createdAt
+     * @var DateTime $createdAt When the event was created.
      */
     #[JsonProperty('created_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $createdAt;
 
     /**
-     * @var ContactWebhookEventData $data
+     * @var ContactWebhookEventData $data The contact, without its properties.
      */
     #[JsonProperty('data')]
     public ContactWebhookEventData $data;

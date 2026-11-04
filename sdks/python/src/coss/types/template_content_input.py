@@ -9,7 +9,7 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 class TemplateContentInput(UniversalBaseModel):
     locale: str = pydantic.Field()
     """
-    A BCP 47 language tag, e.g. "en" or "pt-BR".
+    The BCP 47 language tag this content is for, unique in `contents`.
     """
 
     subject: str = pydantic.Field()

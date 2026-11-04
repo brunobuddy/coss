@@ -7,6 +7,8 @@ import com.coss.core.Nullable;
 import com.coss.core.NullableNonemptyFilter;
 import com.coss.core.ObjectMappers;
 import com.coss.core.OptionalNullable;
+import com.coss.types.LogDrainAuthHeader;
+import com.coss.types.LogDrainFormat;
 import com.coss.types.LogDrainSource;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -31,6 +33,10 @@ public final class UpdateLogDrainRequest {
 
     private final Optional<List<LogDrainSource>> sources;
 
+    private final Optional<LogDrainFormat> format;
+
+    private final OptionalNullable<LogDrainAuthHeader> authHeader;
+
     private final Optional<Boolean> enabled;
 
     private final Map<String, Object> additionalProperties;
@@ -39,11 +45,15 @@ public final class UpdateLogDrainRequest {
             Optional<String> url,
             OptionalNullable<String> description,
             Optional<List<LogDrainSource>> sources,
+            Optional<LogDrainFormat> format,
+            OptionalNullable<LogDrainAuthHeader> authHeader,
             Optional<Boolean> enabled,
             Map<String, Object> additionalProperties) {
         this.url = url;
         this.description = description;
         this.sources = sources;
+        this.format = format;
+        this.authHeader = authHeader;
         this.enabled = enabled;
         this.additionalProperties = additionalProperties;
     }
@@ -76,6 +86,23 @@ public final class UpdateLogDrainRequest {
         return sources;
     }
 
+    @JsonProperty("format")
+    public Optional<LogDrainFormat> getFormat() {
+        return format;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("auth_header")
+    public OptionalNullable<LogDrainAuthHeader> getAuthHeader() {
+        if (authHeader == null) {
+            return OptionalNullable.absent();
+        }
+        return authHeader;
+    }
+
+    /**
+     * @return <code>false</code> disables it, and <code>true</code> enables it again.
+     */
     @JsonProperty("enabled")
     public Optional<Boolean> getEnabled() {
         return enabled;
@@ -85,6 +112,12 @@ public final class UpdateLogDrainRequest {
     @JsonProperty("description")
     private OptionalNullable<String> _getDescription() {
         return description;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("auth_header")
+    private OptionalNullable<LogDrainAuthHeader> _getAuthHeader() {
+        return authHeader;
     }
 
     @java.lang.Override
@@ -102,12 +135,14 @@ public final class UpdateLogDrainRequest {
         return url.equals(other.url)
                 && description.equals(other.description)
                 && sources.equals(other.sources)
+                && format.equals(other.format)
+                && authHeader.equals(other.authHeader)
                 && enabled.equals(other.enabled);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.url, this.description, this.sources, this.enabled);
+        return Objects.hash(this.url, this.description, this.sources, this.format, this.authHeader, this.enabled);
     }
 
     @java.lang.Override
@@ -127,6 +162,10 @@ public final class UpdateLogDrainRequest {
 
         private Optional<List<LogDrainSource>> sources = Optional.empty();
 
+        private Optional<LogDrainFormat> format = Optional.empty();
+
+        private OptionalNullable<LogDrainAuthHeader> authHeader = OptionalNullable.absent();
+
         private Optional<Boolean> enabled = Optional.empty();
 
         @JsonAnySetter
@@ -138,6 +177,8 @@ public final class UpdateLogDrainRequest {
             url(other.getUrl());
             description(other.getDescription());
             sources(other.getSources());
+            format(other.getFormat());
+            authHeader(other.getAuthHeader());
             enabled(other.getEnabled());
             return this;
         }
@@ -204,6 +245,51 @@ public final class UpdateLogDrainRequest {
             return this;
         }
 
+        @JsonSetter(value = "format", nulls = Nulls.SKIP)
+        public Builder format(Optional<LogDrainFormat> format) {
+            this.format = format;
+            return this;
+        }
+
+        public Builder format(LogDrainFormat format) {
+            this.format = Optional.ofNullable(format);
+            return this;
+        }
+
+        @JsonSetter(value = "auth_header", nulls = Nulls.SKIP)
+        public Builder authHeader(OptionalNullable<LogDrainAuthHeader> authHeader) {
+            this.authHeader = authHeader;
+            return this;
+        }
+
+        public Builder authHeader(LogDrainAuthHeader authHeader) {
+            this.authHeader = OptionalNullable.of(authHeader);
+            return this;
+        }
+
+        public Builder authHeader(Optional<LogDrainAuthHeader> authHeader) {
+            if (authHeader.isPresent()) {
+                this.authHeader = OptionalNullable.of(authHeader.get());
+            } else {
+                this.authHeader = OptionalNullable.absent();
+            }
+            return this;
+        }
+
+        public Builder authHeader(Nullable<LogDrainAuthHeader> authHeader) {
+            if (authHeader.isNull()) {
+                this.authHeader = OptionalNullable.ofNull();
+            } else if (authHeader.isEmpty()) {
+                this.authHeader = OptionalNullable.absent();
+            } else {
+                this.authHeader = OptionalNullable.of(authHeader.get());
+            }
+            return this;
+        }
+
+        /**
+         * <p><code>false</code> disables it, and <code>true</code> enables it again.</p>
+         */
         @JsonSetter(value = "enabled", nulls = Nulls.SKIP)
         public Builder enabled(Optional<Boolean> enabled) {
             this.enabled = enabled;
@@ -216,7 +302,8 @@ public final class UpdateLogDrainRequest {
         }
 
         public UpdateLogDrainRequest build() {
-            return new UpdateLogDrainRequest(url, description, sources, enabled, additionalProperties);
+            return new UpdateLogDrainRequest(
+                    url, description, sources, format, authHeader, enabled, additionalProperties);
         }
 
         public Builder additionalProperty(String key, Object value) {

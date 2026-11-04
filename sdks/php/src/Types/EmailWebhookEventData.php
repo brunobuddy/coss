@@ -131,6 +131,12 @@ class EmailWebhookEventData extends JsonSerializableType
     public ?string $subaccountId;
 
     /**
+     * @var ?string $traceparent Only for an email sent with a W3C `traceparent` header: that trace context (normalized to version `00`), also sent as this request's `traceparent` header, so handling the event joins the sender's trace.
+     */
+    #[JsonProperty('traceparent')]
+    public ?string $traceparent;
+
+    /**
      * @param array{
      *   emailId: string,
      *   from: string,
@@ -152,6 +158,7 @@ class EmailWebhookEventData extends JsonSerializableType
      *   category?: ?string,
      *   recipient?: ?string,
      *   subaccountId?: ?string,
+     *   traceparent?: ?string,
      * } $values
      */
     public function __construct(
@@ -215,6 +222,10 @@ class EmailWebhookEventData extends JsonSerializableType
         $this->subaccountId = $values['subaccountId'] ?? null;
         if (array_key_exists('subaccountId', $values)) {
             $this->_setField('subaccountId');
+        }
+        $this->traceparent = $values['traceparent'] ?? null;
+        if (array_key_exists('traceparent', $values)) {
+            $this->_setField('traceparent');
         }
     }
 

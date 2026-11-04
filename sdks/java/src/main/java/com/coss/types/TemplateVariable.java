@@ -53,31 +53,49 @@ public final class TemplateVariable {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Used in the template as <code>{{name}}</code>.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return <code>string</code>, <code>number</code>, <code>boolean</code>, or <code>list</code> (an array of objects with the declared <code>fields</code>).
+     */
     @JsonProperty("type")
     public TemplateVariableType getType() {
         return type;
     }
 
+    /**
+     * @return Whether sends must pass it, unless it has a <code>default</code>.
+     */
     @JsonProperty("required")
     public boolean getRequired() {
         return required;
     }
 
+    /**
+     * @return Used when a send leaves it out.
+     */
     @JsonProperty("default")
     public Optional<TemplateVariableDefault> getDefault() {
         return default_;
     }
 
+    /**
+     * @return What it's for, shown in the dashboard.
+     */
     @JsonProperty("description")
     public Optional<String> getDescription() {
         return description;
     }
 
+    /**
+     * @return A list's item fields.
+     */
     @JsonProperty("fields")
     public Optional<List<TemplateVariableFieldsItem>> getFields() {
         return fields;
@@ -118,16 +136,25 @@ public final class TemplateVariable {
     }
 
     public interface NameStage {
+        /**
+         * <p>Used in the template as <code>{{name}}</code>.</p>
+         */
         TypeStage name(@NotNull String name);
 
         Builder from(TemplateVariable other);
     }
 
     public interface TypeStage {
+        /**
+         * <p><code>string</code>, <code>number</code>, <code>boolean</code>, or <code>list</code> (an array of objects with the declared <code>fields</code>).</p>
+         */
         RequiredStage type(@NotNull TemplateVariableType type);
     }
 
     public interface RequiredStage {
+        /**
+         * <p>Whether sends must pass it, unless it has a <code>default</code>.</p>
+         */
         _FinalStage required(boolean required);
     }
 
@@ -138,14 +165,23 @@ public final class TemplateVariable {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Used when a send leaves it out.</p>
+         */
         _FinalStage default_(Optional<TemplateVariableDefault> default_);
 
         _FinalStage default_(TemplateVariableDefault default_);
 
+        /**
+         * <p>What it's for, shown in the dashboard.</p>
+         */
         _FinalStage description(Optional<String> description);
 
         _FinalStage description(String description);
 
+        /**
+         * <p>A list's item fields.</p>
+         */
         _FinalStage fields(Optional<List<TemplateVariableFieldsItem>> fields);
 
         _FinalStage fields(List<TemplateVariableFieldsItem> fields);
@@ -181,6 +217,10 @@ public final class TemplateVariable {
             return this;
         }
 
+        /**
+         * <p>Used in the template as <code>{{name}}</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public TypeStage name(@NotNull String name) {
@@ -188,6 +228,10 @@ public final class TemplateVariable {
             return this;
         }
 
+        /**
+         * <p><code>string</code>, <code>number</code>, <code>boolean</code>, or <code>list</code> (an array of objects with the declared <code>fields</code>).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public RequiredStage type(@NotNull TemplateVariableType type) {
@@ -195,6 +239,10 @@ public final class TemplateVariable {
             return this;
         }
 
+        /**
+         * <p>Whether sends must pass it, unless it has a <code>default</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("required")
         public _FinalStage required(boolean required) {
@@ -202,12 +250,19 @@ public final class TemplateVariable {
             return this;
         }
 
+        /**
+         * <p>A list's item fields.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage fields(List<TemplateVariableFieldsItem> fields) {
             this.fields = Optional.ofNullable(fields);
             return this;
         }
 
+        /**
+         * <p>A list's item fields.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "fields", nulls = Nulls.SKIP)
         public _FinalStage fields(Optional<List<TemplateVariableFieldsItem>> fields) {
@@ -215,12 +270,19 @@ public final class TemplateVariable {
             return this;
         }
 
+        /**
+         * <p>What it's for, shown in the dashboard.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = Optional.ofNullable(description);
             return this;
         }
 
+        /**
+         * <p>What it's for, shown in the dashboard.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(Optional<String> description) {
@@ -228,12 +290,19 @@ public final class TemplateVariable {
             return this;
         }
 
+        /**
+         * <p>Used when a send leaves it out.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage default_(TemplateVariableDefault default_) {
             this.default_ = Optional.ofNullable(default_);
             return this;
         }
 
+        /**
+         * <p>Used when a send leaves it out.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "default", nulls = Nulls.SKIP)
         public _FinalStage default_(Optional<TemplateVariableDefault> default_) {

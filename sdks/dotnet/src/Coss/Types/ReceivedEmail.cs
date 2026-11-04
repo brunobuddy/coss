@@ -23,6 +23,9 @@ public record ReceivedEmail : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required ReceivedEmailStatus Status { get; set; }
 
+    /// <summary>
+    /// Why it's `blocked`. `null`: it isn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("blocked_reason")]
     public ReceivedEmailBlockedReason? BlockedReason { get; set; }
@@ -58,6 +61,9 @@ public record ReceivedEmail : IJsonOnDeserialized
     [JsonPropertyName("cc")]
     public IEnumerable<string> Cc { get; set; } = new List<string>();
 
+    /// <summary>
+    /// The `Subject` header. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("subject")]
     public string? Subject { get; set; }
@@ -69,6 +75,9 @@ public record ReceivedEmail : IJsonOnDeserialized
     [JsonPropertyName("message_id")]
     public string? MessageId { get; set; }
 
+    /// <summary>
+    /// Its attachments, without their bytes.
+    /// </summary>
     [JsonPropertyName("attachments")]
     public IEnumerable<ReceivedEmailAttachment> Attachments { get; set; } =
         new List<ReceivedEmailAttachment>();
@@ -94,12 +103,21 @@ public record ReceivedEmail : IJsonOnDeserialized
     [JsonPropertyName("sandbox")]
     public required bool Sandbox { get; set; }
 
+    /// <summary>
+    /// When it arrived.
+    /// </summary>
     [JsonPropertyName("received_at")]
     public required DateTime ReceivedAt { get; set; }
 
+    /// <summary>
+    /// The `Reply-To` header's addresses.
+    /// </summary>
     [JsonPropertyName("reply_to")]
     public IEnumerable<string> ReplyTo { get; set; } = new List<string>();
 
+    /// <summary>
+    /// The `In-Reply-To` header. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("in_reply_to")]
     public string? InReplyTo { get; set; }
@@ -124,10 +142,16 @@ public record ReceivedEmail : IJsonOnDeserialized
     public IEnumerable<ReceivedEmailHeadersItem> Headers { get; set; } =
         new List<ReceivedEmailHeadersItem>();
 
+    /// <summary>
+    /// The plain text body. `null`: none, or it's `blocked`.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("text")]
     public string? Text { get; set; }
 
+    /// <summary>
+    /// The HTML body. `null`: none, or it's `blocked`.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("html")]
     public string? Html { get; set; }

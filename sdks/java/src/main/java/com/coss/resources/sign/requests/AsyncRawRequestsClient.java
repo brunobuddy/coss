@@ -20,6 +20,7 @@ import com.coss.errors.ContentTooLargeError;
 import com.coss.errors.ForbiddenError;
 import com.coss.errors.InternalServerError;
 import com.coss.errors.NotFoundError;
+import com.coss.errors.PaymentRequiredError;
 import com.coss.errors.ServiceUnavailableError;
 import com.coss.errors.TooManyRequestsError;
 import com.coss.errors.UnauthorizedError;
@@ -274,6 +275,11 @@ public class AsyncRawRequestsClient {
                                         ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class),
                                         response));
                                 return;
+                            case 402:
+                                future.completeExceptionally(new PaymentRequiredError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class),
+                                        response));
+                                return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
                                         ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class),
@@ -338,18 +344,30 @@ public class AsyncRawRequestsClient {
         return future;
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public CompletableFuture<CossHttpResponse<SignRequest>> get(String id) {
         return get(id, GetRequestsRequest.builder().build());
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public CompletableFuture<CossHttpResponse<SignRequest>> get(String id, RequestOptions requestOptions) {
         return get(id, GetRequestsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public CompletableFuture<CossHttpResponse<SignRequest>> get(String id, GetRequestsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public CompletableFuture<CossHttpResponse<SignRequest>> get(
             String id, GetRequestsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
@@ -660,6 +678,11 @@ public class AsyncRawRequestsClient {
                                 return;
                             case 401:
                                 future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class),
+                                        response));
+                                return;
+                            case 402:
+                                future.completeExceptionally(new PaymentRequiredError(
                                         ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class),
                                         response));
                                 return;

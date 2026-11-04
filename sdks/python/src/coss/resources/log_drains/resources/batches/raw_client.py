@@ -39,7 +39,7 @@ class RawBatchesClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[LogDrainBatchList]:
         """
-        The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
+        The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
 
         Parameters
         ----------
@@ -318,7 +318,7 @@ class AsyncRawBatchesClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[LogDrainBatchList]:
         """
-        The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
+        The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
 
         Parameters
         ----------

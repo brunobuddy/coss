@@ -13,6 +13,9 @@ public partial interface IReceivedClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One message received on a number of the organization and routed to the API key's environment.
+    /// </summary>
     WithRawResponseTask<ReceivedSms> GetAsync(
         GetReceivedRequest request,
         RequestOptions? options = null,

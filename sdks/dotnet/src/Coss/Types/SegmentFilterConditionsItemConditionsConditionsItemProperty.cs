@@ -12,9 +12,15 @@ public record SegmentFilterConditionsItemConditionsConditionsItemProperty : IJso
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The custom property to test.
+    /// </summary>
     [JsonPropertyName("key")]
     public required string Key { get; set; }
 
+    /// <summary>
+    /// How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.
+    /// </summary>
     [JsonPropertyName("op")]
     public required SegmentFilterConditionsItemConditionsConditionsItemPropertyOp Op { get; set; }
 

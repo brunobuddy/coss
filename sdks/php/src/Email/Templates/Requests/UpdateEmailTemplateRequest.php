@@ -8,7 +8,7 @@ use Coss\Core\Json\JsonProperty;
 class UpdateEmailTemplateRequest extends JsonSerializableType
 {
     /**
-     * @var ?string $name
+     * @var ?string $name Shown in the dashboard.
      */
     #[JsonProperty('name')]
     public ?string $name;
@@ -20,7 +20,7 @@ class UpdateEmailTemplateRequest extends JsonSerializableType
     public ?string $alias;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Your note about it. `null` removes it.
      */
     #[JsonProperty('description')]
     public ?string $description;

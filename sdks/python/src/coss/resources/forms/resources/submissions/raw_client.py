@@ -186,6 +186,8 @@ class RawSubmissionsClient:
         self, id: str, submission_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> HttpResponse[FormSubmission]:
         """
+        One submission of the form, with its data, files and Risk's assessment.
+
         Parameters
         ----------
         id : str
@@ -856,6 +858,8 @@ class AsyncRawSubmissionsClient:
         self, id: str, submission_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[FormSubmission]:
         """
+        One submission of the form, with its data, files and Risk's assessment.
+
         Parameters
         ----------
         id : str

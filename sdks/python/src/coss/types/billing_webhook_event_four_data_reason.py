@@ -2,4 +2,6 @@
 
 import typing
 
-BillingWebhookEventFourDataReason = typing.Union[typing.Literal["delinquent", "spend_limit", "admin"], typing.Any]
+BillingWebhookEventFourDataReason = typing.Union[
+    typing.Literal["delinquent", "spend_limit", "credit_limit", "admin"], typing.Any
+]

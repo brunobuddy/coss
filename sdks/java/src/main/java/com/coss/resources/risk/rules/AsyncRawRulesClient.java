@@ -281,18 +281,30 @@ public class AsyncRawRulesClient {
         return future;
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<RiskRule>> get(String id) {
         return get(id, GetRulesRequest.builder().build());
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<RiskRule>> get(String id, RequestOptions requestOptions) {
         return get(id, GetRulesRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<RiskRule>> get(String id, GetRulesRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<RiskRule>> get(
             String id, GetRulesRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
@@ -395,18 +407,30 @@ public class AsyncRawRulesClient {
         return future;
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public CompletableFuture<CossHttpResponse<DeletedRiskRule>> delete(String id) {
         return delete(id, DeleteRulesRequest.builder().build());
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public CompletableFuture<CossHttpResponse<DeletedRiskRule>> delete(String id, RequestOptions requestOptions) {
         return delete(id, DeleteRulesRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public CompletableFuture<CossHttpResponse<DeletedRiskRule>> delete(String id, DeleteRulesRequest request) {
         return delete(id, request, null);
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public CompletableFuture<CossHttpResponse<DeletedRiskRule>> delete(
             String id, DeleteRulesRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

@@ -5,6 +5,9 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * How its emails fared so far.
+ */
 class BroadcastStats extends JsonSerializableType
 {
     /**
@@ -14,13 +17,13 @@ class BroadcastStats extends JsonSerializableType
     public int $recipients;
 
     /**
-     * @var int $sent
+     * @var int $sent Emails accepted by the provider.
      */
     #[JsonProperty('sent')]
     public int $sent;
 
     /**
-     * @var int $delivered
+     * @var int $delivered Emails delivered to recipients' servers.
      */
     #[JsonProperty('delivered')]
     public int $delivered;
@@ -32,13 +35,13 @@ class BroadcastStats extends JsonSerializableType
     public int $bounced;
 
     /**
-     * @var int $complained
+     * @var int $complained Emails marked as spam by recipients.
      */
     #[JsonProperty('complained')]
     public int $complained;
 
     /**
-     * @var int $failed
+     * @var int $failed Emails that couldn't be sent.
      */
     #[JsonProperty('failed')]
     public int $failed;

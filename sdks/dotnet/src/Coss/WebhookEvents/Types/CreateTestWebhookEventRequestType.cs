@@ -284,6 +284,74 @@ public readonly record struct CreateTestWebhookEventRequestType : IStringEnum
         Values.FormSubmissionFlagged
     );
 
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingCreated = new(
+        Values.SchedulingBookingCreated
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingPendingApproval = new(
+        Values.SchedulingBookingPendingApproval
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingConfirmed = new(
+        Values.SchedulingBookingConfirmed
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingRescheduled = new(
+        Values.SchedulingBookingRescheduled
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingCancelled = new(
+        Values.SchedulingBookingCancelled
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingDeclined = new(
+        Values.SchedulingBookingDeclined
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingNoShow = new(
+        Values.SchedulingBookingNoShow
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingExternalConflict =
+        new(Values.SchedulingBookingExternalConflict);
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingCalendarWriteFailed =
+        new(Values.SchedulingBookingCalendarWriteFailed);
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingLocationReady = new(
+        Values.SchedulingBookingLocationReady
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingStarted = new(
+        Values.SchedulingBookingStarted
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingEnded = new(
+        Values.SchedulingBookingEnded
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingBookingReminder = new(
+        Values.SchedulingBookingReminder
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingCalendarConnected = new(
+        Values.SchedulingCalendarConnected
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingCalendarNeedsReauth = new(
+        Values.SchedulingCalendarNeedsReauth
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingCalendarDisconnected = new(
+        Values.SchedulingCalendarDisconnected
+    );
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingCalendarDelegationFailing =
+        new(Values.SchedulingCalendarDelegationFailing);
+
+    public static readonly CreateTestWebhookEventRequestType SchedulingCalendarDelegationRestored =
+        new(Values.SchedulingCalendarDelegationRestored);
+
     public CreateTestWebhookEventRequestType(string value)
     {
         Value = value;
@@ -526,5 +594,46 @@ public readonly record struct CreateTestWebhookEventRequestType : IStringEnum
         public const string FormSubmissionReceived = "form.submission.received";
 
         public const string FormSubmissionFlagged = "form.submission.flagged";
+
+        public const string SchedulingBookingCreated = "scheduling.booking.created";
+
+        public const string SchedulingBookingPendingApproval =
+            "scheduling.booking.pending_approval";
+
+        public const string SchedulingBookingConfirmed = "scheduling.booking.confirmed";
+
+        public const string SchedulingBookingRescheduled = "scheduling.booking.rescheduled";
+
+        public const string SchedulingBookingCancelled = "scheduling.booking.cancelled";
+
+        public const string SchedulingBookingDeclined = "scheduling.booking.declined";
+
+        public const string SchedulingBookingNoShow = "scheduling.booking.no_show";
+
+        public const string SchedulingBookingExternalConflict =
+            "scheduling.booking.external_conflict";
+
+        public const string SchedulingBookingCalendarWriteFailed =
+            "scheduling.booking.calendar_write_failed";
+
+        public const string SchedulingBookingLocationReady = "scheduling.booking.location_ready";
+
+        public const string SchedulingBookingStarted = "scheduling.booking.started";
+
+        public const string SchedulingBookingEnded = "scheduling.booking.ended";
+
+        public const string SchedulingBookingReminder = "scheduling.booking.reminder";
+
+        public const string SchedulingCalendarConnected = "scheduling.calendar.connected";
+
+        public const string SchedulingCalendarNeedsReauth = "scheduling.calendar.needs_reauth";
+
+        public const string SchedulingCalendarDisconnected = "scheduling.calendar.disconnected";
+
+        public const string SchedulingCalendarDelegationFailing =
+            "scheduling.calendar_delegation.failing";
+
+        public const string SchedulingCalendarDelegationRestored =
+            "scheduling.calendar_delegation.restored";
     }
 }

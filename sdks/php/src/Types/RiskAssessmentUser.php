@@ -5,10 +5,13 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * Who it's about.
+ */
 class RiskAssessmentUser extends JsonSerializableType
 {
     /**
-     * @var ?string $id
+     * @var ?string $id Your user id. `null`: none given.
      */
     #[JsonProperty('id')]
     public ?string $id;

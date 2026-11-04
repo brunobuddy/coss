@@ -15,9 +15,15 @@ public record SegmentFilterConditionsItemKey : IJsonOnDeserialized
     [JsonPropertyName("field")]
     public required SegmentFilterConditionsItemKeyField Field { get; set; }
 
+    /// <summary>
+    /// The custom property to test.
+    /// </summary>
     [JsonPropertyName("key")]
     public required string Key { get; set; }
 
+    /// <summary>
+    /// How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.
+    /// </summary>
     [JsonPropertyName("op")]
     public required SegmentFilterConditionsItemKeyOp Op { get; set; }
 

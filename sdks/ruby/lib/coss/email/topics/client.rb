@@ -100,6 +100,8 @@ module Coss
           end
         end
 
+        # One topic of the API key's environment.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

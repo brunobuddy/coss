@@ -12,13 +12,41 @@ from .risk_ip_privacy import RiskIpPrivacy
 
 class RiskIpCheck(UniversalBaseModel):
     version: float
-    private: bool
-    tor: bool
-    hosting: bool
-    hosting_provider: typing.Optional[str] = None
-    hosting_kind: typing.Optional[RiskIpCheckHostingKind] = None
-    asn: typing.Optional[int] = None
-    as_name: typing.Optional[str] = None
+    private: bool = pydantic.Field()
+    """
+    Whether it's a private or reserved address.
+    """
+
+    tor: bool = pydantic.Field()
+    """
+    Whether it's a Tor exit.
+    """
+
+    hosting: bool = pydantic.Field()
+    """
+    Whether it's in a cloud, hosting or VPN network.
+    """
+
+    hosting_provider: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    That network's operator. `null` when it isn't one.
+    """
+
+    hosting_kind: typing.Optional[RiskIpCheckHostingKind] = pydantic.Field(default=None)
+    """
+    `cloud`, `hosting` or `vpn`. `null` when it isn't one.
+    """
+
+    asn: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    The network's autonomous system number. `null` when unknown.
+    """
+
+    as_name: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The network's name. `null` when unknown.
+    """
+
     country: typing.Optional[str] = pydantic.Field(default=None)
     """
     ISO 3166-1 alpha-2.
@@ -30,7 +58,11 @@ class RiskIpCheck(UniversalBaseModel):
     """
 
     object: RiskIpCheckObject
-    ip: str
+    ip: str = pydantic.Field()
+    """
+    The address checked.
+    """
+
     degraded: typing.List[RiskIpCheckDegradedItem] = pydantic.Field()
     """
     `ip_data` when some IP data (Tor exits, cloud ranges, networks and countries) is unavailable at the moment; `ip_privacy` when the privacy data provider failed or timed out.

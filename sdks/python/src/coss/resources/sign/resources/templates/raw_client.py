@@ -202,6 +202,7 @@ class RawTemplatesClient:
         Parameters
         ----------
         name : str
+            Your name for the template.
 
         title : typing.Optional[str]
             Requests' title (a request may set its own). Default: `name`.
@@ -210,8 +211,10 @@ class RawTemplatesClient:
             Requests' message to signers (a request may set its own).
 
         signing_order : typing.Optional[CreateSignTemplateRequestSigningOrder]
+            `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
 
         documents : typing.Optional[typing.Sequence[CreateSignTemplateRequestDocumentsItem]]
+            Uploaded documents by id, or PDFs inline (base64).
 
         roles : typing.Optional[typing.Sequence[CreateSignTemplateRequestRolesItem]]
             Who signs: each request names one signer per role.
@@ -366,6 +369,8 @@ class RawTemplatesClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[SignTemplate]:
         """
+        A template with its documents, roles and fields. `ready` says whether requests can be made from it.
+
         Parameters
         ----------
         id : str
@@ -622,6 +627,7 @@ class RawTemplatesClient:
             The template's id.
 
         name : typing.Optional[str]
+            Your name for the template.
 
         title : typing.Optional[str]
             Requests' title (a request may set its own). Default: `name`.
@@ -630,8 +636,10 @@ class RawTemplatesClient:
             Requests' message to signers (a request may set its own).
 
         signing_order : typing.Optional[UpdateSignTemplateRequestSigningOrder]
+            `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
 
         documents : typing.Optional[typing.Sequence[UpdateSignTemplateRequestDocumentsItem]]
+            Uploaded documents by id, or PDFs inline (base64).
 
         roles : typing.Optional[typing.Sequence[UpdateSignTemplateRequestRolesItem]]
             Who signs: each request names one signer per role.
@@ -828,6 +836,7 @@ class RawTemplatesClient:
             Default: the template's title (else its name).
 
         message : typing.Optional[str]
+            Default: the template's message.
 
         merge_fields : typing.Optional[typing.Dict[str, str]]
             Values of the template's merge fields, by `merge_key`.
@@ -836,11 +845,13 @@ class RawTemplatesClient:
             Default: the template's.
 
         expires_at : typing.Optional[dt.datetime]
+            When an unfinished request expires, at most 365 days ahead.
 
         metadata : typing.Optional[typing.Dict[str, str]]
             Your own key-value pairs, returned with the request and its webhooks.
 
         reminder_interval_days : typing.Optional[int]
+            Days between reminders to email signers. Default: your Sign settings'. `null`: none.
 
         send : typing.Optional[bool]
             Default `true`.
@@ -1285,6 +1296,7 @@ class AsyncRawTemplatesClient:
         Parameters
         ----------
         name : str
+            Your name for the template.
 
         title : typing.Optional[str]
             Requests' title (a request may set its own). Default: `name`.
@@ -1293,8 +1305,10 @@ class AsyncRawTemplatesClient:
             Requests' message to signers (a request may set its own).
 
         signing_order : typing.Optional[CreateSignTemplateRequestSigningOrder]
+            `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
 
         documents : typing.Optional[typing.Sequence[CreateSignTemplateRequestDocumentsItem]]
+            Uploaded documents by id, or PDFs inline (base64).
 
         roles : typing.Optional[typing.Sequence[CreateSignTemplateRequestRolesItem]]
             Who signs: each request names one signer per role.
@@ -1451,6 +1465,8 @@ class AsyncRawTemplatesClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[SignTemplate]:
         """
+        A template with its documents, roles and fields. `ready` says whether requests can be made from it.
+
         Parameters
         ----------
         id : str
@@ -1707,6 +1723,7 @@ class AsyncRawTemplatesClient:
             The template's id.
 
         name : typing.Optional[str]
+            Your name for the template.
 
         title : typing.Optional[str]
             Requests' title (a request may set its own). Default: `name`.
@@ -1715,8 +1732,10 @@ class AsyncRawTemplatesClient:
             Requests' message to signers (a request may set its own).
 
         signing_order : typing.Optional[UpdateSignTemplateRequestSigningOrder]
+            `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
 
         documents : typing.Optional[typing.Sequence[UpdateSignTemplateRequestDocumentsItem]]
+            Uploaded documents by id, or PDFs inline (base64).
 
         roles : typing.Optional[typing.Sequence[UpdateSignTemplateRequestRolesItem]]
             Who signs: each request names one signer per role.
@@ -1913,6 +1932,7 @@ class AsyncRawTemplatesClient:
             Default: the template's title (else its name).
 
         message : typing.Optional[str]
+            Default: the template's message.
 
         merge_fields : typing.Optional[typing.Dict[str, str]]
             Values of the template's merge fields, by `merge_key`.
@@ -1921,11 +1941,13 @@ class AsyncRawTemplatesClient:
             Default: the template's.
 
         expires_at : typing.Optional[dt.datetime]
+            When an unfinished request expires, at most 365 days ahead.
 
         metadata : typing.Optional[typing.Dict[str, str]]
             Your own key-value pairs, returned with the request and its webhooks.
 
         reminder_interval_days : typing.Optional[int]
+            Days between reminders to email signers. Default: your Sign settings'. `null`: none.
 
         send : typing.Optional[bool]
             Default `true`.

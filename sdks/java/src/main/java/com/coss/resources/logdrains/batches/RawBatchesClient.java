@@ -41,28 +41,28 @@ public class RawBatchesClient {
     }
 
     /**
-     * The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
+     * The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
      */
     public CossHttpResponse<LogDrainBatchList> list(String id) {
         return list(id, ListBatchesRequest.builder().build());
     }
 
     /**
-     * The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
+     * The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
      */
     public CossHttpResponse<LogDrainBatchList> list(String id, RequestOptions requestOptions) {
         return list(id, ListBatchesRequest.builder().build(), requestOptions);
     }
 
     /**
-     * The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
+     * The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
      */
     public CossHttpResponse<LogDrainBatchList> list(String id, ListBatchesRequest request) {
         return list(id, request, null);
     }
 
     /**
-     * The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
+     * The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
      */
     public CossHttpResponse<LogDrainBatchList> list(
             String id, ListBatchesRequest request, RequestOptions requestOptions) {

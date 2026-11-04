@@ -20,6 +20,7 @@ from .....errors.content_too_large_error import ContentTooLargeError
 from .....errors.forbidden_error import ForbiddenError
 from .....errors.internal_server_error import InternalServerError
 from .....errors.not_found_error import NotFoundError
+from .....errors.payment_required_error import PaymentRequiredError
 from .....errors.service_unavailable_error import ServiceUnavailableError
 from .....errors.too_many_requests_error import TooManyRequestsError
 from .....errors.unauthorized_error import UnauthorizedError
@@ -206,6 +207,7 @@ class RawRequestsClient:
             Uploaded documents by id, or PDFs inline (base64).
 
         signers : typing.Sequence[CreateSignRequestRequestSignersItem]
+            Who signs, and what each fills.
 
         idempotency_key : typing.Optional[str]
             Makes retries safe: a repeated request with the same key and body returns the original request (in its current state) instead of creating another, for 24 hours. 1-256 characters.
@@ -286,6 +288,17 @@ class RawRequestsClient:
                 )
             if _response.status_code == 401:
                 raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        Error,
+                        parse_obj_as(
+                            type_=Error,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         Error,
@@ -394,6 +407,8 @@ class RawRequestsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[SignRequest]:
         """
+        A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+
         Parameters
         ----------
         id : str
@@ -687,6 +702,17 @@ class RawRequestsClient:
                 )
             if _response.status_code == 401:
                 raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        Error,
+                        parse_obj_as(
+                            type_=Error,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         Error,
@@ -1464,6 +1490,7 @@ class AsyncRawRequestsClient:
             Uploaded documents by id, or PDFs inline (base64).
 
         signers : typing.Sequence[CreateSignRequestRequestSignersItem]
+            Who signs, and what each fills.
 
         idempotency_key : typing.Optional[str]
             Makes retries safe: a repeated request with the same key and body returns the original request (in its current state) instead of creating another, for 24 hours. 1-256 characters.
@@ -1544,6 +1571,17 @@ class AsyncRawRequestsClient:
                 )
             if _response.status_code == 401:
                 raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        Error,
+                        parse_obj_as(
+                            type_=Error,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         Error,
@@ -1654,6 +1692,8 @@ class AsyncRawRequestsClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[SignRequest]:
         """
+        A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+
         Parameters
         ----------
         id : str
@@ -1949,6 +1989,17 @@ class AsyncRawRequestsClient:
                 )
             if _response.status_code == 401:
                 raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        Error,
+                        parse_obj_as(
+                            type_=Error,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         Error,

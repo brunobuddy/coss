@@ -10,7 +10,11 @@ from .contact_confirmation_status import ContactConfirmationStatus
 
 class ContactConfirmation(UniversalBaseModel):
     object: ContactConfirmationObject
-    contact_id: str
+    contact_id: str = pydantic.Field()
+    """
+    The contact's id.
+    """
+
     status: ContactConfirmationStatus = pydantic.Field()
     """
     `sent`; `cooldown` (one confirmation per contact per day); `limit_reached` (three were sent and none confirmed); `not_pending` (the contact isn't waiting to confirm).

@@ -24,6 +24,8 @@ module Coss
       field :sandbox, -> { Internal::Types::Boolean }, optional: false, nullable: false
 
       field :occurred_at, -> { String }, optional: false, nullable: false
+
+      field :traceparent, -> { String }, optional: true, nullable: false
     end
   end
 end

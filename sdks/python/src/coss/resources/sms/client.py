@@ -180,6 +180,8 @@ class SmsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Sms:
         """
+        One message sent from the API key's environment, with its current status.
+
         Parameters
         ----------
         id : str
@@ -472,6 +474,8 @@ class AsyncSmsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Sms:
         """
+        One message sent from the API key's environment, with its current status.
+
         Parameters
         ----------
         id : str

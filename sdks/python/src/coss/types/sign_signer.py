@@ -12,23 +12,58 @@ from .sign_signer_status import SignSignerStatus
 
 
 class SignSigner(UniversalBaseModel):
+    """
+    Someone asked to sign.
+    """
+
     object: SignSignerObject
     id: str
     name: str
     email: str
-    order: int
-    delivery: SignSignerDelivery
+    order: int = pydantic.Field()
+    """
+    Where they come in `signing_order: sequential`. Lower signs first.
+    """
+
+    delivery: SignSignerDelivery = pydantic.Field()
+    """
+    `email`: coss.com emails them a link. `embedded`: your app shows the signing page.
+    """
+
     authentication: SignSignerAuthentication = pydantic.Field()
     """
     How the signer is identified: `email_link` (they opened the link coss.com emailed) or `customer_asserted` (your app vouched for them).
     """
 
-    status: SignSignerStatus
-    client_ref: typing.Optional[str] = None
-    viewed_at: typing.Optional[dt.datetime] = None
-    signed_at: typing.Optional[dt.datetime] = None
-    declined_at: typing.Optional[dt.datetime] = None
-    decline_reason: typing.Optional[str] = None
+    status: SignSignerStatus = pydantic.Field()
+    """
+    `pending`: not contacted yet. `notified`: emailed their link. `viewed`: opened the signing page. `signed`: done. `declined`: refused, which declines the whole request.
+    """
+
+    client_ref: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your own id for the signer. `null`: none given.
+    """
+
+    viewed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When they first opened the signing page. `null`: not yet.
+    """
+
+    signed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When they signed. `null`: not yet.
+    """
+
+    declined_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When they declined. `null`: they haven't.
+    """
+
+    decline_reason: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The reason they gave. `null`: none given.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

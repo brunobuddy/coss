@@ -31,13 +31,20 @@ class RiskDeviceSignals(UniversalBaseModel):
     The browser's first language.
     """
 
-    platform: typing.Optional[str] = None
+    platform: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The browser's reported platform. `null` when it reported none.
+    """
+
     screen: typing.Optional[str] = pydantic.Field(default=None)
     """
     `<width>x<height>` in CSS pixels.
     """
 
-    touch: typing.Optional[bool] = None
+    touch: typing.Optional[bool] = pydantic.Field(default=None)
+    """
+    Whether the device has a touch screen. `null` when it didn't say.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

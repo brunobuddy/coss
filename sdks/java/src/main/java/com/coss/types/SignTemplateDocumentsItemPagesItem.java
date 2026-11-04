@@ -38,6 +38,9 @@ public final class SignTemplateDocumentsItemPagesItem {
         return width;
     }
 
+    /**
+     * @return In PDF points (1/72 inch).
+     */
     @JsonProperty("height")
     public double getHeight() {
         return height;
@@ -83,6 +86,9 @@ public final class SignTemplateDocumentsItemPagesItem {
     }
 
     public interface HeightStage {
+        /**
+         * <p>In PDF points (1/72 inch).</p>
+         */
         _FinalStage height(double height);
     }
 
@@ -123,6 +129,10 @@ public final class SignTemplateDocumentsItemPagesItem {
             return this;
         }
 
+        /**
+         * <p>In PDF points (1/72 inch).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("height")
         public _FinalStage height(double height) {

@@ -14,6 +14,9 @@ public record ContactConfirmation : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required ContactConfirmationObject Object { get; set; }
 
+    /// <summary>
+    /// The contact's id.
+    /// </summary>
     [JsonPropertyName("contact_id")]
     public required string ContactId { get; set; }
 

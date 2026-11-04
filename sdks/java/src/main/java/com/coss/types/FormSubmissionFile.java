@@ -51,16 +51,25 @@ public final class FormSubmissionFile {
         return id;
     }
 
+    /**
+     * @return The form field it was uploaded through.
+     */
     @JsonProperty("field")
     public String getField() {
         return field;
     }
 
+    /**
+     * @return The file's name, made safe.
+     */
     @JsonProperty("filename")
     public String getFilename() {
         return filename;
     }
 
+    /**
+     * @return The MIME type it was uploaded as.
+     */
     @JsonProperty("content_type")
     public String getContentType() {
         return contentType;
@@ -114,14 +123,23 @@ public final class FormSubmissionFile {
     }
 
     public interface FieldStage {
+        /**
+         * <p>The form field it was uploaded through.</p>
+         */
         FilenameStage field(@NotNull String field);
     }
 
     public interface FilenameStage {
+        /**
+         * <p>The file's name, made safe.</p>
+         */
         ContentTypeStage filename(@NotNull String filename);
     }
 
     public interface ContentTypeStage {
+        /**
+         * <p>The MIME type it was uploaded as.</p>
+         */
         SizeStage contentType(@NotNull String contentType);
     }
 
@@ -175,6 +193,10 @@ public final class FormSubmissionFile {
             return this;
         }
 
+        /**
+         * <p>The form field it was uploaded through.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("field")
         public FilenameStage field(@NotNull String field) {
@@ -182,6 +204,10 @@ public final class FormSubmissionFile {
             return this;
         }
 
+        /**
+         * <p>The file's name, made safe.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("filename")
         public ContentTypeStage filename(@NotNull String filename) {
@@ -189,6 +215,10 @@ public final class FormSubmissionFile {
             return this;
         }
 
+        /**
+         * <p>The MIME type it was uploaded as.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("content_type")
         public SizeStage contentType(@NotNull String contentType) {

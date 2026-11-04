@@ -24,6 +24,9 @@ public partial interface IFormsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+    /// </summary>
     WithRawResponseTask<Form> GetAsync(
         GetFormsRequest request,
         RequestOptions? options = null,

@@ -111,6 +111,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// One rule of the API key's environment.
+//
 // Example:
 //
 //	request := &risk.GetRulesRequest{
@@ -136,6 +138,8 @@ func (c *Client) Get(
 	return response.Body, nil
 }
 
+// Deletes a rule. Later assessments no longer apply it.
+//
 // Example:
 //
 //	request := &risk.DeleteRulesRequest{

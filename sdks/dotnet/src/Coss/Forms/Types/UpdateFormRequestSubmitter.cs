@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// Who the submitter is, and whether they must confirm by email. Only the fields given change.
+/// </summary>
 [Serializable]
 public record UpdateFormRequestSubmitter : IJsonOnDeserialized
 {

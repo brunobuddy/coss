@@ -18,10 +18,16 @@ public record UpdateHookEndpointRequest
     [JsonIgnore]
     public required string EndpointId { get; set; }
 
+    /// <summary>
+    /// Where deliveries are sent.
+    /// </summary>
     [Optional]
     [JsonPropertyName("url")]
     public string? Url { get; set; }
 
+    /// <summary>
+    /// Your note about it. `null` removes it.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("description")]
     public Optional<string?> Description { get; set; }
@@ -47,6 +53,9 @@ public record UpdateHookEndpointRequest
     [JsonPropertyName("metadata")]
     public Dictionary<string, string>? Metadata { get; set; }
 
+    /// <summary>
+    /// `false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.
+    /// </summary>
     [Optional]
     [JsonPropertyName("enabled")]
     public bool? Enabled { get; set; }

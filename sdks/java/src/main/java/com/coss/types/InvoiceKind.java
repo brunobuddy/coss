@@ -11,6 +11,8 @@ public final class InvoiceKind {
 
     public static final InvoiceKind PLAN_CHANGE = new InvoiceKind(Value.PLAN_CHANGE, "plan_change");
 
+    public static final InvoiceKind THRESHOLD = new InvoiceKind(Value.THRESHOLD, "threshold");
+
     public static final InvoiceKind ONE_OFF = new InvoiceKind(Value.ONE_OFF, "one_off");
 
     public static final InvoiceKind FINAL = new InvoiceKind(Value.FINAL, "final");
@@ -50,6 +52,8 @@ public final class InvoiceKind {
                 return visitor.visitPeriod();
             case PLAN_CHANGE:
                 return visitor.visitPlanChange();
+            case THRESHOLD:
+                return visitor.visitThreshold();
             case ONE_OFF:
                 return visitor.visitOneOff();
             case FINAL:
@@ -67,6 +71,8 @@ public final class InvoiceKind {
                 return PERIOD;
             case "plan_change":
                 return PLAN_CHANGE;
+            case "threshold":
+                return THRESHOLD;
             case "one_off":
                 return ONE_OFF;
             case "final":
@@ -85,6 +91,8 @@ public final class InvoiceKind {
 
         FINAL,
 
+        THRESHOLD,
+
         UNKNOWN
     }
 
@@ -96,6 +104,8 @@ public final class InvoiceKind {
         T visitOneOff();
 
         T visitFinal();
+
+        T visitThreshold();
 
         T visitUnknown(String unknownType);
     }

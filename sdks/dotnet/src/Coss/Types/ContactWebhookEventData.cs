@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// The contact, without its properties.
+/// </summary>
 [Serializable]
 public record ContactWebhookEventData : IJsonOnDeserialized
 {
@@ -14,6 +17,9 @@ public record ContactWebhookEventData : IJsonOnDeserialized
     [JsonPropertyName("contact")]
     public required ContactWebhookEventDataContact Contact { get; set; }
 
+    /// <summary>
+    /// How the contact was created.
+    /// </summary>
     [JsonPropertyName("source")]
     public required ContactWebhookEventDataSource Source { get; set; }
 
@@ -24,6 +30,9 @@ public record ContactWebhookEventData : IJsonOnDeserialized
     [JsonPropertyName("topic")]
     public string? Topic { get; set; }
 
+    /// <summary>
+    /// When this happened.
+    /// </summary>
     [JsonPropertyName("occurred_at")]
     public required DateTime OccurredAt { get; set; }
 

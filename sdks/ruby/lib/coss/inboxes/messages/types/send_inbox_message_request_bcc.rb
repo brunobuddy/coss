@@ -4,6 +4,7 @@ module Coss
   module Inboxes
     module Messages
       module Types
+        # Who it's blind copied to.
         class SendInboxMessageRequestBcc < Internal::Types::Model
           extend Coss::Internal::Types::Union
 

@@ -394,6 +394,8 @@ class SuppressionsClient
     }
 
     /**
+     * One entry of the suppression list of the API key's environment.
+     *
      * Example:
      * ```php
      * $client->email->suppressions->get(

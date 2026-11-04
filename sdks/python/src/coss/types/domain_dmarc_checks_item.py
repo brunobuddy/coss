@@ -8,9 +8,20 @@ from .domain_dmarc_checks_item_id import DomainDmarcChecksItemId
 
 
 class DomainDmarcChecksItem(UniversalBaseModel):
-    id: DomainDmarcChecksItemId
-    ok: bool
-    message: str
+    id: DomainDmarcChecksItemId = pydantic.Field()
+    """
+    Which check this is.
+    """
+
+    ok: bool = pydantic.Field()
+    """
+    Whether it passes.
+    """
+
+    message: str = pydantic.Field()
+    """
+    What it found.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

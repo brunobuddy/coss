@@ -210,6 +210,8 @@ class RawAuditEventsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[AuditEvent]:
         """
+        One event of the organization's audit log.
+
         Parameters
         ----------
         id : str
@@ -521,6 +523,8 @@ class AsyncRawAuditEventsClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[AuditEvent]:
         """
+        One event of the organization's audit log.
+
         Parameters
         ----------
         id : str

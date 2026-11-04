@@ -13,14 +13,25 @@ from .verification_webhook_event_type import VerificationWebhookEventType
 class VerificationWebhookEvent(UniversalBaseModel):
     id: str
     object: VerificationWebhookEventObject
-    type: VerificationWebhookEventType
+    type: VerificationWebhookEventType = pydantic.Field()
+    """
+    What happened to the verification.
+    """
+
     api_version: str = pydantic.Field()
     """
     The API version the payload is rendered in (your endpoint's version).
     """
 
-    created_at: dt.datetime
-    data: VerificationWebhookEventData
+    created_at: dt.datetime = pydantic.Field()
+    """
+    When the event was created.
+    """
+
+    data: VerificationWebhookEventData = pydantic.Field()
+    """
+    The verification. Never its code.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

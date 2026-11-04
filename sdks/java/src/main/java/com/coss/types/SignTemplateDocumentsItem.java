@@ -54,21 +54,33 @@ public final class SignTemplateDocumentsItem {
         return id;
     }
 
+    /**
+     * @return The file's name.
+     */
     @JsonProperty("filename")
     public String getFilename() {
         return filename;
     }
 
+    /**
+     * @return Hex SHA-256 of the uploaded bytes.
+     */
     @JsonProperty("sha256")
     public String getSha256() {
         return sha256;
     }
 
+    /**
+     * @return How many pages it has.
+     */
     @JsonProperty("page_count")
     public long getPageCount() {
         return pageCount;
     }
 
+    /**
+     * @return Each page's size, in order.
+     */
     @JsonProperty("pages")
     public List<SignTemplateDocumentsItemPagesItem> getPages() {
         return pages;
@@ -114,14 +126,23 @@ public final class SignTemplateDocumentsItem {
     }
 
     public interface FilenameStage {
+        /**
+         * <p>The file's name.</p>
+         */
         Sha256Stage filename(@NotNull String filename);
     }
 
     public interface Sha256Stage {
+        /**
+         * <p>Hex SHA-256 of the uploaded bytes.</p>
+         */
         PageCountStage sha256(@NotNull String sha256);
     }
 
     public interface PageCountStage {
+        /**
+         * <p>How many pages it has.</p>
+         */
         _FinalStage pageCount(long pageCount);
     }
 
@@ -132,6 +153,9 @@ public final class SignTemplateDocumentsItem {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Each page's size, in order.</p>
+         */
         _FinalStage pages(List<SignTemplateDocumentsItemPagesItem> pages);
 
         _FinalStage addPages(SignTemplateDocumentsItemPagesItem pages);
@@ -173,6 +197,10 @@ public final class SignTemplateDocumentsItem {
             return this;
         }
 
+        /**
+         * <p>The file's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("filename")
         public Sha256Stage filename(@NotNull String filename) {
@@ -180,6 +208,10 @@ public final class SignTemplateDocumentsItem {
             return this;
         }
 
+        /**
+         * <p>Hex SHA-256 of the uploaded bytes.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sha256")
         public PageCountStage sha256(@NotNull String sha256) {
@@ -187,6 +219,10 @@ public final class SignTemplateDocumentsItem {
             return this;
         }
 
+        /**
+         * <p>How many pages it has.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("page_count")
         public _FinalStage pageCount(long pageCount) {
@@ -194,6 +230,10 @@ public final class SignTemplateDocumentsItem {
             return this;
         }
 
+        /**
+         * <p>Each page's size, in order.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllPages(List<SignTemplateDocumentsItemPagesItem> pages) {
             if (pages != null) {
@@ -202,12 +242,19 @@ public final class SignTemplateDocumentsItem {
             return this;
         }
 
+        /**
+         * <p>Each page's size, in order.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addPages(SignTemplateDocumentsItemPagesItem pages) {
             this.pages.add(pages);
             return this;
         }
 
+        /**
+         * <p>Each page's size, in order.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "pages", nulls = Nulls.SKIP)
         public _FinalStage pages(List<SignTemplateDocumentsItemPagesItem> pages) {

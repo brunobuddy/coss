@@ -26,6 +26,8 @@ public readonly record struct LogSource : IStringEnum
 
     public static readonly LogSource Forms = new(Values.Forms);
 
+    public static readonly LogSource Scheduling = new(Values.Scheduling);
+
     public LogSource(string value)
     {
         Value = value;
@@ -137,5 +139,7 @@ public readonly record struct LogSource : IStringEnum
         public const string Verify = "verify";
 
         public const string Forms = "forms";
+
+        public const string Scheduling = "scheduling";
     }
 }

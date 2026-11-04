@@ -38,11 +38,17 @@ public final class DomainDmarcNext {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The kind of step this is.
+     */
     @JsonProperty("kind")
     public DomainDmarcNextKind getKind() {
         return kind;
     }
 
+    /**
+     * @return The policy that step gets to.
+     */
     @JsonProperty("policy")
     public DomainDmarcNextPolicy getPolicy() {
         return policy;
@@ -86,12 +92,18 @@ public final class DomainDmarcNext {
     }
 
     public interface KindStage {
+        /**
+         * <p>The kind of step this is.</p>
+         */
         PolicyStage kind(@NotNull DomainDmarcNextKind kind);
 
         Builder from(DomainDmarcNext other);
     }
 
     public interface PolicyStage {
+        /**
+         * <p>The policy that step gets to.</p>
+         */
         RecordStage policy(@NotNull DomainDmarcNextPolicy policy);
     }
 
@@ -131,6 +143,10 @@ public final class DomainDmarcNext {
             return this;
         }
 
+        /**
+         * <p>The kind of step this is.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("kind")
         public PolicyStage kind(@NotNull DomainDmarcNextKind kind) {
@@ -138,6 +154,10 @@ public final class DomainDmarcNext {
             return this;
         }
 
+        /**
+         * <p>The policy that step gets to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("policy")
         public RecordStage policy(@NotNull DomainDmarcNextPolicy policy) {

@@ -3,6 +3,7 @@
 module Coss
   module Forms
     module Types
+      # File uploads. Only the fields given change.
       class CreateFormRequestFiles < Internal::Types::Model
         field :enabled, -> { Internal::Types::Boolean }, optional: true, nullable: false
 

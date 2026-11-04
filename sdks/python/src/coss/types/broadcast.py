@@ -17,27 +17,93 @@ from .broadcast_tracking import BroadcastTracking
 class Broadcast(UniversalBaseModel):
     object: BroadcastObject
     id: str
-    name: str
+    name: str = pydantic.Field()
+    """
+    Shown only to you.
+    """
+
     status: BroadcastStatus = pydantic.Field()
     """
     `draft` (editable), `scheduled`, `sending`, `paused` (see `pause_reason`), `sent`, `canceled`, or `failed` (see `error`).
     """
 
-    audience_id: typing.Optional[str] = None
-    segment_id: typing.Optional[str] = None
-    topic: typing.Optional[str] = None
-    from_: typing_extensions.Annotated[str, FieldMetadata(alias="from"), pydantic.Field(alias="from")]
-    reply_to: typing.List[str]
-    subject: str
-    preview_text: typing.Optional[str] = None
-    html: typing.Optional[str] = None
-    text: typing.Optional[str] = None
-    tracking: BroadcastTracking
-    rate_per_second: typing.Optional[int] = None
-    scheduled_at: typing.Optional[dt.datetime] = None
-    started_at: typing.Optional[dt.datetime] = None
-    completed_at: typing.Optional[dt.datetime] = None
-    canceled_at: typing.Optional[dt.datetime] = None
+    audience_id: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The audience it goes to. `null`: a segment.
+    """
+
+    segment_id: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The segment it goes to. `null`: an audience.
+    """
+
+    topic: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The topic it's about (its key), and its emails' `category`. `null`: none.
+    """
+
+    from_: typing_extensions.Annotated[
+        str, FieldMetadata(alias="from"), pydantic.Field(alias="from", description="Who it's sent from.")
+    ]
+    """
+    Who it's sent from.
+    """
+
+    reply_to: typing.List[str] = pydantic.Field()
+    """
+    Addresses replies go to.
+    """
+
+    subject: str = pydantic.Field()
+    """
+    The subject, before contact fields are filled in.
+    """
+
+    preview_text: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The inbox preview line. `null`: none.
+    """
+
+    html: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The HTML part, before contact fields are filled in. `null`: text only.
+    """
+
+    text: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The plain text part. `null`: HTML only.
+    """
+
+    tracking: BroadcastTracking = pydantic.Field()
+    """
+    Which opens and clicks are tracked.
+    """
+
+    rate_per_second: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    Recipients per second. `null`: the plan's marketing rate.
+    """
+
+    scheduled_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it's set to start. `null`: not scheduled.
+    """
+
+    started_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When sending started. `null`: it hasn't.
+    """
+
+    completed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it finished. `null`: it hasn't.
+    """
+
+    canceled_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was canceled. `null`: it wasn't.
+    """
+
     recipients_estimated: typing.Optional[int] = pydantic.Field(default=None)
     """
     How many contacts it would reach, counted when it started.
@@ -48,7 +114,11 @@ class Broadcast(UniversalBaseModel):
     Why a paused broadcast waits: `paused` (by you), `billing_hold`, `budget_exceeded`, `usage_limit`, `marketing_paused`, `account_suspended`, `sending_paused`.
     """
 
-    error: typing.Optional[BroadcastError] = None
+    error: typing.Optional[BroadcastError] = pydantic.Field(default=None)
+    """
+    Why it `failed`, such as `target_unavailable` when its audience, segment or topic was deleted while sending. `null`: it didn't.
+    """
+
     stats: BroadcastStats
     created_at: dt.datetime
     updated_at: dt.datetime

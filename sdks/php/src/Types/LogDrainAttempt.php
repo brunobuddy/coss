@@ -22,7 +22,7 @@ class LogDrainAttempt extends JsonSerializableType
     public string $id;
 
     /**
-     * @var DateTime $attemptedAt
+     * @var DateTime $attemptedAt When the attempt ran.
      */
     #[JsonProperty('attempted_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $attemptedAt;
@@ -34,7 +34,7 @@ class LogDrainAttempt extends JsonSerializableType
     public ?int $statusCode;
 
     /**
-     * @var int $durationMs
+     * @var int $durationMs How long it took, in milliseconds.
      */
     #[JsonProperty('duration_ms')]
     public int $durationMs;

@@ -12,13 +12,13 @@ use Coss\Core\Types\Union;
 class RiskRuleCondition extends JsonSerializableType
 {
     /**
-     * @var value-of<RiskRuleConditionField> $field
+     * @var value-of<RiskRuleConditionField> $field The signal to test, such as `email.disposable` or `ip.country`.
      */
     #[JsonProperty('field')]
     public string $field;
 
     /**
-     * @var value-of<RiskRuleConditionOperator> $operator
+     * @var value-of<RiskRuleConditionOperator> $operator How to compare. Booleans use `is`, numbers `eq` to `lte`, and strings `eq`, `neq`, `in` and `not_in`.
      */
     #[JsonProperty('operator')]
     public string $operator;
@@ -29,7 +29,7 @@ class RiskRuleCondition extends JsonSerializableType
      *   |float
      *   |string
      *   |array<string>
-     * ) $value
+     * ) $value What to compare it with: its type follows the field, and `in` and `not_in` take a list of strings.
      */
     #[JsonProperty('value'), Union('bool', 'float', 'string', ['string'])]
     public bool|float|string|array $value;

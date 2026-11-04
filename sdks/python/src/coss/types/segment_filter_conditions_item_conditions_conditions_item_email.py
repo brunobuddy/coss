@@ -10,8 +10,15 @@ from .segment_filter_conditions_item_conditions_conditions_item_email_op import 
 
 
 class SegmentFilterConditionsItemConditionsConditionsItemEmail(UniversalBaseModel):
-    op: SegmentFilterConditionsItemConditionsConditionsItemEmailOp
-    value: str
+    op: SegmentFilterConditionsItemConditionsConditionsItemEmailOp = pydantic.Field()
+    """
+    How to compare the contact's address.
+    """
+
+    value: str = pydantic.Field()
+    """
+    What to compare it with.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -13,7 +13,11 @@ from .sign_document_pages_item import SignDocumentPagesItem
 class SignDocument(UniversalBaseModel):
     object: SignDocumentObject
     id: str
-    filename: str
+    filename: str = pydantic.Field()
+    """
+    The file's name, as uploaded.
+    """
+
     size: int = pydantic.Field()
     """
     Bytes.
@@ -24,7 +28,11 @@ class SignDocument(UniversalBaseModel):
     Hex SHA-256 of the uploaded bytes.
     """
 
-    page_count: int
+    page_count: int = pydantic.Field()
+    """
+    How many pages it has.
+    """
+
     pages: typing.List[SignDocumentPagesItem] = pydantic.Field()
     """
     Each page's size, in order.
@@ -35,7 +43,11 @@ class SignDocument(UniversalBaseModel):
     Text anchors (`{{signature:signer_1}}`) found in the document, which fields can be placed by.
     """
 
-    sandbox: bool
+    sandbox: bool = pydantic.Field()
+    """
+    Whether it belongs to a sandbox environment.
+    """
+
     created_at: dt.datetime
 
     if IS_PYDANTIC_V2:

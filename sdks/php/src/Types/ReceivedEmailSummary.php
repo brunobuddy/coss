@@ -29,7 +29,7 @@ class ReceivedEmailSummary extends JsonSerializableType
     public string $status;
 
     /**
-     * @var ?value-of<ReceivedEmailSummaryBlockedReason> $blockedReason
+     * @var ?value-of<ReceivedEmailSummaryBlockedReason> $blockedReason Why it's `blocked`. `null`: it isn't.
      */
     #[JsonProperty('blocked_reason')]
     public ?string $blockedReason;
@@ -65,7 +65,7 @@ class ReceivedEmailSummary extends JsonSerializableType
     public array $cc;
 
     /**
-     * @var ?string $subject
+     * @var ?string $subject The `Subject` header. `null`: none.
      */
     #[JsonProperty('subject')]
     public ?string $subject;
@@ -77,7 +77,7 @@ class ReceivedEmailSummary extends JsonSerializableType
     public ?string $messageId;
 
     /**
-     * @var array<ReceivedEmailAttachment> $attachments
+     * @var array<ReceivedEmailAttachment> $attachments Its attachments, without their bytes.
      */
     #[JsonProperty('attachments'), ArrayType([ReceivedEmailAttachment::class])]
     public array $attachments;
@@ -107,7 +107,7 @@ class ReceivedEmailSummary extends JsonSerializableType
     public bool $sandbox;
 
     /**
-     * @var DateTime $receivedAt
+     * @var DateTime $receivedAt When it arrived.
      */
     #[JsonProperty('received_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $receivedAt;

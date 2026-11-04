@@ -75,21 +75,33 @@ public final class RiskIpSignals {
         return version;
     }
 
+    /**
+     * @return Whether it's a private or reserved address.
+     */
     @JsonProperty("private")
     public boolean getPrivate() {
         return private_;
     }
 
+    /**
+     * @return Whether it's a Tor exit.
+     */
     @JsonProperty("tor")
     public boolean getTor() {
         return tor;
     }
 
+    /**
+     * @return Whether it's in a cloud, hosting or VPN network.
+     */
     @JsonProperty("hosting")
     public boolean getHosting() {
         return hosting;
     }
 
+    /**
+     * @return That network's operator. <code>null</code> when it isn't one.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("hosting_provider")
     public OptionalNullable<String> getHostingProvider() {
@@ -99,6 +111,9 @@ public final class RiskIpSignals {
         return hostingProvider;
     }
 
+    /**
+     * @return <code>cloud</code>, <code>hosting</code> or <code>vpn</code>. <code>null</code> when it isn't one.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("hosting_kind")
     public OptionalNullable<RiskIpSignalsHostingKind> getHostingKind() {
@@ -108,6 +123,9 @@ public final class RiskIpSignals {
         return hostingKind;
     }
 
+    /**
+     * @return The network's autonomous system number. <code>null</code> when unknown.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("asn")
     public OptionalNullable<Long> getAsn() {
@@ -117,6 +135,9 @@ public final class RiskIpSignals {
         return asn;
     }
 
+    /**
+     * @return The network's name. <code>null</code> when unknown.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("as_name")
     public OptionalNullable<String> getAsName() {
@@ -241,14 +262,23 @@ public final class RiskIpSignals {
     }
 
     public interface PrivateStage {
+        /**
+         * <p>Whether it's a private or reserved address.</p>
+         */
         TorStage private_(boolean private_);
     }
 
     public interface TorStage {
+        /**
+         * <p>Whether it's a Tor exit.</p>
+         */
         HostingStage tor(boolean tor);
     }
 
     public interface HostingStage {
+        /**
+         * <p>Whether it's in a cloud, hosting or VPN network.</p>
+         */
         _FinalStage hosting(boolean hosting);
     }
 
@@ -259,6 +289,9 @@ public final class RiskIpSignals {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>That network's operator. <code>null</code> when it isn't one.</p>
+         */
         _FinalStage hostingProvider(OptionalNullable<String> hostingProvider);
 
         _FinalStage hostingProvider(String hostingProvider);
@@ -267,6 +300,9 @@ public final class RiskIpSignals {
 
         _FinalStage hostingProvider(Nullable<String> hostingProvider);
 
+        /**
+         * <p><code>cloud</code>, <code>hosting</code> or <code>vpn</code>. <code>null</code> when it isn't one.</p>
+         */
         _FinalStage hostingKind(OptionalNullable<RiskIpSignalsHostingKind> hostingKind);
 
         _FinalStage hostingKind(RiskIpSignalsHostingKind hostingKind);
@@ -275,6 +311,9 @@ public final class RiskIpSignals {
 
         _FinalStage hostingKind(Nullable<RiskIpSignalsHostingKind> hostingKind);
 
+        /**
+         * <p>The network's autonomous system number. <code>null</code> when unknown.</p>
+         */
         _FinalStage asn(OptionalNullable<Long> asn);
 
         _FinalStage asn(Long asn);
@@ -283,6 +322,9 @@ public final class RiskIpSignals {
 
         _FinalStage asn(Nullable<Long> asn);
 
+        /**
+         * <p>The network's name. <code>null</code> when unknown.</p>
+         */
         _FinalStage asName(OptionalNullable<String> asName);
 
         _FinalStage asName(String asName);
@@ -363,6 +405,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>Whether it's a private or reserved address.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("private")
         public TorStage private_(boolean private_) {
@@ -370,6 +416,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>Whether it's a Tor exit.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("tor")
         public HostingStage tor(boolean tor) {
@@ -377,6 +427,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>Whether it's in a cloud, hosting or VPN network.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("hosting")
         public _FinalStage hosting(boolean hosting) {
@@ -484,6 +538,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>The network's name. <code>null</code> when unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage asName(Nullable<String> asName) {
             if (asName.isNull()) {
@@ -496,6 +554,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>The network's name. <code>null</code> when unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage asName(Optional<String> asName) {
             if (asName.isPresent()) {
@@ -506,12 +568,19 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>The network's name. <code>null</code> when unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage asName(String asName) {
             this.asName = OptionalNullable.of(asName);
             return this;
         }
 
+        /**
+         * <p>The network's name. <code>null</code> when unknown.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "as_name", nulls = Nulls.SKIP)
         public _FinalStage asName(OptionalNullable<String> asName) {
@@ -519,6 +588,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>The network's autonomous system number. <code>null</code> when unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage asn(Nullable<Long> asn) {
             if (asn.isNull()) {
@@ -531,6 +604,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>The network's autonomous system number. <code>null</code> when unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage asn(Optional<Long> asn) {
             if (asn.isPresent()) {
@@ -541,12 +618,19 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>The network's autonomous system number. <code>null</code> when unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage asn(Long asn) {
             this.asn = OptionalNullable.of(asn);
             return this;
         }
 
+        /**
+         * <p>The network's autonomous system number. <code>null</code> when unknown.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "asn", nulls = Nulls.SKIP)
         public _FinalStage asn(OptionalNullable<Long> asn) {
@@ -554,6 +638,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p><code>cloud</code>, <code>hosting</code> or <code>vpn</code>. <code>null</code> when it isn't one.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage hostingKind(Nullable<RiskIpSignalsHostingKind> hostingKind) {
             if (hostingKind.isNull()) {
@@ -566,6 +654,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p><code>cloud</code>, <code>hosting</code> or <code>vpn</code>. <code>null</code> when it isn't one.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage hostingKind(Optional<RiskIpSignalsHostingKind> hostingKind) {
             if (hostingKind.isPresent()) {
@@ -576,12 +668,19 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p><code>cloud</code>, <code>hosting</code> or <code>vpn</code>. <code>null</code> when it isn't one.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage hostingKind(RiskIpSignalsHostingKind hostingKind) {
             this.hostingKind = OptionalNullable.of(hostingKind);
             return this;
         }
 
+        /**
+         * <p><code>cloud</code>, <code>hosting</code> or <code>vpn</code>. <code>null</code> when it isn't one.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "hosting_kind", nulls = Nulls.SKIP)
         public _FinalStage hostingKind(OptionalNullable<RiskIpSignalsHostingKind> hostingKind) {
@@ -589,6 +688,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>That network's operator. <code>null</code> when it isn't one.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage hostingProvider(Nullable<String> hostingProvider) {
             if (hostingProvider.isNull()) {
@@ -601,6 +704,10 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>That network's operator. <code>null</code> when it isn't one.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage hostingProvider(Optional<String> hostingProvider) {
             if (hostingProvider.isPresent()) {
@@ -611,12 +718,19 @@ public final class RiskIpSignals {
             return this;
         }
 
+        /**
+         * <p>That network's operator. <code>null</code> when it isn't one.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage hostingProvider(String hostingProvider) {
             this.hostingProvider = OptionalNullable.of(hostingProvider);
             return this;
         }
 
+        /**
+         * <p>That network's operator. <code>null</code> when it isn't one.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "hosting_provider", nulls = Nulls.SKIP)
         public _FinalStage hostingProvider(OptionalNullable<String> hostingProvider) {

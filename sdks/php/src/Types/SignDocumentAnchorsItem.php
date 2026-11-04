@@ -11,37 +11,37 @@ use Coss\Core\Json\JsonProperty;
 class SignDocumentAnchorsItem extends JsonSerializableType
 {
     /**
-     * @var string $text
+     * @var string $text The anchor as it appears in the document.
      */
     #[JsonProperty('text')]
     public string $text;
 
     /**
-     * @var int $page
+     * @var int $page 1-based page number.
      */
     #[JsonProperty('page')]
     public int $page;
 
     /**
-     * @var float $x
+     * @var float $x Left edge, in PDF points from the page's left.
      */
     #[JsonProperty('x')]
     public float $x;
 
     /**
-     * @var float $y
+     * @var float $y Top edge, in PDF points from the page's top.
      */
     #[JsonProperty('y')]
     public float $y;
 
     /**
-     * @var float $width
+     * @var float $width In PDF points.
      */
     #[JsonProperty('width')]
     public float $width;
 
     /**
-     * @var float $height
+     * @var float $height In PDF points.
      */
     #[JsonProperty('height')]
     public float $height;

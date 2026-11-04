@@ -100,6 +100,8 @@ func (c *Client) Add(
 	return response.Body, nil
 }
 
+// One allow or block list entry of the API key's environment.
+//
 // Example:
 //
 //	request := &risk.GetListsRequest{
@@ -125,6 +127,8 @@ func (c *Client) Get(
 	return response.Body, nil
 }
 
+// Removes an entry from its list. Later assessments no longer see it.
+//
 // Example:
 //
 //	request := &risk.RemoveListsRequest{

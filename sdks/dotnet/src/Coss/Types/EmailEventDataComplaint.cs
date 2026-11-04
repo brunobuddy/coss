@@ -11,10 +11,16 @@ public record EmailEventDataComplaint : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The kind of complaint the mailbox provider reported. `null`: not reported.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("feedback_type")]
     public string? FeedbackType { get; set; }
 
+    /// <summary>
+    /// The provider's finer classification. `null`: not reported.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("sub_type")]
     public string? SubType { get; set; }

@@ -61,6 +61,9 @@ public partial interface IContactsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One contact of the API key's environment.
+    /// </summary>
     WithRawResponseTask<Contact> GetAsync(
         GetContactsRequest request,
         RequestOptions? options = null,

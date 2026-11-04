@@ -17,6 +17,9 @@ public record SignDocument : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The file's name, as uploaded.
+    /// </summary>
     [JsonPropertyName("filename")]
     public required string Filename { get; set; }
 
@@ -32,6 +35,9 @@ public record SignDocument : IJsonOnDeserialized
     [JsonPropertyName("sha256")]
     public required string Sha256 { get; set; }
 
+    /// <summary>
+    /// How many pages it has.
+    /// </summary>
     [JsonPropertyName("page_count")]
     public required long PageCount { get; set; }
 
@@ -49,6 +55,9 @@ public record SignDocument : IJsonOnDeserialized
     public IEnumerable<SignDocumentAnchorsItem> Anchors { get; set; } =
         new List<SignDocumentAnchorsItem>();
 
+    /// <summary>
+    /// Whether it belongs to a sandbox environment.
+    /// </summary>
     [JsonPropertyName("sandbox")]
     public required bool Sandbox { get; set; }
 

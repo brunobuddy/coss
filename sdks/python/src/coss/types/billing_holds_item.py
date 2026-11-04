@@ -9,8 +9,15 @@ from .billing_holds_item_reason import BillingHoldsItemReason
 
 
 class BillingHoldsItem(UniversalBaseModel):
-    reason: BillingHoldsItemReason
-    since: dt.datetime
+    reason: BillingHoldsItemReason = pydantic.Field()
+    """
+    `delinquent`: an invoice is past its grace period. `spend_limit`: the spend limit was reached. `credit_limit`: the credit limit was reached, or a usage charge failed. `admin`: placed by coss.com.
+    """
+
+    since: dt.datetime = pydantic.Field()
+    """
+    When the hold began.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

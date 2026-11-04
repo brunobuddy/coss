@@ -38,6 +38,9 @@ public final class ImportContactsRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The contacts to create or update, at most 1,000.
+     */
     @JsonProperty("contacts")
     public List<ImportContactsRequestContactsItem> getContacts() {
         return contacts;
@@ -97,6 +100,9 @@ public final class ImportContactsRequest {
             return this;
         }
 
+        /**
+         * <p>The contacts to create or update, at most 1,000.</p>
+         */
         @JsonSetter(value = "contacts", nulls = Nulls.SKIP)
         public Builder contacts(List<ImportContactsRequestContactsItem> contacts) {
             this.contacts.clear();

@@ -11,11 +11,26 @@ from .broadcast_webhook_event_data_error import BroadcastWebhookEventDataError
 
 
 class BroadcastWebhookEventData(UniversalBaseModel):
+    """
+    The broadcast and how it fared.
+    """
+
     broadcast: BroadcastWebhookEventDataBroadcast
-    pause_reason: typing.Optional[str] = None
-    error: typing.Optional[BroadcastWebhookEventDataError] = None
+    pause_reason: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Why a paused broadcast waits. `null`: it isn't paused.
+    """
+
+    error: typing.Optional[BroadcastWebhookEventDataError] = pydantic.Field(default=None)
+    """
+    Why it failed. `null`: it didn't.
+    """
+
     stats: BroadcastStats
-    occurred_at: dt.datetime
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When this happened.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

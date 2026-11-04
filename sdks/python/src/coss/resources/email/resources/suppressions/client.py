@@ -296,6 +296,8 @@ class SuppressionsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Suppression:
         """
+        One entry of the suppression list of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -672,6 +674,8 @@ class AsyncSuppressionsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Suppression:
         """
+        One entry of the suppression list of the API key's environment.
+
         Parameters
         ----------
         id : str

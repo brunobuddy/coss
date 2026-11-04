@@ -14,9 +14,15 @@ public record ContactImport : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required ContactImportObject Object { get; set; }
 
+    /// <summary>
+    /// Contacts created.
+    /// </summary>
     [JsonPropertyName("created")]
     public required long Created { get; set; }
 
+    /// <summary>
+    /// Existing contacts updated.
+    /// </summary>
     [JsonPropertyName("updated")]
     public required long Updated { get; set; }
 
@@ -26,6 +32,9 @@ public record ContactImport : IJsonOnDeserialized
     [JsonPropertyName("kept_unsubscribed")]
     public required long KeptUnsubscribed { get; set; }
 
+    /// <summary>
+    /// Entries that were refused. The rest of the import still went through.
+    /// </summary>
     [JsonPropertyName("invalid")]
     public IEnumerable<ContactImportInvalidItem> Invalid { get; set; } =
         new List<ContactImportInvalidItem>();

@@ -14,186 +14,482 @@ class UpdateRiskSettingsRequestReasonWeights(UniversalBaseModel):
     """
 
     email_invalid: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="email.invalid"), pydantic.Field(alias="email.invalid")
+        typing.Optional[float],
+        FieldMetadata(alias="email.invalid"),
+        pydantic.Field(alias="email.invalid", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     email_disposable: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="email.disposable"), pydantic.Field(alias="email.disposable")
+        typing.Optional[float],
+        FieldMetadata(alias="email.disposable"),
+        pydantic.Field(alias="email.disposable", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     email_undeliverable: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="email.undeliverable"), pydantic.Field(alias="email.undeliverable")
+        typing.Optional[float],
+        FieldMetadata(alias="email.undeliverable"),
+        pydantic.Field(
+            alias="email.undeliverable", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     email_role_account: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="email.role_account"), pydantic.Field(alias="email.role_account")
+        typing.Optional[float],
+        FieldMetadata(alias="email.role_account"),
+        pydantic.Field(
+            alias="email.role_account", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     email_typo: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="email.typo"), pydantic.Field(alias="email.typo")
+        typing.Optional[float],
+        FieldMetadata(alias="email.typo"),
+        pydantic.Field(alias="email.typo", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     email_domain_new: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="email.domain_new"), pydantic.Field(alias="email.domain_new")
+        typing.Optional[float],
+        FieldMetadata(alias="email.domain_new"),
+        pydantic.Field(alias="email.domain_new", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     ip_tor: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="ip.tor"), pydantic.Field(alias="ip.tor")
+        typing.Optional[float],
+        FieldMetadata(alias="ip.tor"),
+        pydantic.Field(alias="ip.tor", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     ip_vpn_network: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="ip.vpn_network"), pydantic.Field(alias="ip.vpn_network")
+        typing.Optional[float],
+        FieldMetadata(alias="ip.vpn_network"),
+        pydantic.Field(alias="ip.vpn_network", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     ip_hosting_provider: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="ip.hosting_provider"), pydantic.Field(alias="ip.hosting_provider")
+        typing.Optional[float],
+        FieldMetadata(alias="ip.hosting_provider"),
+        pydantic.Field(
+            alias="ip.hosting_provider", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     ip_vpn: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="ip.vpn"), pydantic.Field(alias="ip.vpn")
+        typing.Optional[float],
+        FieldMetadata(alias="ip.vpn"),
+        pydantic.Field(alias="ip.vpn", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     ip_proxy: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="ip.proxy"), pydantic.Field(alias="ip.proxy")
+        typing.Optional[float],
+        FieldMetadata(alias="ip.proxy"),
+        pydantic.Field(alias="ip.proxy", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     ip_relay: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="ip.relay"), pydantic.Field(alias="ip.relay")
+        typing.Optional[float],
+        FieldMetadata(alias="ip.relay"),
+        pydantic.Field(alias="ip.relay", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     ip_private: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="ip.private"), pydantic.Field(alias="ip.private")
+        typing.Optional[float],
+        FieldMetadata(alias="ip.private"),
+        pydantic.Field(alias="ip.private", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_signups_per_ip1h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.signups_per_ip_1h"),
-        pydantic.Field(alias="velocity.signups_per_ip_1h"),
+        pydantic.Field(
+            alias="velocity.signups_per_ip_1h", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_signups_per_ip24h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.signups_per_ip_24h"),
-        pydantic.Field(alias="velocity.signups_per_ip_24h"),
+        pydantic.Field(
+            alias="velocity.signups_per_ip_24h", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_signups_per_subnet1h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.signups_per_subnet_1h"),
-        pydantic.Field(alias="velocity.signups_per_subnet_1h"),
+        pydantic.Field(
+            alias="velocity.signups_per_subnet_1h", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_signups_per_email_domain1h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.signups_per_email_domain_1h"),
-        pydantic.Field(alias="velocity.signups_per_email_domain_1h"),
+        pydantic.Field(
+            alias="velocity.signups_per_email_domain_1h",
+            description="This reason's new weight. `null` restores its default.",
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_signups_per_mailbox24h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.signups_per_mailbox_24h"),
-        pydantic.Field(alias="velocity.signups_per_mailbox_24h"),
+        pydantic.Field(
+            alias="velocity.signups_per_mailbox_24h",
+            description="This reason's new weight. `null` restores its default.",
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_signups_per_device24h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.signups_per_device_24h"),
-        pydantic.Field(alias="velocity.signups_per_device_24h"),
+        pydantic.Field(
+            alias="velocity.signups_per_device_24h",
+            description="This reason's new weight. `null` restores its default.",
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_checkouts_per_ip1h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.checkouts_per_ip_1h"),
-        pydantic.Field(alias="velocity.checkouts_per_ip_1h"),
+        pydantic.Field(
+            alias="velocity.checkouts_per_ip_1h", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_checkouts_per_user1h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.checkouts_per_user_1h"),
-        pydantic.Field(alias="velocity.checkouts_per_user_1h"),
+        pydantic.Field(
+            alias="velocity.checkouts_per_user_1h", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_checkouts_per_card24h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.checkouts_per_card_24h"),
-        pydantic.Field(alias="velocity.checkouts_per_card_24h"),
+        pydantic.Field(
+            alias="velocity.checkouts_per_card_24h",
+            description="This reason's new weight. `null` restores its default.",
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_logins_per_ip1h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.logins_per_ip_1h"),
-        pydantic.Field(alias="velocity.logins_per_ip_1h"),
+        pydantic.Field(
+            alias="velocity.logins_per_ip_1h", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_logins_per_user1h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.logins_per_user_1h"),
-        pydantic.Field(alias="velocity.logins_per_user_1h"),
+        pydantic.Field(
+            alias="velocity.logins_per_user_1h", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_events_per_ip1h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.events_per_ip_1h"),
-        pydantic.Field(alias="velocity.events_per_ip_1h"),
+        pydantic.Field(
+            alias="velocity.events_per_ip_1h", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     velocity_events_per_user1h: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="velocity.events_per_user_1h"),
-        pydantic.Field(alias="velocity.events_per_user_1h"),
+        pydantic.Field(
+            alias="velocity.events_per_user_1h", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     duplicate_canonical_mailbox: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="duplicate.canonical_mailbox"),
-        pydantic.Field(alias="duplicate.canonical_mailbox"),
+        pydantic.Field(
+            alias="duplicate.canonical_mailbox", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     duplicate_device: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="duplicate.device"), pydantic.Field(alias="duplicate.device")
+        typing.Optional[float],
+        FieldMetadata(alias="duplicate.device"),
+        pydantic.Field(alias="duplicate.device", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     history_fraud_mailbox: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="history.fraud_mailbox"),
-        pydantic.Field(alias="history.fraud_mailbox"),
+        pydantic.Field(
+            alias="history.fraud_mailbox", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     history_fraud_user: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="history.fraud_user"), pydantic.Field(alias="history.fraud_user")
+        typing.Optional[float],
+        FieldMetadata(alias="history.fraud_user"),
+        pydantic.Field(
+            alias="history.fraud_user", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     history_fraud_ip: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="history.fraud_ip"), pydantic.Field(alias="history.fraud_ip")
+        typing.Optional[float],
+        FieldMetadata(alias="history.fraud_ip"),
+        pydantic.Field(alias="history.fraud_ip", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     history_fraud_subnet: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="history.fraud_subnet"),
-        pydantic.Field(alias="history.fraud_subnet"),
+        pydantic.Field(
+            alias="history.fraud_subnet", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     history_fraud_card: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="history.fraud_card"), pydantic.Field(alias="history.fraud_card")
+        typing.Optional[float],
+        FieldMetadata(alias="history.fraud_card"),
+        pydantic.Field(
+            alias="history.fraud_card", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     history_fraud_device: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="history.fraud_device"),
-        pydantic.Field(alias="history.fraud_device"),
+        pydantic.Field(
+            alias="history.fraud_device", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     checkout_card_country_mismatch: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="checkout.card_country_mismatch"),
-        pydantic.Field(alias="checkout.card_country_mismatch"),
+        pydantic.Field(
+            alias="checkout.card_country_mismatch", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     checkout_billing_country_mismatch: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="checkout.billing_country_mismatch"),
-        pydantic.Field(alias="checkout.billing_country_mismatch"),
+        pydantic.Field(
+            alias="checkout.billing_country_mismatch",
+            description="This reason's new weight. `null` restores its default.",
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     checkout_prepaid_card: typing_extensions.Annotated[
         typing.Optional[float],
         FieldMetadata(alias="checkout.prepaid_card"),
-        pydantic.Field(alias="checkout.prepaid_card"),
+        pydantic.Field(
+            alias="checkout.prepaid_card", description="This reason's new weight. `null` restores its default."
+        ),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     device_automation: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="device.automation"), pydantic.Field(alias="device.automation")
+        typing.Optional[float],
+        FieldMetadata(alias="device.automation"),
+        pydantic.Field(alias="device.automation", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     device_invalid: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="device.invalid"), pydantic.Field(alias="device.invalid")
+        typing.Optional[float],
+        FieldMetadata(alias="device.invalid"),
+        pydantic.Field(alias="device.invalid", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     login_new_country: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="login.new_country"), pydantic.Field(alias="login.new_country")
+        typing.Optional[float],
+        FieldMetadata(alias="login.new_country"),
+        pydantic.Field(alias="login.new_country", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     login_new_network: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="login.new_network"), pydantic.Field(alias="login.new_network")
+        typing.Optional[float],
+        FieldMetadata(alias="login.new_network"),
+        pydantic.Field(alias="login.new_network", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     captcha_failed: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="captcha.failed"), pydantic.Field(alias="captcha.failed")
+        typing.Optional[float],
+        FieldMetadata(alias="captcha.failed"),
+        pydantic.Field(alias="captcha.failed", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     captcha_missing: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="captcha.missing"), pydantic.Field(alias="captcha.missing")
+        typing.Optional[float],
+        FieldMetadata(alias="captcha.missing"),
+        pydantic.Field(alias="captcha.missing", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     content_spam: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="content.spam"), pydantic.Field(alias="content.spam")
+        typing.Optional[float],
+        FieldMetadata(alias="content.spam"),
+        pydantic.Field(alias="content.spam", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     content_phishing: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="content.phishing"), pydantic.Field(alias="content.phishing")
+        typing.Optional[float],
+        FieldMetadata(alias="content.phishing"),
+        pydantic.Field(alias="content.phishing", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     content_malware: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="content.malware"), pydantic.Field(alias="content.malware")
+        typing.Optional[float],
+        FieldMetadata(alias="content.malware"),
+        pydantic.Field(alias="content.malware", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
+
     content_fraud: typing_extensions.Annotated[
-        typing.Optional[float], FieldMetadata(alias="content.fraud"), pydantic.Field(alias="content.fraud")
+        typing.Optional[float],
+        FieldMetadata(alias="content.fraud"),
+        pydantic.Field(alias="content.fraud", description="This reason's new weight. `null` restores its default."),
     ] = None
+    """
+    This reason's new weight. `null` restores its default.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

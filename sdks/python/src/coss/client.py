@@ -25,6 +25,7 @@ if typing.TYPE_CHECKING:
     from .resources.logs.client import AsyncLogsClient, LogsClient
     from .resources.reputation.client import AsyncReputationClient, ReputationClient
     from .resources.risk.client import AsyncRiskClient, RiskClient
+    from .resources.scheduling.client import AsyncSchedulingClient, SchedulingClient
     from .resources.sign.client import AsyncSignClient, SignClient
     from .resources.sms.client import AsyncSmsClient, SmsClient
     from .resources.verify.client import AsyncVerifyClient, VerifyClient
@@ -141,6 +142,7 @@ class Coss:
         self._inboxes: typing.Optional[InboxesClient] = None
         self._risk: typing.Optional[RiskClient] = None
         self._hooks: typing.Optional[HooksClient] = None
+        self._scheduling: typing.Optional[SchedulingClient] = None
         self._sign: typing.Optional[SignClient] = None
 
     @property
@@ -288,6 +290,14 @@ class Coss:
         return self._hooks
 
     @property
+    def scheduling(self):
+        if self._scheduling is None:
+            from .resources.scheduling.client import SchedulingClient  # noqa: E402
+
+            self._scheduling = SchedulingClient(client_wrapper=self._client_wrapper)
+        return self._scheduling
+
+    @property
     def sign(self):
         if self._sign is None:
             from .resources.sign.client import SignClient  # noqa: E402
@@ -425,6 +435,7 @@ class AsyncCoss:
         self._inboxes: typing.Optional[AsyncInboxesClient] = None
         self._risk: typing.Optional[AsyncRiskClient] = None
         self._hooks: typing.Optional[AsyncHooksClient] = None
+        self._scheduling: typing.Optional[AsyncSchedulingClient] = None
         self._sign: typing.Optional[AsyncSignClient] = None
 
     @property
@@ -570,6 +581,14 @@ class AsyncCoss:
 
             self._hooks = AsyncHooksClient(client_wrapper=self._client_wrapper)
         return self._hooks
+
+    @property
+    def scheduling(self):
+        if self._scheduling is None:
+            from .resources.scheduling.client import AsyncSchedulingClient  # noqa: E402
+
+            self._scheduling = AsyncSchedulingClient(client_wrapper=self._client_wrapper)
+        return self._scheduling
 
     @property
     def sign(self):

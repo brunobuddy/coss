@@ -105,6 +105,9 @@ public final class TrackingDomain {
         return createdAt;
     }
 
+    /**
+     * @return When it was last checked. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_checked_at")
     public OptionalNullable<OffsetDateTime> getLastCheckedAt() {
@@ -114,6 +117,9 @@ public final class TrackingDomain {
         return lastCheckedAt;
     }
 
+    /**
+     * @return When it became active. <code>null</code>: it isn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("activated_at")
     public OptionalNullable<OffsetDateTime> getActivatedAt() {
@@ -123,6 +129,9 @@ public final class TrackingDomain {
         return activatedAt;
     }
 
+    /**
+     * @return When it failed. <code>null</code>: it hasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("failed_at")
     public OptionalNullable<OffsetDateTime> getFailedAt() {
@@ -245,6 +254,9 @@ public final class TrackingDomain {
 
         _FinalStage message(Nullable<String> message);
 
+        /**
+         * <p>When it was last checked. <code>null</code>: not yet.</p>
+         */
         _FinalStage lastCheckedAt(OptionalNullable<OffsetDateTime> lastCheckedAt);
 
         _FinalStage lastCheckedAt(OffsetDateTime lastCheckedAt);
@@ -253,6 +265,9 @@ public final class TrackingDomain {
 
         _FinalStage lastCheckedAt(Nullable<OffsetDateTime> lastCheckedAt);
 
+        /**
+         * <p>When it became active. <code>null</code>: it isn't.</p>
+         */
         _FinalStage activatedAt(OptionalNullable<OffsetDateTime> activatedAt);
 
         _FinalStage activatedAt(OffsetDateTime activatedAt);
@@ -261,6 +276,9 @@ public final class TrackingDomain {
 
         _FinalStage activatedAt(Nullable<OffsetDateTime> activatedAt);
 
+        /**
+         * <p>When it failed. <code>null</code>: it hasn't.</p>
+         */
         _FinalStage failedAt(OptionalNullable<OffsetDateTime> failedAt);
 
         _FinalStage failedAt(OffsetDateTime failedAt);
@@ -346,6 +364,10 @@ public final class TrackingDomain {
             return this;
         }
 
+        /**
+         * <p>When it failed. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage failedAt(Nullable<OffsetDateTime> failedAt) {
             if (failedAt.isNull()) {
@@ -358,6 +380,10 @@ public final class TrackingDomain {
             return this;
         }
 
+        /**
+         * <p>When it failed. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage failedAt(Optional<OffsetDateTime> failedAt) {
             if (failedAt.isPresent()) {
@@ -368,12 +394,19 @@ public final class TrackingDomain {
             return this;
         }
 
+        /**
+         * <p>When it failed. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage failedAt(OffsetDateTime failedAt) {
             this.failedAt = OptionalNullable.of(failedAt);
             return this;
         }
 
+        /**
+         * <p>When it failed. <code>null</code>: it hasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "failed_at", nulls = Nulls.SKIP)
         public _FinalStage failedAt(OptionalNullable<OffsetDateTime> failedAt) {
@@ -381,6 +414,10 @@ public final class TrackingDomain {
             return this;
         }
 
+        /**
+         * <p>When it became active. <code>null</code>: it isn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage activatedAt(Nullable<OffsetDateTime> activatedAt) {
             if (activatedAt.isNull()) {
@@ -393,6 +430,10 @@ public final class TrackingDomain {
             return this;
         }
 
+        /**
+         * <p>When it became active. <code>null</code>: it isn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage activatedAt(Optional<OffsetDateTime> activatedAt) {
             if (activatedAt.isPresent()) {
@@ -403,12 +444,19 @@ public final class TrackingDomain {
             return this;
         }
 
+        /**
+         * <p>When it became active. <code>null</code>: it isn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage activatedAt(OffsetDateTime activatedAt) {
             this.activatedAt = OptionalNullable.of(activatedAt);
             return this;
         }
 
+        /**
+         * <p>When it became active. <code>null</code>: it isn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "activated_at", nulls = Nulls.SKIP)
         public _FinalStage activatedAt(OptionalNullable<OffsetDateTime> activatedAt) {
@@ -416,6 +464,10 @@ public final class TrackingDomain {
             return this;
         }
 
+        /**
+         * <p>When it was last checked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastCheckedAt(Nullable<OffsetDateTime> lastCheckedAt) {
             if (lastCheckedAt.isNull()) {
@@ -428,6 +480,10 @@ public final class TrackingDomain {
             return this;
         }
 
+        /**
+         * <p>When it was last checked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastCheckedAt(Optional<OffsetDateTime> lastCheckedAt) {
             if (lastCheckedAt.isPresent()) {
@@ -438,12 +494,19 @@ public final class TrackingDomain {
             return this;
         }
 
+        /**
+         * <p>When it was last checked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastCheckedAt(OffsetDateTime lastCheckedAt) {
             this.lastCheckedAt = OptionalNullable.of(lastCheckedAt);
             return this;
         }
 
+        /**
+         * <p>When it was last checked. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_checked_at", nulls = Nulls.SKIP)
         public _FinalStage lastCheckedAt(OptionalNullable<OffsetDateTime> lastCheckedAt) {

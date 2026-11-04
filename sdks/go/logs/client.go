@@ -67,6 +67,8 @@ func (c *Client) List(
 	return response.Body, nil
 }
 
+// One line of the API key's environment log.
+//
 // Example:
 //
 //	request := &coss.GetLogsRequest{

@@ -40,6 +40,9 @@ public final class UpdateRiskSettingsRequestCaptcha {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The captcha provider.
+     */
     @JsonProperty("provider")
     public UpdateRiskSettingsRequestCaptchaProvider getProvider() {
         return provider;
@@ -91,6 +94,9 @@ public final class UpdateRiskSettingsRequestCaptcha {
     }
 
     public interface ProviderStage {
+        /**
+         * <p>The captcha provider.</p>
+         */
         _FinalStage provider(@NotNull UpdateRiskSettingsRequestCaptchaProvider provider);
 
         Builder from(UpdateRiskSettingsRequestCaptcha other);
@@ -139,6 +145,10 @@ public final class UpdateRiskSettingsRequestCaptcha {
             return this;
         }
 
+        /**
+         * <p>The captcha provider.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("provider")
         public _FinalStage provider(@NotNull UpdateRiskSettingsRequestCaptchaProvider provider) {

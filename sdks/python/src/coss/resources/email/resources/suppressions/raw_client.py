@@ -844,6 +844,8 @@ class RawSuppressionsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[Suppression]:
         """
+        One entry of the suppression list of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -1885,6 +1887,8 @@ class AsyncRawSuppressionsClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[Suppression]:
         """
+        One entry of the suppression list of the API key's environment.
+
         Parameters
         ----------
         id : str

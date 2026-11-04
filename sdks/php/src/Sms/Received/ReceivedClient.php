@@ -128,6 +128,8 @@ class ReceivedClient
     }
 
     /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     *
      * Example:
      * ```php
      * $client->sms->received->get(

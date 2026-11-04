@@ -22,19 +22,19 @@ class HookEndpointRecovery extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $endpointId
+     * @var string $endpointId The id of the endpoint being recovered.
      */
     #[JsonProperty('endpoint_id')]
     public string $endpointId;
 
     /**
-     * @var DateTime $since
+     * @var DateTime $since Deliveries of messages sent from this time on are requeued.
      */
     #[JsonProperty('since'), Date(Date::TYPE_DATETIME)]
     public DateTime $since;
 
     /**
-     * @var DateTime $until
+     * @var DateTime $until Up to this time: when the recovery was asked for.
      */
     #[JsonProperty('until'), Date(Date::TYPE_DATETIME)]
     public DateTime $until;
@@ -58,7 +58,7 @@ class HookEndpointRecovery extends JsonSerializableType
     public DateTime $createdAt;
 
     /**
-     * @var ?DateTime $completedAt
+     * @var ?DateTime $completedAt When requeueing finished. `null`: still `pending`.
      */
     #[JsonProperty('completed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $completedAt;

@@ -65,11 +65,17 @@ public final class SignSession {
         return id;
     }
 
+    /**
+     * @return The signature request's id.
+     */
     @JsonProperty("request_id")
     public String getRequestId() {
         return requestId;
     }
 
+    /**
+     * @return The signer's id.
+     */
     @JsonProperty("signer_id")
     public String getSignerId() {
         return signerId;
@@ -91,6 +97,9 @@ public final class SignSession {
         return token;
     }
 
+    /**
+     * @return When the link stops working.
+     */
     @JsonProperty("expires_at")
     public OffsetDateTime getExpiresAt() {
         return expiresAt;
@@ -142,10 +151,16 @@ public final class SignSession {
     }
 
     public interface RequestIdStage {
+        /**
+         * <p>The signature request's id.</p>
+         */
         SignerIdStage requestId(@NotNull String requestId);
     }
 
     public interface SignerIdStage {
+        /**
+         * <p>The signer's id.</p>
+         */
         UrlStage signerId(@NotNull String signerId);
     }
 
@@ -164,6 +179,9 @@ public final class SignSession {
     }
 
     public interface ExpiresAtStage {
+        /**
+         * <p>When the link stops working.</p>
+         */
         _FinalStage expiresAt(@NotNull OffsetDateTime expiresAt);
     }
 
@@ -230,6 +248,10 @@ public final class SignSession {
             return this;
         }
 
+        /**
+         * <p>The signature request's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("request_id")
         public SignerIdStage requestId(@NotNull String requestId) {
@@ -237,6 +259,10 @@ public final class SignSession {
             return this;
         }
 
+        /**
+         * <p>The signer's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("signer_id")
         public UrlStage signerId(@NotNull String signerId) {
@@ -266,6 +292,10 @@ public final class SignSession {
             return this;
         }
 
+        /**
+         * <p>When the link stops working.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("expires_at")
         public _FinalStage expiresAt(@NotNull OffsetDateTime expiresAt) {

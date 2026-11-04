@@ -47,6 +47,14 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
             new UpdateWebhookEndpointRequestEventTypesItem(
                     Value.ACCOUNT_REPUTATION_RECOVERED, "account.reputation_recovered");
 
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_LOCATION_READY =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_LOCATION_READY, "scheduling.booking.location_ready");
+
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_CALENDAR_DELEGATION_RESTORED =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_CALENDAR_DELEGATION_RESTORED, "scheduling.calendar_delegation.restored");
+
     public static final UpdateWebhookEndpointRequestEventTypesItem DOMAIN_DMARC_REPORT_RECEIVED =
             new UpdateWebhookEndpointRequestEventTypesItem(
                     Value.DOMAIN_DMARC_REPORT_RECEIVED, "domain.dmarc_report_received");
@@ -73,6 +81,10 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
     public static final UpdateWebhookEndpointRequestEventTypesItem SMS_RECEIVED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.SMS_RECEIVED, "sms.received");
 
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_CALENDAR_DELEGATION_FAILING =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_CALENDAR_DELEGATION_FAILING, "scheduling.calendar_delegation.failing");
+
     public static final UpdateWebhookEndpointRequestEventTypesItem SUBACCOUNT_REPUTATION_WARNING =
             new UpdateWebhookEndpointRequestEventTypesItem(
                     Value.SUBACCOUNT_REPUTATION_WARNING, "subaccount.reputation_warning");
@@ -80,9 +92,17 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
     public static final UpdateWebhookEndpointRequestEventTypesItem SMS_UNDELIVERED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.SMS_UNDELIVERED, "sms.undelivered");
 
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_CREATED =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_CREATED, "scheduling.booking.created");
+
     public static final UpdateWebhookEndpointRequestEventTypesItem BILLING_INVOICE_FINALIZED =
             new UpdateWebhookEndpointRequestEventTypesItem(
                     Value.BILLING_INVOICE_FINALIZED, "billing.invoice_finalized");
+
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_CALENDAR_WRITE_FAILED =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_CALENDAR_WRITE_FAILED, "scheduling.booking.calendar_write_failed");
 
     public static final UpdateWebhookEndpointRequestEventTypesItem EMAIL_DELIVERED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.EMAIL_DELIVERED, "email.delivered");
@@ -117,6 +137,10 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
     public static final UpdateWebhookEndpointRequestEventTypesItem EMAIL_SENT =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.EMAIL_SENT, "email.sent");
 
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_EXTERNAL_CONFLICT =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_EXTERNAL_CONFLICT, "scheduling.booking.external_conflict");
+
     public static final UpdateWebhookEndpointRequestEventTypesItem BROADCAST_SENT =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.BROADCAST_SENT, "broadcast.sent");
 
@@ -144,8 +168,20 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
     public static final UpdateWebhookEndpointRequestEventTypesItem SMS_OPTED_IN =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.SMS_OPTED_IN, "sms.opted_in");
 
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_CONFIRMED =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_CONFIRMED, "scheduling.booking.confirmed");
+
     public static final UpdateWebhookEndpointRequestEventTypesItem EMAIL_COMPLAINED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.EMAIL_COMPLAINED, "email.complained");
+
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_NO_SHOW =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_NO_SHOW, "scheduling.booking.no_show");
+
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_STARTED =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_STARTED, "scheduling.booking.started");
 
     public static final UpdateWebhookEndpointRequestEventTypesItem BILLING_USAGE_THRESHOLD_REACHED =
             new UpdateWebhookEndpointRequestEventTypesItem(
@@ -178,11 +214,19 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
             new UpdateWebhookEndpointRequestEventTypesItem(
                     Value.BILLING_BUDGET_HOLD_LIFTED, "billing.budget_hold_lifted");
 
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_CALENDAR_NEEDS_REAUTH =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_CALENDAR_NEEDS_REAUTH, "scheduling.calendar.needs_reauth");
+
     public static final UpdateWebhookEndpointRequestEventTypesItem RISK_ASSESSMENT_REVIEWED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.RISK_ASSESSMENT_REVIEWED, "risk.assessment.reviewed");
 
     public static final UpdateWebhookEndpointRequestEventTypesItem SMS_SENT =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.SMS_SENT, "sms.sent");
+
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_PENDING_APPROVAL =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_PENDING_APPROVAL, "scheduling.booking.pending_approval");
 
     public static final UpdateWebhookEndpointRequestEventTypesItem ACCOUNT_REINSTATED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.ACCOUNT_REINSTATED, "account.reinstated");
@@ -197,6 +241,10 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
     public static final UpdateWebhookEndpointRequestEventTypesItem EMAIL_CANCELED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.EMAIL_CANCELED, "email.canceled");
 
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_CALENDAR_DISCONNECTED =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_CALENDAR_DISCONNECTED, "scheduling.calendar.disconnected");
+
     public static final UpdateWebhookEndpointRequestEventTypesItem SMS_DELIVERED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.SMS_DELIVERED, "sms.delivered");
 
@@ -205,6 +253,10 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
 
     public static final UpdateWebhookEndpointRequestEventTypesItem EMAIL_UNSUBSCRIBED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.EMAIL_UNSUBSCRIBED, "email.unsubscribed");
+
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_DECLINED =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_DECLINED, "scheduling.booking.declined");
 
     public static final UpdateWebhookEndpointRequestEventTypesItem SUBACCOUNT_PAUSED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.SUBACCOUNT_PAUSED, "subaccount.paused");
@@ -218,8 +270,19 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
     public static final UpdateWebhookEndpointRequestEventTypesItem EMAIL_SCHEDULED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.EMAIL_SCHEDULED, "email.scheduled");
 
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_RESCHEDULED =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_RESCHEDULED, "scheduling.booking.rescheduled");
+
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_ENDED =
+            new UpdateWebhookEndpointRequestEventTypesItem(Value.SCHEDULING_BOOKING_ENDED, "scheduling.booking.ended");
+
     public static final UpdateWebhookEndpointRequestEventTypesItem HOOK_ENDPOINT_DISABLED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.HOOK_ENDPOINT_DISABLED, "hook_endpoint.disabled");
+
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_CANCELLED =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_CANCELLED, "scheduling.booking.cancelled");
 
     public static final UpdateWebhookEndpointRequestEventTypesItem BILLING_HOLD_LIFTED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.BILLING_HOLD_LIFTED, "billing.hold_lifted");
@@ -232,6 +295,14 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
 
     public static final UpdateWebhookEndpointRequestEventTypesItem EMAIL_RECEIVED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.EMAIL_RECEIVED, "email.received");
+
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_BOOKING_REMINDER =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_BOOKING_REMINDER, "scheduling.booking.reminder");
+
+    public static final UpdateWebhookEndpointRequestEventTypesItem SCHEDULING_CALENDAR_CONNECTED =
+            new UpdateWebhookEndpointRequestEventTypesItem(
+                    Value.SCHEDULING_CALENDAR_CONNECTED, "scheduling.calendar.connected");
 
     public static final UpdateWebhookEndpointRequestEventTypesItem ACCOUNT_SUSPENDED =
             new UpdateWebhookEndpointRequestEventTypesItem(Value.ACCOUNT_SUSPENDED, "account.suspended");
@@ -298,6 +369,10 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return visitor.visitFormSubmissionReceived();
             case ACCOUNT_REPUTATION_RECOVERED:
                 return visitor.visitAccountReputationRecovered();
+            case SCHEDULING_BOOKING_LOCATION_READY:
+                return visitor.visitSchedulingBookingLocationReady();
+            case SCHEDULING_CALENDAR_DELEGATION_RESTORED:
+                return visitor.visitSchedulingCalendarDelegationRestored();
             case DOMAIN_DMARC_REPORT_RECEIVED:
                 return visitor.visitDomainDmarcReportReceived();
             case CONTACT_UPDATED:
@@ -314,12 +389,18 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return visitor.visitSmsFailed();
             case SMS_RECEIVED:
                 return visitor.visitSmsReceived();
+            case SCHEDULING_CALENDAR_DELEGATION_FAILING:
+                return visitor.visitSchedulingCalendarDelegationFailing();
             case SUBACCOUNT_REPUTATION_WARNING:
                 return visitor.visitSubaccountReputationWarning();
             case SMS_UNDELIVERED:
                 return visitor.visitSmsUndelivered();
+            case SCHEDULING_BOOKING_CREATED:
+                return visitor.visitSchedulingBookingCreated();
             case BILLING_INVOICE_FINALIZED:
                 return visitor.visitBillingInvoiceFinalized();
+            case SCHEDULING_BOOKING_CALENDAR_WRITE_FAILED:
+                return visitor.visitSchedulingBookingCalendarWriteFailed();
             case EMAIL_DELIVERED:
                 return visitor.visitEmailDelivered();
             case SMS_SCHEDULED:
@@ -340,6 +421,8 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return visitor.visitBillingBudgetThresholdReached();
             case EMAIL_SENT:
                 return visitor.visitEmailSent();
+            case SCHEDULING_BOOKING_EXTERNAL_CONFLICT:
+                return visitor.visitSchedulingBookingExternalConflict();
             case BROADCAST_SENT:
                 return visitor.visitBroadcastSent();
             case SIGN_REQUEST_CANCELED:
@@ -358,8 +441,14 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return visitor.visitContactDeleted();
             case SMS_OPTED_IN:
                 return visitor.visitSmsOptedIn();
+            case SCHEDULING_BOOKING_CONFIRMED:
+                return visitor.visitSchedulingBookingConfirmed();
             case EMAIL_COMPLAINED:
                 return visitor.visitEmailComplained();
+            case SCHEDULING_BOOKING_NO_SHOW:
+                return visitor.visitSchedulingBookingNoShow();
+            case SCHEDULING_BOOKING_STARTED:
+                return visitor.visitSchedulingBookingStarted();
             case BILLING_USAGE_THRESHOLD_REACHED:
                 return visitor.visitBillingUsageThresholdReached();
             case SIGN_REQUEST_EXPIRED:
@@ -378,10 +467,14 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return visitor.visitBillingCreditGranted();
             case BILLING_BUDGET_HOLD_LIFTED:
                 return visitor.visitBillingBudgetHoldLifted();
+            case SCHEDULING_CALENDAR_NEEDS_REAUTH:
+                return visitor.visitSchedulingCalendarNeedsReauth();
             case RISK_ASSESSMENT_REVIEWED:
                 return visitor.visitRiskAssessmentReviewed();
             case SMS_SENT:
                 return visitor.visitSmsSent();
+            case SCHEDULING_BOOKING_PENDING_APPROVAL:
+                return visitor.visitSchedulingBookingPendingApproval();
             case ACCOUNT_REINSTATED:
                 return visitor.visitAccountReinstated();
             case EMAIL_OPENED:
@@ -390,12 +483,16 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return visitor.visitSignRequestSignerSigned();
             case EMAIL_CANCELED:
                 return visitor.visitEmailCanceled();
+            case SCHEDULING_CALENDAR_DISCONNECTED:
+                return visitor.visitSchedulingCalendarDisconnected();
             case SMS_DELIVERED:
                 return visitor.visitSmsDelivered();
             case SIGN_REQUEST_VIEWED:
                 return visitor.visitSignRequestViewed();
             case EMAIL_UNSUBSCRIBED:
                 return visitor.visitEmailUnsubscribed();
+            case SCHEDULING_BOOKING_DECLINED:
+                return visitor.visitSchedulingBookingDeclined();
             case SUBACCOUNT_PAUSED:
                 return visitor.visitSubaccountPaused();
             case SIGN_REQUEST_COMPLETED:
@@ -404,8 +501,14 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return visitor.visitRiskAssessmentReview();
             case EMAIL_SCHEDULED:
                 return visitor.visitEmailScheduled();
+            case SCHEDULING_BOOKING_RESCHEDULED:
+                return visitor.visitSchedulingBookingRescheduled();
+            case SCHEDULING_BOOKING_ENDED:
+                return visitor.visitSchedulingBookingEnded();
             case HOOK_ENDPOINT_DISABLED:
                 return visitor.visitHookEndpointDisabled();
+            case SCHEDULING_BOOKING_CANCELLED:
+                return visitor.visitSchedulingBookingCancelled();
             case BILLING_HOLD_LIFTED:
                 return visitor.visitBillingHoldLifted();
             case EMAIL_SUPPRESSED:
@@ -414,6 +517,10 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return visitor.visitBillingHoldPlaced();
             case EMAIL_RECEIVED:
                 return visitor.visitEmailReceived();
+            case SCHEDULING_BOOKING_REMINDER:
+                return visitor.visitSchedulingBookingReminder();
+            case SCHEDULING_CALENDAR_CONNECTED:
+                return visitor.visitSchedulingCalendarConnected();
             case ACCOUNT_SUSPENDED:
                 return visitor.visitAccountSuspended();
             case BROADCAST_FAILED:
@@ -453,6 +560,10 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return FORM_SUBMISSION_RECEIVED;
             case "account.reputation_recovered":
                 return ACCOUNT_REPUTATION_RECOVERED;
+            case "scheduling.booking.location_ready":
+                return SCHEDULING_BOOKING_LOCATION_READY;
+            case "scheduling.calendar_delegation.restored":
+                return SCHEDULING_CALENDAR_DELEGATION_RESTORED;
             case "domain.dmarc_report_received":
                 return DOMAIN_DMARC_REPORT_RECEIVED;
             case "contact.updated":
@@ -469,12 +580,18 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return SMS_FAILED;
             case "sms.received":
                 return SMS_RECEIVED;
+            case "scheduling.calendar_delegation.failing":
+                return SCHEDULING_CALENDAR_DELEGATION_FAILING;
             case "subaccount.reputation_warning":
                 return SUBACCOUNT_REPUTATION_WARNING;
             case "sms.undelivered":
                 return SMS_UNDELIVERED;
+            case "scheduling.booking.created":
+                return SCHEDULING_BOOKING_CREATED;
             case "billing.invoice_finalized":
                 return BILLING_INVOICE_FINALIZED;
+            case "scheduling.booking.calendar_write_failed":
+                return SCHEDULING_BOOKING_CALENDAR_WRITE_FAILED;
             case "email.delivered":
                 return EMAIL_DELIVERED;
             case "sms.scheduled":
@@ -495,6 +612,8 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return BILLING_BUDGET_THRESHOLD_REACHED;
             case "email.sent":
                 return EMAIL_SENT;
+            case "scheduling.booking.external_conflict":
+                return SCHEDULING_BOOKING_EXTERNAL_CONFLICT;
             case "broadcast.sent":
                 return BROADCAST_SENT;
             case "sign_request.canceled":
@@ -513,8 +632,14 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return CONTACT_DELETED;
             case "sms.opted_in":
                 return SMS_OPTED_IN;
+            case "scheduling.booking.confirmed":
+                return SCHEDULING_BOOKING_CONFIRMED;
             case "email.complained":
                 return EMAIL_COMPLAINED;
+            case "scheduling.booking.no_show":
+                return SCHEDULING_BOOKING_NO_SHOW;
+            case "scheduling.booking.started":
+                return SCHEDULING_BOOKING_STARTED;
             case "billing.usage_threshold_reached":
                 return BILLING_USAGE_THRESHOLD_REACHED;
             case "sign_request.expired":
@@ -533,10 +658,14 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return BILLING_CREDIT_GRANTED;
             case "billing.budget_hold_lifted":
                 return BILLING_BUDGET_HOLD_LIFTED;
+            case "scheduling.calendar.needs_reauth":
+                return SCHEDULING_CALENDAR_NEEDS_REAUTH;
             case "risk.assessment.reviewed":
                 return RISK_ASSESSMENT_REVIEWED;
             case "sms.sent":
                 return SMS_SENT;
+            case "scheduling.booking.pending_approval":
+                return SCHEDULING_BOOKING_PENDING_APPROVAL;
             case "account.reinstated":
                 return ACCOUNT_REINSTATED;
             case "email.opened":
@@ -545,12 +674,16 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return SIGN_REQUEST_SIGNER_SIGNED;
             case "email.canceled":
                 return EMAIL_CANCELED;
+            case "scheduling.calendar.disconnected":
+                return SCHEDULING_CALENDAR_DISCONNECTED;
             case "sms.delivered":
                 return SMS_DELIVERED;
             case "sign_request.viewed":
                 return SIGN_REQUEST_VIEWED;
             case "email.unsubscribed":
                 return EMAIL_UNSUBSCRIBED;
+            case "scheduling.booking.declined":
+                return SCHEDULING_BOOKING_DECLINED;
             case "subaccount.paused":
                 return SUBACCOUNT_PAUSED;
             case "sign_request.completed":
@@ -559,8 +692,14 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return RISK_ASSESSMENT_REVIEW;
             case "email.scheduled":
                 return EMAIL_SCHEDULED;
+            case "scheduling.booking.rescheduled":
+                return SCHEDULING_BOOKING_RESCHEDULED;
+            case "scheduling.booking.ended":
+                return SCHEDULING_BOOKING_ENDED;
             case "hook_endpoint.disabled":
                 return HOOK_ENDPOINT_DISABLED;
+            case "scheduling.booking.cancelled":
+                return SCHEDULING_BOOKING_CANCELLED;
             case "billing.hold_lifted":
                 return BILLING_HOLD_LIFTED;
             case "email.suppressed":
@@ -569,6 +708,10 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
                 return BILLING_HOLD_PLACED;
             case "email.received":
                 return EMAIL_RECEIVED;
+            case "scheduling.booking.reminder":
+                return SCHEDULING_BOOKING_REMINDER;
+            case "scheduling.calendar.connected":
+                return SCHEDULING_CALENDAR_CONNECTED;
             case "account.suspended":
                 return ACCOUNT_SUSPENDED;
             case "broadcast.failed":
@@ -725,6 +868,42 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
 
         FORM_SUBMISSION_FLAGGED,
 
+        SCHEDULING_BOOKING_CREATED,
+
+        SCHEDULING_BOOKING_PENDING_APPROVAL,
+
+        SCHEDULING_BOOKING_CONFIRMED,
+
+        SCHEDULING_BOOKING_RESCHEDULED,
+
+        SCHEDULING_BOOKING_CANCELLED,
+
+        SCHEDULING_BOOKING_DECLINED,
+
+        SCHEDULING_BOOKING_NO_SHOW,
+
+        SCHEDULING_BOOKING_EXTERNAL_CONFLICT,
+
+        SCHEDULING_BOOKING_CALENDAR_WRITE_FAILED,
+
+        SCHEDULING_BOOKING_LOCATION_READY,
+
+        SCHEDULING_BOOKING_STARTED,
+
+        SCHEDULING_BOOKING_ENDED,
+
+        SCHEDULING_BOOKING_REMINDER,
+
+        SCHEDULING_CALENDAR_CONNECTED,
+
+        SCHEDULING_CALENDAR_NEEDS_REAUTH,
+
+        SCHEDULING_CALENDAR_DISCONNECTED,
+
+        SCHEDULING_CALENDAR_DELEGATION_FAILING,
+
+        SCHEDULING_CALENDAR_DELEGATION_RESTORED,
+
         UNKNOWN
     }
 
@@ -874,6 +1053,42 @@ public final class UpdateWebhookEndpointRequestEventTypesItem {
         T visitFormSubmissionReceived();
 
         T visitFormSubmissionFlagged();
+
+        T visitSchedulingBookingCreated();
+
+        T visitSchedulingBookingPendingApproval();
+
+        T visitSchedulingBookingConfirmed();
+
+        T visitSchedulingBookingRescheduled();
+
+        T visitSchedulingBookingCancelled();
+
+        T visitSchedulingBookingDeclined();
+
+        T visitSchedulingBookingNoShow();
+
+        T visitSchedulingBookingExternalConflict();
+
+        T visitSchedulingBookingCalendarWriteFailed();
+
+        T visitSchedulingBookingLocationReady();
+
+        T visitSchedulingBookingStarted();
+
+        T visitSchedulingBookingEnded();
+
+        T visitSchedulingBookingReminder();
+
+        T visitSchedulingCalendarConnected();
+
+        T visitSchedulingCalendarNeedsReauth();
+
+        T visitSchedulingCalendarDisconnected();
+
+        T visitSchedulingCalendarDelegationFailing();
+
+        T visitSchedulingCalendarDelegationRestored();
 
         T visitUnknown(String unknownType);
     }

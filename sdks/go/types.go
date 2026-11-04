@@ -504,7 +504,8 @@ var (
 type Audience struct {
 	Object AudienceObject `json:"object" url:"object"`
 	ID     string         `json:"id" url:"id"`
-	Name   string         `json:"name" url:"name"`
+	// Your name for the list, unique in the environment.
+	Name string `json:"name" url:"name"`
 	// Members, whatever their status.
 	ContactCount int64     `json:"contact_count" url:"contact_count"`
 	CreatedAt    time.Time `json:"created_at" url:"created_at"`
@@ -679,9 +680,11 @@ var (
 )
 
 type AudienceContactsAdded struct {
-	Object   AudienceContactsAddedObject `json:"object" url:"object"`
-	Added    int64                       `json:"added" url:"added"`
-	Existing int64                       `json:"existing" url:"existing"`
+	Object AudienceContactsAddedObject `json:"object" url:"object"`
+	// Contacts newly added.
+	Added int64 `json:"added" url:"added"`
+	// Contacts that were already members.
+	Existing int64 `json:"existing" url:"existing"`
 	// Ids or addresses of no contact.
 	Missing []string `json:"missing" url:"missing"`
 
@@ -1480,6 +1483,7 @@ var (
 )
 
 type BillingWebhookEventFiveData struct {
+	// The organization's id.
 	OrganizationID string `json:"organization_id" url:"organization_id"`
 	// When it happened: sort events by it.
 	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
@@ -1821,6 +1825,7 @@ var (
 )
 
 type BillingWebhookEventFourData struct {
+	// The organization's id.
 	OrganizationID string `json:"organization_id" url:"organization_id"`
 	// When it happened: sort events by it.
 	OccurredAt time.Time                         `json:"occurred_at" url:"occurred_at"`
@@ -1944,9 +1949,10 @@ func (b *BillingWebhookEventFourData) String() string {
 type BillingWebhookEventFourDataReason string
 
 const (
-	BillingWebhookEventFourDataReasonDelinquent BillingWebhookEventFourDataReason = "delinquent"
-	BillingWebhookEventFourDataReasonSpendLimit BillingWebhookEventFourDataReason = "spend_limit"
-	BillingWebhookEventFourDataReasonAdmin      BillingWebhookEventFourDataReason = "admin"
+	BillingWebhookEventFourDataReasonDelinquent  BillingWebhookEventFourDataReason = "delinquent"
+	BillingWebhookEventFourDataReasonSpendLimit  BillingWebhookEventFourDataReason = "spend_limit"
+	BillingWebhookEventFourDataReasonCreditLimit BillingWebhookEventFourDataReason = "credit_limit"
+	BillingWebhookEventFourDataReasonAdmin       BillingWebhookEventFourDataReason = "admin"
 )
 
 func NewBillingWebhookEventFourDataReasonFromString(s string) (BillingWebhookEventFourDataReason, error) {
@@ -1955,6 +1961,8 @@ func NewBillingWebhookEventFourDataReasonFromString(s string) (BillingWebhookEve
 		return BillingWebhookEventFourDataReasonDelinquent, nil
 	case "spend_limit":
 		return BillingWebhookEventFourDataReasonSpendLimit, nil
+	case "credit_limit":
+		return BillingWebhookEventFourDataReasonCreditLimit, nil
 	case "admin":
 		return BillingWebhookEventFourDataReasonAdmin, nil
 	}
@@ -2191,6 +2199,7 @@ var (
 )
 
 type BillingWebhookEventOneData struct {
+	// The organization's id.
 	OrganizationID string `json:"organization_id" url:"organization_id"`
 	// When it happened: sort events by it.
 	OccurredAt time.Time                          `json:"occurred_at" url:"occurred_at"`
@@ -2634,6 +2643,7 @@ var (
 )
 
 type BillingWebhookEventSevenData struct {
+	// The organization's id.
 	OrganizationID string `json:"organization_id" url:"organization_id"`
 	// When it happened: sort events by it.
 	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
@@ -3026,6 +3036,7 @@ var (
 )
 
 type BillingWebhookEventSixData struct {
+	// The organization's id.
 	OrganizationID string `json:"organization_id" url:"organization_id"`
 	// When it happened: sort events by it.
 	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
@@ -3232,8 +3243,10 @@ var (
 )
 
 type BillingWebhookEventSixDataPeriod struct {
+	// When the period starts (inclusive).
 	Start time.Time `json:"start" url:"start"`
-	End   time.Time `json:"end" url:"end"`
+	// When the period ends (exclusive).
+	End time.Time `json:"end" url:"end"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -3595,6 +3608,7 @@ var billingWebhookEventThreeDataNullableFields = map[string]*big.Int{
 }
 
 type BillingWebhookEventThreeData struct {
+	// The organization's id.
 	OrganizationID string `json:"organization_id" url:"organization_id"`
 	// When it happened: sort events by it.
 	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
@@ -3774,21 +3788,27 @@ func (b *BillingWebhookEventThreeData) String() string {
 type BillingWebhookEventThreeDataMeter string
 
 const (
-	BillingWebhookEventThreeDataMeterEmailRecipients         BillingWebhookEventThreeDataMeter = "email.recipients"
-	BillingWebhookEventThreeDataMeterEmailDedicatedIP        BillingWebhookEventThreeDataMeter = "email.dedicated_ip"
-	BillingWebhookEventThreeDataMeterEmailReceived           BillingWebhookEventThreeDataMeter = "email.received"
-	BillingWebhookEventThreeDataMeterEmailInboxes            BillingWebhookEventThreeDataMeter = "email.inboxes"
-	BillingWebhookEventThreeDataMeterSmsSegments             BillingWebhookEventThreeDataMeter = "sms.segments"
-	BillingWebhookEventThreeDataMeterSmsReceivedSegments     BillingWebhookEventThreeDataMeter = "sms.received_segments"
-	BillingWebhookEventThreeDataMeterSmsNumbers              BillingWebhookEventThreeDataMeter = "sms.numbers"
-	BillingWebhookEventThreeDataMeterSmsRegistrations        BillingWebhookEventThreeDataMeter = "sms.registrations"
-	BillingWebhookEventThreeDataMeterSignCompletedRequests   BillingWebhookEventThreeDataMeter = "sign.completed_requests"
-	BillingWebhookEventThreeDataMeterRiskPhoneChecks         BillingWebhookEventThreeDataMeter = "risk.phone_checks"
-	BillingWebhookEventThreeDataMeterVerifyVerifications     BillingWebhookEventThreeDataMeter = "verify.verifications"
-	BillingWebhookEventThreeDataMeterVerifySms               BillingWebhookEventThreeDataMeter = "verify.sms"
-	BillingWebhookEventThreeDataMeterFormsSubmissions        BillingWebhookEventThreeDataMeter = "forms.submissions"
-	BillingWebhookEventThreeDataMeterVideoParticipantMinutes BillingWebhookEventThreeDataMeter = "video.participant_minutes"
-	BillingWebhookEventThreeDataMeterSchedulingBookings      BillingWebhookEventThreeDataMeter = "scheduling.bookings"
+	BillingWebhookEventThreeDataMeterEmailRecipients       BillingWebhookEventThreeDataMeter = "email.recipients"
+	BillingWebhookEventThreeDataMeterEmailDedicatedIP      BillingWebhookEventThreeDataMeter = "email.dedicated_ip"
+	BillingWebhookEventThreeDataMeterEmailAttachmentData   BillingWebhookEventThreeDataMeter = "email.attachment_data"
+	BillingWebhookEventThreeDataMeterEmailReceived         BillingWebhookEventThreeDataMeter = "email.received"
+	BillingWebhookEventThreeDataMeterEmailReceivedData     BillingWebhookEventThreeDataMeter = "email.received_data"
+	BillingWebhookEventThreeDataMeterEmailInboxes          BillingWebhookEventThreeDataMeter = "email.inboxes"
+	BillingWebhookEventThreeDataMeterSmsSegments           BillingWebhookEventThreeDataMeter = "sms.segments"
+	BillingWebhookEventThreeDataMeterSmsReceivedSegments   BillingWebhookEventThreeDataMeter = "sms.received_segments"
+	BillingWebhookEventThreeDataMeterSmsNumbers            BillingWebhookEventThreeDataMeter = "sms.numbers"
+	BillingWebhookEventThreeDataMeterSmsRegistrations      BillingWebhookEventThreeDataMeter = "sms.registrations"
+	BillingWebhookEventThreeDataMeterSignCompletedRequests BillingWebhookEventThreeDataMeter = "sign.completed_requests"
+	BillingWebhookEventThreeDataMeterRiskPhoneChecks       BillingWebhookEventThreeDataMeter = "risk.phone_checks"
+	BillingWebhookEventThreeDataMeterRiskAssessments       BillingWebhookEventThreeDataMeter = "risk.assessments"
+	BillingWebhookEventThreeDataMeterRiskContentChecks     BillingWebhookEventThreeDataMeter = "risk.content_checks"
+	BillingWebhookEventThreeDataMeterVerifyVerifications   BillingWebhookEventThreeDataMeter = "verify.verifications"
+	BillingWebhookEventThreeDataMeterVerifySms             BillingWebhookEventThreeDataMeter = "verify.sms"
+	BillingWebhookEventThreeDataMeterFormsSubmissions      BillingWebhookEventThreeDataMeter = "forms.submissions"
+	BillingWebhookEventThreeDataMeterFormsFileUploads      BillingWebhookEventThreeDataMeter = "forms.file_uploads"
+	BillingWebhookEventThreeDataMeterSchedulingBookings    BillingWebhookEventThreeDataMeter = "scheduling.bookings"
+	BillingWebhookEventThreeDataMeterSchedulingHosts       BillingWebhookEventThreeDataMeter = "scheduling.hosts"
+	BillingWebhookEventThreeDataMeterHooksMessages         BillingWebhookEventThreeDataMeter = "hooks.messages"
 )
 
 func NewBillingWebhookEventThreeDataMeterFromString(s string) (BillingWebhookEventThreeDataMeter, error) {
@@ -3797,8 +3817,12 @@ func NewBillingWebhookEventThreeDataMeterFromString(s string) (BillingWebhookEve
 		return BillingWebhookEventThreeDataMeterEmailRecipients, nil
 	case "email.dedicated_ip":
 		return BillingWebhookEventThreeDataMeterEmailDedicatedIP, nil
+	case "email.attachment_data":
+		return BillingWebhookEventThreeDataMeterEmailAttachmentData, nil
 	case "email.received":
 		return BillingWebhookEventThreeDataMeterEmailReceived, nil
+	case "email.received_data":
+		return BillingWebhookEventThreeDataMeterEmailReceivedData, nil
 	case "email.inboxes":
 		return BillingWebhookEventThreeDataMeterEmailInboxes, nil
 	case "sms.segments":
@@ -3813,16 +3837,24 @@ func NewBillingWebhookEventThreeDataMeterFromString(s string) (BillingWebhookEve
 		return BillingWebhookEventThreeDataMeterSignCompletedRequests, nil
 	case "risk.phone_checks":
 		return BillingWebhookEventThreeDataMeterRiskPhoneChecks, nil
+	case "risk.assessments":
+		return BillingWebhookEventThreeDataMeterRiskAssessments, nil
+	case "risk.content_checks":
+		return BillingWebhookEventThreeDataMeterRiskContentChecks, nil
 	case "verify.verifications":
 		return BillingWebhookEventThreeDataMeterVerifyVerifications, nil
 	case "verify.sms":
 		return BillingWebhookEventThreeDataMeterVerifySms, nil
 	case "forms.submissions":
 		return BillingWebhookEventThreeDataMeterFormsSubmissions, nil
-	case "video.participant_minutes":
-		return BillingWebhookEventThreeDataMeterVideoParticipantMinutes, nil
+	case "forms.file_uploads":
+		return BillingWebhookEventThreeDataMeterFormsFileUploads, nil
 	case "scheduling.bookings":
 		return BillingWebhookEventThreeDataMeterSchedulingBookings, nil
+	case "scheduling.hosts":
+		return BillingWebhookEventThreeDataMeterSchedulingHosts, nil
+	case "hooks.messages":
+		return BillingWebhookEventThreeDataMeterHooksMessages, nil
 	}
 	var t BillingWebhookEventThreeDataMeter
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -3861,8 +3893,10 @@ var (
 )
 
 type BillingWebhookEventThreeDataPeriod struct {
+	// When the period starts (inclusive).
 	Start time.Time `json:"start" url:"start"`
-	End   time.Time `json:"end" url:"end"`
+	// When the period ends (exclusive).
+	End time.Time `json:"end" url:"end"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -4193,6 +4227,7 @@ var (
 )
 
 type BillingWebhookEventTwoData struct {
+	// The organization's id.
 	OrganizationID string `json:"organization_id" url:"organization_id"`
 	// When it happened: sort events by it.
 	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
@@ -4674,6 +4709,7 @@ var (
 )
 
 type BillingWebhookEventZeroData struct {
+	// The organization's id.
 	OrganizationID string `json:"organization_id" url:"organization_id"`
 	// When it happened: sort events by it.
 	OccurredAt time.Time       `json:"occurred_at" url:"occurred_at"`
@@ -4887,32 +4923,49 @@ var broadcastNullableFields = map[string]*big.Int{
 type Broadcast struct {
 	Object BroadcastObject `json:"object" url:"object"`
 	ID     string          `json:"id" url:"id"`
-	Name   string          `json:"name" url:"name"`
+	// Shown only to you.
+	Name string `json:"name" url:"name"`
 	// `draft` (editable), `scheduled`, `sending`, `paused` (see `pause_reason`), `sent`, `canceled`, or `failed` (see `error`).
-	Status        BroadcastStatus    `json:"status" url:"status"`
-	AudienceID    *string            `json:"audience_id,omitempty" url:"audience_id,omitempty"`
-	SegmentID     *string            `json:"segment_id,omitempty" url:"segment_id,omitempty"`
-	Topic         *string            `json:"topic,omitempty" url:"topic,omitempty"`
-	From          string             `json:"from" url:"from"`
-	ReplyTo       []string           `json:"reply_to" url:"reply_to"`
-	Subject       string             `json:"subject" url:"subject"`
-	PreviewText   *string            `json:"preview_text,omitempty" url:"preview_text,omitempty"`
-	HTML          *string            `json:"html,omitempty" url:"html,omitempty"`
-	Text          *string            `json:"text,omitempty" url:"text,omitempty"`
-	Tracking      *BroadcastTracking `json:"tracking" url:"tracking"`
-	RatePerSecond *int64             `json:"rate_per_second,omitempty" url:"rate_per_second,omitempty"`
-	ScheduledAt   *time.Time         `json:"scheduled_at,omitempty" url:"scheduled_at,omitempty"`
-	StartedAt     *time.Time         `json:"started_at,omitempty" url:"started_at,omitempty"`
-	CompletedAt   *time.Time         `json:"completed_at,omitempty" url:"completed_at,omitempty"`
-	CanceledAt    *time.Time         `json:"canceled_at,omitempty" url:"canceled_at,omitempty"`
+	Status BroadcastStatus `json:"status" url:"status"`
+	// The audience it goes to. `null`: a segment.
+	AudienceID *string `json:"audience_id,omitempty" url:"audience_id,omitempty"`
+	// The segment it goes to. `null`: an audience.
+	SegmentID *string `json:"segment_id,omitempty" url:"segment_id,omitempty"`
+	// The topic it's about (its key), and its emails' `category`. `null`: none.
+	Topic *string `json:"topic,omitempty" url:"topic,omitempty"`
+	// Who it's sent from.
+	From string `json:"from" url:"from"`
+	// Addresses replies go to.
+	ReplyTo []string `json:"reply_to" url:"reply_to"`
+	// The subject, before contact fields are filled in.
+	Subject string `json:"subject" url:"subject"`
+	// The inbox preview line. `null`: none.
+	PreviewText *string `json:"preview_text,omitempty" url:"preview_text,omitempty"`
+	// The HTML part, before contact fields are filled in. `null`: text only.
+	HTML *string `json:"html,omitempty" url:"html,omitempty"`
+	// The plain text part. `null`: HTML only.
+	Text *string `json:"text,omitempty" url:"text,omitempty"`
+	// Which opens and clicks are tracked.
+	Tracking *BroadcastTracking `json:"tracking" url:"tracking"`
+	// Recipients per second. `null`: the plan's marketing rate.
+	RatePerSecond *int64 `json:"rate_per_second,omitempty" url:"rate_per_second,omitempty"`
+	// When it's set to start. `null`: not scheduled.
+	ScheduledAt *time.Time `json:"scheduled_at,omitempty" url:"scheduled_at,omitempty"`
+	// When sending started. `null`: it hasn't.
+	StartedAt *time.Time `json:"started_at,omitempty" url:"started_at,omitempty"`
+	// When it finished. `null`: it hasn't.
+	CompletedAt *time.Time `json:"completed_at,omitempty" url:"completed_at,omitempty"`
+	// When it was canceled. `null`: it wasn't.
+	CanceledAt *time.Time `json:"canceled_at,omitempty" url:"canceled_at,omitempty"`
 	// How many contacts it would reach, counted when it started.
 	RecipientsEstimated *int64 `json:"recipients_estimated,omitempty" url:"recipients_estimated,omitempty"`
 	// Why a paused broadcast waits: `paused` (by you), `billing_hold`, `budget_exceeded`, `usage_limit`, `marketing_paused`, `account_suspended`, `sending_paused`.
-	PauseReason *string         `json:"pause_reason,omitempty" url:"pause_reason,omitempty"`
-	Error       *BroadcastError `json:"error,omitempty" url:"error,omitempty"`
-	Stats       *BroadcastStats `json:"stats" url:"stats"`
-	CreatedAt   time.Time       `json:"created_at" url:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at" url:"updated_at"`
+	PauseReason *string `json:"pause_reason,omitempty" url:"pause_reason,omitempty"`
+	// Why it `failed`, such as `target_unavailable` when its audience, segment or topic was deleted while sending. `null`: it didn't.
+	Error     *BroadcastError `json:"error,omitempty" url:"error,omitempty"`
+	Stats     *BroadcastStats `json:"stats" url:"stats"`
+	CreatedAt time.Time       `json:"created_at" url:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at" url:"updated_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -5506,8 +5559,11 @@ var (
 	broadcastErrorFieldMessage = big.NewInt(1 << 1)
 )
 
+// Why it `failed`, such as `target_unavailable` when its audience, segment or topic was deleted while sending. `null`: it didn't.
 type BroadcastError struct {
-	Code    string `json:"code" url:"code"`
+	// Machine-readable reason.
+	Code string `json:"code" url:"code"`
+	// Human-readable explanation.
 	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -5771,15 +5827,20 @@ var (
 	broadcastStatsFieldUnsubscribed = big.NewInt(1 << 8)
 )
 
+// How its emails fared so far.
 type BroadcastStats struct {
 	// Emails made so far (one per reached contact).
 	Recipients int64 `json:"recipients" url:"recipients"`
-	Sent       int64 `json:"sent" url:"sent"`
-	Delivered  int64 `json:"delivered" url:"delivered"`
+	// Emails accepted by the provider.
+	Sent int64 `json:"sent" url:"sent"`
+	// Emails delivered to recipients' servers.
+	Delivered int64 `json:"delivered" url:"delivered"`
 	// Permanent bounces.
-	Bounced    int64 `json:"bounced" url:"bounced"`
+	Bounced int64 `json:"bounced" url:"bounced"`
+	// Emails marked as spam by recipients.
 	Complained int64 `json:"complained" url:"complained"`
-	Failed     int64 `json:"failed" url:"failed"`
+	// Emails that couldn't be sent.
+	Failed int64 `json:"failed" url:"failed"`
 	// Emails opened at least once (with open tracking).
 	Opened int64 `json:"opened" url:"opened"`
 	// Emails clicked at least once (with click tracking).
@@ -6022,8 +6083,9 @@ var (
 )
 
 type BroadcastTest struct {
-	Object   BroadcastTestObject `json:"object" url:"object"`
-	EmailIDs []string            `json:"email_ids" url:"email_ids"`
+	Object BroadcastTestObject `json:"object" url:"object"`
+	// The ids of the test emails.
+	EmailIDs []string `json:"email_ids" url:"email_ids"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -6142,8 +6204,11 @@ var (
 	broadcastTrackingFieldClicks = big.NewInt(1 << 1)
 )
 
+// Which opens and clicks are tracked.
 type BroadcastTracking struct {
-	Opens  bool `json:"opens" url:"opens"`
+	// Whether opens are tracked.
+	Opens bool `json:"opens" url:"opens"`
+	// Whether clicks are tracked.
 	Clicks bool `json:"clicks" url:"clicks"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6265,18 +6330,24 @@ var contactNullableFields = map[string]*big.Int{
 }
 
 type Contact struct {
-	Object    ContactObject `json:"object" url:"object"`
-	ID        string        `json:"id" url:"id"`
-	Email     string        `json:"email" url:"email"`
-	FirstName *string       `json:"first_name,omitempty" url:"first_name,omitempty"`
-	LastName  *string       `json:"last_name,omitempty" url:"last_name,omitempty"`
+	Object ContactObject `json:"object" url:"object"`
+	ID     string        `json:"id" url:"id"`
+	// The contact's address. Unique in the environment, case-insensitively.
+	Email string `json:"email" url:"email"`
+	// Their first name. `null`: not set.
+	FirstName *string `json:"first_name,omitempty" url:"first_name,omitempty"`
+	// Their last name. `null`: not set.
+	LastName *string `json:"last_name,omitempty" url:"last_name,omitempty"`
 	// Consent to marketing email: `subscribed`, `unsubscribed` (never receives marketing email; transactional email is unaffected) or `pending` (waiting for a double opt-in confirmation).
-	Status     ContactStatus                      `json:"status" url:"status"`
+	Status ContactStatus `json:"status" url:"status"`
+	// Custom properties by key.
 	Properties map[string]*ContactPropertiesValue `json:"properties" url:"properties"`
 	// How the contact was created.
-	Source         ContactSource `json:"source" url:"source"`
-	SubscribedAt   *time.Time    `json:"subscribed_at,omitempty" url:"subscribed_at,omitempty"`
-	UnsubscribedAt *time.Time    `json:"unsubscribed_at,omitempty" url:"unsubscribed_at,omitempty"`
+	Source ContactSource `json:"source" url:"source"`
+	// When it last became `subscribed`. `null`: it hasn't.
+	SubscribedAt *time.Time `json:"subscribed_at,omitempty" url:"subscribed_at,omitempty"`
+	// When it became `unsubscribed`. `null` unless it is.
+	UnsubscribedAt *time.Time `json:"unsubscribed_at,omitempty" url:"unsubscribed_at,omitempty"`
 	// When the contact confirmed a double opt-in.
 	ConfirmedAt *time.Time `json:"confirmed_at,omitempty" url:"confirmed_at,omitempty"`
 	CreatedAt   time.Time  `json:"created_at" url:"created_at"`
@@ -6567,8 +6638,9 @@ var (
 )
 
 type ContactConfirmation struct {
-	Object    ContactConfirmationObject `json:"object" url:"object"`
-	ContactID string                    `json:"contact_id" url:"contact_id"`
+	Object ContactConfirmationObject `json:"object" url:"object"`
+	// The contact's id.
+	ContactID string `json:"contact_id" url:"contact_id"`
 	// `sent`; `cooldown` (one confirmation per contact per day); `limit_reached` (three were sent and none confirmed); `not_pending` (the contact isn't waiting to confirm).
 	Status ContactConfirmationStatus `json:"status" url:"status"`
 
@@ -6736,12 +6808,15 @@ var (
 )
 
 type ContactImport struct {
-	Object  ContactImportObject `json:"object" url:"object"`
-	Created int64               `json:"created" url:"created"`
-	Updated int64               `json:"updated" url:"updated"`
+	Object ContactImportObject `json:"object" url:"object"`
+	// Contacts created.
+	Created int64 `json:"created" url:"created"`
+	// Existing contacts updated.
+	Updated int64 `json:"updated" url:"updated"`
 	// Existing contacts the import marked `subscribed` that stay `unsubscribed`: an import never re-subscribes anyone.
-	KeptUnsubscribed int64                       `json:"kept_unsubscribed" url:"kept_unsubscribed"`
-	Invalid          []*ContactImportInvalidItem `json:"invalid" url:"invalid"`
+	KeptUnsubscribed int64 `json:"kept_unsubscribed" url:"kept_unsubscribed"`
+	// Entries that were refused. The rest of the import still went through.
+	Invalid []*ContactImportInvalidItem `json:"invalid" url:"invalid"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -6885,8 +6960,11 @@ var (
 )
 
 type ContactImportInvalidItem struct {
-	Index   int64  `json:"index" url:"index"`
-	Email   string `json:"email" url:"email"`
+	// The entry's position in `contacts`, from 0.
+	Index int64 `json:"index" url:"index"`
+	// The address it gave.
+	Email string `json:"email" url:"email"`
+	// Why it was refused.
 	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7272,7 +7350,8 @@ var contactPropertyNullableFields = map[string]*big.Int{
 type ContactProperty struct {
 	Object ContactPropertyObject `json:"object" url:"object"`
 	ID     string                `json:"id" url:"id"`
-	Key    string                `json:"key" url:"key"`
+	// How contacts and templates name it (`{{{contact.<key>}}}`). Can't change.
+	Key string `json:"key" url:"key"`
 	// `date` values are ISO 8601 strings.
 	Type ContactPropertyType `json:"type" url:"type"`
 	// Used in templates for contacts without a value.
@@ -7796,9 +7875,11 @@ var (
 )
 
 type ContactTopics struct {
-	Object    ContactTopicsObject        `json:"object" url:"object"`
-	ContactID string                     `json:"contact_id" url:"contact_id"`
-	Topics    []*ContactTopicsTopicsItem `json:"topics" url:"topics"`
+	Object ContactTopicsObject `json:"object" url:"object"`
+	// The contact's id.
+	ContactID string `json:"contact_id" url:"contact_id"`
+	// Every topic of the environment, with this contact's standing.
+	Topics []*ContactTopicsTopicsItem `json:"topics" url:"topics"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -7939,8 +8020,10 @@ var contactTopicsTopicsItemNullableFields = map[string]*big.Int{
 }
 
 type ContactTopicsTopicsItem struct {
+	// The topic's key.
 	Topic string `json:"topic" url:"topic"`
-	Name  string `json:"name" url:"name"`
+	// The topic's name.
+	Name string `json:"name" url:"name"`
 	// Whether emails about the topic reach the contact (its choice, else the topic's default; an unsubscribed contact gets no marketing email at all).
 	Subscribed bool `json:"subscribed" url:"subscribed"`
 	// The contact's explicit choice; `null`: the topic's default applies.
@@ -8097,6 +8180,2066 @@ func (c ContactTopicsTopicsItemChoice) Ptr() *ContactTopicsTopicsItemChoice {
 	return &c
 }
 
+// `caldav` connects a server with an app-specific password; `simulated` is a sandbox calendar for tests.
+type CreateCalendarConnectionRequest struct {
+	Provider  string
+	Caldav    *CreateCalendarConnectionRequestCaldav
+	Simulated *CreateCalendarConnectionRequestSimulated
+
+	rawJSON json.RawMessage
+}
+
+func (c *CreateCalendarConnectionRequest) GetProvider() string {
+	if c == nil {
+		return ""
+	}
+	return c.Provider
+}
+
+func (c *CreateCalendarConnectionRequest) GetCaldav() *CreateCalendarConnectionRequestCaldav {
+	if c == nil {
+		return nil
+	}
+	return c.Caldav
+}
+
+func (c *CreateCalendarConnectionRequest) GetSimulated() *CreateCalendarConnectionRequestSimulated {
+	if c == nil {
+		return nil
+	}
+	return c.Simulated
+}
+
+func (c *CreateCalendarConnectionRequest) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Provider string `json:"provider"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	c.Provider = unmarshaler.Provider
+	if unmarshaler.Provider == "" {
+		return fmt.Errorf("%T did not include discriminant provider", c)
+	}
+	switch unmarshaler.Provider {
+	case "caldav":
+		value := new(CreateCalendarConnectionRequestCaldav)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Caldav = value
+	case "simulated":
+		value := new(CreateCalendarConnectionRequestSimulated)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Simulated = value
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c CreateCalendarConnectionRequest) MarshalJSON() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	if c.Caldav != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Caldav, "provider", "caldav")
+	}
+	if c.Simulated != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Simulated, "provider", "simulated")
+	}
+	if len(c.rawJSON) > 0 {
+		return c.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+type CreateCalendarConnectionRequestVisitor interface {
+	VisitCaldav(*CreateCalendarConnectionRequestCaldav) error
+	VisitSimulated(*CreateCalendarConnectionRequestSimulated) error
+}
+
+func (c *CreateCalendarConnectionRequest) Accept(visitor CreateCalendarConnectionRequestVisitor) error {
+	if c.Caldav != nil {
+		return visitor.VisitCaldav(c.Caldav)
+	}
+	if c.Simulated != nil {
+		return visitor.VisitSimulated(c.Simulated)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+func (c *CreateCalendarConnectionRequest) validate() error {
+	if c == nil {
+		return fmt.Errorf("type %T is nil", c)
+	}
+	var fields []string
+	if c.Caldav != nil {
+		fields = append(fields, "caldav")
+	}
+	if c.Simulated != nil {
+		fields = append(fields, "simulated")
+	}
+	if len(fields) == 0 {
+		if c.Provider != "" {
+			if len(c.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Provider)
+		}
+		return fmt.Errorf("type %T is empty", c)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
+	}
+	if c.Provider != "" {
+		field := fields[0]
+		if c.Provider != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				c,
+				c.Provider,
+				c,
+			)
+		}
+	}
+	return nil
+}
+
+var (
+	createCalendarConnectionRequestCaldavFieldURL      = big.NewInt(1 << 0)
+	createCalendarConnectionRequestCaldavFieldUsername = big.NewInt(1 << 1)
+	createCalendarConnectionRequestCaldavFieldPassword = big.NewInt(1 << 2)
+)
+
+type CreateCalendarConnectionRequestCaldav struct {
+	// The server's https URL.
+	URL string `json:"url" url:"url"`
+	// The account's username on that server.
+	Username string `json:"username" url:"username"`
+	// An app-specific password. Encrypted, and never returned.
+	Password string `json:"password" url:"password"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateCalendarConnectionRequestCaldav) GetURL() string {
+	if c == nil {
+		return ""
+	}
+	return c.URL
+}
+
+func (c *CreateCalendarConnectionRequestCaldav) GetUsername() string {
+	if c == nil {
+		return ""
+	}
+	return c.Username
+}
+
+func (c *CreateCalendarConnectionRequestCaldav) GetPassword() string {
+	if c == nil {
+		return ""
+	}
+	return c.Password
+}
+
+func (c *CreateCalendarConnectionRequestCaldav) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateCalendarConnectionRequestCaldav) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarConnectionRequestCaldav) SetURL(url string) {
+	c.URL = url
+	c.require(createCalendarConnectionRequestCaldavFieldURL)
+}
+
+// SetUsername sets the Username field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarConnectionRequestCaldav) SetUsername(username string) {
+	c.Username = username
+	c.require(createCalendarConnectionRequestCaldavFieldUsername)
+}
+
+// SetPassword sets the Password field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarConnectionRequestCaldav) SetPassword(password string) {
+	c.Password = password
+	c.require(createCalendarConnectionRequestCaldavFieldPassword)
+}
+
+func (c *CreateCalendarConnectionRequestCaldav) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateCalendarConnectionRequestCaldav
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateCalendarConnectionRequestCaldav(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateCalendarConnectionRequestCaldav) MarshalJSON() ([]byte, error) {
+	type embed CreateCalendarConnectionRequestCaldav
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateCalendarConnectionRequestCaldav) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CreateCalendarConnectionRequestSimulated struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateCalendarConnectionRequestSimulated) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateCalendarConnectionRequestSimulated) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+func (c *CreateCalendarConnectionRequestSimulated) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateCalendarConnectionRequestSimulated
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateCalendarConnectionRequestSimulated(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateCalendarConnectionRequestSimulated) MarshalJSON() ([]byte, error) {
+	type embed CreateCalendarConnectionRequestSimulated
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateCalendarConnectionRequestSimulated) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CreateCalendarDelegationRequest struct {
+	Provider  string
+	Google    *CreateCalendarDelegationRequestGoogle
+	Microsoft *CreateCalendarDelegationRequestMicrosoft
+
+	rawJSON json.RawMessage
+}
+
+func (c *CreateCalendarDelegationRequest) GetProvider() string {
+	if c == nil {
+		return ""
+	}
+	return c.Provider
+}
+
+func (c *CreateCalendarDelegationRequest) GetGoogle() *CreateCalendarDelegationRequestGoogle {
+	if c == nil {
+		return nil
+	}
+	return c.Google
+}
+
+func (c *CreateCalendarDelegationRequest) GetMicrosoft() *CreateCalendarDelegationRequestMicrosoft {
+	if c == nil {
+		return nil
+	}
+	return c.Microsoft
+}
+
+func (c *CreateCalendarDelegationRequest) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Provider string `json:"provider"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	c.Provider = unmarshaler.Provider
+	if unmarshaler.Provider == "" {
+		return fmt.Errorf("%T did not include discriminant provider", c)
+	}
+	switch unmarshaler.Provider {
+	case "google":
+		value := new(CreateCalendarDelegationRequestGoogle)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Google = value
+	case "microsoft":
+		value := new(CreateCalendarDelegationRequestMicrosoft)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Microsoft = value
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c CreateCalendarDelegationRequest) MarshalJSON() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	if c.Google != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Google, "provider", "google")
+	}
+	if c.Microsoft != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Microsoft, "provider", "microsoft")
+	}
+	if len(c.rawJSON) > 0 {
+		return c.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+type CreateCalendarDelegationRequestVisitor interface {
+	VisitGoogle(*CreateCalendarDelegationRequestGoogle) error
+	VisitMicrosoft(*CreateCalendarDelegationRequestMicrosoft) error
+}
+
+func (c *CreateCalendarDelegationRequest) Accept(visitor CreateCalendarDelegationRequestVisitor) error {
+	if c.Google != nil {
+		return visitor.VisitGoogle(c.Google)
+	}
+	if c.Microsoft != nil {
+		return visitor.VisitMicrosoft(c.Microsoft)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+func (c *CreateCalendarDelegationRequest) validate() error {
+	if c == nil {
+		return fmt.Errorf("type %T is nil", c)
+	}
+	var fields []string
+	if c.Google != nil {
+		fields = append(fields, "google")
+	}
+	if c.Microsoft != nil {
+		fields = append(fields, "microsoft")
+	}
+	if len(fields) == 0 {
+		if c.Provider != "" {
+			if len(c.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Provider)
+		}
+		return fmt.Errorf("type %T is empty", c)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
+	}
+	if c.Provider != "" {
+		field := fields[0]
+		if c.Provider != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				c,
+				c.Provider,
+				c,
+			)
+		}
+	}
+	return nil
+}
+
+var (
+	createCalendarDelegationRequestGoogleFieldDomain            = big.NewInt(1 << 0)
+	createCalendarDelegationRequestGoogleFieldMatchHostEmail    = big.NewInt(1 << 1)
+	createCalendarDelegationRequestGoogleFieldServiceAccountKey = big.NewInt(1 << 2)
+)
+
+type CreateCalendarDelegationRequestGoogle struct {
+	// The Workspace or Microsoft 365 domain. Only addresses on exactly this domain connect, not its subdomains.
+	Domain string `json:"domain" url:"domain"`
+	// Whether a host's `email` picks their mailbox when `calendar_account` isn't set. Turn it off if end users can type their own email into your app: otherwise one could name a colleague's address and reach that calendar.
+	MatchHostEmail *bool `json:"match_host_email,omitempty" url:"match_host_email,omitempty"`
+	// The whole JSON key of a service account in your Google Cloud project. Never returned.
+	ServiceAccountKey string `json:"service_account_key" url:"service_account_key"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateCalendarDelegationRequestGoogle) GetDomain() string {
+	if c == nil {
+		return ""
+	}
+	return c.Domain
+}
+
+func (c *CreateCalendarDelegationRequestGoogle) GetMatchHostEmail() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.MatchHostEmail
+}
+
+func (c *CreateCalendarDelegationRequestGoogle) GetServiceAccountKey() string {
+	if c == nil {
+		return ""
+	}
+	return c.ServiceAccountKey
+}
+
+func (c *CreateCalendarDelegationRequestGoogle) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateCalendarDelegationRequestGoogle) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetDomain sets the Domain field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarDelegationRequestGoogle) SetDomain(domain string) {
+	c.Domain = domain
+	c.require(createCalendarDelegationRequestGoogleFieldDomain)
+}
+
+// SetMatchHostEmail sets the MatchHostEmail field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarDelegationRequestGoogle) SetMatchHostEmail(matchHostEmail *bool) {
+	c.MatchHostEmail = matchHostEmail
+	c.require(createCalendarDelegationRequestGoogleFieldMatchHostEmail)
+}
+
+// SetServiceAccountKey sets the ServiceAccountKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarDelegationRequestGoogle) SetServiceAccountKey(serviceAccountKey string) {
+	c.ServiceAccountKey = serviceAccountKey
+	c.require(createCalendarDelegationRequestGoogleFieldServiceAccountKey)
+}
+
+func (c *CreateCalendarDelegationRequestGoogle) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateCalendarDelegationRequestGoogle
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateCalendarDelegationRequestGoogle(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateCalendarDelegationRequestGoogle) MarshalJSON() ([]byte, error) {
+	type embed CreateCalendarDelegationRequestGoogle
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateCalendarDelegationRequestGoogle) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	createCalendarDelegationRequestMicrosoftFieldDomain          = big.NewInt(1 << 0)
+	createCalendarDelegationRequestMicrosoftFieldMatchHostEmail  = big.NewInt(1 << 1)
+	createCalendarDelegationRequestMicrosoftFieldTenantID        = big.NewInt(1 << 2)
+	createCalendarDelegationRequestMicrosoftFieldClientID        = big.NewInt(1 << 3)
+	createCalendarDelegationRequestMicrosoftFieldClientSecret    = big.NewInt(1 << 4)
+	createCalendarDelegationRequestMicrosoftFieldSecretExpiresAt = big.NewInt(1 << 5)
+)
+
+type CreateCalendarDelegationRequestMicrosoft struct {
+	// The Workspace or Microsoft 365 domain. Only addresses on exactly this domain connect, not its subdomains.
+	Domain string `json:"domain" url:"domain"`
+	// Whether a host's `email` picks their mailbox when `calendar_account` isn't set. Turn it off if end users can type their own email into your app: otherwise one could name a colleague's address and reach that calendar.
+	MatchHostEmail *bool `json:"match_host_email,omitempty" url:"match_host_email,omitempty"`
+	// The Directory (tenant) ID.
+	TenantID string `json:"tenant_id" url:"tenant_id"`
+	// The Application (client) ID.
+	ClientID string `json:"client_id" url:"client_id"`
+	// A client secret of that app. Never returned.
+	ClientSecret string `json:"client_secret" url:"client_secret"`
+	// When the Entra client secret expires. Owners and admins are warned 14 days before.
+	SecretExpiresAt *time.Time `json:"secret_expires_at,omitempty" url:"secret_expires_at,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) GetDomain() string {
+	if c == nil {
+		return ""
+	}
+	return c.Domain
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) GetMatchHostEmail() *bool {
+	if c == nil {
+		return nil
+	}
+	return c.MatchHostEmail
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) GetTenantID() string {
+	if c == nil {
+		return ""
+	}
+	return c.TenantID
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) GetClientID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ClientID
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) GetClientSecret() string {
+	if c == nil {
+		return ""
+	}
+	return c.ClientSecret
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) GetSecretExpiresAt() *time.Time {
+	if c == nil {
+		return nil
+	}
+	return c.SecretExpiresAt
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetDomain sets the Domain field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarDelegationRequestMicrosoft) SetDomain(domain string) {
+	c.Domain = domain
+	c.require(createCalendarDelegationRequestMicrosoftFieldDomain)
+}
+
+// SetMatchHostEmail sets the MatchHostEmail field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarDelegationRequestMicrosoft) SetMatchHostEmail(matchHostEmail *bool) {
+	c.MatchHostEmail = matchHostEmail
+	c.require(createCalendarDelegationRequestMicrosoftFieldMatchHostEmail)
+}
+
+// SetTenantID sets the TenantID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarDelegationRequestMicrosoft) SetTenantID(tenantID string) {
+	c.TenantID = tenantID
+	c.require(createCalendarDelegationRequestMicrosoftFieldTenantID)
+}
+
+// SetClientID sets the ClientID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarDelegationRequestMicrosoft) SetClientID(clientID string) {
+	c.ClientID = clientID
+	c.require(createCalendarDelegationRequestMicrosoftFieldClientID)
+}
+
+// SetClientSecret sets the ClientSecret field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarDelegationRequestMicrosoft) SetClientSecret(clientSecret string) {
+	c.ClientSecret = clientSecret
+	c.require(createCalendarDelegationRequestMicrosoftFieldClientSecret)
+}
+
+// SetSecretExpiresAt sets the SecretExpiresAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateCalendarDelegationRequestMicrosoft) SetSecretExpiresAt(secretExpiresAt *time.Time) {
+	c.SecretExpiresAt = secretExpiresAt
+	c.require(createCalendarDelegationRequestMicrosoftFieldSecretExpiresAt)
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) UnmarshalJSON(data []byte) error {
+	type embed CreateCalendarDelegationRequestMicrosoft
+	var unmarshaler = struct {
+		embed
+		SecretExpiresAt *internal.DateTime `json:"secret_expires_at,omitempty"`
+	}{
+		embed: embed(*c),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*c = CreateCalendarDelegationRequestMicrosoft(unmarshaler.embed)
+	c.SecretExpiresAt = unmarshaler.SecretExpiresAt.TimePtr()
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) MarshalJSON() ([]byte, error) {
+	type embed CreateCalendarDelegationRequestMicrosoft
+	var marshaler = struct {
+		embed
+		SecretExpiresAt *internal.DateTime `json:"secret_expires_at,omitempty"`
+	}{
+		embed:           embed(*c),
+		SecretExpiresAt: internal.NewOptionalDateTime(c.SecretExpiresAt),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateCalendarDelegationRequestMicrosoft) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	createSeriesRequestFieldEventType       = big.NewInt(1 << 0)
+	createSeriesRequestFieldStart           = big.NewInt(1 << 1)
+	createSeriesRequestFieldHost            = big.NewInt(1 << 2)
+	createSeriesRequestFieldAttributes      = big.NewInt(1 << 3)
+	createSeriesRequestFieldDurationMinutes = big.NewInt(1 << 4)
+	createSeriesRequestFieldAttendee        = big.NewInt(1 << 5)
+	createSeriesRequestFieldGuests          = big.NewInt(1 << 6)
+	createSeriesRequestFieldAnswers         = big.NewInt(1 << 7)
+	createSeriesRequestFieldLocation        = big.NewInt(1 << 8)
+	createSeriesRequestFieldMetadata        = big.NewInt(1 << 9)
+	createSeriesRequestFieldRecurrence      = big.NewInt(1 << 10)
+	createSeriesRequestFieldOnConflict      = big.NewInt(1 << 11)
+)
+
+type CreateSeriesRequest struct {
+	// The event type's id or uid.
+	EventType string `json:"event_type" url:"event_type"`
+	// An ISO 8601 instant with an offset.
+	Start string `json:"start" url:"start"`
+	// A specific host (id or uid). Default: chosen fairly from those free.
+	Host *string `json:"host,omitempty" url:"host,omitempty"`
+	// Only choose among pool hosts matching all of these.
+	Attributes map[string]*CreateSeriesRequestAttributesValue `json:"attributes,omitempty" url:"attributes,omitempty"`
+	// One of the event type's `duration_options`.
+	DurationMinutes *int                     `json:"duration_minutes,omitempty" url:"duration_minutes,omitempty"`
+	Attendee        *SchedulingAttendeeInput `json:"attendee" url:"attendee"`
+	// Up to the event type's `max_guests`.
+	Guests []*SchedulingGuestInput `json:"guests,omitempty" url:"guests,omitempty"`
+	// Answers to the event type's questions. Stored encrypted, and returned only by retrieving the booking.
+	Answers map[string]*CreateSeriesRequestAnswersValue `json:"answers,omitempty" url:"answers,omitempty"`
+	// One of the event type's `locations`, with your link filled in if it has none.
+	Location *CreateSeriesRequestLocation `json:"location,omitempty" url:"location,omitempty"`
+	// Your own key-value pairs. Don't put sensitive data here.
+	Metadata map[string]string `json:"metadata,omitempty" url:"metadata,omitempty"`
+	// How often the booking repeats, at the attendee's local time.
+	Recurrence *CreateSeriesRequestRecurrence `json:"recurrence" url:"recurrence"`
+	// If an occurrence isn't free: book nothing, or book the rest and report it.
+	OnConflict *CreateSeriesRequestOnConflict `json:"on_conflict,omitempty" url:"on_conflict,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateSeriesRequest) GetEventType() string {
+	if c == nil {
+		return ""
+	}
+	return c.EventType
+}
+
+func (c *CreateSeriesRequest) GetStart() string {
+	if c == nil {
+		return ""
+	}
+	return c.Start
+}
+
+func (c *CreateSeriesRequest) GetHost() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Host
+}
+
+func (c *CreateSeriesRequest) GetAttributes() map[string]*CreateSeriesRequestAttributesValue {
+	if c == nil {
+		return nil
+	}
+	return c.Attributes
+}
+
+func (c *CreateSeriesRequest) GetDurationMinutes() *int {
+	if c == nil {
+		return nil
+	}
+	return c.DurationMinutes
+}
+
+func (c *CreateSeriesRequest) GetAttendee() *SchedulingAttendeeInput {
+	if c == nil {
+		return nil
+	}
+	return c.Attendee
+}
+
+func (c *CreateSeriesRequest) GetGuests() []*SchedulingGuestInput {
+	if c == nil {
+		return nil
+	}
+	return c.Guests
+}
+
+func (c *CreateSeriesRequest) GetAnswers() map[string]*CreateSeriesRequestAnswersValue {
+	if c == nil {
+		return nil
+	}
+	return c.Answers
+}
+
+func (c *CreateSeriesRequest) GetLocation() *CreateSeriesRequestLocation {
+	if c == nil {
+		return nil
+	}
+	return c.Location
+}
+
+func (c *CreateSeriesRequest) GetMetadata() map[string]string {
+	if c == nil {
+		return nil
+	}
+	return c.Metadata
+}
+
+func (c *CreateSeriesRequest) GetRecurrence() *CreateSeriesRequestRecurrence {
+	if c == nil {
+		return nil
+	}
+	return c.Recurrence
+}
+
+func (c *CreateSeriesRequest) GetOnConflict() *CreateSeriesRequestOnConflict {
+	if c == nil {
+		return nil
+	}
+	return c.OnConflict
+}
+
+func (c *CreateSeriesRequest) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateSeriesRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetEventType sets the EventType field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetEventType(eventType string) {
+	c.EventType = eventType
+	c.require(createSeriesRequestFieldEventType)
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetStart(start string) {
+	c.Start = start
+	c.require(createSeriesRequestFieldStart)
+}
+
+// SetHost sets the Host field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetHost(host *string) {
+	c.Host = host
+	c.require(createSeriesRequestFieldHost)
+}
+
+// SetAttributes sets the Attributes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetAttributes(attributes map[string]*CreateSeriesRequestAttributesValue) {
+	c.Attributes = attributes
+	c.require(createSeriesRequestFieldAttributes)
+}
+
+// SetDurationMinutes sets the DurationMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetDurationMinutes(durationMinutes *int) {
+	c.DurationMinutes = durationMinutes
+	c.require(createSeriesRequestFieldDurationMinutes)
+}
+
+// SetAttendee sets the Attendee field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetAttendee(attendee *SchedulingAttendeeInput) {
+	c.Attendee = attendee
+	c.require(createSeriesRequestFieldAttendee)
+}
+
+// SetGuests sets the Guests field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetGuests(guests []*SchedulingGuestInput) {
+	c.Guests = guests
+	c.require(createSeriesRequestFieldGuests)
+}
+
+// SetAnswers sets the Answers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetAnswers(answers map[string]*CreateSeriesRequestAnswersValue) {
+	c.Answers = answers
+	c.require(createSeriesRequestFieldAnswers)
+}
+
+// SetLocation sets the Location field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetLocation(location *CreateSeriesRequestLocation) {
+	c.Location = location
+	c.require(createSeriesRequestFieldLocation)
+}
+
+// SetMetadata sets the Metadata field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetMetadata(metadata map[string]string) {
+	c.Metadata = metadata
+	c.require(createSeriesRequestFieldMetadata)
+}
+
+// SetRecurrence sets the Recurrence field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetRecurrence(recurrence *CreateSeriesRequestRecurrence) {
+	c.Recurrence = recurrence
+	c.require(createSeriesRequestFieldRecurrence)
+}
+
+// SetOnConflict sets the OnConflict field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequest) SetOnConflict(onConflict *CreateSeriesRequestOnConflict) {
+	c.OnConflict = onConflict
+	c.require(createSeriesRequestFieldOnConflict)
+}
+
+func (c *CreateSeriesRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateSeriesRequest
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateSeriesRequest(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateSeriesRequest) MarshalJSON() ([]byte, error) {
+	type embed CreateSeriesRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateSeriesRequest) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CreateSeriesRequestAnswersValue struct {
+	String     string
+	StringList []string
+
+	typ string
+}
+
+func (c *CreateSeriesRequestAnswersValue) GetString() string {
+	if c == nil {
+		return ""
+	}
+	return c.String
+}
+
+func (c *CreateSeriesRequestAnswersValue) GetStringList() []string {
+	if c == nil {
+		return nil
+	}
+	return c.StringList
+}
+
+func (c *CreateSeriesRequestAnswersValue) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		c.typ = "String"
+		c.String = valueString
+		return nil
+	}
+	var valueStringList []string
+	if err := json.Unmarshal(data, &valueStringList); err == nil {
+		c.typ = "StringList"
+		c.StringList = valueStringList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c CreateSeriesRequestAnswersValue) MarshalJSON() ([]byte, error) {
+	if c.typ == "String" || c.String != "" {
+		return json.Marshal(c.String)
+	}
+	if c.typ == "StringList" || c.StringList != nil {
+		return json.Marshal(c.StringList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateSeriesRequestAnswersValueVisitor interface {
+	VisitString(string) error
+	VisitStringList([]string) error
+}
+
+func (c *CreateSeriesRequestAnswersValue) Accept(visitor CreateSeriesRequestAnswersValueVisitor) error {
+	if c.typ == "String" || c.String != "" {
+		return visitor.VisitString(c.String)
+	}
+	if c.typ == "StringList" || c.StringList != nil {
+		return visitor.VisitStringList(c.StringList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateSeriesRequestAttributesValue struct {
+	String     string
+	StringList []string
+
+	typ string
+}
+
+func (c *CreateSeriesRequestAttributesValue) GetString() string {
+	if c == nil {
+		return ""
+	}
+	return c.String
+}
+
+func (c *CreateSeriesRequestAttributesValue) GetStringList() []string {
+	if c == nil {
+		return nil
+	}
+	return c.StringList
+}
+
+func (c *CreateSeriesRequestAttributesValue) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		c.typ = "String"
+		c.String = valueString
+		return nil
+	}
+	var valueStringList []string
+	if err := json.Unmarshal(data, &valueStringList); err == nil {
+		c.typ = "StringList"
+		c.StringList = valueStringList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, c)
+}
+
+func (c CreateSeriesRequestAttributesValue) MarshalJSON() ([]byte, error) {
+	if c.typ == "String" || c.String != "" {
+		return json.Marshal(c.String)
+	}
+	if c.typ == "StringList" || c.StringList != nil {
+		return json.Marshal(c.StringList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+type CreateSeriesRequestAttributesValueVisitor interface {
+	VisitString(string) error
+	VisitStringList([]string) error
+}
+
+func (c *CreateSeriesRequestAttributesValue) Accept(visitor CreateSeriesRequestAttributesValueVisitor) error {
+	if c.typ == "String" || c.String != "" {
+		return visitor.VisitString(c.String)
+	}
+	if c.typ == "StringList" || c.StringList != nil {
+		return visitor.VisitStringList(c.StringList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", c)
+}
+
+// One of the event type's `locations`, with your link filled in if it has none.
+type CreateSeriesRequestLocation struct {
+	Type           string
+	Link           *CreateSeriesRequestLocationLink
+	Phone          *CreateSeriesRequestLocationPhone
+	InPerson       *CreateSeriesRequestLocationInPerson
+	GoogleMeet     *CreateSeriesRequestLocationGoogleMeet
+	MicrosoftTeams *CreateSeriesRequestLocationMicrosoftTeams
+	Zoom           *CreateSeriesRequestLocationZoom
+
+	rawJSON json.RawMessage
+}
+
+func (c *CreateSeriesRequestLocation) GetType() string {
+	if c == nil {
+		return ""
+	}
+	return c.Type
+}
+
+func (c *CreateSeriesRequestLocation) GetLink() *CreateSeriesRequestLocationLink {
+	if c == nil {
+		return nil
+	}
+	return c.Link
+}
+
+func (c *CreateSeriesRequestLocation) GetPhone() *CreateSeriesRequestLocationPhone {
+	if c == nil {
+		return nil
+	}
+	return c.Phone
+}
+
+func (c *CreateSeriesRequestLocation) GetInPerson() *CreateSeriesRequestLocationInPerson {
+	if c == nil {
+		return nil
+	}
+	return c.InPerson
+}
+
+func (c *CreateSeriesRequestLocation) GetGoogleMeet() *CreateSeriesRequestLocationGoogleMeet {
+	if c == nil {
+		return nil
+	}
+	return c.GoogleMeet
+}
+
+func (c *CreateSeriesRequestLocation) GetMicrosoftTeams() *CreateSeriesRequestLocationMicrosoftTeams {
+	if c == nil {
+		return nil
+	}
+	return c.MicrosoftTeams
+}
+
+func (c *CreateSeriesRequestLocation) GetZoom() *CreateSeriesRequestLocationZoom {
+	if c == nil {
+		return nil
+	}
+	return c.Zoom
+}
+
+func (c *CreateSeriesRequestLocation) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	c.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant type", c)
+	}
+	switch unmarshaler.Type {
+	case "link":
+		value := new(CreateSeriesRequestLocationLink)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Link = value
+	case "phone":
+		value := new(CreateSeriesRequestLocationPhone)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Phone = value
+	case "in_person":
+		value := new(CreateSeriesRequestLocationInPerson)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.InPerson = value
+	case "google_meet":
+		value := new(CreateSeriesRequestLocationGoogleMeet)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.GoogleMeet = value
+	case "microsoft_teams":
+		value := new(CreateSeriesRequestLocationMicrosoftTeams)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.MicrosoftTeams = value
+	case "zoom":
+		value := new(CreateSeriesRequestLocationZoom)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.Zoom = value
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c CreateSeriesRequestLocation) MarshalJSON() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	if c.Link != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Link, "type", "link")
+	}
+	if c.Phone != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Phone, "type", "phone")
+	}
+	if c.InPerson != nil {
+		return internal.MarshalJSONWithExtraProperty(c.InPerson, "type", "in_person")
+	}
+	if c.GoogleMeet != nil {
+		return internal.MarshalJSONWithExtraProperty(c.GoogleMeet, "type", "google_meet")
+	}
+	if c.MicrosoftTeams != nil {
+		return internal.MarshalJSONWithExtraProperty(c.MicrosoftTeams, "type", "microsoft_teams")
+	}
+	if c.Zoom != nil {
+		return internal.MarshalJSONWithExtraProperty(c.Zoom, "type", "zoom")
+	}
+	if len(c.rawJSON) > 0 {
+		return c.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+type CreateSeriesRequestLocationVisitor interface {
+	VisitLink(*CreateSeriesRequestLocationLink) error
+	VisitPhone(*CreateSeriesRequestLocationPhone) error
+	VisitInPerson(*CreateSeriesRequestLocationInPerson) error
+	VisitGoogleMeet(*CreateSeriesRequestLocationGoogleMeet) error
+	VisitMicrosoftTeams(*CreateSeriesRequestLocationMicrosoftTeams) error
+	VisitZoom(*CreateSeriesRequestLocationZoom) error
+}
+
+func (c *CreateSeriesRequestLocation) Accept(visitor CreateSeriesRequestLocationVisitor) error {
+	if c.Link != nil {
+		return visitor.VisitLink(c.Link)
+	}
+	if c.Phone != nil {
+		return visitor.VisitPhone(c.Phone)
+	}
+	if c.InPerson != nil {
+		return visitor.VisitInPerson(c.InPerson)
+	}
+	if c.GoogleMeet != nil {
+		return visitor.VisitGoogleMeet(c.GoogleMeet)
+	}
+	if c.MicrosoftTeams != nil {
+		return visitor.VisitMicrosoftTeams(c.MicrosoftTeams)
+	}
+	if c.Zoom != nil {
+		return visitor.VisitZoom(c.Zoom)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", c)
+}
+
+func (c *CreateSeriesRequestLocation) validate() error {
+	if c == nil {
+		return fmt.Errorf("type %T is nil", c)
+	}
+	var fields []string
+	if c.Link != nil {
+		fields = append(fields, "link")
+	}
+	if c.Phone != nil {
+		fields = append(fields, "phone")
+	}
+	if c.InPerson != nil {
+		fields = append(fields, "in_person")
+	}
+	if c.GoogleMeet != nil {
+		fields = append(fields, "google_meet")
+	}
+	if c.MicrosoftTeams != nil {
+		fields = append(fields, "microsoft_teams")
+	}
+	if c.Zoom != nil {
+		fields = append(fields, "zoom")
+	}
+	if len(fields) == 0 {
+		if c.Type != "" {
+			if len(c.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", c, c.Type)
+		}
+		return fmt.Errorf("type %T is empty", c)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", c, fields)
+	}
+	if c.Type != "" {
+		field := fields[0]
+		if c.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				c,
+				c.Type,
+				c,
+			)
+		}
+	}
+	return nil
+}
+
+type CreateSeriesRequestLocationGoogleMeet struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateSeriesRequestLocationGoogleMeet) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateSeriesRequestLocationGoogleMeet) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+func (c *CreateSeriesRequestLocationGoogleMeet) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateSeriesRequestLocationGoogleMeet
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateSeriesRequestLocationGoogleMeet(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateSeriesRequestLocationGoogleMeet) MarshalJSON() ([]byte, error) {
+	type embed CreateSeriesRequestLocationGoogleMeet
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateSeriesRequestLocationGoogleMeet) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	createSeriesRequestLocationInPersonFieldAddress = big.NewInt(1 << 0)
+)
+
+// createSeriesRequestLocationInPersonNullableFields maps the wire names of CreateSeriesRequestLocationInPerson's nullable fields (required or optional) to their field bits.
+var createSeriesRequestLocationInPersonNullableFields = map[string]*big.Int{
+	"address": createSeriesRequestLocationInPersonFieldAddress,
+}
+
+type CreateSeriesRequestLocationInPerson struct {
+	// The address to meet at. `null` on an event type means the booking supplies its own.
+	Address *string `json:"address,omitempty" url:"address,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateSeriesRequestLocationInPerson) GetAddress() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Address
+}
+
+func (c *CreateSeriesRequestLocationInPerson) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateSeriesRequestLocationInPerson) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetAddress sets the Address field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequestLocationInPerson) SetAddress(address *string) {
+	c.Address = address
+	c.require(createSeriesRequestLocationInPersonFieldAddress)
+}
+
+func (c *CreateSeriesRequestLocationInPerson) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateSeriesRequestLocationInPerson
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateSeriesRequestLocationInPerson(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, createSeriesRequestLocationInPersonNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateSeriesRequestLocationInPerson) MarshalJSON() ([]byte, error) {
+	type embed CreateSeriesRequestLocationInPerson
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateSeriesRequestLocationInPerson) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	createSeriesRequestLocationLinkFieldURL = big.NewInt(1 << 0)
+)
+
+// createSeriesRequestLocationLinkNullableFields maps the wire names of CreateSeriesRequestLocationLink's nullable fields (required or optional) to their field bits.
+var createSeriesRequestLocationLinkNullableFields = map[string]*big.Int{
+	"url": createSeriesRequestLocationLinkFieldURL,
+}
+
+type CreateSeriesRequestLocationLink struct {
+	// The meeting link. `null` on an event type means the booking supplies its own.
+	URL *string `json:"url,omitempty" url:"url,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateSeriesRequestLocationLink) GetURL() *string {
+	if c == nil {
+		return nil
+	}
+	return c.URL
+}
+
+func (c *CreateSeriesRequestLocationLink) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateSeriesRequestLocationLink) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequestLocationLink) SetURL(url *string) {
+	c.URL = url
+	c.require(createSeriesRequestLocationLinkFieldURL)
+}
+
+func (c *CreateSeriesRequestLocationLink) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateSeriesRequestLocationLink
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateSeriesRequestLocationLink(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, createSeriesRequestLocationLinkNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateSeriesRequestLocationLink) MarshalJSON() ([]byte, error) {
+	type embed CreateSeriesRequestLocationLink
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateSeriesRequestLocationLink) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+type CreateSeriesRequestLocationMicrosoftTeams struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateSeriesRequestLocationMicrosoftTeams) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateSeriesRequestLocationMicrosoftTeams) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+func (c *CreateSeriesRequestLocationMicrosoftTeams) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateSeriesRequestLocationMicrosoftTeams
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateSeriesRequestLocationMicrosoftTeams(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateSeriesRequestLocationMicrosoftTeams) MarshalJSON() ([]byte, error) {
+	type embed CreateSeriesRequestLocationMicrosoftTeams
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateSeriesRequestLocationMicrosoftTeams) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	createSeriesRequestLocationPhoneFieldNumber = big.NewInt(1 << 0)
+)
+
+// createSeriesRequestLocationPhoneNullableFields maps the wire names of CreateSeriesRequestLocationPhone's nullable fields (required or optional) to their field bits.
+var createSeriesRequestLocationPhoneNullableFields = map[string]*big.Int{
+	"number": createSeriesRequestLocationPhoneFieldNumber,
+}
+
+type CreateSeriesRequestLocationPhone struct {
+	// The phone number to call. `null` on an event type means the booking supplies its own.
+	Number *string `json:"number,omitempty" url:"number,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateSeriesRequestLocationPhone) GetNumber() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Number
+}
+
+func (c *CreateSeriesRequestLocationPhone) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateSeriesRequestLocationPhone) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetNumber sets the Number field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequestLocationPhone) SetNumber(number *string) {
+	c.Number = number
+	c.require(createSeriesRequestLocationPhoneFieldNumber)
+}
+
+func (c *CreateSeriesRequestLocationPhone) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateSeriesRequestLocationPhone
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateSeriesRequestLocationPhone(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, createSeriesRequestLocationPhoneNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateSeriesRequestLocationPhone) MarshalJSON() ([]byte, error) {
+	type embed CreateSeriesRequestLocationPhone
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateSeriesRequestLocationPhone) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	createSeriesRequestLocationZoomFieldURL = big.NewInt(1 << 0)
+)
+
+// createSeriesRequestLocationZoomNullableFields maps the wire names of CreateSeriesRequestLocationZoom's nullable fields (required or optional) to their field bits.
+var createSeriesRequestLocationZoomNullableFields = map[string]*big.Int{
+	"url": createSeriesRequestLocationZoomFieldURL,
+}
+
+type CreateSeriesRequestLocationZoom struct {
+	// The meeting's link, once it's created on the host's Zoom account.
+	URL *string `json:"url,omitempty" url:"url,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateSeriesRequestLocationZoom) GetURL() *string {
+	if c == nil {
+		return nil
+	}
+	return c.URL
+}
+
+func (c *CreateSeriesRequestLocationZoom) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateSeriesRequestLocationZoom) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequestLocationZoom) SetURL(url *string) {
+	c.URL = url
+	c.require(createSeriesRequestLocationZoomFieldURL)
+}
+
+func (c *CreateSeriesRequestLocationZoom) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateSeriesRequestLocationZoom
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateSeriesRequestLocationZoom(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, createSeriesRequestLocationZoomNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateSeriesRequestLocationZoom) MarshalJSON() ([]byte, error) {
+	type embed CreateSeriesRequestLocationZoom
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateSeriesRequestLocationZoom) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// If an occurrence isn't free: book nothing, or book the rest and report it.
+type CreateSeriesRequestOnConflict string
+
+const (
+	CreateSeriesRequestOnConflictReject CreateSeriesRequestOnConflict = "reject"
+	CreateSeriesRequestOnConflictSkip   CreateSeriesRequestOnConflict = "skip"
+)
+
+func NewCreateSeriesRequestOnConflictFromString(s string) (CreateSeriesRequestOnConflict, error) {
+	switch s {
+	case "reject":
+		return CreateSeriesRequestOnConflictReject, nil
+	case "skip":
+		return CreateSeriesRequestOnConflictSkip, nil
+	}
+	var t CreateSeriesRequestOnConflict
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CreateSeriesRequestOnConflict) Ptr() *CreateSeriesRequestOnConflict {
+	return &c
+}
+
+var (
+	createSeriesRequestRecurrenceFieldFrequency = big.NewInt(1 << 0)
+	createSeriesRequestRecurrenceFieldInterval  = big.NewInt(1 << 1)
+	createSeriesRequestRecurrenceFieldCount     = big.NewInt(1 << 2)
+)
+
+// How often the booking repeats, at the attendee's local time.
+type CreateSeriesRequestRecurrence struct {
+	// Repeat weekly or monthly.
+	Frequency CreateSeriesRequestRecurrenceFrequency `json:"frequency" url:"frequency"`
+	// Every this many weeks or months. Default: 1.
+	Interval *int `json:"interval,omitempty" url:"interval,omitempty"`
+	// Occurrences in total, the first included.
+	Count int `json:"count" url:"count"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CreateSeriesRequestRecurrence) GetFrequency() CreateSeriesRequestRecurrenceFrequency {
+	if c == nil {
+		return ""
+	}
+	return c.Frequency
+}
+
+func (c *CreateSeriesRequestRecurrence) GetInterval() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Interval
+}
+
+func (c *CreateSeriesRequestRecurrence) GetCount() int {
+	if c == nil {
+		return 0
+	}
+	return c.Count
+}
+
+func (c *CreateSeriesRequestRecurrence) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CreateSeriesRequestRecurrence) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetFrequency sets the Frequency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequestRecurrence) SetFrequency(frequency CreateSeriesRequestRecurrenceFrequency) {
+	c.Frequency = frequency
+	c.require(createSeriesRequestRecurrenceFieldFrequency)
+}
+
+// SetInterval sets the Interval field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequestRecurrence) SetInterval(interval *int) {
+	c.Interval = interval
+	c.require(createSeriesRequestRecurrenceFieldInterval)
+}
+
+// SetCount sets the Count field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateSeriesRequestRecurrence) SetCount(count int) {
+	c.Count = count
+	c.require(createSeriesRequestRecurrenceFieldCount)
+}
+
+func (c *CreateSeriesRequestRecurrence) UnmarshalJSON(data []byte) error {
+	type unmarshaler CreateSeriesRequestRecurrence
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CreateSeriesRequestRecurrence(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CreateSeriesRequestRecurrence) MarshalJSON() ([]byte, error) {
+	type embed CreateSeriesRequestRecurrence
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CreateSeriesRequestRecurrence) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+// Repeat weekly or monthly.
+type CreateSeriesRequestRecurrenceFrequency string
+
+const (
+	CreateSeriesRequestRecurrenceFrequencyWeekly  CreateSeriesRequestRecurrenceFrequency = "weekly"
+	CreateSeriesRequestRecurrenceFrequencyMonthly CreateSeriesRequestRecurrenceFrequency = "monthly"
+)
+
+func NewCreateSeriesRequestRecurrenceFrequencyFromString(s string) (CreateSeriesRequestRecurrenceFrequency, error) {
+	switch s {
+	case "weekly":
+		return CreateSeriesRequestRecurrenceFrequencyWeekly, nil
+	case "monthly":
+		return CreateSeriesRequestRecurrenceFrequencyMonthly, nil
+	}
+	var t CreateSeriesRequestRecurrenceFrequency
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CreateSeriesRequestRecurrenceFrequency) Ptr() *CreateSeriesRequestRecurrenceFrequency {
+	return &c
+}
+
 var (
 	creditFieldObject      = big.NewInt(1 << 0)
 	creditFieldID          = big.NewInt(1 << 1)
@@ -8126,21 +10269,28 @@ type Credit struct {
 	Object CreditObject `json:"object" url:"object"`
 	ID     string       `json:"id" url:"id"`
 	// `amount`: dollars (`amount` and `remaining` in cents); `units`: free units of `meter`.
-	Kind      CreditKind `json:"kind" url:"kind"`
-	Amount    int64      `json:"amount" url:"amount"`
-	Remaining int64      `json:"remaining" url:"remaining"`
+	Kind CreditKind `json:"kind" url:"kind"`
+	// How much was granted: cents, or units for a `units` credit.
+	Amount int64 `json:"amount" url:"amount"`
+	// How much is left, in the same unit as `amount`.
+	Remaining int64 `json:"remaining" url:"remaining"`
 	// What a `units` credit covers.
 	Meter *CreditMeter `json:"meter,omitempty" url:"meter,omitempty"`
 	// What an `amount` credit pays for (`null`: any usage).
 	Meters []CreditMetersItem `json:"meters,omitempty" url:"meters,omitempty"`
 	// `any`: also fees and other charges.
-	AppliesTo   CreditAppliesTo `json:"applies_to" url:"applies_to"`
-	Source      CreditSource    `json:"source" url:"source"`
-	Description string          `json:"description" url:"description"`
-	EffectiveAt time.Time       `json:"effective_at" url:"effective_at"`
-	ExpiresAt   *time.Time      `json:"expires_at,omitempty" url:"expires_at,omitempty"`
-	VoidedAt    *time.Time      `json:"voided_at,omitempty" url:"voided_at,omitempty"`
-	CreatedAt   time.Time       `json:"created_at" url:"created_at"`
+	AppliesTo CreditAppliesTo `json:"applies_to" url:"applies_to"`
+	// Where it came from: `fee`, `commitment`, `support`, `promotion`, `refund` or `sla`.
+	Source CreditSource `json:"source" url:"source"`
+	// What it's for.
+	Description string `json:"description" url:"description"`
+	// When it can start being used.
+	EffectiveAt time.Time `json:"effective_at" url:"effective_at"`
+	// When what's left expires. `null`: never.
+	ExpiresAt *time.Time `json:"expires_at,omitempty" url:"expires_at,omitempty"`
+	// When it was voided. `null`: it wasn't.
+	VoidedAt  *time.Time `json:"voided_at,omitempty" url:"voided_at,omitempty"`
+	CreatedAt time.Time  `json:"created_at" url:"created_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -8617,21 +10767,27 @@ func (c CreditListObject) Ptr() *CreditListObject {
 type CreditMeter string
 
 const (
-	CreditMeterEmailRecipients         CreditMeter = "email.recipients"
-	CreditMeterEmailDedicatedIP        CreditMeter = "email.dedicated_ip"
-	CreditMeterEmailReceived           CreditMeter = "email.received"
-	CreditMeterEmailInboxes            CreditMeter = "email.inboxes"
-	CreditMeterSmsSegments             CreditMeter = "sms.segments"
-	CreditMeterSmsReceivedSegments     CreditMeter = "sms.received_segments"
-	CreditMeterSmsNumbers              CreditMeter = "sms.numbers"
-	CreditMeterSmsRegistrations        CreditMeter = "sms.registrations"
-	CreditMeterSignCompletedRequests   CreditMeter = "sign.completed_requests"
-	CreditMeterRiskPhoneChecks         CreditMeter = "risk.phone_checks"
-	CreditMeterVerifyVerifications     CreditMeter = "verify.verifications"
-	CreditMeterVerifySms               CreditMeter = "verify.sms"
-	CreditMeterFormsSubmissions        CreditMeter = "forms.submissions"
-	CreditMeterVideoParticipantMinutes CreditMeter = "video.participant_minutes"
-	CreditMeterSchedulingBookings      CreditMeter = "scheduling.bookings"
+	CreditMeterEmailRecipients       CreditMeter = "email.recipients"
+	CreditMeterEmailDedicatedIP      CreditMeter = "email.dedicated_ip"
+	CreditMeterEmailAttachmentData   CreditMeter = "email.attachment_data"
+	CreditMeterEmailReceived         CreditMeter = "email.received"
+	CreditMeterEmailReceivedData     CreditMeter = "email.received_data"
+	CreditMeterEmailInboxes          CreditMeter = "email.inboxes"
+	CreditMeterSmsSegments           CreditMeter = "sms.segments"
+	CreditMeterSmsReceivedSegments   CreditMeter = "sms.received_segments"
+	CreditMeterSmsNumbers            CreditMeter = "sms.numbers"
+	CreditMeterSmsRegistrations      CreditMeter = "sms.registrations"
+	CreditMeterSignCompletedRequests CreditMeter = "sign.completed_requests"
+	CreditMeterRiskPhoneChecks       CreditMeter = "risk.phone_checks"
+	CreditMeterRiskAssessments       CreditMeter = "risk.assessments"
+	CreditMeterRiskContentChecks     CreditMeter = "risk.content_checks"
+	CreditMeterVerifyVerifications   CreditMeter = "verify.verifications"
+	CreditMeterVerifySms             CreditMeter = "verify.sms"
+	CreditMeterFormsSubmissions      CreditMeter = "forms.submissions"
+	CreditMeterFormsFileUploads      CreditMeter = "forms.file_uploads"
+	CreditMeterSchedulingBookings    CreditMeter = "scheduling.bookings"
+	CreditMeterSchedulingHosts       CreditMeter = "scheduling.hosts"
+	CreditMeterHooksMessages         CreditMeter = "hooks.messages"
 )
 
 func NewCreditMeterFromString(s string) (CreditMeter, error) {
@@ -8640,8 +10796,12 @@ func NewCreditMeterFromString(s string) (CreditMeter, error) {
 		return CreditMeterEmailRecipients, nil
 	case "email.dedicated_ip":
 		return CreditMeterEmailDedicatedIP, nil
+	case "email.attachment_data":
+		return CreditMeterEmailAttachmentData, nil
 	case "email.received":
 		return CreditMeterEmailReceived, nil
+	case "email.received_data":
+		return CreditMeterEmailReceivedData, nil
 	case "email.inboxes":
 		return CreditMeterEmailInboxes, nil
 	case "sms.segments":
@@ -8656,16 +10816,24 @@ func NewCreditMeterFromString(s string) (CreditMeter, error) {
 		return CreditMeterSignCompletedRequests, nil
 	case "risk.phone_checks":
 		return CreditMeterRiskPhoneChecks, nil
+	case "risk.assessments":
+		return CreditMeterRiskAssessments, nil
+	case "risk.content_checks":
+		return CreditMeterRiskContentChecks, nil
 	case "verify.verifications":
 		return CreditMeterVerifyVerifications, nil
 	case "verify.sms":
 		return CreditMeterVerifySms, nil
 	case "forms.submissions":
 		return CreditMeterFormsSubmissions, nil
-	case "video.participant_minutes":
-		return CreditMeterVideoParticipantMinutes, nil
+	case "forms.file_uploads":
+		return CreditMeterFormsFileUploads, nil
 	case "scheduling.bookings":
 		return CreditMeterSchedulingBookings, nil
+	case "scheduling.hosts":
+		return CreditMeterSchedulingHosts, nil
+	case "hooks.messages":
+		return CreditMeterHooksMessages, nil
 	}
 	var t CreditMeter
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -8679,21 +10847,27 @@ func (c CreditMeter) Ptr() *CreditMeter {
 type CreditMetersItem string
 
 const (
-	CreditMetersItemEmailRecipients         CreditMetersItem = "email.recipients"
-	CreditMetersItemEmailDedicatedIP        CreditMetersItem = "email.dedicated_ip"
-	CreditMetersItemEmailReceived           CreditMetersItem = "email.received"
-	CreditMetersItemEmailInboxes            CreditMetersItem = "email.inboxes"
-	CreditMetersItemSmsSegments             CreditMetersItem = "sms.segments"
-	CreditMetersItemSmsReceivedSegments     CreditMetersItem = "sms.received_segments"
-	CreditMetersItemSmsNumbers              CreditMetersItem = "sms.numbers"
-	CreditMetersItemSmsRegistrations        CreditMetersItem = "sms.registrations"
-	CreditMetersItemSignCompletedRequests   CreditMetersItem = "sign.completed_requests"
-	CreditMetersItemRiskPhoneChecks         CreditMetersItem = "risk.phone_checks"
-	CreditMetersItemVerifyVerifications     CreditMetersItem = "verify.verifications"
-	CreditMetersItemVerifySms               CreditMetersItem = "verify.sms"
-	CreditMetersItemFormsSubmissions        CreditMetersItem = "forms.submissions"
-	CreditMetersItemVideoParticipantMinutes CreditMetersItem = "video.participant_minutes"
-	CreditMetersItemSchedulingBookings      CreditMetersItem = "scheduling.bookings"
+	CreditMetersItemEmailRecipients       CreditMetersItem = "email.recipients"
+	CreditMetersItemEmailDedicatedIP      CreditMetersItem = "email.dedicated_ip"
+	CreditMetersItemEmailAttachmentData   CreditMetersItem = "email.attachment_data"
+	CreditMetersItemEmailReceived         CreditMetersItem = "email.received"
+	CreditMetersItemEmailReceivedData     CreditMetersItem = "email.received_data"
+	CreditMetersItemEmailInboxes          CreditMetersItem = "email.inboxes"
+	CreditMetersItemSmsSegments           CreditMetersItem = "sms.segments"
+	CreditMetersItemSmsReceivedSegments   CreditMetersItem = "sms.received_segments"
+	CreditMetersItemSmsNumbers            CreditMetersItem = "sms.numbers"
+	CreditMetersItemSmsRegistrations      CreditMetersItem = "sms.registrations"
+	CreditMetersItemSignCompletedRequests CreditMetersItem = "sign.completed_requests"
+	CreditMetersItemRiskPhoneChecks       CreditMetersItem = "risk.phone_checks"
+	CreditMetersItemRiskAssessments       CreditMetersItem = "risk.assessments"
+	CreditMetersItemRiskContentChecks     CreditMetersItem = "risk.content_checks"
+	CreditMetersItemVerifyVerifications   CreditMetersItem = "verify.verifications"
+	CreditMetersItemVerifySms             CreditMetersItem = "verify.sms"
+	CreditMetersItemFormsSubmissions      CreditMetersItem = "forms.submissions"
+	CreditMetersItemFormsFileUploads      CreditMetersItem = "forms.file_uploads"
+	CreditMetersItemSchedulingBookings    CreditMetersItem = "scheduling.bookings"
+	CreditMetersItemSchedulingHosts       CreditMetersItem = "scheduling.hosts"
+	CreditMetersItemHooksMessages         CreditMetersItem = "hooks.messages"
 )
 
 func NewCreditMetersItemFromString(s string) (CreditMetersItem, error) {
@@ -8702,8 +10876,12 @@ func NewCreditMetersItemFromString(s string) (CreditMetersItem, error) {
 		return CreditMetersItemEmailRecipients, nil
 	case "email.dedicated_ip":
 		return CreditMetersItemEmailDedicatedIP, nil
+	case "email.attachment_data":
+		return CreditMetersItemEmailAttachmentData, nil
 	case "email.received":
 		return CreditMetersItemEmailReceived, nil
+	case "email.received_data":
+		return CreditMetersItemEmailReceivedData, nil
 	case "email.inboxes":
 		return CreditMetersItemEmailInboxes, nil
 	case "sms.segments":
@@ -8718,16 +10896,24 @@ func NewCreditMetersItemFromString(s string) (CreditMetersItem, error) {
 		return CreditMetersItemSignCompletedRequests, nil
 	case "risk.phone_checks":
 		return CreditMetersItemRiskPhoneChecks, nil
+	case "risk.assessments":
+		return CreditMetersItemRiskAssessments, nil
+	case "risk.content_checks":
+		return CreditMetersItemRiskContentChecks, nil
 	case "verify.verifications":
 		return CreditMetersItemVerifyVerifications, nil
 	case "verify.sms":
 		return CreditMetersItemVerifySms, nil
 	case "forms.submissions":
 		return CreditMetersItemFormsSubmissions, nil
-	case "video.participant_minutes":
-		return CreditMetersItemVideoParticipantMinutes, nil
+	case "forms.file_uploads":
+		return CreditMetersItemFormsFileUploads, nil
 	case "scheduling.bookings":
 		return CreditMetersItemSchedulingBookings, nil
+	case "scheduling.hosts":
+		return CreditMetersItemSchedulingHosts, nil
+	case "hooks.messages":
+		return CreditMetersItemHooksMessages, nil
 	}
 	var t CreditMetersItem
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -8756,6 +10942,7 @@ func (c CreditObject) Ptr() *CreditObject {
 	return &c
 }
 
+// Where it came from: `fee`, `commitment`, `support`, `promotion`, `refund` or `sla`.
 type CreditSource string
 
 const (
@@ -8765,6 +10952,7 @@ const (
 	CreditSourcePromotion  CreditSource = "promotion"
 	CreditSourceRefund     CreditSource = "refund"
 	CreditSourceSLA        CreditSource = "sla"
+	CreditSourceThreshold  CreditSource = "threshold"
 )
 
 func NewCreditSourceFromString(s string) (CreditSource, error) {
@@ -8781,6 +10969,8 @@ func NewCreditSourceFromString(s string) (CreditSource, error) {
 		return CreditSourceRefund, nil
 	case "sla":
 		return CreditSourceSLA, nil
+	case "threshold":
+		return CreditSourceThreshold, nil
 	}
 	var t CreditSource
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -10945,6 +13135,554 @@ func (d DeletedRiskRuleObject) Ptr() *DeletedRiskRuleObject {
 }
 
 var (
+	deletedSchedulingCalendarConnectionFieldObject  = big.NewInt(1 << 0)
+	deletedSchedulingCalendarConnectionFieldID      = big.NewInt(1 << 1)
+	deletedSchedulingCalendarConnectionFieldDeleted = big.NewInt(1 << 2)
+)
+
+type DeletedSchedulingCalendarConnection struct {
+	Object  DeletedSchedulingCalendarConnectionObject `json:"object" url:"object"`
+	ID      string                                    `json:"id" url:"id"`
+	Deleted bool                                      `json:"deleted" url:"deleted"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DeletedSchedulingCalendarConnection) GetObject() DeletedSchedulingCalendarConnectionObject {
+	if d == nil {
+		return ""
+	}
+	return d.Object
+}
+
+func (d *DeletedSchedulingCalendarConnection) GetID() string {
+	if d == nil {
+		return ""
+	}
+	return d.ID
+}
+
+func (d *DeletedSchedulingCalendarConnection) GetDeleted() bool {
+	if d == nil {
+		return false
+	}
+	return d.Deleted
+}
+
+func (d *DeletedSchedulingCalendarConnection) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DeletedSchedulingCalendarConnection) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingCalendarConnection) SetObject(object DeletedSchedulingCalendarConnectionObject) {
+	d.Object = object
+	d.require(deletedSchedulingCalendarConnectionFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingCalendarConnection) SetID(id string) {
+	d.ID = id
+	d.require(deletedSchedulingCalendarConnectionFieldID)
+}
+
+// SetDeleted sets the Deleted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingCalendarConnection) SetDeleted(deleted bool) {
+	d.Deleted = deleted
+	d.require(deletedSchedulingCalendarConnectionFieldDeleted)
+}
+
+func (d *DeletedSchedulingCalendarConnection) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeletedSchedulingCalendarConnection
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeletedSchedulingCalendarConnection(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeletedSchedulingCalendarConnection) MarshalJSON() ([]byte, error) {
+	type embed DeletedSchedulingCalendarConnection
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DeletedSchedulingCalendarConnection) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+type DeletedSchedulingCalendarConnectionObject string
+
+const (
+	DeletedSchedulingCalendarConnectionObjectSchedulingCalendarConnection DeletedSchedulingCalendarConnectionObject = "scheduling.calendar_connection"
+)
+
+func NewDeletedSchedulingCalendarConnectionObjectFromString(s string) (DeletedSchedulingCalendarConnectionObject, error) {
+	switch s {
+	case "scheduling.calendar_connection":
+		return DeletedSchedulingCalendarConnectionObjectSchedulingCalendarConnection, nil
+	}
+	var t DeletedSchedulingCalendarConnectionObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (d DeletedSchedulingCalendarConnectionObject) Ptr() *DeletedSchedulingCalendarConnectionObject {
+	return &d
+}
+
+var (
+	deletedSchedulingCalendarDelegationFieldObject  = big.NewInt(1 << 0)
+	deletedSchedulingCalendarDelegationFieldID      = big.NewInt(1 << 1)
+	deletedSchedulingCalendarDelegationFieldDeleted = big.NewInt(1 << 2)
+)
+
+type DeletedSchedulingCalendarDelegation struct {
+	Object  DeletedSchedulingCalendarDelegationObject `json:"object" url:"object"`
+	ID      string                                    `json:"id" url:"id"`
+	Deleted bool                                      `json:"deleted" url:"deleted"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DeletedSchedulingCalendarDelegation) GetObject() DeletedSchedulingCalendarDelegationObject {
+	if d == nil {
+		return ""
+	}
+	return d.Object
+}
+
+func (d *DeletedSchedulingCalendarDelegation) GetID() string {
+	if d == nil {
+		return ""
+	}
+	return d.ID
+}
+
+func (d *DeletedSchedulingCalendarDelegation) GetDeleted() bool {
+	if d == nil {
+		return false
+	}
+	return d.Deleted
+}
+
+func (d *DeletedSchedulingCalendarDelegation) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DeletedSchedulingCalendarDelegation) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingCalendarDelegation) SetObject(object DeletedSchedulingCalendarDelegationObject) {
+	d.Object = object
+	d.require(deletedSchedulingCalendarDelegationFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingCalendarDelegation) SetID(id string) {
+	d.ID = id
+	d.require(deletedSchedulingCalendarDelegationFieldID)
+}
+
+// SetDeleted sets the Deleted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingCalendarDelegation) SetDeleted(deleted bool) {
+	d.Deleted = deleted
+	d.require(deletedSchedulingCalendarDelegationFieldDeleted)
+}
+
+func (d *DeletedSchedulingCalendarDelegation) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeletedSchedulingCalendarDelegation
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeletedSchedulingCalendarDelegation(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeletedSchedulingCalendarDelegation) MarshalJSON() ([]byte, error) {
+	type embed DeletedSchedulingCalendarDelegation
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DeletedSchedulingCalendarDelegation) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+type DeletedSchedulingCalendarDelegationObject string
+
+const (
+	DeletedSchedulingCalendarDelegationObjectSchedulingCalendarDelegation DeletedSchedulingCalendarDelegationObject = "scheduling.calendar_delegation"
+)
+
+func NewDeletedSchedulingCalendarDelegationObjectFromString(s string) (DeletedSchedulingCalendarDelegationObject, error) {
+	switch s {
+	case "scheduling.calendar_delegation":
+		return DeletedSchedulingCalendarDelegationObjectSchedulingCalendarDelegation, nil
+	}
+	var t DeletedSchedulingCalendarDelegationObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (d DeletedSchedulingCalendarDelegationObject) Ptr() *DeletedSchedulingCalendarDelegationObject {
+	return &d
+}
+
+var (
+	deletedSchedulingHostFieldObject  = big.NewInt(1 << 0)
+	deletedSchedulingHostFieldID      = big.NewInt(1 << 1)
+	deletedSchedulingHostFieldDeleted = big.NewInt(1 << 2)
+)
+
+type DeletedSchedulingHost struct {
+	Object  DeletedSchedulingHostObject `json:"object" url:"object"`
+	ID      string                      `json:"id" url:"id"`
+	Deleted bool                        `json:"deleted" url:"deleted"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DeletedSchedulingHost) GetObject() DeletedSchedulingHostObject {
+	if d == nil {
+		return ""
+	}
+	return d.Object
+}
+
+func (d *DeletedSchedulingHost) GetID() string {
+	if d == nil {
+		return ""
+	}
+	return d.ID
+}
+
+func (d *DeletedSchedulingHost) GetDeleted() bool {
+	if d == nil {
+		return false
+	}
+	return d.Deleted
+}
+
+func (d *DeletedSchedulingHost) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DeletedSchedulingHost) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingHost) SetObject(object DeletedSchedulingHostObject) {
+	d.Object = object
+	d.require(deletedSchedulingHostFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingHost) SetID(id string) {
+	d.ID = id
+	d.require(deletedSchedulingHostFieldID)
+}
+
+// SetDeleted sets the Deleted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingHost) SetDeleted(deleted bool) {
+	d.Deleted = deleted
+	d.require(deletedSchedulingHostFieldDeleted)
+}
+
+func (d *DeletedSchedulingHost) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeletedSchedulingHost
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeletedSchedulingHost(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeletedSchedulingHost) MarshalJSON() ([]byte, error) {
+	type embed DeletedSchedulingHost
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DeletedSchedulingHost) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+type DeletedSchedulingHostObject string
+
+const (
+	DeletedSchedulingHostObjectSchedulingHost DeletedSchedulingHostObject = "scheduling.host"
+)
+
+func NewDeletedSchedulingHostObjectFromString(s string) (DeletedSchedulingHostObject, error) {
+	switch s {
+	case "scheduling.host":
+		return DeletedSchedulingHostObjectSchedulingHost, nil
+	}
+	var t DeletedSchedulingHostObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (d DeletedSchedulingHostObject) Ptr() *DeletedSchedulingHostObject {
+	return &d
+}
+
+var (
+	deletedSchedulingScheduleFieldObject  = big.NewInt(1 << 0)
+	deletedSchedulingScheduleFieldID      = big.NewInt(1 << 1)
+	deletedSchedulingScheduleFieldDeleted = big.NewInt(1 << 2)
+)
+
+type DeletedSchedulingSchedule struct {
+	Object  DeletedSchedulingScheduleObject `json:"object" url:"object"`
+	ID      string                          `json:"id" url:"id"`
+	Deleted bool                            `json:"deleted" url:"deleted"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DeletedSchedulingSchedule) GetObject() DeletedSchedulingScheduleObject {
+	if d == nil {
+		return ""
+	}
+	return d.Object
+}
+
+func (d *DeletedSchedulingSchedule) GetID() string {
+	if d == nil {
+		return ""
+	}
+	return d.ID
+}
+
+func (d *DeletedSchedulingSchedule) GetDeleted() bool {
+	if d == nil {
+		return false
+	}
+	return d.Deleted
+}
+
+func (d *DeletedSchedulingSchedule) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DeletedSchedulingSchedule) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingSchedule) SetObject(object DeletedSchedulingScheduleObject) {
+	d.Object = object
+	d.require(deletedSchedulingScheduleFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingSchedule) SetID(id string) {
+	d.ID = id
+	d.require(deletedSchedulingScheduleFieldID)
+}
+
+// SetDeleted sets the Deleted field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletedSchedulingSchedule) SetDeleted(deleted bool) {
+	d.Deleted = deleted
+	d.require(deletedSchedulingScheduleFieldDeleted)
+}
+
+func (d *DeletedSchedulingSchedule) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeletedSchedulingSchedule
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeletedSchedulingSchedule(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeletedSchedulingSchedule) MarshalJSON() ([]byte, error) {
+	type embed DeletedSchedulingSchedule
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DeletedSchedulingSchedule) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+type DeletedSchedulingScheduleObject string
+
+const (
+	DeletedSchedulingScheduleObjectSchedulingSchedule DeletedSchedulingScheduleObject = "scheduling.schedule"
+)
+
+func NewDeletedSchedulingScheduleObjectFromString(s string) (DeletedSchedulingScheduleObject, error) {
+	switch s {
+	case "scheduling.schedule":
+		return DeletedSchedulingScheduleObjectSchedulingSchedule, nil
+	}
+	var t DeletedSchedulingScheduleObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (d DeletedSchedulingScheduleObject) Ptr() *DeletedSchedulingScheduleObject {
+	return &d
+}
+
+var (
 	deletedSegmentFieldObject  = big.NewInt(1 << 0)
 	deletedSegmentFieldID      = big.NewInt(1 << 1)
 	deletedSegmentFieldDeleted = big.NewInt(1 << 2)
@@ -12094,15 +14832,21 @@ var dmarcPublishedRecordNullableFields = map[string]*big.Int{
 // The DMARC record found at `_dmarc.<domain>` by the latest DNS check.
 type DmarcPublishedRecord struct {
 	// The `v=DMARC1` TXT record as published.
-	Value string                     `json:"value" url:"value"`
-	P     *DmarcPublishedRecordP     `json:"p,omitempty" url:"p,omitempty"`
-	Sp    *DmarcPublishedRecordSp    `json:"sp,omitempty" url:"sp,omitempty"`
-	Np    *DmarcPublishedRecordNp    `json:"np,omitempty" url:"np,omitempty"`
+	Value string `json:"value" url:"value"`
+	// The domain's policy tag.
+	P *DmarcPublishedRecordP `json:"p,omitempty" url:"p,omitempty"`
+	// The subdomain policy tag. `null`: not published.
+	Sp *DmarcPublishedRecordSp `json:"sp,omitempty" url:"sp,omitempty"`
+	// The policy tag for non-existent subdomains. `null`: not published.
+	Np *DmarcPublishedRecordNp `json:"np,omitempty" url:"np,omitempty"`
+	// The DKIM alignment tag. `null`: not published.
 	Adkim *DmarcPublishedRecordAdkim `json:"adkim,omitempty" url:"adkim,omitempty"`
-	Aspf  *DmarcPublishedRecordAspf  `json:"aspf,omitempty" url:"aspf,omitempty"`
+	// The SPF alignment tag. `null`: not published.
+	Aspf *DmarcPublishedRecordAspf `json:"aspf,omitempty" url:"aspf,omitempty"`
 	// Removed by RFC 9989 but still honored by many receivers.
-	Pct *int64                 `json:"pct,omitempty" url:"pct,omitempty"`
-	T   *DmarcPublishedRecordT `json:"t,omitempty" url:"t,omitempty"`
+	Pct *int64 `json:"pct,omitempty" url:"pct,omitempty"`
+	// The testing tag. `null`: not published.
+	T *DmarcPublishedRecordT `json:"t,omitempty" url:"t,omitempty"`
 	// Aggregate report addresses.
 	Rua []string `json:"rua" url:"rua"`
 
@@ -12462,20 +15206,27 @@ var (
 )
 
 type DmarcReport struct {
-	Object   DmarcReportObject    `json:"object" url:"object"`
-	ID       string               `json:"id" url:"id"`
-	DomainID string               `json:"domain_id" url:"domain_id"`
+	Object DmarcReportObject `json:"object" url:"object"`
+	ID     string            `json:"id" url:"id"`
+	// The domain's id.
+	DomainID string `json:"domain_id" url:"domain_id"`
+	// Who sent the report.
 	Reporter *DmarcReportReporter `json:"reporter" url:"reporter"`
 	// The reporter's own id of the report.
-	ReportID    string    `json:"report_id" url:"report_id"`
+	ReportID string `json:"report_id" url:"report_id"`
+	// When the period it covers starts.
 	PeriodStart time.Time `json:"period_start" url:"period_start"`
-	PeriodEnd   time.Time `json:"period_end" url:"period_end"`
+	// When the period it covers ends.
+	PeriodEnd time.Time `json:"period_end" url:"period_end"`
 	// The policy the reporter found when it evaluated the mail.
 	PolicyPublished *DmarcReportPolicyPublished `json:"policy_published" url:"policy_published"`
-	Messages        int64                       `json:"messages" url:"messages"`
-	Passing         int64                       `json:"passing" url:"passing"`
+	// Messages the report covers.
+	Messages int64 `json:"messages" url:"messages"`
+	// Of those, how many passed DMARC.
+	Passing int64 `json:"passing" url:"passing"`
 	// The report listed more rows than are kept (10,000); totals cover the kept rows.
-	Truncated  bool                 `json:"truncated" url:"truncated"`
+	Truncated bool `json:"truncated" url:"truncated"`
+	// When coss.com received it.
 	ReceivedAt time.Time            `json:"received_at" url:"received_at"`
 	Records    []*DmarcReportRecord `json:"records" url:"records"`
 
@@ -12922,13 +15673,21 @@ var dmarcReportPolicyPublishedNullableFields = map[string]*big.Int{
 
 // The policy the reporter found when it evaluated the mail.
 type DmarcReportPolicyPublished struct {
-	Domain  string  `json:"domain" url:"domain"`
-	P       *string `json:"p,omitempty" url:"p,omitempty"`
-	Sp      *string `json:"sp,omitempty" url:"sp,omitempty"`
-	Np      *string `json:"np,omitempty" url:"np,omitempty"`
-	Adkim   *string `json:"adkim,omitempty" url:"adkim,omitempty"`
-	Aspf    *string `json:"aspf,omitempty" url:"aspf,omitempty"`
-	Pct     *int64  `json:"pct,omitempty" url:"pct,omitempty"`
+	// The domain the policy was published for.
+	Domain string `json:"domain" url:"domain"`
+	// The domain's policy tag.
+	P *string `json:"p,omitempty" url:"p,omitempty"`
+	// The subdomain policy tag.
+	Sp *string `json:"sp,omitempty" url:"sp,omitempty"`
+	// The policy tag for non-existent subdomains.
+	Np *string `json:"np,omitempty" url:"np,omitempty"`
+	// The DKIM alignment tag.
+	Adkim *string `json:"adkim,omitempty" url:"adkim,omitempty"`
+	// The SPF alignment tag.
+	Aspf *string `json:"aspf,omitempty" url:"aspf,omitempty"`
+	// The percentage tag.
+	Pct *int64 `json:"pct,omitempty" url:"pct,omitempty"`
+	// The testing tag.
 	Testing *string `json:"testing,omitempty" url:"testing,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -13135,20 +15894,28 @@ var dmarcReportRecordNullableFields = map[string]*big.Int{
 }
 
 type DmarcReportRecord struct {
+	// The address the messages came from.
 	SourceIP string `json:"source_ip" url:"source_ip"`
-	Count    int64  `json:"count" url:"count"`
+	// How many messages this line covers.
+	Count int64 `json:"count" url:"count"`
 	// What the receiver did with the messages.
 	Disposition DmarcReportRecordDisposition `json:"disposition" url:"disposition"`
 	// Aligned DKIM result.
 	Dkim DmarcReportRecordDkim `json:"dkim" url:"dkim"`
 	// Aligned SPF result.
-	Spf          DmarcReportRecordSpf            `json:"spf" url:"spf"`
-	DmarcPass    bool                            `json:"dmarc_pass" url:"dmarc_pass"`
-	HeaderFrom   string                          `json:"header_from" url:"header_from"`
-	EnvelopeFrom *string                         `json:"envelope_from,omitempty" url:"envelope_from,omitempty"`
-	ViaCoss      bool                            `json:"via_coss" url:"via_coss"`
-	AuthResults  *DmarcReportRecordAuthResults   `json:"auth_results" url:"auth_results"`
-	Reasons      []*DmarcReportRecordReasonsItem `json:"reasons" url:"reasons"`
+	Spf DmarcReportRecordSpf `json:"spf" url:"spf"`
+	// Whether they passed DMARC.
+	DmarcPass bool `json:"dmarc_pass" url:"dmarc_pass"`
+	// The domain in their `From` header.
+	HeaderFrom string `json:"header_from" url:"header_from"`
+	// The domain in their envelope sender.
+	EnvelopeFrom *string `json:"envelope_from,omitempty" url:"envelope_from,omitempty"`
+	// Whether they were sent through coss.com, by its DKIM selectors or bounce domain.
+	ViaCoss bool `json:"via_coss" url:"via_coss"`
+	// What receivers saw for DKIM and SPF.
+	AuthResults *DmarcReportRecordAuthResults `json:"auth_results" url:"auth_results"`
+	// Why receivers overrode the policy.
+	Reasons []*DmarcReportRecordReasonsItem `json:"reasons" url:"reasons"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -13381,9 +16148,12 @@ var (
 	dmarcReportRecordAuthResultsFieldSpf  = big.NewInt(1 << 1)
 )
 
+// What receivers saw for DKIM and SPF.
 type DmarcReportRecordAuthResults struct {
+	// Each DKIM signature's result.
 	Dkim []*DmarcReportRecordAuthResultsDkimItem `json:"dkim" url:"dkim"`
-	Spf  []*DmarcReportRecordAuthResultsSpfItem  `json:"spf" url:"spf"`
+	// Each SPF check's result.
+	Spf []*DmarcReportRecordAuthResultsSpfItem `json:"spf" url:"spf"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -13490,9 +16260,12 @@ var dmarcReportRecordAuthResultsDkimItemNullableFields = map[string]*big.Int{
 }
 
 type DmarcReportRecordAuthResultsDkimItem struct {
-	Domain   string  `json:"domain" url:"domain"`
+	// The signing domain.
+	Domain string `json:"domain" url:"domain"`
+	// The selector.
 	Selector *string `json:"selector,omitempty" url:"selector,omitempty"`
-	Result   string  `json:"result" url:"result"`
+	// The result.
+	Result string `json:"result" url:"result"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -13620,9 +16393,12 @@ var dmarcReportRecordAuthResultsSpfItemNullableFields = map[string]*big.Int{
 }
 
 type DmarcReportRecordAuthResultsSpfItem struct {
-	Domain string  `json:"domain" url:"domain"`
-	Scope  *string `json:"scope,omitempty" url:"scope,omitempty"`
-	Result string  `json:"result" url:"result"`
+	// The checked domain.
+	Domain string `json:"domain" url:"domain"`
+	// What it was checked against.
+	Scope *string `json:"scope,omitempty" url:"scope,omitempty"`
+	// The result.
+	Result string `json:"result" url:"result"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -13798,7 +16574,9 @@ var dmarcReportRecordReasonsItemNullableFields = map[string]*big.Int{
 }
 
 type DmarcReportRecordReasonsItem struct {
-	Type    string  `json:"type" url:"type"`
+	// The kind of override.
+	Type string `json:"type" url:"type"`
+	// The receiver's comment.
 	Comment *string `json:"comment,omitempty" url:"comment,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -13934,9 +16712,12 @@ var dmarcReportReporterNullableFields = map[string]*big.Int{
 	"email": dmarcReportReporterFieldEmail,
 }
 
+// Who sent the report.
 type DmarcReportReporter struct {
-	OrgName string  `json:"org_name" url:"org_name"`
-	Email   *string `json:"email,omitempty" url:"email,omitempty"`
+	// The reporting organization.
+	OrgName string `json:"org_name" url:"org_name"`
+	// Its contact address.
+	Email *string `json:"email,omitempty" url:"email,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -14054,20 +16835,27 @@ var (
 )
 
 type DmarcReportSummary struct {
-	Object   DmarcReportSummaryObject    `json:"object" url:"object"`
-	ID       string                      `json:"id" url:"id"`
-	DomainID string                      `json:"domain_id" url:"domain_id"`
+	Object DmarcReportSummaryObject `json:"object" url:"object"`
+	ID     string                   `json:"id" url:"id"`
+	// The domain's id.
+	DomainID string `json:"domain_id" url:"domain_id"`
+	// Who sent the report.
 	Reporter *DmarcReportSummaryReporter `json:"reporter" url:"reporter"`
 	// The reporter's own id of the report.
-	ReportID    string    `json:"report_id" url:"report_id"`
+	ReportID string `json:"report_id" url:"report_id"`
+	// When the period it covers starts.
 	PeriodStart time.Time `json:"period_start" url:"period_start"`
-	PeriodEnd   time.Time `json:"period_end" url:"period_end"`
+	// When the period it covers ends.
+	PeriodEnd time.Time `json:"period_end" url:"period_end"`
 	// The policy the reporter found when it evaluated the mail.
 	PolicyPublished *DmarcReportSummaryPolicyPublished `json:"policy_published" url:"policy_published"`
-	Messages        int64                              `json:"messages" url:"messages"`
-	Passing         int64                              `json:"passing" url:"passing"`
+	// Messages the report covers.
+	Messages int64 `json:"messages" url:"messages"`
+	// Of those, how many passed DMARC.
+	Passing int64 `json:"passing" url:"passing"`
 	// The report listed more rows than are kept (10,000); totals cover the kept rows.
-	Truncated  bool      `json:"truncated" url:"truncated"`
+	Truncated bool `json:"truncated" url:"truncated"`
+	// When coss.com received it.
 	ReceivedAt time.Time `json:"received_at" url:"received_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -14362,13 +17150,21 @@ var dmarcReportSummaryPolicyPublishedNullableFields = map[string]*big.Int{
 
 // The policy the reporter found when it evaluated the mail.
 type DmarcReportSummaryPolicyPublished struct {
-	Domain  string  `json:"domain" url:"domain"`
-	P       *string `json:"p,omitempty" url:"p,omitempty"`
-	Sp      *string `json:"sp,omitempty" url:"sp,omitempty"`
-	Np      *string `json:"np,omitempty" url:"np,omitempty"`
-	Adkim   *string `json:"adkim,omitempty" url:"adkim,omitempty"`
-	Aspf    *string `json:"aspf,omitempty" url:"aspf,omitempty"`
-	Pct     *int64  `json:"pct,omitempty" url:"pct,omitempty"`
+	// The domain the policy was published for.
+	Domain string `json:"domain" url:"domain"`
+	// The domain's policy tag.
+	P *string `json:"p,omitempty" url:"p,omitempty"`
+	// The subdomain policy tag.
+	Sp *string `json:"sp,omitempty" url:"sp,omitempty"`
+	// The policy tag for non-existent subdomains.
+	Np *string `json:"np,omitempty" url:"np,omitempty"`
+	// The DKIM alignment tag.
+	Adkim *string `json:"adkim,omitempty" url:"adkim,omitempty"`
+	// The SPF alignment tag.
+	Aspf *string `json:"aspf,omitempty" url:"aspf,omitempty"`
+	// The percentage tag.
+	Pct *int64 `json:"pct,omitempty" url:"pct,omitempty"`
+	// The testing tag.
 	Testing *string `json:"testing,omitempty" url:"testing,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -14565,9 +17361,12 @@ var dmarcReportSummaryReporterNullableFields = map[string]*big.Int{
 	"email": dmarcReportSummaryReporterFieldEmail,
 }
 
+// Who sent the report.
 type DmarcReportSummaryReporter struct {
-	OrgName string  `json:"org_name" url:"org_name"`
-	Email   *string `json:"email,omitempty" url:"email,omitempty"`
+	// The reporting organization.
+	OrgName string `json:"org_name" url:"org_name"`
+	// Its contact address.
+	Email *string `json:"email,omitempty" url:"email,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -14862,20 +17661,25 @@ type Domain struct {
 	// `pending` while the records are being checked, `verified` once they are, `temporary_failure` after a transient DNS problem, and `failed` when verification gave up (72 hours) — restart it with the verify endpoint. `deleting` is a removal in progress.
 	Status DomainStatus `json:"status" url:"status"`
 	// Whether live keys may send from this domain right now.
-	CanSend bool    `json:"can_send" url:"can_send"`
-	Region  *string `json:"region,omitempty" url:"region,omitempty"`
+	CanSend bool `json:"can_send" url:"can_send"`
+	// The provider region it sends from. `null`: not set up there.
+	Region *string `json:"region,omitempty" url:"region,omitempty"`
 	// The envelope sender subdomain bounces come back to.
-	MailFromDomain string               `json:"mail_from_domain" url:"mail_from_domain"`
+	MailFromDomain string `json:"mail_from_domain" url:"mail_from_domain"`
+	// How setting up its bounce-handling `MAIL FROM` domain went.
 	MailFromStatus DomainMailFromStatus `json:"mail_from_status" url:"mail_from_status"`
 	// The DNS records to publish, with the result of the last check.
-	Records       []*DomainRecord  `json:"records" url:"records"`
-	CreatedAt     time.Time        `json:"created_at" url:"created_at"`
-	LastCheckedAt *time.Time       `json:"last_checked_at,omitempty" url:"last_checked_at,omitempty"`
-	VerifiedAt    *time.Time       `json:"verified_at,omitempty" url:"verified_at,omitempty"`
-	FailedAt      *time.Time       `json:"failed_at,omitempty" url:"failed_at,omitempty"`
-	Tracking      *TrackingDomain  `json:"tracking,omitempty" url:"tracking,omitempty"`
-	Receiving     *ReceivingDomain `json:"receiving,omitempty" url:"receiving,omitempty"`
-	Bimi          *DomainBimi      `json:"bimi" url:"bimi"`
+	Records   []*DomainRecord `json:"records" url:"records"`
+	CreatedAt time.Time       `json:"created_at" url:"created_at"`
+	// When DNS was last checked. `null`: not yet.
+	LastCheckedAt *time.Time `json:"last_checked_at,omitempty" url:"last_checked_at,omitempty"`
+	// When it was verified. `null`: it isn't.
+	VerifiedAt *time.Time `json:"verified_at,omitempty" url:"verified_at,omitempty"`
+	// When verification failed. `null`: it hasn't.
+	FailedAt  *time.Time       `json:"failed_at,omitempty" url:"failed_at,omitempty"`
+	Tracking  *TrackingDomain  `json:"tracking,omitempty" url:"tracking,omitempty"`
+	Receiving *ReceivingDomain `json:"receiving,omitempty" url:"receiving,omitempty"`
+	Bimi      *DomainBimi      `json:"bimi" url:"bimi"`
 	// The sub-account the domain belongs to (only it sends from it, with its own reputation); `null` for the organization's own.
 	SubaccountID *string `json:"subaccount_id,omitempty" url:"subaccount_id,omitempty"`
 	// An organization's domain its sub-accounts may send from too.
@@ -15659,8 +18463,9 @@ var domainDmarcNullableFields = map[string]*big.Int{
 }
 
 type DomainDmarc struct {
-	Object   DomainDmarcObject `json:"object" url:"object"`
-	DomainID string            `json:"domain_id" url:"domain_id"`
+	Object DomainDmarcObject `json:"object" url:"object"`
+	// The domain's id.
+	DomainID string `json:"domain_id" url:"domain_id"`
 	// Where the domain's DMARC aggregate reports go (`rua=mailto:…`). `null` when this deployment doesn't receive email.
 	ReportAddress *string               `json:"report_address,omitempty" url:"report_address,omitempty"`
 	Record        *DmarcPublishedRecord `json:"record,omitempty" url:"record,omitempty"`
@@ -15681,8 +18486,10 @@ type DomainDmarc struct {
 	// The next step: `publish` a first record, `add_reporting` (send reports to coss.com), `complete_rollout` (drop `pct`/`t=y`) or `tighten` to the next policy. `null` at `p=reject`.
 	Next *DomainDmarcNext `json:"next,omitempty" url:"next,omitempty"`
 	// The readiness checks gating `next`, from the last 14 days of reports.
-	Checks        []*DomainDmarcChecksItem  `json:"checks" url:"checks"`
-	Warnings      []string                  `json:"warnings" url:"warnings"`
+	Checks []*DomainDmarcChecksItem `json:"checks" url:"checks"`
+	// Things to look at before tightening the policy.
+	Warnings []string `json:"warnings" url:"warnings"`
+	// What the aggregate reports of this period say.
 	ReportSummary *DomainDmarcReportSummary `json:"report_summary" url:"report_summary"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -15982,9 +18789,12 @@ var (
 )
 
 type DomainDmarcChecksItem struct {
-	ID      DomainDmarcChecksItemID `json:"id" url:"id"`
-	Ok      bool                    `json:"ok" url:"ok"`
-	Message string                  `json:"message" url:"message"`
+	// Which check this is.
+	ID DomainDmarcChecksItemID `json:"id" url:"id"`
+	// Whether it passes.
+	Ok bool `json:"ok" url:"ok"`
+	// What it found.
+	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -16093,6 +18903,7 @@ func (d *DomainDmarcChecksItem) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
+// Which check this is.
 type DomainDmarcChecksItemID string
 
 const (
@@ -16137,7 +18948,9 @@ var (
 )
 
 type DomainDmarcNext struct {
-	Kind   DomainDmarcNextKind   `json:"kind" url:"kind"`
+	// The kind of step this is.
+	Kind DomainDmarcNextKind `json:"kind" url:"kind"`
+	// The policy that step gets to.
 	Policy DomainDmarcNextPolicy `json:"policy" url:"policy"`
 	// The TXT record to publish at `_dmarc.<domain>`.
 	Record string `json:"record" url:"record"`
@@ -16249,6 +19062,7 @@ func (d *DomainDmarcNext) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
+// The kind of step this is.
 type DomainDmarcNextKind string
 
 const (
@@ -16277,6 +19091,7 @@ func (d DomainDmarcNextKind) Ptr() *DomainDmarcNextKind {
 	return &d
 }
 
+// The policy that step gets to.
 type DomainDmarcNextPolicy string
 
 const (
@@ -16365,16 +19180,26 @@ var domainDmarcReportSummaryNullableFields = map[string]*big.Int{
 	"last_report_at":  domainDmarcReportSummaryFieldLastReportAt,
 }
 
+// What the aggregate reports of this period say.
 type DomainDmarcReportSummary struct {
-	PeriodStart   time.Time  `json:"period_start" url:"period_start"`
-	PeriodEnd     time.Time  `json:"period_end" url:"period_end"`
-	Reports       int64      `json:"reports" url:"reports"`
-	Messages      int64      `json:"messages" url:"messages"`
-	Passing       int64      `json:"passing" url:"passing"`
-	CossMessages  int64      `json:"coss_messages" url:"coss_messages"`
-	CossPassing   int64      `json:"coss_passing" url:"coss_passing"`
+	// When the period starts.
+	PeriodStart time.Time `json:"period_start" url:"period_start"`
+	// When the period ends.
+	PeriodEnd time.Time `json:"period_end" url:"period_end"`
+	// Reports received.
+	Reports int64 `json:"reports" url:"reports"`
+	// Messages they cover.
+	Messages int64 `json:"messages" url:"messages"`
+	// Of those, how many passed DMARC.
+	Passing int64 `json:"passing" url:"passing"`
+	// Of those, how many were sent through coss.com.
+	CossMessages int64 `json:"coss_messages" url:"coss_messages"`
+	// Of those, how many passed DMARC.
+	CossPassing int64 `json:"coss_passing" url:"coss_passing"`
+	// When the first report arrived. `null`: none yet.
 	FirstReportAt *time.Time `json:"first_report_at,omitempty" url:"first_report_at,omitempty"`
-	LastReportAt  *time.Time `json:"last_report_at,omitempty" url:"last_report_at,omitempty"`
+	// When the latest report arrived. `null`: none yet.
+	LastReportAt *time.Time `json:"last_report_at,omitempty" url:"last_report_at,omitempty"`
 	// The 50 sources with the most messages in the period.
 	Sources []*DmarcSource `json:"sources" url:"sources"`
 
@@ -16642,6 +19467,7 @@ func (d DomainDmarcStage) Ptr() *DomainDmarcStage {
 	return &d
 }
 
+// How setting up its bounce-handling `MAIL FROM` domain went.
 type DomainMailFromStatus string
 
 const (
@@ -17527,24 +20353,37 @@ var emailNullableFields = map[string]*big.Int{
 }
 
 type Email struct {
-	Object   EmailObject       `json:"object" url:"object"`
-	ID       string            `json:"id" url:"id"`
-	From     string            `json:"from" url:"from"`
-	To       []string          `json:"to" url:"to"`
-	Cc       []string          `json:"cc" url:"cc"`
-	Bcc      []string          `json:"bcc" url:"bcc"`
-	ReplyTo  []string          `json:"reply_to" url:"reply_to"`
-	Subject  string            `json:"subject" url:"subject"`
-	HTML     *string           `json:"html,omitempty" url:"html,omitempty"`
-	Text     *string           `json:"text,omitempty" url:"text,omitempty"`
-	Headers  map[string]string `json:"headers" url:"headers"`
-	Tags     []*EmailTagsItem  `json:"tags" url:"tags"`
-	Category *string           `json:"category,omitempty" url:"category,omitempty"`
-	Stream   EmailStream       `json:"stream" url:"stream"`
+	Object EmailObject `json:"object" url:"object"`
+	ID     string      `json:"id" url:"id"`
+	// Who it's sent from.
+	From string `json:"from" url:"from"`
+	// The `To` addresses.
+	To []string `json:"to" url:"to"`
+	// The `Cc` addresses.
+	Cc []string `json:"cc" url:"cc"`
+	// The `Bcc` addresses.
+	Bcc []string `json:"bcc" url:"bcc"`
+	// The `Reply-To` addresses.
+	ReplyTo []string `json:"reply_to" url:"reply_to"`
+	// The subject, rendered if it came from a template.
+	Subject string `json:"subject" url:"subject"`
+	// The HTML part. `null`: none, or the body was discarded.
+	HTML *string `json:"html,omitempty" url:"html,omitempty"`
+	// The plain text part. `null`: none, or the body was discarded.
+	Text *string `json:"text,omitempty" url:"text,omitempty"`
+	// The custom headers it was sent with.
+	Headers map[string]string `json:"headers" url:"headers"`
+	// Your tags on the email.
+	Tags []*EmailTagsItem `json:"tags" url:"tags"`
+	// The email's category, which suppressions and tracking rules can scope to. `null`: none.
+	Category *string `json:"category,omitempty" url:"category,omitempty"`
+	// `transactional` or `marketing`.
+	Stream EmailStream `json:"stream" url:"stream"`
 	// Whether the email was handed to the delivery provider. `scheduled` emails wait for `scheduled_at`; `canceled` ones were canceled before that. Per-recipient delivery is in `recipients`.
 	Status EmailStatus `json:"status" url:"status"`
 	// Why the email failed; `null` unless `status` is `failed`.
-	Failure    *EmailFailure     `json:"failure,omitempty" url:"failure,omitempty"`
+	Failure *EmailFailure `json:"failure,omitempty" url:"failure,omitempty"`
+	// Each recipient, with how delivery to them went.
 	Recipients []*EmailRecipient `json:"recipients" url:"recipients"`
 	// Attachment metadata. Content is never returned, and is discarded once sent.
 	Attachments []*EmailAttachment `json:"attachments" url:"attachments"`
@@ -17552,7 +20391,8 @@ type Email struct {
 	Sandbox   bool           `json:"sandbox" url:"sandbox"`
 	Tracking  *EmailTracking `json:"tracking" url:"tracking"`
 	CreatedAt time.Time      `json:"created_at" url:"created_at"`
-	SentAt    *time.Time     `json:"sent_at,omitempty" url:"sent_at,omitempty"`
+	// When it was handed to the provider. `null`: not yet.
+	SentAt *time.Time `json:"sent_at,omitempty" url:"sent_at,omitempty"`
 	// When the email was scheduled to be sent; `null` if it was not.
 	ScheduledAt *time.Time `json:"scheduled_at,omitempty" url:"scheduled_at,omitempty"`
 	// The batch that sent the email; `null` if it was sent on its own.
@@ -18491,13 +21331,16 @@ var emailRecipientNullableFields = map[string]*big.Int{
 	"last_event_at": emailRecipientFieldLastEventAt,
 }
 
+// One recipient of an email and how delivery to them went.
 type EmailRecipient struct {
 	// The bare, lower-cased address.
-	Address string             `json:"address" url:"address"`
-	Type    EmailRecipientType `json:"type" url:"type"`
+	Address string `json:"address" url:"address"`
+	// Which list it's on: `to`, `cc` or `bcc`.
+	Type EmailRecipientType `json:"type" url:"type"`
 	// Delivery status of this recipient. `suppressed` means the address is on the environment's suppression list (for every email or for this email's category), so it was skipped. `canceled` means the scheduled email was canceled before it was sent.
-	Status      EmailRecipientStatus `json:"status" url:"status"`
-	LastEventAt *time.Time           `json:"last_event_at,omitempty" url:"last_event_at,omitempty"`
+	Status EmailRecipientStatus `json:"status" url:"status"`
+	// When its latest delivery event happened. `null`: none yet.
+	LastEventAt *time.Time `json:"last_event_at,omitempty" url:"last_event_at,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -18679,6 +21522,7 @@ func (e EmailRecipientStatus) Ptr() *EmailRecipientStatus {
 	return &e
 }
 
+// Which list it's on: `to`, `cc` or `bcc`.
 type EmailRecipientType string
 
 const (
@@ -18736,6 +21580,7 @@ func (e EmailStatus) Ptr() *EmailStatus {
 	return &e
 }
 
+// `transactional` or `marketing`.
 type EmailStream string
 
 const (
@@ -18764,7 +21609,9 @@ var (
 )
 
 type EmailTagsItem struct {
-	Name  string `json:"name" url:"name"`
+	// The tag's name.
+	Name string `json:"name" url:"name"`
+	// The tag's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -18882,14 +21729,18 @@ var emailTemplateNullableFields = map[string]*big.Int{
 }
 
 type EmailTemplate struct {
-	Object      EmailTemplateObject `json:"object" url:"object"`
-	ID          string              `json:"id" url:"id"`
-	Alias       *string             `json:"alias,omitempty" url:"alias,omitempty"`
-	Name        string              `json:"name" url:"name"`
-	Description *string             `json:"description,omitempty" url:"description,omitempty"`
+	Object EmailTemplateObject `json:"object" url:"object"`
+	ID     string              `json:"id" url:"id"`
+	// A name to send the template by instead of its id. `null`: none.
+	Alias *string `json:"alias,omitempty" url:"alias,omitempty"`
+	// Shown in the dashboard.
+	Name string `json:"name" url:"name"`
+	// Your note about it. `null`: none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// The version sends use; `null` until the draft is first published.
-	PublishedVersion *int64     `json:"published_version,omitempty" url:"published_version,omitempty"`
-	PublishedAt      *time.Time `json:"published_at,omitempty" url:"published_at,omitempty"`
+	PublishedVersion *int64 `json:"published_version,omitempty" url:"published_version,omitempty"`
+	// When the published version was published. `null`: never.
+	PublishedAt *time.Time `json:"published_at,omitempty" url:"published_at,omitempty"`
 	// Whether the draft was changed since it was last published.
 	HasUnpublishedChanges bool      `json:"has_unpublished_changes" url:"has_unpublished_changes"`
 	CreatedAt             time.Time `json:"created_at" url:"created_at"`
@@ -19291,10 +22142,12 @@ var emailTemplateReferenceNullableFields = map[string]*big.Int{
 }
 
 type EmailTemplateReference struct {
+	// The template's id.
 	ID string `json:"id" url:"id"`
 	// `null` for a dashboard test send of the draft.
 	Version *int64 `json:"version,omitempty" url:"version,omitempty"`
-	Locale  string `json:"locale" url:"locale"`
+	// The locale the email was rendered in.
+	Locale string `json:"locale" url:"locale"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -19432,21 +22285,27 @@ var emailTemplateVersionNullableFields = map[string]*big.Int{
 }
 
 type EmailTemplateVersion struct {
-	Object     EmailTemplateVersionObject `json:"object" url:"object"`
-	TemplateID string                     `json:"template_id" url:"template_id"`
+	Object EmailTemplateVersionObject `json:"object" url:"object"`
+	// The template's id.
+	TemplateID string `json:"template_id" url:"template_id"`
 	// The version number; `null` for the draft.
 	Version *int64 `json:"version,omitempty" url:"version,omitempty"`
 	// Counts the draft's saves. A published version keeps the revision it was published from.
-	Revision        int64               `json:"revision" url:"revision"`
-	DefaultLocale   string              `json:"default_locale" url:"default_locale"`
-	Variables       []*TemplateVariable `json:"variables" url:"variables"`
-	SampleVariables map[string]any      `json:"sample_variables" url:"sample_variables"`
-	Contents        []*TemplateContent  `json:"contents" url:"contents"`
+	Revision int64 `json:"revision" url:"revision"`
+	// The locale sends fall back to when they ask for none, or for one without content.
+	DefaultLocale string `json:"default_locale" url:"default_locale"`
+	// The variables the template uses, with their types.
+	Variables []*TemplateVariable `json:"variables" url:"variables"`
+	// Example values for previews and test sends in the dashboard.
+	SampleVariables map[string]any `json:"sample_variables" url:"sample_variables"`
+	// The subject, HTML and text per locale.
+	Contents []*TemplateContent `json:"contents" url:"contents"`
 	// Syntax errors and undeclared variables per locale and field, which keep a draft from being published. Always empty for published versions.
-	Problems    []*TemplateProblem `json:"problems" url:"problems"`
-	PublishedAt *time.Time         `json:"published_at,omitempty" url:"published_at,omitempty"`
-	CreatedAt   time.Time          `json:"created_at" url:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at" url:"updated_at"`
+	Problems []*TemplateProblem `json:"problems" url:"problems"`
+	// When this version was published. `null` for the draft.
+	PublishedAt *time.Time `json:"published_at,omitempty" url:"published_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at" url:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at" url:"updated_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -19887,13 +22746,19 @@ type EmailTracking struct {
 	// Whether link clicks are tracked for this email.
 	Clicks bool `json:"clicks" url:"clicks"`
 	// Whether the email carries one-click unsubscribe headers (RFC 8058).
-	Unsubscribe    bool       `json:"unsubscribe" url:"unsubscribe"`
-	OpenCount      int64      `json:"open_count" url:"open_count"`
-	FirstOpenedAt  *time.Time `json:"first_opened_at,omitempty" url:"first_opened_at,omitempty"`
-	LastOpenedAt   *time.Time `json:"last_opened_at,omitempty" url:"last_opened_at,omitempty"`
-	ClickCount     int64      `json:"click_count" url:"click_count"`
+	Unsubscribe bool `json:"unsubscribe" url:"unsubscribe"`
+	// Times opened. Mail clients that prefetch images inflate it.
+	OpenCount int64 `json:"open_count" url:"open_count"`
+	// When it was first opened. `null`: not yet.
+	FirstOpenedAt *time.Time `json:"first_opened_at,omitempty" url:"first_opened_at,omitempty"`
+	// When it was last opened. `null`: not yet.
+	LastOpenedAt *time.Time `json:"last_opened_at,omitempty" url:"last_opened_at,omitempty"`
+	// Link clicks. Link scanners inflate it.
+	ClickCount int64 `json:"click_count" url:"click_count"`
+	// When a link was first clicked. `null`: not yet.
 	FirstClickedAt *time.Time `json:"first_clicked_at,omitempty" url:"first_clicked_at,omitempty"`
-	LastClickedAt  *time.Time `json:"last_clicked_at,omitempty" url:"last_clicked_at,omitempty"`
+	// When a link was last clicked. `null`: not yet.
+	LastClickedAt *time.Time `json:"last_clicked_at,omitempty" url:"last_clicked_at,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -20846,25 +23711,37 @@ var formSubmissionNullableFields = map[string]*big.Int{
 type FormSubmission struct {
 	Object FormSubmissionObject `json:"object" url:"object"`
 	ID     string               `json:"id" url:"id"`
-	FormID string               `json:"form_id" url:"form_id"`
+	// The id of the form it was posted to.
+	FormID string `json:"form_id" url:"form_id"`
 	// `accepted`: delivered (webhooks, notifications, contacts). `held`: Risk asked for a review. `spam`: refused by Risk, the content check or the honeypot. `pending_confirmation`: waiting for the submitter's email link.
 	Status FormSubmissionStatus `json:"status" url:"status"`
 	// Field name → value; a field posted several times has an array.
-	Data           map[string]*FormSubmissionDataValue `json:"data" url:"data"`
-	SubmitterEmail *string                             `json:"submitter_email,omitempty" url:"submitter_email,omitempty"`
-	Files          []*FormSubmissionFile               `json:"files" url:"files"`
-	SpamReason     *FormSubmissionSpamReason           `json:"spam_reason,omitempty" url:"spam_reason,omitempty"`
+	Data map[string]*FormSubmissionDataValue `json:"data" url:"data"`
+	// The value of the form's `submitter.email_field`. `null` when it has none.
+	SubmitterEmail *string `json:"submitter_email,omitempty" url:"submitter_email,omitempty"`
+	// Uploaded files. Download them with the API.
+	Files []*FormSubmissionFile `json:"files" url:"files"`
+	// Why it was flagged. `honeypot`: the honeypot field was filled. `risk_block`: Risk blocked it. `risk_review`: Risk asked for a review. `content`: its text passed `content_threshold`. `null`: not flagged.
+	SpamReason *FormSubmissionSpamReason `json:"spam_reason,omitempty" url:"spam_reason,omitempty"`
 	// Risk's assessment; `null` when none ran (honeypot).
-	Risk        *FormSubmissionRisk `json:"risk,omitempty" url:"risk,omitempty"`
-	IP          *string             `json:"ip,omitempty" url:"ip,omitempty"`
-	UserAgent   *string             `json:"user_agent,omitempty" url:"user_agent,omitempty"`
-	Origin      *string             `json:"origin,omitempty" url:"origin,omitempty"`
-	Referrer    *string             `json:"referrer,omitempty" url:"referrer,omitempty"`
-	ConfirmedAt *time.Time          `json:"confirmed_at,omitempty" url:"confirmed_at,omitempty"`
-	AcceptedAt  *time.Time          `json:"accepted_at,omitempty" url:"accepted_at,omitempty"`
-	ReleasedAt  *time.Time          `json:"released_at,omitempty" url:"released_at,omitempty"`
-	Sandbox     bool                `json:"sandbox" url:"sandbox"`
-	CreatedAt   time.Time           `json:"created_at" url:"created_at"`
+	Risk *FormSubmissionRisk `json:"risk,omitempty" url:"risk,omitempty"`
+	// The address it was posted from. `null`: unknown.
+	IP *string `json:"ip,omitempty" url:"ip,omitempty"`
+	// The browser's `User-Agent`. `null`: not sent.
+	UserAgent *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
+	// The site it was posted from. `null`: not sent.
+	Origin *string `json:"origin,omitempty" url:"origin,omitempty"`
+	// The page it was posted from. `null`: not sent.
+	Referrer *string `json:"referrer,omitempty" url:"referrer,omitempty"`
+	// When the submitter clicked the emailed link. `null`: they haven't, or the form doesn't verify.
+	ConfirmedAt *time.Time `json:"confirmed_at,omitempty" url:"confirmed_at,omitempty"`
+	// When it became `accepted`. `null`: it hasn't.
+	AcceptedAt *time.Time `json:"accepted_at,omitempty" url:"accepted_at,omitempty"`
+	// When it was released from `held` or `spam`. `null`: it wasn't.
+	ReleasedAt *time.Time `json:"released_at,omitempty" url:"released_at,omitempty"`
+	// Whether it belongs to a sandbox environment.
+	Sandbox   bool      `json:"sandbox" url:"sandbox"`
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -21281,9 +24158,12 @@ var (
 )
 
 type FormSubmissionFile struct {
-	ID          string `json:"id" url:"id"`
-	Field       string `json:"field" url:"field"`
-	Filename    string `json:"filename" url:"filename"`
+	ID string `json:"id" url:"id"`
+	// The form field it was uploaded through.
+	Field string `json:"field" url:"field"`
+	// The file's name, made safe.
+	Filename string `json:"filename" url:"filename"`
+	// The MIME type it was uploaded as.
 	ContentType string `json:"content_type" url:"content_type"`
 	// Bytes.
 	Size int64 `json:"size" url:"size"`
@@ -21594,9 +24474,12 @@ var formSubmissionRiskNullableFields = map[string]*big.Int{
 
 // Risk's assessment; `null` when none ran (honeypot).
 type FormSubmissionRisk struct {
-	AssessmentID *string                     `json:"assessment_id,omitempty" url:"assessment_id,omitempty"`
-	Decision     *FormSubmissionRiskDecision `json:"decision,omitempty" url:"decision,omitempty"`
-	Score        *float64                    `json:"score,omitempty" url:"score,omitempty"`
+	// The id of Risk's assessment. `null`: none is recorded.
+	AssessmentID *string `json:"assessment_id,omitempty" url:"assessment_id,omitempty"`
+	// Risk's decision. `null`: none is recorded.
+	Decision *FormSubmissionRiskDecision `json:"decision,omitempty" url:"decision,omitempty"`
+	// Risk's score. `null`: none is recorded.
+	Score *float64 `json:"score,omitempty" url:"score,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -21712,6 +24595,7 @@ func (f *FormSubmissionRisk) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
+// Risk's decision. `null`: none is recorded.
 type FormSubmissionRiskDecision string
 
 const (
@@ -21737,6 +24621,7 @@ func (f FormSubmissionRiskDecision) Ptr() *FormSubmissionRiskDecision {
 	return &f
 }
 
+// Why it was flagged. `honeypot`: the honeypot field was filled. `risk_block`: Risk blocked it. `risk_review`: Risk asked for a review. `content`: its text passed `content_threshold`. `null`: not flagged.
 type FormSubmissionSpamReason string
 
 const (
@@ -21813,8 +24698,10 @@ type HookApplication struct {
 	Object HookApplicationObject `json:"object" url:"object"`
 	ID     string                `json:"id" url:"id"`
 	// Your own id for it (e.g. your customer's id), unique in the environment. Every path that takes an application accepts its `id` or its `uid`.
-	UID       *string           `json:"uid,omitempty" url:"uid,omitempty"`
-	Name      string            `json:"name" url:"name"`
+	UID *string `json:"uid,omitempty" url:"uid,omitempty"`
+	// Shown to the application's users in the portal.
+	Name string `json:"name" url:"name"`
+	// Your own key-value pairs.
 	Metadata  map[string]string `json:"metadata" url:"metadata"`
 	CreatedAt time.Time         `json:"created_at" url:"created_at"`
 	UpdatedAt time.Time         `json:"updated_at" url:"updated_at"`
@@ -22177,15 +25064,20 @@ var hookAttemptNullableFields = map[string]*big.Int{
 }
 
 type HookAttempt struct {
-	Object      HookAttemptObject `json:"object" url:"object"`
-	ID          string            `json:"id" url:"id"`
-	DeliveryID  string            `json:"delivery_id" url:"delivery_id"`
-	EndpointID  string            `json:"endpoint_id" url:"endpoint_id"`
-	AttemptedAt time.Time         `json:"attempted_at" url:"attempted_at"`
+	Object HookAttemptObject `json:"object" url:"object"`
+	ID     string            `json:"id" url:"id"`
+	// The id of the delivery this attempt belongs to.
+	DeliveryID string `json:"delivery_id" url:"delivery_id"`
+	// The id of the endpoint it was sent to.
+	EndpointID string `json:"endpoint_id" url:"endpoint_id"`
+	// When the attempt ran.
+	AttemptedAt time.Time `json:"attempted_at" url:"attempted_at"`
 	// The endpoint's HTTP status; `null` when no response arrived.
-	StatusCode *int64  `json:"status_code,omitempty" url:"status_code,omitempty"`
-	DurationMs int64   `json:"duration_ms" url:"duration_ms"`
-	Error      *string `json:"error,omitempty" url:"error,omitempty"`
+	StatusCode *int64 `json:"status_code,omitempty" url:"status_code,omitempty"`
+	// How long it took, in milliseconds.
+	DurationMs int64 `json:"duration_ms" url:"duration_ms"`
+	// Why it failed. `null`: it didn't.
+	Error *string `json:"error,omitempty" url:"error,omitempty"`
 	// At most 1 KB of the response body, as text.
 	ResponseExcerpt *string `json:"response_excerpt,omitempty" url:"response_excerpt,omitempty"`
 
@@ -22575,19 +25467,27 @@ var hookDeliveryNullableFields = map[string]*big.Int{
 }
 
 type HookDelivery struct {
-	Object        HookDeliveryObject `json:"object" url:"object"`
-	ID            string             `json:"id" url:"id"`
-	ApplicationID string             `json:"application_id" url:"application_id"`
-	MessageID     string             `json:"message_id" url:"message_id"`
-	EndpointID    string             `json:"endpoint_id" url:"endpoint_id"`
+	Object HookDeliveryObject `json:"object" url:"object"`
+	ID     string             `json:"id" url:"id"`
+	// The id of the application.
+	ApplicationID string `json:"application_id" url:"application_id"`
+	// The id of the message being delivered.
+	MessageID string `json:"message_id" url:"message_id"`
+	// The id of the endpoint it's delivered to.
+	EndpointID string `json:"endpoint_id" url:"endpoint_id"`
 	// `pending`: waiting for its next attempt. `succeeded`: the endpoint answered 2xx. `failed`: every attempt failed, or the endpoint was disabled or deleted.
-	Status         HookDeliveryStatus `json:"status" url:"status"`
-	AttemptCount   int64              `json:"attempt_count" url:"attempt_count"`
-	NextAttemptAt  *time.Time         `json:"next_attempt_at,omitempty" url:"next_attempt_at,omitempty"`
-	LastStatusCode *int64             `json:"last_status_code,omitempty" url:"last_status_code,omitempty"`
-	LastError      *string            `json:"last_error,omitempty" url:"last_error,omitempty"`
-	CreatedAt      time.Time          `json:"created_at" url:"created_at"`
-	FinishedAt     *time.Time         `json:"finished_at,omitempty" url:"finished_at,omitempty"`
+	Status HookDeliveryStatus `json:"status" url:"status"`
+	// How many attempts were made so far.
+	AttemptCount int64 `json:"attempt_count" url:"attempt_count"`
+	// When the next attempt runs. `null`: none is due, because it finished.
+	NextAttemptAt *time.Time `json:"next_attempt_at,omitempty" url:"next_attempt_at,omitempty"`
+	// The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
+	LastStatusCode *int64 `json:"last_status_code,omitempty" url:"last_status_code,omitempty"`
+	// Why the latest attempt failed. `null`: it didn't, or no attempt yet.
+	LastError *string   `json:"last_error,omitempty" url:"last_error,omitempty"`
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// When it `succeeded` or `failed`. `null`: still `pending`.
+	FinishedAt *time.Time `json:"finished_at,omitempty" url:"finished_at,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -23056,24 +25956,32 @@ var hookEndpointNullableFields = map[string]*big.Int{
 }
 
 type HookEndpoint struct {
-	Object             HookEndpointObject `json:"object" url:"object"`
-	ID                 string             `json:"id" url:"id"`
-	ApplicationID      string             `json:"application_id" url:"application_id"`
-	URL                string             `json:"url" url:"url"`
-	Description        *string            `json:"description,omitempty" url:"description,omitempty"`
-	FilterTypes        []string           `json:"filter_types" url:"filter_types"`
-	RateLimitPerSecond *int64             `json:"rate_limit_per_second,omitempty" url:"rate_limit_per_second,omitempty"`
-	Enabled            bool               `json:"enabled" url:"enabled"`
+	Object HookEndpointObject `json:"object" url:"object"`
+	ID     string             `json:"id" url:"id"`
+	// The id of the application it belongs to.
+	ApplicationID string `json:"application_id" url:"application_id"`
+	// Where deliveries are sent.
+	URL string `json:"url" url:"url"`
+	// Your note about it. `null`: none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// Only these event types are delivered. Empty: every type.
+	FilterTypes []string `json:"filter_types" url:"filter_types"`
+	// At most this many requests per second to this endpoint. `null`: no limit of its own.
+	RateLimitPerSecond *int64 `json:"rate_limit_per_second,omitempty" url:"rate_limit_per_second,omitempty"`
+	// Whether new messages are delivered to it.
+	Enabled bool `json:"enabled" url:"enabled"`
 	// `manual`: disabled by you or its user. `failing`: its deliveries failed every attempt for five days, so coss.com disabled it. `null` while enabled.
 	DisabledReason *HookEndpointDisabledReason `json:"disabled_reason,omitempty" url:"disabled_reason,omitempty"`
-	DisabledAt     *time.Time                  `json:"disabled_at,omitempty" url:"disabled_at,omitempty"`
+	// When it was disabled. `null`: it's enabled.
+	DisabledAt *time.Time `json:"disabled_at,omitempty" url:"disabled_at,omitempty"`
 	// When its current run of failed deliveries began; cleared by the next success. `null` while healthy.
 	FailingSince *time.Time `json:"failing_since,omitempty" url:"failing_since,omitempty"`
 	// After a secret roll, requests are also signed with the previous secret until then.
-	PreviousSecretExpiresAt *time.Time        `json:"previous_secret_expires_at,omitempty" url:"previous_secret_expires_at,omitempty"`
-	Metadata                map[string]string `json:"metadata" url:"metadata"`
-	CreatedAt               time.Time         `json:"created_at" url:"created_at"`
-	UpdatedAt               time.Time         `json:"updated_at" url:"updated_at"`
+	PreviousSecretExpiresAt *time.Time `json:"previous_secret_expires_at,omitempty" url:"previous_secret_expires_at,omitempty"`
+	// Your own key-value pairs.
+	Metadata  map[string]string `json:"metadata" url:"metadata"`
+	CreatedAt time.Time         `json:"created_at" url:"created_at"`
+	UpdatedAt time.Time         `json:"updated_at" url:"updated_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -23578,16 +26486,20 @@ var hookEndpointRecoveryNullableFields = map[string]*big.Int{
 }
 
 type HookEndpointRecovery struct {
-	Object     HookEndpointRecoveryObject `json:"object" url:"object"`
-	ID         string                     `json:"id" url:"id"`
-	EndpointID string                     `json:"endpoint_id" url:"endpoint_id"`
-	Since      time.Time                  `json:"since" url:"since"`
-	Until      time.Time                  `json:"until" url:"until"`
+	Object HookEndpointRecoveryObject `json:"object" url:"object"`
+	ID     string                     `json:"id" url:"id"`
+	// The id of the endpoint being recovered.
+	EndpointID string `json:"endpoint_id" url:"endpoint_id"`
+	// Deliveries of messages sent from this time on are requeued.
+	Since time.Time `json:"since" url:"since"`
+	// Up to this time: when the recovery was asked for.
+	Until time.Time `json:"until" url:"until"`
 	// `pending` while coss.com is still requeueing deliveries (in the background).
 	Status HookEndpointRecoveryStatus `json:"status" url:"status"`
 	// Deliveries requeued so far.
-	Requeued    int64      `json:"requeued" url:"requeued"`
-	CreatedAt   time.Time  `json:"created_at" url:"created_at"`
+	Requeued  int64     `json:"requeued" url:"requeued"`
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// When requeueing finished. `null`: still `pending`.
 	CompletedAt *time.Time `json:"completed_at,omitempty" url:"completed_at,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -23857,7 +26769,8 @@ var (
 
 type HookEndpointSecret struct {
 	Object HookEndpointSecretObject `json:"object" url:"object"`
-	Secret string                   `json:"secret" url:"secret"`
+	// The endpoint's `whsec_…` signing secret (Standard Webhooks).
+	Secret string `json:"secret" url:"secret"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -24001,24 +26914,32 @@ var hookEndpointWithSecretNullableFields = map[string]*big.Int{
 }
 
 type HookEndpointWithSecret struct {
-	Object             HookEndpointWithSecretObject `json:"object" url:"object"`
-	ID                 string                       `json:"id" url:"id"`
-	ApplicationID      string                       `json:"application_id" url:"application_id"`
-	URL                string                       `json:"url" url:"url"`
-	Description        *string                      `json:"description,omitempty" url:"description,omitempty"`
-	FilterTypes        []string                     `json:"filter_types" url:"filter_types"`
-	RateLimitPerSecond *int64                       `json:"rate_limit_per_second,omitempty" url:"rate_limit_per_second,omitempty"`
-	Enabled            bool                         `json:"enabled" url:"enabled"`
+	Object HookEndpointWithSecretObject `json:"object" url:"object"`
+	ID     string                       `json:"id" url:"id"`
+	// The id of the application it belongs to.
+	ApplicationID string `json:"application_id" url:"application_id"`
+	// Where deliveries are sent.
+	URL string `json:"url" url:"url"`
+	// Your note about it. `null`: none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// Only these event types are delivered. Empty: every type.
+	FilterTypes []string `json:"filter_types" url:"filter_types"`
+	// At most this many requests per second to this endpoint. `null`: no limit of its own.
+	RateLimitPerSecond *int64 `json:"rate_limit_per_second,omitempty" url:"rate_limit_per_second,omitempty"`
+	// Whether new messages are delivered to it.
+	Enabled bool `json:"enabled" url:"enabled"`
 	// `manual`: disabled by you or its user. `failing`: its deliveries failed every attempt for five days, so coss.com disabled it. `null` while enabled.
 	DisabledReason *HookEndpointWithSecretDisabledReason `json:"disabled_reason,omitempty" url:"disabled_reason,omitempty"`
-	DisabledAt     *time.Time                            `json:"disabled_at,omitempty" url:"disabled_at,omitempty"`
+	// When it was disabled. `null`: it's enabled.
+	DisabledAt *time.Time `json:"disabled_at,omitempty" url:"disabled_at,omitempty"`
 	// When its current run of failed deliveries began; cleared by the next success. `null` while healthy.
 	FailingSince *time.Time `json:"failing_since,omitempty" url:"failing_since,omitempty"`
 	// After a secret roll, requests are also signed with the previous secret until then.
-	PreviousSecretExpiresAt *time.Time        `json:"previous_secret_expires_at,omitempty" url:"previous_secret_expires_at,omitempty"`
-	Metadata                map[string]string `json:"metadata" url:"metadata"`
-	CreatedAt               time.Time         `json:"created_at" url:"created_at"`
-	UpdatedAt               time.Time         `json:"updated_at" url:"updated_at"`
+	PreviousSecretExpiresAt *time.Time `json:"previous_secret_expires_at,omitempty" url:"previous_secret_expires_at,omitempty"`
+	// Your own key-value pairs.
+	Metadata  map[string]string `json:"metadata" url:"metadata"`
+	CreatedAt time.Time         `json:"created_at" url:"created_at"`
+	UpdatedAt time.Time         `json:"updated_at" url:"updated_at"`
 	// The endpoint's `whsec_…` signing secret (Standard Webhooks).
 	Secret string `json:"secret" url:"secret"`
 
@@ -24402,11 +27323,15 @@ var hookEventTypeNullableFields = map[string]*big.Int{
 }
 
 type HookEventType struct {
-	Object      HookEventTypeObject `json:"object" url:"object"`
-	Name        string              `json:"name" url:"name"`
-	Description *string             `json:"description,omitempty" url:"description,omitempty"`
-	Schema      map[string]any      `json:"schema,omitempty" url:"schema,omitempty"`
-	Examples    []map[string]any    `json:"examples" url:"examples"`
+	Object HookEventTypeObject `json:"object" url:"object"`
+	// The type's name, which messages send as `event_type`.
+	Name string `json:"name" url:"name"`
+	// What this event means, shown to your users. `null`: none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// A JSON Schema of the payload, shown to your users (not enforced). `null`: none.
+	Schema map[string]any `json:"schema,omitempty" url:"schema,omitempty"`
+	// Sample payloads, shown to your users. Test sends use the first.
+	Examples []map[string]any `json:"examples" url:"examples"`
 	// Archived types are hidden from the portal and can't be subscribed to; messages of the type are still delivered to endpoints that subscribed before.
 	Archived  bool      `json:"archived" url:"archived"`
 	CreatedAt time.Time `json:"created_at" url:"created_at"`
@@ -24776,9 +27701,11 @@ var (
 type HookMessage struct {
 	Object HookMessageObject `json:"object" url:"object"`
 	// Also the `webhook-id` header of every request delivering it.
-	ID            string `json:"id" url:"id"`
+	ID string `json:"id" url:"id"`
+	// The id of the application it was sent to.
 	ApplicationID string `json:"application_id" url:"application_id"`
-	EventType     string `json:"event_type" url:"event_type"`
+	// The event type it was sent as.
+	EventType string `json:"event_type" url:"event_type"`
 	// The JSON body delivered to each endpoint.
 	Payload   map[string]any `json:"payload" url:"payload"`
 	CreatedAt time.Time      `json:"created_at" url:"created_at"`
@@ -25107,14 +28034,17 @@ var (
 )
 
 type HookPortalSession struct {
-	Object        HookPortalSessionObject `json:"object" url:"object"`
-	ID            string                  `json:"id" url:"id"`
-	ApplicationID string                  `json:"application_id" url:"application_id"`
+	Object HookPortalSessionObject `json:"object" url:"object"`
+	ID     string                  `json:"id" url:"id"`
+	// The id of the application this session manages.
+	ApplicationID string `json:"application_id" url:"application_id"`
 	// Open it or embed it in an iframe (from an allowed origin). The token is in the URL fragment, so it never reaches a server log: hand the URL only to that application's user.
 	URL string `json:"url" url:"url"`
 	// The secret part of `url`, shown only here.
-	Token     string    `json:"token" url:"token"`
-	ReadOnly  bool      `json:"read_only" url:"read_only"`
+	Token string `json:"token" url:"token"`
+	// Whether the user can only look.
+	ReadOnly bool `json:"read_only" url:"read_only"`
+	// When the session stops working.
 	ExpiresAt time.Time `json:"expires_at" url:"expires_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -25496,10 +28426,13 @@ type InboxMessage struct {
 	// `received` for inbound messages; an outbound message's email status (`queued`, `sent`, `failed`, …): its email has each recipient's delivery.
 	Status InboxMessageStatus `json:"status" url:"status"`
 	// The `From` header.
-	From    *string  `json:"from,omitempty" url:"from,omitempty"`
-	To      []string `json:"to" url:"to"`
-	Cc      []string `json:"cc" url:"cc"`
-	Subject *string  `json:"subject,omitempty" url:"subject,omitempty"`
+	From *string `json:"from,omitempty" url:"from,omitempty"`
+	// Addresses in the `To` header.
+	To []string `json:"to" url:"to"`
+	// Addresses in the `Cc` header.
+	Cc []string `json:"cc" url:"cc"`
+	// The subject. `null`: none.
+	Subject *string `json:"subject,omitempty" url:"subject,omitempty"`
 	// The start of the message's own text (without the quoted conversation).
 	Preview *string `json:"preview,omitempty" url:"preview,omitempty"`
 	// An inbound message's attachments (download them from the message).
@@ -25512,12 +28445,16 @@ type InboxMessage struct {
 	EmailID *string `json:"email_id,omitempty" url:"email_id,omitempty"`
 	// When it was received or sent.
 	CreatedAt time.Time `json:"created_at" url:"created_at"`
-	ReplyTo   []string  `json:"reply_to" url:"reply_to"`
+	// Addresses in the `Reply-To` header.
+	ReplyTo []string `json:"reply_to" url:"reply_to"`
 	// An inbound message's `Message-ID` header (outbound ones get theirs at sending).
-	MessageID  *string  `json:"message_id,omitempty" url:"message_id,omitempty"`
-	InReplyTo  *string  `json:"in_reply_to,omitempty" url:"in_reply_to,omitempty"`
+	MessageID *string `json:"message_id,omitempty" url:"message_id,omitempty"`
+	// The message it answers, by `Message-ID`. `null`: none.
+	InReplyTo *string `json:"in_reply_to,omitempty" url:"in_reply_to,omitempty"`
+	// The `Message-ID`s of the conversation so far.
 	References []string `json:"references" url:"references"`
-	Text       *string  `json:"text,omitempty" url:"text,omitempty"`
+	// The plain text part. `null`: none.
+	Text *string `json:"text,omitempty" url:"text,omitempty"`
 	// The message's own text: `text` without the quoted conversation and signature below it (a heuristic; when nothing is left, all of `text`). Made from `html` when there is no `text`.
 	ExtractedText *string `json:"extracted_text,omitempty" url:"extracted_text,omitempty"`
 	// The sender's HTML: sanitize it before showing it to anyone.
@@ -26193,10 +29130,13 @@ type InboxMessageSummary struct {
 	// `received` for inbound messages; an outbound message's email status (`queued`, `sent`, `failed`, …): its email has each recipient's delivery.
 	Status InboxMessageSummaryStatus `json:"status" url:"status"`
 	// The `From` header.
-	From    *string  `json:"from,omitempty" url:"from,omitempty"`
-	To      []string `json:"to" url:"to"`
-	Cc      []string `json:"cc" url:"cc"`
-	Subject *string  `json:"subject,omitempty" url:"subject,omitempty"`
+	From *string `json:"from,omitempty" url:"from,omitempty"`
+	// Addresses in the `To` header.
+	To []string `json:"to" url:"to"`
+	// Addresses in the `Cc` header.
+	Cc []string `json:"cc" url:"cc"`
+	// The subject. `null`: none.
+	Subject *string `json:"subject,omitempty" url:"subject,omitempty"`
 	// The start of the message's own text (without the quoted conversation).
 	Preview *string `json:"preview,omitempty" url:"preview,omitempty"`
 	// An inbound message's attachments (download them from the message).
@@ -26613,16 +29553,19 @@ var inboxThreadNullableFields = map[string]*big.Int{
 }
 
 type InboxThread struct {
-	Object  InboxThreadObject `json:"object" url:"object"`
-	ID      string            `json:"id" url:"id"`
-	InboxID string            `json:"inbox_id" url:"inbox_id"`
+	Object InboxThreadObject `json:"object" url:"object"`
+	ID     string            `json:"id" url:"id"`
+	// The inbox's id.
+	InboxID string `json:"inbox_id" url:"inbox_id"`
 	// The first message's subject.
 	Subject *string `json:"subject,omitempty" url:"subject,omitempty"`
 	// Addresses of everyone in the conversation but the inbox (Bcc'd ones never).
 	Participants []string `json:"participants" url:"participants"`
-	MessageCount int64    `json:"message_count" url:"message_count"`
+	// Messages in the thread.
+	MessageCount int64 `json:"message_count" url:"message_count"`
 	// The start of the latest message.
-	Preview       *string   `json:"preview,omitempty" url:"preview,omitempty"`
+	Preview *string `json:"preview,omitempty" url:"preview,omitempty"`
+	// When its latest message was received or sent.
 	LastMessageAt time.Time `json:"last_message_at" url:"last_message_at"`
 	// When its latest inbound message arrived: later than `last_message_at`'s outbound one means the conversation awaits a reply.
 	LastInboundAt *time.Time `json:"last_inbound_at,omitempty" url:"last_inbound_at,omitempty"`
@@ -27049,16 +29992,19 @@ var inboxThreadSummaryNullableFields = map[string]*big.Int{
 }
 
 type InboxThreadSummary struct {
-	Object  InboxThreadSummaryObject `json:"object" url:"object"`
-	ID      string                   `json:"id" url:"id"`
-	InboxID string                   `json:"inbox_id" url:"inbox_id"`
+	Object InboxThreadSummaryObject `json:"object" url:"object"`
+	ID     string                   `json:"id" url:"id"`
+	// The inbox's id.
+	InboxID string `json:"inbox_id" url:"inbox_id"`
 	// The first message's subject.
 	Subject *string `json:"subject,omitempty" url:"subject,omitempty"`
 	// Addresses of everyone in the conversation but the inbox (Bcc'd ones never).
 	Participants []string `json:"participants" url:"participants"`
-	MessageCount int64    `json:"message_count" url:"message_count"`
+	// Messages in the thread.
+	MessageCount int64 `json:"message_count" url:"message_count"`
 	// The start of the latest message.
-	Preview       *string   `json:"preview,omitempty" url:"preview,omitempty"`
+	Preview *string `json:"preview,omitempty" url:"preview,omitempty"`
+	// When its latest message was received or sent.
 	LastMessageAt time.Time `json:"last_message_at" url:"last_message_at"`
 	// When its latest inbound message arrived: later than `last_message_at`'s outbound one means the conversation awaits a reply.
 	LastInboundAt *time.Time `json:"last_inbound_at,omitempty" url:"last_inbound_at,omitempty"`
@@ -27348,13 +30294,18 @@ var invoiceNullableFields = map[string]*big.Int{
 }
 
 type Invoice struct {
-	Object   InvoiceObject   `json:"object" url:"object"`
-	ID       string          `json:"id" url:"id"`
-	Number   *string         `json:"number,omitempty" url:"number,omitempty"`
-	Kind     InvoiceKind     `json:"kind" url:"kind"`
-	Status   InvoiceStatus   `json:"status" url:"status"`
+	Object InvoiceObject `json:"object" url:"object"`
+	ID     string        `json:"id" url:"id"`
+	// The invoice number. `null` until it's finalized.
+	Number *string `json:"number,omitempty" url:"number,omitempty"`
+	// `period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account. `threshold`: usage charged early, taken off the month's invoice.
+	Kind InvoiceKind `json:"kind" url:"kind"`
+	// `open`: not paid yet. `paid`: settled. `void`: canceled. `uncollectible`: written off.
+	Status InvoiceStatus `json:"status" url:"status"`
+	// Always `usd`.
 	Currency InvoiceCurrency `json:"currency" url:"currency"`
-	Period   *InvoicePeriod  `json:"period" url:"period"`
+	// What period it covers.
+	Period *InvoicePeriod `json:"period" url:"period"`
 	// An amount in cents (USD).
 	Subtotal int64 `json:"subtotal" url:"subtotal"`
 	// An amount in cents (USD).
@@ -27368,16 +30319,22 @@ type Invoice struct {
 	// An amount in cents (USD).
 	AmountPaid int64 `json:"amount_paid" url:"amount_paid"`
 	// An amount in cents (USD).
-	AmountDue        int64                   `json:"amount_due" url:"amount_due"`
+	AmountDue int64 `json:"amount_due" url:"amount_due"`
+	// `charge_automatically`: charged to the payment method. `send_invoice`: paid by `due_at`.
 	CollectionMethod InvoiceCollectionMethod `json:"collection_method" url:"collection_method"`
-	DueAt            *time.Time              `json:"due_at,omitempty" url:"due_at,omitempty"`
-	FinalizedAt      *time.Time              `json:"finalized_at,omitempty" url:"finalized_at,omitempty"`
-	PaidAt           *time.Time              `json:"paid_at,omitempty" url:"paid_at,omitempty"`
-	VoidedAt         *time.Time              `json:"voided_at,omitempty" url:"voided_at,omitempty"`
+	// When payment is due. `null`: not set.
+	DueAt *time.Time `json:"due_at,omitempty" url:"due_at,omitempty"`
+	// When it was finalized. `null`: not yet.
+	FinalizedAt *time.Time `json:"finalized_at,omitempty" url:"finalized_at,omitempty"`
+	// When it was paid. `null`: not paid.
+	PaidAt *time.Time `json:"paid_at,omitempty" url:"paid_at,omitempty"`
+	// When it was voided. `null`: it wasn't.
+	VoidedAt *time.Time `json:"voided_at,omitempty" url:"voided_at,omitempty"`
 	// A page to view (and pay) the invoice.
-	HostedURL *string        `json:"hosted_url,omitempty" url:"hosted_url,omitempty"`
-	PdfURL    *string        `json:"pdf_url,omitempty" url:"pdf_url,omitempty"`
-	Lines     []*InvoiceLine `json:"lines" url:"lines"`
+	HostedURL *string `json:"hosted_url,omitempty" url:"hosted_url,omitempty"`
+	// The invoice as a PDF. `null`: not available.
+	PdfURL *string        `json:"pdf_url,omitempty" url:"pdf_url,omitempty"`
+	Lines  []*InvoiceLine `json:"lines" url:"lines"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -27779,6 +30736,7 @@ func (i *Invoice) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
+// `charge_automatically`: charged to the payment method. `send_invoice`: paid by `due_at`.
 type InvoiceCollectionMethod string
 
 const (
@@ -27801,6 +30759,7 @@ func (i InvoiceCollectionMethod) Ptr() *InvoiceCollectionMethod {
 	return &i
 }
 
+// Always `usd`.
 type InvoiceCurrency string
 
 const (
@@ -27820,6 +30779,7 @@ func (i InvoiceCurrency) Ptr() *InvoiceCurrency {
 	return &i
 }
 
+// `period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account. `threshold`: usage charged early, taken off the month's invoice.
 type InvoiceKind string
 
 const (
@@ -27827,6 +30787,7 @@ const (
 	InvoiceKindPlanChange InvoiceKind = "plan_change"
 	InvoiceKindOneOff     InvoiceKind = "one_off"
 	InvoiceKindFinal      InvoiceKind = "final"
+	InvoiceKindThreshold  InvoiceKind = "threshold"
 )
 
 func NewInvoiceKindFromString(s string) (InvoiceKind, error) {
@@ -27839,6 +30800,8 @@ func NewInvoiceKindFromString(s string) (InvoiceKind, error) {
 		return InvoiceKindOneOff, nil
 	case "final":
 		return InvoiceKindFinal, nil
+	case "threshold":
+		return InvoiceKindThreshold, nil
 	}
 	var t InvoiceKind
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -27872,20 +30835,25 @@ var invoiceLineNullableFields = map[string]*big.Int{
 }
 
 type InvoiceLine struct {
-	Object      InvoiceLineObject `json:"object" url:"object"`
-	ID          string            `json:"id" url:"id"`
-	Kind        InvoiceLineKind   `json:"kind" url:"kind"`
-	Description string            `json:"description" url:"description"`
-	// What is counted, e.g. `email.recipients`.
-	Meter     *InvoiceLineMeter `json:"meter,omitempty" url:"meter,omitempty"`
-	Dimension *string           `json:"dimension,omitempty" url:"dimension,omitempty"`
-	Quantity  *int64            `json:"quantity,omitempty" url:"quantity,omitempty"`
+	Object InvoiceLineObject `json:"object" url:"object"`
+	ID     string            `json:"id" url:"id"`
+	// What it's for: `plan_fee`, `proration`, `usage`, `credit`, `discount`, `commitment_fee`, `commitment_shortfall`, `add_on`, `adjustment` or `write_off`.
+	Kind InvoiceLineKind `json:"kind" url:"kind"`
+	// The line as it reads on the invoice.
+	Description string `json:"description" url:"description"`
+	// The meter of a `usage` line. `null` for other lines.
+	Meter *InvoiceLineMeter `json:"meter,omitempty" url:"meter,omitempty"`
+	// What the meter is split by, such as `country=US`. `null`: not split.
+	Dimension *string `json:"dimension,omitempty" url:"dimension,omitempty"`
+	// Units on this line. `null` when it isn't priced by the unit.
+	Quantity *int64 `json:"quantity,omitempty" url:"quantity,omitempty"`
 	// Units covered by an allowance or committed volume (not charged).
 	IncludedQuantity *int64 `json:"included_quantity,omitempty" url:"included_quantity,omitempty"`
 	// Dollars per unit, e.g. `0.0004`; `null` when the price varies by volume.
 	UnitPrice *string `json:"unit_price,omitempty" url:"unit_price,omitempty"`
 	// An amount in cents (USD).
-	Amount int64              `json:"amount" url:"amount"`
+	Amount int64 `json:"amount" url:"amount"`
+	// What period it covers.
 	Period *InvoiceLinePeriod `json:"period" url:"period"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -28114,6 +31082,7 @@ func (i *InvoiceLine) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
+// What it's for: `plan_fee`, `proration`, `usage`, `credit`, `discount`, `commitment_fee`, `commitment_shortfall`, `add_on`, `adjustment` or `write_off`.
 type InvoiceLineKind string
 
 const (
@@ -28160,25 +31129,31 @@ func (i InvoiceLineKind) Ptr() *InvoiceLineKind {
 	return &i
 }
 
-// What is counted, e.g. `email.recipients`.
+// The meter of a `usage` line. `null` for other lines.
 type InvoiceLineMeter string
 
 const (
-	InvoiceLineMeterEmailRecipients         InvoiceLineMeter = "email.recipients"
-	InvoiceLineMeterEmailDedicatedIP        InvoiceLineMeter = "email.dedicated_ip"
-	InvoiceLineMeterEmailReceived           InvoiceLineMeter = "email.received"
-	InvoiceLineMeterEmailInboxes            InvoiceLineMeter = "email.inboxes"
-	InvoiceLineMeterSmsSegments             InvoiceLineMeter = "sms.segments"
-	InvoiceLineMeterSmsReceivedSegments     InvoiceLineMeter = "sms.received_segments"
-	InvoiceLineMeterSmsNumbers              InvoiceLineMeter = "sms.numbers"
-	InvoiceLineMeterSmsRegistrations        InvoiceLineMeter = "sms.registrations"
-	InvoiceLineMeterSignCompletedRequests   InvoiceLineMeter = "sign.completed_requests"
-	InvoiceLineMeterRiskPhoneChecks         InvoiceLineMeter = "risk.phone_checks"
-	InvoiceLineMeterVerifyVerifications     InvoiceLineMeter = "verify.verifications"
-	InvoiceLineMeterVerifySms               InvoiceLineMeter = "verify.sms"
-	InvoiceLineMeterFormsSubmissions        InvoiceLineMeter = "forms.submissions"
-	InvoiceLineMeterVideoParticipantMinutes InvoiceLineMeter = "video.participant_minutes"
-	InvoiceLineMeterSchedulingBookings      InvoiceLineMeter = "scheduling.bookings"
+	InvoiceLineMeterEmailRecipients       InvoiceLineMeter = "email.recipients"
+	InvoiceLineMeterEmailDedicatedIP      InvoiceLineMeter = "email.dedicated_ip"
+	InvoiceLineMeterEmailAttachmentData   InvoiceLineMeter = "email.attachment_data"
+	InvoiceLineMeterEmailReceived         InvoiceLineMeter = "email.received"
+	InvoiceLineMeterEmailReceivedData     InvoiceLineMeter = "email.received_data"
+	InvoiceLineMeterEmailInboxes          InvoiceLineMeter = "email.inboxes"
+	InvoiceLineMeterSmsSegments           InvoiceLineMeter = "sms.segments"
+	InvoiceLineMeterSmsReceivedSegments   InvoiceLineMeter = "sms.received_segments"
+	InvoiceLineMeterSmsNumbers            InvoiceLineMeter = "sms.numbers"
+	InvoiceLineMeterSmsRegistrations      InvoiceLineMeter = "sms.registrations"
+	InvoiceLineMeterSignCompletedRequests InvoiceLineMeter = "sign.completed_requests"
+	InvoiceLineMeterRiskPhoneChecks       InvoiceLineMeter = "risk.phone_checks"
+	InvoiceLineMeterRiskAssessments       InvoiceLineMeter = "risk.assessments"
+	InvoiceLineMeterRiskContentChecks     InvoiceLineMeter = "risk.content_checks"
+	InvoiceLineMeterVerifyVerifications   InvoiceLineMeter = "verify.verifications"
+	InvoiceLineMeterVerifySms             InvoiceLineMeter = "verify.sms"
+	InvoiceLineMeterFormsSubmissions      InvoiceLineMeter = "forms.submissions"
+	InvoiceLineMeterFormsFileUploads      InvoiceLineMeter = "forms.file_uploads"
+	InvoiceLineMeterSchedulingBookings    InvoiceLineMeter = "scheduling.bookings"
+	InvoiceLineMeterSchedulingHosts       InvoiceLineMeter = "scheduling.hosts"
+	InvoiceLineMeterHooksMessages         InvoiceLineMeter = "hooks.messages"
 )
 
 func NewInvoiceLineMeterFromString(s string) (InvoiceLineMeter, error) {
@@ -28187,8 +31162,12 @@ func NewInvoiceLineMeterFromString(s string) (InvoiceLineMeter, error) {
 		return InvoiceLineMeterEmailRecipients, nil
 	case "email.dedicated_ip":
 		return InvoiceLineMeterEmailDedicatedIP, nil
+	case "email.attachment_data":
+		return InvoiceLineMeterEmailAttachmentData, nil
 	case "email.received":
 		return InvoiceLineMeterEmailReceived, nil
+	case "email.received_data":
+		return InvoiceLineMeterEmailReceivedData, nil
 	case "email.inboxes":
 		return InvoiceLineMeterEmailInboxes, nil
 	case "sms.segments":
@@ -28203,16 +31182,24 @@ func NewInvoiceLineMeterFromString(s string) (InvoiceLineMeter, error) {
 		return InvoiceLineMeterSignCompletedRequests, nil
 	case "risk.phone_checks":
 		return InvoiceLineMeterRiskPhoneChecks, nil
+	case "risk.assessments":
+		return InvoiceLineMeterRiskAssessments, nil
+	case "risk.content_checks":
+		return InvoiceLineMeterRiskContentChecks, nil
 	case "verify.verifications":
 		return InvoiceLineMeterVerifyVerifications, nil
 	case "verify.sms":
 		return InvoiceLineMeterVerifySms, nil
 	case "forms.submissions":
 		return InvoiceLineMeterFormsSubmissions, nil
-	case "video.participant_minutes":
-		return InvoiceLineMeterVideoParticipantMinutes, nil
+	case "forms.file_uploads":
+		return InvoiceLineMeterFormsFileUploads, nil
 	case "scheduling.bookings":
 		return InvoiceLineMeterSchedulingBookings, nil
+	case "scheduling.hosts":
+		return InvoiceLineMeterSchedulingHosts, nil
+	case "hooks.messages":
+		return InvoiceLineMeterHooksMessages, nil
 	}
 	var t InvoiceLineMeter
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -28246,9 +31233,12 @@ var (
 	invoiceLinePeriodFieldEnd   = big.NewInt(1 << 1)
 )
 
+// What period it covers.
 type InvoiceLinePeriod struct {
+	// When the period starts (inclusive).
 	Start time.Time `json:"start" url:"start"`
-	End   time.Time `json:"end" url:"end"`
+	// When the period ends (exclusive).
+	End time.Time `json:"end" url:"end"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -28516,9 +31506,12 @@ var (
 	invoicePeriodFieldEnd   = big.NewInt(1 << 1)
 )
 
+// What period it covers.
 type InvoicePeriod struct {
+	// When the period starts (inclusive).
 	Start time.Time `json:"start" url:"start"`
-	End   time.Time `json:"end" url:"end"`
+	// When the period ends (exclusive).
+	End time.Time `json:"end" url:"end"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -28625,6 +31618,7 @@ func (i *InvoicePeriod) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
+// `open`: not paid yet. `paid`: settled. `void`: canceled. `uncollectible`: written off.
 type InvoiceStatus string
 
 const (
@@ -28689,13 +31683,18 @@ var invoiceSummaryNullableFields = map[string]*big.Int{
 }
 
 type InvoiceSummary struct {
-	Object   InvoiceSummaryObject   `json:"object" url:"object"`
-	ID       string                 `json:"id" url:"id"`
-	Number   *string                `json:"number,omitempty" url:"number,omitempty"`
-	Kind     InvoiceSummaryKind     `json:"kind" url:"kind"`
-	Status   InvoiceSummaryStatus   `json:"status" url:"status"`
+	Object InvoiceSummaryObject `json:"object" url:"object"`
+	ID     string               `json:"id" url:"id"`
+	// The invoice number. `null` until it's finalized.
+	Number *string `json:"number,omitempty" url:"number,omitempty"`
+	// `period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account. `threshold`: usage charged early, taken off the month's invoice.
+	Kind InvoiceSummaryKind `json:"kind" url:"kind"`
+	// `open`: not paid yet. `paid`: settled. `void`: canceled. `uncollectible`: written off.
+	Status InvoiceSummaryStatus `json:"status" url:"status"`
+	// Always `usd`.
 	Currency InvoiceSummaryCurrency `json:"currency" url:"currency"`
-	Period   *InvoiceSummaryPeriod  `json:"period" url:"period"`
+	// What period it covers.
+	Period *InvoiceSummaryPeriod `json:"period" url:"period"`
 	// An amount in cents (USD).
 	Subtotal int64 `json:"subtotal" url:"subtotal"`
 	// An amount in cents (USD).
@@ -28709,15 +31708,21 @@ type InvoiceSummary struct {
 	// An amount in cents (USD).
 	AmountPaid int64 `json:"amount_paid" url:"amount_paid"`
 	// An amount in cents (USD).
-	AmountDue        int64                          `json:"amount_due" url:"amount_due"`
+	AmountDue int64 `json:"amount_due" url:"amount_due"`
+	// `charge_automatically`: charged to the payment method. `send_invoice`: paid by `due_at`.
 	CollectionMethod InvoiceSummaryCollectionMethod `json:"collection_method" url:"collection_method"`
-	DueAt            *time.Time                     `json:"due_at,omitempty" url:"due_at,omitempty"`
-	FinalizedAt      *time.Time                     `json:"finalized_at,omitempty" url:"finalized_at,omitempty"`
-	PaidAt           *time.Time                     `json:"paid_at,omitempty" url:"paid_at,omitempty"`
-	VoidedAt         *time.Time                     `json:"voided_at,omitempty" url:"voided_at,omitempty"`
+	// When payment is due. `null`: not set.
+	DueAt *time.Time `json:"due_at,omitempty" url:"due_at,omitempty"`
+	// When it was finalized. `null`: not yet.
+	FinalizedAt *time.Time `json:"finalized_at,omitempty" url:"finalized_at,omitempty"`
+	// When it was paid. `null`: not paid.
+	PaidAt *time.Time `json:"paid_at,omitempty" url:"paid_at,omitempty"`
+	// When it was voided. `null`: it wasn't.
+	VoidedAt *time.Time `json:"voided_at,omitempty" url:"voided_at,omitempty"`
 	// A page to view (and pay) the invoice.
 	HostedURL *string `json:"hosted_url,omitempty" url:"hosted_url,omitempty"`
-	PdfURL    *string `json:"pdf_url,omitempty" url:"pdf_url,omitempty"`
+	// The invoice as a PDF. `null`: not available.
+	PdfURL *string `json:"pdf_url,omitempty" url:"pdf_url,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -29105,6 +32110,7 @@ func (i *InvoiceSummary) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
+// `charge_automatically`: charged to the payment method. `send_invoice`: paid by `due_at`.
 type InvoiceSummaryCollectionMethod string
 
 const (
@@ -29127,6 +32133,7 @@ func (i InvoiceSummaryCollectionMethod) Ptr() *InvoiceSummaryCollectionMethod {
 	return &i
 }
 
+// Always `usd`.
 type InvoiceSummaryCurrency string
 
 const (
@@ -29146,6 +32153,7 @@ func (i InvoiceSummaryCurrency) Ptr() *InvoiceSummaryCurrency {
 	return &i
 }
 
+// `period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account. `threshold`: usage charged early, taken off the month's invoice.
 type InvoiceSummaryKind string
 
 const (
@@ -29153,6 +32161,7 @@ const (
 	InvoiceSummaryKindPlanChange InvoiceSummaryKind = "plan_change"
 	InvoiceSummaryKindOneOff     InvoiceSummaryKind = "one_off"
 	InvoiceSummaryKindFinal      InvoiceSummaryKind = "final"
+	InvoiceSummaryKindThreshold  InvoiceSummaryKind = "threshold"
 )
 
 func NewInvoiceSummaryKindFromString(s string) (InvoiceSummaryKind, error) {
@@ -29165,6 +32174,8 @@ func NewInvoiceSummaryKindFromString(s string) (InvoiceSummaryKind, error) {
 		return InvoiceSummaryKindOneOff, nil
 	case "final":
 		return InvoiceSummaryKindFinal, nil
+	case "threshold":
+		return InvoiceSummaryKindThreshold, nil
 	}
 	var t InvoiceSummaryKind
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -29198,9 +32209,12 @@ var (
 	invoiceSummaryPeriodFieldEnd   = big.NewInt(1 << 1)
 )
 
+// What period it covers.
 type InvoiceSummaryPeriod struct {
+	// When the period starts (inclusive).
 	Start time.Time `json:"start" url:"start"`
-	End   time.Time `json:"end" url:"end"`
+	// When the period ends (exclusive).
+	End time.Time `json:"end" url:"end"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -29307,6 +32321,7 @@ func (i *InvoiceSummaryPeriod) String() string {
 	return fmt.Sprintf("%#v", i)
 }
 
+// `open`: not paid yet. `paid`: settled. `void`: canceled. `uncollectible`: written off.
 type InvoiceSummaryStatus string
 
 const (
@@ -29494,12 +32509,14 @@ var logDrainAttemptNullableFields = map[string]*big.Int{
 }
 
 type LogDrainAttempt struct {
-	Object      LogDrainAttemptObject `json:"object" url:"object"`
-	ID          string                `json:"id" url:"id"`
-	AttemptedAt time.Time             `json:"attempted_at" url:"attempted_at"`
+	Object LogDrainAttemptObject `json:"object" url:"object"`
+	ID     string                `json:"id" url:"id"`
+	// When the attempt ran.
+	AttemptedAt time.Time `json:"attempted_at" url:"attempted_at"`
 	// The drain's HTTP status; `null` when no response arrived.
 	StatusCode *int64 `json:"status_code,omitempty" url:"status_code,omitempty"`
-	DurationMs int64  `json:"duration_ms" url:"duration_ms"`
+	// How long it took, in milliseconds.
+	DurationMs int64 `json:"duration_ms" url:"duration_ms"`
 	// Why the attempt failed (e.g. `HTTP 500`, a timeout); `null` on success.
 	Error *string `json:"error,omitempty" url:"error,omitempty"`
 	// At most 1 KB of the response body, as text.
@@ -29728,18 +32745,22 @@ var logDrainBatchNullableFields = map[string]*big.Int{
 type LogDrainBatch struct {
 	Object LogDrainBatchObject `json:"object" url:"object"`
 	// The batch's id: the `webhook-id` header, the same on every attempt.
-	ID      string              `json:"id" url:"id"`
+	ID string `json:"id" url:"id"`
+	// The id of the drain it's posted to.
 	DrainID string              `json:"drain_id" url:"drain_id"`
 	Status  LogDrainBatchStatus `json:"status" url:"status"`
-	// Lines in the batch (one per NDJSON line).
+	// Lines in the batch.
 	LineCount int64 `json:"line_count" url:"line_count"`
 	// Size of the request body in bytes.
-	ByteSize     int64 `json:"byte_size" url:"byte_size"`
+	ByteSize int64 `json:"byte_size" url:"byte_size"`
+	// How many attempts were made so far.
 	AttemptCount int64 `json:"attempt_count" url:"attempt_count"`
 	// When the next attempt is due; `null` once the batch is finished.
-	NextAttemptAt  *time.Time `json:"next_attempt_at,omitempty" url:"next_attempt_at,omitempty"`
-	LastStatusCode *int64     `json:"last_status_code,omitempty" url:"last_status_code,omitempty"`
-	LastError      *string    `json:"last_error,omitempty" url:"last_error,omitempty"`
+	NextAttemptAt *time.Time `json:"next_attempt_at,omitempty" url:"next_attempt_at,omitempty"`
+	// The drain's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
+	LastStatusCode *int64 `json:"last_status_code,omitempty" url:"last_status_code,omitempty"`
+	// Why the latest attempt failed. `null`: it didn't, or no attempt yet.
+	LastError *string `json:"last_error,omitempty" url:"last_error,omitempty"`
 	// Every HTTP attempt of this batch, oldest first.
 	Attempts  []*LogDrainAttempt `json:"attempts" url:"attempts"`
 	CreatedAt time.Time          `json:"created_at" url:"created_at"`
@@ -30464,8 +33485,9 @@ var (
 )
 
 type PreferenceLinks struct {
-	Object    PreferenceLinksObject `json:"object" url:"object"`
-	ContactID string                `json:"contact_id" url:"contact_id"`
+	Object PreferenceLinksObject `json:"object" url:"object"`
+	// The contact's id.
+	ContactID string `json:"contact_id" url:"contact_id"`
 	// The contact's preference center.
 	PreferencesURL string `json:"preferences_url" url:"preferences_url"`
 	// A one-button unsubscribe page.
@@ -30655,7 +33677,8 @@ type ReceivedEmail struct {
 	Object ReceivedEmailObject `json:"object" url:"object"`
 	ID     string              `json:"id" url:"id"`
 	// `received`, or `blocked` when the message carried a virus: then only its envelope and verdicts are kept, never its content.
-	Status        ReceivedEmailStatus         `json:"status" url:"status"`
+	Status ReceivedEmailStatus `json:"status" url:"status"`
+	// Why it's `blocked`. `null`: it isn't.
 	BlockedReason *ReceivedEmailBlockedReason `json:"blocked_reason,omitempty" url:"blocked_reason,omitempty"`
 	// The envelope sender (`MAIL FROM`); empty for bounces.
 	MailFrom string `json:"mail_from" url:"mail_from"`
@@ -30666,10 +33689,12 @@ type ReceivedEmail struct {
 	// The `To` header's addresses.
 	To []string `json:"to" url:"to"`
 	// The `Cc` header's addresses.
-	Cc      []string `json:"cc" url:"cc"`
-	Subject *string  `json:"subject,omitempty" url:"subject,omitempty"`
+	Cc []string `json:"cc" url:"cc"`
+	// The `Subject` header. `null`: none.
+	Subject *string `json:"subject,omitempty" url:"subject,omitempty"`
 	// The `Message-ID` header.
-	MessageID   *string                    `json:"message_id,omitempty" url:"message_id,omitempty"`
+	MessageID *string `json:"message_id,omitempty" url:"message_id,omitempty"`
+	// Its attachments, without their bytes.
 	Attachments []*ReceivedEmailAttachment `json:"attachments" url:"attachments"`
 	// Size of the raw message in bytes.
 	Size int64 `json:"size" url:"size"`
@@ -30677,18 +33702,23 @@ type ReceivedEmail struct {
 	Spam     bool                   `json:"spam" url:"spam"`
 	Verdicts *ReceivedEmailVerdicts `json:"verdicts" url:"verdicts"`
 	// Whether it was received by a sandbox environment.
-	Sandbox    bool      `json:"sandbox" url:"sandbox"`
+	Sandbox bool `json:"sandbox" url:"sandbox"`
+	// When it arrived.
 	ReceivedAt time.Time `json:"received_at" url:"received_at"`
-	ReplyTo    []string  `json:"reply_to" url:"reply_to"`
-	InReplyTo  *string   `json:"in_reply_to,omitempty" url:"in_reply_to,omitempty"`
+	// The `Reply-To` header's addresses.
+	ReplyTo []string `json:"reply_to" url:"reply_to"`
+	// The `In-Reply-To` header. `null`: none.
+	InReplyTo *string `json:"in_reply_to,omitempty" url:"in_reply_to,omitempty"`
 	// Message ids of the `References` header.
 	References []string `json:"references" url:"references"`
 	// The `Date` header, when valid.
 	SentAt *time.Time `json:"sent_at,omitempty" url:"sent_at,omitempty"`
 	// Every header in message order (duplicates included).
 	Headers []*ReceivedEmailHeadersItem `json:"headers" url:"headers"`
-	Text    *string                     `json:"text,omitempty" url:"text,omitempty"`
-	HTML    *string                     `json:"html,omitempty" url:"html,omitempty"`
+	// The plain text body. `null`: none, or it's `blocked`.
+	Text *string `json:"text,omitempty" url:"text,omitempty"`
+	// The HTML body. `null`: none, or it's `blocked`.
+	HTML *string `json:"html,omitempty" url:"html,omitempty"`
 	// Whether `text`, `html` or `headers` were shortened (2 MB per body, 64 KB of headers). The raw message always has all of it.
 	Truncated bool `json:"truncated" url:"truncated"`
 
@@ -31355,7 +34385,9 @@ var (
 )
 
 type ReceivedEmailHeadersItem struct {
-	Name  string `json:"name" url:"name"`
+	// The header's name.
+	Name string `json:"name" url:"name"`
+	// The header's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -31662,7 +34694,8 @@ type ReceivedEmailSummary struct {
 	Object ReceivedEmailSummaryObject `json:"object" url:"object"`
 	ID     string                     `json:"id" url:"id"`
 	// `received`, or `blocked` when the message carried a virus: then only its envelope and verdicts are kept, never its content.
-	Status        ReceivedEmailSummaryStatus         `json:"status" url:"status"`
+	Status ReceivedEmailSummaryStatus `json:"status" url:"status"`
+	// Why it's `blocked`. `null`: it isn't.
 	BlockedReason *ReceivedEmailSummaryBlockedReason `json:"blocked_reason,omitempty" url:"blocked_reason,omitempty"`
 	// The envelope sender (`MAIL FROM`); empty for bounces.
 	MailFrom string `json:"mail_from" url:"mail_from"`
@@ -31673,10 +34706,12 @@ type ReceivedEmailSummary struct {
 	// The `To` header's addresses.
 	To []string `json:"to" url:"to"`
 	// The `Cc` header's addresses.
-	Cc      []string `json:"cc" url:"cc"`
-	Subject *string  `json:"subject,omitempty" url:"subject,omitempty"`
+	Cc []string `json:"cc" url:"cc"`
+	// The `Subject` header. `null`: none.
+	Subject *string `json:"subject,omitempty" url:"subject,omitempty"`
 	// The `Message-ID` header.
-	MessageID   *string                    `json:"message_id,omitempty" url:"message_id,omitempty"`
+	MessageID *string `json:"message_id,omitempty" url:"message_id,omitempty"`
+	// Its attachments, without their bytes.
 	Attachments []*ReceivedEmailAttachment `json:"attachments" url:"attachments"`
 	// Size of the raw message in bytes.
 	Size int64 `json:"size" url:"size"`
@@ -31684,7 +34719,8 @@ type ReceivedEmailSummary struct {
 	Spam     bool                   `json:"spam" url:"spam"`
 	Verdicts *ReceivedEmailVerdicts `json:"verdicts" url:"verdicts"`
 	// Whether it was received by a sandbox environment.
-	Sandbox    bool      `json:"sandbox" url:"sandbox"`
+	Sandbox bool `json:"sandbox" url:"sandbox"`
+	// When it arrived.
 	ReceivedAt time.Time `json:"received_at" url:"received_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -32087,10 +35123,15 @@ var receivedEmailVerdictsNullableFields = map[string]*big.Int{
 
 // What the receiving server concluded: `pass`, `fail`, `gray` (could not decide) or `processing_failed`; `null` when the check did not run.
 type ReceivedEmailVerdicts struct {
-	Spam  *ReceivedEmailVerdictsSpam  `json:"spam,omitempty" url:"spam,omitempty"`
+	// The spam verdict.
+	Spam *ReceivedEmailVerdictsSpam `json:"spam,omitempty" url:"spam,omitempty"`
+	// The virus verdict.
 	Virus *ReceivedEmailVerdictsVirus `json:"virus,omitempty" url:"virus,omitempty"`
-	Spf   *ReceivedEmailVerdictsSpf   `json:"spf,omitempty" url:"spf,omitempty"`
-	Dkim  *ReceivedEmailVerdictsDkim  `json:"dkim,omitempty" url:"dkim,omitempty"`
+	// The SPF verdict.
+	Spf *ReceivedEmailVerdictsSpf `json:"spf,omitempty" url:"spf,omitempty"`
+	// The DKIM verdict.
+	Dkim *ReceivedEmailVerdictsDkim `json:"dkim,omitempty" url:"dkim,omitempty"`
+	// The DMARC verdict.
 	Dmarc *ReceivedEmailVerdictsDmarc `json:"dmarc,omitempty" url:"dmarc,omitempty"`
 	// The sender domain's DMARC policy (`none`, `quarantine` or `reject`) when DMARC failed.
 	DmarcPolicy *string `json:"dmarc_policy,omitempty" url:"dmarc_policy,omitempty"`
@@ -32414,13 +35455,16 @@ type ReceivedSms struct {
 	// Who sent it.
 	From string `json:"from" url:"from"`
 	// Your number that received it.
-	To       string `json:"to" url:"to"`
-	Body     string `json:"body" url:"body"`
-	Segments int64  `json:"segments" url:"segments"`
+	To string `json:"to" url:"to"`
+	// The text.
+	Body string `json:"body" url:"body"`
+	// Segments the text took.
+	Segments int64 `json:"segments" url:"segments"`
 	// `stop`: an opt-out (the sender is suppressed in every live environment), `start`: an opt-in again, `help`: a request for help. Twilio answers each.
-	Keyword   *ReceivedSmsKeyword `json:"keyword,omitempty" url:"keyword,omitempty"`
-	Sandbox   bool                `json:"sandbox" url:"sandbox"`
-	CreatedAt time.Time           `json:"created_at" url:"created_at"`
+	Keyword *ReceivedSmsKeyword `json:"keyword,omitempty" url:"keyword,omitempty"`
+	// Whether it's a simulated message of a sandbox environment.
+	Sandbox   bool      `json:"sandbox" url:"sandbox"`
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -32830,9 +35874,10 @@ type ReceivingDomain struct {
 	// The environment its received emails are delivered to.
 	EnvironmentID string `json:"environment_id" url:"environment_id"`
 	// The MX record to publish, with the result of the last check. Mail for the hostname is received as soon as it reaches coss.com; the check only shows what DNS serves.
-	Record        *ReceivingDomainRecord `json:"record" url:"record"`
-	CreatedAt     time.Time              `json:"created_at" url:"created_at"`
-	LastCheckedAt *time.Time             `json:"last_checked_at,omitempty" url:"last_checked_at,omitempty"`
+	Record    *ReceivingDomainRecord `json:"record" url:"record"`
+	CreatedAt time.Time              `json:"created_at" url:"created_at"`
+	// When it was last checked. `null`: not yet.
+	LastCheckedAt *time.Time `json:"last_checked_at,omitempty" url:"last_checked_at,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -32999,12 +36044,14 @@ var (
 
 // The MX record to publish, with the result of the last check. Mail for the hostname is received as soon as it reaches coss.com; the check only shows what DNS serves.
 type ReceivingDomainRecord struct {
+	// The record's type.
 	Type ReceivingDomainRecordType `json:"type" url:"type"`
 	// The fully qualified record name to create.
 	Name string `json:"name" url:"name"`
 	// The mail exchange the record must point at.
-	Value    string `json:"value" url:"value"`
-	Priority int64  `json:"priority" url:"priority"`
+	Value string `json:"value" url:"value"`
+	// The MX record's priority.
+	Priority int64 `json:"priority" url:"priority"`
 	// What the last DNS check saw: `verified` once the most preferred MX records point at coss.com. `not_checked` means DNS has not been consulted yet.
 	Status ReceivingDomainRecordStatus `json:"status" url:"status"`
 	// What DNS returned when it did not match.
@@ -33188,6 +36235,7 @@ func (r ReceivingDomainRecordStatus) Ptr() *ReceivingDomainRecordStatus {
 	return &r
 }
 
+// The record's type.
 type ReceivingDomainRecordType string
 
 const (
@@ -33225,15 +36273,19 @@ var renderedEmailTemplateNullableFields = map[string]*big.Int{
 }
 
 type RenderedEmailTemplate struct {
-	Object     RenderedEmailTemplateObject `json:"object" url:"object"`
-	TemplateID string                      `json:"template_id" url:"template_id"`
+	Object RenderedEmailTemplateObject `json:"object" url:"object"`
+	// The template's id.
+	TemplateID string `json:"template_id" url:"template_id"`
 	// The version rendered; `null` for the draft.
 	Version *int64 `json:"version,omitempty" url:"version,omitempty"`
 	// The locale rendered.
-	Locale  string  `json:"locale" url:"locale"`
-	Subject string  `json:"subject" url:"subject"`
-	HTML    *string `json:"html,omitempty" url:"html,omitempty"`
-	Text    *string `json:"text,omitempty" url:"text,omitempty"`
+	Locale string `json:"locale" url:"locale"`
+	// The rendered subject.
+	Subject string `json:"subject" url:"subject"`
+	// The rendered HTML. `null`: the template has none.
+	HTML *string `json:"html,omitempty" url:"html,omitempty"`
+	// The rendered plain text. `null`: the template has none.
+	Text *string `json:"text,omitempty" url:"text,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -33450,20 +36502,23 @@ var riskAssessmentNullableFields = map[string]*big.Int{
 }
 
 type RiskAssessment struct {
-	Object    RiskAssessmentObject `json:"object" url:"object"`
-	ID        string               `json:"id" url:"id"`
-	Event     RiskEvent            `json:"event" url:"event"`
-	EventName *string              `json:"event_name,omitempty" url:"event_name,omitempty"`
-	Decision  RiskDecision         `json:"decision" url:"decision"`
+	Object RiskAssessmentObject `json:"object" url:"object"`
+	ID     string               `json:"id" url:"id"`
+	Event  RiskEvent            `json:"event" url:"event"`
+	// Your name for a `custom` event. `null`: none.
+	EventName *string      `json:"event_name,omitempty" url:"event_name,omitempty"`
+	Decision  RiskDecision `json:"decision" url:"decision"`
 	// 0-1: how risky the signals are together. Lists can decide regardless of the score.
 	Score float64 `json:"score" url:"score"`
 	// Why, most significant first.
-	Reasons []*RiskReason          `json:"reasons" url:"reasons"`
+	Reasons []*RiskReason `json:"reasons" url:"reasons"`
+	// What the assessment saw, by group. A group is `null` when it had nothing to go on.
 	Signals *RiskAssessmentSignals `json:"signals" url:"signals"`
-	User    *RiskAssessmentUser    `json:"user" url:"user"`
+	// Who it's about.
+	User *RiskAssessmentUser `json:"user" url:"user"`
 	// `null` once removed (90 days after).
 	IP *string `json:"ip,omitempty" url:"ip,omitempty"`
-	// Signal groups that were unavailable for this assessment (it was made without them).
+	// Signal groups that were unavailable for this assessment (it was made without them). `usage_limit` means the plan's included assessments are used up, or a billing hold or budget applies: the assessment was free and made without velocity, memory of earlier events, content or address-level IP data.
 	Degraded []RiskAssessmentDegradedItem `json:"degraded" url:"degraded"`
 	// The latest outcome you reported with feedback.
 	Outcome *RiskOutcome `json:"outcome,omitempty" url:"outcome,omitempty"`
@@ -33750,13 +36805,14 @@ func (r *RiskAssessment) String() string {
 type RiskAssessmentDegradedItem string
 
 const (
-	RiskAssessmentDegradedItemEmailDNS  RiskAssessmentDegradedItem = "email_dns"
-	RiskAssessmentDegradedItemDomainAge RiskAssessmentDegradedItem = "domain_age"
-	RiskAssessmentDegradedItemIPData    RiskAssessmentDegradedItem = "ip_data"
-	RiskAssessmentDegradedItemVelocity  RiskAssessmentDegradedItem = "velocity"
-	RiskAssessmentDegradedItemCaptcha   RiskAssessmentDegradedItem = "captcha"
-	RiskAssessmentDegradedItemContent   RiskAssessmentDegradedItem = "content"
-	RiskAssessmentDegradedItemIPPrivacy RiskAssessmentDegradedItem = "ip_privacy"
+	RiskAssessmentDegradedItemEmailDNS   RiskAssessmentDegradedItem = "email_dns"
+	RiskAssessmentDegradedItemDomainAge  RiskAssessmentDegradedItem = "domain_age"
+	RiskAssessmentDegradedItemIPData     RiskAssessmentDegradedItem = "ip_data"
+	RiskAssessmentDegradedItemVelocity   RiskAssessmentDegradedItem = "velocity"
+	RiskAssessmentDegradedItemCaptcha    RiskAssessmentDegradedItem = "captcha"
+	RiskAssessmentDegradedItemContent    RiskAssessmentDegradedItem = "content"
+	RiskAssessmentDegradedItemIPPrivacy  RiskAssessmentDegradedItem = "ip_privacy"
+	RiskAssessmentDegradedItemUsageLimit RiskAssessmentDegradedItem = "usage_limit"
 )
 
 func NewRiskAssessmentDegradedItemFromString(s string) (RiskAssessmentDegradedItem, error) {
@@ -33775,6 +36831,8 @@ func NewRiskAssessmentDegradedItemFromString(s string) (RiskAssessmentDegradedIt
 		return RiskAssessmentDegradedItemContent, nil
 	case "ip_privacy":
 		return RiskAssessmentDegradedItemIPPrivacy, nil
+	case "usage_limit":
+		return RiskAssessmentDegradedItemUsageLimit, nil
 	}
 	var t RiskAssessmentDegradedItem
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -33985,17 +37043,24 @@ var riskAssessmentSignalsNullableFields = map[string]*big.Int{
 	"device":   riskAssessmentSignalsFieldDevice,
 }
 
+// What the assessment saw, by group. A group is `null` when it had nothing to go on.
 type RiskAssessmentSignals struct {
+	// What the address says. `null`: no email was given.
 	Email *RiskEmailSignals `json:"email,omitempty" url:"email,omitempty"`
-	IP    *RiskIPSignals    `json:"ip,omitempty" url:"ip,omitempty"`
+	// What the IP address says. `null`: none was given.
+	IP *RiskIPSignals `json:"ip,omitempty" url:"ip,omitempty"`
 	// `null` when velocity was unavailable (see `degraded`).
 	Velocity *RiskVelocitySignals `json:"velocity,omitempty" url:"velocity,omitempty"`
-	Captcha  *RiskCaptchaSignals  `json:"captcha,omitempty" url:"captcha,omitempty"`
-	Login    *RiskLoginSignals    `json:"login,omitempty" url:"login,omitempty"`
+	// How the captcha went. `null`: no captcha applied.
+	Captcha *RiskCaptchaSignals `json:"captcha,omitempty" url:"captcha,omitempty"`
+	// Whether a login is new for this user. `null`: not a login of a user with history.
+	Login *RiskLoginSignals `json:"login,omitempty" url:"login,omitempty"`
 	// `null` when no content was given or it couldn't be classified.
-	Content  *RiskContentSignals  `json:"content,omitempty" url:"content,omitempty"`
+	Content *RiskContentSignals `json:"content,omitempty" url:"content,omitempty"`
+	// What you sent in `checkout`. `null`: not given.
 	Checkout *RiskCheckoutSignals `json:"checkout,omitempty" url:"checkout,omitempty"`
-	Device   *RiskDeviceSignals   `json:"device,omitempty" url:"device,omitempty"`
+	// What the device token said. `null`: none was given.
+	Device *RiskDeviceSignals `json:"device,omitempty" url:"device,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -34192,7 +37257,9 @@ var riskAssessmentUserNullableFields = map[string]*big.Int{
 	"email": riskAssessmentUserFieldEmail,
 }
 
+// Who it's about.
 type RiskAssessmentUser struct {
+	// Your user id. `null`: none given.
 	ID *string `json:"id,omitempty" url:"id,omitempty"`
 	// `null` once removed (90 days after the assessment) or when none was given.
 	Email *string `json:"email,omitempty" url:"email,omitempty"`
@@ -34307,7 +37374,9 @@ var riskCaptchaSignalsNullableFields = map[string]*big.Int{
 	"passed": riskCaptchaSignalsFieldPassed,
 }
 
+// How the captcha went. `null` when no captcha applies.
 type RiskCaptchaSignals struct {
+	// Whether the request carried a token.
 	Provided bool `json:"provided" url:"provided"`
 	// `null` when it couldn't be checked (no captcha configured, or the provider was unreachable).
 	Passed *bool `json:"passed,omitempty" url:"passed,omitempty"`
@@ -34431,12 +37500,18 @@ var riskCheckoutSignalsNullableFields = map[string]*big.Int{
 
 // What you sent in `checkout` (never the card).
 type RiskCheckoutSignals struct {
-	Amount          int64                           `json:"amount" url:"amount"`
-	Currency        string                          `json:"currency" url:"currency"`
-	CardCountry     *string                         `json:"card_country,omitempty" url:"card_country,omitempty"`
-	CardFunding     *RiskCheckoutSignalsCardFunding `json:"card_funding,omitempty" url:"card_funding,omitempty"`
-	BillingCountry  *string                         `json:"billing_country,omitempty" url:"billing_country,omitempty"`
-	ShippingCountry *string                         `json:"shipping_country,omitempty" url:"shipping_country,omitempty"`
+	// The amount you sent, in the currency's smallest unit.
+	Amount int64 `json:"amount" url:"amount"`
+	// The currency you sent.
+	Currency string `json:"currency" url:"currency"`
+	// The card's country. `null` when not given.
+	CardCountry *string `json:"card_country,omitempty" url:"card_country,omitempty"`
+	// The card's funding type. `null` when not given.
+	CardFunding *RiskCheckoutSignalsCardFunding `json:"card_funding,omitempty" url:"card_funding,omitempty"`
+	// The billing country. `null` when not given.
+	BillingCountry *string `json:"billing_country,omitempty" url:"billing_country,omitempty"`
+	// The shipping country. `null` when not given.
+	ShippingCountry *string `json:"shipping_country,omitempty" url:"shipping_country,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -34594,6 +37669,7 @@ func (r *RiskCheckoutSignals) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// The card's funding type. `null` when not given.
 type RiskCheckoutSignalsCardFunding string
 
 const (
@@ -34631,10 +37707,14 @@ var (
 
 // Per category, the model's probability (0-1) that the content belongs to it. Scores are not calibrated: pick thresholds by looking at your own traffic.
 type RiskContentSignals struct {
-	Spam     float64 `json:"spam" url:"spam"`
+	// The model's probability (0-1) that it's spam.
+	Spam float64 `json:"spam" url:"spam"`
+	// The model's probability (0-1) that it's phishing.
 	Phishing float64 `json:"phishing" url:"phishing"`
-	Malware  float64 `json:"malware" url:"malware"`
-	Fraud    float64 `json:"fraud" url:"fraud"`
+	// The model's probability (0-1) that it's malware.
+	Malware float64 `json:"malware" url:"malware"`
+	// The model's probability (0-1) that it's fraud.
+	Fraud float64 `json:"fraud" url:"fraud"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -34812,10 +37892,12 @@ type RiskDeviceSignals struct {
 	Timezone *string `json:"timezone,omitempty" url:"timezone,omitempty"`
 	// The browser's first language.
 	Language *string `json:"language,omitempty" url:"language,omitempty"`
+	// The browser's reported platform. `null` when it reported none.
 	Platform *string `json:"platform,omitempty" url:"platform,omitempty"`
 	// `<width>x<height>` in CSS pixels.
 	Screen *string `json:"screen,omitempty" url:"screen,omitempty"`
-	Touch  *bool   `json:"touch,omitempty" url:"touch,omitempty"`
+	// Whether the device has a touch screen. `null` when it didn't say.
+	Touch *bool `json:"touch,omitempty" url:"touch,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -35005,16 +38087,22 @@ var riskEmailSignalsNullableFields = map[string]*big.Int{
 	"domain_age_days": riskEmailSignalsFieldDomainAgeDays,
 }
 
+// What the address says. `null` on an assessment with no email.
 type RiskEmailSignals struct {
 	// `null` once the address is removed (90 days after the assessment).
-	Domain     *string `json:"domain,omitempty" url:"domain,omitempty"`
-	Valid      bool    `json:"valid" url:"valid"`
-	Disposable bool    `json:"disposable" url:"disposable"`
+	Domain *string `json:"domain,omitempty" url:"domain,omitempty"`
+	// Whether it's syntactically valid.
+	Valid bool `json:"valid" url:"valid"`
+	// Whether its domain is a known burner service.
+	Disposable bool `json:"disposable" url:"disposable"`
 	// From DNS (MX, A, AAAA). `unknown` when the lookup failed or timed out.
 	Deliverability RiskEmailSignalsDeliverability `json:"deliverability" url:"deliverability"`
-	RoleAccount    bool                           `json:"role_account" url:"role_account"`
-	FreeProvider   bool                           `json:"free_provider" url:"free_provider"`
-	Suggestion     *string                        `json:"suggestion,omitempty" url:"suggestion,omitempty"`
+	// Whether it's a role mailbox, like `info@`.
+	RoleAccount bool `json:"role_account" url:"role_account"`
+	// Whether its domain is a free mailbox provider.
+	FreeProvider bool `json:"free_provider" url:"free_provider"`
+	// `email.typo`: the likely intended domain. `null` otherwise.
+	Suggestion *string `json:"suggestion,omitempty" url:"suggestion,omitempty"`
 	// Days since the domain was registered (RDAP); `null` when unknown or not looked up (free providers, disposable domains).
 	DomainAgeDays *int64 `json:"domain_age_days,omitempty" url:"domain_age_days,omitempty"`
 
@@ -35273,8 +38361,11 @@ var riskIPPrivacyNullableFields = map[string]*big.Int{
 }
 
 type RiskIPPrivacy struct {
-	Vpn   bool `json:"vpn" url:"vpn"`
+	// Whether it's a VPN exit.
+	Vpn bool `json:"vpn" url:"vpn"`
+	// Whether it's a proxy.
 	Proxy bool `json:"proxy" url:"proxy"`
+	// Whether it's a privacy relay.
 	Relay bool `json:"relay" url:"relay"`
 	// The VPN or proxy service.
 	Service *string `json:"service,omitempty" url:"service,omitempty"`
@@ -35430,15 +38521,23 @@ var riskIPSignalsNullableFields = map[string]*big.Int{
 	"privacy":          riskIPSignalsFieldPrivacy,
 }
 
+// What the address says. `null` on an assessment with no IP.
 type RiskIPSignals struct {
-	Version         float64                   `json:"version" url:"version"`
-	Private         bool                      `json:"private" url:"private"`
-	Tor             bool                      `json:"tor" url:"tor"`
-	Hosting         bool                      `json:"hosting" url:"hosting"`
-	HostingProvider *string                   `json:"hosting_provider,omitempty" url:"hosting_provider,omitempty"`
-	HostingKind     *RiskIPSignalsHostingKind `json:"hosting_kind,omitempty" url:"hosting_kind,omitempty"`
-	Asn             *int64                    `json:"asn,omitempty" url:"asn,omitempty"`
-	AsName          *string                   `json:"as_name,omitempty" url:"as_name,omitempty"`
+	Version float64 `json:"version" url:"version"`
+	// Whether it's a private or reserved address.
+	Private bool `json:"private" url:"private"`
+	// Whether it's a Tor exit.
+	Tor bool `json:"tor" url:"tor"`
+	// Whether it's in a cloud, hosting or VPN network.
+	Hosting bool `json:"hosting" url:"hosting"`
+	// That network's operator. `null` when it isn't one.
+	HostingProvider *string `json:"hosting_provider,omitempty" url:"hosting_provider,omitempty"`
+	// `cloud`, `hosting` or `vpn`. `null` when it isn't one.
+	HostingKind *RiskIPSignalsHostingKind `json:"hosting_kind,omitempty" url:"hosting_kind,omitempty"`
+	// The network's autonomous system number. `null` when unknown.
+	Asn *int64 `json:"asn,omitempty" url:"asn,omitempty"`
+	// The network's name. `null` when unknown.
+	AsName *string `json:"as_name,omitempty" url:"as_name,omitempty"`
 	// ISO 3166-1 alpha-2.
 	Country *string `json:"country,omitempty" url:"country,omitempty"`
 	// From coss.com's IP privacy data provider (VPNs, proxies, relays). `null` when it isn't available or was not asked (private addresses).
@@ -35656,6 +38755,7 @@ func (r *RiskIPSignals) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// `cloud`, `hosting` or `vpn`. `null` when it isn't one.
 type RiskIPSignalsHostingKind string
 
 const (
@@ -35699,7 +38799,8 @@ type RiskLimitBucket struct {
 	// What `POST /v1/risk/limits` names it by.
 	Name string `json:"name" url:"name"`
 	// Tokens added per `period_seconds`.
-	Limit         int64 `json:"limit" url:"limit"`
+	Limit int64 `json:"limit" url:"limit"`
+	// How many seconds `limit` tokens take to be added.
 	PeriodSeconds int64 `json:"period_seconds" url:"period_seconds"`
 	// The bucket's size: how many requests a key can make at once.
 	Burst int64 `json:"burst" url:"burst"`
@@ -36091,6 +39192,7 @@ func (r RiskLimitBucketOnFailure) Ptr() *RiskLimitBucketOnFailure {
 	return &r
 }
 
+// Which list: `allow` or `block`.
 type RiskList string
 
 const (
@@ -36136,8 +39238,10 @@ type RiskListEntry struct {
 	List   RiskList            `json:"list" url:"list"`
 	Type   RiskListEntryType   `json:"type" url:"type"`
 	// Normalized: emails as their mailbox, CIDR ranges canonical, ASNs as numbers.
-	Value     string     `json:"value" url:"value"`
-	Note      *string    `json:"note,omitempty" url:"note,omitempty"`
+	Value string `json:"value" url:"value"`
+	// Your note about it. `null`: none.
+	Note *string `json:"note,omitempty" url:"note,omitempty"`
+	// When it stops matching. `null`: never.
 	ExpiresAt *time.Time `json:"expires_at,omitempty" url:"expires_at,omitempty"`
 	CreatedAt time.Time  `json:"created_at" url:"created_at"`
 
@@ -36535,7 +39639,9 @@ var (
 
 // Logins of a user with history: whether the country or network is new for them.
 type RiskLoginSignals struct {
+	// Whether this user never logged in from this country in this environment.
 	NewCountry bool `json:"new_country" url:"new_country"`
+	// Whether this user never logged in from this network (ASN) in this environment.
 	NewNetwork bool `json:"new_network" url:"new_network"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -36679,13 +39785,16 @@ var riskReasonNullableFields = map[string]*big.Int{
 }
 
 type RiskReason struct {
-	Code    RiskReasonCode `json:"code" url:"code"`
-	Message string         `json:"message" url:"message"`
+	// The reason's code, listed under Risk's reasons in the docs.
+	Code RiskReasonCode `json:"code" url:"code"`
+	// What it means, in words. May change.
+	Message string `json:"message" url:"message"`
 	// The count behind a `velocity.*` reason, or the score behind a `content.*` one.
 	Value *float64 `json:"value,omitempty" url:"value,omitempty"`
 	// What a `velocity.*` or `content.*` reason fires at.
-	Threshold *float64          `json:"threshold,omitempty" url:"threshold,omitempty"`
-	Window    *RiskReasonWindow `json:"window,omitempty" url:"window,omitempty"`
+	Threshold *float64 `json:"threshold,omitempty" url:"threshold,omitempty"`
+	// `velocity.*`: the window it's counted over.
+	Window *RiskReasonWindow `json:"window,omitempty" url:"window,omitempty"`
 	// `email.typo`: the likely domain.
 	Suggestion *string `json:"suggestion,omitempty" url:"suggestion,omitempty"`
 	// `ip.hosting_provider`, `ip.vpn_network`: the network's operator; `ip.vpn`: the VPN service.
@@ -36957,6 +40066,7 @@ func (r *RiskReason) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// The reason's code, listed under Risk's reasons in the docs.
 type RiskReasonCode string
 
 const (
@@ -37158,6 +40268,7 @@ func (r RiskReasonType) Ptr() *RiskReasonType {
 	return &r
 }
 
+// `velocity.*`: the window it's counted over.
 type RiskReasonWindow string
 
 const (
@@ -37195,16 +40306,19 @@ var (
 )
 
 type RiskRule struct {
-	Object  RiskRuleObject `json:"object" url:"object"`
-	ID      string         `json:"id" url:"id"`
-	Name    string         `json:"name" url:"name"`
-	Enabled bool           `json:"enabled" url:"enabled"`
+	Object RiskRuleObject `json:"object" url:"object"`
+	ID     string         `json:"id" url:"id"`
+	// Your name for the rule, returned with reasons when it decides.
+	Name string `json:"name" url:"name"`
+	// `false`: it's kept, and no assessment applies it.
+	Enabled bool `json:"enabled" url:"enabled"`
 	// Rules are tried in ascending order.
 	Position int64 `json:"position" url:"position"`
 	// Events it applies to; empty: every event.
 	Events []RiskEvent `json:"events" url:"events"`
 	// `all`: every condition must hold. `any`: one is enough.
-	Match      RiskRuleMatch        `json:"match" url:"match"`
+	Match RiskRuleMatch `json:"match" url:"match"`
+	// What must hold, by `match`.
 	Conditions []*RiskRuleCondition `json:"conditions" url:"conditions"`
 	Action     RiskDecision         `json:"action" url:"action"`
 	CreatedAt  time.Time            `json:"created_at" url:"created_at"`
@@ -37449,9 +40563,12 @@ var (
 
 // A test of one field. A field without a value (no IP, no email…) never matches, whatever the operator.
 type RiskRuleCondition struct {
-	Field    RiskRuleConditionField    `json:"field" url:"field"`
+	// The signal to test, such as `email.disposable` or `ip.country`.
+	Field RiskRuleConditionField `json:"field" url:"field"`
+	// How to compare. Booleans use `is`, numbers `eq` to `lte`, and strings `eq`, `neq`, `in` and `not_in`.
 	Operator RiskRuleConditionOperator `json:"operator" url:"operator"`
-	Value    *RiskRuleConditionValue   `json:"value" url:"value"`
+	// What to compare it with: its type follows the field, and `in` and `not_in` take a list of strings.
+	Value *RiskRuleConditionValue `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -37560,6 +40677,7 @@ func (r *RiskRuleCondition) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// The signal to test, such as `email.disposable` or `ip.country`.
 type RiskRuleConditionField string
 
 const (
@@ -37732,6 +40850,7 @@ func (r RiskRuleConditionField) Ptr() *RiskRuleConditionField {
 	return &r
 }
 
+// How to compare. Booleans use `is`, numbers `eq` to `lte`, and strings `eq`, `neq`, `in` and `not_in`.
 type RiskRuleConditionOperator string
 
 const (
@@ -37775,6 +40894,7 @@ func (r RiskRuleConditionOperator) Ptr() *RiskRuleConditionOperator {
 	return &r
 }
 
+// What to compare it with: its type follows the field, and `in` and `not_in` take a list of strings.
 type RiskRuleConditionValue struct {
 	Boolean    bool
 	Double     float64
@@ -38291,8 +41411,10 @@ var (
 )
 
 type RiskSettingsCaptcha struct {
+	// The captcha provider.
 	Provider RiskSettingsCaptchaProvider `json:"provider" url:"provider"`
-	Required bool                        `json:"required" url:"required"`
+	// Whether assessments without a token get `captcha.missing`.
+	Required bool `json:"required" url:"required"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -38387,6 +41509,7 @@ func (r *RiskSettingsCaptcha) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// The captcha provider.
 type RiskSettingsCaptchaProvider string
 
 const (
@@ -38426,10 +41549,14 @@ var riskSettingsContentThresholdsNullableFields = map[string]*big.Int{
 
 // Per content category, the score at which `content.<category>` fires; `null`: never (the score is still in `signals.content` for your rules).
 type RiskSettingsContentThresholds struct {
-	Spam     *float64 `json:"spam,omitempty" url:"spam,omitempty"`
+	// The score at which `content.spam` fires. `null`: never.
+	Spam *float64 `json:"spam,omitempty" url:"spam,omitempty"`
+	// The score at which `content.phishing` fires. `null`: never.
 	Phishing *float64 `json:"phishing,omitempty" url:"phishing,omitempty"`
-	Malware  *float64 `json:"malware,omitempty" url:"malware,omitempty"`
-	Fraud    *float64 `json:"fraud,omitempty" url:"fraud,omitempty"`
+	// The score at which `content.malware` fires. `null`: never.
+	Malware *float64 `json:"malware,omitempty" url:"malware,omitempty"`
+	// The score at which `content.fraud` fires. `null`: never.
+	Fraud *float64 `json:"fraud,omitempty" url:"fraud,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -38775,53 +41902,100 @@ var (
 
 // Reasons whose weight this environment changed (from calibration or by hand); the rest weigh what the reason catalog says.
 type RiskSettingsReasonWeights struct {
-	EmailInvalid                    *float64 `json:"email.invalid,omitempty" url:"email.invalid,omitempty"`
-	EmailDisposable                 *float64 `json:"email.disposable,omitempty" url:"email.disposable,omitempty"`
-	EmailUndeliverable              *float64 `json:"email.undeliverable,omitempty" url:"email.undeliverable,omitempty"`
-	EmailRoleAccount                *float64 `json:"email.role_account,omitempty" url:"email.role_account,omitempty"`
-	EmailTypo                       *float64 `json:"email.typo,omitempty" url:"email.typo,omitempty"`
-	EmailDomainNew                  *float64 `json:"email.domain_new,omitempty" url:"email.domain_new,omitempty"`
-	IPTor                           *float64 `json:"ip.tor,omitempty" url:"ip.tor,omitempty"`
-	IPVpnNetwork                    *float64 `json:"ip.vpn_network,omitempty" url:"ip.vpn_network,omitempty"`
-	IPHostingProvider               *float64 `json:"ip.hosting_provider,omitempty" url:"ip.hosting_provider,omitempty"`
-	IPVpn                           *float64 `json:"ip.vpn,omitempty" url:"ip.vpn,omitempty"`
-	IPProxy                         *float64 `json:"ip.proxy,omitempty" url:"ip.proxy,omitempty"`
-	IPRelay                         *float64 `json:"ip.relay,omitempty" url:"ip.relay,omitempty"`
-	IPPrivate                       *float64 `json:"ip.private,omitempty" url:"ip.private,omitempty"`
-	VelocitySignupsPerIP1H          *float64 `json:"velocity.signups_per_ip_1h,omitempty" url:"velocity.signups_per_ip_1h,omitempty"`
-	VelocitySignupsPerIP24H         *float64 `json:"velocity.signups_per_ip_24h,omitempty" url:"velocity.signups_per_ip_24h,omitempty"`
-	VelocitySignupsPerSubnet1H      *float64 `json:"velocity.signups_per_subnet_1h,omitempty" url:"velocity.signups_per_subnet_1h,omitempty"`
+	// This reason's weight in this environment.
+	EmailInvalid *float64 `json:"email.invalid,omitempty" url:"email.invalid,omitempty"`
+	// This reason's weight in this environment.
+	EmailDisposable *float64 `json:"email.disposable,omitempty" url:"email.disposable,omitempty"`
+	// This reason's weight in this environment.
+	EmailUndeliverable *float64 `json:"email.undeliverable,omitempty" url:"email.undeliverable,omitempty"`
+	// This reason's weight in this environment.
+	EmailRoleAccount *float64 `json:"email.role_account,omitempty" url:"email.role_account,omitempty"`
+	// This reason's weight in this environment.
+	EmailTypo *float64 `json:"email.typo,omitempty" url:"email.typo,omitempty"`
+	// This reason's weight in this environment.
+	EmailDomainNew *float64 `json:"email.domain_new,omitempty" url:"email.domain_new,omitempty"`
+	// This reason's weight in this environment.
+	IPTor *float64 `json:"ip.tor,omitempty" url:"ip.tor,omitempty"`
+	// This reason's weight in this environment.
+	IPVpnNetwork *float64 `json:"ip.vpn_network,omitempty" url:"ip.vpn_network,omitempty"`
+	// This reason's weight in this environment.
+	IPHostingProvider *float64 `json:"ip.hosting_provider,omitempty" url:"ip.hosting_provider,omitempty"`
+	// This reason's weight in this environment.
+	IPVpn *float64 `json:"ip.vpn,omitempty" url:"ip.vpn,omitempty"`
+	// This reason's weight in this environment.
+	IPProxy *float64 `json:"ip.proxy,omitempty" url:"ip.proxy,omitempty"`
+	// This reason's weight in this environment.
+	IPRelay *float64 `json:"ip.relay,omitempty" url:"ip.relay,omitempty"`
+	// This reason's weight in this environment.
+	IPPrivate *float64 `json:"ip.private,omitempty" url:"ip.private,omitempty"`
+	// This reason's weight in this environment.
+	VelocitySignupsPerIP1H *float64 `json:"velocity.signups_per_ip_1h,omitempty" url:"velocity.signups_per_ip_1h,omitempty"`
+	// This reason's weight in this environment.
+	VelocitySignupsPerIP24H *float64 `json:"velocity.signups_per_ip_24h,omitempty" url:"velocity.signups_per_ip_24h,omitempty"`
+	// This reason's weight in this environment.
+	VelocitySignupsPerSubnet1H *float64 `json:"velocity.signups_per_subnet_1h,omitempty" url:"velocity.signups_per_subnet_1h,omitempty"`
+	// This reason's weight in this environment.
 	VelocitySignupsPerEmailDomain1H *float64 `json:"velocity.signups_per_email_domain_1h,omitempty" url:"velocity.signups_per_email_domain_1h,omitempty"`
-	VelocitySignupsPerMailbox24H    *float64 `json:"velocity.signups_per_mailbox_24h,omitempty" url:"velocity.signups_per_mailbox_24h,omitempty"`
-	VelocitySignupsPerDevice24H     *float64 `json:"velocity.signups_per_device_24h,omitempty" url:"velocity.signups_per_device_24h,omitempty"`
-	VelocityCheckoutsPerIP1H        *float64 `json:"velocity.checkouts_per_ip_1h,omitempty" url:"velocity.checkouts_per_ip_1h,omitempty"`
-	VelocityCheckoutsPerUser1H      *float64 `json:"velocity.checkouts_per_user_1h,omitempty" url:"velocity.checkouts_per_user_1h,omitempty"`
-	VelocityCheckoutsPerCard24H     *float64 `json:"velocity.checkouts_per_card_24h,omitempty" url:"velocity.checkouts_per_card_24h,omitempty"`
-	VelocityLoginsPerIP1H           *float64 `json:"velocity.logins_per_ip_1h,omitempty" url:"velocity.logins_per_ip_1h,omitempty"`
-	VelocityLoginsPerUser1H         *float64 `json:"velocity.logins_per_user_1h,omitempty" url:"velocity.logins_per_user_1h,omitempty"`
-	VelocityEventsPerIP1H           *float64 `json:"velocity.events_per_ip_1h,omitempty" url:"velocity.events_per_ip_1h,omitempty"`
-	VelocityEventsPerUser1H         *float64 `json:"velocity.events_per_user_1h,omitempty" url:"velocity.events_per_user_1h,omitempty"`
-	DuplicateCanonicalMailbox       *float64 `json:"duplicate.canonical_mailbox,omitempty" url:"duplicate.canonical_mailbox,omitempty"`
-	DuplicateDevice                 *float64 `json:"duplicate.device,omitempty" url:"duplicate.device,omitempty"`
-	HistoryFraudMailbox             *float64 `json:"history.fraud_mailbox,omitempty" url:"history.fraud_mailbox,omitempty"`
-	HistoryFraudUser                *float64 `json:"history.fraud_user,omitempty" url:"history.fraud_user,omitempty"`
-	HistoryFraudIP                  *float64 `json:"history.fraud_ip,omitempty" url:"history.fraud_ip,omitempty"`
-	HistoryFraudSubnet              *float64 `json:"history.fraud_subnet,omitempty" url:"history.fraud_subnet,omitempty"`
-	HistoryFraudCard                *float64 `json:"history.fraud_card,omitempty" url:"history.fraud_card,omitempty"`
-	HistoryFraudDevice              *float64 `json:"history.fraud_device,omitempty" url:"history.fraud_device,omitempty"`
-	CheckoutCardCountryMismatch     *float64 `json:"checkout.card_country_mismatch,omitempty" url:"checkout.card_country_mismatch,omitempty"`
-	CheckoutBillingCountryMismatch  *float64 `json:"checkout.billing_country_mismatch,omitempty" url:"checkout.billing_country_mismatch,omitempty"`
-	CheckoutPrepaidCard             *float64 `json:"checkout.prepaid_card,omitempty" url:"checkout.prepaid_card,omitempty"`
-	DeviceAutomation                *float64 `json:"device.automation,omitempty" url:"device.automation,omitempty"`
-	DeviceInvalid                   *float64 `json:"device.invalid,omitempty" url:"device.invalid,omitempty"`
-	LoginNewCountry                 *float64 `json:"login.new_country,omitempty" url:"login.new_country,omitempty"`
-	LoginNewNetwork                 *float64 `json:"login.new_network,omitempty" url:"login.new_network,omitempty"`
-	CaptchaFailed                   *float64 `json:"captcha.failed,omitempty" url:"captcha.failed,omitempty"`
-	CaptchaMissing                  *float64 `json:"captcha.missing,omitempty" url:"captcha.missing,omitempty"`
-	ContentSpam                     *float64 `json:"content.spam,omitempty" url:"content.spam,omitempty"`
-	ContentPhishing                 *float64 `json:"content.phishing,omitempty" url:"content.phishing,omitempty"`
-	ContentMalware                  *float64 `json:"content.malware,omitempty" url:"content.malware,omitempty"`
-	ContentFraud                    *float64 `json:"content.fraud,omitempty" url:"content.fraud,omitempty"`
+	// This reason's weight in this environment.
+	VelocitySignupsPerMailbox24H *float64 `json:"velocity.signups_per_mailbox_24h,omitempty" url:"velocity.signups_per_mailbox_24h,omitempty"`
+	// This reason's weight in this environment.
+	VelocitySignupsPerDevice24H *float64 `json:"velocity.signups_per_device_24h,omitempty" url:"velocity.signups_per_device_24h,omitempty"`
+	// This reason's weight in this environment.
+	VelocityCheckoutsPerIP1H *float64 `json:"velocity.checkouts_per_ip_1h,omitempty" url:"velocity.checkouts_per_ip_1h,omitempty"`
+	// This reason's weight in this environment.
+	VelocityCheckoutsPerUser1H *float64 `json:"velocity.checkouts_per_user_1h,omitempty" url:"velocity.checkouts_per_user_1h,omitempty"`
+	// This reason's weight in this environment.
+	VelocityCheckoutsPerCard24H *float64 `json:"velocity.checkouts_per_card_24h,omitempty" url:"velocity.checkouts_per_card_24h,omitempty"`
+	// This reason's weight in this environment.
+	VelocityLoginsPerIP1H *float64 `json:"velocity.logins_per_ip_1h,omitempty" url:"velocity.logins_per_ip_1h,omitempty"`
+	// This reason's weight in this environment.
+	VelocityLoginsPerUser1H *float64 `json:"velocity.logins_per_user_1h,omitempty" url:"velocity.logins_per_user_1h,omitempty"`
+	// This reason's weight in this environment.
+	VelocityEventsPerIP1H *float64 `json:"velocity.events_per_ip_1h,omitempty" url:"velocity.events_per_ip_1h,omitempty"`
+	// This reason's weight in this environment.
+	VelocityEventsPerUser1H *float64 `json:"velocity.events_per_user_1h,omitempty" url:"velocity.events_per_user_1h,omitempty"`
+	// This reason's weight in this environment.
+	DuplicateCanonicalMailbox *float64 `json:"duplicate.canonical_mailbox,omitempty" url:"duplicate.canonical_mailbox,omitempty"`
+	// This reason's weight in this environment.
+	DuplicateDevice *float64 `json:"duplicate.device,omitempty" url:"duplicate.device,omitempty"`
+	// This reason's weight in this environment.
+	HistoryFraudMailbox *float64 `json:"history.fraud_mailbox,omitempty" url:"history.fraud_mailbox,omitempty"`
+	// This reason's weight in this environment.
+	HistoryFraudUser *float64 `json:"history.fraud_user,omitempty" url:"history.fraud_user,omitempty"`
+	// This reason's weight in this environment.
+	HistoryFraudIP *float64 `json:"history.fraud_ip,omitempty" url:"history.fraud_ip,omitempty"`
+	// This reason's weight in this environment.
+	HistoryFraudSubnet *float64 `json:"history.fraud_subnet,omitempty" url:"history.fraud_subnet,omitempty"`
+	// This reason's weight in this environment.
+	HistoryFraudCard *float64 `json:"history.fraud_card,omitempty" url:"history.fraud_card,omitempty"`
+	// This reason's weight in this environment.
+	HistoryFraudDevice *float64 `json:"history.fraud_device,omitempty" url:"history.fraud_device,omitempty"`
+	// This reason's weight in this environment.
+	CheckoutCardCountryMismatch *float64 `json:"checkout.card_country_mismatch,omitempty" url:"checkout.card_country_mismatch,omitempty"`
+	// This reason's weight in this environment.
+	CheckoutBillingCountryMismatch *float64 `json:"checkout.billing_country_mismatch,omitempty" url:"checkout.billing_country_mismatch,omitempty"`
+	// This reason's weight in this environment.
+	CheckoutPrepaidCard *float64 `json:"checkout.prepaid_card,omitempty" url:"checkout.prepaid_card,omitempty"`
+	// This reason's weight in this environment.
+	DeviceAutomation *float64 `json:"device.automation,omitempty" url:"device.automation,omitempty"`
+	// This reason's weight in this environment.
+	DeviceInvalid *float64 `json:"device.invalid,omitempty" url:"device.invalid,omitempty"`
+	// This reason's weight in this environment.
+	LoginNewCountry *float64 `json:"login.new_country,omitempty" url:"login.new_country,omitempty"`
+	// This reason's weight in this environment.
+	LoginNewNetwork *float64 `json:"login.new_network,omitempty" url:"login.new_network,omitempty"`
+	// This reason's weight in this environment.
+	CaptchaFailed *float64 `json:"captcha.failed,omitempty" url:"captcha.failed,omitempty"`
+	// This reason's weight in this environment.
+	CaptchaMissing *float64 `json:"captcha.missing,omitempty" url:"captcha.missing,omitempty"`
+	// This reason's weight in this environment.
+	ContentSpam *float64 `json:"content.spam,omitempty" url:"content.spam,omitempty"`
+	// This reason's weight in this environment.
+	ContentPhishing *float64 `json:"content.phishing,omitempty" url:"content.phishing,omitempty"`
+	// This reason's weight in this environment.
+	ContentMalware *float64 `json:"content.malware,omitempty" url:"content.malware,omitempty"`
+	// This reason's weight in this environment.
+	ContentFraud *float64 `json:"content.fraud,omitempty" url:"content.fraud,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -39550,6 +42724,12548 @@ func (r *RiskSettingsReasonWeights) String() string {
 type RiskVelocitySignals = map[string]int64
 
 var (
+	schedulingAttendeeErasureFieldObject = big.NewInt(1 << 0)
+	schedulingAttendeeErasureFieldUID    = big.NewInt(1 << 1)
+	schedulingAttendeeErasureFieldErased = big.NewInt(1 << 2)
+)
+
+type SchedulingAttendeeErasure struct {
+	Object SchedulingAttendeeErasureObject `json:"object" url:"object"`
+	// The attendee's uid.
+	UID string `json:"uid" url:"uid"`
+	// How many attendee records were erased, one per booking.
+	Erased float64 `json:"erased" url:"erased"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingAttendeeErasure) GetObject() SchedulingAttendeeErasureObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingAttendeeErasure) GetUID() string {
+	if s == nil {
+		return ""
+	}
+	return s.UID
+}
+
+func (s *SchedulingAttendeeErasure) GetErased() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.Erased
+}
+
+func (s *SchedulingAttendeeErasure) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingAttendeeErasure) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeErasure) SetObject(object SchedulingAttendeeErasureObject) {
+	s.Object = object
+	s.require(schedulingAttendeeErasureFieldObject)
+}
+
+// SetUID sets the UID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeErasure) SetUID(uid string) {
+	s.UID = uid
+	s.require(schedulingAttendeeErasureFieldUID)
+}
+
+// SetErased sets the Erased field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeErasure) SetErased(erased float64) {
+	s.Erased = erased
+	s.require(schedulingAttendeeErasureFieldErased)
+}
+
+func (s *SchedulingAttendeeErasure) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingAttendeeErasure
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingAttendeeErasure(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingAttendeeErasure) MarshalJSON() ([]byte, error) {
+	type embed SchedulingAttendeeErasure
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingAttendeeErasure) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingAttendeeErasureByEmailFieldObject = big.NewInt(1 << 0)
+	schedulingAttendeeErasureByEmailFieldErased = big.NewInt(1 << 1)
+)
+
+type SchedulingAttendeeErasureByEmail struct {
+	Object SchedulingAttendeeErasureByEmailObject `json:"object" url:"object"`
+	// How many attendee and guest records were erased.
+	Erased float64 `json:"erased" url:"erased"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingAttendeeErasureByEmail) GetObject() SchedulingAttendeeErasureByEmailObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingAttendeeErasureByEmail) GetErased() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.Erased
+}
+
+func (s *SchedulingAttendeeErasureByEmail) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingAttendeeErasureByEmail) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeErasureByEmail) SetObject(object SchedulingAttendeeErasureByEmailObject) {
+	s.Object = object
+	s.require(schedulingAttendeeErasureByEmailFieldObject)
+}
+
+// SetErased sets the Erased field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeErasureByEmail) SetErased(erased float64) {
+	s.Erased = erased
+	s.require(schedulingAttendeeErasureByEmailFieldErased)
+}
+
+func (s *SchedulingAttendeeErasureByEmail) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingAttendeeErasureByEmail
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingAttendeeErasureByEmail(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingAttendeeErasureByEmail) MarshalJSON() ([]byte, error) {
+	type embed SchedulingAttendeeErasureByEmail
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingAttendeeErasureByEmail) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingAttendeeErasureByEmailObject string
+
+const (
+	SchedulingAttendeeErasureByEmailObjectSchedulingAttendeeErasure SchedulingAttendeeErasureByEmailObject = "scheduling.attendee_erasure"
+)
+
+func NewSchedulingAttendeeErasureByEmailObjectFromString(s string) (SchedulingAttendeeErasureByEmailObject, error) {
+	switch s {
+	case "scheduling.attendee_erasure":
+		return SchedulingAttendeeErasureByEmailObjectSchedulingAttendeeErasure, nil
+	}
+	var t SchedulingAttendeeErasureByEmailObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingAttendeeErasureByEmailObject) Ptr() *SchedulingAttendeeErasureByEmailObject {
+	return &s
+}
+
+type SchedulingAttendeeErasureObject string
+
+const (
+	SchedulingAttendeeErasureObjectSchedulingAttendeeErasure SchedulingAttendeeErasureObject = "scheduling.attendee_erasure"
+)
+
+func NewSchedulingAttendeeErasureObjectFromString(s string) (SchedulingAttendeeErasureObject, error) {
+	switch s {
+	case "scheduling.attendee_erasure":
+		return SchedulingAttendeeErasureObjectSchedulingAttendeeErasure, nil
+	}
+	var t SchedulingAttendeeErasureObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingAttendeeErasureObject) Ptr() *SchedulingAttendeeErasureObject {
+	return &s
+}
+
+var (
+	schedulingAttendeeInputFieldUID      = big.NewInt(1 << 0)
+	schedulingAttendeeInputFieldName     = big.NewInt(1 << 1)
+	schedulingAttendeeInputFieldEmail    = big.NewInt(1 << 2)
+	schedulingAttendeeInputFieldPhone    = big.NewInt(1 << 3)
+	schedulingAttendeeInputFieldTimeZone = big.NewInt(1 << 4)
+	schedulingAttendeeInputFieldLocale   = big.NewInt(1 << 5)
+)
+
+// Name and email are only needed if coss.com notifies this attendee.
+type SchedulingAttendeeInput struct {
+	// Your own id for this person, used to erase their data later.
+	UID *string `json:"uid,omitempty" url:"uid,omitempty"`
+	// Needed for coss.com to notify them. Can't contain a link.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Where coss.com emails them, if it does.
+	Email *string `json:"email,omitempty" url:"email,omitempty"`
+	// An E.164 number, for SMS reminders.
+	Phone *string `json:"phone,omitempty" url:"phone,omitempty"`
+	// Their IANA time zone. A series keeps their local time across clock changes.
+	TimeZone string `json:"time_zone" url:"time_zone"`
+	// Their locale, such as `en-US`. Emails and texts about the booking are written in it when coss.com has it, otherwise in English, and guests get the same.
+	Locale *string `json:"locale,omitempty" url:"locale,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingAttendeeInput) GetUID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.UID
+}
+
+func (s *SchedulingAttendeeInput) GetName() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Name
+}
+
+func (s *SchedulingAttendeeInput) GetEmail() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Email
+}
+
+func (s *SchedulingAttendeeInput) GetPhone() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Phone
+}
+
+func (s *SchedulingAttendeeInput) GetTimeZone() string {
+	if s == nil {
+		return ""
+	}
+	return s.TimeZone
+}
+
+func (s *SchedulingAttendeeInput) GetLocale() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Locale
+}
+
+func (s *SchedulingAttendeeInput) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingAttendeeInput) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetUID sets the UID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeInput) SetUID(uid *string) {
+	s.UID = uid
+	s.require(schedulingAttendeeInputFieldUID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeInput) SetName(name *string) {
+	s.Name = name
+	s.require(schedulingAttendeeInputFieldName)
+}
+
+// SetEmail sets the Email field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeInput) SetEmail(email *string) {
+	s.Email = email
+	s.require(schedulingAttendeeInputFieldEmail)
+}
+
+// SetPhone sets the Phone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeInput) SetPhone(phone *string) {
+	s.Phone = phone
+	s.require(schedulingAttendeeInputFieldPhone)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeInput) SetTimeZone(timeZone string) {
+	s.TimeZone = timeZone
+	s.require(schedulingAttendeeInputFieldTimeZone)
+}
+
+// SetLocale sets the Locale field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAttendeeInput) SetLocale(locale *string) {
+	s.Locale = locale
+	s.require(schedulingAttendeeInputFieldLocale)
+}
+
+func (s *SchedulingAttendeeInput) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingAttendeeInput
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingAttendeeInput(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingAttendeeInput) MarshalJSON() ([]byte, error) {
+	type embed SchedulingAttendeeInput
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingAttendeeInput) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingAvailabilitySearchResultFieldObject  = big.NewInt(1 << 0)
+	schedulingAvailabilitySearchResultFieldData    = big.NewInt(1 << 1)
+	schedulingAvailabilitySearchResultFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingAvailabilitySearchResult struct {
+	Object SchedulingAvailabilitySearchResultObject `json:"object" url:"object"`
+	// Each host with availability, soonest first.
+	Data []*SchedulingAvailabilitySearchResultDataItem `json:"data" url:"data"`
+	// Whether more hosts matched than `limit` returned.
+	HasMore bool `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingAvailabilitySearchResult) GetObject() SchedulingAvailabilitySearchResultObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingAvailabilitySearchResult) GetData() []*SchedulingAvailabilitySearchResultDataItem {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingAvailabilitySearchResult) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingAvailabilitySearchResult) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingAvailabilitySearchResult) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAvailabilitySearchResult) SetObject(object SchedulingAvailabilitySearchResultObject) {
+	s.Object = object
+	s.require(schedulingAvailabilitySearchResultFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAvailabilitySearchResult) SetData(data []*SchedulingAvailabilitySearchResultDataItem) {
+	s.Data = data
+	s.require(schedulingAvailabilitySearchResultFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAvailabilitySearchResult) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingAvailabilitySearchResultFieldHasMore)
+}
+
+func (s *SchedulingAvailabilitySearchResult) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingAvailabilitySearchResult
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingAvailabilitySearchResult(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingAvailabilitySearchResult) MarshalJSON() ([]byte, error) {
+	type embed SchedulingAvailabilitySearchResult
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingAvailabilitySearchResult) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingAvailabilitySearchResultDataItemFieldHost  = big.NewInt(1 << 0)
+	schedulingAvailabilitySearchResultDataItemFieldUID   = big.NewInt(1 << 1)
+	schedulingAvailabilitySearchResultDataItemFieldSlots = big.NewInt(1 << 2)
+)
+
+// schedulingAvailabilitySearchResultDataItemNullableFields maps the wire names of SchedulingAvailabilitySearchResultDataItem's nullable fields (required or optional) to their field bits.
+var schedulingAvailabilitySearchResultDataItemNullableFields = map[string]*big.Int{
+	"uid": schedulingAvailabilitySearchResultDataItemFieldUID,
+}
+
+type SchedulingAvailabilitySearchResultDataItem struct {
+	// The host's id.
+	Host string `json:"host" url:"host"`
+	// The host's own uid. `null` when none is set.
+	UID *string `json:"uid,omitempty" url:"uid,omitempty"`
+	// The host's soonest slots.
+	Slots []*SchedulingAvailabilitySearchResultDataItemSlotsItem `json:"slots" url:"slots"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItem) GetHost() string {
+	if s == nil {
+		return ""
+	}
+	return s.Host
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItem) GetUID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.UID
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItem) GetSlots() []*SchedulingAvailabilitySearchResultDataItemSlotsItem {
+	if s == nil {
+		return nil
+	}
+	return s.Slots
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetHost sets the Host field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAvailabilitySearchResultDataItem) SetHost(host string) {
+	s.Host = host
+	s.require(schedulingAvailabilitySearchResultDataItemFieldHost)
+}
+
+// SetUID sets the UID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAvailabilitySearchResultDataItem) SetUID(uid *string) {
+	s.UID = uid
+	s.require(schedulingAvailabilitySearchResultDataItemFieldUID)
+}
+
+// SetSlots sets the Slots field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAvailabilitySearchResultDataItem) SetSlots(slots []*SchedulingAvailabilitySearchResultDataItemSlotsItem) {
+	s.Slots = slots
+	s.require(schedulingAvailabilitySearchResultDataItemFieldSlots)
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingAvailabilitySearchResultDataItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingAvailabilitySearchResultDataItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingAvailabilitySearchResultDataItemNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingAvailabilitySearchResultDataItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingAvailabilitySearchResultDataItemSlotsItemFieldStart = big.NewInt(1 << 0)
+	schedulingAvailabilitySearchResultDataItemSlotsItemFieldEnd   = big.NewInt(1 << 1)
+)
+
+type SchedulingAvailabilitySearchResultDataItemSlotsItem struct {
+	// When the slot starts.
+	Start string `json:"start" url:"start"`
+	// When the slot ends.
+	End string `json:"end" url:"end"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItemSlotsItem) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItemSlotsItem) GetEnd() string {
+	if s == nil {
+		return ""
+	}
+	return s.End
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItemSlotsItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItemSlotsItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAvailabilitySearchResultDataItemSlotsItem) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingAvailabilitySearchResultDataItemSlotsItemFieldStart)
+}
+
+// SetEnd sets the End field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingAvailabilitySearchResultDataItemSlotsItem) SetEnd(end string) {
+	s.End = end
+	s.require(schedulingAvailabilitySearchResultDataItemSlotsItemFieldEnd)
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItemSlotsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingAvailabilitySearchResultDataItemSlotsItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingAvailabilitySearchResultDataItemSlotsItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItemSlotsItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingAvailabilitySearchResultDataItemSlotsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingAvailabilitySearchResultDataItemSlotsItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingAvailabilitySearchResultObject string
+
+const (
+	SchedulingAvailabilitySearchResultObjectList SchedulingAvailabilitySearchResultObject = "list"
+)
+
+func NewSchedulingAvailabilitySearchResultObjectFromString(s string) (SchedulingAvailabilitySearchResultObject, error) {
+	switch s {
+	case "list":
+		return SchedulingAvailabilitySearchResultObjectList, nil
+	}
+	var t SchedulingAvailabilitySearchResultObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingAvailabilitySearchResultObject) Ptr() *SchedulingAvailabilitySearchResultObject {
+	return &s
+}
+
+var (
+	schedulingBookingFieldObject             = big.NewInt(1 << 0)
+	schedulingBookingFieldID                 = big.NewInt(1 << 1)
+	schedulingBookingFieldEventType          = big.NewInt(1 << 2)
+	schedulingBookingFieldStatus             = big.NewInt(1 << 3)
+	schedulingBookingFieldTitle              = big.NewInt(1 << 4)
+	schedulingBookingFieldStart              = big.NewInt(1 << 5)
+	schedulingBookingFieldEnd                = big.NewInt(1 << 6)
+	schedulingBookingFieldHosts              = big.NewInt(1 << 7)
+	schedulingBookingFieldAttendees          = big.NewInt(1 << 8)
+	schedulingBookingFieldLocation           = big.NewInt(1 << 9)
+	schedulingBookingFieldHoldExpiresAt      = big.NewInt(1 << 10)
+	schedulingBookingFieldApprovalExpiresAt  = big.NewInt(1 << 11)
+	schedulingBookingFieldSeries             = big.NewInt(1 << 12)
+	schedulingBookingFieldSeriesIndex        = big.NewInt(1 << 13)
+	schedulingBookingFieldGroupSession       = big.NewInt(1 << 14)
+	schedulingBookingFieldCalendarUnverified = big.NewInt(1 << 15)
+	schedulingBookingFieldExternalConflictAt = big.NewInt(1 << 16)
+	schedulingBookingFieldNoShowAt           = big.NewInt(1 << 17)
+	schedulingBookingFieldCancelledAt        = big.NewInt(1 << 18)
+	schedulingBookingFieldCancelledBy        = big.NewInt(1 << 19)
+	schedulingBookingFieldCancellationReason = big.NewInt(1 << 20)
+	schedulingBookingFieldMetadata           = big.NewInt(1 << 21)
+	schedulingBookingFieldCreatedAt          = big.NewInt(1 << 22)
+	schedulingBookingFieldUpdatedAt          = big.NewInt(1 << 23)
+)
+
+// schedulingBookingNullableFields maps the wire names of SchedulingBooking's nullable fields (required or optional) to their field bits.
+var schedulingBookingNullableFields = map[string]*big.Int{
+	"hold_expires_at":      schedulingBookingFieldHoldExpiresAt,
+	"approval_expires_at":  schedulingBookingFieldApprovalExpiresAt,
+	"series":               schedulingBookingFieldSeries,
+	"series_index":         schedulingBookingFieldSeriesIndex,
+	"group_session":        schedulingBookingFieldGroupSession,
+	"external_conflict_at": schedulingBookingFieldExternalConflictAt,
+	"no_show_at":           schedulingBookingFieldNoShowAt,
+	"cancelled_at":         schedulingBookingFieldCancelledAt,
+	"cancelled_by":         schedulingBookingFieldCancelledBy,
+	"cancellation_reason":  schedulingBookingFieldCancellationReason,
+}
+
+type SchedulingBooking struct {
+	Object SchedulingBookingObject `json:"object" url:"object"`
+	ID     string                  `json:"id" url:"id"`
+	// The id of the booked event type.
+	EventType string `json:"event_type" url:"event_type"`
+	// `held`: a hold keeping the slot until `hold_expires_at`, uncharged and known to nobody. `pending_approval`: holds the time until approved, declined or `approval_expires_at`. `confirmed`: booked. `cancelled`: cancelled, or a hold released or expired. `declined`: refused, or its approval deadline passed.
+	Status SchedulingBookingStatus `json:"status" url:"status"`
+	// The event type's title when this was booked.
+	Title string `json:"title" url:"title"`
+	// When the booking starts.
+	Start string `json:"start" url:"start"`
+	// When the booking ends, without buffers.
+	End string `json:"end" url:"end"`
+	// The ids of the hosts taking it.
+	Hosts []string `json:"hosts" url:"hosts"`
+	// Who's booked: the attendee first, then any guests they added. A group session's seat is its own booking.
+	Attendees []*SchedulingBookingAttendeesItem `json:"attendees" url:"attendees"`
+	Location  *SchedulingLocation               `json:"location" url:"location"`
+	// When a `held` booking gives up its slot. `null` otherwise.
+	HoldExpiresAt *string `json:"hold_expires_at,omitempty" url:"hold_expires_at,omitempty"`
+	// When a `pending_approval` booking is declined if nobody decides. `null` otherwise.
+	ApprovalExpiresAt *string `json:"approval_expires_at,omitempty" url:"approval_expires_at,omitempty"`
+	// The id of the series it belongs to. `null`: not part of one.
+	Series *string `json:"series,omitempty" url:"series,omitempty"`
+	// Its place in the series, from 0. `null`: not part of one.
+	SeriesIndex *float64 `json:"series_index,omitempty" url:"series_index,omitempty"`
+	// The id of the group session whose seat this is. `null`: not a seat.
+	GroupSession *string `json:"group_session,omitempty" url:"group_session,omitempty"`
+	// Reserved for flagging a booking made on last known calendar data. Nothing sets it yet, so it's always `false`.
+	CalendarUnverified bool `json:"calendar_unverified" url:"calendar_unverified"`
+	// When something else landed on this time in the host's calendar, or the host changed the event. The booking stands. `null`: no conflict known.
+	ExternalConflictAt *string `json:"external_conflict_at,omitempty" url:"external_conflict_at,omitempty"`
+	// When the attendee was marked as a no-show. `null`: not marked.
+	NoShowAt *string `json:"no_show_at,omitempty" url:"no_show_at,omitempty"`
+	// When it was cancelled. `null`: not cancelled.
+	CancelledAt *string `json:"cancelled_at,omitempty" url:"cancelled_at,omitempty"`
+	// Who cancelled it: `api_key`, `user` (the dashboard), `host_session`, `booker_session`, `manage_session` (the attendee's link) or `system`. `null`: not cancelled, or cancelled before this was recorded.
+	CancelledBy *SchedulingBookingCancelledBy `json:"cancelled_by,omitempty" url:"cancelled_by,omitempty"`
+	// Why, if they said. Only when retrieving one booking. It's erased with the attendee's details, and it's never in webhooks, logs or emails.
+	CancellationReason *string `json:"cancellation_reason,omitempty" url:"cancellation_reason,omitempty"`
+	// Your own key-value pairs.
+	Metadata  map[string]string `json:"metadata" url:"metadata"`
+	CreatedAt string            `json:"created_at" url:"created_at"`
+	UpdatedAt string            `json:"updated_at" url:"updated_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBooking) GetObject() SchedulingBookingObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingBooking) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingBooking) GetEventType() string {
+	if s == nil {
+		return ""
+	}
+	return s.EventType
+}
+
+func (s *SchedulingBooking) GetStatus() SchedulingBookingStatus {
+	if s == nil {
+		return ""
+	}
+	return s.Status
+}
+
+func (s *SchedulingBooking) GetTitle() string {
+	if s == nil {
+		return ""
+	}
+	return s.Title
+}
+
+func (s *SchedulingBooking) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingBooking) GetEnd() string {
+	if s == nil {
+		return ""
+	}
+	return s.End
+}
+
+func (s *SchedulingBooking) GetHosts() []string {
+	if s == nil {
+		return nil
+	}
+	return s.Hosts
+}
+
+func (s *SchedulingBooking) GetAttendees() []*SchedulingBookingAttendeesItem {
+	if s == nil {
+		return nil
+	}
+	return s.Attendees
+}
+
+func (s *SchedulingBooking) GetLocation() *SchedulingLocation {
+	if s == nil {
+		return nil
+	}
+	return s.Location
+}
+
+func (s *SchedulingBooking) GetHoldExpiresAt() *string {
+	if s == nil {
+		return nil
+	}
+	return s.HoldExpiresAt
+}
+
+func (s *SchedulingBooking) GetApprovalExpiresAt() *string {
+	if s == nil {
+		return nil
+	}
+	return s.ApprovalExpiresAt
+}
+
+func (s *SchedulingBooking) GetSeries() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Series
+}
+
+func (s *SchedulingBooking) GetSeriesIndex() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.SeriesIndex
+}
+
+func (s *SchedulingBooking) GetGroupSession() *string {
+	if s == nil {
+		return nil
+	}
+	return s.GroupSession
+}
+
+func (s *SchedulingBooking) GetCalendarUnverified() bool {
+	if s == nil {
+		return false
+	}
+	return s.CalendarUnverified
+}
+
+func (s *SchedulingBooking) GetExternalConflictAt() *string {
+	if s == nil {
+		return nil
+	}
+	return s.ExternalConflictAt
+}
+
+func (s *SchedulingBooking) GetNoShowAt() *string {
+	if s == nil {
+		return nil
+	}
+	return s.NoShowAt
+}
+
+func (s *SchedulingBooking) GetCancelledAt() *string {
+	if s == nil {
+		return nil
+	}
+	return s.CancelledAt
+}
+
+func (s *SchedulingBooking) GetCancelledBy() *SchedulingBookingCancelledBy {
+	if s == nil {
+		return nil
+	}
+	return s.CancelledBy
+}
+
+func (s *SchedulingBooking) GetCancellationReason() *string {
+	if s == nil {
+		return nil
+	}
+	return s.CancellationReason
+}
+
+func (s *SchedulingBooking) GetMetadata() map[string]string {
+	if s == nil {
+		return nil
+	}
+	return s.Metadata
+}
+
+func (s *SchedulingBooking) GetCreatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.CreatedAt
+}
+
+func (s *SchedulingBooking) GetUpdatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.UpdatedAt
+}
+
+func (s *SchedulingBooking) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBooking) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetObject(object SchedulingBookingObject) {
+	s.Object = object
+	s.require(schedulingBookingFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetID(id string) {
+	s.ID = id
+	s.require(schedulingBookingFieldID)
+}
+
+// SetEventType sets the EventType field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetEventType(eventType string) {
+	s.EventType = eventType
+	s.require(schedulingBookingFieldEventType)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetStatus(status SchedulingBookingStatus) {
+	s.Status = status
+	s.require(schedulingBookingFieldStatus)
+}
+
+// SetTitle sets the Title field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetTitle(title string) {
+	s.Title = title
+	s.require(schedulingBookingFieldTitle)
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingBookingFieldStart)
+}
+
+// SetEnd sets the End field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetEnd(end string) {
+	s.End = end
+	s.require(schedulingBookingFieldEnd)
+}
+
+// SetHosts sets the Hosts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetHosts(hosts []string) {
+	s.Hosts = hosts
+	s.require(schedulingBookingFieldHosts)
+}
+
+// SetAttendees sets the Attendees field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetAttendees(attendees []*SchedulingBookingAttendeesItem) {
+	s.Attendees = attendees
+	s.require(schedulingBookingFieldAttendees)
+}
+
+// SetLocation sets the Location field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetLocation(location *SchedulingLocation) {
+	s.Location = location
+	s.require(schedulingBookingFieldLocation)
+}
+
+// SetHoldExpiresAt sets the HoldExpiresAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetHoldExpiresAt(holdExpiresAt *string) {
+	s.HoldExpiresAt = holdExpiresAt
+	s.require(schedulingBookingFieldHoldExpiresAt)
+}
+
+// SetApprovalExpiresAt sets the ApprovalExpiresAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetApprovalExpiresAt(approvalExpiresAt *string) {
+	s.ApprovalExpiresAt = approvalExpiresAt
+	s.require(schedulingBookingFieldApprovalExpiresAt)
+}
+
+// SetSeries sets the Series field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetSeries(series *string) {
+	s.Series = series
+	s.require(schedulingBookingFieldSeries)
+}
+
+// SetSeriesIndex sets the SeriesIndex field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetSeriesIndex(seriesIndex *float64) {
+	s.SeriesIndex = seriesIndex
+	s.require(schedulingBookingFieldSeriesIndex)
+}
+
+// SetGroupSession sets the GroupSession field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetGroupSession(groupSession *string) {
+	s.GroupSession = groupSession
+	s.require(schedulingBookingFieldGroupSession)
+}
+
+// SetCalendarUnverified sets the CalendarUnverified field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetCalendarUnverified(calendarUnverified bool) {
+	s.CalendarUnverified = calendarUnverified
+	s.require(schedulingBookingFieldCalendarUnverified)
+}
+
+// SetExternalConflictAt sets the ExternalConflictAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetExternalConflictAt(externalConflictAt *string) {
+	s.ExternalConflictAt = externalConflictAt
+	s.require(schedulingBookingFieldExternalConflictAt)
+}
+
+// SetNoShowAt sets the NoShowAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetNoShowAt(noShowAt *string) {
+	s.NoShowAt = noShowAt
+	s.require(schedulingBookingFieldNoShowAt)
+}
+
+// SetCancelledAt sets the CancelledAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetCancelledAt(cancelledAt *string) {
+	s.CancelledAt = cancelledAt
+	s.require(schedulingBookingFieldCancelledAt)
+}
+
+// SetCancelledBy sets the CancelledBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetCancelledBy(cancelledBy *SchedulingBookingCancelledBy) {
+	s.CancelledBy = cancelledBy
+	s.require(schedulingBookingFieldCancelledBy)
+}
+
+// SetCancellationReason sets the CancellationReason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetCancellationReason(cancellationReason *string) {
+	s.CancellationReason = cancellationReason
+	s.require(schedulingBookingFieldCancellationReason)
+}
+
+// SetMetadata sets the Metadata field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetMetadata(metadata map[string]string) {
+	s.Metadata = metadata
+	s.require(schedulingBookingFieldMetadata)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetCreatedAt(createdAt string) {
+	s.CreatedAt = createdAt
+	s.require(schedulingBookingFieldCreatedAt)
+}
+
+// SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBooking) SetUpdatedAt(updatedAt string) {
+	s.UpdatedAt = updatedAt
+	s.require(schedulingBookingFieldUpdatedAt)
+}
+
+func (s *SchedulingBooking) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBooking
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBooking(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingBookingNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBooking) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBooking
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBooking) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingBookingAttendeesItemFieldID       = big.NewInt(1 << 0)
+	schedulingBookingAttendeesItemFieldRole     = big.NewInt(1 << 1)
+	schedulingBookingAttendeesItemFieldUID      = big.NewInt(1 << 2)
+	schedulingBookingAttendeesItemFieldName     = big.NewInt(1 << 3)
+	schedulingBookingAttendeesItemFieldEmail    = big.NewInt(1 << 4)
+	schedulingBookingAttendeesItemFieldPhone    = big.NewInt(1 << 5)
+	schedulingBookingAttendeesItemFieldTimeZone = big.NewInt(1 << 6)
+	schedulingBookingAttendeesItemFieldLocale   = big.NewInt(1 << 7)
+	schedulingBookingAttendeesItemFieldAnswers  = big.NewInt(1 << 8)
+)
+
+// schedulingBookingAttendeesItemNullableFields maps the wire names of SchedulingBookingAttendeesItem's nullable fields (required or optional) to their field bits.
+var schedulingBookingAttendeesItemNullableFields = map[string]*big.Int{
+	"uid":    schedulingBookingAttendeesItemFieldUID,
+	"name":   schedulingBookingAttendeesItemFieldName,
+	"email":  schedulingBookingAttendeesItemFieldEmail,
+	"phone":  schedulingBookingAttendeesItemFieldPhone,
+	"locale": schedulingBookingAttendeesItemFieldLocale,
+}
+
+type SchedulingBookingAttendeesItem struct {
+	ID string `json:"id" url:"id"`
+	// `attendee` booked it and comes first; a `guest` was added by them.
+	Role SchedulingBookingAttendeesItemRole `json:"role" url:"role"`
+	// Your own id for this person. `null` when none was given.
+	UID *string `json:"uid,omitempty" url:"uid,omitempty"`
+	// `null` when not given, or after their details are erased.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// `null` when not given, or after their details are erased.
+	Email *string `json:"email,omitempty" url:"email,omitempty"`
+	// `null` when not given, or after their details are erased.
+	Phone *string `json:"phone,omitempty" url:"phone,omitempty"`
+	// Their IANA time zone.
+	TimeZone string `json:"time_zone" url:"time_zone"`
+	// Their locale. `null` when not given.
+	Locale *string `json:"locale,omitempty" url:"locale,omitempty"`
+	// Only when retrieving one booking.
+	Answers map[string]*SchedulingBookingAttendeesItemAnswersValue `json:"answers,omitempty" url:"answers,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingAttendeesItem) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingBookingAttendeesItem) GetRole() SchedulingBookingAttendeesItemRole {
+	if s == nil {
+		return ""
+	}
+	return s.Role
+}
+
+func (s *SchedulingBookingAttendeesItem) GetUID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.UID
+}
+
+func (s *SchedulingBookingAttendeesItem) GetName() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Name
+}
+
+func (s *SchedulingBookingAttendeesItem) GetEmail() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Email
+}
+
+func (s *SchedulingBookingAttendeesItem) GetPhone() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Phone
+}
+
+func (s *SchedulingBookingAttendeesItem) GetTimeZone() string {
+	if s == nil {
+		return ""
+	}
+	return s.TimeZone
+}
+
+func (s *SchedulingBookingAttendeesItem) GetLocale() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Locale
+}
+
+func (s *SchedulingBookingAttendeesItem) GetAnswers() map[string]*SchedulingBookingAttendeesItemAnswersValue {
+	if s == nil {
+		return nil
+	}
+	return s.Answers
+}
+
+func (s *SchedulingBookingAttendeesItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingAttendeesItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingAttendeesItem) SetID(id string) {
+	s.ID = id
+	s.require(schedulingBookingAttendeesItemFieldID)
+}
+
+// SetRole sets the Role field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingAttendeesItem) SetRole(role SchedulingBookingAttendeesItemRole) {
+	s.Role = role
+	s.require(schedulingBookingAttendeesItemFieldRole)
+}
+
+// SetUID sets the UID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingAttendeesItem) SetUID(uid *string) {
+	s.UID = uid
+	s.require(schedulingBookingAttendeesItemFieldUID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingAttendeesItem) SetName(name *string) {
+	s.Name = name
+	s.require(schedulingBookingAttendeesItemFieldName)
+}
+
+// SetEmail sets the Email field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingAttendeesItem) SetEmail(email *string) {
+	s.Email = email
+	s.require(schedulingBookingAttendeesItemFieldEmail)
+}
+
+// SetPhone sets the Phone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingAttendeesItem) SetPhone(phone *string) {
+	s.Phone = phone
+	s.require(schedulingBookingAttendeesItemFieldPhone)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingAttendeesItem) SetTimeZone(timeZone string) {
+	s.TimeZone = timeZone
+	s.require(schedulingBookingAttendeesItemFieldTimeZone)
+}
+
+// SetLocale sets the Locale field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingAttendeesItem) SetLocale(locale *string) {
+	s.Locale = locale
+	s.require(schedulingBookingAttendeesItemFieldLocale)
+}
+
+// SetAnswers sets the Answers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingAttendeesItem) SetAnswers(answers map[string]*SchedulingBookingAttendeesItemAnswersValue) {
+	s.Answers = answers
+	s.require(schedulingBookingAttendeesItemFieldAnswers)
+}
+
+func (s *SchedulingBookingAttendeesItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingAttendeesItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingAttendeesItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingBookingAttendeesItemNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingAttendeesItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingAttendeesItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingAttendeesItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingBookingAttendeesItemAnswersValue struct {
+	String     string
+	StringList []string
+
+	typ string
+}
+
+func (s *SchedulingBookingAttendeesItemAnswersValue) GetString() string {
+	if s == nil {
+		return ""
+	}
+	return s.String
+}
+
+func (s *SchedulingBookingAttendeesItemAnswersValue) GetStringList() []string {
+	if s == nil {
+		return nil
+	}
+	return s.StringList
+}
+
+func (s *SchedulingBookingAttendeesItemAnswersValue) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		s.typ = "String"
+		s.String = valueString
+		return nil
+	}
+	var valueStringList []string
+	if err := json.Unmarshal(data, &valueStringList); err == nil {
+		s.typ = "StringList"
+		s.StringList = valueStringList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
+}
+
+func (s SchedulingBookingAttendeesItemAnswersValue) MarshalJSON() ([]byte, error) {
+	if s.typ == "String" || s.String != "" {
+		return json.Marshal(s.String)
+	}
+	if s.typ == "StringList" || s.StringList != nil {
+		return json.Marshal(s.StringList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+type SchedulingBookingAttendeesItemAnswersValueVisitor interface {
+	VisitString(string) error
+	VisitStringList([]string) error
+}
+
+func (s *SchedulingBookingAttendeesItemAnswersValue) Accept(visitor SchedulingBookingAttendeesItemAnswersValueVisitor) error {
+	if s.typ == "String" || s.String != "" {
+		return visitor.VisitString(s.String)
+	}
+	if s.typ == "StringList" || s.StringList != nil {
+		return visitor.VisitStringList(s.StringList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+// `attendee` booked it and comes first; a `guest` was added by them.
+type SchedulingBookingAttendeesItemRole string
+
+const (
+	SchedulingBookingAttendeesItemRoleAttendee SchedulingBookingAttendeesItemRole = "attendee"
+	SchedulingBookingAttendeesItemRoleGuest    SchedulingBookingAttendeesItemRole = "guest"
+)
+
+func NewSchedulingBookingAttendeesItemRoleFromString(s string) (SchedulingBookingAttendeesItemRole, error) {
+	switch s {
+	case "attendee":
+		return SchedulingBookingAttendeesItemRoleAttendee, nil
+	case "guest":
+		return SchedulingBookingAttendeesItemRoleGuest, nil
+	}
+	var t SchedulingBookingAttendeesItemRole
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingAttendeesItemRole) Ptr() *SchedulingBookingAttendeesItemRole {
+	return &s
+}
+
+// Who cancelled it: `api_key`, `user` (the dashboard), `host_session`, `booker_session`, `manage_session` (the attendee's link) or `system`. `null`: not cancelled, or cancelled before this was recorded.
+type SchedulingBookingCancelledBy string
+
+const (
+	SchedulingBookingCancelledByAPIKey        SchedulingBookingCancelledBy = "api_key"
+	SchedulingBookingCancelledByUser          SchedulingBookingCancelledBy = "user"
+	SchedulingBookingCancelledByHostSession   SchedulingBookingCancelledBy = "host_session"
+	SchedulingBookingCancelledByBookerSession SchedulingBookingCancelledBy = "booker_session"
+	SchedulingBookingCancelledByManageSession SchedulingBookingCancelledBy = "manage_session"
+	SchedulingBookingCancelledBySystem        SchedulingBookingCancelledBy = "system"
+)
+
+func NewSchedulingBookingCancelledByFromString(s string) (SchedulingBookingCancelledBy, error) {
+	switch s {
+	case "api_key":
+		return SchedulingBookingCancelledByAPIKey, nil
+	case "user":
+		return SchedulingBookingCancelledByUser, nil
+	case "host_session":
+		return SchedulingBookingCancelledByHostSession, nil
+	case "booker_session":
+		return SchedulingBookingCancelledByBookerSession, nil
+	case "manage_session":
+		return SchedulingBookingCancelledByManageSession, nil
+	case "system":
+		return SchedulingBookingCancelledBySystem, nil
+	}
+	var t SchedulingBookingCancelledBy
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingCancelledBy) Ptr() *SchedulingBookingCancelledBy {
+	return &s
+}
+
+var (
+	schedulingBookingEventFieldObject     = big.NewInt(1 << 0)
+	schedulingBookingEventFieldID         = big.NewInt(1 << 1)
+	schedulingBookingEventFieldSequence   = big.NewInt(1 << 2)
+	schedulingBookingEventFieldType       = big.NewInt(1 << 3)
+	schedulingBookingEventFieldActor      = big.NewInt(1 << 4)
+	schedulingBookingEventFieldDetails    = big.NewInt(1 << 5)
+	schedulingBookingEventFieldOccurredAt = big.NewInt(1 << 6)
+)
+
+type SchedulingBookingEvent struct {
+	Object SchedulingBookingEventObject `json:"object" url:"object"`
+	ID     string                       `json:"id" url:"id"`
+	// This booking's events count up from 1.
+	Sequence float64 `json:"sequence" url:"sequence"`
+	// What happened, such as `scheduling.booking.confirmed`, `scheduling.booking.rescheduled` or `scheduling.booking.cancelled`.
+	Type string `json:"type" url:"type"`
+	// Who did it.
+	Actor *SchedulingBookingEventActor `json:"actor" url:"actor"`
+	// More about it, such as `previous_start` on a reschedule. Never personal data.
+	Details map[string]any `json:"details" url:"details"`
+	// When it happened.
+	OccurredAt string `json:"occurred_at" url:"occurred_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingEvent) GetObject() SchedulingBookingEventObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingBookingEvent) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingBookingEvent) GetSequence() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.Sequence
+}
+
+func (s *SchedulingBookingEvent) GetType() string {
+	if s == nil {
+		return ""
+	}
+	return s.Type
+}
+
+func (s *SchedulingBookingEvent) GetActor() *SchedulingBookingEventActor {
+	if s == nil {
+		return nil
+	}
+	return s.Actor
+}
+
+func (s *SchedulingBookingEvent) GetDetails() map[string]any {
+	if s == nil {
+		return nil
+	}
+	return s.Details
+}
+
+func (s *SchedulingBookingEvent) GetOccurredAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.OccurredAt
+}
+
+func (s *SchedulingBookingEvent) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingEvent) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEvent) SetObject(object SchedulingBookingEventObject) {
+	s.Object = object
+	s.require(schedulingBookingEventFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEvent) SetID(id string) {
+	s.ID = id
+	s.require(schedulingBookingEventFieldID)
+}
+
+// SetSequence sets the Sequence field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEvent) SetSequence(sequence float64) {
+	s.Sequence = sequence
+	s.require(schedulingBookingEventFieldSequence)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEvent) SetType(type_ string) {
+	s.Type = type_
+	s.require(schedulingBookingEventFieldType)
+}
+
+// SetActor sets the Actor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEvent) SetActor(actor *SchedulingBookingEventActor) {
+	s.Actor = actor
+	s.require(schedulingBookingEventFieldActor)
+}
+
+// SetDetails sets the Details field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEvent) SetDetails(details map[string]any) {
+	s.Details = details
+	s.require(schedulingBookingEventFieldDetails)
+}
+
+// SetOccurredAt sets the OccurredAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEvent) SetOccurredAt(occurredAt string) {
+	s.OccurredAt = occurredAt
+	s.require(schedulingBookingEventFieldOccurredAt)
+}
+
+func (s *SchedulingBookingEvent) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingEvent
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingEvent(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingEvent) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingEvent
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingEvent) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingBookingEventActorFieldKind = big.NewInt(1 << 0)
+	schedulingBookingEventActorFieldID   = big.NewInt(1 << 1)
+)
+
+// schedulingBookingEventActorNullableFields maps the wire names of SchedulingBookingEventActor's nullable fields (required or optional) to their field bits.
+var schedulingBookingEventActorNullableFields = map[string]*big.Int{
+	"id": schedulingBookingEventActorFieldID,
+}
+
+// Who did it.
+type SchedulingBookingEventActor struct {
+	Kind SchedulingBookingEventActorKind `json:"kind" url:"kind"`
+	// The API key, user or session's id. `null` for `system`.
+	ID *string `json:"id,omitempty" url:"id,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingEventActor) GetKind() SchedulingBookingEventActorKind {
+	if s == nil {
+		return ""
+	}
+	return s.Kind
+}
+
+func (s *SchedulingBookingEventActor) GetID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.ID
+}
+
+func (s *SchedulingBookingEventActor) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingEventActor) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEventActor) SetKind(kind SchedulingBookingEventActorKind) {
+	s.Kind = kind
+	s.require(schedulingBookingEventActorFieldKind)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEventActor) SetID(id *string) {
+	s.ID = id
+	s.require(schedulingBookingEventActorFieldID)
+}
+
+func (s *SchedulingBookingEventActor) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingEventActor
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingEventActor(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingBookingEventActorNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingEventActor) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingEventActor
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingEventActor) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingBookingEventActorKind string
+
+const (
+	SchedulingBookingEventActorKindAPIKey        SchedulingBookingEventActorKind = "api_key"
+	SchedulingBookingEventActorKindUser          SchedulingBookingEventActorKind = "user"
+	SchedulingBookingEventActorKindHostSession   SchedulingBookingEventActorKind = "host_session"
+	SchedulingBookingEventActorKindBookerSession SchedulingBookingEventActorKind = "booker_session"
+	SchedulingBookingEventActorKindManageSession SchedulingBookingEventActorKind = "manage_session"
+	SchedulingBookingEventActorKindSystem        SchedulingBookingEventActorKind = "system"
+)
+
+func NewSchedulingBookingEventActorKindFromString(s string) (SchedulingBookingEventActorKind, error) {
+	switch s {
+	case "api_key":
+		return SchedulingBookingEventActorKindAPIKey, nil
+	case "user":
+		return SchedulingBookingEventActorKindUser, nil
+	case "host_session":
+		return SchedulingBookingEventActorKindHostSession, nil
+	case "booker_session":
+		return SchedulingBookingEventActorKindBookerSession, nil
+	case "manage_session":
+		return SchedulingBookingEventActorKindManageSession, nil
+	case "system":
+		return SchedulingBookingEventActorKindSystem, nil
+	}
+	var t SchedulingBookingEventActorKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingEventActorKind) Ptr() *SchedulingBookingEventActorKind {
+	return &s
+}
+
+var (
+	schedulingBookingEventListFieldObject  = big.NewInt(1 << 0)
+	schedulingBookingEventListFieldData    = big.NewInt(1 << 1)
+	schedulingBookingEventListFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingBookingEventList struct {
+	Object  SchedulingBookingEventListObject `json:"object" url:"object"`
+	Data    []*SchedulingBookingEvent        `json:"data" url:"data"`
+	HasMore bool                             `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingEventList) GetObject() SchedulingBookingEventListObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingBookingEventList) GetData() []*SchedulingBookingEvent {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingBookingEventList) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingBookingEventList) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingEventList) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEventList) SetObject(object SchedulingBookingEventListObject) {
+	s.Object = object
+	s.require(schedulingBookingEventListFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEventList) SetData(data []*SchedulingBookingEvent) {
+	s.Data = data
+	s.require(schedulingBookingEventListFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingEventList) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingBookingEventListFieldHasMore)
+}
+
+func (s *SchedulingBookingEventList) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingEventList
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingEventList(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingEventList) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingEventList
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingEventList) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingBookingEventListObject string
+
+const (
+	SchedulingBookingEventListObjectList SchedulingBookingEventListObject = "list"
+)
+
+func NewSchedulingBookingEventListObjectFromString(s string) (SchedulingBookingEventListObject, error) {
+	switch s {
+	case "list":
+		return SchedulingBookingEventListObjectList, nil
+	}
+	var t SchedulingBookingEventListObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingEventListObject) Ptr() *SchedulingBookingEventListObject {
+	return &s
+}
+
+type SchedulingBookingEventObject string
+
+const (
+	SchedulingBookingEventObjectSchedulingBookingEvent SchedulingBookingEventObject = "scheduling.booking_event"
+)
+
+func NewSchedulingBookingEventObjectFromString(s string) (SchedulingBookingEventObject, error) {
+	switch s {
+	case "scheduling.booking_event":
+		return SchedulingBookingEventObjectSchedulingBookingEvent, nil
+	}
+	var t SchedulingBookingEventObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingEventObject) Ptr() *SchedulingBookingEventObject {
+	return &s
+}
+
+var (
+	schedulingBookingListFieldObject  = big.NewInt(1 << 0)
+	schedulingBookingListFieldData    = big.NewInt(1 << 1)
+	schedulingBookingListFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingBookingList struct {
+	Object  SchedulingBookingListObject `json:"object" url:"object"`
+	Data    []*SchedulingBooking        `json:"data" url:"data"`
+	HasMore bool                        `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingList) GetObject() SchedulingBookingListObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingBookingList) GetData() []*SchedulingBooking {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingBookingList) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingBookingList) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingList) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingList) SetObject(object SchedulingBookingListObject) {
+	s.Object = object
+	s.require(schedulingBookingListFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingList) SetData(data []*SchedulingBooking) {
+	s.Data = data
+	s.require(schedulingBookingListFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingList) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingBookingListFieldHasMore)
+}
+
+func (s *SchedulingBookingList) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingList
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingList(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingList) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingList
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingList) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingBookingListObject string
+
+const (
+	SchedulingBookingListObjectList SchedulingBookingListObject = "list"
+)
+
+func NewSchedulingBookingListObjectFromString(s string) (SchedulingBookingListObject, error) {
+	switch s {
+	case "list":
+		return SchedulingBookingListObjectList, nil
+	}
+	var t SchedulingBookingListObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingListObject) Ptr() *SchedulingBookingListObject {
+	return &s
+}
+
+var (
+	schedulingBookingNotificationFieldObject      = big.NewInt(1 << 0)
+	schedulingBookingNotificationFieldID          = big.NewInt(1 << 1)
+	schedulingBookingNotificationFieldKind        = big.NewInt(1 << 2)
+	schedulingBookingNotificationFieldReminderKey = big.NewInt(1 << 3)
+	schedulingBookingNotificationFieldChannel     = big.NewInt(1 << 4)
+	schedulingBookingNotificationFieldRecipient   = big.NewInt(1 << 5)
+	schedulingBookingNotificationFieldDueAt       = big.NewInt(1 << 6)
+	schedulingBookingNotificationFieldFinishedAt  = big.NewInt(1 << 7)
+	schedulingBookingNotificationFieldOutcome     = big.NewInt(1 << 8)
+)
+
+// schedulingBookingNotificationNullableFields maps the wire names of SchedulingBookingNotification's nullable fields (required or optional) to their field bits.
+var schedulingBookingNotificationNullableFields = map[string]*big.Int{
+	"reminder_key": schedulingBookingNotificationFieldReminderKey,
+	"finished_at":  schedulingBookingNotificationFieldFinishedAt,
+	"outcome":      schedulingBookingNotificationFieldOutcome,
+}
+
+type SchedulingBookingNotification struct {
+	Object SchedulingBookingNotificationObject `json:"object" url:"object"`
+	ID     string                              `json:"id" url:"id"`
+	// `reminder` for an entry of `reminders`; otherwise a standard notification, or `started`/`ended`.
+	Kind        string                                 `json:"kind" url:"kind"`
+	ReminderKey *string                                `json:"reminder_key,omitempty" url:"reminder_key,omitempty"`
+	Channel     SchedulingBookingNotificationChannel   `json:"channel" url:"channel"`
+	Recipient   SchedulingBookingNotificationRecipient `json:"recipient" url:"recipient"`
+	DueAt       string                                 `json:"due_at" url:"due_at"`
+	FinishedAt  *string                                `json:"finished_at,omitempty" url:"finished_at,omitempty"`
+	// `null` while it's waiting. `sent`, or why not: `too_late`, `filtered`, `no_show`, `no_address`, `no_sender`, `stale`, `superseded`, `failed`.
+	Outcome *string `json:"outcome,omitempty" url:"outcome,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingNotification) GetObject() SchedulingBookingNotificationObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingBookingNotification) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingBookingNotification) GetKind() string {
+	if s == nil {
+		return ""
+	}
+	return s.Kind
+}
+
+func (s *SchedulingBookingNotification) GetReminderKey() *string {
+	if s == nil {
+		return nil
+	}
+	return s.ReminderKey
+}
+
+func (s *SchedulingBookingNotification) GetChannel() SchedulingBookingNotificationChannel {
+	if s == nil {
+		return ""
+	}
+	return s.Channel
+}
+
+func (s *SchedulingBookingNotification) GetRecipient() SchedulingBookingNotificationRecipient {
+	if s == nil {
+		return ""
+	}
+	return s.Recipient
+}
+
+func (s *SchedulingBookingNotification) GetDueAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.DueAt
+}
+
+func (s *SchedulingBookingNotification) GetFinishedAt() *string {
+	if s == nil {
+		return nil
+	}
+	return s.FinishedAt
+}
+
+func (s *SchedulingBookingNotification) GetOutcome() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Outcome
+}
+
+func (s *SchedulingBookingNotification) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingNotification) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotification) SetObject(object SchedulingBookingNotificationObject) {
+	s.Object = object
+	s.require(schedulingBookingNotificationFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotification) SetID(id string) {
+	s.ID = id
+	s.require(schedulingBookingNotificationFieldID)
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotification) SetKind(kind string) {
+	s.Kind = kind
+	s.require(schedulingBookingNotificationFieldKind)
+}
+
+// SetReminderKey sets the ReminderKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotification) SetReminderKey(reminderKey *string) {
+	s.ReminderKey = reminderKey
+	s.require(schedulingBookingNotificationFieldReminderKey)
+}
+
+// SetChannel sets the Channel field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotification) SetChannel(channel SchedulingBookingNotificationChannel) {
+	s.Channel = channel
+	s.require(schedulingBookingNotificationFieldChannel)
+}
+
+// SetRecipient sets the Recipient field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotification) SetRecipient(recipient SchedulingBookingNotificationRecipient) {
+	s.Recipient = recipient
+	s.require(schedulingBookingNotificationFieldRecipient)
+}
+
+// SetDueAt sets the DueAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotification) SetDueAt(dueAt string) {
+	s.DueAt = dueAt
+	s.require(schedulingBookingNotificationFieldDueAt)
+}
+
+// SetFinishedAt sets the FinishedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotification) SetFinishedAt(finishedAt *string) {
+	s.FinishedAt = finishedAt
+	s.require(schedulingBookingNotificationFieldFinishedAt)
+}
+
+// SetOutcome sets the Outcome field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotification) SetOutcome(outcome *string) {
+	s.Outcome = outcome
+	s.require(schedulingBookingNotificationFieldOutcome)
+}
+
+func (s *SchedulingBookingNotification) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingNotification
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingNotification(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingBookingNotificationNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingNotification) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingNotification
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingNotification) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingBookingNotificationChannel string
+
+const (
+	SchedulingBookingNotificationChannelEmail   SchedulingBookingNotificationChannel = "email"
+	SchedulingBookingNotificationChannelSms     SchedulingBookingNotificationChannel = "sms"
+	SchedulingBookingNotificationChannelWebhook SchedulingBookingNotificationChannel = "webhook"
+)
+
+func NewSchedulingBookingNotificationChannelFromString(s string) (SchedulingBookingNotificationChannel, error) {
+	switch s {
+	case "email":
+		return SchedulingBookingNotificationChannelEmail, nil
+	case "sms":
+		return SchedulingBookingNotificationChannelSms, nil
+	case "webhook":
+		return SchedulingBookingNotificationChannelWebhook, nil
+	}
+	var t SchedulingBookingNotificationChannel
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingNotificationChannel) Ptr() *SchedulingBookingNotificationChannel {
+	return &s
+}
+
+var (
+	schedulingBookingNotificationListFieldObject  = big.NewInt(1 << 0)
+	schedulingBookingNotificationListFieldData    = big.NewInt(1 << 1)
+	schedulingBookingNotificationListFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingBookingNotificationList struct {
+	Object  SchedulingBookingNotificationListObject `json:"object" url:"object"`
+	Data    []*SchedulingBookingNotification        `json:"data" url:"data"`
+	HasMore bool                                    `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingNotificationList) GetObject() SchedulingBookingNotificationListObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingBookingNotificationList) GetData() []*SchedulingBookingNotification {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingBookingNotificationList) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingBookingNotificationList) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingNotificationList) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotificationList) SetObject(object SchedulingBookingNotificationListObject) {
+	s.Object = object
+	s.require(schedulingBookingNotificationListFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotificationList) SetData(data []*SchedulingBookingNotification) {
+	s.Data = data
+	s.require(schedulingBookingNotificationListFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingNotificationList) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingBookingNotificationListFieldHasMore)
+}
+
+func (s *SchedulingBookingNotificationList) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingNotificationList
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingNotificationList(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingNotificationList) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingNotificationList
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingNotificationList) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingBookingNotificationListObject string
+
+const (
+	SchedulingBookingNotificationListObjectList SchedulingBookingNotificationListObject = "list"
+)
+
+func NewSchedulingBookingNotificationListObjectFromString(s string) (SchedulingBookingNotificationListObject, error) {
+	switch s {
+	case "list":
+		return SchedulingBookingNotificationListObjectList, nil
+	}
+	var t SchedulingBookingNotificationListObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingNotificationListObject) Ptr() *SchedulingBookingNotificationListObject {
+	return &s
+}
+
+type SchedulingBookingNotificationObject string
+
+const (
+	SchedulingBookingNotificationObjectSchedulingBookingNotification SchedulingBookingNotificationObject = "scheduling.booking_notification"
+)
+
+func NewSchedulingBookingNotificationObjectFromString(s string) (SchedulingBookingNotificationObject, error) {
+	switch s {
+	case "scheduling.booking_notification":
+		return SchedulingBookingNotificationObjectSchedulingBookingNotification, nil
+	}
+	var t SchedulingBookingNotificationObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingNotificationObject) Ptr() *SchedulingBookingNotificationObject {
+	return &s
+}
+
+type SchedulingBookingNotificationRecipient string
+
+const (
+	SchedulingBookingNotificationRecipientAttendee SchedulingBookingNotificationRecipient = "attendee"
+	SchedulingBookingNotificationRecipientHost     SchedulingBookingNotificationRecipient = "host"
+	SchedulingBookingNotificationRecipientEndpoint SchedulingBookingNotificationRecipient = "endpoint"
+	SchedulingBookingNotificationRecipientAddress  SchedulingBookingNotificationRecipient = "address"
+)
+
+func NewSchedulingBookingNotificationRecipientFromString(s string) (SchedulingBookingNotificationRecipient, error) {
+	switch s {
+	case "attendee":
+		return SchedulingBookingNotificationRecipientAttendee, nil
+	case "host":
+		return SchedulingBookingNotificationRecipientHost, nil
+	case "endpoint":
+		return SchedulingBookingNotificationRecipientEndpoint, nil
+	case "address":
+		return SchedulingBookingNotificationRecipientAddress, nil
+	}
+	var t SchedulingBookingNotificationRecipient
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingNotificationRecipient) Ptr() *SchedulingBookingNotificationRecipient {
+	return &s
+}
+
+type SchedulingBookingObject string
+
+const (
+	SchedulingBookingObjectSchedulingBooking SchedulingBookingObject = "scheduling.booking"
+)
+
+func NewSchedulingBookingObjectFromString(s string) (SchedulingBookingObject, error) {
+	switch s {
+	case "scheduling.booking":
+		return SchedulingBookingObjectSchedulingBooking, nil
+	}
+	var t SchedulingBookingObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingObject) Ptr() *SchedulingBookingObject {
+	return &s
+}
+
+// `held`: a hold keeping the slot until `hold_expires_at`, uncharged and known to nobody. `pending_approval`: holds the time until approved, declined or `approval_expires_at`. `confirmed`: booked. `cancelled`: cancelled, or a hold released or expired. `declined`: refused, or its approval deadline passed.
+type SchedulingBookingStatus string
+
+const (
+	SchedulingBookingStatusHeld            SchedulingBookingStatus = "held"
+	SchedulingBookingStatusPendingApproval SchedulingBookingStatus = "pending_approval"
+	SchedulingBookingStatusConfirmed       SchedulingBookingStatus = "confirmed"
+	SchedulingBookingStatusCancelled       SchedulingBookingStatus = "cancelled"
+	SchedulingBookingStatusDeclined        SchedulingBookingStatus = "declined"
+)
+
+func NewSchedulingBookingStatusFromString(s string) (SchedulingBookingStatus, error) {
+	switch s {
+	case "held":
+		return SchedulingBookingStatusHeld, nil
+	case "pending_approval":
+		return SchedulingBookingStatusPendingApproval, nil
+	case "confirmed":
+		return SchedulingBookingStatusConfirmed, nil
+	case "cancelled":
+		return SchedulingBookingStatusCancelled, nil
+	case "declined":
+		return SchedulingBookingStatusDeclined, nil
+	}
+	var t SchedulingBookingStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingStatus) Ptr() *SchedulingBookingStatus {
+	return &s
+}
+
+// How far ahead a slot can be booked: `rolling` for a number of days from now, or `range` for fixed dates. On an event type, `null` means no window of its own.
+type SchedulingBookingWindow struct {
+	SchedulingBookingWindowDays *SchedulingBookingWindowDays
+	SchedulingBookingWindowFrom *SchedulingBookingWindowFrom
+
+	typ string
+}
+
+func (s *SchedulingBookingWindow) GetSchedulingBookingWindowDays() *SchedulingBookingWindowDays {
+	if s == nil {
+		return nil
+	}
+	return s.SchedulingBookingWindowDays
+}
+
+func (s *SchedulingBookingWindow) GetSchedulingBookingWindowFrom() *SchedulingBookingWindowFrom {
+	if s == nil {
+		return nil
+	}
+	return s.SchedulingBookingWindowFrom
+}
+
+func (s *SchedulingBookingWindow) UnmarshalJSON(data []byte) error {
+	if internal.MatchesObjectKeys(data, []string{"kind", "days"}, []string{"kind", "days"}) {
+		valueSchedulingBookingWindowDays := new(SchedulingBookingWindowDays)
+		if err := json.Unmarshal(data, &valueSchedulingBookingWindowDays); err == nil {
+			s.typ = "SchedulingBookingWindowDays"
+			s.SchedulingBookingWindowDays = valueSchedulingBookingWindowDays
+			return nil
+		}
+	}
+	if internal.MatchesObjectKeys(data, []string{"kind", "from", "to"}, []string{"kind", "from", "to"}) {
+		valueSchedulingBookingWindowFrom := new(SchedulingBookingWindowFrom)
+		if err := json.Unmarshal(data, &valueSchedulingBookingWindowFrom); err == nil {
+			s.typ = "SchedulingBookingWindowFrom"
+			s.SchedulingBookingWindowFrom = valueSchedulingBookingWindowFrom
+			return nil
+		}
+	}
+	if internal.HasObjectKeys(data, []string{"kind", "days"}) {
+		valueSchedulingBookingWindowDays := new(SchedulingBookingWindowDays)
+		if err := json.Unmarshal(data, &valueSchedulingBookingWindowDays); err == nil {
+			s.typ = "SchedulingBookingWindowDays"
+			s.SchedulingBookingWindowDays = valueSchedulingBookingWindowDays
+			return nil
+		}
+	}
+	if internal.HasObjectKeys(data, []string{"kind", "from", "to"}) {
+		valueSchedulingBookingWindowFrom := new(SchedulingBookingWindowFrom)
+		if err := json.Unmarshal(data, &valueSchedulingBookingWindowFrom); err == nil {
+			s.typ = "SchedulingBookingWindowFrom"
+			s.SchedulingBookingWindowFrom = valueSchedulingBookingWindowFrom
+			return nil
+		}
+	}
+	valueSchedulingBookingWindowDays := new(SchedulingBookingWindowDays)
+	if err := json.Unmarshal(data, &valueSchedulingBookingWindowDays); err == nil {
+		s.typ = "SchedulingBookingWindowDays"
+		s.SchedulingBookingWindowDays = valueSchedulingBookingWindowDays
+		return nil
+	}
+	valueSchedulingBookingWindowFrom := new(SchedulingBookingWindowFrom)
+	if err := json.Unmarshal(data, &valueSchedulingBookingWindowFrom); err == nil {
+		s.typ = "SchedulingBookingWindowFrom"
+		s.SchedulingBookingWindowFrom = valueSchedulingBookingWindowFrom
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
+}
+
+func (s SchedulingBookingWindow) MarshalJSON() ([]byte, error) {
+	if s.typ == "SchedulingBookingWindowDays" || s.SchedulingBookingWindowDays != nil {
+		return json.Marshal(s.SchedulingBookingWindowDays)
+	}
+	if s.typ == "SchedulingBookingWindowFrom" || s.SchedulingBookingWindowFrom != nil {
+		return json.Marshal(s.SchedulingBookingWindowFrom)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+type SchedulingBookingWindowVisitor interface {
+	VisitSchedulingBookingWindowDays(*SchedulingBookingWindowDays) error
+	VisitSchedulingBookingWindowFrom(*SchedulingBookingWindowFrom) error
+}
+
+func (s *SchedulingBookingWindow) Accept(visitor SchedulingBookingWindowVisitor) error {
+	if s.typ == "SchedulingBookingWindowDays" || s.SchedulingBookingWindowDays != nil {
+		return visitor.VisitSchedulingBookingWindowDays(s.SchedulingBookingWindowDays)
+	}
+	if s.typ == "SchedulingBookingWindowFrom" || s.SchedulingBookingWindowFrom != nil {
+		return visitor.VisitSchedulingBookingWindowFrom(s.SchedulingBookingWindowFrom)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+var (
+	schedulingBookingWindowDaysFieldKind = big.NewInt(1 << 0)
+	schedulingBookingWindowDaysFieldDays = big.NewInt(1 << 1)
+)
+
+type SchedulingBookingWindowDays struct {
+	Kind SchedulingBookingWindowDaysKind `json:"kind" url:"kind"`
+	// Days ahead of now that slots are offered.
+	Days int `json:"days" url:"days"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingWindowDays) GetKind() SchedulingBookingWindowDaysKind {
+	if s == nil {
+		return ""
+	}
+	return s.Kind
+}
+
+func (s *SchedulingBookingWindowDays) GetDays() int {
+	if s == nil {
+		return 0
+	}
+	return s.Days
+}
+
+func (s *SchedulingBookingWindowDays) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingWindowDays) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWindowDays) SetKind(kind SchedulingBookingWindowDaysKind) {
+	s.Kind = kind
+	s.require(schedulingBookingWindowDaysFieldKind)
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWindowDays) SetDays(days int) {
+	s.Days = days
+	s.require(schedulingBookingWindowDaysFieldDays)
+}
+
+func (s *SchedulingBookingWindowDays) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingWindowDays
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingWindowDays(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingWindowDays) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingWindowDays
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingWindowDays) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingBookingWindowDaysKind string
+
+const (
+	SchedulingBookingWindowDaysKindRolling SchedulingBookingWindowDaysKind = "rolling"
+)
+
+func NewSchedulingBookingWindowDaysKindFromString(s string) (SchedulingBookingWindowDaysKind, error) {
+	switch s {
+	case "rolling":
+		return SchedulingBookingWindowDaysKindRolling, nil
+	}
+	var t SchedulingBookingWindowDaysKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingWindowDaysKind) Ptr() *SchedulingBookingWindowDaysKind {
+	return &s
+}
+
+var (
+	schedulingBookingWindowFromFieldKind = big.NewInt(1 << 0)
+	schedulingBookingWindowFromFieldFrom = big.NewInt(1 << 1)
+	schedulingBookingWindowFromFieldTo   = big.NewInt(1 << 2)
+)
+
+type SchedulingBookingWindowFrom struct {
+	Kind SchedulingBookingWindowFromKind `json:"kind" url:"kind"`
+	// The first local date offered, `YYYY-MM-DD`.
+	From string `json:"from" url:"from"`
+	// The last local date offered, `YYYY-MM-DD`.
+	To string `json:"to" url:"to"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingWindowFrom) GetKind() SchedulingBookingWindowFromKind {
+	if s == nil {
+		return ""
+	}
+	return s.Kind
+}
+
+func (s *SchedulingBookingWindowFrom) GetFrom() string {
+	if s == nil {
+		return ""
+	}
+	return s.From
+}
+
+func (s *SchedulingBookingWindowFrom) GetTo() string {
+	if s == nil {
+		return ""
+	}
+	return s.To
+}
+
+func (s *SchedulingBookingWindowFrom) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingWindowFrom) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWindowFrom) SetKind(kind SchedulingBookingWindowFromKind) {
+	s.Kind = kind
+	s.require(schedulingBookingWindowFromFieldKind)
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWindowFrom) SetFrom(from string) {
+	s.From = from
+	s.require(schedulingBookingWindowFromFieldFrom)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWindowFrom) SetTo(to string) {
+	s.To = to
+	s.require(schedulingBookingWindowFromFieldTo)
+}
+
+func (s *SchedulingBookingWindowFrom) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingWindowFrom
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingWindowFrom(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingWindowFrom) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingWindowFrom
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingWindowFrom) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingBookingWindowFromKind string
+
+const (
+	SchedulingBookingWindowFromKindRange SchedulingBookingWindowFromKind = "range"
+)
+
+func NewSchedulingBookingWindowFromKindFromString(s string) (SchedulingBookingWindowFromKind, error) {
+	switch s {
+	case "range":
+		return SchedulingBookingWindowFromKindRange, nil
+	}
+	var t SchedulingBookingWindowFromKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingWindowFromKind) Ptr() *SchedulingBookingWindowFromKind {
+	return &s
+}
+
+var (
+	schedulingCalendarAuthorizationFieldObject = big.NewInt(1 << 0)
+	schedulingCalendarAuthorizationFieldURL    = big.NewInt(1 << 1)
+)
+
+type SchedulingCalendarAuthorization struct {
+	Object SchedulingCalendarAuthorizationObject `json:"object" url:"object"`
+	// Open it in a new window: providers refuse to be framed.
+	URL string `json:"url" url:"url"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCalendarAuthorization) GetObject() SchedulingCalendarAuthorizationObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingCalendarAuthorization) GetURL() string {
+	if s == nil {
+		return ""
+	}
+	return s.URL
+}
+
+func (s *SchedulingCalendarAuthorization) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCalendarAuthorization) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarAuthorization) SetObject(object SchedulingCalendarAuthorizationObject) {
+	s.Object = object
+	s.require(schedulingCalendarAuthorizationFieldObject)
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarAuthorization) SetURL(url string) {
+	s.URL = url
+	s.require(schedulingCalendarAuthorizationFieldURL)
+}
+
+func (s *SchedulingCalendarAuthorization) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingCalendarAuthorization
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingCalendarAuthorization(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCalendarAuthorization) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCalendarAuthorization
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCalendarAuthorization) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingCalendarAuthorizationObject string
+
+const (
+	SchedulingCalendarAuthorizationObjectSchedulingCalendarAuthorization SchedulingCalendarAuthorizationObject = "scheduling.calendar_authorization"
+)
+
+func NewSchedulingCalendarAuthorizationObjectFromString(s string) (SchedulingCalendarAuthorizationObject, error) {
+	switch s {
+	case "scheduling.calendar_authorization":
+		return SchedulingCalendarAuthorizationObjectSchedulingCalendarAuthorization, nil
+	}
+	var t SchedulingCalendarAuthorizationObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarAuthorizationObject) Ptr() *SchedulingCalendarAuthorizationObject {
+	return &s
+}
+
+var (
+	schedulingCalendarConnectionFieldObject     = big.NewInt(1 << 0)
+	schedulingCalendarConnectionFieldID         = big.NewInt(1 << 1)
+	schedulingCalendarConnectionFieldHost       = big.NewInt(1 << 2)
+	schedulingCalendarConnectionFieldProvider   = big.NewInt(1 << 3)
+	schedulingCalendarConnectionFieldAccount    = big.NewInt(1 << 4)
+	schedulingCalendarConnectionFieldStatus     = big.NewInt(1 << 5)
+	schedulingCalendarConnectionFieldDelegation = big.NewInt(1 << 6)
+	schedulingCalendarConnectionFieldCalendars  = big.NewInt(1 << 7)
+	schedulingCalendarConnectionFieldCreatedAt  = big.NewInt(1 << 8)
+)
+
+// schedulingCalendarConnectionNullableFields maps the wire names of SchedulingCalendarConnection's nullable fields (required or optional) to their field bits.
+var schedulingCalendarConnectionNullableFields = map[string]*big.Int{
+	"delegation": schedulingCalendarConnectionFieldDelegation,
+}
+
+type SchedulingCalendarConnection struct {
+	Object SchedulingCalendarConnectionObject `json:"object" url:"object"`
+	ID     string                             `json:"id" url:"id"`
+	// The id of the host it belongs to.
+	Host string `json:"host" url:"host"`
+	// Where the calendar lives. `simulated` exists only in sandbox environments; `zoom` is only used for meetings, never read for busy times.
+	Provider SchedulingCalendarConnectionProvider `json:"provider" url:"provider"`
+	// The provider's account, such as the Google address.
+	Account string `json:"account" url:"account"`
+	// `needs_reauth`: access was lost, and this host isn't offered until it's back.
+	Status SchedulingCalendarConnectionStatus `json:"status" url:"status"`
+	// The calendar delegation that manages this connection. It can't be disconnected or reconnected by itself.
+	Delegation *string `json:"delegation,omitempty" url:"delegation,omitempty"`
+	// The account's calendars.
+	Calendars []*SchedulingCalendarConnectionCalendarsItem `json:"calendars" url:"calendars"`
+	CreatedAt string                                       `json:"created_at" url:"created_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCalendarConnection) GetObject() SchedulingCalendarConnectionObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingCalendarConnection) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingCalendarConnection) GetHost() string {
+	if s == nil {
+		return ""
+	}
+	return s.Host
+}
+
+func (s *SchedulingCalendarConnection) GetProvider() SchedulingCalendarConnectionProvider {
+	if s == nil {
+		return ""
+	}
+	return s.Provider
+}
+
+func (s *SchedulingCalendarConnection) GetAccount() string {
+	if s == nil {
+		return ""
+	}
+	return s.Account
+}
+
+func (s *SchedulingCalendarConnection) GetStatus() SchedulingCalendarConnectionStatus {
+	if s == nil {
+		return ""
+	}
+	return s.Status
+}
+
+func (s *SchedulingCalendarConnection) GetDelegation() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Delegation
+}
+
+func (s *SchedulingCalendarConnection) GetCalendars() []*SchedulingCalendarConnectionCalendarsItem {
+	if s == nil {
+		return nil
+	}
+	return s.Calendars
+}
+
+func (s *SchedulingCalendarConnection) GetCreatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.CreatedAt
+}
+
+func (s *SchedulingCalendarConnection) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCalendarConnection) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnection) SetObject(object SchedulingCalendarConnectionObject) {
+	s.Object = object
+	s.require(schedulingCalendarConnectionFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnection) SetID(id string) {
+	s.ID = id
+	s.require(schedulingCalendarConnectionFieldID)
+}
+
+// SetHost sets the Host field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnection) SetHost(host string) {
+	s.Host = host
+	s.require(schedulingCalendarConnectionFieldHost)
+}
+
+// SetProvider sets the Provider field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnection) SetProvider(provider SchedulingCalendarConnectionProvider) {
+	s.Provider = provider
+	s.require(schedulingCalendarConnectionFieldProvider)
+}
+
+// SetAccount sets the Account field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnection) SetAccount(account string) {
+	s.Account = account
+	s.require(schedulingCalendarConnectionFieldAccount)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnection) SetStatus(status SchedulingCalendarConnectionStatus) {
+	s.Status = status
+	s.require(schedulingCalendarConnectionFieldStatus)
+}
+
+// SetDelegation sets the Delegation field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnection) SetDelegation(delegation *string) {
+	s.Delegation = delegation
+	s.require(schedulingCalendarConnectionFieldDelegation)
+}
+
+// SetCalendars sets the Calendars field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnection) SetCalendars(calendars []*SchedulingCalendarConnectionCalendarsItem) {
+	s.Calendars = calendars
+	s.require(schedulingCalendarConnectionFieldCalendars)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnection) SetCreatedAt(createdAt string) {
+	s.CreatedAt = createdAt
+	s.require(schedulingCalendarConnectionFieldCreatedAt)
+}
+
+func (s *SchedulingCalendarConnection) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingCalendarConnection
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingCalendarConnection(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingCalendarConnectionNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCalendarConnection) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCalendarConnection
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCalendarConnection) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingCalendarConnectionCalendarsItemFieldID          = big.NewInt(1 << 0)
+	schedulingCalendarConnectionCalendarsItemFieldExternalID  = big.NewInt(1 << 1)
+	schedulingCalendarConnectionCalendarsItemFieldReadBusy    = big.NewInt(1 << 2)
+	schedulingCalendarConnectionCalendarsItemFieldWriteTarget = big.NewInt(1 << 3)
+	schedulingCalendarConnectionCalendarsItemFieldVerifiedAt  = big.NewInt(1 << 4)
+)
+
+// schedulingCalendarConnectionCalendarsItemNullableFields maps the wire names of SchedulingCalendarConnectionCalendarsItem's nullable fields (required or optional) to their field bits.
+var schedulingCalendarConnectionCalendarsItemNullableFields = map[string]*big.Int{
+	"verified_at": schedulingCalendarConnectionCalendarsItemFieldVerifiedAt,
+}
+
+type SchedulingCalendarConnectionCalendarsItem struct {
+	ID string `json:"id" url:"id"`
+	// The calendar's id at the provider.
+	ExternalID string `json:"external_id" url:"external_id"`
+	// Whether its busy times block slots.
+	ReadBusy bool `json:"read_busy" url:"read_busy"`
+	// Whether bookings are written to it.
+	WriteTarget bool `json:"write_target" url:"write_target"`
+	// When it was last read successfully. `null`: not read yet.
+	VerifiedAt *string `json:"verified_at,omitempty" url:"verified_at,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCalendarConnectionCalendarsItem) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingCalendarConnectionCalendarsItem) GetExternalID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ExternalID
+}
+
+func (s *SchedulingCalendarConnectionCalendarsItem) GetReadBusy() bool {
+	if s == nil {
+		return false
+	}
+	return s.ReadBusy
+}
+
+func (s *SchedulingCalendarConnectionCalendarsItem) GetWriteTarget() bool {
+	if s == nil {
+		return false
+	}
+	return s.WriteTarget
+}
+
+func (s *SchedulingCalendarConnectionCalendarsItem) GetVerifiedAt() *string {
+	if s == nil {
+		return nil
+	}
+	return s.VerifiedAt
+}
+
+func (s *SchedulingCalendarConnectionCalendarsItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCalendarConnectionCalendarsItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnectionCalendarsItem) SetID(id string) {
+	s.ID = id
+	s.require(schedulingCalendarConnectionCalendarsItemFieldID)
+}
+
+// SetExternalID sets the ExternalID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnectionCalendarsItem) SetExternalID(externalID string) {
+	s.ExternalID = externalID
+	s.require(schedulingCalendarConnectionCalendarsItemFieldExternalID)
+}
+
+// SetReadBusy sets the ReadBusy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnectionCalendarsItem) SetReadBusy(readBusy bool) {
+	s.ReadBusy = readBusy
+	s.require(schedulingCalendarConnectionCalendarsItemFieldReadBusy)
+}
+
+// SetWriteTarget sets the WriteTarget field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnectionCalendarsItem) SetWriteTarget(writeTarget bool) {
+	s.WriteTarget = writeTarget
+	s.require(schedulingCalendarConnectionCalendarsItemFieldWriteTarget)
+}
+
+// SetVerifiedAt sets the VerifiedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnectionCalendarsItem) SetVerifiedAt(verifiedAt *string) {
+	s.VerifiedAt = verifiedAt
+	s.require(schedulingCalendarConnectionCalendarsItemFieldVerifiedAt)
+}
+
+func (s *SchedulingCalendarConnectionCalendarsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingCalendarConnectionCalendarsItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingCalendarConnectionCalendarsItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingCalendarConnectionCalendarsItemNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCalendarConnectionCalendarsItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCalendarConnectionCalendarsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCalendarConnectionCalendarsItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingCalendarConnectionListFieldObject  = big.NewInt(1 << 0)
+	schedulingCalendarConnectionListFieldData    = big.NewInt(1 << 1)
+	schedulingCalendarConnectionListFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingCalendarConnectionList struct {
+	Object  SchedulingCalendarConnectionListObject `json:"object" url:"object"`
+	Data    []*SchedulingCalendarConnection        `json:"data" url:"data"`
+	HasMore bool                                   `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCalendarConnectionList) GetObject() SchedulingCalendarConnectionListObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingCalendarConnectionList) GetData() []*SchedulingCalendarConnection {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingCalendarConnectionList) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingCalendarConnectionList) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCalendarConnectionList) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnectionList) SetObject(object SchedulingCalendarConnectionListObject) {
+	s.Object = object
+	s.require(schedulingCalendarConnectionListFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnectionList) SetData(data []*SchedulingCalendarConnection) {
+	s.Data = data
+	s.require(schedulingCalendarConnectionListFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarConnectionList) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingCalendarConnectionListFieldHasMore)
+}
+
+func (s *SchedulingCalendarConnectionList) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingCalendarConnectionList
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingCalendarConnectionList(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCalendarConnectionList) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCalendarConnectionList
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCalendarConnectionList) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingCalendarConnectionListObject string
+
+const (
+	SchedulingCalendarConnectionListObjectList SchedulingCalendarConnectionListObject = "list"
+)
+
+func NewSchedulingCalendarConnectionListObjectFromString(s string) (SchedulingCalendarConnectionListObject, error) {
+	switch s {
+	case "list":
+		return SchedulingCalendarConnectionListObjectList, nil
+	}
+	var t SchedulingCalendarConnectionListObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarConnectionListObject) Ptr() *SchedulingCalendarConnectionListObject {
+	return &s
+}
+
+type SchedulingCalendarConnectionObject string
+
+const (
+	SchedulingCalendarConnectionObjectSchedulingCalendarConnection SchedulingCalendarConnectionObject = "scheduling.calendar_connection"
+)
+
+func NewSchedulingCalendarConnectionObjectFromString(s string) (SchedulingCalendarConnectionObject, error) {
+	switch s {
+	case "scheduling.calendar_connection":
+		return SchedulingCalendarConnectionObjectSchedulingCalendarConnection, nil
+	}
+	var t SchedulingCalendarConnectionObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarConnectionObject) Ptr() *SchedulingCalendarConnectionObject {
+	return &s
+}
+
+// Where the calendar lives. `simulated` exists only in sandbox environments; `zoom` is only used for meetings, never read for busy times.
+type SchedulingCalendarConnectionProvider string
+
+const (
+	SchedulingCalendarConnectionProviderGoogle    SchedulingCalendarConnectionProvider = "google"
+	SchedulingCalendarConnectionProviderMicrosoft SchedulingCalendarConnectionProvider = "microsoft"
+	SchedulingCalendarConnectionProviderCaldav    SchedulingCalendarConnectionProvider = "caldav"
+	SchedulingCalendarConnectionProviderSimulated SchedulingCalendarConnectionProvider = "simulated"
+	SchedulingCalendarConnectionProviderZoom      SchedulingCalendarConnectionProvider = "zoom"
+)
+
+func NewSchedulingCalendarConnectionProviderFromString(s string) (SchedulingCalendarConnectionProvider, error) {
+	switch s {
+	case "google":
+		return SchedulingCalendarConnectionProviderGoogle, nil
+	case "microsoft":
+		return SchedulingCalendarConnectionProviderMicrosoft, nil
+	case "caldav":
+		return SchedulingCalendarConnectionProviderCaldav, nil
+	case "simulated":
+		return SchedulingCalendarConnectionProviderSimulated, nil
+	case "zoom":
+		return SchedulingCalendarConnectionProviderZoom, nil
+	}
+	var t SchedulingCalendarConnectionProvider
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarConnectionProvider) Ptr() *SchedulingCalendarConnectionProvider {
+	return &s
+}
+
+// `needs_reauth`: access was lost, and this host isn't offered until it's back.
+type SchedulingCalendarConnectionStatus string
+
+const (
+	SchedulingCalendarConnectionStatusActive      SchedulingCalendarConnectionStatus = "active"
+	SchedulingCalendarConnectionStatusNeedsReauth SchedulingCalendarConnectionStatus = "needs_reauth"
+)
+
+func NewSchedulingCalendarConnectionStatusFromString(s string) (SchedulingCalendarConnectionStatus, error) {
+	switch s {
+	case "active":
+		return SchedulingCalendarConnectionStatusActive, nil
+	case "needs_reauth":
+		return SchedulingCalendarConnectionStatusNeedsReauth, nil
+	}
+	var t SchedulingCalendarConnectionStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarConnectionStatus) Ptr() *SchedulingCalendarConnectionStatus {
+	return &s
+}
+
+var (
+	schedulingCalendarDelegationFieldObject          = big.NewInt(1 << 0)
+	schedulingCalendarDelegationFieldID              = big.NewInt(1 << 1)
+	schedulingCalendarDelegationFieldProvider        = big.NewInt(1 << 2)
+	schedulingCalendarDelegationFieldDomain          = big.NewInt(1 << 3)
+	schedulingCalendarDelegationFieldStatus          = big.NewInt(1 << 4)
+	schedulingCalendarDelegationFieldMatchHostEmail  = big.NewInt(1 << 5)
+	schedulingCalendarDelegationFieldClientID        = big.NewInt(1 << 6)
+	schedulingCalendarDelegationFieldTenantID        = big.NewInt(1 << 7)
+	schedulingCalendarDelegationFieldScopes          = big.NewInt(1 << 8)
+	schedulingCalendarDelegationFieldVerifiedAccount = big.NewInt(1 << 9)
+	schedulingCalendarDelegationFieldLastErrorCode   = big.NewInt(1 << 10)
+	schedulingCalendarDelegationFieldFailingSince    = big.NewInt(1 << 11)
+	schedulingCalendarDelegationFieldSecretExpiresAt = big.NewInt(1 << 12)
+	schedulingCalendarDelegationFieldHostsConnected  = big.NewInt(1 << 13)
+	schedulingCalendarDelegationFieldHostsFailed     = big.NewInt(1 << 14)
+	schedulingCalendarDelegationFieldCreatedAt       = big.NewInt(1 << 15)
+	schedulingCalendarDelegationFieldUpdatedAt       = big.NewInt(1 << 16)
+)
+
+// schedulingCalendarDelegationNullableFields maps the wire names of SchedulingCalendarDelegation's nullable fields (required or optional) to their field bits.
+var schedulingCalendarDelegationNullableFields = map[string]*big.Int{
+	"tenant_id":         schedulingCalendarDelegationFieldTenantID,
+	"verified_account":  schedulingCalendarDelegationFieldVerifiedAccount,
+	"last_error_code":   schedulingCalendarDelegationFieldLastErrorCode,
+	"failing_since":     schedulingCalendarDelegationFieldFailingSince,
+	"secret_expires_at": schedulingCalendarDelegationFieldSecretExpiresAt,
+}
+
+type SchedulingCalendarDelegation struct {
+	Object   SchedulingCalendarDelegationObject   `json:"object" url:"object"`
+	ID       string                               `json:"id" url:"id"`
+	Provider SchedulingCalendarDelegationProvider `json:"provider" url:"provider"`
+	Domain   string                               `json:"domain" url:"domain"`
+	// `pending`: not verified yet. `failing`: the provider refused access, and its hosts aren't offered until it's back. `deleting`: its connections are being removed.
+	Status         SchedulingCalendarDelegationStatus `json:"status" url:"status"`
+	MatchHostEmail bool                               `json:"match_host_email" url:"match_host_email"`
+	// Google: the numeric client ID your Workspace admin authorizes.
+	ClientID string  `json:"client_id" url:"client_id"`
+	TenantID *string `json:"tenant_id,omitempty" url:"tenant_id,omitempty"`
+	// What to authorize: OAuth scopes in Google's Admin console, the application permission in Entra.
+	Scopes          []string `json:"scopes" url:"scopes"`
+	VerifiedAccount *string  `json:"verified_account,omitempty" url:"verified_account,omitempty"`
+	LastErrorCode   *string  `json:"last_error_code,omitempty" url:"last_error_code,omitempty"`
+	FailingSince    *string  `json:"failing_since,omitempty" url:"failing_since,omitempty"`
+	SecretExpiresAt *string  `json:"secret_expires_at,omitempty" url:"secret_expires_at,omitempty"`
+	HostsConnected  int64    `json:"hosts_connected" url:"hosts_connected"`
+	// Hosts whose mailbox can't be reached, or who are out while this is `failing`.
+	HostsFailed int64  `json:"hosts_failed" url:"hosts_failed"`
+	CreatedAt   string `json:"created_at" url:"created_at"`
+	UpdatedAt   string `json:"updated_at" url:"updated_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCalendarDelegation) GetObject() SchedulingCalendarDelegationObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingCalendarDelegation) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingCalendarDelegation) GetProvider() SchedulingCalendarDelegationProvider {
+	if s == nil {
+		return ""
+	}
+	return s.Provider
+}
+
+func (s *SchedulingCalendarDelegation) GetDomain() string {
+	if s == nil {
+		return ""
+	}
+	return s.Domain
+}
+
+func (s *SchedulingCalendarDelegation) GetStatus() SchedulingCalendarDelegationStatus {
+	if s == nil {
+		return ""
+	}
+	return s.Status
+}
+
+func (s *SchedulingCalendarDelegation) GetMatchHostEmail() bool {
+	if s == nil {
+		return false
+	}
+	return s.MatchHostEmail
+}
+
+func (s *SchedulingCalendarDelegation) GetClientID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ClientID
+}
+
+func (s *SchedulingCalendarDelegation) GetTenantID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.TenantID
+}
+
+func (s *SchedulingCalendarDelegation) GetScopes() []string {
+	if s == nil {
+		return nil
+	}
+	return s.Scopes
+}
+
+func (s *SchedulingCalendarDelegation) GetVerifiedAccount() *string {
+	if s == nil {
+		return nil
+	}
+	return s.VerifiedAccount
+}
+
+func (s *SchedulingCalendarDelegation) GetLastErrorCode() *string {
+	if s == nil {
+		return nil
+	}
+	return s.LastErrorCode
+}
+
+func (s *SchedulingCalendarDelegation) GetFailingSince() *string {
+	if s == nil {
+		return nil
+	}
+	return s.FailingSince
+}
+
+func (s *SchedulingCalendarDelegation) GetSecretExpiresAt() *string {
+	if s == nil {
+		return nil
+	}
+	return s.SecretExpiresAt
+}
+
+func (s *SchedulingCalendarDelegation) GetHostsConnected() int64 {
+	if s == nil {
+		return 0
+	}
+	return s.HostsConnected
+}
+
+func (s *SchedulingCalendarDelegation) GetHostsFailed() int64 {
+	if s == nil {
+		return 0
+	}
+	return s.HostsFailed
+}
+
+func (s *SchedulingCalendarDelegation) GetCreatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.CreatedAt
+}
+
+func (s *SchedulingCalendarDelegation) GetUpdatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.UpdatedAt
+}
+
+func (s *SchedulingCalendarDelegation) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCalendarDelegation) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetObject(object SchedulingCalendarDelegationObject) {
+	s.Object = object
+	s.require(schedulingCalendarDelegationFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetID(id string) {
+	s.ID = id
+	s.require(schedulingCalendarDelegationFieldID)
+}
+
+// SetProvider sets the Provider field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetProvider(provider SchedulingCalendarDelegationProvider) {
+	s.Provider = provider
+	s.require(schedulingCalendarDelegationFieldProvider)
+}
+
+// SetDomain sets the Domain field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetDomain(domain string) {
+	s.Domain = domain
+	s.require(schedulingCalendarDelegationFieldDomain)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetStatus(status SchedulingCalendarDelegationStatus) {
+	s.Status = status
+	s.require(schedulingCalendarDelegationFieldStatus)
+}
+
+// SetMatchHostEmail sets the MatchHostEmail field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetMatchHostEmail(matchHostEmail bool) {
+	s.MatchHostEmail = matchHostEmail
+	s.require(schedulingCalendarDelegationFieldMatchHostEmail)
+}
+
+// SetClientID sets the ClientID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetClientID(clientID string) {
+	s.ClientID = clientID
+	s.require(schedulingCalendarDelegationFieldClientID)
+}
+
+// SetTenantID sets the TenantID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetTenantID(tenantID *string) {
+	s.TenantID = tenantID
+	s.require(schedulingCalendarDelegationFieldTenantID)
+}
+
+// SetScopes sets the Scopes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetScopes(scopes []string) {
+	s.Scopes = scopes
+	s.require(schedulingCalendarDelegationFieldScopes)
+}
+
+// SetVerifiedAccount sets the VerifiedAccount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetVerifiedAccount(verifiedAccount *string) {
+	s.VerifiedAccount = verifiedAccount
+	s.require(schedulingCalendarDelegationFieldVerifiedAccount)
+}
+
+// SetLastErrorCode sets the LastErrorCode field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetLastErrorCode(lastErrorCode *string) {
+	s.LastErrorCode = lastErrorCode
+	s.require(schedulingCalendarDelegationFieldLastErrorCode)
+}
+
+// SetFailingSince sets the FailingSince field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetFailingSince(failingSince *string) {
+	s.FailingSince = failingSince
+	s.require(schedulingCalendarDelegationFieldFailingSince)
+}
+
+// SetSecretExpiresAt sets the SecretExpiresAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetSecretExpiresAt(secretExpiresAt *string) {
+	s.SecretExpiresAt = secretExpiresAt
+	s.require(schedulingCalendarDelegationFieldSecretExpiresAt)
+}
+
+// SetHostsConnected sets the HostsConnected field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetHostsConnected(hostsConnected int64) {
+	s.HostsConnected = hostsConnected
+	s.require(schedulingCalendarDelegationFieldHostsConnected)
+}
+
+// SetHostsFailed sets the HostsFailed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetHostsFailed(hostsFailed int64) {
+	s.HostsFailed = hostsFailed
+	s.require(schedulingCalendarDelegationFieldHostsFailed)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetCreatedAt(createdAt string) {
+	s.CreatedAt = createdAt
+	s.require(schedulingCalendarDelegationFieldCreatedAt)
+}
+
+// SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegation) SetUpdatedAt(updatedAt string) {
+	s.UpdatedAt = updatedAt
+	s.require(schedulingCalendarDelegationFieldUpdatedAt)
+}
+
+func (s *SchedulingCalendarDelegation) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingCalendarDelegation
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingCalendarDelegation(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingCalendarDelegationNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCalendarDelegation) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCalendarDelegation
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCalendarDelegation) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingCalendarDelegationListFieldObject  = big.NewInt(1 << 0)
+	schedulingCalendarDelegationListFieldData    = big.NewInt(1 << 1)
+	schedulingCalendarDelegationListFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingCalendarDelegationList struct {
+	Object  SchedulingCalendarDelegationListObject `json:"object" url:"object"`
+	Data    []*SchedulingCalendarDelegation        `json:"data" url:"data"`
+	HasMore bool                                   `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCalendarDelegationList) GetObject() SchedulingCalendarDelegationListObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingCalendarDelegationList) GetData() []*SchedulingCalendarDelegation {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingCalendarDelegationList) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingCalendarDelegationList) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCalendarDelegationList) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationList) SetObject(object SchedulingCalendarDelegationListObject) {
+	s.Object = object
+	s.require(schedulingCalendarDelegationListFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationList) SetData(data []*SchedulingCalendarDelegation) {
+	s.Data = data
+	s.require(schedulingCalendarDelegationListFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationList) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingCalendarDelegationListFieldHasMore)
+}
+
+func (s *SchedulingCalendarDelegationList) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingCalendarDelegationList
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingCalendarDelegationList(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCalendarDelegationList) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCalendarDelegationList
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCalendarDelegationList) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingCalendarDelegationListObject string
+
+const (
+	SchedulingCalendarDelegationListObjectList SchedulingCalendarDelegationListObject = "list"
+)
+
+func NewSchedulingCalendarDelegationListObjectFromString(s string) (SchedulingCalendarDelegationListObject, error) {
+	switch s {
+	case "list":
+		return SchedulingCalendarDelegationListObjectList, nil
+	}
+	var t SchedulingCalendarDelegationListObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarDelegationListObject) Ptr() *SchedulingCalendarDelegationListObject {
+	return &s
+}
+
+type SchedulingCalendarDelegationObject string
+
+const (
+	SchedulingCalendarDelegationObjectSchedulingCalendarDelegation SchedulingCalendarDelegationObject = "scheduling.calendar_delegation"
+)
+
+func NewSchedulingCalendarDelegationObjectFromString(s string) (SchedulingCalendarDelegationObject, error) {
+	switch s {
+	case "scheduling.calendar_delegation":
+		return SchedulingCalendarDelegationObjectSchedulingCalendarDelegation, nil
+	}
+	var t SchedulingCalendarDelegationObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarDelegationObject) Ptr() *SchedulingCalendarDelegationObject {
+	return &s
+}
+
+type SchedulingCalendarDelegationProvider string
+
+const (
+	SchedulingCalendarDelegationProviderGoogle    SchedulingCalendarDelegationProvider = "google"
+	SchedulingCalendarDelegationProviderMicrosoft SchedulingCalendarDelegationProvider = "microsoft"
+)
+
+func NewSchedulingCalendarDelegationProviderFromString(s string) (SchedulingCalendarDelegationProvider, error) {
+	switch s {
+	case "google":
+		return SchedulingCalendarDelegationProviderGoogle, nil
+	case "microsoft":
+		return SchedulingCalendarDelegationProviderMicrosoft, nil
+	}
+	var t SchedulingCalendarDelegationProvider
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarDelegationProvider) Ptr() *SchedulingCalendarDelegationProvider {
+	return &s
+}
+
+// `pending`: not verified yet. `failing`: the provider refused access, and its hosts aren't offered until it's back. `deleting`: its connections are being removed.
+type SchedulingCalendarDelegationStatus string
+
+const (
+	SchedulingCalendarDelegationStatusPending  SchedulingCalendarDelegationStatus = "pending"
+	SchedulingCalendarDelegationStatusActive   SchedulingCalendarDelegationStatus = "active"
+	SchedulingCalendarDelegationStatusFailing  SchedulingCalendarDelegationStatus = "failing"
+	SchedulingCalendarDelegationStatusDeleting SchedulingCalendarDelegationStatus = "deleting"
+)
+
+func NewSchedulingCalendarDelegationStatusFromString(s string) (SchedulingCalendarDelegationStatus, error) {
+	switch s {
+	case "pending":
+		return SchedulingCalendarDelegationStatusPending, nil
+	case "active":
+		return SchedulingCalendarDelegationStatusActive, nil
+	case "failing":
+		return SchedulingCalendarDelegationStatusFailing, nil
+	case "deleting":
+		return SchedulingCalendarDelegationStatusDeleting, nil
+	}
+	var t SchedulingCalendarDelegationStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarDelegationStatus) Ptr() *SchedulingCalendarDelegationStatus {
+	return &s
+}
+
+var (
+	schedulingCancelledSeriesFieldObject  = big.NewInt(1 << 0)
+	schedulingCancelledSeriesFieldData    = big.NewInt(1 << 1)
+	schedulingCancelledSeriesFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingCancelledSeries struct {
+	Object  SchedulingCancelledSeriesObject `json:"object" url:"object"`
+	Data    []*SchedulingBooking            `json:"data" url:"data"`
+	HasMore bool                            `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCancelledSeries) GetObject() SchedulingCancelledSeriesObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingCancelledSeries) GetData() []*SchedulingBooking {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingCancelledSeries) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingCancelledSeries) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCancelledSeries) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCancelledSeries) SetObject(object SchedulingCancelledSeriesObject) {
+	s.Object = object
+	s.require(schedulingCancelledSeriesFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCancelledSeries) SetData(data []*SchedulingBooking) {
+	s.Data = data
+	s.require(schedulingCancelledSeriesFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCancelledSeries) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingCancelledSeriesFieldHasMore)
+}
+
+func (s *SchedulingCancelledSeries) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingCancelledSeries
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingCancelledSeries(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCancelledSeries) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCancelledSeries
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCancelledSeries) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingCancelledSeriesObject string
+
+const (
+	SchedulingCancelledSeriesObjectList SchedulingCancelledSeriesObject = "list"
+)
+
+func NewSchedulingCancelledSeriesObjectFromString(s string) (SchedulingCancelledSeriesObject, error) {
+	switch s {
+	case "list":
+		return SchedulingCancelledSeriesObjectList, nil
+	}
+	var t SchedulingCancelledSeriesObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCancelledSeriesObject) Ptr() *SchedulingCancelledSeriesObject {
+	return &s
+}
+
+var (
+	schedulingEventTypeFieldObject                       = big.NewInt(1 << 0)
+	schedulingEventTypeFieldID                           = big.NewInt(1 << 1)
+	schedulingEventTypeFieldUID                          = big.NewInt(1 << 2)
+	schedulingEventTypeFieldDescription                  = big.NewInt(1 << 3)
+	schedulingEventTypeFieldTitle                        = big.NewInt(1 << 4)
+	schedulingEventTypeFieldKind                         = big.NewInt(1 << 5)
+	schedulingEventTypeFieldStatus                       = big.NewInt(1 << 6)
+	schedulingEventTypeFieldDurationMinutes              = big.NewInt(1 << 7)
+	schedulingEventTypeFieldDurationOptions              = big.NewInt(1 << 8)
+	schedulingEventTypeFieldStepMinutes                  = big.NewInt(1 << 9)
+	schedulingEventTypeFieldGridTimeZone                 = big.NewInt(1 << 10)
+	schedulingEventTypeFieldBufferBeforeMinutes          = big.NewInt(1 << 11)
+	schedulingEventTypeFieldBufferAfterMinutes           = big.NewInt(1 << 12)
+	schedulingEventTypeFieldMinNoticeMinutes             = big.NewInt(1 << 13)
+	schedulingEventTypeFieldBookingWindow                = big.NewInt(1 << 14)
+	schedulingEventTypeFieldLimits                       = big.NewInt(1 << 15)
+	schedulingEventTypeFieldCapacity                     = big.NewInt(1 << 16)
+	schedulingEventTypeFieldRequiresApproval             = big.NewInt(1 << 17)
+	schedulingEventTypeFieldApprovalTTLMinutes           = big.NewInt(1 << 18)
+	schedulingEventTypeFieldHoldTTLSeconds               = big.NewInt(1 << 19)
+	schedulingEventTypeFieldCancelNoticeMinutes          = big.NewInt(1 << 20)
+	schedulingEventTypeFieldRescheduleNoticeMinutes      = big.NewInt(1 << 21)
+	schedulingEventTypeFieldMaxGuests                    = big.NewInt(1 << 22)
+	schedulingEventTypeFieldMaxActiveBookingsPerAttendee = big.NewInt(1 << 23)
+	schedulingEventTypeFieldHostCalendarDetails          = big.NewInt(1 << 24)
+	schedulingEventTypeFieldQuestions                    = big.NewInt(1 << 25)
+	schedulingEventTypeFieldLocations                    = big.NewInt(1 << 26)
+	schedulingEventTypeFieldHostFilter                   = big.NewInt(1 << 27)
+	schedulingEventTypeFieldNotifications                = big.NewInt(1 << 28)
+	schedulingEventTypeFieldReminders                    = big.NewInt(1 << 29)
+	schedulingEventTypeFieldHosts                        = big.NewInt(1 << 30)
+	schedulingEventTypeFieldMetadata                     = big.NewInt(1 << 31)
+	schedulingEventTypeFieldCreatedAt                    = big.NewInt(1 << 32)
+	schedulingEventTypeFieldUpdatedAt                    = big.NewInt(1 << 33)
+)
+
+// schedulingEventTypeNullableFields maps the wire names of SchedulingEventType's nullable fields (required or optional) to their field bits.
+var schedulingEventTypeNullableFields = map[string]*big.Int{
+	"uid":                              schedulingEventTypeFieldUID,
+	"description":                      schedulingEventTypeFieldDescription,
+	"grid_time_zone":                   schedulingEventTypeFieldGridTimeZone,
+	"booking_window":                   schedulingEventTypeFieldBookingWindow,
+	"capacity":                         schedulingEventTypeFieldCapacity,
+	"max_active_bookings_per_attendee": schedulingEventTypeFieldMaxActiveBookingsPerAttendee,
+	"host_filter":                      schedulingEventTypeFieldHostFilter,
+	"notifications":                    schedulingEventTypeFieldNotifications,
+	"reminders":                        schedulingEventTypeFieldReminders,
+}
+
+type SchedulingEventType struct {
+	Object SchedulingEventTypeObject `json:"object" url:"object"`
+	ID     string                    `json:"id" url:"id"`
+	// Your own id for this event type, accepted wherever its id is. `null` when none is set.
+	UID *string `json:"uid,omitempty" url:"uid,omitempty"`
+	// Plain text shown on hosted booking pages. `null` when there's none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.
+	Title string `json:"title" url:"title"`
+	// Who a booking needs. `one_on_one`: one host. `pool`: any one of its hosts. `collective`: every `required` host, plus at most one `member`. `group`: one host, with attendees taking seats up to `capacity`.
+	Kind SchedulingEventTypeKind `json:"kind" url:"kind"`
+	// `active`: can be booked. `archived`: new bookings answer `not_found`; existing ones stay.
+	Status SchedulingEventTypeStatus `json:"status" url:"status"`
+	// How long a booking lasts by default, in minutes.
+	DurationMinutes float64 `json:"duration_minutes" url:"duration_minutes"`
+	// Other lengths an attendee may choose, in minutes. Empty: only `duration_minutes`.
+	DurationOptions []float64 `json:"duration_options" url:"duration_options"`
+	// How far apart slots start, in minutes.
+	StepMinutes float64 `json:"step_minutes" url:"step_minutes"`
+	// The zone slots align in. `null`: each host's own.
+	GridTimeZone *string `json:"grid_time_zone,omitempty" url:"grid_time_zone,omitempty"`
+	// Minutes kept free before each booking.
+	BufferBeforeMinutes float64 `json:"buffer_before_minutes" url:"buffer_before_minutes"`
+	// Minutes kept free after each booking.
+	BufferAfterMinutes float64 `json:"buffer_after_minutes" url:"buffer_after_minutes"`
+	// Slots starting sooner than this many minutes from now aren't offered.
+	MinNoticeMinutes float64                  `json:"min_notice_minutes" url:"min_notice_minutes"`
+	BookingWindow    *SchedulingBookingWindow `json:"booking_window,omitempty" url:"booking_window,omitempty"`
+	// Caps on bookings per day or week.
+	Limits []*SchedulingLimit `json:"limits" url:"limits"`
+	// Attendees per session of a `group` event type. `null` for every other kind.
+	Capacity *float64 `json:"capacity,omitempty" url:"capacity,omitempty"`
+	// Whether bookings start as `pending_approval`, holding the time until approved or declined.
+	RequiresApproval bool `json:"requires_approval" url:"requires_approval"`
+	// How long a booking can wait for approval before it's declined, in minutes.
+	ApprovalTTLMinutes float64 `json:"approval_ttl_minutes" url:"approval_ttl_minutes"`
+	// How long a hold keeps its slot, in seconds.
+	HoldTTLSeconds float64 `json:"hold_ttl_seconds" url:"hold_ttl_seconds"`
+	// Attendees can't cancel closer to the start than this. API keys can.
+	CancelNoticeMinutes float64 `json:"cancel_notice_minutes" url:"cancel_notice_minutes"`
+	// Attendees can't reschedule closer to the start than this. API keys can.
+	RescheduleNoticeMinutes float64 `json:"reschedule_notice_minutes" url:"reschedule_notice_minutes"`
+	// How many people an attendee can add to a booking. Not on `group`.
+	MaxGuests float64 `json:"max_guests" url:"max_guests"`
+	// How many upcoming bookings of this event type one person can have at a time. `null`: no limit.
+	MaxActiveBookingsPerAttendee *float64 `json:"max_active_bookings_per_attendee,omitempty" url:"max_active_bookings_per_attendee,omitempty"`
+	// What hosts' calendars say about a booking. `neutral`: a private event titled "Appointment". `full`: a private event with this title and the attendee's and guests' details.
+	HostCalendarDetails SchedulingEventTypeHostCalendarDetails `json:"host_calendar_details" url:"host_calendar_details"`
+	// What attendees are asked when booking.
+	Questions []*SchedulingQuestion `json:"questions" url:"questions"`
+	// Where bookings can meet. A browser only chooses among these.
+	Locations []*SchedulingLocation `json:"locations" url:"locations"`
+	// Pool members also include active hosts matching all of these attributes. `null`: only `hosts`.
+	HostFilter map[string]*SchedulingEventTypeHostFilterValue `json:"host_filter,omitempty" url:"host_filter,omitempty"`
+	// Per event, overriding your settings for this event type. `null`: only those.
+	Notifications map[string]*SchedulingEventTypeNotificationsValue `json:"notifications,omitempty" url:"notifications,omitempty"`
+	// What goes out around a booking, in place of your settings' list. `null` inherits it; an empty list means none.
+	Reminders []*SchedulingReminder `json:"reminders,omitempty" url:"reminders,omitempty"`
+	// The hosts assigned by name.
+	Hosts []*SchedulingEventTypeHostsItem `json:"hosts" url:"hosts"`
+	// Your own key-value pairs.
+	Metadata  map[string]string `json:"metadata" url:"metadata"`
+	CreatedAt string            `json:"created_at" url:"created_at"`
+	UpdatedAt string            `json:"updated_at" url:"updated_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingEventType) GetObject() SchedulingEventTypeObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingEventType) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingEventType) GetUID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.UID
+}
+
+func (s *SchedulingEventType) GetDescription() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Description
+}
+
+func (s *SchedulingEventType) GetTitle() string {
+	if s == nil {
+		return ""
+	}
+	return s.Title
+}
+
+func (s *SchedulingEventType) GetKind() SchedulingEventTypeKind {
+	if s == nil {
+		return ""
+	}
+	return s.Kind
+}
+
+func (s *SchedulingEventType) GetStatus() SchedulingEventTypeStatus {
+	if s == nil {
+		return ""
+	}
+	return s.Status
+}
+
+func (s *SchedulingEventType) GetDurationMinutes() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.DurationMinutes
+}
+
+func (s *SchedulingEventType) GetDurationOptions() []float64 {
+	if s == nil {
+		return nil
+	}
+	return s.DurationOptions
+}
+
+func (s *SchedulingEventType) GetStepMinutes() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.StepMinutes
+}
+
+func (s *SchedulingEventType) GetGridTimeZone() *string {
+	if s == nil {
+		return nil
+	}
+	return s.GridTimeZone
+}
+
+func (s *SchedulingEventType) GetBufferBeforeMinutes() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.BufferBeforeMinutes
+}
+
+func (s *SchedulingEventType) GetBufferAfterMinutes() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.BufferAfterMinutes
+}
+
+func (s *SchedulingEventType) GetMinNoticeMinutes() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.MinNoticeMinutes
+}
+
+func (s *SchedulingEventType) GetBookingWindow() *SchedulingBookingWindow {
+	if s == nil {
+		return nil
+	}
+	return s.BookingWindow
+}
+
+func (s *SchedulingEventType) GetLimits() []*SchedulingLimit {
+	if s == nil {
+		return nil
+	}
+	return s.Limits
+}
+
+func (s *SchedulingEventType) GetCapacity() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.Capacity
+}
+
+func (s *SchedulingEventType) GetRequiresApproval() bool {
+	if s == nil {
+		return false
+	}
+	return s.RequiresApproval
+}
+
+func (s *SchedulingEventType) GetApprovalTTLMinutes() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.ApprovalTTLMinutes
+}
+
+func (s *SchedulingEventType) GetHoldTTLSeconds() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.HoldTTLSeconds
+}
+
+func (s *SchedulingEventType) GetCancelNoticeMinutes() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.CancelNoticeMinutes
+}
+
+func (s *SchedulingEventType) GetRescheduleNoticeMinutes() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.RescheduleNoticeMinutes
+}
+
+func (s *SchedulingEventType) GetMaxGuests() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.MaxGuests
+}
+
+func (s *SchedulingEventType) GetMaxActiveBookingsPerAttendee() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.MaxActiveBookingsPerAttendee
+}
+
+func (s *SchedulingEventType) GetHostCalendarDetails() SchedulingEventTypeHostCalendarDetails {
+	if s == nil {
+		return ""
+	}
+	return s.HostCalendarDetails
+}
+
+func (s *SchedulingEventType) GetQuestions() []*SchedulingQuestion {
+	if s == nil {
+		return nil
+	}
+	return s.Questions
+}
+
+func (s *SchedulingEventType) GetLocations() []*SchedulingLocation {
+	if s == nil {
+		return nil
+	}
+	return s.Locations
+}
+
+func (s *SchedulingEventType) GetHostFilter() map[string]*SchedulingEventTypeHostFilterValue {
+	if s == nil {
+		return nil
+	}
+	return s.HostFilter
+}
+
+func (s *SchedulingEventType) GetNotifications() map[string]*SchedulingEventTypeNotificationsValue {
+	if s == nil {
+		return nil
+	}
+	return s.Notifications
+}
+
+func (s *SchedulingEventType) GetReminders() []*SchedulingReminder {
+	if s == nil {
+		return nil
+	}
+	return s.Reminders
+}
+
+func (s *SchedulingEventType) GetHosts() []*SchedulingEventTypeHostsItem {
+	if s == nil {
+		return nil
+	}
+	return s.Hosts
+}
+
+func (s *SchedulingEventType) GetMetadata() map[string]string {
+	if s == nil {
+		return nil
+	}
+	return s.Metadata
+}
+
+func (s *SchedulingEventType) GetCreatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.CreatedAt
+}
+
+func (s *SchedulingEventType) GetUpdatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.UpdatedAt
+}
+
+func (s *SchedulingEventType) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingEventType) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetObject(object SchedulingEventTypeObject) {
+	s.Object = object
+	s.require(schedulingEventTypeFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetID(id string) {
+	s.ID = id
+	s.require(schedulingEventTypeFieldID)
+}
+
+// SetUID sets the UID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetUID(uid *string) {
+	s.UID = uid
+	s.require(schedulingEventTypeFieldUID)
+}
+
+// SetDescription sets the Description field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetDescription(description *string) {
+	s.Description = description
+	s.require(schedulingEventTypeFieldDescription)
+}
+
+// SetTitle sets the Title field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetTitle(title string) {
+	s.Title = title
+	s.require(schedulingEventTypeFieldTitle)
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetKind(kind SchedulingEventTypeKind) {
+	s.Kind = kind
+	s.require(schedulingEventTypeFieldKind)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetStatus(status SchedulingEventTypeStatus) {
+	s.Status = status
+	s.require(schedulingEventTypeFieldStatus)
+}
+
+// SetDurationMinutes sets the DurationMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetDurationMinutes(durationMinutes float64) {
+	s.DurationMinutes = durationMinutes
+	s.require(schedulingEventTypeFieldDurationMinutes)
+}
+
+// SetDurationOptions sets the DurationOptions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetDurationOptions(durationOptions []float64) {
+	s.DurationOptions = durationOptions
+	s.require(schedulingEventTypeFieldDurationOptions)
+}
+
+// SetStepMinutes sets the StepMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetStepMinutes(stepMinutes float64) {
+	s.StepMinutes = stepMinutes
+	s.require(schedulingEventTypeFieldStepMinutes)
+}
+
+// SetGridTimeZone sets the GridTimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetGridTimeZone(gridTimeZone *string) {
+	s.GridTimeZone = gridTimeZone
+	s.require(schedulingEventTypeFieldGridTimeZone)
+}
+
+// SetBufferBeforeMinutes sets the BufferBeforeMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetBufferBeforeMinutes(bufferBeforeMinutes float64) {
+	s.BufferBeforeMinutes = bufferBeforeMinutes
+	s.require(schedulingEventTypeFieldBufferBeforeMinutes)
+}
+
+// SetBufferAfterMinutes sets the BufferAfterMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetBufferAfterMinutes(bufferAfterMinutes float64) {
+	s.BufferAfterMinutes = bufferAfterMinutes
+	s.require(schedulingEventTypeFieldBufferAfterMinutes)
+}
+
+// SetMinNoticeMinutes sets the MinNoticeMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetMinNoticeMinutes(minNoticeMinutes float64) {
+	s.MinNoticeMinutes = minNoticeMinutes
+	s.require(schedulingEventTypeFieldMinNoticeMinutes)
+}
+
+// SetBookingWindow sets the BookingWindow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetBookingWindow(bookingWindow *SchedulingBookingWindow) {
+	s.BookingWindow = bookingWindow
+	s.require(schedulingEventTypeFieldBookingWindow)
+}
+
+// SetLimits sets the Limits field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetLimits(limits []*SchedulingLimit) {
+	s.Limits = limits
+	s.require(schedulingEventTypeFieldLimits)
+}
+
+// SetCapacity sets the Capacity field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetCapacity(capacity *float64) {
+	s.Capacity = capacity
+	s.require(schedulingEventTypeFieldCapacity)
+}
+
+// SetRequiresApproval sets the RequiresApproval field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetRequiresApproval(requiresApproval bool) {
+	s.RequiresApproval = requiresApproval
+	s.require(schedulingEventTypeFieldRequiresApproval)
+}
+
+// SetApprovalTTLMinutes sets the ApprovalTTLMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetApprovalTTLMinutes(approvalTTLMinutes float64) {
+	s.ApprovalTTLMinutes = approvalTTLMinutes
+	s.require(schedulingEventTypeFieldApprovalTTLMinutes)
+}
+
+// SetHoldTTLSeconds sets the HoldTTLSeconds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetHoldTTLSeconds(holdTTLSeconds float64) {
+	s.HoldTTLSeconds = holdTTLSeconds
+	s.require(schedulingEventTypeFieldHoldTTLSeconds)
+}
+
+// SetCancelNoticeMinutes sets the CancelNoticeMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetCancelNoticeMinutes(cancelNoticeMinutes float64) {
+	s.CancelNoticeMinutes = cancelNoticeMinutes
+	s.require(schedulingEventTypeFieldCancelNoticeMinutes)
+}
+
+// SetRescheduleNoticeMinutes sets the RescheduleNoticeMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetRescheduleNoticeMinutes(rescheduleNoticeMinutes float64) {
+	s.RescheduleNoticeMinutes = rescheduleNoticeMinutes
+	s.require(schedulingEventTypeFieldRescheduleNoticeMinutes)
+}
+
+// SetMaxGuests sets the MaxGuests field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetMaxGuests(maxGuests float64) {
+	s.MaxGuests = maxGuests
+	s.require(schedulingEventTypeFieldMaxGuests)
+}
+
+// SetMaxActiveBookingsPerAttendee sets the MaxActiveBookingsPerAttendee field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetMaxActiveBookingsPerAttendee(maxActiveBookingsPerAttendee *float64) {
+	s.MaxActiveBookingsPerAttendee = maxActiveBookingsPerAttendee
+	s.require(schedulingEventTypeFieldMaxActiveBookingsPerAttendee)
+}
+
+// SetHostCalendarDetails sets the HostCalendarDetails field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetHostCalendarDetails(hostCalendarDetails SchedulingEventTypeHostCalendarDetails) {
+	s.HostCalendarDetails = hostCalendarDetails
+	s.require(schedulingEventTypeFieldHostCalendarDetails)
+}
+
+// SetQuestions sets the Questions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetQuestions(questions []*SchedulingQuestion) {
+	s.Questions = questions
+	s.require(schedulingEventTypeFieldQuestions)
+}
+
+// SetLocations sets the Locations field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetLocations(locations []*SchedulingLocation) {
+	s.Locations = locations
+	s.require(schedulingEventTypeFieldLocations)
+}
+
+// SetHostFilter sets the HostFilter field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetHostFilter(hostFilter map[string]*SchedulingEventTypeHostFilterValue) {
+	s.HostFilter = hostFilter
+	s.require(schedulingEventTypeFieldHostFilter)
+}
+
+// SetNotifications sets the Notifications field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetNotifications(notifications map[string]*SchedulingEventTypeNotificationsValue) {
+	s.Notifications = notifications
+	s.require(schedulingEventTypeFieldNotifications)
+}
+
+// SetReminders sets the Reminders field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetReminders(reminders []*SchedulingReminder) {
+	s.Reminders = reminders
+	s.require(schedulingEventTypeFieldReminders)
+}
+
+// SetHosts sets the Hosts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetHosts(hosts []*SchedulingEventTypeHostsItem) {
+	s.Hosts = hosts
+	s.require(schedulingEventTypeFieldHosts)
+}
+
+// SetMetadata sets the Metadata field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetMetadata(metadata map[string]string) {
+	s.Metadata = metadata
+	s.require(schedulingEventTypeFieldMetadata)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetCreatedAt(createdAt string) {
+	s.CreatedAt = createdAt
+	s.require(schedulingEventTypeFieldCreatedAt)
+}
+
+// SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventType) SetUpdatedAt(updatedAt string) {
+	s.UpdatedAt = updatedAt
+	s.require(schedulingEventTypeFieldUpdatedAt)
+}
+
+func (s *SchedulingEventType) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingEventType
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingEventType(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingEventTypeNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingEventType) MarshalJSON() ([]byte, error) {
+	type embed SchedulingEventType
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingEventType) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// What hosts' calendars say about a booking. `neutral`: a private event titled "Appointment". `full`: a private event with this title and the attendee's and guests' details.
+type SchedulingEventTypeHostCalendarDetails string
+
+const (
+	SchedulingEventTypeHostCalendarDetailsNeutral SchedulingEventTypeHostCalendarDetails = "neutral"
+	SchedulingEventTypeHostCalendarDetailsFull    SchedulingEventTypeHostCalendarDetails = "full"
+)
+
+func NewSchedulingEventTypeHostCalendarDetailsFromString(s string) (SchedulingEventTypeHostCalendarDetails, error) {
+	switch s {
+	case "neutral":
+		return SchedulingEventTypeHostCalendarDetailsNeutral, nil
+	case "full":
+		return SchedulingEventTypeHostCalendarDetailsFull, nil
+	}
+	var t SchedulingEventTypeHostCalendarDetails
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingEventTypeHostCalendarDetails) Ptr() *SchedulingEventTypeHostCalendarDetails {
+	return &s
+}
+
+type SchedulingEventTypeHostFilterValue struct {
+	String     string
+	StringList []string
+
+	typ string
+}
+
+func (s *SchedulingEventTypeHostFilterValue) GetString() string {
+	if s == nil {
+		return ""
+	}
+	return s.String
+}
+
+func (s *SchedulingEventTypeHostFilterValue) GetStringList() []string {
+	if s == nil {
+		return nil
+	}
+	return s.StringList
+}
+
+func (s *SchedulingEventTypeHostFilterValue) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		s.typ = "String"
+		s.String = valueString
+		return nil
+	}
+	var valueStringList []string
+	if err := json.Unmarshal(data, &valueStringList); err == nil {
+		s.typ = "StringList"
+		s.StringList = valueStringList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
+}
+
+func (s SchedulingEventTypeHostFilterValue) MarshalJSON() ([]byte, error) {
+	if s.typ == "String" || s.String != "" {
+		return json.Marshal(s.String)
+	}
+	if s.typ == "StringList" || s.StringList != nil {
+		return json.Marshal(s.StringList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+type SchedulingEventTypeHostFilterValueVisitor interface {
+	VisitString(string) error
+	VisitStringList([]string) error
+}
+
+func (s *SchedulingEventTypeHostFilterValue) Accept(visitor SchedulingEventTypeHostFilterValueVisitor) error {
+	if s.typ == "String" || s.String != "" {
+		return visitor.VisitString(s.String)
+	}
+	if s.typ == "StringList" || s.StringList != nil {
+		return visitor.VisitStringList(s.StringList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+var (
+	schedulingEventTypeHostInputFieldHost     = big.NewInt(1 << 0)
+	schedulingEventTypeHostInputFieldRole     = big.NewInt(1 << 1)
+	schedulingEventTypeHostInputFieldWeight   = big.NewInt(1 << 2)
+	schedulingEventTypeHostInputFieldSchedule = big.NewInt(1 << 3)
+)
+
+// schedulingEventTypeHostInputNullableFields maps the wire names of SchedulingEventTypeHostInput's nullable fields (required or optional) to their field bits.
+var schedulingEventTypeHostInputNullableFields = map[string]*big.Int{
+	"schedule": schedulingEventTypeHostInputFieldSchedule,
+}
+
+type SchedulingEventTypeHostInput struct {
+	// The host's id or uid.
+	Host string `json:"host" url:"host"`
+	// `required` hosts must all be free; one `member` is chosen for a booking.
+	Role *SchedulingEventTypeHostInputRole `json:"role,omitempty" url:"role,omitempty"`
+	// Share of a pool's bookings relative to other members.
+	Weight *int `json:"weight,omitempty" url:"weight,omitempty"`
+	// A schedule of this host's. Default: their default schedule.
+	Schedule *string `json:"schedule,omitempty" url:"schedule,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingEventTypeHostInput) GetHost() string {
+	if s == nil {
+		return ""
+	}
+	return s.Host
+}
+
+func (s *SchedulingEventTypeHostInput) GetRole() *SchedulingEventTypeHostInputRole {
+	if s == nil {
+		return nil
+	}
+	return s.Role
+}
+
+func (s *SchedulingEventTypeHostInput) GetWeight() *int {
+	if s == nil {
+		return nil
+	}
+	return s.Weight
+}
+
+func (s *SchedulingEventTypeHostInput) GetSchedule() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Schedule
+}
+
+func (s *SchedulingEventTypeHostInput) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingEventTypeHostInput) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetHost sets the Host field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeHostInput) SetHost(host string) {
+	s.Host = host
+	s.require(schedulingEventTypeHostInputFieldHost)
+}
+
+// SetRole sets the Role field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeHostInput) SetRole(role *SchedulingEventTypeHostInputRole) {
+	s.Role = role
+	s.require(schedulingEventTypeHostInputFieldRole)
+}
+
+// SetWeight sets the Weight field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeHostInput) SetWeight(weight *int) {
+	s.Weight = weight
+	s.require(schedulingEventTypeHostInputFieldWeight)
+}
+
+// SetSchedule sets the Schedule field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeHostInput) SetSchedule(schedule *string) {
+	s.Schedule = schedule
+	s.require(schedulingEventTypeHostInputFieldSchedule)
+}
+
+func (s *SchedulingEventTypeHostInput) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingEventTypeHostInput
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingEventTypeHostInput(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingEventTypeHostInputNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingEventTypeHostInput) MarshalJSON() ([]byte, error) {
+	type embed SchedulingEventTypeHostInput
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingEventTypeHostInput) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// `required` hosts must all be free; one `member` is chosen for a booking.
+type SchedulingEventTypeHostInputRole string
+
+const (
+	SchedulingEventTypeHostInputRoleRequired SchedulingEventTypeHostInputRole = "required"
+	SchedulingEventTypeHostInputRoleMember   SchedulingEventTypeHostInputRole = "member"
+)
+
+func NewSchedulingEventTypeHostInputRoleFromString(s string) (SchedulingEventTypeHostInputRole, error) {
+	switch s {
+	case "required":
+		return SchedulingEventTypeHostInputRoleRequired, nil
+	case "member":
+		return SchedulingEventTypeHostInputRoleMember, nil
+	}
+	var t SchedulingEventTypeHostInputRole
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingEventTypeHostInputRole) Ptr() *SchedulingEventTypeHostInputRole {
+	return &s
+}
+
+var (
+	schedulingEventTypeHostsItemFieldHost     = big.NewInt(1 << 0)
+	schedulingEventTypeHostsItemFieldRole     = big.NewInt(1 << 1)
+	schedulingEventTypeHostsItemFieldWeight   = big.NewInt(1 << 2)
+	schedulingEventTypeHostsItemFieldSchedule = big.NewInt(1 << 3)
+)
+
+// schedulingEventTypeHostsItemNullableFields maps the wire names of SchedulingEventTypeHostsItem's nullable fields (required or optional) to their field bits.
+var schedulingEventTypeHostsItemNullableFields = map[string]*big.Int{
+	"schedule": schedulingEventTypeHostsItemFieldSchedule,
+}
+
+type SchedulingEventTypeHostsItem struct {
+	// The host's id.
+	Host string `json:"host" url:"host"`
+	// `required` hosts must all be free; one `member` is chosen for a booking.
+	Role SchedulingEventTypeHostsItemRole `json:"role" url:"role"`
+	// Share of a pool's bookings relative to other members.
+	Weight float64 `json:"weight" url:"weight"`
+	// The id of the schedule used for this event type. `null`: the host's default schedule.
+	Schedule *string `json:"schedule,omitempty" url:"schedule,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingEventTypeHostsItem) GetHost() string {
+	if s == nil {
+		return ""
+	}
+	return s.Host
+}
+
+func (s *SchedulingEventTypeHostsItem) GetRole() SchedulingEventTypeHostsItemRole {
+	if s == nil {
+		return ""
+	}
+	return s.Role
+}
+
+func (s *SchedulingEventTypeHostsItem) GetWeight() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.Weight
+}
+
+func (s *SchedulingEventTypeHostsItem) GetSchedule() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Schedule
+}
+
+func (s *SchedulingEventTypeHostsItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingEventTypeHostsItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetHost sets the Host field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeHostsItem) SetHost(host string) {
+	s.Host = host
+	s.require(schedulingEventTypeHostsItemFieldHost)
+}
+
+// SetRole sets the Role field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeHostsItem) SetRole(role SchedulingEventTypeHostsItemRole) {
+	s.Role = role
+	s.require(schedulingEventTypeHostsItemFieldRole)
+}
+
+// SetWeight sets the Weight field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeHostsItem) SetWeight(weight float64) {
+	s.Weight = weight
+	s.require(schedulingEventTypeHostsItemFieldWeight)
+}
+
+// SetSchedule sets the Schedule field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeHostsItem) SetSchedule(schedule *string) {
+	s.Schedule = schedule
+	s.require(schedulingEventTypeHostsItemFieldSchedule)
+}
+
+func (s *SchedulingEventTypeHostsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingEventTypeHostsItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingEventTypeHostsItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingEventTypeHostsItemNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingEventTypeHostsItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingEventTypeHostsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingEventTypeHostsItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// `required` hosts must all be free; one `member` is chosen for a booking.
+type SchedulingEventTypeHostsItemRole string
+
+const (
+	SchedulingEventTypeHostsItemRoleRequired SchedulingEventTypeHostsItemRole = "required"
+	SchedulingEventTypeHostsItemRoleMember   SchedulingEventTypeHostsItemRole = "member"
+)
+
+func NewSchedulingEventTypeHostsItemRoleFromString(s string) (SchedulingEventTypeHostsItemRole, error) {
+	switch s {
+	case "required":
+		return SchedulingEventTypeHostsItemRoleRequired, nil
+	case "member":
+		return SchedulingEventTypeHostsItemRoleMember, nil
+	}
+	var t SchedulingEventTypeHostsItemRole
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingEventTypeHostsItemRole) Ptr() *SchedulingEventTypeHostsItemRole {
+	return &s
+}
+
+// Who a booking needs. `one_on_one`: one host. `pool`: any one of its hosts. `collective`: every `required` host, plus at most one `member`. `group`: one host, with attendees taking seats up to `capacity`.
+type SchedulingEventTypeKind string
+
+const (
+	SchedulingEventTypeKindOneOnOne   SchedulingEventTypeKind = "one_on_one"
+	SchedulingEventTypeKindPool       SchedulingEventTypeKind = "pool"
+	SchedulingEventTypeKindCollective SchedulingEventTypeKind = "collective"
+	SchedulingEventTypeKindGroup      SchedulingEventTypeKind = "group"
+)
+
+func NewSchedulingEventTypeKindFromString(s string) (SchedulingEventTypeKind, error) {
+	switch s {
+	case "one_on_one":
+		return SchedulingEventTypeKindOneOnOne, nil
+	case "pool":
+		return SchedulingEventTypeKindPool, nil
+	case "collective":
+		return SchedulingEventTypeKindCollective, nil
+	case "group":
+		return SchedulingEventTypeKindGroup, nil
+	}
+	var t SchedulingEventTypeKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingEventTypeKind) Ptr() *SchedulingEventTypeKind {
+	return &s
+}
+
+var (
+	schedulingEventTypeListFieldObject  = big.NewInt(1 << 0)
+	schedulingEventTypeListFieldData    = big.NewInt(1 << 1)
+	schedulingEventTypeListFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingEventTypeList struct {
+	Object  SchedulingEventTypeListObject `json:"object" url:"object"`
+	Data    []*SchedulingEventType        `json:"data" url:"data"`
+	HasMore bool                          `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingEventTypeList) GetObject() SchedulingEventTypeListObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingEventTypeList) GetData() []*SchedulingEventType {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingEventTypeList) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingEventTypeList) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingEventTypeList) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeList) SetObject(object SchedulingEventTypeListObject) {
+	s.Object = object
+	s.require(schedulingEventTypeListFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeList) SetData(data []*SchedulingEventType) {
+	s.Data = data
+	s.require(schedulingEventTypeListFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeList) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingEventTypeListFieldHasMore)
+}
+
+func (s *SchedulingEventTypeList) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingEventTypeList
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingEventTypeList(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingEventTypeList) MarshalJSON() ([]byte, error) {
+	type embed SchedulingEventTypeList
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingEventTypeList) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingEventTypeListObject string
+
+const (
+	SchedulingEventTypeListObjectList SchedulingEventTypeListObject = "list"
+)
+
+func NewSchedulingEventTypeListObjectFromString(s string) (SchedulingEventTypeListObject, error) {
+	switch s {
+	case "list":
+		return SchedulingEventTypeListObjectList, nil
+	}
+	var t SchedulingEventTypeListObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingEventTypeListObject) Ptr() *SchedulingEventTypeListObject {
+	return &s
+}
+
+var (
+	schedulingEventTypeNotificationsValueFieldEmailAttendee = big.NewInt(1 << 0)
+	schedulingEventTypeNotificationsValueFieldEmailHost     = big.NewInt(1 << 1)
+	schedulingEventTypeNotificationsValueFieldSmsAttendee   = big.NewInt(1 << 2)
+)
+
+type SchedulingEventTypeNotificationsValue struct {
+	EmailAttendee *bool `json:"email_attendee,omitempty" url:"email_attendee,omitempty"`
+	EmailHost     *bool `json:"email_host,omitempty" url:"email_host,omitempty"`
+	SmsAttendee   *bool `json:"sms_attendee,omitempty" url:"sms_attendee,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingEventTypeNotificationsValue) GetEmailAttendee() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.EmailAttendee
+}
+
+func (s *SchedulingEventTypeNotificationsValue) GetEmailHost() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.EmailHost
+}
+
+func (s *SchedulingEventTypeNotificationsValue) GetSmsAttendee() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.SmsAttendee
+}
+
+func (s *SchedulingEventTypeNotificationsValue) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingEventTypeNotificationsValue) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetEmailAttendee sets the EmailAttendee field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeNotificationsValue) SetEmailAttendee(emailAttendee *bool) {
+	s.EmailAttendee = emailAttendee
+	s.require(schedulingEventTypeNotificationsValueFieldEmailAttendee)
+}
+
+// SetEmailHost sets the EmailHost field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeNotificationsValue) SetEmailHost(emailHost *bool) {
+	s.EmailHost = emailHost
+	s.require(schedulingEventTypeNotificationsValueFieldEmailHost)
+}
+
+// SetSmsAttendee sets the SmsAttendee field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingEventTypeNotificationsValue) SetSmsAttendee(smsAttendee *bool) {
+	s.SmsAttendee = smsAttendee
+	s.require(schedulingEventTypeNotificationsValueFieldSmsAttendee)
+}
+
+func (s *SchedulingEventTypeNotificationsValue) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingEventTypeNotificationsValue
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingEventTypeNotificationsValue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingEventTypeNotificationsValue) MarshalJSON() ([]byte, error) {
+	type embed SchedulingEventTypeNotificationsValue
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingEventTypeNotificationsValue) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingEventTypeObject string
+
+const (
+	SchedulingEventTypeObjectSchedulingEventType SchedulingEventTypeObject = "scheduling.event_type"
+)
+
+func NewSchedulingEventTypeObjectFromString(s string) (SchedulingEventTypeObject, error) {
+	switch s {
+	case "scheduling.event_type":
+		return SchedulingEventTypeObjectSchedulingEventType, nil
+	}
+	var t SchedulingEventTypeObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingEventTypeObject) Ptr() *SchedulingEventTypeObject {
+	return &s
+}
+
+// `active`: can be booked. `archived`: new bookings answer `not_found`; existing ones stay.
+type SchedulingEventTypeStatus string
+
+const (
+	SchedulingEventTypeStatusActive   SchedulingEventTypeStatus = "active"
+	SchedulingEventTypeStatusArchived SchedulingEventTypeStatus = "archived"
+)
+
+func NewSchedulingEventTypeStatusFromString(s string) (SchedulingEventTypeStatus, error) {
+	switch s {
+	case "active":
+		return SchedulingEventTypeStatusActive, nil
+	case "archived":
+		return SchedulingEventTypeStatusArchived, nil
+	}
+	var t SchedulingEventTypeStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingEventTypeStatus) Ptr() *SchedulingEventTypeStatus {
+	return &s
+}
+
+var (
+	schedulingGuestInputFieldEmail = big.NewInt(1 << 0)
+	schedulingGuestInputFieldName  = big.NewInt(1 << 1)
+)
+
+// Someone else coming along. They're emailed about the booking, with no manage link.
+type SchedulingGuestInput struct {
+	// Where they're emailed about the booking.
+	Email string `json:"email" url:"email"`
+	// Their name, if you have it.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingGuestInput) GetEmail() string {
+	if s == nil {
+		return ""
+	}
+	return s.Email
+}
+
+func (s *SchedulingGuestInput) GetName() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Name
+}
+
+func (s *SchedulingGuestInput) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingGuestInput) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetEmail sets the Email field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingGuestInput) SetEmail(email string) {
+	s.Email = email
+	s.require(schedulingGuestInputFieldEmail)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingGuestInput) SetName(name *string) {
+	s.Name = name
+	s.require(schedulingGuestInputFieldName)
+}
+
+func (s *SchedulingGuestInput) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingGuestInput
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingGuestInput(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingGuestInput) MarshalJSON() ([]byte, error) {
+	type embed SchedulingGuestInput
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingGuestInput) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingHostFieldObject          = big.NewInt(1 << 0)
+	schedulingHostFieldID              = big.NewInt(1 << 1)
+	schedulingHostFieldUID             = big.NewInt(1 << 2)
+	schedulingHostFieldName            = big.NewInt(1 << 3)
+	schedulingHostFieldEmail           = big.NewInt(1 << 4)
+	schedulingHostFieldPhone           = big.NewInt(1 << 5)
+	schedulingHostFieldCalendarAccount = big.NewInt(1 << 6)
+	schedulingHostFieldTimeZone        = big.NewInt(1 << 7)
+	schedulingHostFieldLocale          = big.NewInt(1 << 8)
+	schedulingHostFieldAttributes      = big.NewInt(1 << 9)
+	schedulingHostFieldLocations       = big.NewInt(1 << 10)
+	schedulingHostFieldMetadata        = big.NewInt(1 << 11)
+	schedulingHostFieldStatus          = big.NewInt(1 << 12)
+	schedulingHostFieldCreatedAt       = big.NewInt(1 << 13)
+	schedulingHostFieldUpdatedAt       = big.NewInt(1 << 14)
+)
+
+// schedulingHostNullableFields maps the wire names of SchedulingHost's nullable fields (required or optional) to their field bits.
+var schedulingHostNullableFields = map[string]*big.Int{
+	"uid":              schedulingHostFieldUID,
+	"email":            schedulingHostFieldEmail,
+	"phone":            schedulingHostFieldPhone,
+	"calendar_account": schedulingHostFieldCalendarAccount,
+	"locale":           schedulingHostFieldLocale,
+}
+
+type SchedulingHost struct {
+	Object SchedulingHostObject `json:"object" url:"object"`
+	ID     string               `json:"id" url:"id"`
+	// Your own id for this host, unique in the environment, accepted wherever a host id is. `null` when none is set.
+	UID *string `json:"uid,omitempty" url:"uid,omitempty"`
+	// The host's name.
+	Name string `json:"name" url:"name"`
+	// Where this host's notifications go. `null` when none is set. Not an identity, and need not be unique.
+	Email *string `json:"email,omitempty" url:"email,omitempty"`
+	// Where this host's SMS reminders go, in E.164. `null` when none is set.
+	Phone *string `json:"phone,omitempty" url:"phone,omitempty"`
+	// The mailbox a calendar delegation connects for this host, when it isn't `email`. `null` when none is set.
+	CalendarAccount *string `json:"calendar_account,omitempty" url:"calendar_account,omitempty"`
+	// The host's IANA time zone. Their schedules default to it, and limits count days and weeks in it.
+	TimeZone string `json:"time_zone" url:"time_zone"`
+	// What this host's notifications are written in. `null`: English.
+	Locale *string `json:"locale,omitempty" url:"locale,omitempty"`
+	// What pools filter hosts by, as strings or lists of strings.
+	Attributes map[string]*SchedulingHostAttributesValue `json:"attributes" url:"attributes"`
+	// This host's own office, meeting link and phone number. An event type's location that leaves its value blank uses them.
+	Locations []*SchedulingHostLocation `json:"locations" url:"locations"`
+	// Your own key-value pairs.
+	Metadata map[string]string `json:"metadata" url:"metadata"`
+	// `active`: can be offered. `disabled`: isn't offered, and keeps its existing bookings.
+	Status    SchedulingHostStatus `json:"status" url:"status"`
+	CreatedAt string               `json:"created_at" url:"created_at"`
+	UpdatedAt string               `json:"updated_at" url:"updated_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingHost) GetObject() SchedulingHostObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingHost) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingHost) GetUID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.UID
+}
+
+func (s *SchedulingHost) GetName() string {
+	if s == nil {
+		return ""
+	}
+	return s.Name
+}
+
+func (s *SchedulingHost) GetEmail() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Email
+}
+
+func (s *SchedulingHost) GetPhone() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Phone
+}
+
+func (s *SchedulingHost) GetCalendarAccount() *string {
+	if s == nil {
+		return nil
+	}
+	return s.CalendarAccount
+}
+
+func (s *SchedulingHost) GetTimeZone() string {
+	if s == nil {
+		return ""
+	}
+	return s.TimeZone
+}
+
+func (s *SchedulingHost) GetLocale() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Locale
+}
+
+func (s *SchedulingHost) GetAttributes() map[string]*SchedulingHostAttributesValue {
+	if s == nil {
+		return nil
+	}
+	return s.Attributes
+}
+
+func (s *SchedulingHost) GetLocations() []*SchedulingHostLocation {
+	if s == nil {
+		return nil
+	}
+	return s.Locations
+}
+
+func (s *SchedulingHost) GetMetadata() map[string]string {
+	if s == nil {
+		return nil
+	}
+	return s.Metadata
+}
+
+func (s *SchedulingHost) GetStatus() SchedulingHostStatus {
+	if s == nil {
+		return ""
+	}
+	return s.Status
+}
+
+func (s *SchedulingHost) GetCreatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.CreatedAt
+}
+
+func (s *SchedulingHost) GetUpdatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.UpdatedAt
+}
+
+func (s *SchedulingHost) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingHost) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetObject(object SchedulingHostObject) {
+	s.Object = object
+	s.require(schedulingHostFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetID(id string) {
+	s.ID = id
+	s.require(schedulingHostFieldID)
+}
+
+// SetUID sets the UID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetUID(uid *string) {
+	s.UID = uid
+	s.require(schedulingHostFieldUID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetName(name string) {
+	s.Name = name
+	s.require(schedulingHostFieldName)
+}
+
+// SetEmail sets the Email field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetEmail(email *string) {
+	s.Email = email
+	s.require(schedulingHostFieldEmail)
+}
+
+// SetPhone sets the Phone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetPhone(phone *string) {
+	s.Phone = phone
+	s.require(schedulingHostFieldPhone)
+}
+
+// SetCalendarAccount sets the CalendarAccount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetCalendarAccount(calendarAccount *string) {
+	s.CalendarAccount = calendarAccount
+	s.require(schedulingHostFieldCalendarAccount)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetTimeZone(timeZone string) {
+	s.TimeZone = timeZone
+	s.require(schedulingHostFieldTimeZone)
+}
+
+// SetLocale sets the Locale field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetLocale(locale *string) {
+	s.Locale = locale
+	s.require(schedulingHostFieldLocale)
+}
+
+// SetAttributes sets the Attributes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetAttributes(attributes map[string]*SchedulingHostAttributesValue) {
+	s.Attributes = attributes
+	s.require(schedulingHostFieldAttributes)
+}
+
+// SetLocations sets the Locations field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetLocations(locations []*SchedulingHostLocation) {
+	s.Locations = locations
+	s.require(schedulingHostFieldLocations)
+}
+
+// SetMetadata sets the Metadata field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetMetadata(metadata map[string]string) {
+	s.Metadata = metadata
+	s.require(schedulingHostFieldMetadata)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetStatus(status SchedulingHostStatus) {
+	s.Status = status
+	s.require(schedulingHostFieldStatus)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetCreatedAt(createdAt string) {
+	s.CreatedAt = createdAt
+	s.require(schedulingHostFieldCreatedAt)
+}
+
+// SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHost) SetUpdatedAt(updatedAt string) {
+	s.UpdatedAt = updatedAt
+	s.require(schedulingHostFieldUpdatedAt)
+}
+
+func (s *SchedulingHost) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingHost
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingHost(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingHostNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingHost) MarshalJSON() ([]byte, error) {
+	type embed SchedulingHost
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingHost) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingHostAttributesValue struct {
+	String     string
+	StringList []string
+
+	typ string
+}
+
+func (s *SchedulingHostAttributesValue) GetString() string {
+	if s == nil {
+		return ""
+	}
+	return s.String
+}
+
+func (s *SchedulingHostAttributesValue) GetStringList() []string {
+	if s == nil {
+		return nil
+	}
+	return s.StringList
+}
+
+func (s *SchedulingHostAttributesValue) UnmarshalJSON(data []byte) error {
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		s.typ = "String"
+		s.String = valueString
+		return nil
+	}
+	var valueStringList []string
+	if err := json.Unmarshal(data, &valueStringList); err == nil {
+		s.typ = "StringList"
+		s.StringList = valueStringList
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, s)
+}
+
+func (s SchedulingHostAttributesValue) MarshalJSON() ([]byte, error) {
+	if s.typ == "String" || s.String != "" {
+		return json.Marshal(s.String)
+	}
+	if s.typ == "StringList" || s.StringList != nil {
+		return json.Marshal(s.StringList)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+type SchedulingHostAttributesValueVisitor interface {
+	VisitString(string) error
+	VisitStringList([]string) error
+}
+
+func (s *SchedulingHostAttributesValue) Accept(visitor SchedulingHostAttributesValueVisitor) error {
+	if s.typ == "String" || s.String != "" {
+		return visitor.VisitString(s.String)
+	}
+	if s.typ == "StringList" || s.StringList != nil {
+		return visitor.VisitStringList(s.StringList)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", s)
+}
+
+var (
+	schedulingHostListFieldObject  = big.NewInt(1 << 0)
+	schedulingHostListFieldData    = big.NewInt(1 << 1)
+	schedulingHostListFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingHostList struct {
+	Object  SchedulingHostListObject `json:"object" url:"object"`
+	Data    []*SchedulingHost        `json:"data" url:"data"`
+	HasMore bool                     `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingHostList) GetObject() SchedulingHostListObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingHostList) GetData() []*SchedulingHost {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingHostList) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingHostList) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingHostList) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHostList) SetObject(object SchedulingHostListObject) {
+	s.Object = object
+	s.require(schedulingHostListFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHostList) SetData(data []*SchedulingHost) {
+	s.Data = data
+	s.require(schedulingHostListFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHostList) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingHostListFieldHasMore)
+}
+
+func (s *SchedulingHostList) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingHostList
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingHostList(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingHostList) MarshalJSON() ([]byte, error) {
+	type embed SchedulingHostList
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingHostList) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingHostListObject string
+
+const (
+	SchedulingHostListObjectList SchedulingHostListObject = "list"
+)
+
+func NewSchedulingHostListObjectFromString(s string) (SchedulingHostListObject, error) {
+	switch s {
+	case "list":
+		return SchedulingHostListObjectList, nil
+	}
+	var t SchedulingHostListObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingHostListObject) Ptr() *SchedulingHostListObject {
+	return &s
+}
+
+// Where this host meets. A host has at most one of each type.
+type SchedulingHostLocation struct {
+	Type     string
+	Link     *SchedulingHostLocationLink
+	Phone    *SchedulingHostLocationPhone
+	InPerson *SchedulingHostLocationInPerson
+
+	rawJSON json.RawMessage
+}
+
+func (s *SchedulingHostLocation) GetType() string {
+	if s == nil {
+		return ""
+	}
+	return s.Type
+}
+
+func (s *SchedulingHostLocation) GetLink() *SchedulingHostLocationLink {
+	if s == nil {
+		return nil
+	}
+	return s.Link
+}
+
+func (s *SchedulingHostLocation) GetPhone() *SchedulingHostLocationPhone {
+	if s == nil {
+		return nil
+	}
+	return s.Phone
+}
+
+func (s *SchedulingHostLocation) GetInPerson() *SchedulingHostLocationInPerson {
+	if s == nil {
+		return nil
+	}
+	return s.InPerson
+}
+
+func (s *SchedulingHostLocation) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	s.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant type", s)
+	}
+	switch unmarshaler.Type {
+	case "link":
+		value := new(SchedulingHostLocationLink)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.Link = value
+	case "phone":
+		value := new(SchedulingHostLocationPhone)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.Phone = value
+	case "in_person":
+		value := new(SchedulingHostLocationInPerson)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.InPerson = value
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s SchedulingHostLocation) MarshalJSON() ([]byte, error) {
+	if err := s.validate(); err != nil {
+		return nil, err
+	}
+	if s.Link != nil {
+		return internal.MarshalJSONWithExtraProperty(s.Link, "type", "link")
+	}
+	if s.Phone != nil {
+		return internal.MarshalJSONWithExtraProperty(s.Phone, "type", "phone")
+	}
+	if s.InPerson != nil {
+		return internal.MarshalJSONWithExtraProperty(s.InPerson, "type", "in_person")
+	}
+	if len(s.rawJSON) > 0 {
+		return s.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", s)
+}
+
+type SchedulingHostLocationVisitor interface {
+	VisitLink(*SchedulingHostLocationLink) error
+	VisitPhone(*SchedulingHostLocationPhone) error
+	VisitInPerson(*SchedulingHostLocationInPerson) error
+}
+
+func (s *SchedulingHostLocation) Accept(visitor SchedulingHostLocationVisitor) error {
+	if s.Link != nil {
+		return visitor.VisitLink(s.Link)
+	}
+	if s.Phone != nil {
+		return visitor.VisitPhone(s.Phone)
+	}
+	if s.InPerson != nil {
+		return visitor.VisitInPerson(s.InPerson)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", s)
+}
+
+func (s *SchedulingHostLocation) validate() error {
+	if s == nil {
+		return fmt.Errorf("type %T is nil", s)
+	}
+	var fields []string
+	if s.Link != nil {
+		fields = append(fields, "link")
+	}
+	if s.Phone != nil {
+		fields = append(fields, "phone")
+	}
+	if s.InPerson != nil {
+		fields = append(fields, "in_person")
+	}
+	if len(fields) == 0 {
+		if s.Type != "" {
+			if len(s.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", s, s.Type)
+		}
+		return fmt.Errorf("type %T is empty", s)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", s, fields)
+	}
+	if s.Type != "" {
+		field := fields[0]
+		if s.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				s,
+				s.Type,
+				s,
+			)
+		}
+	}
+	return nil
+}
+
+var (
+	schedulingHostLocationInPersonFieldAddress = big.NewInt(1 << 0)
+)
+
+type SchedulingHostLocationInPerson struct {
+	// The address. It can't contain a link.
+	Address string `json:"address" url:"address"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingHostLocationInPerson) GetAddress() string {
+	if s == nil {
+		return ""
+	}
+	return s.Address
+}
+
+func (s *SchedulingHostLocationInPerson) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingHostLocationInPerson) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetAddress sets the Address field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHostLocationInPerson) SetAddress(address string) {
+	s.Address = address
+	s.require(schedulingHostLocationInPersonFieldAddress)
+}
+
+func (s *SchedulingHostLocationInPerson) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingHostLocationInPerson
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingHostLocationInPerson(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingHostLocationInPerson) MarshalJSON() ([]byte, error) {
+	type embed SchedulingHostLocationInPerson
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingHostLocationInPerson) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingHostLocationLinkFieldURL = big.NewInt(1 << 0)
+)
+
+type SchedulingHostLocationLink struct {
+	// The link, which must be `https`.
+	URL string `json:"url" url:"url"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingHostLocationLink) GetURL() string {
+	if s == nil {
+		return ""
+	}
+	return s.URL
+}
+
+func (s *SchedulingHostLocationLink) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingHostLocationLink) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHostLocationLink) SetURL(url string) {
+	s.URL = url
+	s.require(schedulingHostLocationLinkFieldURL)
+}
+
+func (s *SchedulingHostLocationLink) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingHostLocationLink
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingHostLocationLink(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingHostLocationLink) MarshalJSON() ([]byte, error) {
+	type embed SchedulingHostLocationLink
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingHostLocationLink) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingHostLocationPhoneFieldNumber = big.NewInt(1 << 0)
+)
+
+type SchedulingHostLocationPhone struct {
+	// The number, in E.164 format.
+	Number string `json:"number" url:"number"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingHostLocationPhone) GetNumber() string {
+	if s == nil {
+		return ""
+	}
+	return s.Number
+}
+
+func (s *SchedulingHostLocationPhone) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingHostLocationPhone) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetNumber sets the Number field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingHostLocationPhone) SetNumber(number string) {
+	s.Number = number
+	s.require(schedulingHostLocationPhoneFieldNumber)
+}
+
+func (s *SchedulingHostLocationPhone) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingHostLocationPhone
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingHostLocationPhone(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingHostLocationPhone) MarshalJSON() ([]byte, error) {
+	type embed SchedulingHostLocationPhone
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingHostLocationPhone) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingHostObject string
+
+const (
+	SchedulingHostObjectSchedulingHost SchedulingHostObject = "scheduling.host"
+)
+
+func NewSchedulingHostObjectFromString(s string) (SchedulingHostObject, error) {
+	switch s {
+	case "scheduling.host":
+		return SchedulingHostObjectSchedulingHost, nil
+	}
+	var t SchedulingHostObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingHostObject) Ptr() *SchedulingHostObject {
+	return &s
+}
+
+// `active`: can be offered. `disabled`: isn't offered, and keeps its existing bookings.
+type SchedulingHostStatus string
+
+const (
+	SchedulingHostStatusActive   SchedulingHostStatus = "active"
+	SchedulingHostStatusDisabled SchedulingHostStatus = "disabled"
+)
+
+func NewSchedulingHostStatusFromString(s string) (SchedulingHostStatus, error) {
+	switch s {
+	case "active":
+		return SchedulingHostStatusActive, nil
+	case "disabled":
+		return SchedulingHostStatusDisabled, nil
+	}
+	var t SchedulingHostStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingHostStatus) Ptr() *SchedulingHostStatus {
+	return &s
+}
+
+var (
+	schedulingLimitFieldPeriod = big.NewInt(1 << 0)
+	schedulingLimitFieldMax    = big.NewInt(1 << 1)
+	schedulingLimitFieldScope  = big.NewInt(1 << 2)
+)
+
+// A cap on bookings in a day or a week.
+type SchedulingLimit struct {
+	// In the host's time zone.
+	Period SchedulingLimitPeriod `json:"period" url:"period"`
+	// The most bookings allowed in one period.
+	Max int `json:"max" url:"max"`
+	// Count this event type's bookings, or all of the host's.
+	Scope *SchedulingLimitScope `json:"scope,omitempty" url:"scope,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingLimit) GetPeriod() SchedulingLimitPeriod {
+	if s == nil {
+		return ""
+	}
+	return s.Period
+}
+
+func (s *SchedulingLimit) GetMax() int {
+	if s == nil {
+		return 0
+	}
+	return s.Max
+}
+
+func (s *SchedulingLimit) GetScope() *SchedulingLimitScope {
+	if s == nil {
+		return nil
+	}
+	return s.Scope
+}
+
+func (s *SchedulingLimit) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingLimit) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetPeriod sets the Period field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingLimit) SetPeriod(period SchedulingLimitPeriod) {
+	s.Period = period
+	s.require(schedulingLimitFieldPeriod)
+}
+
+// SetMax sets the Max field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingLimit) SetMax(max int) {
+	s.Max = max
+	s.require(schedulingLimitFieldMax)
+}
+
+// SetScope sets the Scope field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingLimit) SetScope(scope *SchedulingLimitScope) {
+	s.Scope = scope
+	s.require(schedulingLimitFieldScope)
+}
+
+func (s *SchedulingLimit) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingLimit
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingLimit(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingLimit) MarshalJSON() ([]byte, error) {
+	type embed SchedulingLimit
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingLimit) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// In the host's time zone.
+type SchedulingLimitPeriod string
+
+const (
+	SchedulingLimitPeriodDay  SchedulingLimitPeriod = "day"
+	SchedulingLimitPeriodWeek SchedulingLimitPeriod = "week"
+)
+
+func NewSchedulingLimitPeriodFromString(s string) (SchedulingLimitPeriod, error) {
+	switch s {
+	case "day":
+		return SchedulingLimitPeriodDay, nil
+	case "week":
+		return SchedulingLimitPeriodWeek, nil
+	}
+	var t SchedulingLimitPeriod
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingLimitPeriod) Ptr() *SchedulingLimitPeriod {
+	return &s
+}
+
+// Count this event type's bookings, or all of the host's.
+type SchedulingLimitScope string
+
+const (
+	SchedulingLimitScopeEventType SchedulingLimitScope = "event_type"
+	SchedulingLimitScopeHost      SchedulingLimitScope = "host"
+)
+
+func NewSchedulingLimitScopeFromString(s string) (SchedulingLimitScope, error) {
+	switch s {
+	case "event_type":
+		return SchedulingLimitScopeEventType, nil
+	case "host":
+		return SchedulingLimitScopeHost, nil
+	}
+	var t SchedulingLimitScope
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingLimitScope) Ptr() *SchedulingLimitScope {
+	return &s
+}
+
+// Where a booking meets. `link`, `phone` and `in_person` carry their details, and on an event type, left blank, use the booked host's own if they have one; `google_meet`, `microsoft_teams` and `zoom` get a meeting made on the host's connected account.
+type SchedulingLocation struct {
+	Type           string
+	Link           *SchedulingLocationLink
+	Phone          *SchedulingLocationPhone
+	InPerson       *SchedulingLocationInPerson
+	GoogleMeet     *SchedulingLocationGoogleMeet
+	MicrosoftTeams *SchedulingLocationMicrosoftTeams
+	Zoom           *SchedulingLocationZoom
+
+	rawJSON json.RawMessage
+}
+
+func (s *SchedulingLocation) GetType() string {
+	if s == nil {
+		return ""
+	}
+	return s.Type
+}
+
+func (s *SchedulingLocation) GetLink() *SchedulingLocationLink {
+	if s == nil {
+		return nil
+	}
+	return s.Link
+}
+
+func (s *SchedulingLocation) GetPhone() *SchedulingLocationPhone {
+	if s == nil {
+		return nil
+	}
+	return s.Phone
+}
+
+func (s *SchedulingLocation) GetInPerson() *SchedulingLocationInPerson {
+	if s == nil {
+		return nil
+	}
+	return s.InPerson
+}
+
+func (s *SchedulingLocation) GetGoogleMeet() *SchedulingLocationGoogleMeet {
+	if s == nil {
+		return nil
+	}
+	return s.GoogleMeet
+}
+
+func (s *SchedulingLocation) GetMicrosoftTeams() *SchedulingLocationMicrosoftTeams {
+	if s == nil {
+		return nil
+	}
+	return s.MicrosoftTeams
+}
+
+func (s *SchedulingLocation) GetZoom() *SchedulingLocationZoom {
+	if s == nil {
+		return nil
+	}
+	return s.Zoom
+}
+
+func (s *SchedulingLocation) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	s.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant type", s)
+	}
+	switch unmarshaler.Type {
+	case "link":
+		value := new(SchedulingLocationLink)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.Link = value
+	case "phone":
+		value := new(SchedulingLocationPhone)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.Phone = value
+	case "in_person":
+		value := new(SchedulingLocationInPerson)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.InPerson = value
+	case "google_meet":
+		value := new(SchedulingLocationGoogleMeet)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.GoogleMeet = value
+	case "microsoft_teams":
+		value := new(SchedulingLocationMicrosoftTeams)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.MicrosoftTeams = value
+	case "zoom":
+		value := new(SchedulingLocationZoom)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.Zoom = value
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s SchedulingLocation) MarshalJSON() ([]byte, error) {
+	if err := s.validate(); err != nil {
+		return nil, err
+	}
+	if s.Link != nil {
+		return internal.MarshalJSONWithExtraProperty(s.Link, "type", "link")
+	}
+	if s.Phone != nil {
+		return internal.MarshalJSONWithExtraProperty(s.Phone, "type", "phone")
+	}
+	if s.InPerson != nil {
+		return internal.MarshalJSONWithExtraProperty(s.InPerson, "type", "in_person")
+	}
+	if s.GoogleMeet != nil {
+		return internal.MarshalJSONWithExtraProperty(s.GoogleMeet, "type", "google_meet")
+	}
+	if s.MicrosoftTeams != nil {
+		return internal.MarshalJSONWithExtraProperty(s.MicrosoftTeams, "type", "microsoft_teams")
+	}
+	if s.Zoom != nil {
+		return internal.MarshalJSONWithExtraProperty(s.Zoom, "type", "zoom")
+	}
+	if len(s.rawJSON) > 0 {
+		return s.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", s)
+}
+
+type SchedulingLocationVisitor interface {
+	VisitLink(*SchedulingLocationLink) error
+	VisitPhone(*SchedulingLocationPhone) error
+	VisitInPerson(*SchedulingLocationInPerson) error
+	VisitGoogleMeet(*SchedulingLocationGoogleMeet) error
+	VisitMicrosoftTeams(*SchedulingLocationMicrosoftTeams) error
+	VisitZoom(*SchedulingLocationZoom) error
+}
+
+func (s *SchedulingLocation) Accept(visitor SchedulingLocationVisitor) error {
+	if s.Link != nil {
+		return visitor.VisitLink(s.Link)
+	}
+	if s.Phone != nil {
+		return visitor.VisitPhone(s.Phone)
+	}
+	if s.InPerson != nil {
+		return visitor.VisitInPerson(s.InPerson)
+	}
+	if s.GoogleMeet != nil {
+		return visitor.VisitGoogleMeet(s.GoogleMeet)
+	}
+	if s.MicrosoftTeams != nil {
+		return visitor.VisitMicrosoftTeams(s.MicrosoftTeams)
+	}
+	if s.Zoom != nil {
+		return visitor.VisitZoom(s.Zoom)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", s)
+}
+
+func (s *SchedulingLocation) validate() error {
+	if s == nil {
+		return fmt.Errorf("type %T is nil", s)
+	}
+	var fields []string
+	if s.Link != nil {
+		fields = append(fields, "link")
+	}
+	if s.Phone != nil {
+		fields = append(fields, "phone")
+	}
+	if s.InPerson != nil {
+		fields = append(fields, "in_person")
+	}
+	if s.GoogleMeet != nil {
+		fields = append(fields, "google_meet")
+	}
+	if s.MicrosoftTeams != nil {
+		fields = append(fields, "microsoft_teams")
+	}
+	if s.Zoom != nil {
+		fields = append(fields, "zoom")
+	}
+	if len(fields) == 0 {
+		if s.Type != "" {
+			if len(s.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", s, s.Type)
+		}
+		return fmt.Errorf("type %T is empty", s)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", s, fields)
+	}
+	if s.Type != "" {
+		field := fields[0]
+		if s.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				s,
+				s.Type,
+				s,
+			)
+		}
+	}
+	return nil
+}
+
+type SchedulingLocationGoogleMeet struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingLocationGoogleMeet) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingLocationGoogleMeet) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+func (s *SchedulingLocationGoogleMeet) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingLocationGoogleMeet
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingLocationGoogleMeet(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingLocationGoogleMeet) MarshalJSON() ([]byte, error) {
+	type embed SchedulingLocationGoogleMeet
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingLocationGoogleMeet) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingLocationInPersonFieldAddress = big.NewInt(1 << 0)
+)
+
+// schedulingLocationInPersonNullableFields maps the wire names of SchedulingLocationInPerson's nullable fields (required or optional) to their field bits.
+var schedulingLocationInPersonNullableFields = map[string]*big.Int{
+	"address": schedulingLocationInPersonFieldAddress,
+}
+
+type SchedulingLocationInPerson struct {
+	// The address to meet at. `null` on an event type means the booking supplies its own.
+	Address *string `json:"address,omitempty" url:"address,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingLocationInPerson) GetAddress() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Address
+}
+
+func (s *SchedulingLocationInPerson) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingLocationInPerson) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetAddress sets the Address field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingLocationInPerson) SetAddress(address *string) {
+	s.Address = address
+	s.require(schedulingLocationInPersonFieldAddress)
+}
+
+func (s *SchedulingLocationInPerson) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingLocationInPerson
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingLocationInPerson(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingLocationInPersonNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingLocationInPerson) MarshalJSON() ([]byte, error) {
+	type embed SchedulingLocationInPerson
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingLocationInPerson) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingLocationLinkFieldURL = big.NewInt(1 << 0)
+)
+
+// schedulingLocationLinkNullableFields maps the wire names of SchedulingLocationLink's nullable fields (required or optional) to their field bits.
+var schedulingLocationLinkNullableFields = map[string]*big.Int{
+	"url": schedulingLocationLinkFieldURL,
+}
+
+type SchedulingLocationLink struct {
+	// The meeting link. `null` on an event type means the booking supplies its own.
+	URL *string `json:"url,omitempty" url:"url,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingLocationLink) GetURL() *string {
+	if s == nil {
+		return nil
+	}
+	return s.URL
+}
+
+func (s *SchedulingLocationLink) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingLocationLink) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingLocationLink) SetURL(url *string) {
+	s.URL = url
+	s.require(schedulingLocationLinkFieldURL)
+}
+
+func (s *SchedulingLocationLink) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingLocationLink
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingLocationLink(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingLocationLinkNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingLocationLink) MarshalJSON() ([]byte, error) {
+	type embed SchedulingLocationLink
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingLocationLink) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingLocationMicrosoftTeams struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingLocationMicrosoftTeams) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingLocationMicrosoftTeams) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+func (s *SchedulingLocationMicrosoftTeams) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingLocationMicrosoftTeams
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingLocationMicrosoftTeams(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingLocationMicrosoftTeams) MarshalJSON() ([]byte, error) {
+	type embed SchedulingLocationMicrosoftTeams
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingLocationMicrosoftTeams) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingLocationPhoneFieldNumber = big.NewInt(1 << 0)
+)
+
+// schedulingLocationPhoneNullableFields maps the wire names of SchedulingLocationPhone's nullable fields (required or optional) to their field bits.
+var schedulingLocationPhoneNullableFields = map[string]*big.Int{
+	"number": schedulingLocationPhoneFieldNumber,
+}
+
+type SchedulingLocationPhone struct {
+	// The phone number to call. `null` on an event type means the booking supplies its own.
+	Number *string `json:"number,omitempty" url:"number,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingLocationPhone) GetNumber() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Number
+}
+
+func (s *SchedulingLocationPhone) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingLocationPhone) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetNumber sets the Number field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingLocationPhone) SetNumber(number *string) {
+	s.Number = number
+	s.require(schedulingLocationPhoneFieldNumber)
+}
+
+func (s *SchedulingLocationPhone) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingLocationPhone
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingLocationPhone(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingLocationPhoneNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingLocationPhone) MarshalJSON() ([]byte, error) {
+	type embed SchedulingLocationPhone
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingLocationPhone) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingLocationZoomFieldURL = big.NewInt(1 << 0)
+)
+
+// schedulingLocationZoomNullableFields maps the wire names of SchedulingLocationZoom's nullable fields (required or optional) to their field bits.
+var schedulingLocationZoomNullableFields = map[string]*big.Int{
+	"url": schedulingLocationZoomFieldURL,
+}
+
+type SchedulingLocationZoom struct {
+	// The meeting's link, once it's created on the host's Zoom account.
+	URL *string `json:"url,omitempty" url:"url,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingLocationZoom) GetURL() *string {
+	if s == nil {
+		return nil
+	}
+	return s.URL
+}
+
+func (s *SchedulingLocationZoom) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingLocationZoom) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingLocationZoom) SetURL(url *string) {
+	s.URL = url
+	s.require(schedulingLocationZoomFieldURL)
+}
+
+func (s *SchedulingLocationZoom) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingLocationZoom
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingLocationZoom(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingLocationZoomNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingLocationZoom) MarshalJSON() ([]byte, error) {
+	type embed SchedulingLocationZoom
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingLocationZoom) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingQuestionFieldKey      = big.NewInt(1 << 0)
+	schedulingQuestionFieldType     = big.NewInt(1 << 1)
+	schedulingQuestionFieldLabel    = big.NewInt(1 << 2)
+	schedulingQuestionFieldRequired = big.NewInt(1 << 3)
+	schedulingQuestionFieldOptions  = big.NewInt(1 << 4)
+)
+
+// Something attendees are asked when booking. Answers are encrypted, and come back only when you retrieve one booking.
+type SchedulingQuestion struct {
+	// The answer's key in `answers`. Unique within the event type.
+	Key string `json:"key" url:"key"`
+	// How it's asked and which answers are valid.
+	Type SchedulingQuestionType `json:"type" url:"type"`
+	// The question as attendees see it.
+	Label string `json:"label" url:"label"`
+	// Whether a booking must answer it.
+	Required *bool `json:"required,omitempty" url:"required,omitempty"`
+	// The choices of a `select`, `radio` or `checkbox` question. `select` and `radio` need at least one.
+	Options []string `json:"options,omitempty" url:"options,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingQuestion) GetKey() string {
+	if s == nil {
+		return ""
+	}
+	return s.Key
+}
+
+func (s *SchedulingQuestion) GetType() SchedulingQuestionType {
+	if s == nil {
+		return ""
+	}
+	return s.Type
+}
+
+func (s *SchedulingQuestion) GetLabel() string {
+	if s == nil {
+		return ""
+	}
+	return s.Label
+}
+
+func (s *SchedulingQuestion) GetRequired() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.Required
+}
+
+func (s *SchedulingQuestion) GetOptions() []string {
+	if s == nil {
+		return nil
+	}
+	return s.Options
+}
+
+func (s *SchedulingQuestion) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingQuestion) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetKey sets the Key field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingQuestion) SetKey(key string) {
+	s.Key = key
+	s.require(schedulingQuestionFieldKey)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingQuestion) SetType(type_ SchedulingQuestionType) {
+	s.Type = type_
+	s.require(schedulingQuestionFieldType)
+}
+
+// SetLabel sets the Label field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingQuestion) SetLabel(label string) {
+	s.Label = label
+	s.require(schedulingQuestionFieldLabel)
+}
+
+// SetRequired sets the Required field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingQuestion) SetRequired(required *bool) {
+	s.Required = required
+	s.require(schedulingQuestionFieldRequired)
+}
+
+// SetOptions sets the Options field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingQuestion) SetOptions(options []string) {
+	s.Options = options
+	s.require(schedulingQuestionFieldOptions)
+}
+
+func (s *SchedulingQuestion) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingQuestion
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingQuestion(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingQuestion) MarshalJSON() ([]byte, error) {
+	type embed SchedulingQuestion
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingQuestion) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// How it's asked and which answers are valid.
+type SchedulingQuestionType string
+
+const (
+	SchedulingQuestionTypeText     SchedulingQuestionType = "text"
+	SchedulingQuestionTypeTextarea SchedulingQuestionType = "textarea"
+	SchedulingQuestionTypeSelect   SchedulingQuestionType = "select"
+	SchedulingQuestionTypeRadio    SchedulingQuestionType = "radio"
+	SchedulingQuestionTypeCheckbox SchedulingQuestionType = "checkbox"
+	SchedulingQuestionTypePhone    SchedulingQuestionType = "phone"
+	SchedulingQuestionTypeEmail    SchedulingQuestionType = "email"
+	SchedulingQuestionTypeNumber   SchedulingQuestionType = "number"
+)
+
+func NewSchedulingQuestionTypeFromString(s string) (SchedulingQuestionType, error) {
+	switch s {
+	case "text":
+		return SchedulingQuestionTypeText, nil
+	case "textarea":
+		return SchedulingQuestionTypeTextarea, nil
+	case "select":
+		return SchedulingQuestionTypeSelect, nil
+	case "radio":
+		return SchedulingQuestionTypeRadio, nil
+	case "checkbox":
+		return SchedulingQuestionTypeCheckbox, nil
+	case "phone":
+		return SchedulingQuestionTypePhone, nil
+	case "email":
+		return SchedulingQuestionTypeEmail, nil
+	case "number":
+		return SchedulingQuestionTypeNumber, nil
+	}
+	var t SchedulingQuestionType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingQuestionType) Ptr() *SchedulingQuestionType {
+	return &s
+}
+
+var (
+	schedulingReminderFieldKey           = big.NewInt(1 << 0)
+	schedulingReminderFieldAnchor        = big.NewInt(1 << 1)
+	schedulingReminderFieldBeforeMinutes = big.NewInt(1 << 2)
+	schedulingReminderFieldAfterMinutes  = big.NewInt(1 << 3)
+	schedulingReminderFieldSend          = big.NewInt(1 << 4)
+	schedulingReminderFieldEmailTo       = big.NewInt(1 << 5)
+	schedulingReminderFieldSubject       = big.NewInt(1 << 6)
+	schedulingReminderFieldMessage       = big.NewInt(1 << 7)
+	schedulingReminderFieldSmsMessage    = big.NewInt(1 << 8)
+	schedulingReminderFieldButton        = big.NewInt(1 << 9)
+	schedulingReminderFieldIncludeInvite = big.NewInt(1 << 10)
+	schedulingReminderFieldSendIfLate    = big.NewInt(1 << 11)
+	schedulingReminderFieldSkipNoShow    = big.NewInt(1 << 12)
+	schedulingReminderFieldOnlyIf        = big.NewInt(1 << 13)
+)
+
+// schedulingReminderNullableFields maps the wire names of SchedulingReminder's nullable fields (required or optional) to their field bits.
+var schedulingReminderNullableFields = map[string]*big.Int{
+	"before_minutes": schedulingReminderFieldBeforeMinutes,
+	"after_minutes":  schedulingReminderFieldAfterMinutes,
+	"subject":        schedulingReminderFieldSubject,
+	"message":        schedulingReminderFieldMessage,
+	"sms_message":    schedulingReminderFieldSmsMessage,
+	"button":         schedulingReminderFieldButton,
+	"only_if":        schedulingReminderFieldOnlyIf,
+}
+
+type SchedulingReminder struct {
+	// What webhooks and the booking call this reminder.
+	Key string `json:"key" url:"key"`
+	// The moment this is timed from.
+	Anchor SchedulingReminderAnchor `json:"anchor" url:"anchor"`
+	// How long before the anchor. `null` when it's after.
+	BeforeMinutes *float64 `json:"before_minutes,omitempty" url:"before_minutes,omitempty"`
+	// How long after the anchor. `null` when it's before.
+	AfterMinutes *float64 `json:"after_minutes,omitempty" url:"after_minutes,omitempty"`
+	// Who hears about it. `webhook` fires `scheduling.booking.reminder`.
+	Send []SchedulingReminderSendItem `json:"send" url:"send"`
+	// Fixed addresses that are emailed as well.
+	EmailTo []string `json:"email_to" url:"email_to"`
+	// Your own subject. `null`: the standard one.
+	Subject *string `json:"subject,omitempty" url:"subject,omitempty"`
+	// Your own words in the email. `null`: the standard ones.
+	Message *string `json:"message,omitempty" url:"message,omitempty"`
+	// Your own text. `null`: the standard one.
+	SmsMessage *string `json:"sms_message,omitempty" url:"sms_message,omitempty"`
+	// One button in the email. `null`: none.
+	Button *SchedulingReminderButton `json:"button,omitempty" url:"button,omitempty"`
+	// Whether the emails carry the invitation.
+	IncludeInvite bool `json:"include_invite" url:"include_invite"`
+	// Whether it goes right away if booked after its moment, instead of being skipped.
+	SendIfLate bool `json:"send_if_late" url:"send_if_late"`
+	// Whether it's dropped once the booking is marked a no-show.
+	SkipNoShow bool `json:"skip_no_show" url:"skip_no_show"`
+	// Only for bookings matching all of this. `null`: every booking.
+	OnlyIf *SchedulingReminderOnlyIf `json:"only_if,omitempty" url:"only_if,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingReminder) GetKey() string {
+	if s == nil {
+		return ""
+	}
+	return s.Key
+}
+
+func (s *SchedulingReminder) GetAnchor() SchedulingReminderAnchor {
+	if s == nil {
+		return ""
+	}
+	return s.Anchor
+}
+
+func (s *SchedulingReminder) GetBeforeMinutes() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.BeforeMinutes
+}
+
+func (s *SchedulingReminder) GetAfterMinutes() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.AfterMinutes
+}
+
+func (s *SchedulingReminder) GetSend() []SchedulingReminderSendItem {
+	if s == nil {
+		return nil
+	}
+	return s.Send
+}
+
+func (s *SchedulingReminder) GetEmailTo() []string {
+	if s == nil {
+		return nil
+	}
+	return s.EmailTo
+}
+
+func (s *SchedulingReminder) GetSubject() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Subject
+}
+
+func (s *SchedulingReminder) GetMessage() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Message
+}
+
+func (s *SchedulingReminder) GetSmsMessage() *string {
+	if s == nil {
+		return nil
+	}
+	return s.SmsMessage
+}
+
+func (s *SchedulingReminder) GetButton() *SchedulingReminderButton {
+	if s == nil {
+		return nil
+	}
+	return s.Button
+}
+
+func (s *SchedulingReminder) GetIncludeInvite() bool {
+	if s == nil {
+		return false
+	}
+	return s.IncludeInvite
+}
+
+func (s *SchedulingReminder) GetSendIfLate() bool {
+	if s == nil {
+		return false
+	}
+	return s.SendIfLate
+}
+
+func (s *SchedulingReminder) GetSkipNoShow() bool {
+	if s == nil {
+		return false
+	}
+	return s.SkipNoShow
+}
+
+func (s *SchedulingReminder) GetOnlyIf() *SchedulingReminderOnlyIf {
+	if s == nil {
+		return nil
+	}
+	return s.OnlyIf
+}
+
+func (s *SchedulingReminder) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingReminder) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetKey sets the Key field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetKey(key string) {
+	s.Key = key
+	s.require(schedulingReminderFieldKey)
+}
+
+// SetAnchor sets the Anchor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetAnchor(anchor SchedulingReminderAnchor) {
+	s.Anchor = anchor
+	s.require(schedulingReminderFieldAnchor)
+}
+
+// SetBeforeMinutes sets the BeforeMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetBeforeMinutes(beforeMinutes *float64) {
+	s.BeforeMinutes = beforeMinutes
+	s.require(schedulingReminderFieldBeforeMinutes)
+}
+
+// SetAfterMinutes sets the AfterMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetAfterMinutes(afterMinutes *float64) {
+	s.AfterMinutes = afterMinutes
+	s.require(schedulingReminderFieldAfterMinutes)
+}
+
+// SetSend sets the Send field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetSend(send []SchedulingReminderSendItem) {
+	s.Send = send
+	s.require(schedulingReminderFieldSend)
+}
+
+// SetEmailTo sets the EmailTo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetEmailTo(emailTo []string) {
+	s.EmailTo = emailTo
+	s.require(schedulingReminderFieldEmailTo)
+}
+
+// SetSubject sets the Subject field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetSubject(subject *string) {
+	s.Subject = subject
+	s.require(schedulingReminderFieldSubject)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetMessage(message *string) {
+	s.Message = message
+	s.require(schedulingReminderFieldMessage)
+}
+
+// SetSmsMessage sets the SmsMessage field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetSmsMessage(smsMessage *string) {
+	s.SmsMessage = smsMessage
+	s.require(schedulingReminderFieldSmsMessage)
+}
+
+// SetButton sets the Button field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetButton(button *SchedulingReminderButton) {
+	s.Button = button
+	s.require(schedulingReminderFieldButton)
+}
+
+// SetIncludeInvite sets the IncludeInvite field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetIncludeInvite(includeInvite bool) {
+	s.IncludeInvite = includeInvite
+	s.require(schedulingReminderFieldIncludeInvite)
+}
+
+// SetSendIfLate sets the SendIfLate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetSendIfLate(sendIfLate bool) {
+	s.SendIfLate = sendIfLate
+	s.require(schedulingReminderFieldSendIfLate)
+}
+
+// SetSkipNoShow sets the SkipNoShow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetSkipNoShow(skipNoShow bool) {
+	s.SkipNoShow = skipNoShow
+	s.require(schedulingReminderFieldSkipNoShow)
+}
+
+// SetOnlyIf sets the OnlyIf field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminder) SetOnlyIf(onlyIf *SchedulingReminderOnlyIf) {
+	s.OnlyIf = onlyIf
+	s.require(schedulingReminderFieldOnlyIf)
+}
+
+func (s *SchedulingReminder) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingReminder
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingReminder(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingReminderNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingReminder) MarshalJSON() ([]byte, error) {
+	type embed SchedulingReminder
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingReminder) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// The moment this is timed from.
+type SchedulingReminderAnchor string
+
+const (
+	SchedulingReminderAnchorStart           SchedulingReminderAnchor = "start"
+	SchedulingReminderAnchorEnd             SchedulingReminderAnchor = "end"
+	SchedulingReminderAnchorConfirmed       SchedulingReminderAnchor = "confirmed"
+	SchedulingReminderAnchorRescheduled     SchedulingReminderAnchor = "rescheduled"
+	SchedulingReminderAnchorCancelled       SchedulingReminderAnchor = "cancelled"
+	SchedulingReminderAnchorDeclined        SchedulingReminderAnchor = "declined"
+	SchedulingReminderAnchorPendingApproval SchedulingReminderAnchor = "pending_approval"
+	SchedulingReminderAnchorNoShow          SchedulingReminderAnchor = "no_show"
+)
+
+func NewSchedulingReminderAnchorFromString(s string) (SchedulingReminderAnchor, error) {
+	switch s {
+	case "start":
+		return SchedulingReminderAnchorStart, nil
+	case "end":
+		return SchedulingReminderAnchorEnd, nil
+	case "confirmed":
+		return SchedulingReminderAnchorConfirmed, nil
+	case "rescheduled":
+		return SchedulingReminderAnchorRescheduled, nil
+	case "cancelled":
+		return SchedulingReminderAnchorCancelled, nil
+	case "declined":
+		return SchedulingReminderAnchorDeclined, nil
+	case "pending_approval":
+		return SchedulingReminderAnchorPendingApproval, nil
+	case "no_show":
+		return SchedulingReminderAnchorNoShow, nil
+	}
+	var t SchedulingReminderAnchor
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingReminderAnchor) Ptr() *SchedulingReminderAnchor {
+	return &s
+}
+
+var (
+	schedulingReminderButtonFieldLabel = big.NewInt(1 << 0)
+	schedulingReminderButtonFieldURL   = big.NewInt(1 << 1)
+)
+
+// One button in the email. `null`: none.
+type SchedulingReminderButton struct {
+	// What the button says.
+	Label string `json:"label" url:"label"`
+	// Where it goes.
+	URL string `json:"url" url:"url"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingReminderButton) GetLabel() string {
+	if s == nil {
+		return ""
+	}
+	return s.Label
+}
+
+func (s *SchedulingReminderButton) GetURL() string {
+	if s == nil {
+		return ""
+	}
+	return s.URL
+}
+
+func (s *SchedulingReminderButton) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingReminderButton) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetLabel sets the Label field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderButton) SetLabel(label string) {
+	s.Label = label
+	s.require(schedulingReminderButtonFieldLabel)
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderButton) SetURL(url string) {
+	s.URL = url
+	s.require(schedulingReminderButtonFieldURL)
+}
+
+func (s *SchedulingReminderButton) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingReminderButton
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingReminderButton(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingReminderButton) MarshalJSON() ([]byte, error) {
+	type embed SchedulingReminderButton
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingReminderButton) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingReminderInputFieldKey           = big.NewInt(1 << 0)
+	schedulingReminderInputFieldAnchor        = big.NewInt(1 << 1)
+	schedulingReminderInputFieldBeforeMinutes = big.NewInt(1 << 2)
+	schedulingReminderInputFieldAfterMinutes  = big.NewInt(1 << 3)
+	schedulingReminderInputFieldSend          = big.NewInt(1 << 4)
+	schedulingReminderInputFieldEmailTo       = big.NewInt(1 << 5)
+	schedulingReminderInputFieldSubject       = big.NewInt(1 << 6)
+	schedulingReminderInputFieldMessage       = big.NewInt(1 << 7)
+	schedulingReminderInputFieldSmsMessage    = big.NewInt(1 << 8)
+	schedulingReminderInputFieldButton        = big.NewInt(1 << 9)
+	schedulingReminderInputFieldIncludeInvite = big.NewInt(1 << 10)
+	schedulingReminderInputFieldSendIfLate    = big.NewInt(1 << 11)
+	schedulingReminderInputFieldSkipNoShow    = big.NewInt(1 << 12)
+	schedulingReminderInputFieldOnlyIf        = big.NewInt(1 << 13)
+)
+
+// schedulingReminderInputNullableFields maps the wire names of SchedulingReminderInput's nullable fields (required or optional) to their field bits.
+var schedulingReminderInputNullableFields = map[string]*big.Int{
+	"before_minutes": schedulingReminderInputFieldBeforeMinutes,
+	"after_minutes":  schedulingReminderInputFieldAfterMinutes,
+	"subject":        schedulingReminderInputFieldSubject,
+	"message":        schedulingReminderInputFieldMessage,
+	"sms_message":    schedulingReminderInputFieldSmsMessage,
+	"button":         schedulingReminderInputFieldButton,
+	"only_if":        schedulingReminderInputFieldOnlyIf,
+}
+
+type SchedulingReminderInput struct {
+	// Names this reminder in webhooks and on the booking. Default: from its timing, like `start-1440`.
+	Key *string `json:"key,omitempty" url:"key,omitempty"`
+	// The moment this is timed from.
+	Anchor SchedulingReminderInputAnchor `json:"anchor" url:"anchor"`
+	// How long before the anchor. Only for `start` and `end`.
+	BeforeMinutes *int `json:"before_minutes,omitempty" url:"before_minutes,omitempty"`
+	// How long after the anchor, up to 60 days. Default for other anchors: 0.
+	AfterMinutes *int `json:"after_minutes,omitempty" url:"after_minutes,omitempty"`
+	// Who hears about it. `webhook` fires `scheduling.booking.reminder`.
+	Send []SchedulingReminderInputSendItem `json:"send,omitempty" url:"send,omitempty"`
+	// Fixed addresses to email as well: verified members of your organization, or addresses on your verified domains (live environments).
+	EmailTo []string `json:"email_to,omitempty" url:"email_to,omitempty"`
+	// Your own subject, with `{{variables}}`. Needs `email_from`.
+	Subject *string `json:"subject,omitempty" url:"subject,omitempty"`
+	// Your own words in place of the standard first line, with `{{variables}}` and no links. The booking's details stay below it. Needs `email_from`.
+	Message *string `json:"message,omitempty" url:"message,omitempty"`
+	// Your own text, with `{{variables}}` other than names, and no links. `Reply STOP to opt out.` is always added.
+	SmsMessage *string `json:"sms_message,omitempty" url:"sms_message,omitempty"`
+	// One button in the email. Needs `email_from`.
+	Button *SchedulingReminderInputButton `json:"button,omitempty" url:"button,omitempty"`
+	// Attach the calendar invitation to the emails.
+	IncludeInvite *bool `json:"include_invite,omitempty" url:"include_invite,omitempty"`
+	// If it was booked after this reminder's moment, send it right away instead of skipping it, as long as the meeting is still ahead. Only for `before_minutes` on `start`.
+	SendIfLate *bool `json:"send_if_late,omitempty" url:"send_if_late,omitempty"`
+	// Don't send it once the booking is marked a no-show. Default: true on `end`.
+	SkipNoShow *bool `json:"skip_no_show,omitempty" url:"skip_no_show,omitempty"`
+	// Only for bookings matching all of this, checked when it's due.
+	OnlyIf *SchedulingReminderInputOnlyIf `json:"only_if,omitempty" url:"only_if,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingReminderInput) GetKey() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Key
+}
+
+func (s *SchedulingReminderInput) GetAnchor() SchedulingReminderInputAnchor {
+	if s == nil {
+		return ""
+	}
+	return s.Anchor
+}
+
+func (s *SchedulingReminderInput) GetBeforeMinutes() *int {
+	if s == nil {
+		return nil
+	}
+	return s.BeforeMinutes
+}
+
+func (s *SchedulingReminderInput) GetAfterMinutes() *int {
+	if s == nil {
+		return nil
+	}
+	return s.AfterMinutes
+}
+
+func (s *SchedulingReminderInput) GetSend() []SchedulingReminderInputSendItem {
+	if s == nil {
+		return nil
+	}
+	return s.Send
+}
+
+func (s *SchedulingReminderInput) GetEmailTo() []string {
+	if s == nil {
+		return nil
+	}
+	return s.EmailTo
+}
+
+func (s *SchedulingReminderInput) GetSubject() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Subject
+}
+
+func (s *SchedulingReminderInput) GetMessage() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Message
+}
+
+func (s *SchedulingReminderInput) GetSmsMessage() *string {
+	if s == nil {
+		return nil
+	}
+	return s.SmsMessage
+}
+
+func (s *SchedulingReminderInput) GetButton() *SchedulingReminderInputButton {
+	if s == nil {
+		return nil
+	}
+	return s.Button
+}
+
+func (s *SchedulingReminderInput) GetIncludeInvite() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.IncludeInvite
+}
+
+func (s *SchedulingReminderInput) GetSendIfLate() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.SendIfLate
+}
+
+func (s *SchedulingReminderInput) GetSkipNoShow() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.SkipNoShow
+}
+
+func (s *SchedulingReminderInput) GetOnlyIf() *SchedulingReminderInputOnlyIf {
+	if s == nil {
+		return nil
+	}
+	return s.OnlyIf
+}
+
+func (s *SchedulingReminderInput) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingReminderInput) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetKey sets the Key field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetKey(key *string) {
+	s.Key = key
+	s.require(schedulingReminderInputFieldKey)
+}
+
+// SetAnchor sets the Anchor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetAnchor(anchor SchedulingReminderInputAnchor) {
+	s.Anchor = anchor
+	s.require(schedulingReminderInputFieldAnchor)
+}
+
+// SetBeforeMinutes sets the BeforeMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetBeforeMinutes(beforeMinutes *int) {
+	s.BeforeMinutes = beforeMinutes
+	s.require(schedulingReminderInputFieldBeforeMinutes)
+}
+
+// SetAfterMinutes sets the AfterMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetAfterMinutes(afterMinutes *int) {
+	s.AfterMinutes = afterMinutes
+	s.require(schedulingReminderInputFieldAfterMinutes)
+}
+
+// SetSend sets the Send field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetSend(send []SchedulingReminderInputSendItem) {
+	s.Send = send
+	s.require(schedulingReminderInputFieldSend)
+}
+
+// SetEmailTo sets the EmailTo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetEmailTo(emailTo []string) {
+	s.EmailTo = emailTo
+	s.require(schedulingReminderInputFieldEmailTo)
+}
+
+// SetSubject sets the Subject field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetSubject(subject *string) {
+	s.Subject = subject
+	s.require(schedulingReminderInputFieldSubject)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetMessage(message *string) {
+	s.Message = message
+	s.require(schedulingReminderInputFieldMessage)
+}
+
+// SetSmsMessage sets the SmsMessage field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetSmsMessage(smsMessage *string) {
+	s.SmsMessage = smsMessage
+	s.require(schedulingReminderInputFieldSmsMessage)
+}
+
+// SetButton sets the Button field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetButton(button *SchedulingReminderInputButton) {
+	s.Button = button
+	s.require(schedulingReminderInputFieldButton)
+}
+
+// SetIncludeInvite sets the IncludeInvite field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetIncludeInvite(includeInvite *bool) {
+	s.IncludeInvite = includeInvite
+	s.require(schedulingReminderInputFieldIncludeInvite)
+}
+
+// SetSendIfLate sets the SendIfLate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetSendIfLate(sendIfLate *bool) {
+	s.SendIfLate = sendIfLate
+	s.require(schedulingReminderInputFieldSendIfLate)
+}
+
+// SetSkipNoShow sets the SkipNoShow field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetSkipNoShow(skipNoShow *bool) {
+	s.SkipNoShow = skipNoShow
+	s.require(schedulingReminderInputFieldSkipNoShow)
+}
+
+// SetOnlyIf sets the OnlyIf field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInput) SetOnlyIf(onlyIf *SchedulingReminderInputOnlyIf) {
+	s.OnlyIf = onlyIf
+	s.require(schedulingReminderInputFieldOnlyIf)
+}
+
+func (s *SchedulingReminderInput) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingReminderInput
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingReminderInput(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingReminderInputNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingReminderInput) MarshalJSON() ([]byte, error) {
+	type embed SchedulingReminderInput
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingReminderInput) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// The moment this is timed from.
+type SchedulingReminderInputAnchor string
+
+const (
+	SchedulingReminderInputAnchorStart           SchedulingReminderInputAnchor = "start"
+	SchedulingReminderInputAnchorEnd             SchedulingReminderInputAnchor = "end"
+	SchedulingReminderInputAnchorConfirmed       SchedulingReminderInputAnchor = "confirmed"
+	SchedulingReminderInputAnchorRescheduled     SchedulingReminderInputAnchor = "rescheduled"
+	SchedulingReminderInputAnchorCancelled       SchedulingReminderInputAnchor = "cancelled"
+	SchedulingReminderInputAnchorDeclined        SchedulingReminderInputAnchor = "declined"
+	SchedulingReminderInputAnchorPendingApproval SchedulingReminderInputAnchor = "pending_approval"
+	SchedulingReminderInputAnchorNoShow          SchedulingReminderInputAnchor = "no_show"
+)
+
+func NewSchedulingReminderInputAnchorFromString(s string) (SchedulingReminderInputAnchor, error) {
+	switch s {
+	case "start":
+		return SchedulingReminderInputAnchorStart, nil
+	case "end":
+		return SchedulingReminderInputAnchorEnd, nil
+	case "confirmed":
+		return SchedulingReminderInputAnchorConfirmed, nil
+	case "rescheduled":
+		return SchedulingReminderInputAnchorRescheduled, nil
+	case "cancelled":
+		return SchedulingReminderInputAnchorCancelled, nil
+	case "declined":
+		return SchedulingReminderInputAnchorDeclined, nil
+	case "pending_approval":
+		return SchedulingReminderInputAnchorPendingApproval, nil
+	case "no_show":
+		return SchedulingReminderInputAnchorNoShow, nil
+	}
+	var t SchedulingReminderInputAnchor
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingReminderInputAnchor) Ptr() *SchedulingReminderInputAnchor {
+	return &s
+}
+
+var (
+	schedulingReminderInputButtonFieldLabel = big.NewInt(1 << 0)
+	schedulingReminderInputButtonFieldURL   = big.NewInt(1 << 1)
+)
+
+// One button in the email. Needs `email_from`.
+type SchedulingReminderInputButton struct {
+	Label string `json:"label" url:"label"`
+	// https, on one of your verified domains (live environments). May use `{{booking_id}}` in its path or query.
+	URL string `json:"url" url:"url"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingReminderInputButton) GetLabel() string {
+	if s == nil {
+		return ""
+	}
+	return s.Label
+}
+
+func (s *SchedulingReminderInputButton) GetURL() string {
+	if s == nil {
+		return ""
+	}
+	return s.URL
+}
+
+func (s *SchedulingReminderInputButton) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingReminderInputButton) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetLabel sets the Label field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInputButton) SetLabel(label string) {
+	s.Label = label
+	s.require(schedulingReminderInputButtonFieldLabel)
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInputButton) SetURL(url string) {
+	s.URL = url
+	s.require(schedulingReminderInputButtonFieldURL)
+}
+
+func (s *SchedulingReminderInputButton) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingReminderInputButton
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingReminderInputButton(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingReminderInputButton) MarshalJSON() ([]byte, error) {
+	type embed SchedulingReminderInputButton
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingReminderInputButton) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingReminderInputOnlyIfFieldMetadata      = big.NewInt(1 << 0)
+	schedulingReminderInputOnlyIfFieldLocationTypes = big.NewInt(1 << 1)
+)
+
+// schedulingReminderInputOnlyIfNullableFields maps the wire names of SchedulingReminderInputOnlyIf's nullable fields (required or optional) to their field bits.
+var schedulingReminderInputOnlyIfNullableFields = map[string]*big.Int{
+	"metadata":       schedulingReminderInputOnlyIfFieldMetadata,
+	"location_types": schedulingReminderInputOnlyIfFieldLocationTypes,
+}
+
+// Only for bookings matching all of this, checked when it's due.
+type SchedulingReminderInputOnlyIf struct {
+	// The booking's metadata must have all of these.
+	Metadata map[string]*string `json:"metadata,omitempty" url:"metadata,omitempty"`
+	// The booking's location must be one of these.
+	LocationTypes []SchedulingReminderInputOnlyIfLocationTypesItem `json:"location_types,omitempty" url:"location_types,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingReminderInputOnlyIf) GetMetadata() map[string]*string {
+	if s == nil {
+		return nil
+	}
+	return s.Metadata
+}
+
+func (s *SchedulingReminderInputOnlyIf) GetLocationTypes() []SchedulingReminderInputOnlyIfLocationTypesItem {
+	if s == nil {
+		return nil
+	}
+	return s.LocationTypes
+}
+
+func (s *SchedulingReminderInputOnlyIf) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingReminderInputOnlyIf) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetMetadata sets the Metadata field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInputOnlyIf) SetMetadata(metadata map[string]*string) {
+	s.Metadata = metadata
+	s.require(schedulingReminderInputOnlyIfFieldMetadata)
+}
+
+// SetLocationTypes sets the LocationTypes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderInputOnlyIf) SetLocationTypes(locationTypes []SchedulingReminderInputOnlyIfLocationTypesItem) {
+	s.LocationTypes = locationTypes
+	s.require(schedulingReminderInputOnlyIfFieldLocationTypes)
+}
+
+func (s *SchedulingReminderInputOnlyIf) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingReminderInputOnlyIf
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingReminderInputOnlyIf(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingReminderInputOnlyIfNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingReminderInputOnlyIf) MarshalJSON() ([]byte, error) {
+	type embed SchedulingReminderInputOnlyIf
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingReminderInputOnlyIf) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingReminderInputOnlyIfLocationTypesItem string
+
+const (
+	SchedulingReminderInputOnlyIfLocationTypesItemLink           SchedulingReminderInputOnlyIfLocationTypesItem = "link"
+	SchedulingReminderInputOnlyIfLocationTypesItemPhone          SchedulingReminderInputOnlyIfLocationTypesItem = "phone"
+	SchedulingReminderInputOnlyIfLocationTypesItemInPerson       SchedulingReminderInputOnlyIfLocationTypesItem = "in_person"
+	SchedulingReminderInputOnlyIfLocationTypesItemGoogleMeet     SchedulingReminderInputOnlyIfLocationTypesItem = "google_meet"
+	SchedulingReminderInputOnlyIfLocationTypesItemMicrosoftTeams SchedulingReminderInputOnlyIfLocationTypesItem = "microsoft_teams"
+	SchedulingReminderInputOnlyIfLocationTypesItemZoom           SchedulingReminderInputOnlyIfLocationTypesItem = "zoom"
+)
+
+func NewSchedulingReminderInputOnlyIfLocationTypesItemFromString(s string) (SchedulingReminderInputOnlyIfLocationTypesItem, error) {
+	switch s {
+	case "link":
+		return SchedulingReminderInputOnlyIfLocationTypesItemLink, nil
+	case "phone":
+		return SchedulingReminderInputOnlyIfLocationTypesItemPhone, nil
+	case "in_person":
+		return SchedulingReminderInputOnlyIfLocationTypesItemInPerson, nil
+	case "google_meet":
+		return SchedulingReminderInputOnlyIfLocationTypesItemGoogleMeet, nil
+	case "microsoft_teams":
+		return SchedulingReminderInputOnlyIfLocationTypesItemMicrosoftTeams, nil
+	case "zoom":
+		return SchedulingReminderInputOnlyIfLocationTypesItemZoom, nil
+	}
+	var t SchedulingReminderInputOnlyIfLocationTypesItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingReminderInputOnlyIfLocationTypesItem) Ptr() *SchedulingReminderInputOnlyIfLocationTypesItem {
+	return &s
+}
+
+type SchedulingReminderInputSendItem string
+
+const (
+	SchedulingReminderInputSendItemEmailAttendee SchedulingReminderInputSendItem = "email_attendee"
+	SchedulingReminderInputSendItemEmailHost     SchedulingReminderInputSendItem = "email_host"
+	SchedulingReminderInputSendItemSmsAttendee   SchedulingReminderInputSendItem = "sms_attendee"
+	SchedulingReminderInputSendItemSmsHost       SchedulingReminderInputSendItem = "sms_host"
+	SchedulingReminderInputSendItemWebhook       SchedulingReminderInputSendItem = "webhook"
+)
+
+func NewSchedulingReminderInputSendItemFromString(s string) (SchedulingReminderInputSendItem, error) {
+	switch s {
+	case "email_attendee":
+		return SchedulingReminderInputSendItemEmailAttendee, nil
+	case "email_host":
+		return SchedulingReminderInputSendItemEmailHost, nil
+	case "sms_attendee":
+		return SchedulingReminderInputSendItemSmsAttendee, nil
+	case "sms_host":
+		return SchedulingReminderInputSendItemSmsHost, nil
+	case "webhook":
+		return SchedulingReminderInputSendItemWebhook, nil
+	}
+	var t SchedulingReminderInputSendItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingReminderInputSendItem) Ptr() *SchedulingReminderInputSendItem {
+	return &s
+}
+
+var (
+	schedulingReminderOnlyIfFieldMetadata      = big.NewInt(1 << 0)
+	schedulingReminderOnlyIfFieldLocationTypes = big.NewInt(1 << 1)
+)
+
+// schedulingReminderOnlyIfNullableFields maps the wire names of SchedulingReminderOnlyIf's nullable fields (required or optional) to their field bits.
+var schedulingReminderOnlyIfNullableFields = map[string]*big.Int{
+	"metadata":       schedulingReminderOnlyIfFieldMetadata,
+	"location_types": schedulingReminderOnlyIfFieldLocationTypes,
+}
+
+// Only for bookings matching all of this. `null`: every booking.
+type SchedulingReminderOnlyIf struct {
+	// The booking's metadata must have all of these. `null`: any.
+	Metadata map[string]*string `json:"metadata,omitempty" url:"metadata,omitempty"`
+	// The booking's location must be one of these. `null`: any.
+	LocationTypes []string `json:"location_types,omitempty" url:"location_types,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingReminderOnlyIf) GetMetadata() map[string]*string {
+	if s == nil {
+		return nil
+	}
+	return s.Metadata
+}
+
+func (s *SchedulingReminderOnlyIf) GetLocationTypes() []string {
+	if s == nil {
+		return nil
+	}
+	return s.LocationTypes
+}
+
+func (s *SchedulingReminderOnlyIf) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingReminderOnlyIf) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetMetadata sets the Metadata field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderOnlyIf) SetMetadata(metadata map[string]*string) {
+	s.Metadata = metadata
+	s.require(schedulingReminderOnlyIfFieldMetadata)
+}
+
+// SetLocationTypes sets the LocationTypes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingReminderOnlyIf) SetLocationTypes(locationTypes []string) {
+	s.LocationTypes = locationTypes
+	s.require(schedulingReminderOnlyIfFieldLocationTypes)
+}
+
+func (s *SchedulingReminderOnlyIf) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingReminderOnlyIf
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingReminderOnlyIf(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingReminderOnlyIfNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingReminderOnlyIf) MarshalJSON() ([]byte, error) {
+	type embed SchedulingReminderOnlyIf
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingReminderOnlyIf) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingReminderSendItem string
+
+const (
+	SchedulingReminderSendItemEmailAttendee SchedulingReminderSendItem = "email_attendee"
+	SchedulingReminderSendItemEmailHost     SchedulingReminderSendItem = "email_host"
+	SchedulingReminderSendItemSmsAttendee   SchedulingReminderSendItem = "sms_attendee"
+	SchedulingReminderSendItemSmsHost       SchedulingReminderSendItem = "sms_host"
+	SchedulingReminderSendItemWebhook       SchedulingReminderSendItem = "webhook"
+)
+
+func NewSchedulingReminderSendItemFromString(s string) (SchedulingReminderSendItem, error) {
+	switch s {
+	case "email_attendee":
+		return SchedulingReminderSendItemEmailAttendee, nil
+	case "email_host":
+		return SchedulingReminderSendItemEmailHost, nil
+	case "sms_attendee":
+		return SchedulingReminderSendItemSmsAttendee, nil
+	case "sms_host":
+		return SchedulingReminderSendItemSmsHost, nil
+	case "webhook":
+		return SchedulingReminderSendItemWebhook, nil
+	}
+	var t SchedulingReminderSendItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingReminderSendItem) Ptr() *SchedulingReminderSendItem {
+	return &s
+}
+
+var (
+	schedulingScheduleFieldObject    = big.NewInt(1 << 0)
+	schedulingScheduleFieldID        = big.NewInt(1 << 1)
+	schedulingScheduleFieldHost      = big.NewInt(1 << 2)
+	schedulingScheduleFieldName      = big.NewInt(1 << 3)
+	schedulingScheduleFieldTimeZone  = big.NewInt(1 << 4)
+	schedulingScheduleFieldIsDefault = big.NewInt(1 << 5)
+	schedulingScheduleFieldRules     = big.NewInt(1 << 6)
+	schedulingScheduleFieldOverrides = big.NewInt(1 << 7)
+	schedulingScheduleFieldCreatedAt = big.NewInt(1 << 8)
+	schedulingScheduleFieldUpdatedAt = big.NewInt(1 << 9)
+)
+
+type SchedulingSchedule struct {
+	Object SchedulingScheduleObject `json:"object" url:"object"`
+	ID     string                   `json:"id" url:"id"`
+	// The id of the host this schedule belongs to.
+	Host string `json:"host" url:"host"`
+	// A label for the schedule. `Default` when none was given.
+	Name string `json:"name" url:"name"`
+	// The IANA time zone its rules and overrides are local to.
+	TimeZone string `json:"time_zone" url:"time_zone"`
+	// Whether this is the host's default schedule, used by event types that don't name one. A host's first schedule always is.
+	IsDefault bool `json:"is_default" url:"is_default"`
+	// Weekly hours in local time, unchanged across daylight saving.
+	Rules []*SchedulingScheduleRulesItem `json:"rules" url:"rules"`
+	// Dates whose hours replace the weekly rules.
+	Overrides []*SchedulingScheduleOverridesItem `json:"overrides" url:"overrides"`
+	CreatedAt string                             `json:"created_at" url:"created_at"`
+	UpdatedAt string                             `json:"updated_at" url:"updated_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSchedule) GetObject() SchedulingScheduleObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingSchedule) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingSchedule) GetHost() string {
+	if s == nil {
+		return ""
+	}
+	return s.Host
+}
+
+func (s *SchedulingSchedule) GetName() string {
+	if s == nil {
+		return ""
+	}
+	return s.Name
+}
+
+func (s *SchedulingSchedule) GetTimeZone() string {
+	if s == nil {
+		return ""
+	}
+	return s.TimeZone
+}
+
+func (s *SchedulingSchedule) GetIsDefault() bool {
+	if s == nil {
+		return false
+	}
+	return s.IsDefault
+}
+
+func (s *SchedulingSchedule) GetRules() []*SchedulingScheduleRulesItem {
+	if s == nil {
+		return nil
+	}
+	return s.Rules
+}
+
+func (s *SchedulingSchedule) GetOverrides() []*SchedulingScheduleOverridesItem {
+	if s == nil {
+		return nil
+	}
+	return s.Overrides
+}
+
+func (s *SchedulingSchedule) GetCreatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.CreatedAt
+}
+
+func (s *SchedulingSchedule) GetUpdatedAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.UpdatedAt
+}
+
+func (s *SchedulingSchedule) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSchedule) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSchedule) SetObject(object SchedulingScheduleObject) {
+	s.Object = object
+	s.require(schedulingScheduleFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSchedule) SetID(id string) {
+	s.ID = id
+	s.require(schedulingScheduleFieldID)
+}
+
+// SetHost sets the Host field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSchedule) SetHost(host string) {
+	s.Host = host
+	s.require(schedulingScheduleFieldHost)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSchedule) SetName(name string) {
+	s.Name = name
+	s.require(schedulingScheduleFieldName)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSchedule) SetTimeZone(timeZone string) {
+	s.TimeZone = timeZone
+	s.require(schedulingScheduleFieldTimeZone)
+}
+
+// SetIsDefault sets the IsDefault field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSchedule) SetIsDefault(isDefault bool) {
+	s.IsDefault = isDefault
+	s.require(schedulingScheduleFieldIsDefault)
+}
+
+// SetRules sets the Rules field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSchedule) SetRules(rules []*SchedulingScheduleRulesItem) {
+	s.Rules = rules
+	s.require(schedulingScheduleFieldRules)
+}
+
+// SetOverrides sets the Overrides field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSchedule) SetOverrides(overrides []*SchedulingScheduleOverridesItem) {
+	s.Overrides = overrides
+	s.require(schedulingScheduleFieldOverrides)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSchedule) SetCreatedAt(createdAt string) {
+	s.CreatedAt = createdAt
+	s.require(schedulingScheduleFieldCreatedAt)
+}
+
+// SetUpdatedAt sets the UpdatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSchedule) SetUpdatedAt(updatedAt string) {
+	s.UpdatedAt = updatedAt
+	s.require(schedulingScheduleFieldUpdatedAt)
+}
+
+func (s *SchedulingSchedule) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSchedule
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSchedule(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSchedule) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSchedule
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSchedule) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingScheduleListFieldObject  = big.NewInt(1 << 0)
+	schedulingScheduleListFieldData    = big.NewInt(1 << 1)
+	schedulingScheduleListFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingScheduleList struct {
+	Object  SchedulingScheduleListObject `json:"object" url:"object"`
+	Data    []*SchedulingSchedule        `json:"data" url:"data"`
+	HasMore bool                         `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingScheduleList) GetObject() SchedulingScheduleListObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingScheduleList) GetData() []*SchedulingSchedule {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingScheduleList) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingScheduleList) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingScheduleList) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleList) SetObject(object SchedulingScheduleListObject) {
+	s.Object = object
+	s.require(schedulingScheduleListFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleList) SetData(data []*SchedulingSchedule) {
+	s.Data = data
+	s.require(schedulingScheduleListFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleList) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingScheduleListFieldHasMore)
+}
+
+func (s *SchedulingScheduleList) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingScheduleList
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingScheduleList(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingScheduleList) MarshalJSON() ([]byte, error) {
+	type embed SchedulingScheduleList
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingScheduleList) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingScheduleListObject string
+
+const (
+	SchedulingScheduleListObjectList SchedulingScheduleListObject = "list"
+)
+
+func NewSchedulingScheduleListObjectFromString(s string) (SchedulingScheduleListObject, error) {
+	switch s {
+	case "list":
+		return SchedulingScheduleListObjectList, nil
+	}
+	var t SchedulingScheduleListObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingScheduleListObject) Ptr() *SchedulingScheduleListObject {
+	return &s
+}
+
+type SchedulingScheduleObject string
+
+const (
+	SchedulingScheduleObjectSchedulingSchedule SchedulingScheduleObject = "scheduling.schedule"
+)
+
+func NewSchedulingScheduleObjectFromString(s string) (SchedulingScheduleObject, error) {
+	switch s {
+	case "scheduling.schedule":
+		return SchedulingScheduleObjectSchedulingSchedule, nil
+	}
+	var t SchedulingScheduleObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingScheduleObject) Ptr() *SchedulingScheduleObject {
+	return &s
+}
+
+var (
+	schedulingScheduleOverrideFieldDate   = big.NewInt(1 << 0)
+	schedulingScheduleOverrideFieldRanges = big.NewInt(1 << 1)
+)
+
+type SchedulingScheduleOverride struct {
+	// A local date in the schedule's time zone.
+	Date string `json:"date" url:"date"`
+	// Replaces the weekly rules that day. Empty means unavailable all day.
+	Ranges []*SchedulingScheduleOverrideRangesItem `json:"ranges" url:"ranges"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingScheduleOverride) GetDate() string {
+	if s == nil {
+		return ""
+	}
+	return s.Date
+}
+
+func (s *SchedulingScheduleOverride) GetRanges() []*SchedulingScheduleOverrideRangesItem {
+	if s == nil {
+		return nil
+	}
+	return s.Ranges
+}
+
+func (s *SchedulingScheduleOverride) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingScheduleOverride) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetDate sets the Date field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleOverride) SetDate(date string) {
+	s.Date = date
+	s.require(schedulingScheduleOverrideFieldDate)
+}
+
+// SetRanges sets the Ranges field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleOverride) SetRanges(ranges []*SchedulingScheduleOverrideRangesItem) {
+	s.Ranges = ranges
+	s.require(schedulingScheduleOverrideFieldRanges)
+}
+
+func (s *SchedulingScheduleOverride) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingScheduleOverride
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingScheduleOverride(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingScheduleOverride) MarshalJSON() ([]byte, error) {
+	type embed SchedulingScheduleOverride
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingScheduleOverride) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingScheduleOverrideRangesItemFieldStart = big.NewInt(1 << 0)
+	schedulingScheduleOverrideRangesItemFieldEnd   = big.NewInt(1 << 1)
+)
+
+type SchedulingScheduleOverrideRangesItem struct {
+	// A local time, `HH:MM`. `24:00` is the end of the day.
+	Start string `json:"start" url:"start"`
+	// A local time, `HH:MM`. `24:00` is the end of the day.
+	End string `json:"end" url:"end"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingScheduleOverrideRangesItem) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingScheduleOverrideRangesItem) GetEnd() string {
+	if s == nil {
+		return ""
+	}
+	return s.End
+}
+
+func (s *SchedulingScheduleOverrideRangesItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingScheduleOverrideRangesItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleOverrideRangesItem) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingScheduleOverrideRangesItemFieldStart)
+}
+
+// SetEnd sets the End field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleOverrideRangesItem) SetEnd(end string) {
+	s.End = end
+	s.require(schedulingScheduleOverrideRangesItemFieldEnd)
+}
+
+func (s *SchedulingScheduleOverrideRangesItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingScheduleOverrideRangesItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingScheduleOverrideRangesItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingScheduleOverrideRangesItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingScheduleOverrideRangesItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingScheduleOverrideRangesItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingScheduleOverridesItemFieldDate   = big.NewInt(1 << 0)
+	schedulingScheduleOverridesItemFieldRanges = big.NewInt(1 << 1)
+)
+
+type SchedulingScheduleOverridesItem struct {
+	// The local date, `YYYY-MM-DD`.
+	Date string `json:"date" url:"date"`
+	// That day's hours. Empty means unavailable all day.
+	Ranges []*SchedulingScheduleOverridesItemRangesItem `json:"ranges" url:"ranges"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingScheduleOverridesItem) GetDate() string {
+	if s == nil {
+		return ""
+	}
+	return s.Date
+}
+
+func (s *SchedulingScheduleOverridesItem) GetRanges() []*SchedulingScheduleOverridesItemRangesItem {
+	if s == nil {
+		return nil
+	}
+	return s.Ranges
+}
+
+func (s *SchedulingScheduleOverridesItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingScheduleOverridesItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetDate sets the Date field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleOverridesItem) SetDate(date string) {
+	s.Date = date
+	s.require(schedulingScheduleOverridesItemFieldDate)
+}
+
+// SetRanges sets the Ranges field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleOverridesItem) SetRanges(ranges []*SchedulingScheduleOverridesItemRangesItem) {
+	s.Ranges = ranges
+	s.require(schedulingScheduleOverridesItemFieldRanges)
+}
+
+func (s *SchedulingScheduleOverridesItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingScheduleOverridesItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingScheduleOverridesItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingScheduleOverridesItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingScheduleOverridesItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingScheduleOverridesItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingScheduleOverridesItemRangesItemFieldStart = big.NewInt(1 << 0)
+	schedulingScheduleOverridesItemRangesItemFieldEnd   = big.NewInt(1 << 1)
+)
+
+type SchedulingScheduleOverridesItemRangesItem struct {
+	// Local start time, `HH:MM`.
+	Start string `json:"start" url:"start"`
+	// Local end time, `HH:MM`. `24:00` is the end of the day.
+	End string `json:"end" url:"end"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingScheduleOverridesItemRangesItem) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingScheduleOverridesItemRangesItem) GetEnd() string {
+	if s == nil {
+		return ""
+	}
+	return s.End
+}
+
+func (s *SchedulingScheduleOverridesItemRangesItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingScheduleOverridesItemRangesItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleOverridesItemRangesItem) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingScheduleOverridesItemRangesItemFieldStart)
+}
+
+// SetEnd sets the End field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleOverridesItemRangesItem) SetEnd(end string) {
+	s.End = end
+	s.require(schedulingScheduleOverridesItemRangesItemFieldEnd)
+}
+
+func (s *SchedulingScheduleOverridesItemRangesItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingScheduleOverridesItemRangesItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingScheduleOverridesItemRangesItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingScheduleOverridesItemRangesItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingScheduleOverridesItemRangesItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingScheduleOverridesItemRangesItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingScheduleRulesItemFieldDays  = big.NewInt(1 << 0)
+	schedulingScheduleRulesItemFieldStart = big.NewInt(1 << 1)
+	schedulingScheduleRulesItemFieldEnd   = big.NewInt(1 << 2)
+)
+
+type SchedulingScheduleRulesItem struct {
+	// Weekdays, with Sunday as 0.
+	Days []float64 `json:"days" url:"days"`
+	// Local start time, `HH:MM`.
+	Start string `json:"start" url:"start"`
+	// Local end time, `HH:MM`. `24:00` is the end of the day.
+	End string `json:"end" url:"end"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingScheduleRulesItem) GetDays() []float64 {
+	if s == nil {
+		return nil
+	}
+	return s.Days
+}
+
+func (s *SchedulingScheduleRulesItem) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingScheduleRulesItem) GetEnd() string {
+	if s == nil {
+		return ""
+	}
+	return s.End
+}
+
+func (s *SchedulingScheduleRulesItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingScheduleRulesItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleRulesItem) SetDays(days []float64) {
+	s.Days = days
+	s.require(schedulingScheduleRulesItemFieldDays)
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleRulesItem) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingScheduleRulesItemFieldStart)
+}
+
+// SetEnd sets the End field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingScheduleRulesItem) SetEnd(end string) {
+	s.End = end
+	s.require(schedulingScheduleRulesItemFieldEnd)
+}
+
+func (s *SchedulingScheduleRulesItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingScheduleRulesItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingScheduleRulesItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingScheduleRulesItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingScheduleRulesItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingScheduleRulesItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingSeriesFieldObject    = big.NewInt(1 << 0)
+	schedulingSeriesFieldID        = big.NewInt(1 << 1)
+	schedulingSeriesFieldBookings  = big.NewInt(1 << 2)
+	schedulingSeriesFieldConflicts = big.NewInt(1 << 3)
+)
+
+type SchedulingSeries struct {
+	Object SchedulingSeriesObject `json:"object" url:"object"`
+	ID     string                 `json:"id" url:"id"`
+	// The occurrences booked, each an ordinary booking.
+	Bookings []*SchedulingBooking `json:"bookings" url:"bookings"`
+	// With `on_conflict: skip`, the occurrences that weren't free and weren't booked.
+	Conflicts []*SchedulingSeriesConflictsItem `json:"conflicts" url:"conflicts"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSeries) GetObject() SchedulingSeriesObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingSeries) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingSeries) GetBookings() []*SchedulingBooking {
+	if s == nil {
+		return nil
+	}
+	return s.Bookings
+}
+
+func (s *SchedulingSeries) GetConflicts() []*SchedulingSeriesConflictsItem {
+	if s == nil {
+		return nil
+	}
+	return s.Conflicts
+}
+
+func (s *SchedulingSeries) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSeries) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeries) SetObject(object SchedulingSeriesObject) {
+	s.Object = object
+	s.require(schedulingSeriesFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeries) SetID(id string) {
+	s.ID = id
+	s.require(schedulingSeriesFieldID)
+}
+
+// SetBookings sets the Bookings field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeries) SetBookings(bookings []*SchedulingBooking) {
+	s.Bookings = bookings
+	s.require(schedulingSeriesFieldBookings)
+}
+
+// SetConflicts sets the Conflicts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeries) SetConflicts(conflicts []*SchedulingSeriesConflictsItem) {
+	s.Conflicts = conflicts
+	s.require(schedulingSeriesFieldConflicts)
+}
+
+func (s *SchedulingSeries) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSeries
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSeries(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSeries) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSeries
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSeries) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingSeriesConflictsItemFieldIndex = big.NewInt(1 << 0)
+	schedulingSeriesConflictsItemFieldStart = big.NewInt(1 << 1)
+)
+
+type SchedulingSeriesConflictsItem struct {
+	// The occurrence's place in the series, from 0.
+	Index float64 `json:"index" url:"index"`
+	// When it would have started.
+	Start string `json:"start" url:"start"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSeriesConflictsItem) GetIndex() float64 {
+	if s == nil {
+		return 0
+	}
+	return s.Index
+}
+
+func (s *SchedulingSeriesConflictsItem) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingSeriesConflictsItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSeriesConflictsItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetIndex sets the Index field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeriesConflictsItem) SetIndex(index float64) {
+	s.Index = index
+	s.require(schedulingSeriesConflictsItemFieldIndex)
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeriesConflictsItem) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingSeriesConflictsItemFieldStart)
+}
+
+func (s *SchedulingSeriesConflictsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSeriesConflictsItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSeriesConflictsItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSeriesConflictsItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSeriesConflictsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSeriesConflictsItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingSeriesObject string
+
+const (
+	SchedulingSeriesObjectSchedulingSeries SchedulingSeriesObject = "scheduling.series"
+)
+
+func NewSchedulingSeriesObjectFromString(s string) (SchedulingSeriesObject, error) {
+	switch s {
+	case "scheduling.series":
+		return SchedulingSeriesObjectSchedulingSeries, nil
+	}
+	var t SchedulingSeriesObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingSeriesObject) Ptr() *SchedulingSeriesObject {
+	return &s
+}
+
+var (
+	schedulingSeriesPreviewFieldObject  = big.NewInt(1 << 0)
+	schedulingSeriesPreviewFieldData    = big.NewInt(1 << 1)
+	schedulingSeriesPreviewFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingSeriesPreview struct {
+	Object SchedulingSeriesPreviewObject `json:"object" url:"object"`
+	// Each occurrence the request would book. Nothing is booked.
+	Data    []*SchedulingSeriesPreviewDataItem `json:"data" url:"data"`
+	HasMore bool                               `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSeriesPreview) GetObject() SchedulingSeriesPreviewObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingSeriesPreview) GetData() []*SchedulingSeriesPreviewDataItem {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingSeriesPreview) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingSeriesPreview) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSeriesPreview) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeriesPreview) SetObject(object SchedulingSeriesPreviewObject) {
+	s.Object = object
+	s.require(schedulingSeriesPreviewFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeriesPreview) SetData(data []*SchedulingSeriesPreviewDataItem) {
+	s.Data = data
+	s.require(schedulingSeriesPreviewFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeriesPreview) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingSeriesPreviewFieldHasMore)
+}
+
+func (s *SchedulingSeriesPreview) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSeriesPreview
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSeriesPreview(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSeriesPreview) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSeriesPreview
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSeriesPreview) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingSeriesPreviewDataItemFieldStart     = big.NewInt(1 << 0)
+	schedulingSeriesPreviewDataItemFieldAvailable = big.NewInt(1 << 1)
+	schedulingSeriesPreviewDataItemFieldReason    = big.NewInt(1 << 2)
+	schedulingSeriesPreviewDataItemFieldHosts     = big.NewInt(1 << 3)
+)
+
+// schedulingSeriesPreviewDataItemNullableFields maps the wire names of SchedulingSeriesPreviewDataItem's nullable fields (required or optional) to their field bits.
+var schedulingSeriesPreviewDataItemNullableFields = map[string]*big.Int{
+	"reason": schedulingSeriesPreviewDataItemFieldReason,
+}
+
+type SchedulingSeriesPreviewDataItem struct {
+	// When this occurrence starts.
+	Start string `json:"start" url:"start"`
+	// Whether it's free.
+	Available bool `json:"available" url:"available"`
+	// Why it isn't free, such as `host_busy`, `already_claimed`, `outside_availability` or `no_hosts`. `null` when it is.
+	Reason *string `json:"reason,omitempty" url:"reason,omitempty"`
+	// The ids of the hosts who could take it.
+	Hosts []string `json:"hosts" url:"hosts"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSeriesPreviewDataItem) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingSeriesPreviewDataItem) GetAvailable() bool {
+	if s == nil {
+		return false
+	}
+	return s.Available
+}
+
+func (s *SchedulingSeriesPreviewDataItem) GetReason() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Reason
+}
+
+func (s *SchedulingSeriesPreviewDataItem) GetHosts() []string {
+	if s == nil {
+		return nil
+	}
+	return s.Hosts
+}
+
+func (s *SchedulingSeriesPreviewDataItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSeriesPreviewDataItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeriesPreviewDataItem) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingSeriesPreviewDataItemFieldStart)
+}
+
+// SetAvailable sets the Available field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeriesPreviewDataItem) SetAvailable(available bool) {
+	s.Available = available
+	s.require(schedulingSeriesPreviewDataItemFieldAvailable)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeriesPreviewDataItem) SetReason(reason *string) {
+	s.Reason = reason
+	s.require(schedulingSeriesPreviewDataItemFieldReason)
+}
+
+// SetHosts sets the Hosts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSeriesPreviewDataItem) SetHosts(hosts []string) {
+	s.Hosts = hosts
+	s.require(schedulingSeriesPreviewDataItemFieldHosts)
+}
+
+func (s *SchedulingSeriesPreviewDataItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSeriesPreviewDataItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSeriesPreviewDataItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingSeriesPreviewDataItemNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSeriesPreviewDataItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSeriesPreviewDataItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSeriesPreviewDataItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingSeriesPreviewObject string
+
+const (
+	SchedulingSeriesPreviewObjectList SchedulingSeriesPreviewObject = "list"
+)
+
+func NewSchedulingSeriesPreviewObjectFromString(s string) (SchedulingSeriesPreviewObject, error) {
+	switch s {
+	case "list":
+		return SchedulingSeriesPreviewObjectList, nil
+	}
+	var t SchedulingSeriesPreviewObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingSeriesPreviewObject) Ptr() *SchedulingSeriesPreviewObject {
+	return &s
+}
+
+var (
+	schedulingSessionFieldObject    = big.NewInt(1 << 0)
+	schedulingSessionFieldID        = big.NewInt(1 << 1)
+	schedulingSessionFieldToken     = big.NewInt(1 << 2)
+	schedulingSessionFieldURL       = big.NewInt(1 << 3)
+	schedulingSessionFieldExpiresAt = big.NewInt(1 << 4)
+)
+
+// schedulingSessionNullableFields maps the wire names of SchedulingSession's nullable fields (required or optional) to their field bits.
+var schedulingSessionNullableFields = map[string]*big.Int{
+	"url": schedulingSessionFieldURL,
+}
+
+type SchedulingSession struct {
+	Object SchedulingSessionObject `json:"object" url:"object"`
+	ID     string                  `json:"id" url:"id"`
+	// Shown only now. A bearer token for the client API.
+	Token string `json:"token" url:"token"`
+	// coss.com's hosted page, with the token in its fragment.
+	URL       *string `json:"url,omitempty" url:"url,omitempty"`
+	ExpiresAt string  `json:"expires_at" url:"expires_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSession) GetObject() SchedulingSessionObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingSession) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingSession) GetToken() string {
+	if s == nil {
+		return ""
+	}
+	return s.Token
+}
+
+func (s *SchedulingSession) GetURL() *string {
+	if s == nil {
+		return nil
+	}
+	return s.URL
+}
+
+func (s *SchedulingSession) GetExpiresAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.ExpiresAt
+}
+
+func (s *SchedulingSession) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSession) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSession) SetObject(object SchedulingSessionObject) {
+	s.Object = object
+	s.require(schedulingSessionFieldObject)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSession) SetID(id string) {
+	s.ID = id
+	s.require(schedulingSessionFieldID)
+}
+
+// SetToken sets the Token field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSession) SetToken(token string) {
+	s.Token = token
+	s.require(schedulingSessionFieldToken)
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSession) SetURL(url *string) {
+	s.URL = url
+	s.require(schedulingSessionFieldURL)
+}
+
+// SetExpiresAt sets the ExpiresAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSession) SetExpiresAt(expiresAt string) {
+	s.ExpiresAt = expiresAt
+	s.require(schedulingSessionFieldExpiresAt)
+}
+
+func (s *SchedulingSession) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSession
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSession(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingSessionNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSession) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSession
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSession) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingSessionObject string
+
+const (
+	SchedulingSessionObjectSchedulingSession SchedulingSessionObject = "scheduling.session"
+)
+
+func NewSchedulingSessionObjectFromString(s string) (SchedulingSessionObject, error) {
+	switch s {
+	case "scheduling.session":
+		return SchedulingSessionObjectSchedulingSession, nil
+	}
+	var t SchedulingSessionObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingSessionObject) Ptr() *SchedulingSessionObject {
+	return &s
+}
+
+var (
+	schedulingSettingsFieldObject              = big.NewInt(1 << 0)
+	schedulingSettingsFieldAllowedOrigins      = big.NewInt(1 << 1)
+	schedulingSettingsFieldBrandName           = big.NewInt(1 << 2)
+	schedulingSettingsFieldAccentColor         = big.NewInt(1 << 3)
+	schedulingSettingsFieldLogo                = big.NewInt(1 << 4)
+	schedulingSettingsFieldEmailFrom           = big.NewInt(1 << 5)
+	schedulingSettingsFieldSmsFrom             = big.NewInt(1 << 6)
+	schedulingSettingsFieldCalendarFailureMode = big.NewInt(1 << 7)
+	schedulingSettingsFieldNotifications       = big.NewInt(1 << 8)
+	schedulingSettingsFieldEmailReplyTo        = big.NewInt(1 << 9)
+	schedulingSettingsFieldReminders           = big.NewInt(1 << 10)
+)
+
+// schedulingSettingsNullableFields maps the wire names of SchedulingSettings's nullable fields (required or optional) to their field bits.
+var schedulingSettingsNullableFields = map[string]*big.Int{
+	"brand_name":     schedulingSettingsFieldBrandName,
+	"accent_color":   schedulingSettingsFieldAccentColor,
+	"logo":           schedulingSettingsFieldLogo,
+	"email_from":     schedulingSettingsFieldEmailFrom,
+	"sms_from":       schedulingSettingsFieldSmsFrom,
+	"notifications":  schedulingSettingsFieldNotifications,
+	"email_reply_to": schedulingSettingsFieldEmailReplyTo,
+	"reminders":      schedulingSettingsFieldReminders,
+}
+
+type SchedulingSettings struct {
+	Object SchedulingSettingsObject `json:"object" url:"object"`
+	// Sites allowed to embed coss.com's hosted pages and call the client API.
+	AllowedOrigins []string `json:"allowed_origins" url:"allowed_origins"`
+	// Your name on hosted pages and on emails sent from `email_from`. `null`: none set.
+	BrandName *string `json:"brand_name,omitempty" url:"brand_name,omitempty"`
+	// The accent color of hosted pages and emails sent from `email_from`, as `#RRGGBB`. `null`: the default.
+	AccentColor *string `json:"accent_color,omitempty" url:"accent_color,omitempty"`
+	// At the top of the hosted pages, and of emails sent from `email_from`.
+	Logo *SchedulingSettingsLogo `json:"logo,omitempty" url:"logo,omitempty"`
+	// Sender of booking emails, on a verified domain.
+	EmailFrom *string `json:"email_from,omitempty" url:"email_from,omitempty"`
+	// Your approved number for SMS reminders. Without one, no SMS is sent.
+	SmsFrom *string `json:"sms_from,omitempty" url:"sms_from,omitempty"`
+	// When a host's calendar can't be read: `hide` stops offering them, `last_known` keeps offering their last known times.
+	CalendarFailureMode SchedulingSettingsCalendarFailureMode `json:"calendar_failure_mode" url:"calendar_failure_mode"`
+	// Per event, overriding the defaults.
+	Notifications map[string]*SchedulingSettingsNotificationsValue `json:"notifications,omitempty" url:"notifications,omitempty"`
+	EmailReplyTo  *string                                          `json:"email_reply_to,omitempty" url:"email_reply_to,omitempty"`
+	// What goes out around a booking, unless an event type has its own. `null`: a reminder a day before, on the channels `notifications.reminder` chooses.
+	Reminders []*SchedulingReminder `json:"reminders,omitempty" url:"reminders,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSettings) GetObject() SchedulingSettingsObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingSettings) GetAllowedOrigins() []string {
+	if s == nil {
+		return nil
+	}
+	return s.AllowedOrigins
+}
+
+func (s *SchedulingSettings) GetBrandName() *string {
+	if s == nil {
+		return nil
+	}
+	return s.BrandName
+}
+
+func (s *SchedulingSettings) GetAccentColor() *string {
+	if s == nil {
+		return nil
+	}
+	return s.AccentColor
+}
+
+func (s *SchedulingSettings) GetLogo() *SchedulingSettingsLogo {
+	if s == nil {
+		return nil
+	}
+	return s.Logo
+}
+
+func (s *SchedulingSettings) GetEmailFrom() *string {
+	if s == nil {
+		return nil
+	}
+	return s.EmailFrom
+}
+
+func (s *SchedulingSettings) GetSmsFrom() *string {
+	if s == nil {
+		return nil
+	}
+	return s.SmsFrom
+}
+
+func (s *SchedulingSettings) GetCalendarFailureMode() SchedulingSettingsCalendarFailureMode {
+	if s == nil {
+		return ""
+	}
+	return s.CalendarFailureMode
+}
+
+func (s *SchedulingSettings) GetNotifications() map[string]*SchedulingSettingsNotificationsValue {
+	if s == nil {
+		return nil
+	}
+	return s.Notifications
+}
+
+func (s *SchedulingSettings) GetEmailReplyTo() *string {
+	if s == nil {
+		return nil
+	}
+	return s.EmailReplyTo
+}
+
+func (s *SchedulingSettings) GetReminders() []*SchedulingReminder {
+	if s == nil {
+		return nil
+	}
+	return s.Reminders
+}
+
+func (s *SchedulingSettings) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSettings) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetObject(object SchedulingSettingsObject) {
+	s.Object = object
+	s.require(schedulingSettingsFieldObject)
+}
+
+// SetAllowedOrigins sets the AllowedOrigins field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetAllowedOrigins(allowedOrigins []string) {
+	s.AllowedOrigins = allowedOrigins
+	s.require(schedulingSettingsFieldAllowedOrigins)
+}
+
+// SetBrandName sets the BrandName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetBrandName(brandName *string) {
+	s.BrandName = brandName
+	s.require(schedulingSettingsFieldBrandName)
+}
+
+// SetAccentColor sets the AccentColor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetAccentColor(accentColor *string) {
+	s.AccentColor = accentColor
+	s.require(schedulingSettingsFieldAccentColor)
+}
+
+// SetLogo sets the Logo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetLogo(logo *SchedulingSettingsLogo) {
+	s.Logo = logo
+	s.require(schedulingSettingsFieldLogo)
+}
+
+// SetEmailFrom sets the EmailFrom field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetEmailFrom(emailFrom *string) {
+	s.EmailFrom = emailFrom
+	s.require(schedulingSettingsFieldEmailFrom)
+}
+
+// SetSmsFrom sets the SmsFrom field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetSmsFrom(smsFrom *string) {
+	s.SmsFrom = smsFrom
+	s.require(schedulingSettingsFieldSmsFrom)
+}
+
+// SetCalendarFailureMode sets the CalendarFailureMode field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetCalendarFailureMode(calendarFailureMode SchedulingSettingsCalendarFailureMode) {
+	s.CalendarFailureMode = calendarFailureMode
+	s.require(schedulingSettingsFieldCalendarFailureMode)
+}
+
+// SetNotifications sets the Notifications field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetNotifications(notifications map[string]*SchedulingSettingsNotificationsValue) {
+	s.Notifications = notifications
+	s.require(schedulingSettingsFieldNotifications)
+}
+
+// SetEmailReplyTo sets the EmailReplyTo field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetEmailReplyTo(emailReplyTo *string) {
+	s.EmailReplyTo = emailReplyTo
+	s.require(schedulingSettingsFieldEmailReplyTo)
+}
+
+// SetReminders sets the Reminders field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettings) SetReminders(reminders []*SchedulingReminder) {
+	s.Reminders = reminders
+	s.require(schedulingSettingsFieldReminders)
+}
+
+func (s *SchedulingSettings) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSettings
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSettings(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingSettingsNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSettings) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSettings
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSettings) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// When a host's calendar can't be read: `hide` stops offering them, `last_known` keeps offering their last known times.
+type SchedulingSettingsCalendarFailureMode string
+
+const (
+	SchedulingSettingsCalendarFailureModeHide      SchedulingSettingsCalendarFailureMode = "hide"
+	SchedulingSettingsCalendarFailureModeLastKnown SchedulingSettingsCalendarFailureMode = "last_known"
+)
+
+func NewSchedulingSettingsCalendarFailureModeFromString(s string) (SchedulingSettingsCalendarFailureMode, error) {
+	switch s {
+	case "hide":
+		return SchedulingSettingsCalendarFailureModeHide, nil
+	case "last_known":
+		return SchedulingSettingsCalendarFailureModeLastKnown, nil
+	}
+	var t SchedulingSettingsCalendarFailureMode
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingSettingsCalendarFailureMode) Ptr() *SchedulingSettingsCalendarFailureMode {
+	return &s
+}
+
+var (
+	schedulingSettingsLogoFieldContentType = big.NewInt(1 << 0)
+	schedulingSettingsLogoFieldWidth       = big.NewInt(1 << 1)
+	schedulingSettingsLogoFieldHeight      = big.NewInt(1 << 2)
+	schedulingSettingsLogoFieldDataURL     = big.NewInt(1 << 3)
+)
+
+// At the top of the hosted pages, and of emails sent from `email_from`.
+type SchedulingSettingsLogo struct {
+	// The image's type, checked from its bytes.
+	ContentType SchedulingSettingsLogoContentType `json:"content_type" url:"content_type"`
+	// Width in pixels.
+	Width int64 `json:"width" url:"width"`
+	// Height in pixels.
+	Height int64 `json:"height" url:"height"`
+	// The image, as a `data:` URL.
+	DataURL string `json:"data_url" url:"data_url"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSettingsLogo) GetContentType() SchedulingSettingsLogoContentType {
+	if s == nil {
+		return ""
+	}
+	return s.ContentType
+}
+
+func (s *SchedulingSettingsLogo) GetWidth() int64 {
+	if s == nil {
+		return 0
+	}
+	return s.Width
+}
+
+func (s *SchedulingSettingsLogo) GetHeight() int64 {
+	if s == nil {
+		return 0
+	}
+	return s.Height
+}
+
+func (s *SchedulingSettingsLogo) GetDataURL() string {
+	if s == nil {
+		return ""
+	}
+	return s.DataURL
+}
+
+func (s *SchedulingSettingsLogo) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSettingsLogo) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetContentType sets the ContentType field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettingsLogo) SetContentType(contentType SchedulingSettingsLogoContentType) {
+	s.ContentType = contentType
+	s.require(schedulingSettingsLogoFieldContentType)
+}
+
+// SetWidth sets the Width field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettingsLogo) SetWidth(width int64) {
+	s.Width = width
+	s.require(schedulingSettingsLogoFieldWidth)
+}
+
+// SetHeight sets the Height field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettingsLogo) SetHeight(height int64) {
+	s.Height = height
+	s.require(schedulingSettingsLogoFieldHeight)
+}
+
+// SetDataURL sets the DataURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettingsLogo) SetDataURL(dataURL string) {
+	s.DataURL = dataURL
+	s.require(schedulingSettingsLogoFieldDataURL)
+}
+
+func (s *SchedulingSettingsLogo) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSettingsLogo
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSettingsLogo(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSettingsLogo) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSettingsLogo
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSettingsLogo) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// The image's type, checked from its bytes.
+type SchedulingSettingsLogoContentType string
+
+const (
+	SchedulingSettingsLogoContentTypeImagePng  SchedulingSettingsLogoContentType = "image/png"
+	SchedulingSettingsLogoContentTypeImageJpeg SchedulingSettingsLogoContentType = "image/jpeg"
+)
+
+func NewSchedulingSettingsLogoContentTypeFromString(s string) (SchedulingSettingsLogoContentType, error) {
+	switch s {
+	case "image/png":
+		return SchedulingSettingsLogoContentTypeImagePng, nil
+	case "image/jpeg":
+		return SchedulingSettingsLogoContentTypeImageJpeg, nil
+	}
+	var t SchedulingSettingsLogoContentType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingSettingsLogoContentType) Ptr() *SchedulingSettingsLogoContentType {
+	return &s
+}
+
+var (
+	schedulingSettingsNotificationsValueFieldEmailAttendee = big.NewInt(1 << 0)
+	schedulingSettingsNotificationsValueFieldEmailHost     = big.NewInt(1 << 1)
+	schedulingSettingsNotificationsValueFieldSmsAttendee   = big.NewInt(1 << 2)
+)
+
+type SchedulingSettingsNotificationsValue struct {
+	// Email the attendee about this event.
+	EmailAttendee *bool `json:"email_attendee,omitempty" url:"email_attendee,omitempty"`
+	// Email the host about this event.
+	EmailHost *bool `json:"email_host,omitempty" url:"email_host,omitempty"`
+	// Text the attendee about this event, if `sms_from` is set.
+	SmsAttendee *bool `json:"sms_attendee,omitempty" url:"sms_attendee,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSettingsNotificationsValue) GetEmailAttendee() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.EmailAttendee
+}
+
+func (s *SchedulingSettingsNotificationsValue) GetEmailHost() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.EmailHost
+}
+
+func (s *SchedulingSettingsNotificationsValue) GetSmsAttendee() *bool {
+	if s == nil {
+		return nil
+	}
+	return s.SmsAttendee
+}
+
+func (s *SchedulingSettingsNotificationsValue) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSettingsNotificationsValue) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetEmailAttendee sets the EmailAttendee field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettingsNotificationsValue) SetEmailAttendee(emailAttendee *bool) {
+	s.EmailAttendee = emailAttendee
+	s.require(schedulingSettingsNotificationsValueFieldEmailAttendee)
+}
+
+// SetEmailHost sets the EmailHost field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettingsNotificationsValue) SetEmailHost(emailHost *bool) {
+	s.EmailHost = emailHost
+	s.require(schedulingSettingsNotificationsValueFieldEmailHost)
+}
+
+// SetSmsAttendee sets the SmsAttendee field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSettingsNotificationsValue) SetSmsAttendee(smsAttendee *bool) {
+	s.SmsAttendee = smsAttendee
+	s.require(schedulingSettingsNotificationsValueFieldSmsAttendee)
+}
+
+func (s *SchedulingSettingsNotificationsValue) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSettingsNotificationsValue
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSettingsNotificationsValue(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSettingsNotificationsValue) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSettingsNotificationsValue
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSettingsNotificationsValue) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingSettingsObject string
+
+const (
+	SchedulingSettingsObjectSchedulingSettings SchedulingSettingsObject = "scheduling.settings"
+)
+
+func NewSchedulingSettingsObjectFromString(s string) (SchedulingSettingsObject, error) {
+	switch s {
+	case "scheduling.settings":
+		return SchedulingSettingsObjectSchedulingSettings, nil
+	}
+	var t SchedulingSettingsObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingSettingsObject) Ptr() *SchedulingSettingsObject {
+	return &s
+}
+
+var (
+	schedulingSlotFieldStart     = big.NewInt(1 << 0)
+	schedulingSlotFieldEnd       = big.NewInt(1 << 1)
+	schedulingSlotFieldHosts     = big.NewInt(1 << 2)
+	schedulingSlotFieldSeatsLeft = big.NewInt(1 << 3)
+)
+
+// schedulingSlotNullableFields maps the wire names of SchedulingSlot's nullable fields (required or optional) to their field bits.
+var schedulingSlotNullableFields = map[string]*big.Int{
+	"seats_left": schedulingSlotFieldSeatsLeft,
+}
+
+type SchedulingSlot struct {
+	// When the slot starts.
+	Start string `json:"start" url:"start"`
+	// When the slot ends.
+	End string `json:"end" url:"end"`
+	// Who could take it.
+	Hosts []string `json:"hosts" url:"hosts"`
+	// Free seats at this start, for a `group` event type. `null` for the others.
+	SeatsLeft *float64 `json:"seats_left,omitempty" url:"seats_left,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSlot) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingSlot) GetEnd() string {
+	if s == nil {
+		return ""
+	}
+	return s.End
+}
+
+func (s *SchedulingSlot) GetHosts() []string {
+	if s == nil {
+		return nil
+	}
+	return s.Hosts
+}
+
+func (s *SchedulingSlot) GetSeatsLeft() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.SeatsLeft
+}
+
+func (s *SchedulingSlot) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSlot) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlot) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingSlotFieldStart)
+}
+
+// SetEnd sets the End field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlot) SetEnd(end string) {
+	s.End = end
+	s.require(schedulingSlotFieldEnd)
+}
+
+// SetHosts sets the Hosts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlot) SetHosts(hosts []string) {
+	s.Hosts = hosts
+	s.require(schedulingSlotFieldHosts)
+}
+
+// SetSeatsLeft sets the SeatsLeft field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlot) SetSeatsLeft(seatsLeft *float64) {
+	s.SeatsLeft = seatsLeft
+	s.require(schedulingSlotFieldSeatsLeft)
+}
+
+func (s *SchedulingSlot) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSlot
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSlot(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingSlotNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSlot) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSlot
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSlot) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingSlotExplanationFieldObject    = big.NewInt(1 << 0)
+	schedulingSlotExplanationFieldStart     = big.NewInt(1 << 1)
+	schedulingSlotExplanationFieldEnd       = big.NewInt(1 << 2)
+	schedulingSlotExplanationFieldAvailable = big.NewInt(1 << 3)
+	schedulingSlotExplanationFieldReason    = big.NewInt(1 << 4)
+	schedulingSlotExplanationFieldHosts     = big.NewInt(1 << 5)
+)
+
+// schedulingSlotExplanationNullableFields maps the wire names of SchedulingSlotExplanation's nullable fields (required or optional) to their field bits.
+var schedulingSlotExplanationNullableFields = map[string]*big.Int{
+	"reason": schedulingSlotExplanationFieldReason,
+}
+
+type SchedulingSlotExplanation struct {
+	Object SchedulingSlotExplanationObject `json:"object" url:"object"`
+	// The start asked about.
+	Start string `json:"start" url:"start"`
+	// When it would end.
+	End string `json:"end" url:"end"`
+	// Whether it can be booked right now.
+	Available bool `json:"available" url:"available"`
+	// Why it can't: `not_on_grid`, `too_soon`, `outside_booking_window`, `calendar_unverified`, `outside_availability`, `host_busy`, `already_claimed`, `limit_reached` or `session_full`, or `event_type_inactive` or `no_hosts`. `null` when it can. With several hosts refused, the first one's reason: see `hosts`.
+	Reason *string `json:"reason,omitempty" url:"reason,omitempty"`
+	// Everyone who could take this event type, narrowed by the query.
+	Hosts []*SchedulingSlotExplanationHostsItem `json:"hosts" url:"hosts"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSlotExplanation) GetObject() SchedulingSlotExplanationObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingSlotExplanation) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingSlotExplanation) GetEnd() string {
+	if s == nil {
+		return ""
+	}
+	return s.End
+}
+
+func (s *SchedulingSlotExplanation) GetAvailable() bool {
+	if s == nil {
+		return false
+	}
+	return s.Available
+}
+
+func (s *SchedulingSlotExplanation) GetReason() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Reason
+}
+
+func (s *SchedulingSlotExplanation) GetHosts() []*SchedulingSlotExplanationHostsItem {
+	if s == nil {
+		return nil
+	}
+	return s.Hosts
+}
+
+func (s *SchedulingSlotExplanation) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSlotExplanation) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanation) SetObject(object SchedulingSlotExplanationObject) {
+	s.Object = object
+	s.require(schedulingSlotExplanationFieldObject)
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanation) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingSlotExplanationFieldStart)
+}
+
+// SetEnd sets the End field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanation) SetEnd(end string) {
+	s.End = end
+	s.require(schedulingSlotExplanationFieldEnd)
+}
+
+// SetAvailable sets the Available field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanation) SetAvailable(available bool) {
+	s.Available = available
+	s.require(schedulingSlotExplanationFieldAvailable)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanation) SetReason(reason *string) {
+	s.Reason = reason
+	s.require(schedulingSlotExplanationFieldReason)
+}
+
+// SetHosts sets the Hosts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanation) SetHosts(hosts []*SchedulingSlotExplanationHostsItem) {
+	s.Hosts = hosts
+	s.require(schedulingSlotExplanationFieldHosts)
+}
+
+func (s *SchedulingSlotExplanation) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSlotExplanation
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSlotExplanation(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingSlotExplanationNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSlotExplanation) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSlotExplanation
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSlotExplanation) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingSlotExplanationHostsItemFieldHost           = big.NewInt(1 << 0)
+	schedulingSlotExplanationHostsItemFieldRole           = big.NewInt(1 << 1)
+	schedulingSlotExplanationHostsItemFieldAvailable      = big.NewInt(1 << 2)
+	schedulingSlotExplanationHostsItemFieldReason         = big.NewInt(1 << 3)
+	schedulingSlotExplanationHostsItemFieldCalendarReason = big.NewInt(1 << 4)
+)
+
+// schedulingSlotExplanationHostsItemNullableFields maps the wire names of SchedulingSlotExplanationHostsItem's nullable fields (required or optional) to their field bits.
+var schedulingSlotExplanationHostsItemNullableFields = map[string]*big.Int{
+	"reason":          schedulingSlotExplanationHostsItemFieldReason,
+	"calendar_reason": schedulingSlotExplanationHostsItemFieldCalendarReason,
+}
+
+type SchedulingSlotExplanationHostsItem struct {
+	// The host's id.
+	Host string `json:"host" url:"host"`
+	// `required` hosts must all be free. Only one `member` needs to be.
+	Role SchedulingSlotExplanationHostsItemRole `json:"role" url:"role"`
+	// Whether this host could take it.
+	Available bool `json:"available" url:"available"`
+	// Why not: `not_on_grid`, `too_soon`, `outside_booking_window`, `calendar_unverified`, `outside_availability`, `host_busy`, `already_claimed`, `limit_reached` or `session_full`. `null` when they could.
+	Reason *string `json:"reason,omitempty" url:"reason,omitempty"`
+	// With `calendar_unverified`: `calendar_needs_reauth`, `calendar_stale` or `calendar_not_covered`.
+	CalendarReason *string `json:"calendar_reason,omitempty" url:"calendar_reason,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSlotExplanationHostsItem) GetHost() string {
+	if s == nil {
+		return ""
+	}
+	return s.Host
+}
+
+func (s *SchedulingSlotExplanationHostsItem) GetRole() SchedulingSlotExplanationHostsItemRole {
+	if s == nil {
+		return ""
+	}
+	return s.Role
+}
+
+func (s *SchedulingSlotExplanationHostsItem) GetAvailable() bool {
+	if s == nil {
+		return false
+	}
+	return s.Available
+}
+
+func (s *SchedulingSlotExplanationHostsItem) GetReason() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Reason
+}
+
+func (s *SchedulingSlotExplanationHostsItem) GetCalendarReason() *string {
+	if s == nil {
+		return nil
+	}
+	return s.CalendarReason
+}
+
+func (s *SchedulingSlotExplanationHostsItem) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSlotExplanationHostsItem) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetHost sets the Host field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanationHostsItem) SetHost(host string) {
+	s.Host = host
+	s.require(schedulingSlotExplanationHostsItemFieldHost)
+}
+
+// SetRole sets the Role field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanationHostsItem) SetRole(role SchedulingSlotExplanationHostsItemRole) {
+	s.Role = role
+	s.require(schedulingSlotExplanationHostsItemFieldRole)
+}
+
+// SetAvailable sets the Available field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanationHostsItem) SetAvailable(available bool) {
+	s.Available = available
+	s.require(schedulingSlotExplanationHostsItemFieldAvailable)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanationHostsItem) SetReason(reason *string) {
+	s.Reason = reason
+	s.require(schedulingSlotExplanationHostsItemFieldReason)
+}
+
+// SetCalendarReason sets the CalendarReason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotExplanationHostsItem) SetCalendarReason(calendarReason *string) {
+	s.CalendarReason = calendarReason
+	s.require(schedulingSlotExplanationHostsItemFieldCalendarReason)
+}
+
+func (s *SchedulingSlotExplanationHostsItem) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSlotExplanationHostsItem
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSlotExplanationHostsItem(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingSlotExplanationHostsItemNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSlotExplanationHostsItem) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSlotExplanationHostsItem
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSlotExplanationHostsItem) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// `required` hosts must all be free. Only one `member` needs to be.
+type SchedulingSlotExplanationHostsItemRole string
+
+const (
+	SchedulingSlotExplanationHostsItemRoleRequired SchedulingSlotExplanationHostsItemRole = "required"
+	SchedulingSlotExplanationHostsItemRoleMember   SchedulingSlotExplanationHostsItemRole = "member"
+)
+
+func NewSchedulingSlotExplanationHostsItemRoleFromString(s string) (SchedulingSlotExplanationHostsItemRole, error) {
+	switch s {
+	case "required":
+		return SchedulingSlotExplanationHostsItemRoleRequired, nil
+	case "member":
+		return SchedulingSlotExplanationHostsItemRoleMember, nil
+	}
+	var t SchedulingSlotExplanationHostsItemRole
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingSlotExplanationHostsItemRole) Ptr() *SchedulingSlotExplanationHostsItemRole {
+	return &s
+}
+
+type SchedulingSlotExplanationObject string
+
+const (
+	SchedulingSlotExplanationObjectSchedulingSlotExplanation SchedulingSlotExplanationObject = "scheduling.slot_explanation"
+)
+
+func NewSchedulingSlotExplanationObjectFromString(s string) (SchedulingSlotExplanationObject, error) {
+	switch s {
+	case "scheduling.slot_explanation":
+		return SchedulingSlotExplanationObjectSchedulingSlotExplanation, nil
+	}
+	var t SchedulingSlotExplanationObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingSlotExplanationObject) Ptr() *SchedulingSlotExplanationObject {
+	return &s
+}
+
+var (
+	schedulingSlotListFieldObject  = big.NewInt(1 << 0)
+	schedulingSlotListFieldData    = big.NewInt(1 << 1)
+	schedulingSlotListFieldHasMore = big.NewInt(1 << 2)
+)
+
+type SchedulingSlotList struct {
+	Object  SchedulingSlotListObject `json:"object" url:"object"`
+	Data    []*SchedulingSlot        `json:"data" url:"data"`
+	HasMore bool                     `json:"has_more" url:"has_more"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingSlotList) GetObject() SchedulingSlotListObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingSlotList) GetData() []*SchedulingSlot {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingSlotList) GetHasMore() bool {
+	if s == nil {
+		return false
+	}
+	return s.HasMore
+}
+
+func (s *SchedulingSlotList) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingSlotList) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotList) SetObject(object SchedulingSlotListObject) {
+	s.Object = object
+	s.require(schedulingSlotListFieldObject)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotList) SetData(data []*SchedulingSlot) {
+	s.Data = data
+	s.require(schedulingSlotListFieldData)
+}
+
+// SetHasMore sets the HasMore field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingSlotList) SetHasMore(hasMore bool) {
+	s.HasMore = hasMore
+	s.require(schedulingSlotListFieldHasMore)
+}
+
+func (s *SchedulingSlotList) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingSlotList
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingSlotList(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingSlotList) MarshalJSON() ([]byte, error) {
+	type embed SchedulingSlotList
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingSlotList) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingSlotListObject string
+
+const (
+	SchedulingSlotListObjectList SchedulingSlotListObject = "list"
+)
+
+func NewSchedulingSlotListObjectFromString(s string) (SchedulingSlotListObject, error) {
+	switch s {
+	case "list":
+		return SchedulingSlotListObjectList, nil
+	}
+	var t SchedulingSlotListObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingSlotListObject) Ptr() *SchedulingSlotListObject {
+	return &s
+}
+
+var (
+	schedulingWeeklyRuleFieldDays  = big.NewInt(1 << 0)
+	schedulingWeeklyRuleFieldStart = big.NewInt(1 << 1)
+	schedulingWeeklyRuleFieldEnd   = big.NewInt(1 << 2)
+)
+
+type SchedulingWeeklyRule struct {
+	// Weekdays, with Sunday as 0.
+	Days []int `json:"days" url:"days"`
+	// A local time, `HH:MM`. `24:00` is the end of the day.
+	Start string `json:"start" url:"start"`
+	// A local time, `HH:MM`. `24:00` is the end of the day.
+	End string `json:"end" url:"end"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingWeeklyRule) GetDays() []int {
+	if s == nil {
+		return nil
+	}
+	return s.Days
+}
+
+func (s *SchedulingWeeklyRule) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingWeeklyRule) GetEnd() string {
+	if s == nil {
+		return ""
+	}
+	return s.End
+}
+
+func (s *SchedulingWeeklyRule) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingWeeklyRule) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingWeeklyRule) SetDays(days []int) {
+	s.Days = days
+	s.require(schedulingWeeklyRuleFieldDays)
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingWeeklyRule) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingWeeklyRuleFieldStart)
+}
+
+// SetEnd sets the End field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingWeeklyRule) SetEnd(end string) {
+	s.End = end
+	s.require(schedulingWeeklyRuleFieldEnd)
+}
+
+func (s *SchedulingWeeklyRule) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingWeeklyRule
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingWeeklyRule(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingWeeklyRule) MarshalJSON() ([]byte, error) {
+	type embed SchedulingWeeklyRule
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingWeeklyRule) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
 	segmentFieldObject    = big.NewInt(1 << 0)
 	segmentFieldID        = big.NewInt(1 << 1)
 	segmentFieldName      = big.NewInt(1 << 2)
@@ -39559,8 +55275,9 @@ var (
 )
 
 type Segment struct {
-	Object    SegmentObject  `json:"object" url:"object"`
-	ID        string         `json:"id" url:"id"`
+	Object SegmentObject `json:"object" url:"object"`
+	ID     string        `json:"id" url:"id"`
+	// Your name for the segment, unique in the environment.
 	Name      string         `json:"name" url:"name"`
 	Filter    *SegmentFilter `json:"filter" url:"filter"`
 	CreatedAt time.Time      `json:"created_at" url:"created_at"`
@@ -39735,9 +55452,11 @@ var (
 
 // Which contacts belong to the segment. Conditions on `property` (custom properties), `email`, `audience` membership, `topic` subscription and `created_at`; one level of nested `{ match, conditions }` groups.
 type SegmentFilter struct {
+	// The filter's format. Always 1.
 	Version float64 `json:"version" url:"version"`
 	// `all`: every condition must hold; `any`: one is enough.
-	Match      SegmentFilterMatch             `json:"match" url:"match"`
+	Match SegmentFilterMatch `json:"match" url:"match"`
+	// Conditions, or `{ match, conditions }` groups of them. At most 20 in all.
 	Conditions []*SegmentFilterConditionsItem `json:"conditions" url:"conditions"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -40096,9 +55815,11 @@ var (
 )
 
 type SegmentFilterConditionsItemAudienceID struct {
-	Field      SegmentFilterConditionsItemAudienceIDField `json:"field" url:"field"`
-	Op         SegmentFilterConditionsItemAudienceIDOp    `json:"op" url:"op"`
-	AudienceID string                                     `json:"audience_id" url:"audience_id"`
+	Field SegmentFilterConditionsItemAudienceIDField `json:"field" url:"field"`
+	// Whether the contact is in the audience.
+	Op SegmentFilterConditionsItemAudienceIDOp `json:"op" url:"op"`
+	// The audience's id.
+	AudienceID string `json:"audience_id" url:"audience_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -40226,6 +55947,7 @@ func (s SegmentFilterConditionsItemAudienceIDField) Ptr() *SegmentFilterConditio
 	return &s
 }
 
+// Whether the contact is in the audience.
 type SegmentFilterConditionsItemAudienceIDOp string
 
 const (
@@ -40254,7 +55976,9 @@ var (
 )
 
 type SegmentFilterConditionsItemConditions struct {
-	Match      SegmentFilterConditionsItemConditionsMatch             `json:"match" url:"match"`
+	// `all`: every condition must hold; `any`: one is enough.
+	Match SegmentFilterConditionsItemConditionsMatch `json:"match" url:"match"`
+	// The group's conditions.
 	Conditions []*SegmentFilterConditionsItemConditionsConditionsItem `json:"conditions" url:"conditions"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -40554,8 +56278,10 @@ var (
 )
 
 type SegmentFilterConditionsItemConditionsConditionsItemAudience struct {
-	Op         SegmentFilterConditionsItemConditionsConditionsItemAudienceOp `json:"op" url:"op"`
-	AudienceID string                                                        `json:"audience_id" url:"audience_id"`
+	// Whether the contact is in the audience.
+	Op SegmentFilterConditionsItemConditionsConditionsItemAudienceOp `json:"op" url:"op"`
+	// The audience's id.
+	AudienceID string `json:"audience_id" url:"audience_id"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -40650,6 +56376,7 @@ func (s *SegmentFilterConditionsItemConditionsConditionsItemAudience) String() s
 	return fmt.Sprintf("%#v", s)
 }
 
+// Whether the contact is in the audience.
 type SegmentFilterConditionsItemConditionsConditionsItemAudienceOp string
 
 const (
@@ -40678,6 +56405,7 @@ var (
 )
 
 type SegmentFilterConditionsItemConditionsConditionsItemCreatedAt struct {
+	// `before` or `after` a time, or created `within_days` the last days.
 	Op SegmentFilterConditionsItemConditionsConditionsItemCreatedAtOp `json:"op" url:"op"`
 	// A timestamp for `before`/`after`, a number of days for `within_days`.
 	Value *SegmentFilterConditionsItemConditionsConditionsItemCreatedAtValue `json:"value" url:"value"`
@@ -40775,6 +56503,7 @@ func (s *SegmentFilterConditionsItemConditionsConditionsItemCreatedAt) String() 
 	return fmt.Sprintf("%#v", s)
 }
 
+// `before` or `after` a time, or created `within_days` the last days.
 type SegmentFilterConditionsItemConditionsConditionsItemCreatedAtOp string
 
 const (
@@ -40869,8 +56598,10 @@ var (
 )
 
 type SegmentFilterConditionsItemConditionsConditionsItemEmail struct {
-	Op    SegmentFilterConditionsItemConditionsConditionsItemEmailOp `json:"op" url:"op"`
-	Value string                                                     `json:"value" url:"value"`
+	// How to compare the contact's address.
+	Op SegmentFilterConditionsItemConditionsConditionsItemEmailOp `json:"op" url:"op"`
+	// What to compare it with.
+	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -40965,6 +56696,7 @@ func (s *SegmentFilterConditionsItemConditionsConditionsItemEmail) String() stri
 	return fmt.Sprintf("%#v", s)
 }
 
+// How to compare the contact's address.
 type SegmentFilterConditionsItemConditionsConditionsItemEmailOp string
 
 const (
@@ -40997,8 +56729,10 @@ var (
 )
 
 type SegmentFilterConditionsItemConditionsConditionsItemProperty struct {
-	Key string                                                        `json:"key" url:"key"`
-	Op  SegmentFilterConditionsItemConditionsConditionsItemPropertyOp `json:"op" url:"op"`
+	// The custom property to test.
+	Key string `json:"key" url:"key"`
+	// How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.
+	Op SegmentFilterConditionsItemConditionsConditionsItemPropertyOp `json:"op" url:"op"`
 	// A list for `in`/`not_in`; none for `exists`/`not_exists`.
 	Value *SegmentFilterConditionsItemConditionsConditionsItemPropertyValue `json:"value,omitempty" url:"value,omitempty"`
 
@@ -41109,6 +56843,7 @@ func (s *SegmentFilterConditionsItemConditionsConditionsItemProperty) String() s
 	return fmt.Sprintf("%#v", s)
 }
 
+// How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.
 type SegmentFilterConditionsItemConditionsConditionsItemPropertyOp string
 
 const (
@@ -41355,8 +57090,10 @@ var (
 )
 
 type SegmentFilterConditionsItemConditionsConditionsItemTopic struct {
-	Op    SegmentFilterConditionsItemConditionsConditionsItemTopicOp `json:"op" url:"op"`
-	Topic string                                                     `json:"topic" url:"topic"`
+	// Whether emails about the topic reach the contact.
+	Op SegmentFilterConditionsItemConditionsConditionsItemTopicOp `json:"op" url:"op"`
+	// The topic's key.
+	Topic string `json:"topic" url:"topic"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -41451,6 +57188,7 @@ func (s *SegmentFilterConditionsItemConditionsConditionsItemTopic) String() stri
 	return fmt.Sprintf("%#v", s)
 }
 
+// Whether emails about the topic reach the contact.
 type SegmentFilterConditionsItemConditionsConditionsItemTopicOp string
 
 const (
@@ -41473,6 +57211,7 @@ func (s SegmentFilterConditionsItemConditionsConditionsItemTopicOp) Ptr() *Segme
 	return &s
 }
 
+// `all`: every condition must hold; `any`: one is enough.
 type SegmentFilterConditionsItemConditionsMatch string
 
 const (
@@ -41503,7 +57242,8 @@ var (
 
 type SegmentFilterConditionsItemField struct {
 	Field SegmentFilterConditionsItemFieldField `json:"field" url:"field"`
-	Op    SegmentFilterConditionsItemFieldOp    `json:"op" url:"op"`
+	// `before` or `after` a time, or created `within_days` the last days.
+	Op SegmentFilterConditionsItemFieldOp `json:"op" url:"op"`
 	// A timestamp for `before`/`after`, a number of days for `within_days`.
 	Value *SegmentFilterConditionsItemFieldValue `json:"value" url:"value"`
 
@@ -41633,6 +57373,7 @@ func (s SegmentFilterConditionsItemFieldField) Ptr() *SegmentFilterConditionsIte
 	return &s
 }
 
+// `before` or `after` a time, or created `within_days` the last days.
 type SegmentFilterConditionsItemFieldOp string
 
 const (
@@ -41730,8 +57471,10 @@ var (
 
 type SegmentFilterConditionsItemKey struct {
 	Field SegmentFilterConditionsItemKeyField `json:"field" url:"field"`
-	Key   string                              `json:"key" url:"key"`
-	Op    SegmentFilterConditionsItemKeyOp    `json:"op" url:"op"`
+	// The custom property to test.
+	Key string `json:"key" url:"key"`
+	// How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.
+	Op SegmentFilterConditionsItemKeyOp `json:"op" url:"op"`
 	// A list for `in`/`not_in`; none for `exists`/`not_exists`.
 	Value *SegmentFilterConditionsItemKeyValue `json:"value,omitempty" url:"value,omitempty"`
 
@@ -41875,6 +57618,7 @@ func (s SegmentFilterConditionsItemKeyField) Ptr() *SegmentFilterConditionsItemK
 	return &s
 }
 
+// How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.
 type SegmentFilterConditionsItemKeyOp string
 
 const (
@@ -42123,8 +57867,10 @@ var (
 
 type SegmentFilterConditionsItemOne struct {
 	Field SegmentFilterConditionsItemOneField `json:"field" url:"field"`
-	Op    SegmentFilterConditionsItemOneOp    `json:"op" url:"op"`
-	Value string                              `json:"value" url:"value"`
+	// How to compare the contact's address.
+	Op SegmentFilterConditionsItemOneOp `json:"op" url:"op"`
+	// What to compare it with.
+	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -42252,6 +57998,7 @@ func (s SegmentFilterConditionsItemOneField) Ptr() *SegmentFilterConditionsItemO
 	return &s
 }
 
+// How to compare the contact's address.
 type SegmentFilterConditionsItemOneOp string
 
 const (
@@ -42285,8 +58032,10 @@ var (
 
 type SegmentFilterConditionsItemTopic struct {
 	Field SegmentFilterConditionsItemTopicField `json:"field" url:"field"`
-	Op    SegmentFilterConditionsItemTopicOp    `json:"op" url:"op"`
-	Topic string                                `json:"topic" url:"topic"`
+	// Whether emails about the topic reach the contact.
+	Op SegmentFilterConditionsItemTopicOp `json:"op" url:"op"`
+	// The topic's key.
+	Topic string `json:"topic" url:"topic"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -42414,6 +58163,7 @@ func (s SegmentFilterConditionsItemTopicField) Ptr() *SegmentFilterConditionsIte
 	return &s
 }
 
+// Whether emails about the topic reach the contact.
 type SegmentFilterConditionsItemTopicOp string
 
 const (
@@ -42762,13 +58512,15 @@ var (
 )
 
 type SignBuilderSession struct {
-	Object     SignBuilderSessionObject `json:"object" url:"object"`
-	ID         string                   `json:"id" url:"id"`
-	TemplateID string                   `json:"template_id" url:"template_id"`
+	Object SignBuilderSessionObject `json:"object" url:"object"`
+	ID     string                   `json:"id" url:"id"`
+	// The id of the template it edits.
+	TemplateID string `json:"template_id" url:"template_id"`
 	// The builder: embed it (from an allowed origin, `mountBuilder` from `coss/sign`) for whoever edits the template: they can upload documents, add roles and place fields. Show it only to them.
 	URL string `json:"url" url:"url"`
 	// The secret part of `url`, shown only here.
-	Token     string    `json:"token" url:"token"`
+	Token string `json:"token" url:"token"`
+	// When the link stops working.
 	ExpiresAt time.Time `json:"expires_at" url:"expires_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -42961,20 +58713,23 @@ var (
 )
 
 type SignDocument struct {
-	Object   SignDocumentObject `json:"object" url:"object"`
-	ID       string             `json:"id" url:"id"`
-	Filename string             `json:"filename" url:"filename"`
+	Object SignDocumentObject `json:"object" url:"object"`
+	ID     string             `json:"id" url:"id"`
+	// The file's name, as uploaded.
+	Filename string `json:"filename" url:"filename"`
 	// Bytes.
 	Size int64 `json:"size" url:"size"`
 	// Hex SHA-256 of the uploaded bytes.
-	Sha256    string `json:"sha256" url:"sha256"`
-	PageCount int64  `json:"page_count" url:"page_count"`
+	Sha256 string `json:"sha256" url:"sha256"`
+	// How many pages it has.
+	PageCount int64 `json:"page_count" url:"page_count"`
 	// Each page's size, in order.
 	Pages []*SignDocumentPagesItem `json:"pages" url:"pages"`
 	// Text anchors (`{{signature:signer_1}}`) found in the document, which fields can be placed by.
-	Anchors   []*SignDocumentAnchorsItem `json:"anchors" url:"anchors"`
-	Sandbox   bool                       `json:"sandbox" url:"sandbox"`
-	CreatedAt time.Time                  `json:"created_at" url:"created_at"`
+	Anchors []*SignDocumentAnchorsItem `json:"anchors" url:"anchors"`
+	// Whether it belongs to a sandbox environment.
+	Sandbox   bool      `json:"sandbox" url:"sandbox"`
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -43200,11 +58955,17 @@ var (
 
 // A text anchor found in the document, in points from the page's top left.
 type SignDocumentAnchorsItem struct {
-	Text   string  `json:"text" url:"text"`
-	Page   int64   `json:"page" url:"page"`
-	X      float64 `json:"x" url:"x"`
-	Y      float64 `json:"y" url:"y"`
-	Width  float64 `json:"width" url:"width"`
+	// The anchor as it appears in the document.
+	Text string `json:"text" url:"text"`
+	// 1-based page number.
+	Page int64 `json:"page" url:"page"`
+	// Left edge, in PDF points from the page's left.
+	X float64 `json:"x" url:"x"`
+	// Top edge, in PDF points from the page's top.
+	Y float64 `json:"y" url:"y"`
+	// In PDF points.
+	Width float64 `json:"width" url:"width"`
+	// In PDF points.
 	Height float64 `json:"height" url:"height"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -43519,7 +59280,8 @@ var (
 
 type SignDocumentPagesItem struct {
 	// In PDF points (1/72 inch).
-	Width  float64 `json:"width" url:"width"`
+	Width float64 `json:"width" url:"width"`
+	// In PDF points (1/72 inch).
 	Height float64 `json:"height" url:"height"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -43642,16 +59404,23 @@ type SignEvent struct {
 	Object SignEventObject `json:"object" url:"object"`
 	ID     string          `json:"id" url:"id"`
 	// 1-based position in the request's trail.
-	Sequence int64         `json:"sequence" url:"sequence"`
-	Type     SignEventType `json:"type" url:"type"`
-	SignerID *string       `json:"signer_id,omitempty" url:"signer_id,omitempty"`
+	Sequence int64 `json:"sequence" url:"sequence"`
+	// What happened. `created`, `sent`, `canceled` and `expired` concern the request; `notified`, `reminded`, `viewed`, `consented`, `signed` and `declined` a signer; `completed` is the last signature and `sealed` the sealed document being ready.
+	Type SignEventType `json:"type" url:"type"`
+	// The id of the signer it concerns. `null`: the whole request.
+	SignerID *string `json:"signer_id,omitempty" url:"signer_id,omitempty"`
 	// Who did it: your API key, a signer, a member in the dashboard, or coss.com.
-	Actor        SignEventActor    `json:"actor" url:"actor"`
-	IPAddress    *string           `json:"ip_address,omitempty" url:"ip_address,omitempty"`
-	UserAgent    *string           `json:"user_agent,omitempty" url:"user_agent,omitempty"`
-	Details      *SignEventDetails `json:"details" url:"details"`
-	OccurredAt   time.Time         `json:"occurred_at" url:"occurred_at"`
-	PreviousHash *string           `json:"previous_hash,omitempty" url:"previous_hash,omitempty"`
+	Actor SignEventActor `json:"actor" url:"actor"`
+	// The address the action came from. `null`: unknown, or coss.com acted.
+	IPAddress *string `json:"ip_address,omitempty" url:"ip_address,omitempty"`
+	// The client's `User-Agent`. `null`: unknown.
+	UserAgent *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
+	// What this event recorded, depending on its type.
+	Details *SignEventDetails `json:"details" url:"details"`
+	// When it happened.
+	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
+	// The previous event's `hash`. `null` on the first event.
+	PreviousHash *string `json:"previous_hash,omitempty" url:"previous_hash,omitempty"`
 	// SHA-256 over this event and `previous_hash`: changing or removing an event breaks the chain from there on.
 	Hash string `json:"hash" url:"hash"`
 
@@ -43943,16 +59712,20 @@ var (
 	signEventDetailsFieldSignedDocumentSha256 = big.NewInt(1 << 7)
 )
 
+// What this event recorded, depending on its type.
 type SignEventDetails struct {
+	// `declined`: the signer's reason.
 	Reason *string `json:"reason,omitempty" url:"reason,omitempty"`
 	// Each document's SHA-256 at that moment, by document id.
 	DocumentSha256 map[string]string `json:"document_sha256,omitempty" url:"document_sha256,omitempty"`
 	// SHA-256 of the consent text the signer accepted.
-	DisclosureSha256 *string  `json:"disclosure_sha256,omitempty" url:"disclosure_sha256,omitempty"`
-	FieldIDs         []string `json:"field_ids,omitempty" url:"field_ids,omitempty"`
+	DisclosureSha256 *string `json:"disclosure_sha256,omitempty" url:"disclosure_sha256,omitempty"`
+	// `signed`: the fields the signer filled.
+	FieldIDs []string `json:"field_ids,omitempty" url:"field_ids,omitempty"`
 	// SHA-256 of the signature image the signer adopted.
 	SignatureSha256 *string `json:"signature_sha256,omitempty" url:"signature_sha256,omitempty"`
-	InitialsSha256  *string `json:"initials_sha256,omitempty" url:"initials_sha256,omitempty"`
+	// SHA-256 of the initials image the signer adopted.
+	InitialsSha256 *string `json:"initials_sha256,omitempty" url:"initials_sha256,omitempty"`
 	// The signing session the signer used.
 	SessionID *string `json:"session_id,omitempty" url:"session_id,omitempty"`
 	// `sealed`: the SHA-256 of the sealed, completed document.
@@ -44291,6 +60064,7 @@ func (s SignEventObject) Ptr() *SignEventObject {
 	return &s
 }
 
+// What happened. `created`, `sent`, `canceled` and `expired` concern the request; `notified`, `reminded`, `viewed`, `consented`, `signed` and `declined` a signer; `completed` is the last signature and `sealed` the sealed document being ready.
 type SignEventType string
 
 const (
@@ -44365,20 +60139,32 @@ var signFieldNullableFields = map[string]*big.Int{
 	"anchor": signFieldFieldAnchor,
 }
 
+// A box on a page that one signer fills.
 type SignField struct {
-	Object     SignFieldObject `json:"object" url:"object"`
-	ID         string          `json:"id" url:"id"`
-	SignerID   string          `json:"signer_id" url:"signer_id"`
-	DocumentID string          `json:"document_id" url:"document_id"`
-	Type       SignFieldType   `json:"type" url:"type"`
-	Page       int64           `json:"page" url:"page"`
-	X          float64         `json:"x" url:"x"`
-	Y          float64         `json:"y" url:"y"`
-	Width      float64         `json:"width" url:"width"`
-	Height     float64         `json:"height" url:"height"`
-	Required   bool            `json:"required" url:"required"`
-	Label      *string         `json:"label,omitempty" url:"label,omitempty"`
-	Anchor     *string         `json:"anchor,omitempty" url:"anchor,omitempty"`
+	Object SignFieldObject `json:"object" url:"object"`
+	ID     string          `json:"id" url:"id"`
+	// The id of the signer who fills it.
+	SignerID string `json:"signer_id" url:"signer_id"`
+	// The id of the document it's on.
+	DocumentID string `json:"document_id" url:"document_id"`
+	// `signature` and `initials` take the signer's adopted signature, `date_signed` is filled with the signing date, `name` and `email` with the signer's, `text` and `checkbox` by the signer.
+	Type SignFieldType `json:"type" url:"type"`
+	// 1-based page number.
+	Page int64 `json:"page" url:"page"`
+	// Left edge, in PDF points from the page's left.
+	X float64 `json:"x" url:"x"`
+	// Top edge, in PDF points from the page's top.
+	Y float64 `json:"y" url:"y"`
+	// In PDF points.
+	Width float64 `json:"width" url:"width"`
+	// In PDF points.
+	Height float64 `json:"height" url:"height"`
+	// Whether a signer can finish with it empty.
+	Required bool `json:"required" url:"required"`
+	// Shown to the signer. `null`: none.
+	Label *string `json:"label,omitempty" url:"label,omitempty"`
+	// The text anchor it was placed by. `null`: placed by position.
+	Anchor *string `json:"anchor,omitempty" url:"anchor,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -44998,8 +60784,10 @@ type SignFieldInputDocument struct {
 	// Left edge, in PDF points from the page's left.
 	X float64 `json:"x" url:"x"`
 	// Top edge, in PDF points from the page's top.
-	Y      float64 `json:"y" url:"y"`
-	Width  float64 `json:"width" url:"width"`
+	Y float64 `json:"y" url:"y"`
+	// In PDF points.
+	Width float64 `json:"width" url:"width"`
+	// In PDF points.
 	Height float64 `json:"height" url:"height"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -45250,6 +61038,7 @@ func (s SignFieldObject) Ptr() *SignFieldObject {
 	return &s
 }
 
+// `signature` and `initials` take the signer's adopted signature, `date_signed` is filled with the signing date, `name` and `email` with the signer's, `text` and `checkbox` by the signer.
 type SignFieldType string
 
 const (
@@ -45327,23 +61116,37 @@ type SignRequest struct {
 	Object SignRequestObject `json:"object" url:"object"`
 	ID     string            `json:"id" url:"id"`
 	// `draft` until sent, `sent` while signers sign, then `completed` (everyone signed), `declined` (a signer declined), `canceled` or `expired`.
-	Status       SignRequestStatus           `json:"status" url:"status"`
-	Title        string                      `json:"title" url:"title"`
-	Message      *string                     `json:"message,omitempty" url:"message,omitempty"`
-	SigningOrder SignRequestSigningOrder     `json:"signing_order" url:"signing_order"`
-	Documents    []*SignRequestDocumentsItem `json:"documents" url:"documents"`
-	Signers      []*SignSigner               `json:"signers" url:"signers"`
-	Fields       []*SignField                `json:"fields" url:"fields"`
-	Metadata     map[string]string           `json:"metadata" url:"metadata"`
-	Sandbox      bool                        `json:"sandbox" url:"sandbox"`
+	Status SignRequestStatus `json:"status" url:"status"`
+	// Shown to signers.
+	Title string `json:"title" url:"title"`
+	// A note to signers. `null`: none.
+	Message *string `json:"message,omitempty" url:"message,omitempty"`
+	// `parallel`: everyone at once. `sequential`: in each signer's `order`.
+	SigningOrder SignRequestSigningOrder `json:"signing_order" url:"signing_order"`
+	// The documents to sign, in order.
+	Documents []*SignRequestDocumentsItem `json:"documents" url:"documents"`
+	// Who signs.
+	Signers []*SignSigner `json:"signers" url:"signers"`
+	// What each signer fills.
+	Fields []*SignField `json:"fields" url:"fields"`
+	// Your own key-value pairs.
+	Metadata map[string]string `json:"metadata" url:"metadata"`
+	// Whether it belongs to a sandbox environment.
+	Sandbox bool `json:"sandbox" url:"sandbox"`
 	// Days between automatic reminders to email signers; `null`: none.
-	ReminderIntervalDays *int64     `json:"reminder_interval_days,omitempty" url:"reminder_interval_days,omitempty"`
-	ExpiresAt            *time.Time `json:"expires_at,omitempty" url:"expires_at,omitempty"`
-	ExpiredAt            *time.Time `json:"expired_at,omitempty" url:"expired_at,omitempty"`
-	SentAt               *time.Time `json:"sent_at,omitempty" url:"sent_at,omitempty"`
-	CompletedAt          *time.Time `json:"completed_at,omitempty" url:"completed_at,omitempty"`
-	CanceledAt           *time.Time `json:"canceled_at,omitempty" url:"canceled_at,omitempty"`
-	DeclinedAt           *time.Time `json:"declined_at,omitempty" url:"declined_at,omitempty"`
+	ReminderIntervalDays *int64 `json:"reminder_interval_days,omitempty" url:"reminder_interval_days,omitempty"`
+	// When it expires if it isn't finished. `null`: never.
+	ExpiresAt *time.Time `json:"expires_at,omitempty" url:"expires_at,omitempty"`
+	// When it expired. `null`: it hasn't.
+	ExpiredAt *time.Time `json:"expired_at,omitempty" url:"expired_at,omitempty"`
+	// When it was sent. `null`: still a draft.
+	SentAt *time.Time `json:"sent_at,omitempty" url:"sent_at,omitempty"`
+	// When the last signer signed. `null`: not yet.
+	CompletedAt *time.Time `json:"completed_at,omitempty" url:"completed_at,omitempty"`
+	// When it was canceled. `null`: it wasn't.
+	CanceledAt *time.Time `json:"canceled_at,omitempty" url:"canceled_at,omitempty"`
+	// When a signer declined it. `null`: nobody has.
+	DeclinedAt *time.Time `json:"declined_at,omitempty" url:"declined_at,omitempty"`
 	// The completed document, sealed by coss.com: every document with the signatures and values filled in, and a certificate of completion. `null` until it is ready (shortly after `completed`, announced by the `sign_request.completed` webhook); download it from `GET /v1/sign/requests/{id}/signed_document`.
 	SignedDocument *SignRequestSignedDocument `json:"signed_document,omitempty" url:"signed_document,omitempty"`
 	CreatedAt      time.Time                  `json:"created_at" url:"created_at"`
@@ -45740,10 +61543,13 @@ var (
 )
 
 type SignRequestDocumentsItem struct {
-	ID        string `json:"id" url:"id"`
-	Filename  string `json:"filename" url:"filename"`
-	Sha256    string `json:"sha256" url:"sha256"`
-	PageCount int64  `json:"page_count" url:"page_count"`
+	ID string `json:"id" url:"id"`
+	// The file's name.
+	Filename string `json:"filename" url:"filename"`
+	// Hex SHA-256 of the uploaded bytes.
+	Sha256 string `json:"sha256" url:"sha256"`
+	// How many pages it has.
+	PageCount int64 `json:"page_count" url:"page_count"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -46029,7 +61835,8 @@ var (
 
 type SignRequestSignedDocument struct {
 	// Hex SHA-256 of the sealed PDF.
-	Sha256   string    `json:"sha256" url:"sha256"`
+	Sha256 string `json:"sha256" url:"sha256"`
+	// When it was sealed.
 	SealedAt time.Time `json:"sealed_at" url:"sealed_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -46133,6 +61940,7 @@ func (s *SignRequestSignedDocument) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// `parallel`: everyone at once. `sequential`: in each signer's `order`.
 type SignRequestSigningOrder string
 
 const (
@@ -46201,14 +62009,17 @@ var (
 )
 
 type SignSession struct {
-	Object    SignSessionObject `json:"object" url:"object"`
-	ID        string            `json:"id" url:"id"`
-	RequestID string            `json:"request_id" url:"request_id"`
-	SignerID  string            `json:"signer_id" url:"signer_id"`
+	Object SignSessionObject `json:"object" url:"object"`
+	ID     string            `json:"id" url:"id"`
+	// The signature request's id.
+	RequestID string `json:"request_id" url:"request_id"`
+	// The signer's id.
+	SignerID string `json:"signer_id" url:"signer_id"`
 	// The signing page: embed it in an iframe (from an allowed origin, with `coss/sign`'s `mountSigning`) or redirect to it. The token is in the URL fragment, so it never reaches a server log: show it only to that signer.
 	URL string `json:"url" url:"url"`
 	// The secret part of `url`, shown only here.
-	Token     string    `json:"token" url:"token"`
+	Token string `json:"token" url:"token"`
+	// When the link stops working.
 	ExpiresAt time.Time `json:"expires_at" url:"expires_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -46426,9 +62237,11 @@ type SignSettings struct {
 	// Origins that may embed the signing page in an iframe, like `https://app.example.com` (sandbox environments also `http://localhost:<port>`). Empty: it can only be opened on its own.
 	AllowedOrigins []string `json:"allowed_origins" url:"allowed_origins"`
 	// The requester's name signers see. `null`: the organization's name.
-	DisplayName *string           `json:"display_name,omitempty" url:"display_name,omitempty"`
-	AccentColor *string           `json:"accent_color,omitempty" url:"accent_color,omitempty"`
-	Theme       SignSettingsTheme `json:"theme" url:"theme"`
+	DisplayName *string `json:"display_name,omitempty" url:"display_name,omitempty"`
+	// The signing page's accent color, as `#RRGGBB`. `null`: the default.
+	AccentColor *string `json:"accent_color,omitempty" url:"accent_color,omitempty"`
+	// The signing page's theme. `system` follows the signer's device.
+	Theme SignSettingsTheme `json:"theme" url:"theme"`
 	// Your own consent text signers accept before they see a document. `null`: coss.com's default, which covers ESIGN's consumer disclosure. Have your counsel review a replacement.
 	Disclosure *string `json:"disclosure,omitempty" url:"disclosure,omitempty"`
 	// Signing emails (invitations, reminders, signed copies) come from this address, on a verified domain in live environments. `null`: from coss.com, as "<display name> via coss.com".
@@ -46639,6 +62452,7 @@ func (s SignSettingsObject) Ptr() *SignSettingsObject {
 	return &s
 }
 
+// The signing page's theme. `system` follows the signer's device.
 type SignSettingsTheme string
 
 const (
@@ -46689,21 +62503,30 @@ var signSignerNullableFields = map[string]*big.Int{
 	"decline_reason": signSignerFieldDeclineReason,
 }
 
+// Someone asked to sign.
 type SignSigner struct {
-	Object   SignSignerObject   `json:"object" url:"object"`
-	ID       string             `json:"id" url:"id"`
-	Name     string             `json:"name" url:"name"`
-	Email    string             `json:"email" url:"email"`
-	Order    int64              `json:"order" url:"order"`
+	Object SignSignerObject `json:"object" url:"object"`
+	ID     string           `json:"id" url:"id"`
+	Name   string           `json:"name" url:"name"`
+	Email  string           `json:"email" url:"email"`
+	// Where they come in `signing_order: sequential`. Lower signs first.
+	Order int64 `json:"order" url:"order"`
+	// `email`: coss.com emails them a link. `embedded`: your app shows the signing page.
 	Delivery SignSignerDelivery `json:"delivery" url:"delivery"`
 	// How the signer is identified: `email_link` (they opened the link coss.com emailed) or `customer_asserted` (your app vouched for them).
 	Authentication SignSignerAuthentication `json:"authentication" url:"authentication"`
-	Status         SignSignerStatus         `json:"status" url:"status"`
-	ClientRef      *string                  `json:"client_ref,omitempty" url:"client_ref,omitempty"`
-	ViewedAt       *time.Time               `json:"viewed_at,omitempty" url:"viewed_at,omitempty"`
-	SignedAt       *time.Time               `json:"signed_at,omitempty" url:"signed_at,omitempty"`
-	DeclinedAt     *time.Time               `json:"declined_at,omitempty" url:"declined_at,omitempty"`
-	DeclineReason  *string                  `json:"decline_reason,omitempty" url:"decline_reason,omitempty"`
+	// `pending`: not contacted yet. `notified`: emailed their link. `viewed`: opened the signing page. `signed`: done. `declined`: refused, which declines the whole request.
+	Status SignSignerStatus `json:"status" url:"status"`
+	// Your own id for the signer. `null`: none given.
+	ClientRef *string `json:"client_ref,omitempty" url:"client_ref,omitempty"`
+	// When they first opened the signing page. `null`: not yet.
+	ViewedAt *time.Time `json:"viewed_at,omitempty" url:"viewed_at,omitempty"`
+	// When they signed. `null`: not yet.
+	SignedAt *time.Time `json:"signed_at,omitempty" url:"signed_at,omitempty"`
+	// When they declined. `null`: they haven't.
+	DeclinedAt *time.Time `json:"declined_at,omitempty" url:"declined_at,omitempty"`
+	// The reason they gave. `null`: none given.
+	DeclineReason *string `json:"decline_reason,omitempty" url:"decline_reason,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -46998,6 +62821,7 @@ func (s SignSignerAuthentication) Ptr() *SignSignerAuthentication {
 	return &s
 }
 
+// `email`: coss.com emails them a link. `embedded`: your app shows the signing page.
 type SignSignerDelivery string
 
 const (
@@ -47039,6 +62863,7 @@ func (s SignSignerObject) Ptr() *SignSignerObject {
 	return &s
 }
 
+// `pending`: not contacted yet. `notified`: emailed their link. `viewed`: opened the signing page. `signed`: done. `declined`: refused, which declines the whole request.
 type SignSignerStatus string
 
 const (
@@ -47093,17 +62918,25 @@ var signTemplateNullableFields = map[string]*big.Int{
 }
 
 type SignTemplate struct {
-	Object       SignTemplateObject           `json:"object" url:"object"`
-	ID           string                       `json:"id" url:"id"`
-	Name         string                       `json:"name" url:"name"`
-	Title        *string                      `json:"title,omitempty" url:"title,omitempty"`
-	Message      *string                      `json:"message,omitempty" url:"message,omitempty"`
-	SigningOrder SignTemplateSigningOrder     `json:"signing_order" url:"signing_order"`
-	Documents    []*SignTemplateDocumentsItem `json:"documents" url:"documents"`
-	Roles        []*SignTemplateRolesItem     `json:"roles" url:"roles"`
-	Fields       []*SignTemplateFieldsItem    `json:"fields" url:"fields"`
+	Object SignTemplateObject `json:"object" url:"object"`
+	ID     string             `json:"id" url:"id"`
+	// Your name for the template.
+	Name string `json:"name" url:"name"`
+	// Requests' title. `null`: the template's name.
+	Title *string `json:"title,omitempty" url:"title,omitempty"`
+	// Requests' message to signers. `null`: none.
+	Message *string `json:"message,omitempty" url:"message,omitempty"`
+	// Its requests' order, unless one sets its own.
+	SigningOrder SignTemplateSigningOrder `json:"signing_order" url:"signing_order"`
+	// The documents its requests use, in order.
+	Documents []*SignTemplateDocumentsItem `json:"documents" url:"documents"`
+	// Who signs: each request names one signer per role.
+	Roles []*SignTemplateRolesItem `json:"roles" url:"roles"`
+	// Each role's fields.
+	Fields []*SignTemplateFieldsItem `json:"fields" url:"fields"`
 	// It has documents and every role has a `signature` field, so requests can be made from it.
-	Ready     bool      `json:"ready" url:"ready"`
+	Ready bool `json:"ready" url:"ready"`
+	// Whether it belongs to a sandbox environment.
 	Sandbox   bool      `json:"sandbox" url:"sandbox"`
 	CreatedAt time.Time `json:"created_at" url:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" url:"updated_at"`
@@ -47383,11 +63216,15 @@ var (
 )
 
 type SignTemplateDocumentsItem struct {
-	ID        string                                `json:"id" url:"id"`
-	Filename  string                                `json:"filename" url:"filename"`
-	Sha256    string                                `json:"sha256" url:"sha256"`
-	PageCount int64                                 `json:"page_count" url:"page_count"`
-	Pages     []*SignTemplateDocumentsItemPagesItem `json:"pages" url:"pages"`
+	ID string `json:"id" url:"id"`
+	// The file's name.
+	Filename string `json:"filename" url:"filename"`
+	// Hex SHA-256 of the uploaded bytes.
+	Sha256 string `json:"sha256" url:"sha256"`
+	// How many pages it has.
+	PageCount int64 `json:"page_count" url:"page_count"`
+	// Each page's size, in order.
+	Pages []*SignTemplateDocumentsItemPagesItem `json:"pages" url:"pages"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -47531,7 +63368,8 @@ var (
 
 type SignTemplateDocumentsItemPagesItem struct {
 	// In PDF points (1/72 inch).
-	Width  float64 `json:"width" url:"width"`
+	Width float64 `json:"width" url:"width"`
+	// In PDF points (1/72 inch).
 	Height float64 `json:"height" url:"height"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -47649,18 +63487,29 @@ var signTemplateFieldsItemNullableFields = map[string]*big.Int{
 }
 
 type SignTemplateFieldsItem struct {
-	ID         string                     `json:"id" url:"id"`
-	Role       string                     `json:"role" url:"role"`
-	DocumentID string                     `json:"document_id" url:"document_id"`
-	Type       SignTemplateFieldsItemType `json:"type" url:"type"`
-	Page       int64                      `json:"page" url:"page"`
-	X          float64                    `json:"x" url:"x"`
-	Y          float64                    `json:"y" url:"y"`
-	Width      float64                    `json:"width" url:"width"`
-	Height     float64                    `json:"height" url:"height"`
-	Required   bool                       `json:"required" url:"required"`
-	Label      *string                    `json:"label,omitempty" url:"label,omitempty"`
-	MergeKey   *string                    `json:"merge_key,omitempty" url:"merge_key,omitempty"`
+	ID string `json:"id" url:"id"`
+	// The `key` of the role that fills it.
+	Role string `json:"role" url:"role"`
+	// The id of the document it's on.
+	DocumentID string `json:"document_id" url:"document_id"`
+	// What the field takes, as on a signature request.
+	Type SignTemplateFieldsItemType `json:"type" url:"type"`
+	// 1-based page number.
+	Page int64 `json:"page" url:"page"`
+	// Left edge, in PDF points from the page's left.
+	X float64 `json:"x" url:"x"`
+	// Top edge, in PDF points from the page's top.
+	Y float64 `json:"y" url:"y"`
+	// In PDF points.
+	Width float64 `json:"width" url:"width"`
+	// In PDF points.
+	Height float64 `json:"height" url:"height"`
+	// Whether a signer can finish with it empty.
+	Required bool `json:"required" url:"required"`
+	// Shown to the signer. `null`: none.
+	Label *string `json:"label,omitempty" url:"label,omitempty"`
+	// `text` fields: which `merge_fields` value fills it. `null`: the signer fills it.
+	MergeKey *string `json:"merge_key,omitempty" url:"merge_key,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -47902,6 +63751,7 @@ func (s *SignTemplateFieldsItem) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// What the field takes, as on a signature request.
 type SignTemplateFieldsItemType string
 
 const (
@@ -48101,7 +63951,9 @@ var (
 )
 
 type SignTemplateRolesItem struct {
-	Key  string `json:"key" url:"key"`
+	// The role's id within the template.
+	Key string `json:"key" url:"key"`
+	// Shown in the builder, e.g. `Client`.
 	Name string `json:"name" url:"name"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -48197,6 +64049,7 @@ func (s *SignTemplateRolesItem) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// Its requests' order, unless one sets its own.
 type SignTemplateSigningOrder string
 
 const (
@@ -48238,12 +64091,16 @@ var smsNumberNullableFields = map[string]*big.Int{
 }
 
 type SmsNumber struct {
-	Object      SmsNumberObject `json:"object" url:"object"`
-	ID          string          `json:"id" url:"id"`
-	PhoneNumber string          `json:"phone_number" url:"phone_number"`
-	Kind        SmsNumberKind   `json:"kind" url:"kind"`
-	Country     string          `json:"country" url:"country"`
-	Status      SmsNumberStatus `json:"status" url:"status"`
+	Object SmsNumberObject `json:"object" url:"object"`
+	ID     string          `json:"id" url:"id"`
+	// The number, in E.164.
+	PhoneNumber string `json:"phone_number" url:"phone_number"`
+	// `local` (US A2P 10DLC) or `toll_free` (toll-free verification, and sends only to the US and Canada).
+	Kind SmsNumberKind `json:"kind" url:"kind"`
+	// Its country (ISO 3166-1 alpha-2).
+	Country string `json:"country" url:"country"`
+	// `pending`: not ready yet. `active`: ready, once its registration is approved. `releasing`: being given up.
+	Status SmsNumberStatus `json:"status" url:"status"`
 	// Its carrier registration's status; live sends need `approved`.
 	RegistrationStatus *SmsNumberRegistrationStatus `json:"registration_status,omitempty" url:"registration_status,omitempty"`
 	// Whether live sends can go from it now.
@@ -48472,6 +64329,7 @@ func (s *SmsNumber) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// `local` (US A2P 10DLC) or `toll_free` (toll-free verification, and sends only to the US and Canada).
 type SmsNumberKind string
 
 const (
@@ -48685,6 +64543,7 @@ func (s SmsNumberRegistrationStatus) Ptr() *SmsNumberRegistrationStatus {
 	return &s
 }
 
+// `pending`: not ready yet. `active`: ready, once its registration is approved. `releasing`: being given up.
 type SmsNumberStatus string
 
 const (
@@ -48724,10 +64583,12 @@ var smsSuppressionNullableFields = map[string]*big.Int{
 	"sms_id": smsSuppressionFieldSmsID,
 }
 
+// A number sends skip.
 type SmsSuppression struct {
-	Object      SmsSuppressionObject `json:"object" url:"object"`
-	ID          string               `json:"id" url:"id"`
-	PhoneNumber string               `json:"phone_number" url:"phone_number"`
+	Object SmsSuppressionObject `json:"object" url:"object"`
+	ID     string               `json:"id" url:"id"`
+	// The suppressed number, in E.164.
+	PhoneNumber string `json:"phone_number" url:"phone_number"`
 	// `opt_out`: the number replied STOP (or the carrier says it opted out). `invalid_number`: not a number that can receive SMS. `manual`: added by you.
 	Reason SmsSuppressionReason `json:"reason" url:"reason"`
 	// The message whose failure added it, if any.
@@ -48911,10 +64772,12 @@ var smsSuppressionCheckNullableFields = map[string]*big.Int{
 }
 
 type SmsSuppressionCheck struct {
-	Object      SmsSuppressionCheckObject `json:"object" url:"object"`
-	PhoneNumber string                    `json:"phone_number" url:"phone_number"`
+	Object SmsSuppressionCheckObject `json:"object" url:"object"`
+	// The number checked, in E.164.
+	PhoneNumber string `json:"phone_number" url:"phone_number"`
 	// Whether a send to this number would be skipped.
-	Suppressed  bool                            `json:"suppressed" url:"suppressed"`
+	Suppressed bool `json:"suppressed" url:"suppressed"`
+	// A number sends skip.
 	Suppression *SmsSuppressionCheckSuppression `json:"suppression,omitempty" url:"suppression,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -49078,10 +64941,12 @@ var smsSuppressionCheckSuppressionNullableFields = map[string]*big.Int{
 	"sms_id": smsSuppressionCheckSuppressionFieldSmsID,
 }
 
+// A number sends skip.
 type SmsSuppressionCheckSuppression struct {
-	Object      SmsSuppressionCheckSuppressionObject `json:"object" url:"object"`
-	ID          string                               `json:"id" url:"id"`
-	PhoneNumber string                               `json:"phone_number" url:"phone_number"`
+	Object SmsSuppressionCheckSuppressionObject `json:"object" url:"object"`
+	ID     string                               `json:"id" url:"id"`
+	// The suppressed number, in E.164.
+	PhoneNumber string `json:"phone_number" url:"phone_number"`
 	// `opt_out`: the number replied STOP (or the carrier says it opted out). `invalid_number`: not a number that can receive SMS. `manual`: added by you.
 	Reason SmsSuppressionCheckSuppressionReason `json:"reason" url:"reason"`
 	// The message whose failure added it, if any.
@@ -49684,8 +65549,10 @@ type Subaccount struct {
 	Object SubaccountObject `json:"object" url:"object"`
 	ID     string           `json:"id" url:"id"`
 	// Your own id for it (e.g. your user's id), unique in the environment. Every path and send that takes a sub-account accepts its `id` or its `uid`.
-	UID      *string           `json:"uid,omitempty" url:"uid,omitempty"`
-	Name     string            `json:"name" url:"name"`
+	UID *string `json:"uid,omitempty" url:"uid,omitempty"`
+	// Your name for it.
+	Name string `json:"name" url:"name"`
+	// Your own key-value pairs.
 	Metadata map[string]string `json:"metadata" url:"metadata"`
 	// `disabled`: you turned it off (its sends are refused). `deleting`: its domains are being released.
 	Status     SubaccountStatus      `json:"status" url:"status"`
@@ -50087,6 +65954,7 @@ var subaccountQuotasNullableFields = map[string]*big.Int{
 	"burst":                 subaccountQuotasFieldBurst,
 }
 
+// Its own sending limits.
 type SubaccountQuotas struct {
 	// Recipients it may send to per day; `null`: only your organization's quota.
 	RecipientsPerDay *int `json:"recipients_per_day,omitempty" url:"recipients_per_day,omitempty"`
@@ -50223,12 +66091,15 @@ var subaccountReputationNullableFields = map[string]*big.Int{
 	"reinstated_at": subaccountReputationFieldReinstatedAt,
 }
 
+// Its own sending standing.
 type SubaccountReputation struct {
 	// `warning`: a rate is close to its limit. `paused`: its live sends are refused (`subaccount_paused`) until you reinstate it.
 	Status SubaccountReputationStatus `json:"status" url:"status"`
 	// What last changed it, e.g. `bounce_rate`, `complaint_rate`, `content_screening`.
-	Trigger      *string    `json:"trigger,omitempty" url:"trigger,omitempty"`
-	ChangedAt    *time.Time `json:"changed_at,omitempty" url:"changed_at,omitempty"`
+	Trigger *string `json:"trigger,omitempty" url:"trigger,omitempty"`
+	// When its status last changed. `null`: never.
+	ChangedAt *time.Time `json:"changed_at,omitempty" url:"changed_at,omitempty"`
+	// When it was last reinstated. `null`: never.
 	ReinstatedAt *time.Time `json:"reinstated_at,omitempty" url:"reinstated_at,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -50406,10 +66277,13 @@ var (
 )
 
 type SubaccountStats struct {
-	Object       SubaccountStatsObject `json:"object" url:"object"`
-	SubaccountID string                `json:"subaccount_id" url:"subaccount_id"`
-	From         time.Time             `json:"from" url:"from" format:"date"`
-	To           time.Time             `json:"to" url:"to" format:"date"`
+	Object SubaccountStatsObject `json:"object" url:"object"`
+	// The sub-account's id.
+	SubaccountID string `json:"subaccount_id" url:"subaccount_id"`
+	// The first date included.
+	From time.Time `json:"from" url:"from" format:"date"`
+	// The last date included.
+	To time.Time `json:"to" url:"to" format:"date"`
 	// One entry per day with sends, oldest first; recipients count by their current status.
 	Data []*SubaccountStatsDay `json:"data" url:"data"`
 
@@ -50572,15 +66446,20 @@ var (
 )
 
 type SubaccountStatsDay struct {
+	// The UTC date.
 	Date time.Time `json:"date" url:"date" format:"date"`
 	// Recipients of the emails sent that day.
 	Recipients int64 `json:"recipients" url:"recipients"`
 	// Handed to the provider (delivered or not).
-	Sent       int64 `json:"sent" url:"sent"`
-	Delivered  int64 `json:"delivered" url:"delivered"`
-	Bounced    int64 `json:"bounced" url:"bounced"`
+	Sent int64 `json:"sent" url:"sent"`
+	// Deliveries that day.
+	Delivered int64 `json:"delivered" url:"delivered"`
+	// Bounces that day.
+	Bounced int64 `json:"bounced" url:"bounced"`
+	// Complaints that day.
 	Complained int64 `json:"complained" url:"complained"`
-	Failed     int64 `json:"failed" url:"failed"`
+	// Failures that day.
+	Failed int64 `json:"failed" url:"failed"`
 	// Skipped: on a suppression list.
 	Suppressed int64 `json:"suppressed" url:"suppressed"`
 
@@ -50827,11 +66706,14 @@ type SubaccountWebhookEvent struct {
 	// The event id, also sent as the `webhook-id` header.
 	ID     string                       `json:"id" url:"id"`
 	Object SubaccountWebhookEventObject `json:"object" url:"object"`
-	Type   SubaccountWebhookEventType   `json:"type" url:"type"`
+	// What changed for the sub-account.
+	Type SubaccountWebhookEventType `json:"type" url:"type"`
 	// The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
-	APIVersion string                      `json:"api_version" url:"api_version"`
-	CreatedAt  time.Time                   `json:"created_at" url:"created_at"`
-	Data       *SubaccountWebhookEventData `json:"data" url:"data"`
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// The sub-account's standing.
+	Data *SubaccountWebhookEventData `json:"data" url:"data"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -51006,13 +66888,19 @@ var subaccountWebhookEventDataNullableFields = map[string]*big.Int{
 	"trigger": subaccountWebhookEventDataFieldTrigger,
 }
 
+// The sub-account's standing.
 type SubaccountWebhookEventData struct {
-	SubaccountID   string                                   `json:"subaccount_id" url:"subaccount_id"`
-	UID            *string                                  `json:"uid,omitempty" url:"uid,omitempty"`
-	Status         SubaccountWebhookEventDataStatus         `json:"status" url:"status"`
+	// The sub-account's id.
+	SubaccountID string `json:"subaccount_id" url:"subaccount_id"`
+	// Your own id for it. `null`: none.
+	UID *string `json:"uid,omitempty" url:"uid,omitempty"`
+	// Its status after this event.
+	Status SubaccountWebhookEventDataStatus `json:"status" url:"status"`
+	// Its status before.
 	PreviousStatus SubaccountWebhookEventDataPreviousStatus `json:"previous_status" url:"previous_status"`
 	// What changed it: a check (`bounce_rate`, `complaint_rate`), `content_screening` or `reinstated`.
-	Trigger    *string   `json:"trigger,omitempty" url:"trigger,omitempty"`
+	Trigger *string `json:"trigger,omitempty" url:"trigger,omitempty"`
+	// When this happened.
 	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
 	// The measurements behind the change (empty for reinstatements and screening).
 	Checks []*ReputationCheck `json:"checks" url:"checks"`
@@ -51195,6 +67083,7 @@ func (s *SubaccountWebhookEventData) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// Its status before.
 type SubaccountWebhookEventDataPreviousStatus string
 
 const (
@@ -51220,6 +67109,7 @@ func (s SubaccountWebhookEventDataPreviousStatus) Ptr() *SubaccountWebhookEventD
 	return &s
 }
 
+// Its status after this event.
 type SubaccountWebhookEventDataStatus string
 
 const (
@@ -51264,6 +67154,7 @@ func (s SubaccountWebhookEventObject) Ptr() *SubaccountWebhookEventObject {
 	return &s
 }
 
+// What changed for the sub-account.
 type SubaccountWebhookEventType string
 
 const (
@@ -51524,8 +67415,9 @@ var (
 )
 
 type SuppressionCheck struct {
-	Object  SuppressionCheckObject `json:"object" url:"object"`
-	Address string                 `json:"address" url:"address"`
+	Object SuppressionCheckObject `json:"object" url:"object"`
+	// The address checked.
+	Address string `json:"address" url:"address"`
 	// Whether a send (with the given category) would skip this address.
 	Suppressed bool `json:"suppressed" url:"suppressed"`
 	// The entries that match.
@@ -52148,10 +68040,14 @@ var templateContentNullableFields = map[string]*big.Int{
 }
 
 type TemplateContent struct {
-	Locale  string  `json:"locale" url:"locale"`
-	Subject string  `json:"subject" url:"subject"`
-	HTML    *string `json:"html,omitempty" url:"html,omitempty"`
-	Text    *string `json:"text,omitempty" url:"text,omitempty"`
+	// The BCP 47 language tag this content is for.
+	Locale string `json:"locale" url:"locale"`
+	// The subject template.
+	Subject string `json:"subject" url:"subject"`
+	// The HTML template. `null`: text only.
+	HTML *string `json:"html,omitempty" url:"html,omitempty"`
+	// The plain-text template. `null`: HTML only.
+	Text *string `json:"text,omitempty" url:"text,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -52295,7 +68191,7 @@ var templateContentInputNullableFields = map[string]*big.Int{
 }
 
 type TemplateContentInput struct {
-	// A BCP 47 language tag, e.g. "en" or "pt-BR".
+	// The BCP 47 language tag this content is for, unique in `contents`.
 	Locale string `json:"locale" url:"locale"`
 	// The subject template.
 	Subject string `json:"subject" url:"subject"`
@@ -52441,11 +68337,16 @@ var (
 )
 
 type TemplateProblem struct {
-	Locale  string               `json:"locale" url:"locale"`
-	Field   TemplateProblemField `json:"field" url:"field"`
-	Message string               `json:"message" url:"message"`
-	Line    int64                `json:"line" url:"line"`
-	Column  int64                `json:"column" url:"column"`
+	// The locale whose content it's in.
+	Locale string `json:"locale" url:"locale"`
+	// The part of the content it's in.
+	Field TemplateProblemField `json:"field" url:"field"`
+	// What's wrong.
+	Message string `json:"message" url:"message"`
+	// The line it's on, from 1.
+	Line int64 `json:"line" url:"line"`
+	// The column it's at, from 1.
+	Column int64 `json:"column" url:"column"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -52582,6 +68483,7 @@ func (t *TemplateProblem) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
+// The part of the content it's in.
 type TemplateProblemField string
 
 const (
@@ -52617,12 +68519,18 @@ var (
 )
 
 type TemplateVariable struct {
-	Name        string                        `json:"name" url:"name"`
-	Type        TemplateVariableType          `json:"type" url:"type"`
-	Required    bool                          `json:"required" url:"required"`
-	Default     *TemplateVariableDefault      `json:"default,omitempty" url:"default,omitempty"`
-	Description *string                       `json:"description,omitempty" url:"description,omitempty"`
-	Fields      []*TemplateVariableFieldsItem `json:"fields,omitempty" url:"fields,omitempty"`
+	// Used in the template as `{{name}}`.
+	Name string `json:"name" url:"name"`
+	// `string`, `number`, `boolean`, or `list` (an array of objects with the declared `fields`).
+	Type TemplateVariableType `json:"type" url:"type"`
+	// Whether sends must pass it, unless it has a `default`.
+	Required bool `json:"required" url:"required"`
+	// Used when a send leaves it out.
+	Default *TemplateVariableDefault `json:"default,omitempty" url:"default,omitempty"`
+	// What it's for, shown in the dashboard.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// A list's item fields.
+	Fields []*TemplateVariableFieldsItem `json:"fields,omitempty" url:"fields,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -52773,6 +68681,7 @@ func (t *TemplateVariable) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
+// Used when a send leaves it out.
 type TemplateVariableDefault struct {
 	String  string
 	Double  float64
@@ -52863,9 +68772,12 @@ var (
 )
 
 type TemplateVariableFieldsItem struct {
-	Name     string                         `json:"name" url:"name"`
-	Type     TemplateVariableFieldsItemType `json:"type" url:"type"`
-	Required bool                           `json:"required" url:"required"`
+	// Used inside `{{#each}}` as `{{name}}`.
+	Name string `json:"name" url:"name"`
+	// The field's type.
+	Type TemplateVariableFieldsItemType `json:"type" url:"type"`
+	// Whether each item must have it.
+	Required bool `json:"required" url:"required"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -52974,6 +68886,7 @@ func (t *TemplateVariableFieldsItem) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
+// The field's type.
 type TemplateVariableFieldsItemType string
 
 const (
@@ -53016,8 +68929,9 @@ type TemplateVariableInput struct {
 	// Sends must pass it unless it has a `default`. Defaults to true.
 	Required *bool `json:"required,omitempty" url:"required,omitempty"`
 	// Used when a send leaves it out. Not for lists.
-	Default     *TemplateVariableInputDefault `json:"default,omitempty" url:"default,omitempty"`
-	Description *string                       `json:"description,omitempty" url:"description,omitempty"`
+	Default *TemplateVariableInputDefault `json:"default,omitempty" url:"default,omitempty"`
+	// What it's for, shown in the dashboard.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// A list's item fields (required for lists, only for lists).
 	Fields []*TemplateVariableInputFieldsItem `json:"fields,omitempty" url:"fields,omitempty"`
 
@@ -53261,9 +69175,12 @@ var (
 )
 
 type TemplateVariableInputFieldsItem struct {
-	Name     string                              `json:"name" url:"name"`
-	Type     TemplateVariableInputFieldsItemType `json:"type" url:"type"`
-	Required *bool                               `json:"required,omitempty" url:"required,omitempty"`
+	// Used inside `{{#each}}` as `{{name}}`.
+	Name string `json:"name" url:"name"`
+	// The field's type.
+	Type TemplateVariableInputFieldsItemType `json:"type" url:"type"`
+	// Whether each item must have it. Defaults to true.
+	Required *bool `json:"required,omitempty" url:"required,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -53372,6 +69289,7 @@ func (t *TemplateVariableInputFieldsItem) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
+// The field's type.
 type TemplateVariableInputFieldsItemType string
 
 const (
@@ -53426,6 +69344,7 @@ func (t TemplateVariableInputType) Ptr() *TemplateVariableInputType {
 	return &t
 }
 
+// `string`, `number`, `boolean`, or `list` (an array of objects with the declared `fields`).
 type TemplateVariableType string
 
 const (
@@ -53476,14 +69395,19 @@ type Topic struct {
 	Object TopicObject `json:"object" url:"object"`
 	ID     string      `json:"id" url:"id"`
 	// The `category` of the emails about this topic. Can't change.
-	Key                 string                   `json:"key" url:"key"`
-	Name                string                   `json:"name" url:"name"`
-	Description         *string                  `json:"description,omitempty" url:"description,omitempty"`
+	Key string `json:"key" url:"key"`
+	// Shown in the preference center.
+	Name string `json:"name" url:"name"`
+	// Shown in the preference center under its name. `null`: none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.
 	DefaultSubscription TopicDefaultSubscription `json:"default_subscription" url:"default_subscription"`
-	Visibility          TopicVisibility          `json:"visibility" url:"visibility"`
-	Position            int64                    `json:"position" url:"position"`
-	CreatedAt           time.Time                `json:"created_at" url:"created_at"`
-	UpdatedAt           time.Time                `json:"updated_at" url:"updated_at"`
+	// `private` topics never show in the preference center.
+	Visibility TopicVisibility `json:"visibility" url:"visibility"`
+	// Order in the preference center (ascending).
+	Position  int64     `json:"position" url:"position"`
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" url:"updated_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -53709,6 +69633,7 @@ func (t *Topic) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
+// `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.
 type TopicDefaultSubscription string
 
 const (
@@ -53887,6 +69812,7 @@ func (t TopicObject) Ptr() *TopicObject {
 	return &t
 }
 
+// `private` topics never show in the preference center.
 type TopicVisibility string
 
 const (
@@ -53937,11 +69863,14 @@ type TrackingDomain struct {
 	// The DNS record to publish, with the result of the last check.
 	Record *TrackingDomainRecord `json:"record" url:"record"`
 	// What is holding the hostname up, when the certificate provider said.
-	Message       *string    `json:"message,omitempty" url:"message,omitempty"`
-	CreatedAt     time.Time  `json:"created_at" url:"created_at"`
+	Message   *string   `json:"message,omitempty" url:"message,omitempty"`
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// When it was last checked. `null`: not yet.
 	LastCheckedAt *time.Time `json:"last_checked_at,omitempty" url:"last_checked_at,omitempty"`
-	ActivatedAt   *time.Time `json:"activated_at,omitempty" url:"activated_at,omitempty"`
-	FailedAt      *time.Time `json:"failed_at,omitempty" url:"failed_at,omitempty"`
+	// When it became active. `null`: it isn't.
+	ActivatedAt *time.Time `json:"activated_at,omitempty" url:"activated_at,omitempty"`
+	// When it failed. `null`: it hasn't.
+	FailedAt *time.Time `json:"failed_at,omitempty" url:"failed_at,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -54157,6 +70086,7 @@ var (
 
 // The DNS record to publish, with the result of the last check.
 type TrackingDomainRecord struct {
+	// The record's type.
 	Type TrackingDomainRecordType `json:"type" url:"type"`
 	// The fully qualified record name to create.
 	Name string `json:"name" url:"name"`
@@ -54331,6 +70261,7 @@ func (t TrackingDomainRecordStatus) Ptr() *TrackingDomainRecordStatus {
 	return &t
 }
 
+// The record's type.
 type TrackingDomainRecordType string
 
 const (
@@ -54641,8 +70572,9 @@ var trackingSettingsNullableFields = map[string]*big.Int{
 
 // Open and click tracking and one-click unsubscribe settings of the API key's environment. For each of `opens`, `clicks` and `unsubscribe`, a send's own `tracking` wins, then its category's rule, then `default` (the environment default; `null` when none is set), then off.
 type TrackingSettings struct {
-	Object  TrackingSettingsObject `json:"object" url:"object"`
-	Default *TrackingRule          `json:"default,omitempty" url:"default,omitempty"`
+	Object TrackingSettingsObject `json:"object" url:"object"`
+	// The environment's tracking default. `null`: none is set.
+	Default *TrackingRule `json:"default,omitempty" url:"default,omitempty"`
 	// Category rules, by category name.
 	Categories []*TrackingRule `json:"categories" url:"categories"`
 
@@ -54902,6 +70834,416 @@ func (u *UpdateTrackingRuleRequest) String() string {
 }
 
 var (
+	upsertScheduleRequestFieldName      = big.NewInt(1 << 0)
+	upsertScheduleRequestFieldTimeZone  = big.NewInt(1 << 1)
+	upsertScheduleRequestFieldIsDefault = big.NewInt(1 << 2)
+	upsertScheduleRequestFieldRules     = big.NewInt(1 << 3)
+	upsertScheduleRequestFieldOverrides = big.NewInt(1 << 4)
+)
+
+type UpsertScheduleRequest struct {
+	// A label for the schedule. Default on creation: `Default`.
+	Name *string `json:"name,omitempty" url:"name,omitempty"`
+	// Default: the host's.
+	TimeZone *string `json:"time_zone,omitempty" url:"time_zone,omitempty"`
+	// `true` makes this the host's default schedule, in place of the current one. A host's first schedule is their default anyway.
+	IsDefault *bool `json:"is_default,omitempty" url:"is_default,omitempty"`
+	// Weekly hours in local time. A range can't cross midnight: use two.
+	Rules []*SchedulingWeeklyRule `json:"rules" url:"rules"`
+	// Replaces the schedule's overrides when given.
+	Overrides []*SchedulingScheduleOverride `json:"overrides,omitempty" url:"overrides,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UpsertScheduleRequest) GetName() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Name
+}
+
+func (u *UpsertScheduleRequest) GetTimeZone() *string {
+	if u == nil {
+		return nil
+	}
+	return u.TimeZone
+}
+
+func (u *UpsertScheduleRequest) GetIsDefault() *bool {
+	if u == nil {
+		return nil
+	}
+	return u.IsDefault
+}
+
+func (u *UpsertScheduleRequest) GetRules() []*SchedulingWeeklyRule {
+	if u == nil {
+		return nil
+	}
+	return u.Rules
+}
+
+func (u *UpsertScheduleRequest) GetOverrides() []*SchedulingScheduleOverride {
+	if u == nil {
+		return nil
+	}
+	return u.Overrides
+}
+
+func (u *UpsertScheduleRequest) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
+	return u.extraProperties
+}
+
+func (u *UpsertScheduleRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if u.explicitFields != nil {
+		next.Set(u.explicitFields)
+	}
+	next.Or(next, field)
+	u.explicitFields = next
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpsertScheduleRequest) SetName(name *string) {
+	u.Name = name
+	u.require(upsertScheduleRequestFieldName)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpsertScheduleRequest) SetTimeZone(timeZone *string) {
+	u.TimeZone = timeZone
+	u.require(upsertScheduleRequestFieldTimeZone)
+}
+
+// SetIsDefault sets the IsDefault field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpsertScheduleRequest) SetIsDefault(isDefault *bool) {
+	u.IsDefault = isDefault
+	u.require(upsertScheduleRequestFieldIsDefault)
+}
+
+// SetRules sets the Rules field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpsertScheduleRequest) SetRules(rules []*SchedulingWeeklyRule) {
+	u.Rules = rules
+	u.require(upsertScheduleRequestFieldRules)
+}
+
+// SetOverrides sets the Overrides field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpsertScheduleRequest) SetOverrides(overrides []*SchedulingScheduleOverride) {
+	u.Overrides = overrides
+	u.require(upsertScheduleRequestFieldOverrides)
+}
+
+func (u *UpsertScheduleRequest) UnmarshalJSON(data []byte) error {
+	type unmarshaler UpsertScheduleRequest
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UpsertScheduleRequest(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UpsertScheduleRequest) MarshalJSON() ([]byte, error) {
+	type embed UpsertScheduleRequest
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*u),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (u *UpsertScheduleRequest) String() string {
+	if u == nil {
+		return "<nil>"
+	}
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+var (
+	verifySettingsFieldObject           = big.NewInt(1 << 0)
+	verifySettingsFieldAppName          = big.NewInt(1 << 1)
+	verifySettingsFieldAppNameIsDefault = big.NewInt(1 << 2)
+	verifySettingsFieldCodeLength       = big.NewInt(1 << 3)
+	verifySettingsFieldTTLSeconds       = big.NewInt(1 << 4)
+	verifySettingsFieldMaxAttempts      = big.NewInt(1 << 5)
+	verifySettingsFieldSmsFrom          = big.NewInt(1 << 6)
+	verifySettingsFieldEmailFrom        = big.NewInt(1 << 7)
+	verifySettingsFieldAllowedCountries = big.NewInt(1 << 8)
+)
+
+// verifySettingsNullableFields maps the wire names of VerifySettings's nullable fields (required or optional) to their field bits.
+var verifySettingsNullableFields = map[string]*big.Int{
+	"sms_from":   verifySettingsFieldSmsFrom,
+	"email_from": verifySettingsFieldEmailFrom,
+}
+
+// An environment's Verify settings.
+type VerifySettings struct {
+	Object VerifySettingsObject `json:"object" url:"object"`
+	// The name codes are sent for.
+	AppName string `json:"app_name" url:"app_name"`
+	// Whether `app_name` is the project's: no name of its own is set.
+	AppNameIsDefault bool `json:"app_name_is_default" url:"app_name_is_default"`
+	// Digits in a code.
+	CodeLength int64 `json:"code_length" url:"code_length"`
+	// How long a code works.
+	TTLSeconds int64 `json:"ttl_seconds" url:"ttl_seconds"`
+	// Wrong codes before a verification fails.
+	MaxAttempts int64 `json:"max_attempts" url:"max_attempts"`
+	// One of the organization's numbers; `null`: coss.com's shared numbers.
+	SmsFrom *string `json:"sms_from,omitempty" url:"sms_from,omitempty"`
+	// An address on one of the organization's verified domains; `null`: coss.com's.
+	EmailFrom *string `json:"email_from,omitempty" url:"email_from,omitempty"`
+	// ISO 3166 countries SMS codes may go to.
+	AllowedCountries []string `json:"allowed_countries" url:"allowed_countries"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (v *VerifySettings) GetObject() VerifySettingsObject {
+	if v == nil {
+		return ""
+	}
+	return v.Object
+}
+
+func (v *VerifySettings) GetAppName() string {
+	if v == nil {
+		return ""
+	}
+	return v.AppName
+}
+
+func (v *VerifySettings) GetAppNameIsDefault() bool {
+	if v == nil {
+		return false
+	}
+	return v.AppNameIsDefault
+}
+
+func (v *VerifySettings) GetCodeLength() int64 {
+	if v == nil {
+		return 0
+	}
+	return v.CodeLength
+}
+
+func (v *VerifySettings) GetTTLSeconds() int64 {
+	if v == nil {
+		return 0
+	}
+	return v.TTLSeconds
+}
+
+func (v *VerifySettings) GetMaxAttempts() int64 {
+	if v == nil {
+		return 0
+	}
+	return v.MaxAttempts
+}
+
+func (v *VerifySettings) GetSmsFrom() *string {
+	if v == nil {
+		return nil
+	}
+	return v.SmsFrom
+}
+
+func (v *VerifySettings) GetEmailFrom() *string {
+	if v == nil {
+		return nil
+	}
+	return v.EmailFrom
+}
+
+func (v *VerifySettings) GetAllowedCountries() []string {
+	if v == nil {
+		return nil
+	}
+	return v.AllowedCountries
+}
+
+func (v *VerifySettings) GetExtraProperties() map[string]interface{} {
+	if v == nil {
+		return nil
+	}
+	return v.extraProperties
+}
+
+func (v *VerifySettings) require(field *big.Int) {
+	next := new(big.Int)
+	if v.explicitFields != nil {
+		next.Set(v.explicitFields)
+	}
+	next.Or(next, field)
+	v.explicitFields = next
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *VerifySettings) SetObject(object VerifySettingsObject) {
+	v.Object = object
+	v.require(verifySettingsFieldObject)
+}
+
+// SetAppName sets the AppName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *VerifySettings) SetAppName(appName string) {
+	v.AppName = appName
+	v.require(verifySettingsFieldAppName)
+}
+
+// SetAppNameIsDefault sets the AppNameIsDefault field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *VerifySettings) SetAppNameIsDefault(appNameIsDefault bool) {
+	v.AppNameIsDefault = appNameIsDefault
+	v.require(verifySettingsFieldAppNameIsDefault)
+}
+
+// SetCodeLength sets the CodeLength field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *VerifySettings) SetCodeLength(codeLength int64) {
+	v.CodeLength = codeLength
+	v.require(verifySettingsFieldCodeLength)
+}
+
+// SetTTLSeconds sets the TTLSeconds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *VerifySettings) SetTTLSeconds(ttlSeconds int64) {
+	v.TTLSeconds = ttlSeconds
+	v.require(verifySettingsFieldTTLSeconds)
+}
+
+// SetMaxAttempts sets the MaxAttempts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *VerifySettings) SetMaxAttempts(maxAttempts int64) {
+	v.MaxAttempts = maxAttempts
+	v.require(verifySettingsFieldMaxAttempts)
+}
+
+// SetSmsFrom sets the SmsFrom field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *VerifySettings) SetSmsFrom(smsFrom *string) {
+	v.SmsFrom = smsFrom
+	v.require(verifySettingsFieldSmsFrom)
+}
+
+// SetEmailFrom sets the EmailFrom field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *VerifySettings) SetEmailFrom(emailFrom *string) {
+	v.EmailFrom = emailFrom
+	v.require(verifySettingsFieldEmailFrom)
+}
+
+// SetAllowedCountries sets the AllowedCountries field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (v *VerifySettings) SetAllowedCountries(allowedCountries []string) {
+	v.AllowedCountries = allowedCountries
+	v.require(verifySettingsFieldAllowedCountries)
+}
+
+func (v *VerifySettings) UnmarshalJSON(data []byte) error {
+	type unmarshaler VerifySettings
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*v = VerifySettings(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *v)
+	if err != nil {
+		return err
+	}
+	v.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, verifySettingsNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		v.require(presentFields)
+	}
+	v.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (v *VerifySettings) MarshalJSON() ([]byte, error) {
+	type embed VerifySettings
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*v),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, v.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (v *VerifySettings) String() string {
+	if v == nil {
+		return "<nil>"
+	}
+	if len(v.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(v.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(v); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", v)
+}
+
+type VerifySettingsObject string
+
+const (
+	VerifySettingsObjectVerifySettings VerifySettingsObject = "verify_settings"
+)
+
+func NewVerifySettingsObjectFromString(s string) (VerifySettingsObject, error) {
+	switch s {
+	case "verify_settings":
+		return VerifySettingsObjectVerifySettings, nil
+	}
+	var t VerifySettingsObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (v VerifySettingsObject) Ptr() *VerifySettingsObject {
+	return &v
+}
+
+var (
 	webhookAttemptFieldObject          = big.NewInt(1 << 0)
 	webhookAttemptFieldID              = big.NewInt(1 << 1)
 	webhookAttemptFieldAttemptedAt     = big.NewInt(1 << 2)
@@ -54919,12 +71261,14 @@ var webhookAttemptNullableFields = map[string]*big.Int{
 }
 
 type WebhookAttempt struct {
-	Object      WebhookAttemptObject `json:"object" url:"object"`
-	ID          string               `json:"id" url:"id"`
-	AttemptedAt time.Time            `json:"attempted_at" url:"attempted_at"`
+	Object WebhookAttemptObject `json:"object" url:"object"`
+	ID     string               `json:"id" url:"id"`
+	// When the attempt ran.
+	AttemptedAt time.Time `json:"attempted_at" url:"attempted_at"`
 	// The endpoint's HTTP status; `null` when no response arrived.
 	StatusCode *int64 `json:"status_code,omitempty" url:"status_code,omitempty"`
-	DurationMs int64  `json:"duration_ms" url:"duration_ms"`
+	// How long it took, in milliseconds.
+	DurationMs int64 `json:"duration_ms" url:"duration_ms"`
 	// Why the attempt failed (e.g. `HTTP 500`, a timeout); `null` on success.
 	Error *string `json:"error,omitempty" url:"error,omitempty"`
 	// At most 1 KB of the response body, as text.
@@ -55152,18 +71496,22 @@ var webhookDeliveryNullableFields = map[string]*big.Int{
 }
 
 type WebhookDelivery struct {
-	Object     WebhookDeliveryObject `json:"object" url:"object"`
-	ID         string                `json:"id" url:"id"`
-	EndpointID string                `json:"endpoint_id" url:"endpoint_id"`
+	Object WebhookDeliveryObject `json:"object" url:"object"`
+	ID     string                `json:"id" url:"id"`
+	// The id of the endpoint it's delivered to.
+	EndpointID string `json:"endpoint_id" url:"endpoint_id"`
 	// The event's id: the `id` of the payload and the `webhook-id` header.
-	EventID      string                `json:"event_id" url:"event_id"`
-	EventType    string                `json:"event_type" url:"event_type"`
-	Status       WebhookDeliveryStatus `json:"status" url:"status"`
-	AttemptCount int64                 `json:"attempt_count" url:"attempt_count"`
+	EventID   string                `json:"event_id" url:"event_id"`
+	EventType string                `json:"event_type" url:"event_type"`
+	Status    WebhookDeliveryStatus `json:"status" url:"status"`
+	// How many attempts were made so far.
+	AttemptCount int64 `json:"attempt_count" url:"attempt_count"`
 	// When the next attempt is due; `null` once the delivery is finished.
-	NextAttemptAt  *time.Time `json:"next_attempt_at,omitempty" url:"next_attempt_at,omitempty"`
-	LastStatusCode *int64     `json:"last_status_code,omitempty" url:"last_status_code,omitempty"`
-	LastError      *string    `json:"last_error,omitempty" url:"last_error,omitempty"`
+	NextAttemptAt *time.Time `json:"next_attempt_at,omitempty" url:"next_attempt_at,omitempty"`
+	// The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
+	LastStatusCode *int64 `json:"last_status_code,omitempty" url:"last_status_code,omitempty"`
+	// Why the latest attempt failed. `null`: it didn't, or no attempt yet.
+	LastError *string `json:"last_error,omitempty" url:"last_error,omitempty"`
 	// The event body, exactly as posted to the endpoint.
 	Payload map[string]any `json:"payload" url:"payload"`
 	// Every HTTP attempt of this delivery, oldest first.

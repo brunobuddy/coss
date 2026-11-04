@@ -81,6 +81,7 @@ class SuppressionsClient:
         Parameters
         ----------
         phone_number : str
+            The number to suppress, in E.164.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -109,6 +110,8 @@ class SuppressionsClient:
         self, *, phone_number: str, request_options: typing.Optional[RequestOptions] = None
     ) -> SmsSuppressionCheck:
         """
+        Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+
         Parameters
         ----------
         phone_number : str
@@ -138,6 +141,8 @@ class SuppressionsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> SmsSuppression:
         """
+        One entry of the SMS suppression list of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -276,6 +281,7 @@ class AsyncSuppressionsClient:
         Parameters
         ----------
         phone_number : str
+            The number to suppress, in E.164.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -312,6 +318,8 @@ class AsyncSuppressionsClient:
         self, *, phone_number: str, request_options: typing.Optional[RequestOptions] = None
     ) -> SmsSuppressionCheck:
         """
+        Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+
         Parameters
         ----------
         phone_number : str
@@ -349,6 +357,8 @@ class AsyncSuppressionsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> SmsSuppression:
         """
+        One entry of the SMS suppression list of the API key's environment.
+
         Parameters
         ----------
         id : str

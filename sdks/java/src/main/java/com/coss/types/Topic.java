@@ -90,11 +90,17 @@ public final class Topic {
         return key;
     }
 
+    /**
+     * @return Shown in the preference center.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Shown in the preference center under its name. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -104,16 +110,25 @@ public final class Topic {
         return description;
     }
 
+    /**
+     * @return <code>opt_in</code>: every subscribed contact gets the topic's emails unless they opt out. <code>opt_out</code>: only contacts who opted in do.
+     */
     @JsonProperty("default_subscription")
     public TopicDefaultSubscription getDefaultSubscription() {
         return defaultSubscription;
     }
 
+    /**
+     * @return <code>private</code> topics never show in the preference center.
+     */
     @JsonProperty("visibility")
     public TopicVisibility getVisibility() {
         return visibility;
     }
 
+    /**
+     * @return Order in the preference center (ascending).
+     */
     @JsonProperty("position")
     public long getPosition() {
         return position;
@@ -201,18 +216,30 @@ public final class Topic {
     }
 
     public interface NameStage {
+        /**
+         * <p>Shown in the preference center.</p>
+         */
         DefaultSubscriptionStage name(@NotNull String name);
     }
 
     public interface DefaultSubscriptionStage {
+        /**
+         * <p><code>opt_in</code>: every subscribed contact gets the topic's emails unless they opt out. <code>opt_out</code>: only contacts who opted in do.</p>
+         */
         VisibilityStage defaultSubscription(@NotNull TopicDefaultSubscription defaultSubscription);
     }
 
     public interface VisibilityStage {
+        /**
+         * <p><code>private</code> topics never show in the preference center.</p>
+         */
         PositionStage visibility(@NotNull TopicVisibility visibility);
     }
 
     public interface PositionStage {
+        /**
+         * <p>Order in the preference center (ascending).</p>
+         */
         CreatedAtStage position(long position);
     }
 
@@ -231,6 +258,9 @@ public final class Topic {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         */
         _FinalStage description(OptionalNullable<String> description);
 
         _FinalStage description(String description);
@@ -317,6 +347,10 @@ public final class Topic {
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public DefaultSubscriptionStage name(@NotNull String name) {
@@ -324,6 +358,10 @@ public final class Topic {
             return this;
         }
 
+        /**
+         * <p><code>opt_in</code>: every subscribed contact gets the topic's emails unless they opt out. <code>opt_out</code>: only contacts who opted in do.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("default_subscription")
         public VisibilityStage defaultSubscription(@NotNull TopicDefaultSubscription defaultSubscription) {
@@ -332,6 +370,10 @@ public final class Topic {
             return this;
         }
 
+        /**
+         * <p><code>private</code> topics never show in the preference center.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("visibility")
         public PositionStage visibility(@NotNull TopicVisibility visibility) {
@@ -339,6 +381,10 @@ public final class Topic {
             return this;
         }
 
+        /**
+         * <p>Order in the preference center (ascending).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("position")
         public CreatedAtStage position(long position) {
@@ -360,6 +406,10 @@ public final class Topic {
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Nullable<String> description) {
             if (description.isNull()) {
@@ -372,6 +422,10 @@ public final class Topic {
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Optional<String> description) {
             if (description.isPresent()) {
@@ -382,12 +436,19 @@ public final class Topic {
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = OptionalNullable.of(description);
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(OptionalNullable<String> description) {

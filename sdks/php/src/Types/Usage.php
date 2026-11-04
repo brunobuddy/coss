@@ -52,19 +52,19 @@ class Usage extends JsonSerializableType
     public ?string $userId;
 
     /**
-     * @var DateTime $start
+     * @var DateTime $start When this bucket starts (inclusive).
      */
     #[JsonProperty('start'), Date(Date::TYPE_DATETIME)]
     public DateTime $start;
 
     /**
-     * @var DateTime $end
+     * @var DateTime $end When this bucket ends (exclusive).
      */
     #[JsonProperty('end'), Date(Date::TYPE_DATETIME)]
     public DateTime $end;
 
     /**
-     * @var int $quantity
+     * @var int $quantity Units used in this bucket.
      */
     #[JsonProperty('quantity')]
     public int $quantity;

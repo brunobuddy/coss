@@ -16,31 +16,31 @@ class ReceivedSmsWebhookEventData extends JsonSerializableType
     public ?string $receivedSmsId;
 
     /**
-     * @var string $from
+     * @var string $from Who sent it.
      */
     #[JsonProperty('from')]
     public string $from;
 
     /**
-     * @var string $to
+     * @var string $to Your number that received it.
      */
     #[JsonProperty('to')]
     public string $to;
 
     /**
-     * @var ?value-of<ReceivedSmsWebhookEventDataKeyword> $keyword
+     * @var ?value-of<ReceivedSmsWebhookEventDataKeyword> $keyword The keyword it is, if any: `stop`, `start` or `help`. `null`: none.
      */
     #[JsonProperty('keyword')]
     public ?string $keyword;
 
     /**
-     * @var bool $sandbox
+     * @var bool $sandbox Whether it's a simulated message of a sandbox environment.
      */
     #[JsonProperty('sandbox')]
     public bool $sandbox;
 
     /**
-     * @var DateTime $occurredAt
+     * @var DateTime $occurredAt When it happened.
      */
     #[JsonProperty('occurred_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $occurredAt;

@@ -1416,6 +1416,9 @@ public partial class TemplatesClient : ITemplatesClient
         );
     }
 
+    /// <summary>
+    /// A template with its documents, roles and fields. `ready` says whether requests can be made from it.
+    /// </summary>
     /// <example><code>
     /// await client.Sign.Templates.GetAsync(
     ///     new Coss.Sign.GetTemplatesRequest { Id = "stpl_01k7c8m4q2f3e9v6t5r1n0p8yz" }

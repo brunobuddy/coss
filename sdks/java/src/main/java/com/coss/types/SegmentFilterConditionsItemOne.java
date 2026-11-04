@@ -43,11 +43,17 @@ public final class SegmentFilterConditionsItemOne {
         return field;
     }
 
+    /**
+     * @return How to compare the contact's address.
+     */
     @JsonProperty("op")
     public SegmentFilterConditionsItemOneOp getOp() {
         return op;
     }
 
+    /**
+     * @return What to compare it with.
+     */
     @JsonProperty("value")
     public String getValue() {
         return value;
@@ -89,10 +95,16 @@ public final class SegmentFilterConditionsItemOne {
     }
 
     public interface OpStage {
+        /**
+         * <p>How to compare the contact's address.</p>
+         */
         ValueStage op(@NotNull SegmentFilterConditionsItemOneOp op);
     }
 
     public interface ValueStage {
+        /**
+         * <p>What to compare it with.</p>
+         */
         _FinalStage value(@NotNull String value);
     }
 
@@ -132,6 +144,10 @@ public final class SegmentFilterConditionsItemOne {
             return this;
         }
 
+        /**
+         * <p>How to compare the contact's address.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("op")
         public ValueStage op(@NotNull SegmentFilterConditionsItemOneOp op) {
@@ -139,6 +155,10 @@ public final class SegmentFilterConditionsItemOne {
             return this;
         }
 
+        /**
+         * <p>What to compare it with.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("value")
         public _FinalStage value(@NotNull String value) {

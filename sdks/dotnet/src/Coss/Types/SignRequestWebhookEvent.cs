@@ -20,6 +20,9 @@ public record SignRequestWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required SignRequestWebhookEventObject Object { get; set; }
 
+    /// <summary>
+    /// `sent`: sent to signers. `viewed`: a signer opened it. `signer_signed`: a signer signed. `declined`: a signer declined. `completed`: the sealed document is ready to download. `canceled` and `expired`: it ended unsigned.
+    /// </summary>
     [JsonPropertyName("type")]
     public required SignRequestWebhookEventType Type { get; set; }
 
@@ -29,9 +32,15 @@ public record SignRequestWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("api_version")]
     public required string ApiVersion { get; set; }
 
+    /// <summary>
+    /// When the event was created.
+    /// </summary>
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// The request. Never documents or field values.
+    /// </summary>
     [JsonPropertyName("data")]
     public required SignRequestWebhookEventData Data { get; set; }
 

@@ -38,6 +38,9 @@ public final class EmailWebhookEventDataUnsubscribe {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The contact who unsubscribed. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("contact_id")
     public OptionalNullable<String> getContactId() {
@@ -47,6 +50,9 @@ public final class EmailWebhookEventDataUnsubscribe {
         return contactId;
     }
 
+    /**
+     * @return The topic they left. <code>null</code>: marketing altogether.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("topic")
     public OptionalNullable<String> getTopic() {
@@ -114,6 +120,9 @@ public final class EmailWebhookEventDataUnsubscribe {
             return this;
         }
 
+        /**
+         * <p>The contact who unsubscribed. <code>null</code>: none.</p>
+         */
         @JsonSetter(value = "contact_id", nulls = Nulls.SKIP)
         public Builder contactId(OptionalNullable<String> contactId) {
             this.contactId = contactId;
@@ -145,6 +154,9 @@ public final class EmailWebhookEventDataUnsubscribe {
             return this;
         }
 
+        /**
+         * <p>The topic they left. <code>null</code>: marketing altogether.</p>
+         */
         @JsonSetter(value = "topic", nulls = Nulls.SKIP)
         public Builder topic(OptionalNullable<String> topic) {
             this.topic = topic;

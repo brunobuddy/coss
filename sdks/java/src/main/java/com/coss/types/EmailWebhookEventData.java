@@ -67,6 +67,8 @@ public final class EmailWebhookEventData {
 
     private final Optional<String> subaccountId;
 
+    private final Optional<String> traceparent;
+
     private final Map<String, Object> additionalProperties;
 
     private EmailWebhookEventData(
@@ -90,6 +92,7 @@ public final class EmailWebhookEventData {
             OptionalNullable<String> recipient,
             OffsetDateTime occurredAt,
             Optional<String> subaccountId,
+            Optional<String> traceparent,
             Map<String, Object> additionalProperties) {
         this.bounce = bounce;
         this.complaint = complaint;
@@ -111,6 +114,7 @@ public final class EmailWebhookEventData {
         this.recipient = recipient;
         this.occurredAt = occurredAt;
         this.subaccountId = subaccountId;
+        this.traceparent = traceparent;
         this.additionalProperties = additionalProperties;
     }
 
@@ -240,6 +244,14 @@ public final class EmailWebhookEventData {
         return subaccountId;
     }
 
+    /**
+     * @return Only for an email sent with a W3C <code>traceparent</code> header: that trace context (normalized to version <code>00</code>), also sent as this request's <code>traceparent</code> header, so handling the event joins the sender's trace.
+     */
+    @JsonProperty("traceparent")
+    public Optional<String> getTraceparent() {
+        return traceparent;
+    }
+
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("category")
     private OptionalNullable<String> _getCategory() {
@@ -283,7 +295,8 @@ public final class EmailWebhookEventData {
                 && sandbox == other.sandbox
                 && recipient.equals(other.recipient)
                 && occurredAt.equals(other.occurredAt)
-                && subaccountId.equals(other.subaccountId);
+                && subaccountId.equals(other.subaccountId)
+                && traceparent.equals(other.traceparent);
     }
 
     @java.lang.Override
@@ -308,7 +321,8 @@ public final class EmailWebhookEventData {
                 this.sandbox,
                 this.recipient,
                 this.occurredAt,
-                this.subaccountId);
+                this.subaccountId,
+                this.traceparent);
     }
 
     @java.lang.Override
@@ -438,6 +452,13 @@ public final class EmailWebhookEventData {
         _FinalStage subaccountId(Optional<String> subaccountId);
 
         _FinalStage subaccountId(String subaccountId);
+
+        /**
+         * <p>Only for an email sent with a W3C <code>traceparent</code> header: that trace context (normalized to version <code>00</code>), also sent as this request's <code>traceparent</code> header, so handling the event joins the sender's trace.</p>
+         */
+        _FinalStage traceparent(Optional<String> traceparent);
+
+        _FinalStage traceparent(String traceparent);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -452,6 +473,8 @@ public final class EmailWebhookEventData {
         private boolean sandbox;
 
         private OffsetDateTime occurredAt;
+
+        private Optional<String> traceparent = Optional.empty();
 
         private Optional<String> subaccountId = Optional.empty();
 
@@ -510,6 +533,7 @@ public final class EmailWebhookEventData {
             recipient(other.getRecipient());
             occurredAt(other.getOccurredAt());
             subaccountId(other.getSubaccountId());
+            traceparent(other.getTraceparent());
             return this;
         }
 
@@ -545,6 +569,26 @@ public final class EmailWebhookEventData {
         @JsonSetter("occurred_at")
         public _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt) {
             this.occurredAt = Objects.requireNonNull(occurredAt, "occurredAt must not be null");
+            return this;
+        }
+
+        /**
+         * <p>Only for an email sent with a W3C <code>traceparent</code> header: that trace context (normalized to version <code>00</code>), also sent as this request's <code>traceparent</code> header, so handling the event joins the sender's trace.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
+        @java.lang.Override
+        public _FinalStage traceparent(String traceparent) {
+            this.traceparent = Optional.ofNullable(traceparent);
+            return this;
+        }
+
+        /**
+         * <p>Only for an email sent with a W3C <code>traceparent</code> header: that trace context (normalized to version <code>00</code>), also sent as this request's <code>traceparent</code> header, so handling the event joins the sender's trace.</p>
+         */
+        @java.lang.Override
+        @JsonSetter(value = "traceparent", nulls = Nulls.SKIP)
+        public _FinalStage traceparent(Optional<String> traceparent) {
+            this.traceparent = traceparent;
             return this;
         }
 
@@ -874,6 +918,7 @@ public final class EmailWebhookEventData {
                     recipient,
                     occurredAt,
                     subaccountId,
+                    traceparent,
                     additionalProperties);
         }
 

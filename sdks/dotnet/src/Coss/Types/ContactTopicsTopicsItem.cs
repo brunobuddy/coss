@@ -11,9 +11,15 @@ public record ContactTopicsTopicsItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The topic's key.
+    /// </summary>
     [JsonPropertyName("topic")]
     public required string Topic { get; set; }
 
+    /// <summary>
+    /// The topic's name.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 

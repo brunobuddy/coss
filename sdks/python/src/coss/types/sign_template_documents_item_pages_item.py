@@ -12,7 +12,10 @@ class SignTemplateDocumentsItemPagesItem(UniversalBaseModel):
     In PDF points (1/72 inch).
     """
 
-    height: float
+    height: float = pydantic.Field()
+    """
+    In PDF points (1/72 inch).
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

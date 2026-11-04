@@ -22,13 +22,13 @@ class SignSession extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $requestId
+     * @var string $requestId The signature request's id.
      */
     #[JsonProperty('request_id')]
     public string $requestId;
 
     /**
-     * @var string $signerId
+     * @var string $signerId The signer's id.
      */
     #[JsonProperty('signer_id')]
     public string $signerId;
@@ -46,7 +46,7 @@ class SignSession extends JsonSerializableType
     public string $token;
 
     /**
-     * @var DateTime $expiresAt
+     * @var DateTime $expiresAt When the link stops working.
      */
     #[JsonProperty('expires_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $expiresAt;

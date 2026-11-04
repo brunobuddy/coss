@@ -38,16 +38,25 @@ public final class ContactWebhookEventDataContact {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The contact's id.
+     */
     @JsonProperty("id")
     public String getId() {
         return id;
     }
 
+    /**
+     * @return The contact's address.
+     */
     @JsonProperty("email")
     public String getEmail() {
         return email;
     }
 
+    /**
+     * @return Its consent after this event.
+     */
     @JsonProperty("status")
     public ContactWebhookEventDataContactStatus getStatus() {
         return status;
@@ -83,16 +92,25 @@ public final class ContactWebhookEventDataContact {
     }
 
     public interface IdStage {
+        /**
+         * <p>The contact's id.</p>
+         */
         EmailStage id(@NotNull String id);
 
         Builder from(ContactWebhookEventDataContact other);
     }
 
     public interface EmailStage {
+        /**
+         * <p>The contact's address.</p>
+         */
         StatusStage email(@NotNull String email);
     }
 
     public interface StatusStage {
+        /**
+         * <p>Its consent after this event.</p>
+         */
         _FinalStage status(@NotNull ContactWebhookEventDataContactStatus status);
     }
 
@@ -125,6 +143,10 @@ public final class ContactWebhookEventDataContact {
             return this;
         }
 
+        /**
+         * <p>The contact's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("id")
         public EmailStage id(@NotNull String id) {
@@ -132,6 +154,10 @@ public final class ContactWebhookEventDataContact {
             return this;
         }
 
+        /**
+         * <p>The contact's address.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("email")
         public StatusStage email(@NotNull String email) {
@@ -139,6 +165,10 @@ public final class ContactWebhookEventDataContact {
             return this;
         }
 
+        /**
+         * <p>Its consent after this event.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("status")
         public _FinalStage status(@NotNull ContactWebhookEventDataContactStatus status) {

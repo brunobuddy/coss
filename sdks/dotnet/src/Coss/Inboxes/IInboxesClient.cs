@@ -25,6 +25,9 @@ public partial interface IInboxesClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One inbox of the API key's environment.
+    /// </summary>
     WithRawResponseTask<Inbox> GetAsync(
         GetInboxesRequest request,
         RequestOptions? options = null,

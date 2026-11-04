@@ -1016,6 +1016,9 @@ public partial class TopicsClient : ITopicsClient
         return new WithRawResponseTask<Topic>(CreateAsyncCore(request, options, cancellationToken));
     }
 
+    /// <summary>
+    /// One topic of the API key's environment.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Topics.GetAsync(
     ///     new GetTopicsRequest { Id = "topic_01k7c8m4q2f3e9v6t5r1n0p8yz" }
