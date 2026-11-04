@@ -128,6 +128,8 @@ describe("terms", () => {
       "verify.sms": 0,
       "forms.submissions": 1_000,
       "forms.file_uploads": 1_000,
+      "email.attachment_data": 1_000,
+      "email.received_data": 1_000,
       "scheduling.bookings": 100,
       "scheduling.hosts": 93,
       "hooks.messages": 50_000,

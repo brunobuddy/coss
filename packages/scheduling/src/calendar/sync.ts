@@ -5,22 +5,22 @@
  * `calendarVerdict` then decides how long that's trusted.
  */
 import { createHash, randomBytes } from "node:crypto";
-import { db, schema } from "@coss/db";
+import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { type Interval, normalizeIntervals, subtractIntervals } from "../engine/intervals.ts";
-import { CalendarError } from "./client.ts";
+import { type CalendarClient, CalendarError } from "./client.ts";
 import {
   type CalendarDeps,
   type CalendarRow,
   type ConnectionRow,
   clientFor,
-  markNeedsReauth,
   pushWebhookUrl,
   SYNC_HORIZON_DAYS,
 } from "./connections.ts";
+import { handleAccessLost } from "./delegation-failures.ts";
 
 const {
   schedulingBooking,
@@ -91,8 +91,51 @@ async function claimDueCalendars(now: Date, opts: Scan) {
 }
 
 /** How soon to read a calendar again, with nothing telling us it changed. */
-function nextReadAt(calendar: CalendarRow, now: Date): Date {
+export function nextReadAt(calendar: Pick<CalendarRow, "channelId">, now: Date): Date {
   return new Date(now.getTime() + (calendar.channelId ? RECONCILE_MS : POLL_MS));
+}
+
+export async function insertBusyIntervals(
+  tx: Executor,
+  calendar: Pick<CalendarRow, "id" | "organizationId" | "hostId">,
+  intervals: readonly Interval[],
+): Promise<void> {
+  for (let index = 0; index < intervals.length; index += BUSY_ROWS_PER_INSERT) {
+    await tx.insert(schedulingBusyInterval).values(
+      intervals.slice(index, index + BUSY_ROWS_PER_INSERT).map((interval) => ({
+        organizationId: calendar.organizationId,
+        calendarId: calendar.id,
+        hostId: calendar.hostId,
+        startAt: new Date(interval.startMs),
+        endAt: new Date(interval.endMs),
+      })),
+    );
+  }
+}
+
+/** Opens a push channel, as the columns that remember it. Its token is only kept as a hash. */
+export async function openChannel(
+  client: CalendarClient,
+  externalId: string,
+  webhookUrl: string,
+  now: Date,
+) {
+  if (!client.subscribe) return null;
+  const token = randomBytes(32).toString("base64url");
+  const channel = await client.subscribe({
+    calendarId: externalId,
+    webhookUrl,
+    token,
+    ttlSeconds: CHANNEL_TTL_SECONDS,
+  });
+  return {
+    channelId: channel.channelId,
+    channelResourceId: channel.resourceId,
+    channelTokenHash: createHash("sha256").update(token).digest("hex"),
+    channelExpiresAt: channel.expiresAtMs
+      ? new Date(channel.expiresAtMs)
+      : new Date(now.getTime() + CHANNEL_TTL_SECONDS * 1000),
+  };
 }
 
 async function replaceIntervals(
@@ -115,17 +158,7 @@ async function replaceIntervals(
     await tx
       .delete(schedulingBusyInterval)
       .where(eq(schedulingBusyInterval.calendarId, calendar.id));
-    for (let index = 0; index < intervals.length; index += BUSY_ROWS_PER_INSERT) {
-      await tx.insert(schedulingBusyInterval).values(
-        intervals.slice(index, index + BUSY_ROWS_PER_INSERT).map((interval) => ({
-          organizationId: calendar.organizationId,
-          calendarId: calendar.id,
-          hostId: calendar.hostId,
-          startAt: new Date(interval.startMs),
-          endAt: new Date(interval.endMs),
-        })),
-      );
-    }
+    await insertBusyIntervals(tx, calendar, intervals);
     // A push that arrived during the fetch isn't covered by it: read again straight away.
     const stillDirty = current.dirtyAt !== null && current.dirtyAt > startedAt;
     await tx
@@ -342,7 +375,12 @@ async function syncOne(
       throw error;
     }
     if (error.kind === "auth") {
-      await markNeedsReauth(connection, error.code, deps);
+      await handleAccessLost(connection, error, deps);
+      // Nothing may have changed for a delegation's (the answer was inconclusive): don't hot-loop.
+      if (connection.delegationId) {
+        await recordFailure(calendar, startedAt);
+        return;
+      }
       await db
         .update(schedulingCalendar)
         .set({ leaseUntil: null })
@@ -407,14 +445,13 @@ export async function renewDueCalendarChannels(
     if (!claimed) continue;
     try {
       const client = await clientFor(connection, deps);
-      if (!client.subscribe) continue;
-      const token = randomBytes(32).toString("base64url");
-      const channel = await client.subscribe({
-        calendarId: calendar.externalId,
-        webhookUrl: pushWebhookUrl(deps, connection.provider as "google" | "microsoft"),
-        token,
-        ttlSeconds: CHANNEL_TTL_SECONDS,
-      });
+      const channel = await openChannel(
+        client,
+        calendar.externalId,
+        pushWebhookUrl(deps, connection.provider as "google" | "microsoft"),
+        now,
+      );
+      if (!channel) continue;
       if (calendar.channelId) {
         await client
           .unsubscribe?.({ channelId: calendar.channelId, resourceId: calendar.channelResourceId })
@@ -423,19 +460,14 @@ export async function renewDueCalendarChannels(
       await db
         .update(schedulingCalendar)
         .set({
-          channelId: channel.channelId,
-          channelResourceId: channel.resourceId,
-          channelTokenHash: createHash("sha256").update(token).digest("hex"),
-          channelExpiresAt: channel.expiresAtMs
-            ? new Date(channel.expiresAtMs)
-            : new Date(now.getTime() + CHANNEL_TTL_SECONDS * 1000),
+          ...channel,
           // Pushes only cover changes from here on: read whatever changed before the channel.
           nextSyncAt: now,
         })
         .where(eq(schedulingCalendar.id, calendar.id));
     } catch (error) {
       if (!(error instanceof CalendarError)) throw error;
-      if (error.kind === "auth") await markNeedsReauth(connection, error.code, deps);
+      if (error.kind === "auth") await handleAccessLost(connection, error, deps);
       // A failed channel leaves the calendar on the poll: try again in an hour, not every run.
       await db
         .update(schedulingCalendar)

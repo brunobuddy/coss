@@ -5,19 +5,23 @@ import {
   type BookingActor,
   cancelBooking,
   createBookerSession,
+  createCalendarDelegation,
   createEventType,
   createHost,
   createHostSession,
   createManageSession,
   createSchedule,
   declineBooking,
+  deleteCalendarDelegation,
   deleteHost,
   getEventType,
   getHost,
   SchedulingError,
+  updateCalendarDelegation,
   updateEventType,
   updateHost,
   updateSettings,
+  verifyCalendarDelegation,
 } from "@coss/scheduling";
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import {
@@ -33,7 +37,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { ActionError, formString, runAction } from "@/lib/actions";
 import { recordAudit } from "@/lib/audit";
 import { usageGate } from "@/lib/broadcasts";
-import { schedulingDeps, schedulingUrl } from "@/lib/scheduling";
+import { schedulingCalendarDeps, schedulingDeps, schedulingUrl } from "@/lib/scheduling";
 import { eventTypeChanges, issueLabel, parseJsonObject } from "@/lib/scheduling-edit";
 import { type OrgContext, requireOrgPermission } from "@/lib/session";
 
@@ -122,6 +126,124 @@ function publicUrlOrThrow(): string {
 }
 
 const FULL_WEEK_DAYS = [1, 2, 3, 4, 5];
+
+/** A date from a date input, as the end of that day in UTC. */
+function secretExpiry(formData: FormData): string | undefined {
+  const value = formString(formData, "secretExpiresAt");
+  if (!value) return undefined;
+  const date = new Date(`${value}T23:59:59Z`);
+  if (Number.isNaN(date.getTime())) throw new ActionError("That expiry date isn't valid.");
+  return date.toISOString();
+}
+
+export async function createDelegationAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const domain = formString(formData, "domain").trim().toLowerCase();
+    if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain)) {
+      throw new ActionError("Enter a domain, like example.com.");
+    }
+    const matchHostEmail = formString(formData, "matchHostEmail") === "on";
+    const secretExpiresAt = secretExpiry(formData);
+    const delegation = await friendly(() =>
+      createCalendarDelegation(
+        env,
+        formString(formData, "provider") === "microsoft"
+          ? {
+              provider: "microsoft",
+              domain,
+              match_host_email: matchHostEmail,
+              tenant_id: formString(formData, "tenantId").trim(),
+              client_id: formString(formData, "clientId").trim(),
+              client_secret: formString(formData, "clientSecret"),
+              ...(secretExpiresAt ? { secret_expires_at: secretExpiresAt } : {}),
+            }
+          : {
+              provider: "google",
+              domain,
+              match_host_email: matchHostEmail,
+              service_account_key: formString(formData, "serviceAccountKey"),
+            },
+        schedulingCalendarDeps(),
+      ),
+    );
+    await audit(context, "scheduling_calendar_delegation.created", {
+      type: "scheduling_calendar_delegation",
+      id: delegation.id,
+      label: delegation.domain,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function verifyDelegationAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const delegation = await friendly(() =>
+      verifyCalendarDelegation(
+        env,
+        formString(formData, "delegationId"),
+        { account: formString(formData, "account") },
+        schedulingCalendarDeps(),
+      ),
+    );
+    await audit(context, "scheduling_calendar_delegation.verified", {
+      type: "scheduling_calendar_delegation",
+      id: delegation.id,
+      label: delegation.domain,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function updateDelegationAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const serviceAccountKey = formString(formData, "serviceAccountKey");
+    const clientSecret = formString(formData, "clientSecret");
+    const secretExpiresAt = secretExpiry(formData);
+    const delegation = await friendly(() =>
+      updateCalendarDelegation(
+        env,
+        formString(formData, "delegationId"),
+        {
+          match_host_email: formString(formData, "matchHostEmail") === "on",
+          ...(serviceAccountKey ? { service_account_key: serviceAccountKey } : {}),
+          ...(clientSecret ? { client_secret: clientSecret } : {}),
+          // Only Microsoft's form has it, and there an empty date clears it.
+          ...(formData.has("secretExpiresAt")
+            ? { secret_expires_at: secretExpiresAt ?? null }
+            : {}),
+        },
+        schedulingCalendarDeps(),
+      ),
+    );
+    await audit(context, "scheduling_calendar_delegation.updated", {
+      type: "scheduling_calendar_delegation",
+      id: delegation.id,
+      label: delegation.domain,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function deleteDelegationAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const { id } = await friendly(() =>
+      deleteCalendarDelegation(env, formString(formData, "delegationId"), {}),
+    );
+    await audit(context, "scheduling_calendar_delegation.deleted", {
+      type: "scheduling_calendar_delegation",
+      id,
+    });
+    refresh();
+    return null;
+  });
+}
 
 export async function createHostAction(
   _prev: ActionResult<{ id: string }> | null,

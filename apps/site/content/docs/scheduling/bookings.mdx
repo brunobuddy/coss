@@ -21,6 +21,40 @@ if (error?.code === "slot_unavailable") {
 The SDK retries safely: every attempt carries the same `Idempotency-Key`, so a lost response can't
 book twice. A refused request keeps no key.
 
+## Why isn't a time available?
+
+`coss.scheduling.slots.explain` says whether one start can be booked right now and, if not, why, for each
+host who could take it. It's decided the same way a booking is, including their calendars.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+const { data } = await coss.scheduling.slots.explain(eventTypeId, {
+  start: "2027-01-04T15:00:00.000Z",
+});
+console.log(data?.available, data?.reason); // false "host_busy"
+```
+
+| `reason` | What it means |
+|---|---|
+| `not_on_grid` | It isn't one of the event type's start times. |
+| `too_soon` | It's inside the minimum notice. |
+| `outside_booking_window` | It's outside how far ahead people can book. |
+| `calendar_unverified` | The host's calendar can't be read right now. `calendar_reason` says why. |
+| `outside_availability` | It's outside the host's working hours. |
+| `host_busy` | Something on the host's calendar overlaps it, with buffers. |
+| `already_claimed` | Another booking or hold overlaps it, with buffers. |
+| `limit_reached` | A booking limit for that day or week is used up. |
+| `session_full` | A group session at that time has no seats left. |
+| `event_type_inactive` | The event type isn't active. |
+| `no_hosts` | No active host can take this event type. |
+
+It tells you when a host is busy, so use it for support and debugging rather than showing it to attendees. To
+ask why a whole range is empty, without naming a start, use `coss scheduling diagnose` or the MCP server's
+`diagnose_scheduling_slots`.
+
 ## Taking payment first
 
 Hold the slot, charge the customer, then confirm. Live holds need <PlansWith feature="schedulingHolds" />. A hold isn't charged and tells nobody. Its slot stays

@@ -34,6 +34,7 @@ export const RATE_LIMIT_KEYS = [
   "email.recipients.second",
   "email.recipients.day",
   "email.marketing.recipients.second",
+  "email.inbound.megabytes.day",
   "sms.segments.second",
   "sms.segments.day",
   "scheduling.slots.second",

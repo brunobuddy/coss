@@ -24,9 +24,14 @@ Usage is counted per product and billed at these rates:
 - **Email** is counted per recipient handed to the email provider: every address in `to`, `cc`
   and `bcc` once, except suppressed addresses. Emails that fail before sending, or are canceled,
   cost nothing. Sandbox environments are never billed.
+- **Email attachments** are counted in MB, past the first 1 MB of each email's attachments and
+  rounded up, for each recipient the email is billed for: 3.5 MB of attachments to 2 recipients is
+  6 MB.
 - **Received email** is counted per message stored, once for each environment it reaches (sandbox
   environments too: they receive real mail). Mail flagged as spam or carrying a virus, mail
   dropped over a limit and the dashboard's test emails cost nothing.
+- **Received email data** is counted in MB, past the first 1 MB of each raw message and rounded
+  up, once for each environment it reaches. What's free above is free here too.
 - **Inboxes** are counted per day each live inbox exists, starting when it's created: 30
   inbox-days are an inbox for a month. Sandbox inboxes are free. See [inboxes](/docs/inboxes#pricing).
 - **SMS** is counted per segment, by destination country, once a message reaches a carrier;
@@ -69,7 +74,9 @@ after removing it. On a contract, add-ons are part of the contract.
 
 - On **Free**, live sends past the month's allowance are refused with a `402` `billing_error`
   (`usage_limit_exceeded`) until the next month or an upgrade, and so are new live inboxes past
-  its inbox-days and new live Scheduling hosts past its host-days. Received mail past its allowance is dropped (and counted on **Received emails**).
+  its inbox-days and new live Scheduling hosts past its host-days. Received mail past its allowance
+  is dropped (and counted on **Received emails**). Once only an attachment or received data
+  allowance is used up, emails within their included 1 MB still go through.
 - If an invoice can't be collected, we retry it and email your billing contacts. Once it's
   overdue past the grace period (14 days unless your contract says otherwise), live sending is
   paused (`402`, `billing_hold`) until it's paid. So are new live bookings, Scheduling hosts, signature

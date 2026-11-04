@@ -259,6 +259,7 @@ describe("the diagnose tools", () => {
       "GET /v1/scheduling/hosts/shost_1/calendar_connections": list([
         {
           object: "scheduling.calendar_connection",
+          delegation: null,
           id: "scc_1",
           host: "shost_1",
           provider: "google",

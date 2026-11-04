@@ -7,6 +7,8 @@ import { type AnyColumn, and, eq, exists, inArray, or, type SQL, sql } from "dri
 import type { MeterKey } from "./catalog/meters.ts";
 import type { UsageGate } from "./gate.ts";
 
+export { billableEmailMegabytes } from "./catalog/meters.ts";
+
 const { billingBudgetHold, billingHold, billingUsage, billingUsageAttribution } = schema;
 
 /** Rows per organization, hour and meter that concurrent writers spread over. */

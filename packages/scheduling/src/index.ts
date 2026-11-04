@@ -4,6 +4,8 @@ export * from "./bookings.ts";
 export * from "./calendar/caldav.ts";
 export * from "./calendar/client.ts";
 export * from "./calendar/connections.ts";
+export * from "./calendar/delegation.ts";
+export { SCHEDULING_NOTIFICATION_KINDS } from "./calendar/delegation-notifications.ts";
 export { buildIcs } from "./calendar/ical.ts";
 export * from "./calendar/oauth.ts";
 export * from "./calendar/sync.ts";

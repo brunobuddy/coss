@@ -17,16 +17,19 @@
  *
  * Every stored copy of a message the receiving provider took is billed (`email.received`, in any
  * environment: it is real mail), unless it has a spam or virus verdict. The fake provider's (the
- * dashboard's test emails) are free. A capped plan's allowance is reserved in the transaction that
- * stores the copy, so a failed attempt reserves nothing; past it the copy (and the content written
- * for it) is dropped and counted like one over the daily limit.
+ * dashboard's test emails) are free. A billed copy past the included size is also billed by the MB
+ * (`email.received_data`). A capped plan's allowance is reserved in the transaction that stores the
+ * copy, so a failed attempt reserves nothing; past it the copy (and the content written for it) is
+ * dropped and counted like one over the daily limit. A daily data limit (`dataQuota`) does the same
+ * before any content is written, spam included: anyone can mail an address, and small messages
+ * cost nothing against either, so a stranger's large ones never stop an organization's other mail.
  *
  * Recipients that are DMARC report addresses (`dmarc-<token>@<managed domain>`) are split off
  * first and ingested as reports (`dmarc-reports.ts`); they never become received emails.
  */
 import { randomBytes } from "node:crypto";
 import type { UsageGate } from "@coss/billing/gate";
-import { recordUsage } from "@coss/billing/metering";
+import { billableEmailMegabytes, recordUsage } from "@coss/billing/metering";
 import { db, schema } from "@coss/db";
 import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
@@ -98,10 +101,17 @@ export type InboundQuota = {
   consume(organizationId: string, messageKey: string): Promise<boolean>;
 };
 
+/** Each organization's daily limit of received data (`email.inbound.megabytes.day`). */
+export type InboundDataQuota = {
+  /** Charges the MB a message bills on `email.received_data`; `false` when it is over its limit. */
+  consume(organizationId: string, messageKey: string, megabytes: number): Promise<boolean>;
+};
+
 export type InboundDeps = {
   store: InboundContentStore;
   managedDomain: string;
   quota?: InboundQuota | null;
+  dataQuota?: InboundDataQuota | null;
   /** Each organization's daily DMARC report budget (the worker wires `email.dmarc_reports.day`). */
   dmarcQuota?: InboundQuota | null;
   /** Capped plans' allowance of received email (`createUsageGate`). Defaults to none. */
@@ -371,6 +381,26 @@ async function receiveRouted(
       continue;
     }
     raw ??= await message.raw();
+    const dataMegabytes = billableEmailMegabytes(raw.byteLength);
+    // A virus verdict stores no content and isn't billed: nothing for this limit to bound.
+    if (
+      deps.dataQuota &&
+      !blocked &&
+      dataMegabytes > 0 &&
+      !(await deps.dataQuota.consume(
+        route.organizationId,
+        JSON.stringify([route.environmentId, message.provider, message.providerMessageId]),
+        dataMegabytes,
+      ))
+    ) {
+      await countDrop(route.organizationId, message.receivedAt);
+      outcomes.push({
+        kind: "over_limit",
+        environmentId: route.environmentId,
+        recipients: route.recipients,
+      });
+      continue;
+    }
     parsed ??= await parseInboundMessage(raw);
     const id = newId(ID_PREFIXES.receivedEmail);
     const prefix = receivedEmailPrefix({
@@ -461,6 +491,18 @@ async function receiveRouted(
             projectId: route.projectId,
             meter: "email.received",
             quantity: 1,
+          });
+          await deps.billing?.reserve(tx, {
+            organizationId: route.organizationId,
+            meter: "email.received_data",
+            quantity: dataMegabytes,
+          });
+          await recordUsage(tx, {
+            organizationId: route.organizationId,
+            environmentId: route.environmentId,
+            projectId: route.projectId,
+            meter: "email.received_data",
+            quantity: dataMegabytes,
           });
         }
         if (attachments.length > 0) {
