@@ -38,6 +38,31 @@ faq:
     answer: One per confirmed booking, per occurrence of a series and per group session, however many people attend. Holds and pending approvals aren't charged, rescheduling is free and a cancelled booking stays charged. Sandbox environments are free, and the Free plan includes bookings every month. The pricing page has the rate.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const eventTypeId: string;
+// ---cut---
+// [!code word:coss.scheduling.bookings.create]
+const result = await coss.scheduling.bookings.create({
+  event_type: eventTypeId,
+  start: "2026-03-10T14:00:00Z",
+  attendee: {
+    uid: "customer_77",
+    name: "Sam Lee",
+    email: "sam@example.com",
+    time_zone: "America/New_York",
+  },
+});
+if (result.error?.code === "slot_unavailable") {
+  // Someone got there first: show the times again.
+}
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="For marketplaces and other platforms whose providers get booked: add them as hosts, and their customers book them in your app.">
 
 ```ts twoslash

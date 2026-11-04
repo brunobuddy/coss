@@ -34,6 +34,30 @@ faq:
     answer: A live inbox is billed per day it exists, mail it receives like any received email, and mail it sends like any email. Every plan includes a few inboxes, and inboxes in sandbox environments are free. The pricing page lists the current rates.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const inboxId: string;
+declare const messageId: string;
+// ---cut---
+// [!code word:coss.inboxes.create]
+const { data: inbox } = await coss.inboxes.create({
+  username: "support-agent",
+  client_id: "agent-42",
+});
+
+await coss.inboxes.messages.reply(
+  inboxId,
+  messageId,
+  { text: "Sorry about that, Jane! A new one is on its way." },
+  { idempotencyKey: `reply-${messageId}` },
+);
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Create an address, get a webhook when mail arrives, reply from the same address. The thread keeps the whole conversation.">
 
 ```ts twoslash

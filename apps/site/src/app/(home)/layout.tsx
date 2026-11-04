@@ -4,8 +4,8 @@ import { SiteShell } from "@/components/site-shell";
 /** The landing, pricing and legal pages: the site's header, the page, the full-width footer. */
 export default function Layout({ children }: LayoutProps<"/">) {
   return (
-    <SiteShell>
-      <div className="flex flex-1 flex-col">{children}</div>
+    <SiteShell rails={false}>
+      <div className="flex flex-1 flex-col bg-background">{children}</div>
       <SiteFooter />
     </SiteShell>
   );

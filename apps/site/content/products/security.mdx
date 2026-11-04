@@ -36,6 +36,26 @@ faq:
     answer: Yes. The Data Processing Addendum is part of the Terms and is published at coss.com/legal/dpa, with its security measures and the list of subprocessors.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// [!code word:coss.auditEvents.list]
+const { data: events } = await coss.auditEvents.list({
+  action: ["api_key.", "member.role_changed"],
+  actor_type: ["user", "api_key"],
+  limit: 50,
+});
+
+for (const event of events?.data ?? []) {
+  console.log(event.action, event.actor_label, event.target_label);
+}
+```
+
+</HeroSample>
+
 <Section title="Sign-in your IT team can manage" lede="Organizations decide how their members sign in, and coss.com enforces it on every page of the dashboard.">
 
 <Features>

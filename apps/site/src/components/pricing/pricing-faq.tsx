@@ -1,11 +1,5 @@
 import { PLANS } from "@coss/billing/catalog";
 import { formatCents } from "@coss/billing/money";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionPanel,
-  AccordionTrigger,
-} from "@coss/ui/components/accordion";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { estimateEmailMonth, formatPrice } from "@/lib/pricing";
@@ -100,29 +94,4 @@ export function pricingFaq(): { question: string; answer: string }[] {
     question,
     answer: text ?? (typeof answer === "string" ? answer : ""),
   }));
-}
-
-/** Billing questions; the details live in the billing guide. */
-export function PricingFaq() {
-  return (
-    <div className="flex flex-col gap-4">
-      <Accordion>
-        {questions().map((item) => (
-          <AccordionItem key={item.question} value={item.question}>
-            <AccordionTrigger className="text-base">{item.question}</AccordionTrigger>
-            <AccordionPanel className="max-w-2xl text-pretty leading-relaxed">
-              {item.answer}
-            </AccordionPanel>
-          </AccordionItem>
-        ))}
-      </Accordion>
-      <p className="text-muted-foreground text-sm">
-        More in the{" "}
-        <Link className="text-foreground underline underline-offset-4" href="/docs/billing">
-          billing guide
-        </Link>
-        .
-      </p>
-    </div>
-  );
 }

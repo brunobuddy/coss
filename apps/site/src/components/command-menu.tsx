@@ -136,10 +136,13 @@ export function CommandMenu({
 
   return (
     <CommandDialog onOpenChange={setOpen} open={open} {...props}>
-      <CommandDialogTrigger className="text-muted-foreground" render={<Button variant="ghost" />}>
+      <CommandDialogTrigger
+        className="w-52 justify-start text-muted-foreground"
+        render={<Button variant="outline" />}
+      >
         <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
         Search
-        <KbdGroup className="gap-1">
+        <KbdGroup className="ms-auto gap-1">
           <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
           <Kbd className="aspect-square">K</Kbd>
         </KbdGroup>

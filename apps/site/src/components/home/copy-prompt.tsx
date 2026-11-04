@@ -4,7 +4,7 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AGENT_PROMPT } from "@/lib/site";
 
-export function CopyPrompt() {
+function useCopyPrompt() {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (!copied) return;
@@ -21,12 +21,30 @@ export function CopyPrompt() {
     }
   }
 
+  return { copied, copy };
+}
+
+/** The prompt as a button, where the prompt itself is on screen next to it. */
+export function CopyPromptButton() {
+  const { copied, copy } = useCopyPrompt();
   return (
-    <div className="flex flex-col gap-3 rounded-xl border bg-background p-2 ps-4 sm:flex-row sm:items-center">
-      <p className="min-w-0 flex-1 font-mono text-[0.8125rem] leading-relaxed">{AGENT_PROMPT}</p>
-      <Button aria-live="polite" className="shrink-0 px-4" onClick={copy} variant="outline">
+    <Button aria-live="polite" className="self-start" onClick={copy}>
+      {copied ? <CheckIcon /> : <CopyIcon />}
+      {copied ? "Copied" : "Copy the prompt"}
+    </Button>
+  );
+}
+
+export function CopyPrompt() {
+  const { copied, copy } = useCopyPrompt();
+  return (
+    <div className="flex items-center gap-2 rounded-xl border bg-background py-1.5 ps-4 pe-1.5 shadow-xs/5">
+      <p className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)] [scrollbar-width:none]">
+        {AGENT_PROMPT}
+      </p>
+      <Button aria-live="polite" className="shrink-0" onClick={copy} variant="outline">
         {copied ? <CheckIcon /> : <CopyIcon />}
-        {copied ? "Copied" : "Copy prompt"}
+        {copied ? "Copied" : "Copy"}
       </Button>
     </div>
   );

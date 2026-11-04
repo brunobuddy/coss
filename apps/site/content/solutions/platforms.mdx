@@ -24,6 +24,35 @@ faq:
     answer: Live sub-accounts, SSO and directory sync are included in the higher plans, and sandbox sub-accounts are free on every plan so you can build the integration first. The pricing page lists which plan includes what.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// [!code word:coss.email.subaccounts.create]
+await coss.email.subaccounts.create({
+  name: "Acme Bakery",
+  uid: "user_8812",
+});
+
+await coss.email.send({
+  subaccount: "user_8812",
+  from: "Acme Bakery <orders@acmebakery.com>",
+  to: "customer@example.com",
+  subject: "Your order is ready",
+  html: "<p>Come and pick it up.</p>",
+});
+
+await coss.hooks.messages.send({
+  application: "user_8812",
+  event_type: "order.ready",
+  payload: { order_id: "ord_1042" },
+});
+```
+
+</HeroSample>
+
 <Section title="The problem" lede="A platform whose customers send email or receive webhooks carries their mistakes unless each one is kept apart.">
 
 When a website builder, CRM or store builder sends email for its users, one user's bounced list or phishing campaign can pause sending for every other user on the same account. When the same platform sends webhooks to its customers, it ends up building endpoint management, signing, retries, a delivery log and a settings page for each customer to manage it all.

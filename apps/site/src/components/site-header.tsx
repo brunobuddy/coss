@@ -12,7 +12,8 @@ import { MobileNav } from "./mobile-nav";
 import { SectionLabel } from "./section-label";
 
 /** A header cell: full height, set off from the previous one by a hairline, like the page's ruling. */
-const CELL = "flex h-full items-center border-border/64 border-s";
+const RULED_CELL = "flex h-full items-center border-border/64 border-s";
+const PLAIN_CELL = "flex h-full items-center";
 
 /**
  * The header of coss.com/ui (the coss ui docs), adapted: the wordmark names the section instead
@@ -24,13 +25,17 @@ export function SiteHeader({
   tree = withoutNestedFolders(source.getPageTree()),
   searchApi = SEARCH_API,
   docsSidebar = false,
+  ruled = true,
 }: {
   items?: readonly NavItem[];
   tree?: PageTree.Root;
   searchApi?: string;
   /** Size the wordmark's cell to the docs sidebar (`--sidebar-width`, set by `SiteShell`). */
   docsSidebar?: boolean;
+  /** Hairlines between the cells, on pages with the docs' rails. */
+  ruled?: boolean;
 }) {
+  const CELL = ruled ? RULED_CELL : PLAIN_CELL;
   return (
     <header className="sticky top-0 z-40 w-full bg-sidebar/80 backdrop-blur-sm before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-border/64">
       {/* The mega menu's anchor: the page's sheet between the shell's rails (`container` + 12px a side). */}
@@ -59,12 +64,14 @@ export function SiteHeader({
           <MegaMenu links={items === NAV_ITEMS ? undefined : items} />
         </div>
         <div className="ms-auto flex h-full items-center">
-          <div className={`${CELL} px-3 max-md:hidden`}>
+          <div className={`${CELL} ${ruled ? "px-3" : "pe-3"} max-md:hidden`}>
             <CommandMenu navItems={items} searchApi={searchApi} tree={tree} />
           </div>
           {/* No hairline on the right: the cell ends at the page rail (24px of padding, plus 12px once
               the rails are on screen), so its left padding matches that to centre the links. */}
-          <div className={`${CELL} ps-3 max-md:border-s-0 md:ps-6 min-[90rem]:ps-9`}>
+          <div
+            className={`${CELL} ${ruled ? "ps-3 max-md:border-s-0 md:ps-6 min-[90rem]:ps-9" : ""}`}
+          >
             <AccountLinks />
           </div>
         </div>

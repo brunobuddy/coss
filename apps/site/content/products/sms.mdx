@@ -37,6 +37,25 @@ faq:
     answer: Every organization starts with the United States and Canada. Owners and admins can allow other priced countries on the dashboard; a few countries where SMS pumping fraud is common need support to unlock them first. Toll-free numbers only send to the US and Canada.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// [!code word:coss.sms.send]
+const { data: sms, error } = await coss.sms.send(
+  {
+    from: "+14155550123",
+    to: "+14155550199",
+    body: "Your Acme order #1042 has shipped.",
+  },
+  { idempotencyKey: "order-1042-shipped" },
+);
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Send from a registered number, follow the message through its events, and read the replies. One API key covers SMS, email and everything else.">
 
 ```ts twoslash
@@ -133,7 +152,7 @@ Sandbox (`coss_test_…`) keys accept any `from` number and skip the number, cou
 
 </Section>
 
-<Section title="Pricing" lede="Live messages are billed per segment by destination country, once a carrier has them, carrier fees included. Numbers and US carrier registration fees are passed through at cost.">
+<Section title="Pricing" lede="Live messages are billed per segment by destination country, once a carrier has them, carrier fees included. Numbers and US carrier registration fees are passed through at cost. Live SMS needs a paid plan.">
 
 <UsageRates product="sms" />
 
