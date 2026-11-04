@@ -38,7 +38,7 @@ import {
 import { Textarea } from "@coss/ui/components/textarea";
 import { CalendarClockIcon, CalendarPlusIcon, UserRoundIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import type { ActionResult } from "@/lib/action-result";
@@ -125,26 +125,54 @@ export function NewHostDialog(props: EnvTarget) {
 
 /**
  * A hosted page in a tab of its own, for what only the API can work out or a host does themselves.
- * Coming back shows whatever happened there.
+ * The tab opens on the click, since a browser blocks one opened after a server's answer, and goes to
+ * the page once there's a session. If it was blocked anyway, this tab goes there instead. Coming
+ * back shows whatever happened there. Returns the form's `onSubmit`.
  */
-function useOpensHostedPage(state: ActionResult<{ url: string }> | null) {
+function useOpensHostedPage(state: ActionResult<{ url: string }> | null, pending: boolean) {
   const router = useRouter();
+  const tab = useRef<Window | null>(null);
+  const lastState = useRef(state);
   useEffect(() => {
-    if (!state?.ok || !state.data) return;
-    window.open(state.data.url, "_blank", "noopener,noreferrer");
+    if (pending) return;
+    const opened = tab.current;
+    const answer = state === lastState.current ? null : state;
+    lastState.current = state;
+    tab.current = null;
+    // No answer at all (the request itself failed) closes the tab too, or it stays blank.
+    if (!answer?.ok || !answer.data) {
+      opened?.close();
+      return;
+    }
+    if (!opened) {
+      window.location.assign(answer.data.url);
+      return;
+    }
+    opened.location.href = answer.data.url;
     const onFocus = () => router.refresh();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [state, router]);
+  }, [state, pending, router]);
+  // A request that fails outright goes to the page's error boundary, which unmounts this.
+  useEffect(
+    () => () => {
+      tab.current?.close();
+    },
+    [],
+  );
+  return () => {
+    tab.current = window.open("", "_blank");
+    if (tab.current) tab.current.opener = null;
+  };
 }
 
 export function OpenPortalButton(props: EnvTarget & { hostId: string }) {
   const [state, formAction, pending] = useActionToast(openHostPortalAction, {
     errors: "toast",
   });
-  useOpensHostedPage(state);
+  const openTab = useOpensHostedPage(state, pending);
   return (
-    <form action={formAction}>
+    <form action={formAction} onSubmit={openTab}>
       <Hidden {...props} />
       <Button disabled={pending} size="sm" type="submit" variant="outline">
         Open their page
@@ -156,9 +184,9 @@ export function OpenPortalButton(props: EnvTarget & { hostId: string }) {
 /** The booker's page for one event type, in a tab of its own. */
 export function BookEventTypeButton(props: EnvTarget & { eventTypeId: string }) {
   const [state, formAction, pending] = useActionToast(openBookerAction, { errors: "toast" });
-  useOpensHostedPage(state);
+  const openTab = useOpensHostedPage(state, pending);
   return (
-    <form action={formAction}>
+    <form action={formAction} onSubmit={openTab}>
       <Hidden {...props} />
       <Button disabled={pending} size="sm" type="submit">
         New booking
@@ -173,7 +201,7 @@ export function NewBookingDialog(
   const { eventTypes, ...target } = props;
   const [state, formAction, pending] = useActionToast(openBookerAction, {});
   const [open, setOpen] = useState(false);
-  useOpensHostedPage(state);
+  const openTab = useOpensHostedPage(state, pending);
   useEffect(() => {
     if (state?.ok) setOpen(false);
   }, [state]);
@@ -182,7 +210,7 @@ export function NewBookingDialog(
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger render={<Button size="sm" />}>New booking</DialogTrigger>
       <DialogPopup>
-        <form action={formAction} className="contents">
+        <form action={formAction} className="contents" onSubmit={openTab}>
           <Hidden {...target} />
           <DialogHeader>
             <DialogIcon icon={CalendarPlusIcon} />
@@ -227,9 +255,9 @@ export function RescheduleBookingButton(props: EnvTarget & { bookingId: string }
   const [state, formAction, pending] = useActionToast(openBookingManagerAction, {
     errors: "toast",
   });
-  useOpensHostedPage(state);
+  const openTab = useOpensHostedPage(state, pending);
   return (
-    <form action={formAction}>
+    <form action={formAction} onSubmit={openTab}>
       <Hidden {...props} />
       <Button disabled={pending} size="sm" type="submit" variant="outline">
         Reschedule

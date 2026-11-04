@@ -5,17 +5,30 @@ import type { EventTypeObjectOutput, UpdateEventTypeRequestOutput } from "@coss/
 export type QuestionType = EventTypeObjectOutput["questions"][number]["type"];
 export type LocationType = EventTypeObjectOutput["locations"][number]["type"];
 
+type SavedQuestion = EventTypeObjectOutput["questions"][number];
+type SavedLocation = EventTypeObjectOutput["locations"][number];
+
 export type QuestionRow = {
   id: string;
-  /** Saved answers are stored under the key, so a saved question's key doesn't change. */
-  saved: boolean;
+  /**
+   * What's stored, so an untouched row goes back exactly as it came: an API client's options can
+   * hold line breaks and spaces, and answers are checked against them. Saved answers are stored
+   * under the key, so a saved question's key doesn't change.
+   */
+  saved: SavedQuestion | null;
   key: string;
   type: QuestionType;
   label: string;
   required: boolean;
   options: string;
 };
-export type LocationRow = { id: string; type: LocationType; value: string };
+export type LocationRow = {
+  id: string;
+  /** As on a question: a stored location the form can't fully show survives an unrelated save. */
+  saved: SavedLocation | null;
+  type: LocationType;
+  value: string;
+};
 export type LimitRow = {
   id: string;
   period: "day" | "week";
@@ -61,7 +74,7 @@ export type EventTypeFormState = {
 const CHOICE_TYPES: readonly QuestionType[] = ["select", "radio", "checkbox"];
 export const hasOptions = (type: QuestionType) => CHOICE_TYPES.includes(type);
 
-function locationValue(location: EventTypeObjectOutput["locations"][number]): string {
+function locationValue(location: SavedLocation): string {
   if (location.type === "link") return location.url ?? "";
   if (location.type === "phone") return location.number ?? "";
   if (location.type === "in_person") return location.address ?? "";
@@ -100,7 +113,7 @@ export function eventTypeFormState(eventType: EventTypeObjectOutput): EventTypeF
     calendarDetails: eventType.host_calendar_details,
     questions: eventType.questions.map((question, index) => ({
       id: `question-${index}`,
-      saved: true,
+      saved: question,
       key: question.key,
       type: question.type,
       label: question.label,
@@ -109,6 +122,7 @@ export function eventTypeFormState(eventType: EventTypeObjectOutput): EventTypeF
     })),
     locations: eventType.locations.map((location, index) => ({
       id: `location-${index}`,
+      saved: location,
       type: location.type,
       value: locationValue(location),
     })),
@@ -122,7 +136,8 @@ export function eventTypeFormState(eventType: EventTypeObjectOutput): EventTypeF
   };
 }
 
-function locationPayload(row: LocationRow): EventTypeObjectOutput["locations"][number] {
+function locationPayload(row: LocationRow): SavedLocation {
+  if (row.saved?.type === row.type && locationValue(row.saved) === row.value) return row.saved;
   const value = row.value.trim() || null;
   switch (row.type) {
     case "link":
@@ -154,6 +169,12 @@ function bookingWindow(state: EventTypeFormState) {
     return { kind: "range" as const, from: state.windowFrom, to: state.windowTo };
   }
   return null;
+}
+
+function questionOptions(row: QuestionRow): string[] {
+  const untouched = row.saved?.type === row.type && row.saved.options.join("\n") === row.options;
+  if (untouched && row.saved) return row.saved.options;
+  return hasOptions(row.type) ? lines(row.options) : [];
 }
 
 /** What the form submits, before `UpdateEventTypeRequest` checks it on the server. */
@@ -189,9 +210,9 @@ export function eventTypePayload(state: EventTypeFormState, kind: EventTypeObjec
     questions: state.questions.map((question) => ({
       key: question.key.trim(),
       type: question.type,
-      label: question.label.trim(),
+      label: question.saved?.label === question.label ? question.label : question.label.trim(),
       required: question.required,
-      options: hasOptions(question.type) ? lines(question.options) : [],
+      options: questionOptions(question),
     })),
     locations: state.locations.map(locationPayload),
     hosts: state.hosts.map((host) => ({
@@ -242,9 +263,14 @@ export function eventTypeChanges(
     if (value === undefined) continue;
     const stored = current[key as keyof EventTypeObjectOutput];
     const sortable = key === "hosts" && Array.isArray(value) && Array.isArray(stored);
-    const unchanged = sortable
-      ? same(sortedHosts(value as Hosts), sortedHosts(stored as Hosts))
-      : same(value, stored);
+    // The form trims what it sends, and a stored value's own spaces aren't an edit.
+    const untrimmed =
+      typeof value === "string" && typeof stored === "string" && value.trim() === stored.trim();
+    const unchanged =
+      untrimmed ||
+      (sortable
+        ? same(sortedHosts(value as Hosts), sortedHosts(stored as Hosts))
+        : same(value, stored));
     if (!unchanged) changes[key] = value;
   }
   return changes as UpdateEventTypeRequestOutput;

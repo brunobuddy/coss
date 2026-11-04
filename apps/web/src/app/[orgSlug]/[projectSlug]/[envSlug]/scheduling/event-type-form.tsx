@@ -242,7 +242,7 @@ export function EventTypeForm(
   const addQuestion = () => {
     const row: QuestionRow = {
       id: rowId(),
-      saved: false,
+      saved: null,
       key: "",
       type: "text",
       label: "",
@@ -252,7 +252,7 @@ export function EventTypeForm(
     set({ questions: [...form.questions, row] });
   };
   const addLocation = () => {
-    const row: LocationRow = { id: rowId(), type: "link", value: "" };
+    const row: LocationRow = { id: rowId(), saved: null, type: "link", value: "" };
     set({ locations: [...form.locations, row] });
   };
   const addLimit = () => {
@@ -732,7 +732,7 @@ export function EventTypeForm(
                       <FieldLabel>Key</FieldLabel>
                       <Input
                         className="font-mono"
-                        disabled={row.saved || !canEdit}
+                        disabled={row.saved !== null || !canEdit}
                         maxLength={64}
                         onChange={(event) =>
                           set({

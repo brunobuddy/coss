@@ -194,6 +194,61 @@ describe("the event type form", () => {
   });
 });
 
+describe("what an API client stored that the form can't show", () => {
+  const stored: EventTypeObjectOutput = {
+    ...EVENT_TYPE,
+    title: " Consultation ",
+    questions: [
+      {
+        key: "kind",
+        type: "select",
+        label: " Kind ",
+        required: false,
+        options: [" New patient ", "Two\nlines"],
+      },
+      { key: "note", type: "text", label: "Note", required: false, options: ["unused"] },
+    ],
+    locations: [{ type: "zoom", url: "https://zoom.example.com/j/1" }],
+  };
+
+  test("survives saving something else", () => {
+    expect(eventTypeChanges(stored, submitted(stored))).toEqual({});
+    const changes = eventTypeChanges(
+      stored,
+      submitted(stored, (state) => {
+        state.minNotice = "5";
+      }),
+    );
+    expect(changes).toEqual({ min_notice_minutes: 5 });
+  });
+
+  test("survives editing another row of the same list", () => {
+    const changes = eventTypeChanges(
+      stored,
+      submitted(stored, (state) => {
+        const row = state.questions[1];
+        if (row) row.label = "Your note";
+      }),
+    );
+    expect(changes.questions?.[0]).toEqual(stored.questions[0] as never);
+    expect(changes.questions?.[1]?.label).toBe("Your note");
+  });
+
+  test("goes when that row itself is edited", () => {
+    const changes = eventTypeChanges(
+      stored,
+      submitted(stored, (state) => {
+        const row = state.questions[0];
+        if (row) row.options = "New patient\nReturning";
+        const location = state.locations[0];
+        if (location) location.type = "google_meet";
+      }),
+    );
+    expect(changes.questions?.[0]?.options).toEqual(["New patient", "Returning"]);
+    expect(changes.locations).toEqual([{ type: "google_meet" }]);
+  });
+});
+
 describe("question keys", () => {
   test("come from the label, valid and unique", () => {
     expect(questionKey("What's your reason?", [])).toBe("what_s_your_reason");

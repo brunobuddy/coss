@@ -198,9 +198,9 @@ export async function updateHostAction(_prev: ActionResult | null, formData: For
     // time zone is refused here too.
     const update = checked(
       UpdateHostRequest.safeParse({
-        ...(name !== current.name ? { name } : {}),
-        ...(email !== current.email ? { email } : {}),
-        ...(uid !== current.uid ? { uid } : {}),
+        ...(name !== current.name.trim() ? { name } : {}),
+        ...(email !== (current.email?.trim() || null) ? { email } : {}),
+        ...(uid !== (current.uid?.trim() || null) ? { uid } : {}),
         ...(timeZone !== current.time_zone ? { time_zone: timeZone } : {}),
         attributes: readJson(formString(formData, "attributes"), "Attributes") ?? {},
         metadata: readJson(formString(formData, "metadata"), "Metadata") ?? {},

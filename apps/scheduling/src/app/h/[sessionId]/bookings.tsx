@@ -22,7 +22,7 @@ import {
 import { Skeleton } from "@coss/ui/components/skeleton";
 import { Tabs, TabsList, TabsTab } from "@coss/ui/components/tabs";
 import { CalendarIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SlotPicker } from "@/components/slot-picker";
 import type { ClientCall } from "@/lib/client-api";
 import type { HostSession } from "./types";
@@ -113,6 +113,7 @@ function MoveBooking(props: {
 export function Bookings(props: { call: ClientCall; session: HostSession }) {
   const { call, session } = props;
   const [view, setView] = useState<View>("upcoming");
+  const [reloads, setReloads] = useState(0);
   const [bookings, setBookings] = useState<HostBooking[] | null>(null);
   const [loadFailed, setLoadFailed] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -123,19 +124,28 @@ export function Bookings(props: { call: ClientCall; session: HostSession }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const timeZone = session.host.time_zone;
 
-  const load = useCallback(() => {
+  // Each list replaces the last: an answer for a tab the host has left is dropped, here and in
+  // `loadMore`, or its bookings would show with the other tab's actions.
+  const currentList = useRef(0);
+  useEffect(() => {
+    void reloads;
+    const list = ++currentList.current;
     setLoadFailed(null);
     call<BookingPage>(LIST_PATH[view])
       .then((response) => {
+        if (list !== currentList.current) return;
         setBookings(response.data);
         setNextCursor(response.next_cursor);
       })
-      .catch((error: Error) => setLoadFailed(error.message));
-  }, [call, view]);
-  useEffect(load, [load]);
+      .catch((error: Error) => {
+        if (list === currentList.current) setLoadFailed(error.message);
+      });
+  }, [call, view, reloads]);
+  const load = () => setReloads((value) => value + 1);
 
   const loadMore = async () => {
     if (!nextCursor) return;
+    const list = currentList.current;
     setLoadingMore(true);
     setProblem(null);
     try {
@@ -143,10 +153,11 @@ export function Bookings(props: { call: ClientCall; session: HostSession }) {
       const response = await call<BookingPage>(
         `${LIST_PATH[view]}${separator}cursor=${encodeURIComponent(nextCursor)}`,
       );
+      if (list !== currentList.current) return;
       setBookings((current) => [...(current ?? []), ...response.data]);
       setNextCursor(response.next_cursor);
     } catch (error) {
-      setProblem((error as Error).message);
+      if (list === currentList.current) setProblem((error as Error).message);
     } finally {
       setLoadingMore(false);
     }
