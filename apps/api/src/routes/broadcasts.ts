@@ -128,7 +128,8 @@ export const createBroadcastRoute = createRoute({
     ),
     422: errorDoc(
       "The body failed validation, the audience, segment or topic doesn't exist " +
-        "(`invalid_target`, `topic_not_found`), the `Idempotency-Key` was used with another " +
+        "(`invalid_target`, `topic_not_found`), its content could render too long " +
+        "(`content_too_large`), the `Idempotency-Key` was used with another " +
         "body (`idempotency_key_reused`), or it can't start (see `POST …/send`).",
     ),
   },
@@ -169,7 +170,8 @@ export const updateBroadcastRoute = createRoute({
     ...commonErrors,
     404: notFoundDoc,
     422: errorDoc(
-      "The body failed validation, or the broadcast isn't a draft (`broadcast_not_editable`).",
+      "The body failed validation, the broadcast isn't a draft (`broadcast_not_editable`), or its " +
+        "content could render too long (`content_too_large`).",
     ),
   },
 });

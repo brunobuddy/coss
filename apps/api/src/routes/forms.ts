@@ -85,7 +85,8 @@ const invalidForm = errorDoc(
     "(`invalid_sender`, `invalid_recipient`), an unknown audience, topic or property " +
     "(`invalid_contacts`), no captcha in the risk settings (`captcha_not_configured`), a hosted " +
     "page without fields or asking for credentials (`hosted_needs_fields`, " +
-    "`hosted_content_refused`), or too many forms (`form_limit_reached`).",
+    "`hosted_content_refused`), a blocked file type or uploads turned off while a `file` field " +
+    "remains (`invalid_files`), or too many forms (`form_limit_reached`).",
 );
 
 export const createFormRoute = createRoute({

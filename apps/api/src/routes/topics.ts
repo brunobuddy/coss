@@ -83,7 +83,10 @@ export const createTopicRoute = createRoute({
     201: jsonDoc("The new topic.", Topic),
     ...bodyErrors,
     ...commonErrors,
-    422: errorDoc("The body failed validation, or the key is taken (`topic_exists`)."),
+    422: errorDoc(
+      "The body failed validation, the key is taken (`topic_exists`), or the environment has the " +
+        "most topics it can (`too_many_topics`).",
+    ),
   },
 });
 

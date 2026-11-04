@@ -155,8 +155,8 @@ export const createInboxRoute = createRoute({
         "plan's included inbox-days are used up this month (`usage_limit_exceeded`).",
     ),
     422: errorDoc(
-      "The body failed validation (`validation_error`), the address is already an inbox " +
-        "(`address_taken`), `domain` is not a receiving domain of the environment " +
+      "The body failed validation (`validation_error`), the address can't be used " +
+        "(`invalid_address`) or is already an inbox (`address_taken`), `domain` is not a receiving domain of the environment " +
         "(`unknown_domain`), or the deployment doesn't receive email at coss.com's inbound " +
         "domain (`receiving_unavailable`).",
     ),
