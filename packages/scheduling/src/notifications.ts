@@ -836,7 +836,8 @@ export async function sendTimedWebhook(
       .from(schedulingNotification)
       .where(eq(schedulingNotification.id, row.id))
       .for("update");
-    if (!current || current.finishedAt) return;
+    // Another worker holding this row may have finished it, or moved it to a later moment.
+    if (!current || current.finishedAt || current.dueAt > now) return;
     const finish = async (outcome: string) => {
       await tx
         .update(schedulingNotification)
@@ -1012,10 +1013,11 @@ export async function runDueSchedulingNotifications(
         .select({
           bookingVersion: schedulingNotification.bookingVersion,
           finishedAt: schedulingNotification.finishedAt,
+          dueAt: schedulingNotification.dueAt,
         })
         .from(schedulingNotification)
         .where(eq(schedulingNotification.id, row.id));
-      if (!current || current.finishedAt) continue;
+      if (!current || current.finishedAt || current.dueAt > now) continue;
       if (!found || isStale({ ...row, bookingVersion: current.bookingVersion }, found)) {
         await finish(row, "stale", now);
         continue;

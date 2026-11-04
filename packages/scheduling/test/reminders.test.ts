@@ -1788,3 +1788,71 @@ describe("a waiting reminder whose timing is edited", () => {
     expect((await outcome(s, booking.id))?.outcome).toBe("sent");
   });
 });
+
+describe("a row moved while another worker holds it", () => {
+  const key = "welcome";
+  const notifications = schema.schedulingNotification;
+  const rowOf = async (bookingId: string) => {
+    const [row] = await db
+      .select()
+      .from(notifications)
+      .where(and(eq(notifications.bookingId, bookingId), eq(notifications.reminderKey, key)));
+    if (!row) throw new Error("no row");
+    return row;
+  };
+  const moveLater = (id: string) =>
+    db
+      .update(notifications)
+      .set({ dueAt: new Date(NOW.getTime() + 20 * MINUTE), reminderOffsetMinutes: 20 })
+      .where(eq(notifications.id, id));
+
+  test("a webhook isn't reported before its new moment", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      reminders: [rule({ key, anchor: "confirmed", after_minutes: 20, send: ["webhook"] })],
+    });
+    const { booking } = await book(s);
+    const claimed = await rowOf(booking.id);
+    await moveLater(claimed.id);
+    await sendTimedWebhook(claimed, new Date(NOW.getTime() + 10 * MINUTE));
+    expect((await rowOf(booking.id)).finishedAt).toBeNull();
+    expect((await webhookMessages(s)).some((e) => e.type === "scheduling.booking.reminder")).toBe(
+      false,
+    );
+  });
+
+  test("an email already claimed in the same batch waits for it too", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      email_from: "appointments@example.com",
+      reminders: [
+        rule({
+          key,
+          anchor: "confirmed",
+          after_minutes: 1,
+          send: ["email_attendee"],
+          message: "Welcome.",
+        }),
+      ],
+    });
+    const { booking } = await book(s);
+    const row = await rowOf(booking.id);
+    const n = notifier(() => new Date(NOW.getTime() + 10 * MINUTE));
+    const send = n.notification.notifier.email;
+    let moved = false;
+    // The confirmation goes first, due sooner: by then this worker has claimed the reminder too.
+    n.notification.notifier.email = async (message) => {
+      if (!moved) {
+        moved = true;
+        await moveLater(row.id);
+      }
+      return send(message);
+    };
+    await runDueSchedulingNotifications(n.notification, {
+      scope: { organizationIds: [s.env.organizationId] },
+    });
+    expect(moved).toBe(true);
+    expect(n.emails.some((email) => email.text.includes("Welcome."))).toBe(false);
+    expect((await rowOf(booking.id)).finishedAt).toBeNull();
+  });
+});
