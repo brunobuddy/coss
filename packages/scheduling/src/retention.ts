@@ -5,7 +5,7 @@
  */
 import { db, schema } from "@coss/db";
 import { RETENTION_DAYS } from "@coss/retention";
-import { and, eq, inArray, isNotNull, isNull, lt, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, lt, or, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import { emailLookup } from "./attendees.ts";
 import { rewriteDetailedEvents } from "./calendar/details.ts";
@@ -225,6 +225,24 @@ async function eraseMatching(
       eq(schedulingAttendee.environmentId, scope.environmentId),
       matching,
     );
+    // Bookings first, as redacting and cancelling do, or erasing the same booking would deadlock.
+    const affected = await tx
+      .select({ bookingId: schedulingAttendee.bookingId })
+      .from(schedulingAttendee)
+      .where(where);
+    if (affected.length > 0) {
+      await tx
+        .select({ id: schedulingBooking.id })
+        .from(schedulingBooking)
+        .where(
+          and(
+            inArray(schedulingBooking.id, [...new Set(affected.map((row) => row.bookingId))]),
+            eq(schedulingBooking.organizationId, scope.organizationId),
+          ),
+        )
+        .orderBy(asc(schedulingBooking.id))
+        .for("update");
+    }
     // Before they're gone: redacting takes the uid, which is how sessions name this person.
     const matched = await tx
       .select({ uid: schedulingAttendee.uid })

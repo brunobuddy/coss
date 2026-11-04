@@ -20,6 +20,7 @@ import {
   gt,
   gte,
   inArray,
+  isNotNull,
   isNull,
   lt,
   lte,
@@ -2072,6 +2073,21 @@ function checkNotice(
   }
 }
 
+async function hasErasedAttendee(tx: Executor, booking: BookingRow): Promise<boolean> {
+  const [erased] = await tx
+    .select({ id: schedulingAttendee.id })
+    .from(schedulingAttendee)
+    .where(
+      and(
+        eq(schedulingAttendee.bookingId, booking.id),
+        eq(schedulingAttendee.organizationId, booking.organizationId),
+        isNotNull(schedulingAttendee.redactedAt),
+      ),
+    )
+    .limit(1);
+  return Boolean(erased);
+}
+
 export async function cancelBooking(
   env: SchedulingEnvironment,
   id: string,
@@ -2095,7 +2111,8 @@ export async function cancelBooking(
       "Booking cancelled",
     );
     const reason = opts.reason?.trim();
-    if (reason) {
+    // Their details are gone for good, so nothing new about them goes back in.
+    if (reason && !booking.redactedAt && !(await hasErasedAttendee(tx, booking))) {
       await tx
         .update(schedulingBooking)
         .set({ encryptedCancellationReason: encryptSecret(reason, deps.dataKeys) })

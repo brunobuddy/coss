@@ -2,6 +2,7 @@
  * Scheduling over the public API (`/v1/scheduling/*`): hosts, their schedules, event types, slots,
  * bookings, holds and series. Tenancy comes only from the API key.
  */
+
 import {
   approveBooking,
   type BookingActor,
@@ -107,6 +108,7 @@ import {
 } from "@coss/scheduling/schemas";
 import { secretsKeyRing } from "@coss/webhooks";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { recordApiAudit } from "../audit.ts";
 import { ApiError } from "../errors.ts";
@@ -601,6 +603,19 @@ export const rescheduleBookingRoute = createRoute({
   },
 });
 
+/**
+ * This route's body came later, and callers that send a JSON content type with no body have always
+ * been fine. Hono parses by the header, even with `required: false`, so an empty body is `{}` here.
+ */
+const emptyBodyIsAllowed = createMiddleware(async (c, next) => {
+  if (c.req.header("Content-Type")?.includes("json") && !(await c.req.text()).trim()) {
+    const { url, method, headers } = c.req.raw;
+    c.req.raw = new Request(url, { method, headers, body: "{}" });
+    c.req.bodyCache = {};
+  }
+  await next();
+});
+
 export const cancelBookingRoute = createRoute({
   method: "post",
   path: "/scheduling/bookings/{id}/cancel",
@@ -609,7 +624,7 @@ export const cancelBookingRoute = createRoute({
   summary: "Cancel a booking",
   description: "Frees the time and removes the calendar event. A cancelled booking stays charged.",
   security: [{ bearerAuth: [] }],
-  middleware: acting("update"),
+  middleware: [...acting("update"), emptyBodyIsAllowed],
   request: {
     params: BookingParams,
     body: {

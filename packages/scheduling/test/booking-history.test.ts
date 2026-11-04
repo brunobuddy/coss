@@ -170,6 +170,39 @@ describe("cancelling", () => {
     expect((await getBooking(env, booking.id, deps)).cancellation_reason).toBeNull();
   });
 
+  test("a booking whose details are gone takes no new reason", async () => {
+    const redacted = await setUp();
+    await redactExpiredBookings({
+      now: new Date(at("09:00", "2033-01-01")),
+      scope: { organizationIds: [redacted.tenant.organization.id] },
+    });
+    await cancelBooking(redacted.env, redacted.booking.id, deps, apiKey, { reason: SECRET });
+    expect(
+      (await getBooking(redacted.env, redacted.booking.id, deps)).cancellation_reason,
+    ).toBeNull();
+
+    const erased = await setUp();
+    await eraseAttendee(erased.env, { uid: "patient_1" });
+    await cancelBooking(erased.env, erased.booking.id, deps, apiKey, { reason: SECRET });
+    expect((await getBooking(erased.env, erased.booking.id, deps)).cancellation_reason).toBeNull();
+    expect((await getBooking(erased.env, erased.booking.id, deps)).status).toBe("cancelled");
+  });
+
+  test("erasing, redacting and cancelling at once don't deadlock", async () => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { env, tenant, booking } = await setUp();
+      await Promise.all([
+        cancelBooking(env, booking.id, deps, apiKey, { reason: SECRET }),
+        eraseAttendee(env, { uid: "patient_1" }),
+        redactExpiredBookings({
+          now: new Date(at("09:00", "2033-01-01")),
+          scope: { organizationIds: [tenant.organization.id] },
+        }),
+      ]);
+      expect((await getBooking(env, booking.id, deps)).cancellation_reason).toBeNull();
+    }
+  });
+
   test("a reason goes when the booking's details expire", async () => {
     const { env, tenant, booking } = await setUp();
     await cancelBooking(env, booking.id, deps, apiKey, { reason: SECRET });

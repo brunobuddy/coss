@@ -182,6 +182,12 @@ describe("scheduling API", () => {
       reason: "x".repeat(501),
     });
     expect(refused.status).toBe(422);
+    const malformed = await app.request(`/v1/scheduling/bookings/${created.id}/cancel`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: "{nope",
+    });
+    expect(malformed.status).toBe(400);
 
     const cancelled = await call(app, key, "POST", `/bookings/${created.id}/cancel`, {
       reason: "Feeling better",
@@ -212,6 +218,22 @@ describe("scheduling API", () => {
 
     const missing = await call(app, key, "GET", "/bookings/nope/events");
     expect(missing.status).toBe(404);
+
+    for (const body of [undefined, "", "  "]) {
+      const another = (await (
+        await call(app, key, "POST", "/bookings", {
+          event_type: eventType,
+          start: at(body === undefined ? "10:00" : body === "" ? "11:00" : "12:00"),
+          attendee: { uid: "patient_1", name: "Sam Lee", time_zone: "UTC" },
+        })
+      ).json()) as { id: string };
+      const empty = await app.request(`/v1/scheduling/bookings/${another.id}/cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        ...(body === undefined ? {} : { body }),
+      });
+      expect(empty.status).toBe(200);
+    }
   });
 
   test("answers come back only when retrieving one booking", async () => {
@@ -1243,6 +1265,14 @@ describe("client API", () => {
     const shown = JSON.stringify(await said.json());
     expect(shown).not.toContain("Feeling better");
     expect(shown).not.toContain("cancelled_by");
+
+    const another = (await (
+      await call(s.app, s.key, "POST", "/bookings", booking(s.eventType, at("11:00")))
+    ).json()) as { id: string };
+    const second = (await (
+      await call(s.app, s.key, "POST", `/bookings/${another.id}/manage_sessions`)
+    ).json()) as { token: string };
+    expect((await client(s.app, second.token, "POST", "/booking/cancel")).status).toBe(200);
     expect((await client(s.app, manage.token, "GET", "/booking")).status).toBe(404);
   });
 
