@@ -17870,6 +17870,13 @@
             },
             "description": "What pools filter hosts by, as strings or lists of strings."
           },
+          "locations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingHostLocation"
+            },
+            "description": "This host's own office, meeting link and phone number. An event type's location that leaves its value blank uses them."
+          },
           "metadata": {
             "type": "object",
             "additionalProperties": {
@@ -17900,6 +17907,7 @@
           "email",
           "time_zone",
           "attributes",
+          "locations",
           "metadata",
           "status",
           "created_at",
@@ -17919,12 +17927,91 @@
                 "NJ"
               ]
             },
+            "locations": [
+              {
+                "type": "in_person",
+                "address": "12 Main St, New York, NY"
+              }
+            ],
             "metadata": {},
             "status": "active",
             "created_at": "2027-01-01T10:00:00.000Z",
             "updated_at": "2027-01-01T10:00:00.000Z"
           }
         ]
+      },
+      "SchedulingHostLocation": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "link"
+                ],
+                "description": "A meeting link of the host's own."
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 2000,
+                "format": "uri",
+                "description": "The link, which must be `https`."
+              }
+            },
+            "required": [
+              "type",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "phone"
+                ],
+                "description": "A phone number of the host's own."
+              },
+              "number": {
+                "type": "string",
+                "pattern": "^\\+[1-9]\\d{6,14}$",
+                "description": "The number, in E.164 format."
+              }
+            },
+            "required": [
+              "type",
+              "number"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "in_person"
+                ],
+                "description": "The host's own office."
+              },
+              "address": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500,
+                "description": "The address. It can't contain a link."
+              }
+            },
+            "required": [
+              "type",
+              "address"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Where this host meets. A host has at most one of each type."
       },
       "CreateHostRequest": {
         "type": "object",
@@ -17976,6 +18063,14 @@
             },
             "description": "What pools filter hosts by, such as `{ \"licensed_in\": [\"CA\", \"NY\"], \"language\": \"es\" }`."
           },
+          "locations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingHostLocation"
+            },
+            "maxItems": 3,
+            "description": "This host's own office, meeting link and phone number. An event type's location that leaves its value blank uses them."
+          },
           "metadata": {
             "type": "object",
             "additionalProperties": {
@@ -18001,7 +18096,13 @@
                 "NY",
                 "NJ"
               ]
-            }
+            },
+            "locations": [
+              {
+                "type": "in_person",
+                "address": "12 Main St, New York, NY"
+              }
+            ]
           }
         ]
       },
@@ -18046,6 +18147,12 @@
                     "NJ"
                   ]
                 },
+                "locations": [
+                  {
+                    "type": "in_person",
+                    "address": "12 Main St, New York, NY"
+                  }
+                ],
                 "metadata": {},
                 "status": "active",
                 "created_at": "2027-01-01T10:00:00.000Z",
@@ -18111,6 +18218,14 @@
               ]
             },
             "description": "What pools filter hosts by, such as `{ \"licensed_in\": [\"CA\", \"NY\"], \"language\": \"es\" }`."
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingHostLocation"
+            },
+            "maxItems": 3,
+            "description": "Replaces this host's own locations. Existing bookings keep the location they have."
           },
           "metadata": {
             "type": "object",
@@ -19116,7 +19231,7 @@
             "additionalProperties": false
           }
         ],
-        "description": "Where a booking meets. `link`, `phone` and `in_person` carry their details; `google_meet`, `microsoft_teams` and `zoom` get a meeting made on the host's connected account."
+        "description": "Where a booking meets. `link`, `phone` and `in_person` carry their details, and on an event type, left blank, use the booked host's own if they have one; `google_meet`, `microsoft_teams` and `zoom` get a meeting made on the host's connected account."
       },
       "CreateEventTypeRequest": {
         "type": "object",
@@ -74308,7 +74423,7 @@
           "Scheduling hosts"
         ],
         "summary": "Create a host session",
-        "description": "Lets one host manage their own hours and calendars, on coss.com's hosted page or your own UI. Send the `url` to their browser, or embed it with `coss/scheduling`.",
+        "description": "Lets one host manage their own hours, calendars and locations, on coss.com's hosted page or your own UI. Send the `url` to their browser, or embed it with `coss/scheduling`.",
         "security": [
           {
             "bearerAuth": []
