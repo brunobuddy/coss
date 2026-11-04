@@ -83,7 +83,10 @@ export const createTopicRoute = createRoute({
     201: jsonDoc("The new topic.", Topic),
     ...bodyErrors,
     ...commonErrors,
-    422: errorDoc("The body failed validation, or the key is taken (`topic_exists`)."),
+    422: errorDoc(
+      "The body failed validation, the key is taken (`topic_exists`), or the environment has the " +
+        "most topics it can (`too_many_topics`).",
+    ),
   },
 });
 
@@ -93,6 +96,7 @@ export const getTopicRoute = createRoute({
   operationId: "getTopic",
   tags: ["Topics"],
   summary: "Retrieve a topic",
+  description: "One topic of the API key's environment.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ contact: ["read"] }), rateLimit("api.read")],
   request: { params: TopicParams },

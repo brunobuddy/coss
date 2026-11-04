@@ -85,7 +85,8 @@ const invalidForm = errorDoc(
     "(`invalid_sender`, `invalid_recipient`), an unknown audience, topic or property " +
     "(`invalid_contacts`), no captcha in the risk settings (`captcha_not_configured`), a hosted " +
     "page without fields or asking for credentials (`hosted_needs_fields`, " +
-    "`hosted_content_refused`), or too many forms (`form_limit_reached`).",
+    "`hosted_content_refused`), a blocked file type or uploads turned off while a `file` field " +
+    "remains (`invalid_files`), or too many forms (`form_limit_reached`).",
 );
 
 export const createFormRoute = createRoute({
@@ -141,6 +142,7 @@ export const getFormRoute = createRoute({
   operationId: "getForm",
   tags: [TAG_FORMS],
   summary: "Get a form",
+  description: "A form's settings, with the `endpoint` it posts to and its `hosted_url`.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ form: ["read"] }), rateLimit("api.read")],
   request: { params: FormIdParams },
@@ -229,6 +231,7 @@ export const getFormSubmissionRoute = createRoute({
   operationId: "getFormSubmission",
   tags: [TAG_SUBMISSIONS],
   summary: "Get a submission",
+  description: "One submission of the form, with its data, files and Risk's assessment.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ form: ["read"] }), rateLimit("api.read")],
   request: { params: SubmissionParams },

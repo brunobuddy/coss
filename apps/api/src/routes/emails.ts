@@ -129,7 +129,8 @@ export const sendEmailRoute = createRoute({
     403: errorDoc(
       "The API key lacks the permission this endpoint needs (`insufficient_permissions`), its " +
         "organization is suspended (`organization_suspended`), live sending is suspended (`account_suspended`), or sending is paused for the " +
-        "organization because of its sending reputation (`sending_paused`).",
+        "organization because of its sending reputation (`sending_paused`), or the `subaccount` is turned off " +
+        "(`subaccount_disabled`) or paused (`subaccount_paused`).",
     ),
     422: errorDoc(
       "The body failed validation (`validation_error`, see `issues`), the `from` domain is not a " +
@@ -205,8 +206,9 @@ export const sendEmailBatchRoute = createRoute({
     403: errorDoc(
       "The API key lacks the permission this endpoint needs (`insufficient_permissions`), its " +
         "organization is suspended (`organization_suspended`), live sending is suspended " +
-        "(`account_suspended`), or sending is paused for the organization because of its " +
-        "sending reputation (`sending_paused`).",
+        "(`account_suspended`), sending is paused for the organization because of its " +
+        "sending reputation (`sending_paused`), or a `subaccount` is turned off " +
+        "(`subaccount_disabled`) or paused (`subaccount_paused`).",
     ),
     422: errorDoc(
       "The body failed validation (`validation_error`, see `issues`), a `from` domain is not a " +

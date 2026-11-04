@@ -57,6 +57,7 @@ export const getAuditEventRoute = createRoute({
   operationId: "getAuditEvent",
   tags: ["Audit log"],
   summary: "Retrieve an audit event",
+  description: "One event of the organization's audit log.",
   security: [{ bearerAuth: [] }],
   middleware: [
     requireApiKey({ audit: ["read"] }),
