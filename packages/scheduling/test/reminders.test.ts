@@ -1808,6 +1808,40 @@ describe("a waiting reminder whose timing is edited", () => {
     expect((await outcome(s, booking.id))?.outcome).toBe("sent");
   });
 
+  test("goes to whoever it's for by then", async () => {
+    const s = await setUp();
+    const to = (send: string[], email_to: string[] = []) =>
+      rule({ key: "welcome", anchor: "confirmed", after_minutes: 60, send, email_to });
+    await updateSettings(s.env, { reminders: [to(["email_attendee"])] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [to(["email_host"], ["desk@example.com"])] });
+    const n = await runAt(s, NOW.getTime() + 60 * MINUTE);
+    const welcome = (await rows(s, booking.id)).filter((row) => row.reminder_key === "welcome");
+    expect(welcome.map((row) => [row.recipient, row.outcome]).sort()).toEqual([
+      ["address", "sent"],
+      ["attendee", "stale"],
+      ["host", "sent"],
+    ]);
+    // Everyone's standard confirmation went out too: the attendee had only that.
+    const countTo = (to: string) => n.emails.filter((email) => email.to === to).length;
+    expect(countTo("desk@example.com")).toBe(1);
+    expect(countTo("reyes@example.com")).toBe(2);
+    expect(countTo(attendee.email)).toBe(1);
+  });
+
+  test("an edit that keeps who it's for sends it once, not once for each timing", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, { reminders: [confirmedRule(10)] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [confirmedRule(20)] });
+    await runAt(s, NOW.getTime() + 10 * MINUTE);
+    const n = await runAt(s, NOW.getTime() + 20 * MINUTE);
+    expect((await rows(s, booking.id)).filter((row) => row.reminder_key === "welcome").length).toBe(
+      1,
+    );
+    expect(n.emails.filter((email) => email.to === attendee.email).length).toBe(1);
+  });
+
   test("a webhook takes the new timing too", async () => {
     const s = await setUp();
     const hook = (after_minutes: number) =>

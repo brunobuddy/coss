@@ -149,17 +149,14 @@ function anchorMoment(rule: ReminderRule, booking: BookingRow, now: Date): Date 
   return now;
 }
 
-function rowsOfRule(rule: ReminderRule, booking: BookingRow, now: Date): NotificationInsert[] {
-  const anchorAt = anchorMoment(rule, booking, now);
-  if (!anchorAt) return [];
+function ruleRow(
+  rule: ReminderRule,
+  booking: BookingRow,
+  target: Target,
+  anchorAt: Date,
+): NotificationInsert {
   const offset = offsetOf(rule);
-  const scheduled = anchorAt.getTime() + offset * MINUTE_MS;
-  const timed = rule.anchor === "start" || rule.anchor === "end";
-  const passed = timed && scheduled <= now.getTime();
-  const catchesUp = passed && rule.send_if_late && booking.startAt.getTime() > now.getTime();
-  // A moment that's passed is recorded, so a booking can say why it had no reminder.
-  const finished = passed && !catchesUp;
-  return targetsOf(rule).map((target) => ({
+  return {
     organizationId: booking.organizationId,
     environmentId: booking.environmentId,
     bookingId: booking.id,
@@ -172,9 +169,80 @@ function rowsOfRule(rule: ReminderRule, booking: BookingRow, now: Date): Notific
     reminderOffsetMinutes: offset,
     anchorAt,
     dedupeKey: `reminder:${rule.key}:${rule.anchor}:${offset}:${target.channel}:${target.recipient}:${booking.id}:${anchorAt.getTime()}`,
+    dueAt: new Date(anchorAt.getTime() + offset * MINUTE_MS),
+  };
+}
+
+function rowsOfRule(rule: ReminderRule, booking: BookingRow, now: Date): NotificationInsert[] {
+  const anchorAt = anchorMoment(rule, booking, now);
+  if (!anchorAt) return [];
+  const scheduled = anchorAt.getTime() + offsetOf(rule) * MINUTE_MS;
+  const timed = rule.anchor === "start" || rule.anchor === "end";
+  const passed = timed && scheduled <= now.getTime();
+  const catchesUp = passed && rule.send_if_late && booking.startAt.getTime() > now.getTime();
+  // A moment that's passed is recorded, so a booking can say why it had no reminder.
+  const finished = passed && !catchesUp;
+  return targetsOf(rule).map((target) => ({
+    ...ruleRow(rule, booking, target, anchorAt),
     dueAt: catchesUp ? now : new Date(scheduled),
     ...(finished ? { finishedAt: now, outcome: "too_late" } : {}),
   }));
+}
+
+/**
+ * A changed list's walk makes rows for a start or end of a booking that hasn't ended. Nothing walks
+ * anything else, so what's waiting there has to take its rule's changes itself.
+ */
+const walkedByListChange = (rule: ReminderRule, booking: Pick<BookingRow, "endAt">, now: Date) =>
+  (rule.anchor === "start" || rule.anchor === "end") && booking.endAt.getTime() > now.getTime();
+
+/**
+ * Recipients added to a rule after its row was queued get theirs when it comes due: a row can only
+ * speak for its own, and the one whose recipient was taken off would otherwise end the reminder.
+ */
+export async function addEditedTargets(
+  executor: Executor,
+  row: NotificationRow,
+  booking: BookingRow,
+  rules: readonly ReminderRule[],
+  now: Date,
+): Promise<void> {
+  const rule = rules.find(
+    (candidate) => candidate.key === row.reminderKey && candidate.anchor === row.reminderAnchor,
+  );
+  const anchorAt = row.anchorAt;
+  if (!rule || !anchorAt || walkedByListChange(rule, booking, now)) return;
+  const siblings = await executor
+    .select({
+      channel: schedulingNotification.channel,
+      recipient: schedulingNotification.recipient,
+      outcome: schedulingNotification.outcome,
+    })
+    .from(schedulingNotification)
+    .where(
+      and(
+        eq(schedulingNotification.bookingId, booking.id),
+        eq(schedulingNotification.organizationId, booking.organizationId),
+        eq(schedulingNotification.kind, "reminder"),
+        eq(schedulingNotification.reminderKey, rule.key),
+        eq(schedulingNotification.reminderAnchor, rule.anchor),
+        eq(schedulingNotification.anchorAt, anchorAt),
+      ),
+    );
+  const missing = targetsOf(rule).filter(
+    (target) =>
+      !siblings.some(
+        (sibling) =>
+          sibling.channel === target.channel &&
+          sibling.recipient === target.recipient &&
+          sibling.outcome !== "stale" &&
+          sibling.outcome !== "superseded",
+      ),
+  );
+  await insertReminderRows(
+    executor,
+    missing.map((target) => ruleRow(rule, booking, target, anchorAt)),
+  );
 }
 
 /** Every confirmed booking gets these, so an endpoint added later still hears about it. */
@@ -372,12 +440,10 @@ export function ruleVerdict(
   );
   if (!rule) return { outcome: "stale" };
   if (offsetOf(rule) !== row.reminderOffsetMinutes) {
-    // A changed list's walk makes a row for the new moment, on a start or end of a booking that
-    // hasn't ended. Nothing walks anything else, so that row takes the new timing itself, or the
-    // edit would lose it. An edit to sooner can only be seen once the row comes due: it goes then.
-    const walked =
-      (rule.anchor === "start" || rule.anchor === "end") && booking.endAt.getTime() > now.getTime();
-    if (walked) return { outcome: "stale" };
+    // Where the walk made a row for the new moment, this one's done. Elsewhere it takes the new
+    // timing itself, or the edit would lose it. An edit to sooner can only be seen once the row
+    // comes due: it goes then.
+    if (walkedByListChange(rule, booking, now)) return { outcome: "stale" };
     const due = (row.anchorAt?.getTime() ?? now.getTime()) + offsetOf(rule) * MINUTE_MS;
     if (due > now.getTime()) return { moveTo: new Date(due), offsetMinutes: offsetOf(rule) };
   }

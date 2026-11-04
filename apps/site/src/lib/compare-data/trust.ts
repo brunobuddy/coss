@@ -89,12 +89,12 @@ const NYLAS_SCHEDULER: Competitor = {
     },
     {
       label: "Booking emails",
-      coss: "Standard text or, on reminders, your own, with your brand name or logo and accent color from your own domain; each can be turned off",
+      coss: "Standard text or, on reminders, your own, with your name or logo and accent color from your domain; each can be turned off",
       them: "Fixed wording and branding; turn them off and send your own",
     },
     {
       label: "Reminders",
-      coss: "Any number, timed from any point in a booking's life, by email, webhook and SMS from your own approved number on the same account",
+      coss: "Any number, timed from any point in a booking's life, by email, webhook and SMS from your own approved number",
       them: "Email or a webhook; SMS through your own messaging stack",
     },
     {
