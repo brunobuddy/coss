@@ -12,7 +12,7 @@ WHERE "added"."booking_id" = "booking"."id"
   AND "member"."host_id" = "added"."host_id"
   AND "added"."role" = 'member'
   AND "event_type"."kind" = 'pool'
-  AND "booking"."status" = 'confirmed'
+  AND "booking"."status" IN ('held', 'pending_approval', 'confirmed')
   AND "booking"."start_at" > now();--> statement-breakpoint
 -- Hosts who joined a running pool and haven't been booked yet, so their first booking doesn't start
 -- a run of every booking until they've caught up: see `startingUnits`.
