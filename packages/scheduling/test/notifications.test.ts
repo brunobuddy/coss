@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { db, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   approveBooking,
   authenticateSchedulingSession,
@@ -300,6 +300,16 @@ test("a move superseding a notice the worker already claimed stops it going out"
   const s = await setUp();
   const { booking } = await book(s);
   await rescheduleBooking(s.env, booking.id, { startMs: at("10:00") }, deps, actor);
+  // The confirmation goes first, so the move below lands while the older notice is claimed.
+  await db
+    .update(schema.schedulingNotification)
+    .set({ dueAt: new Date(NOW.getTime() - 60_000) })
+    .where(
+      and(
+        eq(schema.schedulingNotification.bookingId, booking.id),
+        eq(schema.schedulingNotification.kind, "confirmed"),
+      ),
+    );
   const n = notifier();
   const send = n.notification.notifier.email;
   let moved = false;
