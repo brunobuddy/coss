@@ -433,12 +433,22 @@ describe("a group session on a calendar", () => {
       ...overrides,
     });
     const plain = testSchedulingDeps({ now: () => NOW });
-    const write = () => runDueCalendarWrites(calendars, { scope: scope(env) });
+    const write = () =>
+      runDueCalendarWrites({ ...calendars, dataKeys: deps.dataKeys }, { scope: scope(env) });
     const shown = () => [...api.events.values()].filter((event) => !event.deleted);
     return { env, host, api, calendars, eventType, plain, write, shown };
   }
 
   const MEET = { type: "link" as const, url: "https://meet.google.com/abc-defg-hij" };
+
+  test("with details on, a session's event has its title and nobody's name", async () => {
+    const c = await connected({ title: "Yoga", host_calendar_details: "full" });
+    await createBooking(c.env, seat(c.eventType.id, "a"), c.plain, actor);
+    await c.write();
+    const [event] = c.shown();
+    expect(event?.title).toBe("Yoga");
+    expect(event?.description).toBeUndefined();
+  });
 
   test("direct seats share one event and one Meet link", async () => {
     const c = await connected();

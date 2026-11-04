@@ -1,9 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
+import { HipaaModeError } from "@coss/compliance";
+import { enableTestHipaaMode } from "@coss/compliance/testing";
 import { db, schema } from "@coss/db";
-import { createTestTenant } from "@coss/tenancy/testing";
+import { enableHipaaMode } from "@coss/tenancy/admin";
+import { createTestTenant, createTestUser } from "@coss/tenancy/testing";
 import { secretsKeyRing } from "@coss/webhooks";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   caldavCalendarClient,
   type DavRequest,
@@ -16,6 +19,7 @@ import { normalizeIntervals } from "../src/engine/intervals.ts";
 import {
   buildIcs,
   type CalendarDeps,
+  type CalendarWriteDeps,
   cancelBooking,
   checkHostEditedEvents,
   completeCalendarAuthorization,
@@ -26,11 +30,14 @@ import {
   createHost,
   createSchedule,
   disconnectCalendar,
+  eraseAttendee,
+  eraseAttendeeByEmail,
   flagExternalConflicts,
   getBooking,
   handleCalendarPush,
   listConnections,
   listEventTypeSlots,
+  redactExpiredBookings,
   renewDueCalendarChannels,
   rescheduleBooking,
   runDueCalendarSyncs,
@@ -40,6 +47,7 @@ import {
   setSimulatedBusy,
   startCalendarAuthorization,
   updateCalendar,
+  updateEventType,
 } from "../src/index.ts";
 import { FakeGoogleCalendarApi, testSchedulingDeps } from "../src/testing.ts";
 
@@ -73,8 +81,9 @@ async function setUp(mode: "live" | "sandbox" = "sandbox") {
   return { env, host, eventType };
 }
 
-function calendarDeps(api: FakeGoogleCalendarApi, now: () => Date = () => NOW): CalendarDeps {
+function calendarDeps(api: FakeGoogleCalendarApi, now: () => Date = () => NOW): CalendarWriteDeps {
   return {
+    dataKeys: testSchedulingDeps().dataKeys,
     secretsKeys: secretsKeyRing([createHash("sha256").update("calendar test").digest()]),
     apps: {
       google: { clientId: "google-client", clientSecret: "google-secret" },
@@ -509,8 +518,8 @@ describe("availability follows the calendar", () => {
 });
 
 describe("writing to calendars", () => {
-  async function writable() {
-    const setup = await setUp();
+  async function writable(mode: "live" | "sandbox" = "sandbox") {
+    const setup = await setUp(mode);
     const api = new FakeGoogleCalendarApi();
     const deps = calendarDeps(api);
     await connectGoogle(setup.env, setup.host.id, deps);
@@ -534,6 +543,255 @@ describe("writing to calendars", () => {
     const [event] = [...w.api.events.values()];
     expect(event?.title).toBe("Appointment");
     expect(event?.startMs).toBe(at("09:00"));
+  });
+
+  test("an event that never held details leaves its description alone", async () => {
+    const w = await writable();
+    const { booking } = await book(w);
+    await runDueCalendarWrites(w.deps, { scope: scope(w.env) });
+    const [event] = [...w.api.events.values()];
+    if (event) event.description = "the host's own notes";
+    await rescheduleBooking(w.env, booking.id, { startMs: at("10:00") }, w.plain, actor);
+    await runDueCalendarWrites(w.deps, { scope: scope(w.env) });
+    expect([...w.api.events.values()][0]?.description).toBe("the host's own notes");
+  });
+
+  describe("with host_calendar_details: full", () => {
+    const sam = { ...attendee, uid: "sam", name: "Sam Lee", email: "sam@example.com" };
+    const secretAnswer = "my very private answer";
+
+    async function detailed(mode: "live" | "sandbox" = "sandbox") {
+      const w = await writable(mode);
+      await updateEventType(w.env, w.eventType.id, {
+        title: "Intro call",
+        host_calendar_details: "full",
+        max_guests: 2,
+        questions: [{ key: "why", type: "text", label: "Why?", required: false, options: [] }],
+      });
+      const bookIt = () =>
+        createBooking(
+          w.env,
+          {
+            eventType: w.eventType.id,
+            startMs: at("09:00"),
+            attendee: sam,
+            guests: [{ email: "jo@example.com", name: "Jo Park" }],
+            answers: { why: secretAnswer },
+          },
+          w.plain,
+          actor,
+        );
+      const write = () => runDueCalendarWrites(w.deps, { scope: scope(w.env) });
+      const event = () => [...w.api.events.values()][0];
+      const ledger = async () => {
+        const [row] = await db
+          .select()
+          .from(schema.schedulingCalendarEvent)
+          .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
+        return row as typeof schema.schedulingCalendarEvent.$inferSelect;
+      };
+      return { ...w, bookIt, write, event, ledger };
+    }
+
+    test("the event says who's coming, but never their answers", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      expect(w.event()?.title).toBe("Intro call with Sam Lee");
+      expect(w.event()?.description).toBe(
+        "Attendee: Sam Lee, sam@example.com\nGuest: Jo Park, jo@example.com",
+      );
+      expect(JSON.stringify(w.event())).not.toContain(secretAnswer);
+      expect((await w.ledger()).detailsWritten).toBe(true);
+    });
+
+    test("erasing the attendee takes them off the event, and leaves the guest", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      expect(await eraseAttendee(w.env, { uid: "sam" })).toBe(1);
+      await w.write();
+      expect(w.event()?.title).toBe("Intro call");
+      expect(w.event()?.description).toBe("Guest: Jo Park, jo@example.com");
+    });
+
+    test("erasing everyone clears the description and the row's mark", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      await eraseAttendee(w.env, { uid: "sam" });
+      await eraseAttendeeByEmail(w.env, { email: "JO@example.com" }, w.plain);
+      await w.write();
+      expect(w.event()?.title).toBe("Intro call");
+      expect(w.event()?.description).toBe("");
+      expect((await w.ledger()).detailsWritten).toBe(false);
+    });
+
+    test("an erasure while a write is in flight still gets another write", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      let erasedDuringWrite = false;
+      const racing = {
+        ...w.deps,
+        fetcher: async (url: string, init?: RequestInit) => {
+          if (!erasedDuringWrite && init?.method === "POST" && url.includes("/events")) {
+            erasedDuringWrite = true;
+            await eraseAttendee(w.env, { uid: "sam" });
+          }
+          return w.api.fetch(url, init);
+        },
+      };
+      await runDueCalendarWrites(racing, { scope: scope(w.env) });
+      expect(erasedDuringWrite).toBe(true);
+      expect(w.event()?.title).toBe("Intro call with Sam Lee");
+      await w.write();
+      expect(w.event()?.title).toBe("Intro call");
+      expect(w.event()?.description).toBe("Guest: Jo Park, jo@example.com");
+    });
+
+    test("details from a create whose answer was lost don't survive an erasure", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      w.api.loseNextAnswer = true;
+      await w.write();
+      expect(w.event()?.title).toBe("Intro call with Sam Lee");
+      expect((await w.ledger()).detailsWritten).toBe(true);
+      await eraseAttendee(w.env, { uid: "sam" });
+      await eraseAttendeeByEmail(w.env, { email: "jo@example.com" }, w.plain);
+      await db
+        .update(schema.schedulingCalendarEvent)
+        .set({ nextAttemptAt: NOW })
+        .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
+      await w.write();
+      expect(w.event()?.title).toBe("Intro call");
+      expect(w.event()?.description ?? "").toBe("");
+    });
+
+    test("redacting an old booking takes the details off its past event", async () => {
+      const w = await detailed();
+      const { booking } = await w.bookIt();
+      await w.write();
+      const later = new Date(at("09:00") + 91 * 86_400_000);
+      await redactExpiredBookings({ now: later, scope: scope(w.env) });
+      const pastDeps = { ...w.deps, now: () => later };
+      await runDueCalendarWrites(pastDeps, { scope: scope(w.env) });
+      expect(w.event()?.title).toBe("Intro call");
+      expect(w.event()?.description).toBe("");
+      expect((await getBooking(w.env, booking.id, w.plain)).attendees[0]?.name).toBeNull();
+    });
+
+    test("a past event that can't be rewritten is nobody's news", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      const later = new Date(at("09:00") + 91 * 86_400_000);
+      await redactExpiredBookings({ now: later, scope: scope(w.env) });
+      w.api.events.clear();
+      await runDueCalendarWrites({ ...w.deps, now: () => later }, { scope: scope(w.env) });
+      const row = await w.ledger();
+      expect(row.appliedVersion).toBe(row.desiredVersion);
+      const failed = await db
+        .select()
+        .from(schema.logEntry)
+        .where(
+          and(
+            eq(schema.logEntry.environmentId, w.env.environmentId),
+            eq(schema.logEntry.type, "scheduling.booking.calendar_write_failed"),
+          ),
+        );
+      expect(failed).toEqual([]);
+    });
+
+    test("turning it off rewrites upcoming events, and turning it on again restores them", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      await updateEventType(w.env, w.eventType.id, { host_calendar_details: "neutral" });
+      await w.write();
+      expect(w.event()?.title).toBe("Appointment");
+      expect(w.event()?.description).toBe("");
+      expect((await w.ledger()).detailsWritten).toBe(false);
+      await updateEventType(w.env, w.eventType.id, { host_calendar_details: "full" });
+      await w.write();
+      expect(w.event()?.title).toBe("Intro call with Sam Lee");
+    });
+
+    test("turning on HIPAA mode takes details off, and refuses them from then on", async () => {
+      const w = await detailed("live");
+      await w.bookIt();
+      await w.write();
+      expect(w.event()?.title).toBe("Intro call with Sam Lee");
+      const admin = await createTestUser();
+      await enableHipaaMode({
+        organizationId: w.env.organizationId,
+        baaSignedAt: new Date("2026-10-30T00:00:00Z"),
+        baaReference: "BAA-1",
+        reason: "Contract signed",
+        actor: { userId: admin.id, email: admin.email },
+      });
+      await w.write();
+      expect(w.event()?.title).toBe("Appointment");
+      expect(w.event()?.description).toBe("");
+      expect((await w.ledger()).detailsWritten).toBe(false);
+      await expect(
+        updateEventType(w.env, w.eventType.id, { host_calendar_details: "full" }),
+      ).rejects.toBeInstanceOf(HipaaModeError);
+    });
+
+    test("in HIPAA mode a new booking's event stays neutral whatever's configured", async () => {
+      const w = await detailed("live");
+      await enableTestHipaaMode(w.env.organizationId);
+      await w.bookIt();
+      await w.write();
+      expect(w.event()?.title).toBe("Appointment");
+      expect(w.event()?.description).toBeUndefined();
+    });
+  });
+
+  test("Microsoft: a retry over a lost create always writes when details are involved", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const startMs = at("09:00");
+    const existing = {
+      id: "graph-1",
+      start: { dateTime: new Date(startMs).toISOString() },
+      end: { dateTime: new Date(startMs + 1_800_000).toISOString() },
+    };
+    const client = microsoftCalendarClient({
+      accessToken: "t",
+      fetcher: async (_url, init) => {
+        if (init?.method === "PATCH") {
+          bodies.push(JSON.parse(String(init.body)));
+          return Response.json(existing);
+        }
+        return Response.json({ value: [existing] });
+      },
+    });
+    const write = {
+      key: "booking-calendar",
+      title: "Appointment",
+      startMs,
+      endMs: startMs + 1_800_000,
+      conference: null,
+      location: null,
+    };
+    await client.createEvent("calendar", write);
+    expect(bodies).toEqual([]);
+    await client.createEvent("calendar", { ...write, description: null });
+    expect(bodies[0]?.body).toEqual({ contentType: "text", content: "" });
+  });
+
+  test("CalDAV: a description is escaped into the event", () => {
+    const ics = buildIcs({
+      uid: "u",
+      title: "Intro",
+      description: "Attendee: Sam, sam@example.com\nGuest: Jo; Co",
+      startMs: at("09:00"),
+      endMs: at("09:30"),
+      stampMs: NOW.getTime(),
+      private: true,
+    });
+    expect(ics).toContain("DESCRIPTION:Attendee: Sam\\, sam@example.com\\nGuest: Jo\\; Co");
+    expect(ics).toContain("CLASS:PRIVATE");
   });
 
   test("our own event doesn't count as busy against itself", async () => {
@@ -737,7 +995,7 @@ describe("writing to calendars", () => {
     test("a request that hangs is given up on before the lease runs out", async () => {
       const w = await writable();
       const { booking } = await book(w);
-      const deps: CalendarDeps = {
+      const deps: CalendarWriteDeps = {
         ...w.deps,
         requestTimeoutMs: 20,
         fetcher: (_url, init) =>
@@ -856,7 +1114,7 @@ describe("writing to calendars", () => {
     const plain = testSchedulingDeps({ now: () => NOW });
     let bookingId = "";
     let moved = false;
-    const deps: CalendarDeps = {
+    const deps: CalendarWriteDeps = {
       ...calendarDeps(api),
       fetcher: async (input, init) => {
         const res = await api.fetch(input, init);
@@ -893,7 +1151,7 @@ describe("writing to calendars", () => {
     const w = await writable();
     await book(w);
     let dropped = false;
-    const deps: CalendarDeps = {
+    const deps: CalendarWriteDeps = {
       ...w.deps,
       fetcher: async (input, init) => {
         const res = await w.api.fetch(input, init);
@@ -1755,7 +2013,7 @@ describe("caldav", () => {
           ),
         );
       };
-      const deps: CalendarDeps = {
+      const deps: CalendarWriteDeps = {
         ...calendarDeps(new FakeGoogleCalendarApi()),
         davTransport: transport,
       };
@@ -1817,7 +2075,7 @@ describe("caldav", () => {
           ),
         );
       };
-      const deps: CalendarDeps = {
+      const deps: CalendarWriteDeps = {
         ...calendarDeps(new FakeGoogleCalendarApi()),
         davTransport: transport,
       };
@@ -2139,7 +2397,7 @@ test("a recurring event keeps its wall clock across daylight saving, from the fi
 
 test("a CalDAV server that refuses to connect is a clear answer, not a server error", async () => {
   const setup = await setUp();
-  const deps: CalendarDeps = {
+  const deps: CalendarWriteDeps = {
     ...calendarDeps(new FakeGoogleCalendarApi()),
     davTransport: async () => ({ status: 401, headers: {}, body: "" }),
   };

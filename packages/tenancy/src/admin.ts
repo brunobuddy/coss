@@ -337,6 +337,21 @@ export async function isMemberOfHipaaOrganization(userId: string): Promise<boole
 
 /** Queued email and SMS pick the mode up when they are claimed; a pending push is just dropped. */
 async function applyHipaaModeToWaitingMessages(tx: Executor, organizationId: string) {
+  // Attendees' details come off hosts' calendars: the worker reads the mode when it writes.
+  await tx
+    .update(schema.schedulingCalendarEvent)
+    .set({
+      desiredVersion: sql`${schema.schedulingCalendarEvent.desiredVersion} + 1`,
+      nextAttemptAt: sql`now()`,
+      attempts: 0,
+    })
+    .where(
+      and(
+        eq(schema.schedulingCalendarEvent.organizationId, organizationId),
+        eq(schema.schedulingCalendarEvent.desiredState, "present"),
+        eq(schema.schedulingCalendarEvent.detailsWritten, true),
+      ),
+    );
   await tx
     .delete(schema.pushNotification)
     .where(

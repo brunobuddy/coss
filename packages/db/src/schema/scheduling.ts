@@ -91,6 +91,9 @@ export const schedulingEventTypeStatus = pgEnum("scheduling_event_type_status", 
   "archived",
 ]);
 export const schedulingHostRole = pgEnum("scheduling_host_role", ["required", "member"]);
+export const schedulingCalendarDetails = pgEnum("scheduling_calendar_details", ["neutral", "full"]);
+// In this order: bookings list their attendee before any guests.
+export const schedulingAttendeeRole = pgEnum("scheduling_attendee_role", ["attendee", "guest"]);
 export const schedulingCalendarProvider = pgEnum("scheduling_calendar_provider", [
   "google",
   "microsoft",
@@ -253,6 +256,12 @@ export const schedulingEventType = pgTable(
     holdTtlSeconds: integer("hold_ttl_seconds").notNull().default(600),
     cancelNoticeMinutes: integer("cancel_notice_minutes").notNull().default(0),
     rescheduleNoticeMinutes: integer("reschedule_notice_minutes").notNull().default(0),
+    // How many people an attendee can add to a booking; 0: none. Never on a group event type.
+    maxGuests: integer("max_guests").notNull().default(0),
+    // What hosts' calendars say about a booking. Read when an event is written.
+    hostCalendarDetails: schedulingCalendarDetails("host_calendar_details")
+      .notNull()
+      .default("neutral"),
     questions: jsonb("questions").$type<SchedulingQuestion[]>().notNull().default([]),
     locations: jsonb("locations").$type<SchedulingLocation[]>().notNull().default([]),
     // Attributes a host must have to be in this pool, on top of explicit members.
@@ -696,6 +705,7 @@ export const schedulingAttendee = pgTable(
     organizationId: text("organization_id").notNull(),
     environmentId: text("environment_id").notNull(),
     bookingId: text("booking_id").notNull(),
+    role: schedulingAttendeeRole("role").notNull().default("attendee"),
     // The customer's own id for this person.
     uid: text("uid"),
     encryptedContact: text("encrypted_contact"),
@@ -767,6 +777,9 @@ export const schedulingCalendarEvent = pgTable(
     appliedVersion: integer("applied_version").notNull().default(0),
     providerEventId: text("provider_event_id"),
     externalState: schedulingExternalState("external_state").notNull().default("in_sync"),
+    // The provider may hold someone's details: set before such a write is sent, cleared only after
+    // one without them. Erasing someone rewrites these rows.
+    detailsWritten: boolean("details_written").notNull().default(false),
     nextAttemptAt: instant("next_attempt_at").notNull().defaultNow(),
     leaseUntil: instant("lease_until"),
     attempts: integer("attempts").notNull().default(0),

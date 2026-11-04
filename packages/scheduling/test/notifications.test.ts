@@ -13,6 +13,7 @@ import {
   createHost,
   createHostSession,
   createSchedule,
+  declineBooking,
   deleteHold,
   type NotificationDeps,
   rescheduleBooking,
@@ -591,5 +592,188 @@ describe("sessions", () => {
     expect(authenticateSchedulingSession("something_else", NOW)).rejects.toBeInstanceOf(
       SchedulingError,
     );
+  });
+});
+
+describe("guests", () => {
+  const withGuests = (s: Awaited<ReturnType<typeof setUp>>) =>
+    createBooking(
+      s.env,
+      {
+        eventType: s.eventType.id,
+        startMs: at("09:00"),
+        attendee,
+        guests: [{ email: "jo@example.com", name: "Jo Park" }],
+      },
+      deps,
+      actor,
+    );
+  const to = (emails: SchedulingEmail[], address: string) =>
+    emails.filter((email) => email.to === address);
+
+  test("a guest gets the news and a calendar invite, with no way to change the booking", async () => {
+    const s = await setUp({ max_guests: 1 });
+    const { emails, notification } = notifier();
+    await withGuests(s);
+    await run(s.env, notification);
+    const [guest] = to(emails, "jo@example.com");
+    expect(guest?.subject).toBe("Confirmed: Consultation");
+    expect(guest?.text).toContain("You've been added to this booking.");
+    expect(guest?.text).toContain("as a guest");
+    expect(guest?.text).not.toContain("Reschedule or cancel");
+    expect(guest?.ics?.content).toContain("mailto:jo@example.com");
+    expect(guest?.ics?.content).not.toContain("sam@example.com");
+    const [booker] = to(emails, "sam@example.com");
+    expect(booker?.text).toContain("Reschedule or cancel");
+  });
+
+  test("nothing a booker wrote about a guest reaches the guest's email", async () => {
+    const s = await setUp({ max_guests: 1 });
+    const { emails, notification } = notifier();
+    await withGuests(s);
+    await run(s.env, notification);
+    const [guest] = to(emails, "jo@example.com");
+    expect(guest?.text).not.toContain("Jo Park");
+    expect(guest?.text).not.toContain("Sam Lee");
+    expect(guest?.html).not.toContain("Sam Lee");
+  });
+
+  test("guests hear about moves and cancellations too", async () => {
+    const s = await setUp({ max_guests: 1 });
+    const { emails, notification } = notifier();
+    const { booking } = await withGuests(s);
+    await run(s.env, notification);
+    await rescheduleBooking(s.env, booking.id, { startMs: at("10:00") }, deps, actor);
+    await run(s.env, notification);
+    await cancelBooking(s.env, booking.id, deps, actor);
+    await run(s.env, notification);
+    expect(to(emails, "jo@example.com").map((email) => email.subject)).toEqual([
+      "Confirmed: Consultation",
+      "Rescheduled: Consultation",
+      "Cancelled: Consultation",
+    ]);
+  });
+
+  test("guests hear nothing about a request until it's approved", async () => {
+    const s = await setUp({ max_guests: 1, requires_approval: true });
+    const { emails, notification } = notifier();
+    const { booking } = await withGuests(s);
+    await run(s.env, notification);
+    expect(to(emails, "jo@example.com")).toEqual([]);
+    expect(to(emails, "sam@example.com").length).toBe(1);
+    await approveBooking(s.env, booking.id, deps, actor);
+    await run(s.env, notification);
+    expect(to(emails, "jo@example.com").map((email) => email.subject)).toEqual([
+      "Confirmed: Consultation",
+    ]);
+  });
+
+  test("a request declined or cancelled before anyone told them stays unknown to guests", async () => {
+    const s = await setUp({ max_guests: 1, requires_approval: true });
+    const { emails, notification } = notifier();
+    const { booking: declined } = await withGuests(s);
+    await declineBooking(s.env, declined.id, deps, actor);
+    await run(s.env, notification);
+    const { booking: cancelled } = await createBooking(
+      s.env,
+      {
+        eventType: s.eventType.id,
+        startMs: at("11:00"),
+        attendee,
+        guests: [{ email: "jo@example.com" }],
+      },
+      deps,
+      actor,
+    );
+    await cancelBooking(s.env, cancelled.id, deps, actor);
+    await run(s.env, notification);
+    expect(to(emails, "jo@example.com")).toEqual([]);
+  });
+
+  test("a guest of a confirmed hold is told when it's confirmed", async () => {
+    const s = await setUp({ max_guests: 1 });
+    const { emails, notification } = notifier();
+    const { booking } = await createHold(
+      s.env,
+      {
+        eventType: s.eventType.id,
+        startMs: at("09:00"),
+        attendee,
+        guests: [{ email: "jo@example.com" }],
+      },
+      deps,
+      actor,
+    );
+    await run(s.env, notification);
+    expect(to(emails, "jo@example.com")).toEqual([]);
+    await confirmHold(s.env, booking.id, {}, deps, actor);
+    await run(s.env, notification);
+    expect(to(emails, "jo@example.com").length).toBe(1);
+  });
+
+  test("in a live environment, guests are only emailed from the customer's own sender", async () => {
+    const tenant = await createTestTenant();
+    const env: SchedulingEnvironment = {
+      organizationId: tenant.organization.id,
+      projectId: tenant.project.id,
+      environmentId: tenant.production.id,
+      mode: "live",
+    };
+    const host = await createHost(env, { name: "Dr. Reyes", time_zone: "UTC" });
+    await createSchedule(env, host.id, {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+    });
+    const eventType = await createEventType(env, {
+      title: "Consultation",
+      kind: "one_on_one",
+      duration_minutes: 30,
+      max_guests: 1,
+      hosts: [{ host: host.id, role: "member", weight: 100, schedule: null }],
+    });
+    const bookAt = (time: string) =>
+      createBooking(
+        env,
+        {
+          eventType: eventType.id,
+          startMs: at(time),
+          attendee,
+          guests: [{ email: "jo@example.com" }],
+        },
+        deps,
+        actor,
+      );
+    const { emails, notification } = notifier();
+    await bookAt("09:00");
+    await run(env, notification);
+    expect(to(emails, "sam@example.com").length).toBe(1);
+    expect(to(emails, "jo@example.com")).toEqual([]);
+    await db
+      .insert(schema.schedulingSettings)
+      .values({
+        organizationId: env.organizationId,
+        projectId: env.projectId,
+        environmentId: env.environmentId,
+        emailFrom: "appointments@example.com",
+      })
+      .onConflictDoUpdate({
+        target: [schema.schedulingSettings.environmentId],
+        set: { emailFrom: "appointments@example.com" },
+      });
+    await bookAt("10:00");
+    await run(env, notification);
+    expect(to(emails, "jo@example.com").length).toBe(1);
+  });
+
+  test("a guest gets the attendee's reminder", async () => {
+    const s = await setUp({ max_guests: 1 });
+    const before = notifier();
+    await withGuests(s);
+    await run(s.env, before.notification);
+    const reminderTime = new Date(at("09:00") - 3_600_000);
+    const later = notifier(() => reminderTime);
+    await run(s.env, later.notification);
+    expect(to(later.emails, "jo@example.com").map((email) => email.subject)).toEqual([
+      "Reminder: Consultation",
+    ]);
   });
 });

@@ -22,6 +22,7 @@ import type { SchedulingDeps } from "./types.ts";
 const {
   environment,
   schedulingAttendee,
+  schedulingBookingEvent,
   schedulingBooking,
   schedulingBookingHost,
   schedulingEventType,
@@ -293,17 +294,57 @@ const SUBJECTS: Record<NotificationEvent, (title: string) => string> = {
   reminder: (title) => `Reminder: ${title}`,
 };
 
-const LEADS: Record<NotificationEvent, { attendee: string; host: string }> = {
-  confirmed: { attendee: "Your booking is confirmed.", host: "You have a new booking." },
+const LEADS: Record<NotificationEvent, { attendee: string; host: string; guest: string }> = {
+  // Guests hear nothing until there's something to come to, so they have no line for these two.
+  confirmed: {
+    attendee: "Your booking is confirmed.",
+    host: "You have a new booking.",
+    guest: "You've been added to this booking.",
+  },
   pending_approval: {
     attendee: "Your request has been received. You'll hear back once it's approved.",
     host: "A new booking is waiting for approval.",
+    guest: "",
   },
-  rescheduled: { attendee: "Your booking has moved.", host: "A booking has moved." },
-  cancelled: { attendee: "Your booking is cancelled.", host: "A booking was cancelled." },
-  declined: { attendee: "Your request couldn't be confirmed.", host: "A request was declined." },
-  reminder: { attendee: "This is coming up.", host: "This is coming up." },
+  rescheduled: {
+    attendee: "Your booking has moved.",
+    host: "A booking has moved.",
+    guest: "A booking you're a guest of has moved.",
+  },
+  cancelled: {
+    attendee: "Your booking is cancelled.",
+    host: "A booking was cancelled.",
+    guest: "A booking you're a guest of was cancelled.",
+  },
+  declined: {
+    attendee: "Your request couldn't be confirmed.",
+    host: "A request was declined.",
+    guest: "",
+  },
+  reminder: {
+    attendee: "This is coming up.",
+    host: "This is coming up.",
+    guest: "This is coming up.",
+  },
 };
+
+/** Whether a guest has heard of this booking, or has any reason to hear about it now. */
+async function guestsAreTold(booking: BookingRow, event: NotificationEvent): Promise<boolean> {
+  if (event === "pending_approval" || event === "declined") return false;
+  if (event !== "cancelled") return booking.status === "confirmed";
+  const [confirmed] = await db
+    .select({ id: schedulingBookingEvent.bookingId })
+    .from(schedulingBookingEvent)
+    .where(
+      and(
+        eq(schedulingBookingEvent.bookingId, booking.id),
+        eq(schedulingBookingEvent.organizationId, booking.organizationId),
+        eq(schedulingBookingEvent.type, "scheduling.booking.confirmed"),
+      ),
+    )
+    .limit(1);
+  return Boolean(confirmed);
+}
 
 type Claimed = NotificationRow;
 
@@ -449,13 +490,20 @@ async function sendBookingEmail(
           eq(schedulingAttendee.organizationId, booking.organizationId),
         ),
       );
+    // A guest is an address someone typed, who asked for nothing: never coss.com's own sender.
+    const toldGuests =
+      (env.mode === "sandbox" || Boolean(settings?.emailFrom)) &&
+      (await guestsAreTold(booking, event));
     let sent = false;
     for (const attendee of attendees) {
+      const guest = attendee.role === "guest";
+      if (guest && !toldGuests) continue;
       const contact = decryptContact(attendee.encryptedContact, deps);
       if (!contact.email) continue;
-      // A fresh link per email: its token can't be recovered, and a body isn't kept.
+      // A fresh link per email: its token can't be recovered, and a body isn't kept. The booking
+      // is the attendee's to change, so a guest gets none.
       const manage =
-        deps.publicUrl && event !== "cancelled" && event !== "declined"
+        !guest && deps.publicUrl && event !== "cancelled" && event !== "declined"
           ? await createManageSession(env, {
               bookingId: booking.id,
               publicUrl: deps.publicUrl,
@@ -463,7 +511,7 @@ async function sendBookingEmail(
             })
           : null;
       const blocks: EmailBlock[] = [
-        { paragraph: LEADS[event].attendee },
+        { paragraph: guest ? LEADS[event].guest : LEADS[event].attendee },
         {
           details: [
             { label: "What", value: titleOf(booking) },
@@ -480,7 +528,9 @@ async function sendBookingEmail(
       const message = renderMessage(branding, senderName, {
         subject: SUBJECTS[event](titleOf(booking)),
         blocks,
-        reason: `You're receiving this because of your booking with ${senderName}.`,
+        reason: guest
+          ? `You're receiving this because you were added as a guest to a booking with ${senderName}.`
+          : `You're receiving this because of your booking with ${senderName}.`,
       });
       await deps.notifier.email({
         environment: env,

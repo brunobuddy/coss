@@ -57,6 +57,32 @@ An event type can ask `questions`, answered in `answers`. Answers are encrypted,
 when you retrieve one booking: never in lists, webhooks, logs, emails or calendars. See
 [Privacy](/docs/scheduling/privacy) before asking anything sensitive.
 
+## Guests
+
+An attendee can bring other people. Set `max_guests` on the event type (up to 10; the default is 0, and a `group`
+event type takes none, since each person books a seat), then pass them when booking. The hosted booker offers it too.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.bookings.create({
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-01-04T15:00:00.000Z",
+  attendee: { name: "Sam Lee", email: "sam@example.com", time_zone: "America/New_York" },
+  guests: [{ email: "jo@example.com", name: "Jo Park" }],
+});
+```
+
+Guests come after the attendee in `attendees`, with the `role` `guest`. With attendee emails on, they get the same
+confirmation, calendar invite, reminder and changes, in the attendee's time zone, but no link to change the booking,
+and they hear nothing until it's confirmed. Answers belong to the attendee, and guests aren't counted as seats or
+extra bookings.
+
+Guests didn't ask to hear from anyone, so in live environments they're emailed only from your own
+[`email_from`](/docs/scheduling/notifications), never coss.com's address. Without one they're still on the booking and
+its calendar event, and telling them is up to you.
+
 ## Rescheduling and cancelling
 
 `reschedule` keeps the booking's id, and its old time stays booked unless the new one's free. Your API

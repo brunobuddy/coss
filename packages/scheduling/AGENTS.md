@@ -126,7 +126,24 @@ attendee sees times, never other hosts.
 - Answers come back only from `getBooking`: never lists, webhooks, logs, emails or calendars. The dashboard's iOS
   routes map bookings to name or uid only (`scheduling/wire.ts` under `apps/web/src/app/api/mobile/v1`).
 - Webhooks and log lines carry ids, times and statuses. `request-log.ts` keeps no bodies of these routes.
-- Host calendar events are private, titled "Appointment", with no attendees.
+- Host calendar events are private, titled "Appointment", with no attendees, unless the event type's
+  `host_calendar_details` is `full`: then `calendar/details.ts` adds its title, and who's coming to the title and
+  description. Nobody's ever invited through a provider (Graph can't be stopped from emailing them), answers never go
+  there, a group session's event has only the title, and Zoom stays neutral (`detailedEvent`, `writes.ts`). HIPAA mode
+  refuses `full` at setup, and is read again at each write.
+- A provider's copy of someone's details has to go when ours does. `details_written` marks a row whose event may hold
+  them, **before** the attendees are read and the request sent: an erasure then either commits first, so the write
+  finds nothing, or sees the mark and asks for another write (`rewriteDetailedEvents`). Only a write without details
+  clears it. `eraseAttendee`, `eraseAttendeeByEmail`, `redactExpiredBookings` and `enableHipaaMode` all rewrite these
+  rows, past events included. `description` is left out of writes to an event that never held details, so what a host
+  wrote there stays. Failing to rewrite a past event announces nothing.
+- A guest is a `scheduling_attendee` with `role = 'guest'`, only an email and optional name, and the attendee's zone and
+  locale; `participants` lists the attendee first. The event type's `max_guests` (default 0, never on `group`) allows
+  them, since each is an address someone typed that we then email. So in live environments they're only emailed from the
+  customer's own `email_from`, never coss.com's. They get no manage link and no SMS, and hear nothing until a booking's
+  confirmed (`guestsAreTold`, `notifications.ts`). Their emails say nothing the booker wrote. Browsers
+  and the iOS app see only the attendee. With no `uid`, a guest is erased by address (`POST /scheduling/attendees/erase`):
+  never put the address in a path or the audit log.
 - `redactExpiredBookings` erases details 90 days after a booking ends, `purgeExpiredBookings` the row at 395;
   `eraseAttendee` on request, which also ends booker sessions fixed to them (found by `attendee_uid`). Periods live in
   `@coss/retention`.

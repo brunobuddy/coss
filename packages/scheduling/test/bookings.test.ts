@@ -6,6 +6,7 @@ import {
   approveBooking,
   cancelBooking,
   confirmHold,
+  createBookerSession,
   createBooking,
   createEventType,
   createHold,
@@ -14,6 +15,7 @@ import {
   createSeries,
   declineBooking,
   deleteHost,
+  eraseAttendeeByEmail,
   expireDueBookings,
   getBooking,
   getBookingOverview,
@@ -1378,5 +1380,137 @@ describe("billing", () => {
       select coalesce(sum(quantity), 0)::int as n from billing_usage
       where organization_id = ${env.organizationId} and meter = 'scheduling.bookings'`);
     expect((rows[0] as { n: number }).n).toBe(1);
+  });
+});
+
+describe("guests", () => {
+  async function allowing(maxGuests: number) {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    const eventType = await eventTypeFor(env, [{ host: host.id }], { max_guests: maxGuests });
+    return { env, eventType };
+  }
+  const request = (eventType: string, guests: { email: string; name?: string }[]) => ({
+    eventType,
+    startMs: at("09:00"),
+    attendee,
+    guests,
+  });
+
+  test("they come after the attendee, with no uid of their own", async () => {
+    const { env, eventType } = await allowing(2);
+    const guests = [{ email: "jo@example.com", name: "Jo Park" }, { email: "kai@example.com" }];
+    const { booking } = await createBooking(env, request(eventType.id, guests), deps, actor);
+    expect(booking.attendees.map((person) => person.role)).toEqual(["attendee", "guest", "guest"]);
+    expect(booking.attendees[0]?.uid).toBe("patient_1");
+    const jo = booking.attendees.find((person) => person.email === "jo@example.com");
+    expect(jo).toMatchObject({ name: "Jo Park", uid: null, phone: null, time_zone: "UTC" });
+  });
+
+  test("an event type allows none by default, and never more than it says", async () => {
+    const none = await allowing(0);
+    expect(
+      await code(
+        createBooking(none.env, request(none.eventType.id, [{ email: "a@b.co" }]), deps, actor),
+      ),
+    ).toBe("invalid_attendee");
+    const one = await allowing(1);
+    expect(
+      await code(
+        createBooking(
+          one.env,
+          request(one.eventType.id, [{ email: "a@b.co" }, { email: "c@d.co" }]),
+          deps,
+          actor,
+        ),
+      ),
+    ).toBe("invalid_attendee");
+  });
+
+  test("everyone needs their own address, and a name can't hold a link", async () => {
+    const { env, eventType } = await allowing(3);
+    for (const guests of [
+      [{ email: "SAM@example.com" }],
+      [{ email: "a@b.co" }, { email: "A@b.co" }],
+      [{ email: "a@b.co", name: "see https://evil.example/x" }],
+    ]) {
+      expect(await code(createBooking(env, request(eventType.id, guests), deps, actor))).toBe(
+        "invalid_attendee",
+      );
+    }
+  });
+
+  test("a lost slot leaves no guests behind", async () => {
+    const { env, eventType } = await allowing(1);
+    await createBooking(env, request(eventType.id, [{ email: "a@b.co" }]), deps, actor);
+    expect(
+      await code(createBooking(env, request(eventType.id, [{ email: "c@d.co" }]), deps, actor)),
+    ).toBe("slot_unavailable");
+    const rows = await db
+      .select()
+      .from(schema.schedulingAttendee)
+      .where(eq(schema.schedulingAttendee.environmentId, env.environmentId));
+    expect(rows.length).toBe(2);
+  });
+
+  test("a series takes them to every occurrence", async () => {
+    const { env, eventType } = await allowing(1);
+    const { result } = await createSeries(
+      env,
+      {
+        ...request(eventType.id, [{ email: "a@b.co" }]),
+        recurrence: { frequency: "weekly", interval: 1, count: 2 },
+        onConflict: "reject",
+      },
+      deps,
+      actor,
+    );
+    const rows = await db
+      .select({ role: schema.schedulingAttendee.role })
+      .from(schema.schedulingAttendee)
+      .where(eq(schema.schedulingAttendee.environmentId, env.environmentId));
+    expect(result.bookings.length).toBe(2);
+    expect(rows.filter((row) => row.role === "guest").length).toBe(2);
+  });
+
+  test("a group event type can't have them: each person takes a seat", async () => {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    expect(
+      await code(
+        eventTypeFor(env, [{ host: host.id }], { kind: "group", capacity: 5, max_guests: 1 }),
+      ),
+    ).toBe("invalid_event_type");
+  });
+
+  test("an address erases a guest, without touching the attendee or the booking", async () => {
+    const { env, eventType } = await allowing(1);
+    const { booking } = await createBooking(
+      env,
+      request(eventType.id, [{ email: "jo@example.com", name: "Jo Park" }]),
+      deps,
+      actor,
+    );
+    expect(await eraseAttendeeByEmail(env, { email: "Jo@Example.com" }, deps)).toBe(1);
+    const after = await getBooking(env, booking.id, deps);
+    expect(after.status).toBe("confirmed");
+    expect(after.attendees[0]?.email).toBe("sam@example.com");
+    expect(after.attendees[1]).toMatchObject({ role: "guest", email: null, name: null });
+  });
+
+  test("an address ends a booker session fixed to the person it finds", async () => {
+    const { env, eventType } = await allowing(0);
+    await createBooking(env, request(eventType.id, []), deps, actor);
+    const session = await createBookerSession(
+      env,
+      { eventType: eventType.id, attendee, publicUrl: null },
+      deps,
+    );
+    expect(await eraseAttendeeByEmail(env, { email: "sam@example.com" }, deps)).toBe(1);
+    const [row] = await db
+      .select({ revokedAt: schema.schedulingSession.revokedAt })
+      .from(schema.schedulingSession)
+      .where(eq(schema.schedulingSession.id, session.id));
+    expect(row?.revokedAt).not.toBeNull();
   });
 });
