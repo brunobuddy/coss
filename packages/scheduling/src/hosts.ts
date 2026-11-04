@@ -121,7 +121,8 @@ async function nudgeDelegations(
       and(
         eq(schedulingCalendarDelegation.organizationId, scope.organizationId),
         eq(schedulingCalendarDelegation.environmentId, scope.environmentId),
-        eq(schedulingCalendarDelegation.status, "active"),
+        // A failing one too: a new host stops being offered as free during an outage as well.
+        inArray(schedulingCalendarDelegation.status, ["active", "failing"]),
         inArray(schedulingCalendarDelegation.domain, domains),
       ),
     );

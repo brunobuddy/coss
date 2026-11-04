@@ -535,7 +535,7 @@ async function hostStillWants(
   tx: Executor,
   delegation: DelegationRow,
   host: Host,
-  opts: { ifCredentials?: string | undefined } = {},
+  opts: { ifCredentials?: string | undefined; duringOutage?: boolean } = {},
 ): Promise<boolean> {
   const [current] = await tx
     .select({ calendarAccount: schedulingHost.calendarAccount, email: schedulingHost.email })
@@ -565,7 +565,8 @@ async function hostStillWants(
       ),
     )
     .for("share");
-  if (state?.status !== "active") return false;
+  if (!state) return false;
+  if (state.status !== "active" && !(opts.duringOutage && state.status === "failing")) return false;
   if (opts.ifCredentials && state.credentials !== opts.ifCredentials) return false;
   if (!host.existing) {
     const wanted = current.calendarAccount ?? (state.matchHostEmail ? current.email : null);
@@ -800,6 +801,7 @@ async function recordMailboxFailure(
   code: string,
   now: Date,
   credentials: string | undefined,
+  opts: { duringOutage?: boolean } = {},
 ): Promise<void> {
   if (host.existing) {
     await db
@@ -809,7 +811,11 @@ async function recordMailboxFailure(
     return;
   }
   await db.transaction(async (tx) => {
-    if (!(await hostStillWants(tx, delegation, host, { ifCredentials: credentials }))) return;
+    const wanted = await hostStillWants(tx, delegation, host, {
+      ifCredentials: credentials,
+      duringOutage: opts.duringOutage ?? false,
+    });
+    if (!wanted) return;
     const [row] = await tx
       .insert(schedulingCalendarConnection)
       .values({
@@ -968,11 +974,34 @@ async function warnOfExpiringSecret(delegation: DelegationRow, deps: CalendarDep
   });
 }
 
+/**
+ * During an outage, hosts it hasn't connected yet aren't offered as free any more than those it has:
+ * they get a stand-in like a mailbox that can't be reached, and are tried as soon as access is back.
+ * No provider calls, so all of them, within the budget.
+ */
+async function hideUnconnectedHosts(delegation: DelegationRow, deps: CalendarDeps): Promise<void> {
+  const now = new Date(nowMs(deps));
+  const code = delegation.lastErrorCode ?? "delegation_failing";
+  const deadline = Date.now() + RUN_BUDGET_MS;
+  for (;;) {
+    const hosts = await hostsToConnect({ ...delegation, reconcileCursor: null }, now);
+    const fresh = hosts.filter((host) => !host.existing);
+    for (const host of fresh) {
+      await recordMailboxFailure(delegation, host, code, now, undefined, { duringOutage: true });
+    }
+    if (fresh.length < HOSTS_PER_RUN || Date.now() > deadline) return;
+  }
+}
+
 async function reconcile(delegation: DelegationRow, deps: CalendarDeps): Promise<Date> {
   if (delegation.status === "deleting") return finishDeleting(delegation, deps);
   if (delegation.status === "failing") {
     const { result } = await probeDelegation(delegation, deps);
-    if (result === "ok") await restoreDelegation(delegation, deps);
+    if (result === "ok") {
+      await restoreDelegation(delegation, deps);
+      return new Date(nowMs(deps));
+    }
+    await hideUnconnectedHosts(delegation, deps);
     return new Date(nowMs(deps) + BACKOFF_MS);
   }
   await warnOfExpiringSecret(delegation, deps);

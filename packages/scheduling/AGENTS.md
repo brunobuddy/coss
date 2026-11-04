@@ -166,6 +166,8 @@ once, and every host on it gets their calendar with no consent screen.
   if it turns out to be the primary. An email correction releases such a connection (`releaseUnreachedMailbox`): it
   has no events, and it's the only mailbox change that doesn't need `calendar_account`. `reached_at` is what says it was
   never reached: `verified_at` isn't, since toggling `read_busy` clears it.
+  The same goes for hosts it hasn't connected when access is lost, or who are added during an outage
+  (`hideUnconnectedHosts`), who are tried again as soon as it's back. A stand-in isn't shown on the wire or selectable.
 - **Deleting** is `deleting`, then the worker, within a run's budget: each connection released (details scrubbed,
   channels stopped), then removed with the host locked `FOR UPDATE`, or a booking reading its write target would hit a foreign key. Hosts stay bookable with no conflict
   check (the dialog and docs say so), as with any disconnect.

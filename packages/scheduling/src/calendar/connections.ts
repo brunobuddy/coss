@@ -701,6 +701,9 @@ export async function markNeedsReauth(
   });
 }
 
+/** A delegation that's never reached this mailbox: its calendar row only keeps the host hidden. */
+const isStandIn = (row: ConnectionRow) => row.delegationId !== null && row.reachedAt === null;
+
 export type ConnectionObject = {
   object: "scheduling.calendar_connection";
   id: string;
@@ -746,7 +749,10 @@ async function toConnectionObjects(
     delegation: row.delegationId,
     calendars: calendars
       .filter(
-        (calendar) => calendar.connectionId === row.id && calendar.externalId !== ZOOM_CALENDAR_ID,
+        (calendar) =>
+          calendar.connectionId === row.id &&
+          calendar.externalId !== ZOOM_CALENDAR_ID &&
+          !isStandIn(row),
       )
       .map((calendar) => ({
         id: calendar.id,
@@ -818,6 +824,18 @@ export async function updateCalendar(
       .for("update");
     if (!calendar)
       throw new SchedulingError("not_found", `No calendar "${calendarId}" on this host.`);
+    const [connection] = await tx
+      .select()
+      .from(schedulingCalendarConnection)
+      .where(
+        and(
+          eq(schedulingCalendarConnection.id, calendar.connectionId),
+          eq(schedulingCalendarConnection.organizationId, calendar.organizationId),
+        ),
+      );
+    if (connection && isStandIn(connection)) {
+      throw new SchedulingError("not_found", `No calendar "${calendarId}" on this host.`);
+    }
     if (params.write_target === true) {
       await tx
         .update(schedulingCalendar)

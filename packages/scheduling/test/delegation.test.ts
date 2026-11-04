@@ -548,6 +548,28 @@ describe("connecting hosts", () => {
     ]);
   });
 
+  test("a stand-in can't be seen or chosen", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const gone = await hostOn(env, "gone");
+    api.goneMailboxes.add(`gone@${DOMAIN}`);
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    expect(await listConnections(env, gone.id)).toMatchObject([{ calendars: [] }]);
+    const [standIn] = await db
+      .select()
+      .from(schema.schedulingCalendar)
+      .where(eq(schema.schedulingCalendar.hostId, gone.id));
+    expect(standIn).toBeDefined();
+    expect(
+      await code(updateCalendar(env, gone.id, standIn?.id as string, { write_target: true })),
+    ).toBe("not_found");
+    expect(
+      await code(updateCalendar(env, gone.id, standIn?.id as string, { read_busy: false })),
+    ).toBe("not_found");
+  });
+
   test("a stand-in that isn't the mailbox's calendar is replaced", async () => {
     const env = await environment();
     const api = new FakeGraphApi();
@@ -1501,6 +1523,39 @@ describe("losing access", () => {
     await dueNow(delegation.id);
     await run(env, deps);
     expect((await getCalendarDelegation(env, delegation.id)).status).toBe("failing");
+  });
+
+  test("hosts not connected yet aren't offered as free during an outage, and come back after", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const delegation = await activeGoogle(env, deps);
+    const waiting = await hostOn(env, "waiting");
+    const eventType = await eventTypeFor(env, [waiting.id]);
+    expect(await slotStarts(env, eventType.id)).toContain("09:00");
+    api.delegationRefused = { error: "unauthorized_client" };
+    await markDelegationFailing(
+      { id: delegation.id, organizationId: env.organizationId },
+      "unauthorized_client",
+      { now: () => NOW },
+    );
+    await run(env, deps);
+    expect(await slotStarts(env, eventType.id)).toEqual([]);
+    // One added during the outage too, nudged by being created.
+    const late = await hostOn(env, "late");
+    const lateType = await eventTypeFor(env, [late.id]);
+    await run(env, deps);
+    expect(await slotStarts(env, lateType.id)).toEqual([]);
+    api.delegationRefused = null;
+    await dueNow(delegation.id);
+    await run(env, deps);
+    expect((await getCalendarDelegation(env, delegation.id)).status).toBe("active");
+    await run(env, deps);
+    expect(await listConnections(env, waiting.id)).toMatchObject([
+      { status: "active", calendars: [{ write_target: true }] },
+    ]);
+    expect(await listConnections(env, late.id)).toMatchObject([{ status: "active" }]);
+    expect(await slotStarts(env, eventType.id)).toContain("09:00");
   });
 
   test("a failure while it's already failing doesn't announce again", async () => {

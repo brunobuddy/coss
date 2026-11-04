@@ -9,7 +9,7 @@ import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueNotification } from "@coss/notifications";
 import { enqueueWebhookMessage } from "@coss/webhooks";
-import { and, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import type { SchedulingDelegationWebhookEventType } from "../webhook-types.ts";
 import { CalendarError } from "./client.ts";
 import {
@@ -102,7 +102,8 @@ export async function markDelegationFailing(
   await db.transaction(async (tx) => {
     const [changed] = await tx
       .update(schedulingCalendarDelegation)
-      .set({ status: "failing", failingSince: now, lastErrorCode: code })
+      // Due now: hosts it hasn't connected yet have to stop being offered too.
+      .set({ status: "failing", failingSince: now, lastErrorCode: code, nextReconcileAt: now })
       .where(
         and(
           rowOf(delegation),
@@ -165,6 +166,18 @@ export async function restoreDelegation(
         ),
       )
       .returning({ id: schedulingCalendarConnection.id });
+    // Hosts hidden during the outage without ever being reached: now they can be.
+    await tx
+      .update(schedulingCalendarConnection)
+      .set({ lastErrorAt: new Date(0) })
+      .where(
+        and(
+          eq(schedulingCalendarConnection.delegationId, changed.id),
+          eq(schedulingCalendarConnection.organizationId, changed.organizationId),
+          eq(schedulingCalendarConnection.status, "needs_reauth"),
+          isNull(schedulingCalendarConnection.reachedAt),
+        ),
+      );
     if (connections.length > 0) {
       await tx
         .update(schedulingCalendar)

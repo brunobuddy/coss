@@ -129,7 +129,8 @@ still choose which of its calendars count on [their page](/docs/scheduling/embed
 ## When access is lost
 
 - **The provider refuses the credentials** (the client ID removed, consent revoked, a secret expired). The
-  delegation goes `failing` and its hosts stop being offered at once. You get
+  delegation goes `failing` and its hosts stop being offered at once, including any on the domain it hasn't connected
+  yet. You get
   `scheduling.calendar_delegation.failing`, and your owners and admins get an email. Hosts aren't told, since
   there's nothing they can do. Once access is back they return by themselves, with
   `scheduling.calendar_delegation.restored`, and nobody has to reconnect. New credentials or a successful verify
