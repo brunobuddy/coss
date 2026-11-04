@@ -11,9 +11,9 @@ const SAMPLE =
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex flex-col gap-1 border-b px-4 py-5 sm:border-r sm:border-b-0 sm:px-8 sm:last:border-r-0">
+    <div className="flex flex-col gap-1 border-b px-4 py-4 last:border-b-0 sm:border-r sm:border-b-0 sm:px-5 sm:last:border-r-0">
       <dt className="text-muted-foreground text-sm">{label}</dt>
-      <dd className="font-mono text-2xl">{value}</dd>
+      <dd className="font-mono text-2xl tabular-nums">{value}</dd>
     </div>
   );
 }
@@ -27,7 +27,7 @@ export function SmsSegmentCalculator() {
   const forcing = [...new Set([...body].filter((character) => !isGsm7(character)))];
   return (
     <div>
-      <div className="flex flex-col gap-4 border-t px-4 py-8 sm:px-8">
+      <div className="flex flex-col gap-4 p-4 sm:p-5">
         <Label htmlFor={bodyId}>Message</Label>
         <Textarea
           id={bodyId}
@@ -47,7 +47,7 @@ export function SmsSegmentCalculator() {
         <Stat label="Left in this segment" value={remaining} />
       </dl>
       {forcing.length > 0 || segments > MAX_SMS_SEGMENTS || body.length > MAX_SMS_BODY_LENGTH ? (
-        <div className="flex flex-col gap-2 border-t px-4 py-6 text-sm sm:px-8">
+        <div className="flex flex-col gap-2 border-t p-4 text-sm sm:p-5">
           {forcing.length > 0 ? (
             <p>
               These characters aren't in GSM-7 and force the whole message into UCS-2:{" "}

@@ -48,7 +48,7 @@ export function WebhookSignatureVerifier() {
 
   return (
     <form
-      className="flex flex-col gap-6 border-t px-4 py-8 sm:px-8"
+      className="flex flex-col gap-6 p-4 sm:p-5"
       onSubmit={async (event) => {
         event.preventDefault();
         setResult(

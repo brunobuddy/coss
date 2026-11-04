@@ -1,6 +1,8 @@
 @import "tailwindcss";
 /* coss ui tokens. shadcn.css points Fumadocs' colors at them, so its components share the theme. */
 @import "@coss/ui/theme.css";
+/* The dashboard's tactile finish over coss ui, shared so the site and the app feel like one product. */
+@import "@coss/ui/finish.css";
 @import "fumadocs-ui/css/shadcn.css";
 @import "fumadocs-ui/css/preset.css";
 @import "fumadocs-openapi/css/preset.css";
@@ -49,7 +51,204 @@
   }
 }
 
-/* The landing page's catalog drawings (src/components/home): the faces of its isometric parts. */
+/* A stage's code runs edge to edge in its cell (src/components/marketing/kit.tsx). */
+.stage-code figure.shiki {
+  margin: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+}
+
+/*
+ * A stage's code is a shaded well, in neutrals: colour on these pages belongs to status and product
+ * tiles. Weight comes from the foreground, with keywords and strings stepped back from it.
+ */
+.stage-code {
+  background-color: color-mix(in srgb, var(--foreground) 2.5%, transparent);
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 3.5%, transparent),
+    transparent 0.75rem
+  );
+}
+
+/* In the dark a well is shaded with black, as in the dashboard's finish. */
+.dark .stage-code {
+  background-color: color-mix(in srgb, black 16%, transparent);
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, black 22%, transparent),
+    transparent 0.75rem
+  );
+}
+
+.stage-code figure.shiki pre {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.stage-code figure.shiki span[style*="--shiki-light"] {
+  /* biome-ignore lint/complexity/noImportantStyles: Fumadocs sets token colours with !important. */
+  color: var(--foreground) !important;
+}
+
+.stage-code figure.shiki span[style*="#032F62"] {
+  /* biome-ignore lint/complexity/noImportantStyles: Fumadocs sets token colours with !important. */
+  color: color-mix(in srgb, var(--foreground) 68%, transparent) !important;
+}
+
+.stage-code figure.shiki :is(span[style*="#D73A49"], span[style*="#6A737D"]) {
+  /* biome-ignore lint/complexity/noImportantStyles: Fumadocs sets token colours with !important. */
+  color: var(--muted-foreground) !important;
+}
+
+/*
+ * The one thing to take away from a sample: the call, in the product's colour. Everything around it
+ * steps back. Marked with Shiki's `// [!code word:…]` in each MDX's <HeroSample>.
+ */
+.stage-code {
+  --call: var(--foreground);
+}
+
+.stage-code[data-tone="email"] {
+  --call: var(--color-orange-600);
+}
+.stage-code[data-tone="marketing"] {
+  --call: var(--color-pink-600);
+}
+.stage-code[data-tone="inboxes"] {
+  --call: var(--color-violet-600);
+}
+.stage-code[data-tone="sms"] {
+  --call: var(--color-emerald-600);
+}
+.stage-code[data-tone="verify"] {
+  --call: var(--color-sky-600);
+}
+.stage-code[data-tone="sign"] {
+  --call: var(--color-indigo-600);
+}
+.stage-code[data-tone="forms"] {
+  --call: var(--color-amber-700);
+}
+.stage-code[data-tone="scheduling"] {
+  --call: var(--color-blue-600);
+}
+.stage-code[data-tone="hooks"] {
+  --call: var(--color-teal-600);
+}
+.stage-code[data-tone="risk"] {
+  --call: var(--color-rose-600);
+}
+.dark .stage-code[data-tone="email"] {
+  --call: var(--color-orange-400);
+}
+.dark .stage-code[data-tone="marketing"] {
+  --call: var(--color-pink-400);
+}
+.dark .stage-code[data-tone="inboxes"] {
+  --call: var(--color-violet-400);
+}
+.dark .stage-code[data-tone="sms"] {
+  --call: var(--color-emerald-400);
+}
+.dark .stage-code[data-tone="verify"] {
+  --call: var(--color-sky-400);
+}
+.dark .stage-code[data-tone="sign"] {
+  --call: var(--color-indigo-400);
+}
+.dark .stage-code[data-tone="forms"] {
+  --call: var(--color-amber-400);
+}
+.dark .stage-code[data-tone="scheduling"] {
+  --call: var(--color-blue-400);
+}
+.dark .stage-code[data-tone="hooks"] {
+  --call: var(--color-teal-400);
+}
+.dark .stage-code[data-tone="risk"] {
+  --call: var(--color-rose-400);
+}
+
+/* One run of colour across the call's tokens, without Fumadocs' pill on each of them. */
+.stage-code figure.shiki span.highlighted-word {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background-color: color-mix(in srgb, var(--call) 12%, transparent);
+}
+
+.stage-code figure.shiki span.highlighted-word,
+.stage-code figure.shiki .highlighted-word span,
+.stage-code figure.shiki .highlighted-word button {
+  /* biome-ignore lint/complexity/noImportantStyles: Fumadocs sets token colours with !important. */
+  color: var(--call) !important;
+  font-weight: 600;
+}
+
+/* A status that moves on: each step shows for its beat, the last one stays. */
+.status-step {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .status-step {
+    animation-name: status-show;
+    animation-timing-function: linear;
+  }
+
+  .status-last {
+    animation: fade 160ms ease-out backwards;
+  }
+
+  .enter-pop {
+    animation: pop 260ms cubic-bezier(0.3, 1.5, 0.6, 1) both;
+  }
+
+  .enter-fill {
+    animation: fill-bar 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .enter-draw {
+    stroke-dasharray: 1;
+    animation: draw 900ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+}
+
+@keyframes fill-bar {
+  from {
+    scale: 0 1;
+  }
+}
+
+@keyframes status-show {
+  0%,
+  99% {
+    opacity: 1;
+  }
+}
+
+/* On phones the copy button would sit on the first line of code. */
+@media (width < 40rem) {
+  .stage-code figure.shiki button:not(.twoslash-hover) {
+    display: none;
+  }
+
+  /* Smaller on phones, so the call in a sample's first line stays on screen. */
+  .stage-code figure.shiki pre {
+    font-size: 0.6875rem;
+  }
+}
+
+/* The browser's own surfaces carry the same neutrals. */
+::selection {
+  background-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+/* Shipyard's isometric drawings (src/components/home/iso.tsx): the faces of their parts. */
 :root {
   --iso-top: var(--background);
   --iso-left: color-mix(in srgb, var(--foreground) 5%, var(--background));
@@ -65,27 +264,4 @@
   );
   background-size: 1.5rem 1.5rem;
   background-position: center;
-}
-
-/* Spec rows: a dotted leader between the label and its value. */
-.leader {
-  flex: 1;
-  min-width: 1.5rem;
-  border-bottom: 1px dotted color-mix(in srgb, var(--foreground) 32%, transparent);
-  translate: 0 -0.3em;
-}
-
-/* The landing page's one moment: the email block drops into its socket. */
-@media (prefers-reduced-motion: no-preference) {
-  .assembly-seat {
-    animation: assembly-seat 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
-  }
-}
-@keyframes assembly-seat {
-  from {
-    translate: 0 -84px;
-  }
-  to {
-    translate: 0 0;
-  }
 }

@@ -36,6 +36,27 @@ faq:
     answer: Yes. Turn on files and the form takes multipart posts with attachments, 3 files of up to 10 MB each by default and 25 MB per submission. HTML, SVG, scripts and executables are always refused, and files are served only as downloads.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// [!code word:coss.forms.create]
+const { data: form } = await coss.forms.create({
+  name: "Contact us",
+  allowed_origins: ["https://www.example.com"],
+  fields: [
+    { name: "email", type: "email", required: true },
+    { name: "message", type: "textarea", max_length: 5000 },
+  ],
+  notifications: { recipients: ["support@example.com"] },
+});
+// Point any HTML form at form?.endpoint.
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Create a form, point your HTML at its endpoint, and handle accepted submissions in a webhook. coss.com does the rest.">
 
 ```ts twoslash
