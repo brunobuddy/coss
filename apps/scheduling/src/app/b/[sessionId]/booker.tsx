@@ -37,6 +37,7 @@ import {
 } from "@/components/page";
 import { type Slot, SlotPicker } from "@/components/slot-picker";
 import { TimeZonePicker, zoneLabel } from "@/components/time-zone-picker";
+import { type BookingLocation, Where } from "@/components/where";
 import { type Branding, useAccentColor } from "@/lib/branding";
 import { browserTimeZone, ClientApiError, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
@@ -175,7 +176,12 @@ function QuestionField(props: {
   );
 }
 
-type Done = { status: string; start: string; attendee_emailed: boolean };
+type Done = {
+  status: string;
+  start: string;
+  location: BookingLocation;
+  attendee_emailed: boolean;
+};
 
 function Confirmed(props: { session: Session; done: Done; when: string; timeZone: string }) {
   const { session, done, when, timeZone } = props;
@@ -211,6 +217,7 @@ function Confirmed(props: { session: Session; done: Done; when: string; timeZone
           <Detail icon={GlobeIcon} label="Time zone">
             {zoneLabel(timeZone)}
           </Detail>
+          <Where location={done.location} />
         </DetailList>
       </Panel>
     </main>

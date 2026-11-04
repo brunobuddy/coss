@@ -79,6 +79,47 @@ const HostUid = z
 
 export const HostStatus = z.enum(["active", "disabled"]);
 
+export const HostLocation = z
+  .discriminatedUnion("type", [
+    z.strictObject({
+      type: z.literal("link").meta({ description: "A meeting link of the host's own." }),
+      url: z
+        .url({ protocol: /^https$/, error: "Use an https:// link." })
+        .max(2000)
+        .meta({ description: "The link, which must be `https`." }),
+    }),
+    z.strictObject({
+      type: z.literal("phone").meta({ description: "A phone number of the host's own." }),
+      number: z
+        .string()
+        .regex(/^\+[1-9]\d{6,14}$/, "Use the E.164 format, such as +12125550100.")
+        .meta({ description: "The number, in E.164 format." }),
+    }),
+    z.strictObject({
+      type: z.literal("in_person").meta({ description: "The host's own office." }),
+      address: z.string().trim().min(1).max(500).meta({
+        description: "The address. It can't contain a link.",
+      }),
+    }),
+  ])
+  .meta({
+    id: "SchedulingHostLocation",
+    description: "Where this host meets. A host has at most one of each type.",
+  });
+export type HostLocationOutput = z.output<typeof HostLocation>;
+
+const HostLocations = z
+  .array(HostLocation)
+  .max(3)
+  .refine(
+    (locations) => new Set(locations.map((location) => location.type)).size === locations.length,
+    "A host has at most one location of each type.",
+  )
+  .meta({
+    description:
+      "This host's own office, meeting link and phone number. An event type's location that leaves its value blank uses them.",
+  });
+
 export const CreateHostRequest = z
   .strictObject({
     uid: HostUid.optional(),
@@ -88,6 +129,7 @@ export const CreateHostRequest = z
     }),
     time_zone: TimeZone,
     attributes: Attributes.optional(),
+    locations: HostLocations.optional(),
     metadata: Metadata.optional(),
   })
   .meta({
@@ -99,6 +141,7 @@ export const CreateHostRequest = z
         email: "ana@example.com",
         time_zone: "America/New_York",
         attributes: { licensed_in: ["NY", "NJ"] },
+        locations: [{ type: "in_person", address: "12 Main St, New York, NY" }],
       },
     ],
   });
@@ -116,6 +159,10 @@ export const UpdateHostRequest = z
       .meta({ description: "Where this host's notifications go. `null` removes it." }),
     time_zone: TimeZone.optional(),
     attributes: Attributes.optional(),
+    locations: HostLocations.optional().meta({
+      description:
+        "Replaces this host's own locations. Existing bookings keep the location they have.",
+    }),
     metadata: Metadata.optional(),
     status: HostStatus.optional().meta({
       description: "A `disabled` host isn't offered. Its existing bookings stay.",
@@ -123,6 +170,9 @@ export const UpdateHostRequest = z
   })
   .meta({ id: "UpdateHostRequest", examples: [{ status: "disabled" }] });
 export type UpdateHostRequestOutput = z.output<typeof UpdateHostRequest>;
+
+/** What a host's own page sends: the whole list, which replaces what's there. */
+export const UpdateHostLocationsRequest = z.strictObject({ locations: HostLocations });
 
 const HOST_EXAMPLE = {
   object: "scheduling.host" as const,
@@ -132,6 +182,7 @@ const HOST_EXAMPLE = {
   email: "ana@example.com",
   time_zone: "America/New_York",
   attributes: { licensed_in: ["NY", "NJ"] },
+  locations: [{ type: "in_person" as const, address: "12 Main St, New York, NY" }],
   metadata: {},
   status: "active" as const,
   created_at: "2027-01-01T10:00:00.000Z",
@@ -158,6 +209,10 @@ export const HostObject = z
     attributes: z
       .record(z.string(), z.union([z.string(), z.array(z.string())]))
       .meta({ description: "What pools filter hosts by, as strings or lists of strings." }),
+    locations: z.array(HostLocation).meta({
+      description:
+        "This host's own office, meeting link and phone number. An event type's location that leaves its value blank uses them.",
+    }),
     metadata: z.record(z.string(), z.string()).meta({ description: "Your own key-value pairs." }),
     status: HostStatus.meta({
       description:
@@ -426,7 +481,7 @@ export const Location = z
   ])
   .meta({
     description:
-      "Where a booking meets. `link`, `phone` and `in_person` carry their details; `google_meet`, `microsoft_teams` and `zoom` get a meeting made on the host's connected account.",
+      "Where a booking meets. `link`, `phone` and `in_person` carry their details, and on an event type, left blank, use the booked host's own if they have one; `google_meet`, `microsoft_teams` and `zoom` get a meeting made on the host's connected account.",
     id: "SchedulingLocation",
   });
 
