@@ -1189,6 +1189,21 @@ describe("pools", () => {
       expect(await fairUnits(eventType.id, a)).toBeCloseTo(50);
     });
 
+    test("rescheduling to the same host keeps what the booking took", async () => {
+      const env = await tenantEnv();
+      const [a, b] = await threeHosts(env);
+      const eventType = await poolOf(env, [a, b]);
+      await setUnits(eventType.id, 50);
+      await setUnits(eventType.id, 60, b);
+      const { booking } = await createBooking(env, request(eventType.id, at("09:00")), deps, actor);
+      await updateEventType(env, eventType.id, { hosts: [member(a, 1), member(b)] });
+
+      await rescheduleBooking(env, booking.id, { startMs: at("10:00"), host: a }, deps, actor);
+      await cancelBooking(env, booking.id, deps, actor);
+
+      expect(await fairUnits(eventType.id, a)).toBeCloseTo(0.5);
+    });
+
     test("a booking from before this was recorded gives back one", async () => {
       const env = await tenantEnv();
       const [a] = await threeHosts(env);

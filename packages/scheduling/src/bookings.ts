@@ -2213,7 +2213,7 @@ export async function rescheduleBooking(
       if (error instanceof LostSlot) throw slotLost(error.reason);
       throw error;
     }
-    if (replacement && member) {
+    if (replacement && member && replacement.id !== member.hostId) {
       await tx
         .delete(schedulingBookingHost)
         .where(
