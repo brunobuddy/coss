@@ -1172,11 +1172,10 @@ async function settleSessionLocation(
 function sharedLocation(
   eventType: EventTypeRow,
   chosen: Location | null,
-  actor: BookingActor,
+  fromBrowser: boolean | undefined,
 ): Location | null {
   if (!chosen) return null;
-  const browser = actor.kind === "booker_session" || actor.kind === "manage_session";
-  if (!browser && chosen.type !== "phone") return chosen;
+  if (!fromBrowser && chosen.type !== "phone") return chosen;
   return eventType.locations.find((location) => location.type === chosen.type) ?? chosen;
 }
 
@@ -1257,7 +1256,11 @@ async function createOne(
   if (eventType.kind === "group") {
     const entry = candidates.members[0] ?? candidates.required[0];
     if (!entry) throw slotLost("no_hosts");
-    const shared = sharedLocation(eventType, chooseLocation(eventType, request.location), actor);
+    const shared = sharedLocation(
+      eventType,
+      chooseLocation(eventType, request.location),
+      request.locationFromBrowser,
+    );
     const chosen = shared && withHostLocation(shared, [entry.host]);
     try {
       const joined = await tx.transaction((savepoint) =>

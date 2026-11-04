@@ -5,6 +5,7 @@ import type { LogWriter } from "@coss/logs";
 import { memoryLogWriter } from "@coss/logs/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
 import {
+  createBookerSession,
   createEventType,
   createHostSession,
   createManageSession,
@@ -1035,6 +1036,49 @@ describe("client API", () => {
         200,
       );
     });
+  });
+
+  test("a browser can't set a group's shared location, even on a session a member opened", async () => {
+    const s = await setUp();
+    const group = (await (
+      await call(s.app, s.key, "POST", "/event_types", {
+        title: "Class",
+        kind: "group",
+        capacity: 3,
+        duration_minutes: 30,
+        hosts: [{ host: s.host }],
+        locations: [{ type: "link", url: "https://meet.example.com/real" }],
+      })
+    ).json()) as { id: string };
+    const env = {
+      organizationId: s.tenant.organization.id,
+      projectId: s.tenant.project.id,
+      environmentId: s.tenant.development.id,
+      mode: "sandbox" as const,
+    };
+    const session = await createBookerSession(
+      env,
+      { eventType: group.id, createdByUserId: s.tenant.owner.id, publicUrl: null },
+      testSchedulingDeps(),
+    );
+    const seat = await client(s.app, session.token, "POST", "/bookings", {
+      start: at("09:00"),
+      attendee: { name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+      location: { type: "link", url: "https://evil.example.com/" },
+    });
+    expect(seat.status).toBe(201);
+    const { location } = (await seat.json()) as { location: { url: string } };
+    expect(location.url).toBe("https://meet.example.com/real");
+    const { events } = await getBookingOverview(
+      env,
+      (
+        (await (await call(s.app, s.key, "GET", `/bookings?event_type=${group.id}`)).json()) as {
+          data: { id: string }[];
+        }
+      ).data[0]?.id as string,
+      testSchedulingDeps(),
+    );
+    expect(events.at(-1)?.actor).toBe("user");
   });
 
   test("a manage session a dashboard member opened acts as them, past the cutoffs", async () => {
