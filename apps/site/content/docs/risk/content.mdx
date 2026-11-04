@@ -69,13 +69,19 @@ at what they catch in the dashboard, and adjust.
 - The model reads the first 8,000 characters (`truncated: true` when there were more). Links in the
   text are passed as host and path, without query strings.
 - A classification takes up to 3 seconds. `coss.risk.classify()` returns a `503`
-  (`classification_unavailable`) when the model fails or is slower, which the SDK retries; treat a
-  persistent error as "unknown". An assessment never fails because of it: it goes on without the
+  (`classification_unavailable`) when the model fails or is slower. The SDK doesn't retry it, because
+  each answered check is billed: retry yourself, or treat the error as "unknown". An assessment never fails because of it: it goes on without the
   scores and lists `content` in `degraded`.
 - Live classifications are limited per organization, to 10 per second (bursts of 20) and 10,000 per
   day, across `coss.risk.classify()` and assessments with `content`. Over the limit, `classify`
   returns a `429` (`classification_rate_limited`) and assessments go on without the scores
   (`degraded`). Sandbox classifications don't count.
+- `coss.risk.classify()` costs <Rate meter="risk.content_checks" /> for each
+  text the model answered about, and the Free plan includes
+  <Included meter="risk.content_checks" /> (beyond it, a `402`, `usage_limit_exceeded`). It also
+  returns a `402` on a billing hold (`billing_hold`) or over a budget (`budget_exceeded`). Content
+  in an assessment is part of the [assessment's price](/docs/risk#pricing) and is skipped when the
+  assessment runs reduced.
 
 ## Privacy
 

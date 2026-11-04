@@ -8,7 +8,9 @@ export type PlanKey = "free" | "pro" | "scale" | "enterprise";
 export type Meter =
   | "email.recipients"
   | "email.dedicated_ip"
+  | "email.attachment_data"
   | "email.received"
+  | "email.received_data"
   | "email.inboxes"
   | "sms.segments"
   | "sms.received_segments"
@@ -16,6 +18,8 @@ export type Meter =
   | "sms.registrations"
   | "sign.completed_requests"
   | "risk.phone_checks"
+  | "risk.assessments"
+  | "risk.content_checks"
   | "verify.verifications"
   | "verify.sms"
   | "forms.submissions"

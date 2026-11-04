@@ -103,6 +103,7 @@ const BUCKET_LABELS: Partial<Record<BucketName, string>> = {
   "email.recipients.second": "Live recipients per second, per organization",
   "email.recipients.day": "Live recipients per day, per organization",
   "email.sandbox_recipients.day": "Sandbox recipients per day, per environment",
+  "email.inbound.megabytes.day": "MB received per day past each email's first, per organization",
   "dashboard.invitations": "Member invitations per day, per organization",
   "dashboard.migration_connections": "Provider keys checked for imports per day, per organization",
   "hooks.messages.second": "Live Hooks messages per second, per organization",

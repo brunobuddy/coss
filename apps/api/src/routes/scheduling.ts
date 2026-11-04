@@ -2,6 +2,7 @@
  * Scheduling over the public API (`/v1/scheduling/*`): hosts, their schedules, event types, slots,
  * bookings, holds and series. Tenancy comes only from the API key.
  */
+
 import {
   approveBooking,
   type BookingActor,
@@ -13,6 +14,7 @@ import {
   connectSimulated,
   createBookerSession,
   createBooking,
+  createCalendarDelegation,
   createEventType,
   createHold,
   createHost,
@@ -21,18 +23,24 @@ import {
   createSchedule,
   createSeries,
   declineBooking,
+  deleteCalendarDelegation,
   deleteHold,
   deleteHost,
   deleteSchedule,
   disconnectCalendar,
   eraseAttendee,
+  eraseAttendeeByEmail,
+  explainSlot,
   getBooking,
+  getCalendarDelegation,
   getEventType,
   getHost,
   getSchedule,
   getSettings,
   getSettingsRow,
+  listBookingEvents,
   listBookings,
+  listCalendarDelegations,
   listConnections,
   listEventTypeSlots,
   listEventTypes,
@@ -49,37 +57,49 @@ import {
   toConnectionObject,
   updateBookingLocation,
   updateCalendar,
+  updateCalendarDelegation,
   updateEventType,
   updateHost,
   updateSchedule,
   updateSettings,
+  verifyCalendarDelegation,
 } from "@coss/scheduling";
 import {
   AuthorizeCalendarRequest,
   AvailabilitySearchRequest,
   AvailabilitySearchResult,
+  BookingEventList,
   BookingList,
   BookingObject,
   CalendarAuthorization,
   CalendarConnectionList,
   CalendarConnectionObject,
+  CalendarDelegationList,
+  CalendarDelegationObject,
+  CancelBookingRequest,
   CancelledSeries,
   CancelSeriesRequest,
   ConfirmHoldRequest,
   CreateBookingRequest,
   CreateCalendarConnectionRequest,
+  CreateCalendarDelegationRequest,
   CreateEventTypeRequest,
   CreateHoldRequest,
   CreateHostRequest,
   CreateSeriesRequest,
   DeletedCalendarConnection,
+  DeletedCalendarDelegation,
   DeletedHost,
   DeletedSchedule,
+  EraseAttendeeByEmailRequest,
   ErasedAttendee,
+  ErasedAttendeeByEmail,
   EventTypeList,
   EventTypeObject,
+  ExplainSlotQuery,
   HostList,
   HostObject,
+  ListBookingEventsQuery,
   ListBookingsQuery,
   PageQuery,
   RescheduleBookingRequest,
@@ -89,17 +109,21 @@ import {
   SeriesResult,
   SetSimulatedBusyRequest,
   SettingsObject,
+  SlotExplanation,
   SlotList,
   SlotsQuery,
   UpdateBookingLocationRequest,
+  UpdateCalendarDelegationRequest,
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
   UpdateHostRequest,
   UpdateSettingsRequest,
   UpsertScheduleRequest,
+  VerifyCalendarDelegationRequest,
 } from "@coss/scheduling/schemas";
 import { secretsKeyRing } from "@coss/webhooks";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { recordApiAudit } from "../audit.ts";
 import { ApiError } from "../errors.ts";
@@ -156,6 +180,9 @@ const ConnectionParams = HostParams.extend({
 const CalendarParams = HostParams.extend({
   calendar_id: param("The calendar's id.", "cal_01kd2m9a0b1c2d3e4f5g6h7j8m"),
 });
+const DelegationParams = z.object({
+  id: param("The delegation's id.", "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m"),
+});
 const AttendeeParams = z.object({ uid: param("Your id for the attendee.", "patient_77") });
 
 const bodyErrors = {
@@ -167,9 +194,35 @@ const invalid = errorDoc(
   "The request failed validation (`validation_error`, see `issues`), or can't be done: see `code`.",
 );
 const refusedBooking = errorDoc(
-  "The time isn't available (`slot_unavailable`), the answers or attendee are invalid " +
-    "(`invalid_answers`, `invalid_attendee`), or the `Idempotency-Key` was used with a different " +
-    "request (`idempotency_key_reused`).",
+  "The time isn't available (`slot_unavailable`), `start`, `duration_minutes` or the occurrence " +
+    "count is out of bounds (`invalid_time`), the attendee's time zone isn't an IANA name " +
+    "(`invalid_time_zone`), the answers or attendee are invalid (`invalid_answers`, " +
+    "`invalid_attendee`), or the `Idempotency-Key` was used with a different request " +
+    "(`idempotency_key_reused`).",
+);
+const invalidHost = errorDoc(
+  "The request failed validation (`validation_error`, see `issues`), `time_zone` isn't an IANA " +
+    "name (`invalid_time_zone`), or another host has the `uid` (`uid_taken`).",
+);
+const invalidSchedule = errorDoc(
+  "The request failed validation (`validation_error`, see `issues`), a range ends before it " +
+    "starts or a date has two overrides (`invalid_schedule`), or `time_zone` isn't an IANA name " +
+    "(`invalid_time_zone`).",
+);
+const invalidEventType = errorDoc(
+  "The request failed validation (`validation_error`, see `issues`), the settings don't fit " +
+    "together (`invalid_event_type`), `grid_time_zone` isn't an IANA name (`invalid_time_zone`), " +
+    "another event type has the `uid` (`uid_taken`), or its text was refused (`content_refused`).",
+);
+const invalidWindow = errorDoc(
+  "The request failed validation (`validation_error`, see `issues`), or `start`, `end` or " +
+    "`duration_minutes` is invalid: `end` isn't after `start`, the window is longer than 62 days, " +
+    "or the duration isn't one of the event type's (`invalid_time`).",
+);
+const invalidCalendar = errorDoc(
+  "The request failed validation (`validation_error`, see `issues`), or the calendar can't be " +
+    "connected: the provider isn't set up, the server's URL is refused, or a simulated calendar " +
+    "was asked for outside a sandbox environment (`calendar_unavailable`).",
 );
 const refusedChange = errorDoc(
   "The booking can't change that way (`booking_not_changeable`), the new time isn't available " +
@@ -203,7 +256,7 @@ export const createHostRoute = createRoute({
     201: jsonDoc("The host.", HostObject),
     ...commonErrors,
     ...bodyErrors,
-    422: invalid,
+    422: invalidHost,
   },
 });
 
@@ -251,7 +304,7 @@ export const updateHostRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidHost,
   },
 });
 
@@ -294,7 +347,7 @@ export const createScheduleRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidSchedule,
   },
 });
 
@@ -344,7 +397,7 @@ export const updateScheduleRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidSchedule,
   },
 });
 
@@ -362,7 +415,9 @@ export const deleteScheduleRoute = createRoute({
     200: jsonDoc("Deleted.", DeletedSchedule),
     ...commonErrors,
     404: notFound,
-    422: invalid,
+    422: errorDoc(
+      "This is the host's default schedule (`invalid_schedule`): make another one the default first.",
+    ),
   },
 });
 
@@ -385,7 +440,7 @@ export const createEventTypeRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidEventType,
   },
 });
 
@@ -439,7 +494,7 @@ export const updateEventTypeRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidEventType,
   },
 });
 
@@ -455,7 +510,32 @@ export const listSlotsRoute = createRoute({
   security: [{ bearerAuth: [] }],
   middleware: read(),
   request: { params: EventTypeParams, query: SlotsQuery },
-  responses: { 200: jsonDoc("The slots.", SlotList), ...commonErrors, 404: notFound, 422: invalid },
+  responses: {
+    200: jsonDoc("The slots.", SlotList),
+    ...commonErrors,
+    404: notFound,
+    422: invalidWindow,
+  },
+});
+
+export const explainSlotRoute = createRoute({
+  method: "get",
+  path: "/scheduling/event_types/{event_type}/slots/explain",
+  operationId: "explainSchedulingSlot",
+  tags: [TAG_AVAILABILITY],
+  summary: "Explain a slot",
+  description:
+    "Why one start can or can't be booked right now, host by host, decided the same way a booking is. " +
+    "For support and debugging: it says when a host is busy, so don't show it to attendees.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: EventTypeParams, query: ExplainSlotQuery },
+  responses: {
+    200: jsonDoc("Whether it can be booked, and why.", SlotExplanation),
+    ...commonErrors,
+    404: notFound,
+    422: invalidWindow,
+  },
 });
 
 export const searchAvailabilityRoute = createRoute({
@@ -483,7 +563,7 @@ export const searchAvailabilityRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidWindow,
   },
 });
 
@@ -561,6 +641,19 @@ export const rescheduleBookingRoute = createRoute({
   },
 });
 
+/**
+ * This route's body came later, and callers that send a JSON content type with no body have always
+ * been fine. Hono parses by the header, even with `required: false`, so an empty body is `{}` here.
+ */
+const emptyBodyIsAllowed = createMiddleware(async (c, next) => {
+  if (c.req.header("Content-Type")?.includes("json") && !(await c.req.text()).trim()) {
+    const { url, method, headers } = c.req.raw;
+    c.req.raw = new Request(url, { method, headers, body: "{}" });
+    c.req.bodyCache = {};
+  }
+  await next();
+});
+
 export const cancelBookingRoute = createRoute({
   method: "post",
   path: "/scheduling/bookings/{id}/cancel",
@@ -569,13 +662,37 @@ export const cancelBookingRoute = createRoute({
   summary: "Cancel a booking",
   description: "Frees the time and removes the calendar event. A cancelled booking stays charged.",
   security: [{ bearerAuth: [] }],
-  middleware: acting("update"),
-  request: { params: BookingParams },
+  middleware: [...acting("update"), emptyBodyIsAllowed],
+  request: {
+    params: BookingParams,
+    body: {
+      content: { "application/json": { schema: CancelBookingRequest } },
+      required: false,
+    },
+  },
   responses: {
     200: jsonDoc("The booking.", BookingObject),
     ...commonErrors,
     404: notFound,
     422: refusedChange,
+  },
+});
+
+export const listBookingEventsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/bookings/{id}/events",
+  operationId: "listSchedulingBookingEvents",
+  tags: [TAG_BOOKINGS],
+  summary: "List a booking's history",
+  description:
+    "What's happened to a booking, oldest first, and who did it. There's no personal data in here.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: BookingParams, query: ListBookingEventsQuery },
+  responses: {
+    200: jsonDoc("The events.", BookingEventList),
+    ...commonErrors,
+    404: notFound,
   },
 });
 
@@ -771,7 +888,7 @@ export const previewSeriesRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidWindow,
   },
 });
 
@@ -810,6 +927,29 @@ export const eraseAttendeeRoute = createRoute({
   responses: { 200: jsonDoc("How many were erased.", ErasedAttendee), ...commonErrors },
 });
 
+export const eraseAttendeeByEmailRoute = createRoute({
+  method: "post",
+  path: "/scheduling/attendees/erase",
+  operationId: "eraseSchedulingAttendeeByEmail",
+  tags: [TAG_BOOKINGS],
+  summary: "Erase an attendee or guest by email",
+  description:
+    "Removes this address's details and answers from every booking now, for someone you have no `uid` for, such as a guest. The bookings themselves stay.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("delete", "POST /v1/scheduling/attendees/erase"),
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: EraseAttendeeByEmailRequest } },
+    },
+  },
+  responses: {
+    200: jsonDoc("How many were erased.", ErasedAttendeeByEmail),
+    ...commonErrors,
+    ...bodyErrors,
+  },
+});
+
 export const authorizeCalendarRoute = createRoute({
   method: "post",
   path: "/scheduling/hosts/{host}/calendar_connections/authorize",
@@ -818,7 +958,7 @@ export const authorizeCalendarRoute = createRoute({
   summary: "Start connecting a calendar",
   description:
     "A URL for the host to give consent at Google or Microsoft. Open it in a new window: providers " +
-    "refuse to be framed. Coss.com reads only busy times, and writes events with a neutral title.",
+    "refuse to be framed. Coss.com reads only busy times, and writes events with a neutral title unless the event type's `host_calendar_details` is `full`.",
   security: [{ bearerAuth: [] }],
   middleware: writing("update", "POST /v1/scheduling/hosts/{host}/calendar_connections/authorize"),
   request: {
@@ -833,7 +973,7 @@ export const authorizeCalendarRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidCalendar,
   },
 });
 
@@ -860,7 +1000,7 @@ export const createCalendarConnectionRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: invalidCalendar,
   },
 });
 
@@ -887,7 +1027,9 @@ export const deleteCalendarConnectionRoute = createRoute({
   operationId: "deleteSchedulingCalendarConnection",
   tags: [TAG_CALENDARS],
   summary: "Disconnect a calendar",
-  description: "Revokes coss.com's access and deletes every busy time read through it.",
+  description:
+    "Revokes coss.com's access and deletes every busy time read through it. One a calendar " +
+    "delegation manages is refused (`calendar_managed`).",
   security: [{ bearerAuth: [] }],
   middleware: acting("update"),
   request: { params: ConnectionParams },
@@ -895,6 +1037,7 @@ export const deleteCalendarConnectionRoute = createRoute({
     200: jsonDoc("Disconnected.", DeletedCalendarConnection),
     ...commonErrors,
     404: notFound,
+    422: invalid,
   },
 });
 
@@ -919,6 +1062,141 @@ export const updateCalendarRoute = createRoute({
   },
 });
 
+const refusedDelegation = errorDoc(
+  "The credentials or mailbox aren't valid (`invalid_calendar_delegation`), or the provider refused " +
+    "them (`calendar_delegation_refused`, and `message` says what to fix).",
+);
+
+export const createCalendarDelegationRoute = createRoute({
+  method: "post",
+  path: "/scheduling/calendar_delegations",
+  operationId: "createSchedulingCalendarDelegation",
+  tags: [TAG_CALENDARS],
+  summary: "Add a calendar delegation",
+  description:
+    "An admin authorizes once, and every host on the domain gets their calendar with no consent " +
+    "screen. It stays `pending`: authorize what it returns, then verify it. Credentials are never returned.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/calendar_delegations"),
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: CreateCalendarDelegationRequest } },
+    },
+  },
+  responses: {
+    201: jsonDoc("The delegation.", CalendarDelegationObject),
+    ...commonErrors,
+    ...bodyErrors,
+    422: refusedDelegation,
+  },
+});
+
+export const listCalendarDelegationsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/calendar_delegations",
+  operationId: "listSchedulingCalendarDelegations",
+  tags: [TAG_CALENDARS],
+  summary: "List calendar delegations",
+  description: "With how many hosts each has connected.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  responses: {
+    200: jsonDoc("The delegations.", CalendarDelegationList),
+    ...commonErrors,
+  },
+});
+
+export const getCalendarDelegationRoute = createRoute({
+  method: "get",
+  path: "/scheduling/calendar_delegations/{id}",
+  operationId: "getSchedulingCalendarDelegation",
+  tags: [TAG_CALENDARS],
+  summary: "Get a calendar delegation",
+  description: "Its status, what to authorize, and how many hosts it has connected.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: DelegationParams },
+  responses: {
+    200: jsonDoc("The delegation.", CalendarDelegationObject),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
+export const updateCalendarDelegationRoute = createRoute({
+  method: "patch",
+  path: "/scheduling/calendar_delegations/{id}",
+  operationId: "updateSchedulingCalendarDelegation",
+  tags: [TAG_CALENDARS],
+  summary: "Update a calendar delegation",
+  description:
+    "New credentials are tried on the verified mailbox before they replace the old ones, and end an " +
+    "outage if they work.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "PATCH /v1/scheduling/calendar_delegations/{id}"),
+  request: {
+    params: DelegationParams,
+    body: {
+      required: true,
+      content: { "application/json": { schema: UpdateCalendarDelegationRequest } },
+    },
+  },
+  responses: {
+    200: jsonDoc("The delegation.", CalendarDelegationObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: refusedDelegation,
+  },
+});
+
+export const verifyCalendarDelegationRoute = createRoute({
+  method: "post",
+  path: "/scheduling/calendar_delegations/{id}/verify",
+  operationId: "verifySchedulingCalendarDelegation",
+  tags: [TAG_CALENDARS],
+  summary: "Verify a calendar delegation",
+  description:
+    "Tries one real mailbox. Passing makes it `active`, and its hosts start connecting. Google can " +
+    "take up to 24 hours to apply a new authorization, so a refusal may just need time.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/calendar_delegations/{id}/verify"),
+  request: {
+    params: DelegationParams,
+    body: {
+      required: true,
+      content: { "application/json": { schema: VerifyCalendarDelegationRequest } },
+    },
+  },
+  responses: {
+    200: jsonDoc("The delegation.", CalendarDelegationObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: refusedDelegation,
+  },
+});
+
+export const deleteCalendarDelegationRoute = createRoute({
+  method: "delete",
+  path: "/scheduling/calendar_delegations/{id}",
+  operationId: "deleteSchedulingCalendarDelegation",
+  tags: [TAG_CALENDARS],
+  summary: "Delete a calendar delegation",
+  description:
+    "Its hosts lose these calendars within minutes. They stay bookable with no conflict check, and " +
+    "events already written stay on their calendars, out of reach of later moves or cancellations.",
+  security: [{ bearerAuth: [] }],
+  middleware: acting("update"),
+  request: { params: DelegationParams },
+  responses: {
+    200: jsonDoc("Being removed.", DeletedCalendarDelegation),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
 export const setSimulatedBusyRoute = createRoute({
   method: "put",
   path: "/scheduling/hosts/{host}/simulated_busy",
@@ -937,7 +1215,10 @@ export const setSimulatedBusyRoute = createRoute({
     ...commonErrors,
     ...bodyErrors,
     404: notFound,
-    422: invalid,
+    422: errorDoc(
+      "The body failed validation (`validation_error`, see `issues`), or this isn't a sandbox " +
+        "environment: simulated calendars only exist there (`calendar_unavailable`).",
+    ),
   },
 });
 
@@ -973,7 +1254,10 @@ const CreatedSessionBody = z
 const CreateHostSessionRequest = z
   .strictObject({
     expires_in: SessionExpiry,
-    read_only: z.boolean().optional(),
+    read_only: z
+      .boolean()
+      .optional()
+      .meta({ description: "The host can look but not change anything." }),
   })
   .meta({ id: "CreateSchedulingHostSessionRequest", examples: [{ expires_in: 3600 }] });
 
@@ -1007,7 +1291,7 @@ export const createHostSessionRoute = createRoute({
   tags: [TAG_HOSTS],
   summary: "Create a host session",
   description:
-    "Lets one host manage their own hours and calendars, on coss.com's hosted page or your own UI. " +
+    "Lets one host manage their own hours, calendars and locations, on coss.com's hosted page or your own UI. " +
     "Send the `url` to their browser, or embed it with `coss/scheduling`.",
   security: [{ bearerAuth: [] }],
   middleware: writing("update", "POST /v1/scheduling/hosts/{host}/sessions"),
@@ -1096,7 +1380,11 @@ export const updateSettingsRoute = createRoute({
     200: jsonDoc("The settings.", SettingsObject),
     ...commonErrors,
     ...bodyErrors,
-    422: invalid,
+    422: errorDoc(
+      "The body failed validation (`validation_error`, see `issues`), the logo isn't a PNG or JPEG " +
+        "it can read (`invalid_logo`), an origin isn't https (`invalid_event_type`), or its text was " +
+        "refused (`content_refused`).",
+    ),
   },
 });
 
@@ -1282,8 +1570,38 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
           start: iso(slot.startMs),
           end: iso(slot.endMs),
           hosts: slot.hostIds,
+          seats_left: slot.seatsLeft,
         })),
         has_more: false as const,
+      },
+      200,
+    );
+  });
+
+  router.openapi(explainSlotRoute, async (c) => {
+    const query = c.req.valid("query");
+    const explained = await explainSlot(c.var.auth, {
+      eventTypeRef: c.req.valid("param").event_type,
+      startMs: instant(query.start, "start"),
+      nowMs: (deps.now?.() ?? new Date()).getTime(),
+      hostRef: query.host,
+      attributes: attributesParam(query.attributes),
+      durationMinutes: query.duration_minutes,
+    });
+    return c.json(
+      {
+        object: "scheduling.slot_explanation" as const,
+        start: iso(explained.startMs),
+        end: iso(explained.endMs),
+        available: explained.available,
+        reason: explained.reason,
+        hosts: explained.hosts.map((host) => ({
+          host: host.hostId,
+          role: host.required ? ("required" as const) : ("member" as const),
+          available: host.available,
+          reason: host.reason,
+          calendar_reason: host.calendarReason,
+        })),
       },
       200,
     );
@@ -1325,6 +1643,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     attributes: body.attributes,
     durationMinutes: body.duration_minutes,
     attendee: body.attendee,
+    guests: body.guests,
     answers: body.answers,
     location: body.location,
     metadata: body.metadata,
@@ -1389,12 +1708,24 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     );
   });
 
-  router.openapi(cancelBookingRoute, async (c) =>
-    c.json(
-      await cancelBooking(c.var.auth, c.req.valid("param").id, deps, actorOf(c.var.auth)),
+  router.openapi(cancelBookingRoute, async (c) => {
+    const body = c.req.valid("json") as { reason?: string } | undefined;
+    return c.json(
+      await cancelBooking(c.var.auth, c.req.valid("param").id, deps, actorOf(c.var.auth), {
+        reason: body?.reason,
+      }),
       200,
-    ),
-  );
+    );
+  });
+
+  router.openapi(listBookingEventsRoute, async (c) => {
+    const { data, hasMore } = await listBookingEvents(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("query"),
+    );
+    return c.json({ object: "list" as const, data, has_more: hasMore }, 200);
+  });
 
   router.openapi(approveBookingRoute, async (c) =>
     c.json(
@@ -1525,6 +1856,16 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     return c.json({ object: "scheduling.attendee_erasure" as const, uid, erased }, 200);
   });
 
+  router.openapi(eraseAttendeeByEmailRoute, async (c) => {
+    const erased = await eraseAttendeeByEmail(c.var.auth, c.req.valid("json"), deps);
+    // The address is what's being forgotten, so the audit log doesn't keep it.
+    await recordApiAudit(c, {
+      action: "scheduling_attendee.erased",
+      target: { type: "scheduling_attendee", id: "by_email" },
+    });
+    return c.json({ object: "scheduling.attendee_erasure" as const, erased }, 200);
+  });
+
   const calendars = (): CalendarDeps => {
     if (!deps.calendars) {
       throw new SchedulingError(
@@ -1602,6 +1943,78 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     const { host, calendar_id } = c.req.valid("param");
     const data = await updateCalendar(c.var.auth, host, calendar_id, c.req.valid("json"));
     return c.json({ object: "list" as const, data, has_more: false }, 200);
+  });
+
+  router.openapi(createCalendarDelegationRoute, async (c) => {
+    const delegation = await createCalendarDelegation(c.var.auth, c.req.valid("json"), calendars());
+    await recordApiAudit(c, {
+      action: "scheduling_calendar_delegation.created",
+      target: {
+        type: "scheduling_calendar_delegation",
+        id: delegation.id,
+        label: delegation.domain,
+      },
+    });
+    return c.json(delegation, 201);
+  });
+
+  router.openapi(listCalendarDelegationsRoute, async (c) => {
+    const data = await listCalendarDelegations(c.var.auth);
+    return c.json({ object: "list" as const, data, has_more: false }, 200);
+  });
+
+  router.openapi(getCalendarDelegationRoute, async (c) =>
+    c.json(await getCalendarDelegation(c.var.auth, c.req.valid("param").id), 200),
+  );
+
+  router.openapi(updateCalendarDelegationRoute, async (c) => {
+    const delegation = await updateCalendarDelegation(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      calendars(),
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_calendar_delegation.updated",
+      target: {
+        type: "scheduling_calendar_delegation",
+        id: delegation.id,
+        label: delegation.domain,
+      },
+    });
+    return c.json(delegation, 200);
+  });
+
+  router.openapi(verifyCalendarDelegationRoute, async (c) => {
+    const delegation = await verifyCalendarDelegation(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      calendars(),
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_calendar_delegation.verified",
+      target: {
+        type: "scheduling_calendar_delegation",
+        id: delegation.id,
+        label: delegation.domain,
+      },
+    });
+    return c.json(delegation, 200);
+  });
+
+  router.openapi(deleteCalendarDelegationRoute, async (c) => {
+    const { id } = await deleteCalendarDelegation(c.var.auth, c.req.valid("param").id, {
+      now: deps.now,
+    });
+    await recordApiAudit(c, {
+      action: "scheduling_calendar_delegation.deleted",
+      target: { type: "scheduling_calendar_delegation", id },
+    });
+    return c.json(
+      { object: "scheduling.calendar_delegation" as const, id, deleted: true as const },
+      200,
+    );
   });
 
   router.openapi(setSimulatedBusyRoute, async (c) => {

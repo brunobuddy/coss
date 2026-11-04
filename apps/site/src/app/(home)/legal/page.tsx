@@ -1,7 +1,8 @@
-import { Card, CardDescription, CardHeader, CardTitle } from "@coss/ui/components/card";
+import { ArrowRightIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd } from "@/components/json-ld";
+import { Hero, Page, Tray } from "@/components/marketing/kit";
 import { formatLegalDate, legalPages } from "@/lib/legal";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 
@@ -14,29 +15,41 @@ export const metadata: Metadata = pageMetadata({
 
 export default function LegalIndexPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-12 sm:py-16">
+    <Page>
       <JsonLd data={breadcrumbSchema([["Legal", "/legal"]])} />
-      <header className="flex flex-col gap-3">
-        <h1 className="font-semibold text-3xl tracking-tight sm:text-4xl">Legal</h1>
-        <p className="text-muted-foreground">
-          coss.com is operated by Cal.com, Inc. These documents govern your use of it.
-        </p>
-      </header>
-      <div className="grid gap-4">
-        {legalPages().map((page) => (
-          <Link className="group" href={page.url} key={page.url}>
-            <Card className="transition-colors group-hover:bg-accent/50">
-              <CardHeader>
-                <CardTitle>{page.data.title}</CardTitle>
-                <CardDescription>{page.data.description}</CardDescription>
-                <CardDescription className="text-xs">
-                  Last updated {formatLegalDate(page.data.lastUpdated)}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-        ))}
-      </div>
-    </main>
+      <Hero
+        headline="Legal"
+        lede={<p>coss.com is operated by Cal.com, Inc. These documents govern your use of it.</p>}
+      >
+        <div className="mx-auto max-w-3xl pb-16 sm:pb-24">
+          <Tray flush>
+            <ul className="flex flex-col">
+              {legalPages().map((page) => (
+                <li className="border-b last:border-b-0" key={page.url}>
+                  <Link
+                    className="group flex items-center gap-4 p-4 transition-colors hover:bg-accent/50 sm:px-5"
+                    href={page.url}
+                  >
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="font-medium">{page.data.title}</span>
+                      <span className="text-pretty text-muted-foreground text-sm leading-snug">
+                        {page.data.description}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        Last updated {formatLegalDate(page.data.lastUpdated)}
+                      </span>
+                    </span>
+                    <ArrowRightIcon
+                      aria-hidden
+                      className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Tray>
+        </div>
+      </Hero>
+    </Page>
   );
 }

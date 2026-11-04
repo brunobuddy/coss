@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { X509Certificate } from "node:crypto";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { request } from "node:https";
+import { createServer, type Server } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { selfSignedCertificate } from "../runtime/tls-entry.mjs";
@@ -63,7 +64,19 @@ async function eventually<T>(read: () => Promise<T>): Promise<T> {
   throw last;
 }
 
-let nextPort = 24_000 + Math.floor(Math.random() * 10_000);
+/** Ports free right now, all different: other suites listen and connect while this one runs. */
+async function freePorts(count: number): Promise<number[]> {
+  const servers: Server[] = [];
+  const ports: number[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const server = createServer();
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+    servers.push(server);
+    ports.push((server.address() as import("node:net").AddressInfo).port);
+  }
+  await Promise.all(servers.map((server) => new Promise((done) => server.close(done))));
+  return ports;
+}
 
 describe("selfSignedCertificate", () => {
   test("is a certificate its key signed, valid now", () => {
@@ -83,8 +96,7 @@ describe("selfSignedCertificate", () => {
 for (const runtime of ["node", "bun"]) {
   describe(`tls-entry on ${runtime}`, () => {
     test("serves the app over TLS, byte for byte, and exits when the app does", async () => {
-      const plain = nextPort++;
-      const tls = nextPort++;
+      const [plain, tls] = (await freePorts(2)) as [number, number];
       const child = Bun.spawn([runtime, ENTRY, fixtureApp()], {
         // What Fargate does to every task: only the entry's override makes 127.0.0.1 reachable.
         env: { ...process.env, PORT: String(plain), TLS_PORT: String(tls), HOSTNAME: "192.0.2.1" },
@@ -103,7 +115,7 @@ for (const runtime of ["node", "bun"]) {
     });
 
     test("without TLS_PORT it only runs the app", async () => {
-      const plain = nextPort++;
+      const [plain] = await freePorts(1);
       const { TLS_PORT: _unset, ...inherited } = process.env as Record<string, string>;
       const env = { ...inherited, PORT: String(plain), HOSTNAME: "192.0.2.1" };
       const child = Bun.spawn([runtime, ENTRY, fixtureApp()], {

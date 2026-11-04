@@ -25,9 +25,12 @@ import {
   getSettingsRow,
   listConnections,
   listEventTypeSlots,
+  listRecentHostBookings,
+  listRescheduleSlots,
   listSchedules,
   listUpcomingHostBookings,
   logoDataUrl,
+  markNoShow,
   rescheduleBooking,
   type SchedulingDeps,
   SchedulingError,
@@ -36,14 +39,17 @@ import {
   startCalendarAuthorization,
   toConnectionObject,
   updateCalendar,
+  updateHost,
   updateSchedule,
 } from "@coss/scheduling";
 import {
   AuthorizeCalendarRequest,
+  CancelBookingRequest,
   CreateBookingRequest,
   CreateCalendarConnectionRequest,
   RescheduleBookingRequest,
   UpdateCalendarRequest,
+  UpdateHostLocationsRequest,
   UpsertScheduleRequest,
 } from "@coss/scheduling/schemas";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
@@ -77,6 +83,32 @@ async function parsed<T extends z.ZodType>(c: Context<ClientEnv>, schema: T): Pr
     throw invalidBody(issue?.message ?? "The body is invalid.", issue?.path.join("."));
   }
   return result.data;
+}
+
+/** The same, for a body that's optional: a page from before it existed sends none. */
+async function parsedOrEmpty<T extends z.ZodType>(
+  c: Context<ClientEnv>,
+  schema: T,
+): Promise<z.output<T>> {
+  const text = await c.req.text();
+  const result = schema.safeParse(text.trim() ? parseJson(text) : {});
+  if (!result.success) {
+    const issue = result.error.issues[0];
+    throw invalidBody(issue?.message ?? "The body is invalid.", issue?.path.join("."));
+  }
+  return result.data;
+}
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new ApiError(400, {
+      type: "invalid_request_error",
+      code: "invalid_json",
+      message: "The body is not valid JSON.",
+    });
+  }
 }
 
 const notFound = () => new SchedulingError("not_found", "That isn't available from this link.");
@@ -208,12 +240,14 @@ export function createSchedulingClientRoutes(opts: {
     return {
       id: eventType.id,
       title: eventType.title,
+      description: eventType.description,
       kind: eventType.kind,
       duration_minutes: eventType.duration_minutes,
       duration_options: eventType.duration_options,
       questions: eventType.questions,
       locations: eventType.locations.map((location) => ({ type: location.type })),
       requires_approval: eventType.requires_approval,
+      max_guests: eventType.max_guests,
     };
   };
 
@@ -256,34 +290,56 @@ export function createSchedulingClientRoutes(opts: {
     return c.json(base);
   });
 
-  const slotsFor = async (
-    c: Context<ClientEnv>,
-    eventType: string,
-    hostRefs: readonly string[] | undefined,
-    durationMinutes?: number,
-    attributes?: Record<string, string | string[]>,
-  ) => {
+  const slotWindow = (c: Context<ClientEnv>) => {
     const query = SlotQuery.safeParse({
       start: c.req.query("start"),
       end: c.req.query("end"),
       duration_minutes: c.req.query("duration_minutes"),
     });
     if (!query.success) throw invalidBody("`start` and `end` are required.");
-    const slots = await listEventTypeSlots(c.var.session.env, {
-      eventTypeRef: eventType,
+    return {
       fromMs: instant(query.data.start, "start"),
       toMs: instant(query.data.end, "end"),
       nowMs: (deps.now?.() ?? new Date()).getTime(),
-      hostRefs,
-      attributes,
-      durationMinutes: durationMinutes ?? query.data.duration_minutes,
-    });
-    // An attendee sees times, never who else could take them.
-    return c.json({
+      durationMinutes: query.data.duration_minutes,
+    };
+  };
+
+  /** An attendee sees times and free seats, never who else could take them. */
+  const slotList = (
+    c: Context<ClientEnv>,
+    slots: { startMs: number; endMs: number; seatsLeft?: number | null }[],
+  ) =>
+    c.json({
       object: "list" as const,
-      data: slots.map((slot) => ({ start: iso(slot.startMs), end: iso(slot.endMs) })),
+      data: slots.map((slot) => ({
+        start: iso(slot.startMs),
+        end: iso(slot.endMs),
+        seats_left: slot.seatsLeft ?? null,
+      })),
       has_more: false,
     });
+
+  const slotsFor = async (
+    c: Context<ClientEnv>,
+    eventType: string,
+    hostRefs: readonly string[] | undefined,
+    attributes?: Record<string, string | string[]>,
+  ) =>
+    slotList(
+      c,
+      await listEventTypeSlots(c.var.session.env, {
+        ...slotWindow(c),
+        eventTypeRef: eventType,
+        hostRefs,
+        attributes,
+      }),
+    );
+
+  /** Where this booking could move to: its own hosts, length and buffers. */
+  const rescheduleSlots = async (c: Context<ClientEnv>, id: string) => {
+    const { fromMs, toMs, nowMs } = slotWindow(c);
+    return slotList(c, await listRescheduleSlots(c.var.session.env, id, { fromMs, toMs, nowMs }));
   };
 
   router.get("/slots", async (c) =>
@@ -291,7 +347,6 @@ export function createSchedulingClientRoutes(opts: {
       c,
       eventTypeOf(c),
       c.var.session.session.hostId ? [c.var.session.session.hostId] : undefined,
-      undefined,
       sessionAttributes(c.var.session.session, deps),
     ),
   );
@@ -312,6 +367,7 @@ export function createSchedulingClientRoutes(opts: {
         attributes: sessionAttributes(session, deps),
         durationMinutes: body.duration_minutes,
         attendee,
+        guests: body.guests,
         answers: body.answers,
         location: body.location,
         locationFromBrowser: true,
@@ -322,7 +378,7 @@ export function createSchedulingClientRoutes(opts: {
     );
     if (replayed) c.header("Idempotent-Replayed", "true");
     const emailed =
-      booking.attendees.some((person) => person.email) &&
+      booking.attendees.some((person) => person.role === "attendee" && person.email) &&
       (await attendeeEmailedOnConfirm(env, session.eventTypeId as string));
     return c.json({ ...clientBooking(booking), attendee_emailed: emailed }, 201);
   });
@@ -336,10 +392,9 @@ export function createSchedulingClientRoutes(opts: {
     start: booking.start,
     end: booking.end,
     location: booking.location,
-    attendees: booking.attendees.map((attendee) => ({
-      name: attendee.name,
-      time_zone: attendee.time_zone,
-    })),
+    attendees: booking.attendees
+      .filter((attendee) => attendee.role === "attendee")
+      .map((attendee) => ({ name: attendee.name, time_zone: attendee.time_zone })),
   });
 
   router.get("/booking", async (c) => {
@@ -347,12 +402,7 @@ export function createSchedulingClientRoutes(opts: {
     return c.json(clientBooking(await getBooking(c.var.session.env, id, deps)));
   });
 
-  router.get("/booking/slots", async (c) => {
-    const id = bookingOf(c);
-    const booking = await getBooking(c.var.session.env, id, deps);
-    const duration = (Date.parse(booking.end) - Date.parse(booking.start)) / 60_000;
-    return slotsFor(c, booking.event_type, booking.hosts, duration);
-  });
+  router.get("/booking/slots", async (c) => rescheduleSlots(c, bookingOf(c)));
 
   router.post("/booking/reschedule", async (c) => {
     const id = bookingOf(c);
@@ -364,7 +414,7 @@ export function createSchedulingClientRoutes(opts: {
       { startMs: instant(body.start, "start") },
       deps,
       sessionActor(session),
-      { enforceCutoffs: true },
+      { enforceCutoffs: session.createdByUserId === null },
     );
     return c.json(clientBooking(booking));
   });
@@ -372,8 +422,10 @@ export function createSchedulingClientRoutes(opts: {
   router.post("/booking/cancel", async (c) => {
     const id = bookingOf(c);
     const { env, session } = c.var.session;
+    const { reason } = await parsedOrEmpty(c, CancelBookingRequest);
     const booking = await cancelBooking(env, id, deps, sessionActor(session), {
-      enforceCutoffs: true,
+      enforceCutoffs: session.createdByUserId === null,
+      reason,
     });
     return c.json(clientBooking(booking));
   });
@@ -467,9 +519,31 @@ export function createSchedulingClientRoutes(opts: {
     return c.json({ object: "list" as const, data, has_more: false });
   });
 
-  /** A host's own bookings, with attendee names but not their answers. */
+  router.get("/host/locations", async (c) => {
+    const host = await getHost(c.var.session.env, hostOf(c));
+    return c.json({ object: "list" as const, data: host.locations, has_more: false });
+  });
+
+  /** A host's own words for attendees' emails, so they're screened like anything else in them. */
+  router.put("/host/locations", async (c) => {
+    const hostId = writableHost(c);
+    const { locations } = await parsed(c, UpdateHostLocationsRequest);
+    const host = await updateHost(
+      c.var.session.env,
+      hostId,
+      { locations },
+      { screen: deps.screenSetup },
+    );
+    return c.json({ object: "list" as const, data: host.locations, has_more: false });
+  });
+
+  /**
+   * A host's own bookings, with attendee names but not their answers: those to come, or with
+   * `?when=past`, those that have started in the last 30 days.
+   */
   router.get("/host/bookings", async (c) => {
-    const page = await listUpcomingHostBookings(
+    const list = c.req.query("when") === "past" ? listRecentHostBookings : listUpcomingHostBookings;
+    const page = await list(
       c.var.session.env,
       {
         hostId: hostOf(c),
@@ -490,7 +564,39 @@ export function createSchedulingClientRoutes(opts: {
   const hostsOwnBooking = async (c: Context<ClientEnv>, hostId: string, id: string) => {
     const booking = await getBooking(c.var.session.env, id, deps);
     if (!booking.hosts.includes(hostId)) throw notFound();
+    return booking;
   };
+
+  router.get("/host/bookings/:id/slots", async (c) => {
+    const id = c.req.param("id");
+    await hostsOwnBooking(c, hostOf(c), id);
+    return rescheduleSlots(c, id);
+  });
+
+  /** Moves it for everyone on it. A host isn't held to the cutoffs attendees are. */
+  router.post("/host/bookings/:id/reschedule", async (c) => {
+    const hostId = writableHost(c);
+    const id = c.req.param("id");
+    await hostsOwnBooking(c, hostId, id);
+    const { env, session } = c.var.session;
+    const body = await parsed(c, StartBody);
+    const booking = await rescheduleBooking(
+      env,
+      id,
+      { startMs: instant(body.start, "start") },
+      deps,
+      sessionActor(session),
+    );
+    return c.json(clientBooking(booking));
+  });
+
+  router.post("/host/bookings/:id/no_show", async (c) => {
+    const hostId = writableHost(c);
+    const id = c.req.param("id");
+    await hostsOwnBooking(c, hostId, id);
+    const { env, session } = c.var.session;
+    return c.json(clientBooking(await markNoShow(env, id, deps, sessionActor(session))));
+  });
 
   router.post("/host/bookings/:id/approve", async (c) => {
     const hostId = writableHost(c);

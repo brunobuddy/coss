@@ -13,7 +13,8 @@ export function RootToolbar(props: { environment?: boolean }) {
     <>
       {props.environment && current ? (
         <Stack.Toolbar placement="left">
-          <Stack.Toolbar.Menu accessibilityLabel="Project and environment" title={current.name}>
+          <Stack.Toolbar.Menu accessibilityLabel="Project and environment">
+            <Stack.Toolbar.Label>{current.name}</Stack.Toolbar.Label>
             {projects.map((item) => (
               <Stack.Toolbar.Menu inline key={item.slug} title={item.name}>
                 {item.environments.map((env) => (

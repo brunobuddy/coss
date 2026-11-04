@@ -17,7 +17,8 @@ const API_BUCKETS: readonly { bucket: BucketName; per: string; covers: string }[
   {
     bucket: "risk.assess",
     per: "API key",
-    covers: "Risk assessments, and email, IP, phone and content checks",
+    covers:
+      "Risk assessments, and email, IP, phone and content checks (10 a second, bursts of 50, on the Free plan)",
   },
   { bucket: "risk.limit", per: "API key", covers: "Risk rate limit checks (`coss.risk.limit()`)" },
   {

@@ -5,9 +5,11 @@
  */
 import { db, schema } from "@coss/db";
 import { RETENTION_DAYS } from "@coss/retention";
-import { and, eq, inArray, isNotNull, isNull, lt, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, lt, or, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
-import type { SchedulingEnvironment } from "./types.ts";
+import { emailLookup } from "./attendees.ts";
+import { rewriteDetailedEvents } from "./calendar/details.ts";
+import type { SchedulingDeps, SchedulingEnvironment } from "./types.ts";
 
 const {
   schedulingAttendee,
@@ -76,7 +78,7 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
   return db.transaction(async (tx) => {
     // Under the lock: a booking moved into the future meanwhile keeps its attendees.
     const locked = await tx
-      .select({ id: schedulingBooking.id })
+      .select({ id: schedulingBooking.id, organizationId: schedulingBooking.organizationId })
       .from(schedulingBooking)
       .where(
         and(
@@ -88,6 +90,7 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
           isNull(schedulingBooking.redactedAt),
         ),
       )
+      .orderBy(asc(schedulingBooking.id))
       .for("update");
     if (locked.length === 0) return 0;
     const ids = locked.map((row) => row.id);
@@ -95,9 +98,18 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
       .update(schedulingAttendee)
       .set({ ...REDACTED, redactedAt: now })
       .where(inArray(schedulingAttendee.bookingId, ids));
+    const organizationIds = [...new Set(locked.map((row) => row.organizationId))];
+    for (const organizationId of organizationIds) {
+      await rewriteDetailedEvents(
+        tx,
+        { organizationId },
+        locked.filter((row) => row.organizationId === organizationId).map((row) => row.id),
+        now,
+      );
+    }
     await tx
       .update(schedulingBooking)
-      .set({ metadata: {}, location: null, redactedAt: now })
+      .set({ metadata: {}, location: null, encryptedCancellationReason: null, redactedAt: now })
       .where(inArray(schedulingBooking.id, ids));
     return ids.length;
   });
@@ -200,42 +212,108 @@ export async function purgeSchedulingLeftovers(opts: PurgeOptions = {}): Promise
   ];
 }
 
-/**
- * An attendee's right to be forgotten: their details go from every booking now, and any booker
- * session fixed to them ends, since without its identity it would let the browser book as anyone.
- */
-export async function eraseAttendee(
-  scope: Pick<SchedulingEnvironment, "organizationId" | "environmentId">,
-  input: { uid: string },
+type Scope = Pick<SchedulingEnvironment, "organizationId" | "environmentId">;
+
+async function eraseMatching(
+  scope: Scope,
+  matching: SQL,
+  fixedSessions: { uid?: string; emailHmac?: string },
 ): Promise<number> {
   return db.transaction(async (tx) => {
     const now = new Date();
+    const where = and(
+      eq(schedulingAttendee.organizationId, scope.organizationId),
+      eq(schedulingAttendee.environmentId, scope.environmentId),
+      matching,
+    );
+    // Bookings first, as redacting and cancelling do, or erasing the same booking would deadlock.
+    const affected = await tx
+      .select({ bookingId: schedulingAttendee.bookingId })
+      .from(schedulingAttendee)
+      .where(where);
+    if (affected.length > 0) {
+      await tx
+        .select({ id: schedulingBooking.id })
+        .from(schedulingBooking)
+        .where(
+          and(
+            inArray(schedulingBooking.id, [...new Set(affected.map((row) => row.bookingId))]),
+            eq(schedulingBooking.organizationId, scope.organizationId),
+          ),
+        )
+        .orderBy(asc(schedulingBooking.id))
+        .for("update");
+    }
+    // Before they're gone: redacting takes the uid, which is how sessions name this person.
+    const matched = await tx
+      .select({ uid: schedulingAttendee.uid })
+      .from(schedulingAttendee)
+      .where(where)
+      .for("update");
     const erased = await tx
       .update(schedulingAttendee)
       .set({ ...REDACTED, redactedAt: now })
-      .where(
-        and(
-          eq(schedulingAttendee.organizationId, scope.organizationId),
-          eq(schedulingAttendee.environmentId, scope.environmentId),
-          eq(schedulingAttendee.uid, input.uid),
-        ),
-      )
-      .returning({ id: schedulingAttendee.id });
-    await tx
-      .update(schedulingSession)
-      .set({
-        encryptedAttendee: null,
-        encryptedAttributes: null,
-        attendeeUid: null,
-        revokedAt: sql`coalesce(${schedulingSession.revokedAt}, ${now.toISOString()}::timestamptz)`,
-      })
-      .where(
-        and(
-          eq(schedulingSession.organizationId, scope.organizationId),
-          eq(schedulingSession.environmentId, scope.environmentId),
-          eq(schedulingSession.attendeeUid, input.uid),
-        ),
-      );
+      .where(where)
+      .returning({ bookingId: schedulingAttendee.bookingId });
+    const bookingIds = [...new Set(erased.map((row) => row.bookingId))];
+    await rewriteDetailedEvents(tx, scope, bookingIds, now);
+    if (bookingIds.length > 0) {
+      // Whoever wrote it may have said anything about this person.
+      await tx
+        .update(schedulingBooking)
+        .set({ encryptedCancellationReason: null })
+        .where(
+          and(
+            inArray(schedulingBooking.id, bookingIds),
+            eq(schedulingBooking.organizationId, scope.organizationId),
+          ),
+        );
+    }
+    const uids = new Set(matched.flatMap((row) => (row.uid ? [row.uid] : [])));
+    if (fixedSessions.uid) uids.add(fixedSessions.uid);
+    const sessionMatches = [
+      ...(uids.size > 0 ? [inArray(schedulingSession.attendeeUid, [...uids])] : []),
+      ...(fixedSessions.emailHmac
+        ? [eq(schedulingSession.attendeeEmailHmac, fixedSessions.emailHmac)]
+        : []),
+    ];
+    if (sessionMatches.length > 0) {
+      await tx
+        .update(schedulingSession)
+        .set({
+          encryptedAttendee: null,
+          encryptedAttributes: null,
+          attendeeUid: null,
+          attendeeEmailHmac: null,
+          revokedAt: sql`coalesce(${schedulingSession.revokedAt}, ${now.toISOString()}::timestamptz)`,
+        })
+        .where(
+          and(
+            eq(schedulingSession.organizationId, scope.organizationId),
+            eq(schedulingSession.environmentId, scope.environmentId),
+            or(...sessionMatches),
+          ),
+        );
+    }
     return erased.length;
   });
+}
+
+/**
+ * An attendee's right to be forgotten: their details go from every booking now, and from hosts'
+ * calendars as the worker gets to them, and any booker session fixed to them ends, since without
+ * its identity it would let the browser book as anyone.
+ */
+export async function eraseAttendee(scope: Scope, input: { uid: string }): Promise<number> {
+  return eraseMatching(scope, eq(schedulingAttendee.uid, input.uid), { uid: input.uid });
+}
+
+/** The same for someone known only by their address, which is all there is of a guest. */
+export async function eraseAttendeeByEmail(
+  scope: Scope,
+  input: { email: string },
+  keys: Pick<SchedulingDeps, "lookupKey">,
+): Promise<number> {
+  const emailHmac = emailLookup(input.email, keys);
+  return eraseMatching(scope, eq(schedulingAttendee.emailHmac, emailHmac), { emailHmac });
 }

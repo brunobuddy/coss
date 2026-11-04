@@ -191,16 +191,26 @@ describe("transport: hosted", () => {
     expect(names.filter((name) => !hosted.includes(name))).toEqual(["upload_sign_document"]);
   });
 
-  test("a new tool that touches files has to say what it does on the hosted server", () => {
-    // Anything that reads or writes files gates on `projectDir === null` (`ToolContext`), and is
-    // listed here once it does. A failure means: gate it, and add it to the exercise above.
-    const toolsDir = join(import.meta.dir, "../src/tools");
-    const touching = readdirSync(toolsDir).filter((file) =>
-      /node:(fs|path|child_process|os)|project-env/.test(
-        readFileSync(join(toolsDir, file), "utf8"),
-      ),
-    );
-    expect(touching.sort()).toEqual(["sign.ts", "webhooks.ts"]);
+  test("nothing new touches files or the environment without saying what it does when hosted", () => {
+    // Tools, prompts and resources alike. Anything that reads or writes files gates on
+    // `projectDir === null` (`ToolContext`), and is listed here once it does. A failure means: gate
+    // it, and add it to the exercise above. `cli.ts` and `project-env.ts` are stdio's, and
+    // `server.ts` only falls back to the working directory when not hosted.
+    const src = join(import.meta.dir, "../src");
+    const touching = readdirSync(src, { recursive: true, encoding: "utf8" })
+      .filter((file) => file.endsWith(".ts"))
+      .filter((file) =>
+        /node:(fs|path|child_process|os)|project-env|process\.(env|cwd|argv)/.test(
+          readFileSync(join(src, file), "utf8"),
+        ),
+      );
+    expect(touching.sort()).toEqual([
+      "cli.ts",
+      "project-env.ts",
+      "server.ts",
+      "tools/sign.ts",
+      "tools/webhooks.ts",
+    ]);
   });
 });
 

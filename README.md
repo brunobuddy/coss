@@ -392,6 +392,20 @@ route is dropped.
    `SES_INBOUND_QUEUE_URL` (plus `VALKEY_URL`, for the daily inbound limit) for the worker. Rerun bootstrap first on
    upgrades: the updated `<name>-*` policies grant the S3 and SQS access.
 
+**Abusive inbound mail.** SES charges for every message and 256 KB it accepts, before the worker sees it, and our
+limits only stop what gets stored and billed: spam, viruses, mail over a limit and unroutable mail all cost us and
+bill no one. When the SES budget alerts, block the sending network with a receipt filter, which SES applies when the
+sender connects (the top `Received` header of a stored copy's raw message names it):
+
+```sh
+aws ses create-receipt-filter --region "$AWS_REGION" \
+  --filter 'Name=block-203-0-113-0,IpFilter={Policy=Block,Cidr=203.0.113.0/24}'
+aws ses list-receipt-filters --region "$AWS_REGION"
+aws ses delete-receipt-filter --region "$AWS_REGION" --filter-name block-203-0-113-0   # later
+```
+
+Filters apply to the whole account and region, so block the narrowest range that stops it.
+
 Before relying on it in a new account, check against a live account (and note the results here): that a verified
 parent domain receives for its subdomains (`in.acme.com` on `acme.com`'s identity) and one identity covers the
 managed domain's wildcard; that identities associated with SES tenants still receive; that
@@ -677,9 +691,9 @@ Cloudflare DNS (coss.com zone, DNS only)
   `/health`, so an outage of it doesn't take every task out of service) and `https://track.cosslinks.com/t/o/uptime`
   (the tracking host: any token answers `200` with its pixel and records nothing). Sentry's uptime monitors are HTTP
   only, so `smtp.coss.com` is covered by the healthy-host alarm below, not by a probe from outside.
-- **Worker loops:** each checks in with Sentry at most once a minute (cron monitors `worker-<loop>`, created on first
-  check-in; `loopMonitorConfig`, `apps/worker/src/loop.ts`), so a loop that hangs, keeps failing or stops opens an issue
-  after three misses. The `dispatch-backlog` loop reports emails and SMS waiting for dispatch for over 15 minutes.
+- **Worker loops:** one Sentry cron monitor (`worker-loops`, created on first check-in; `watchLoops`,
+  `apps/worker/src/loop.ts`) covers every loop, since Sentry bills per monitor: no check-in for 10 minutes means the worker
+  is gone, and a run stuck for over an hour is reported by name. The `dispatch-backlog` loop reports emails and SMS waiting for dispatch for over 15 minutes.
 - **Alarms** (`infra/terraform/monitoring.tf`, notify the `coss-alerts` SNS topic → `alert_email`): per service,
   fewer running tasks than its minimum, memory above 85 %, CPU above 90 % (autoscaling saturated); load balancer
   5xx, per-target 5xx and unhealthy targets; no healthy task behind the SMTP relay's network load balancer; the SES
@@ -687,8 +701,8 @@ Cloudflare DNS (coss.com zone, DNS only)
   (> 300 of ~410); Valkey throttling (raise `--max-ecpu`); plus ses:bootstrap's SES event queue backlog and dead
   letters. Route 53 health checks and CloudFront metrics exist only in us-east-1, which the organization's SCP
   denies: uptime is Sentry's.
-- **Cost:** an AWS budget (`monthly_budget_usd`, email at 80 % actual and 100 % forecasted) and Cost Anomaly
-  Detection per service (daily email for anomalies ≥ $25).
+- **Cost:** an AWS budget (`monthly_budget_usd`, email at 80 % actual and 100 % forecasted), one for SES alone
+  (`ses_monthly_budget_usd`, the same alerts) and Cost Anomaly Detection per service (daily email for anomalies ≥ $25).
 
 ### Secrets and environment
 
@@ -945,7 +959,8 @@ webhooks:reencrypt` does step 3 against `DATABASE_URL`.
 
 The variable is a comma-separated list of keys, newest first: the first encrypts, every one decrypts. It protects
 attendees' contact details and answers and the identity a booker session is fixed to
-(`scheduling_attendee.encrypted_contact`, `.encrypted_answers`, `scheduling_session.encrypted_attendee`). Calendar
+(`scheduling_attendee.encrypted_contact`, `.encrypted_answers`, `scheduling_session.encrypted_attendee`) and
+cancellation reasons (`scheduling_booking.encrypted_cancellation_reason`). Calendar
 credentials aren't in it: they use `WEBHOOK_SECRETS_KEY`, [rotated on their own](#rotating-webhook_secrets_key).
 Customers notice nothing. The web, api and worker services all read it.
 

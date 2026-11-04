@@ -1,9 +1,11 @@
 /**
  * The plans. A plan's monthly fee is credit spendable on any product's usage, so a month costs
  * the larger of the fee and the usage (plus add-ons). Free has no credit but includes 3,000
- * emails, 1,000 form submissions, 1,000 MB of their uploads and 50,000 Hooks messages a month and
- * blocks usage beyond its allowance. Every plan includes 100 phone checks, 3 inboxes and Hooks
- * messages a month.
+ * emails, 1,000 MB each of attachments and received data past each email's first MB, 1,000 form
+ * submissions, 1,000 MB of their uploads and 50,000 Hooks messages a month and blocks usage beyond
+ * its allowance. Every plan includes 100 phone checks, 3 inboxes, Hooks messages and Risk
+ * assessments a month (past Free's, assessments go on in a reduced form instead of stopping:
+ * `packages/risk/AGENTS.md`).
  */
 import { type Entitlements, perDay, perSecond } from "./entitlements.ts";
 import type { MeterKey } from "./meters.ts";
@@ -18,6 +20,21 @@ const HOOKS_MESSAGES_INCLUDED = {
   pro: 500_000,
   scale: 5_000_000,
   enterprise: 50_000_000,
+} as const;
+
+/** Risk assessments each plan includes each month: the same dollars as its Hooks messages. */
+const RISK_ASSESSMENTS_INCLUDED = {
+  free: 10_000,
+  pro: 50_000,
+  scale: 500_000,
+  enterprise: 5_000_000,
+} as const;
+/** Risk content checks (`classify` on its own) each plan includes each month. */
+const RISK_CONTENT_CHECKS_INCLUDED = {
+  free: 10_000,
+  pro: 100_000,
+  scale: 1_000_000,
+  enterprise: 10_000_000,
 } as const;
 
 export const PLAN_KEYS = ["free", "pro", "scale", "enterprise"] as const;
@@ -54,13 +71,17 @@ export const PLANS = {
     feeCents: 0n,
     includedUnits: {
       "email.recipients": 3_000,
+      "email.attachment_data": 1_000,
       "email.received": 3_000,
+      "email.received_data": 1_000,
       "forms.submissions": 1_000,
       "forms.file_uploads": 1_000,
       "scheduling.bookings": 100,
       "email.inboxes": INBOX_DAYS_INCLUDED,
       "risk.phone_checks": PHONE_CHECKS_INCLUDED,
       "hooks.messages": HOOKS_MESSAGES_INCLUDED.free,
+      "risk.assessments": RISK_ASSESSMENTS_INCLUDED.free,
+      "risk.content_checks": RISK_CONTENT_CHECKS_INCLUDED.free,
     },
     overage: "blocked",
     termMonths: null,
@@ -87,8 +108,10 @@ export const PLANS = {
         "email.recipients.second": perSecond(2, 50),
         "email.recipients.day": perDay(3_000),
         "email.marketing.recipients.second": perSecond(2, 10),
+        "email.inbound.megabytes.day": perDay(250),
         "sms.segments.second": perSecond(1, 5),
         "sms.segments.day": perDay(100),
+        "risk.assess": perSecond(10, 50),
       },
     },
     highlights: ["3,000 emails per month", "1 domain", "3 team members", "3 inboxes"],
@@ -104,6 +127,8 @@ export const PLANS = {
       "email.inboxes": INBOX_DAYS_INCLUDED,
       "risk.phone_checks": PHONE_CHECKS_INCLUDED,
       "hooks.messages": HOOKS_MESSAGES_INCLUDED.pro,
+      "risk.assessments": RISK_ASSESSMENTS_INCLUDED.pro,
+      "risk.content_checks": RISK_CONTENT_CHECKS_INCLUDED.pro,
     },
     overage: "billed",
     termMonths: null,
@@ -130,8 +155,10 @@ export const PLANS = {
         "email.recipients.second": perSecond(14, 100),
         "email.recipients.day": perDay(100_000),
         "email.marketing.recipients.second": perSecond(10, 50),
+        "email.inbound.megabytes.day": perDay(10_000),
         "sms.segments.second": perSecond(10, 50),
         "sms.segments.day": perDay(10_000),
+        "risk.assess": perSecond(100, 200),
       },
     },
     highlights: [
@@ -154,6 +181,8 @@ export const PLANS = {
       "email.inboxes": INBOX_DAYS_INCLUDED,
       "risk.phone_checks": PHONE_CHECKS_INCLUDED,
       "hooks.messages": HOOKS_MESSAGES_INCLUDED.scale,
+      "risk.assessments": RISK_ASSESSMENTS_INCLUDED.scale,
+      "risk.content_checks": RISK_CONTENT_CHECKS_INCLUDED.scale,
     },
     overage: "billed",
     termMonths: null,
@@ -180,8 +209,10 @@ export const PLANS = {
         "email.recipients.second": perSecond(50, 200),
         "email.recipients.day": perDay(1_000_000),
         "email.marketing.recipients.second": perSecond(50, 250),
+        "email.inbound.megabytes.day": perDay(100_000),
         "sms.segments.second": perSecond(30, 150),
         "sms.segments.day": perDay(100_000),
+        "risk.assess": perSecond(100, 200),
       },
     },
     highlights: [
@@ -203,6 +234,8 @@ export const PLANS = {
       "email.inboxes": INBOX_DAYS_INCLUDED,
       "risk.phone_checks": PHONE_CHECKS_INCLUDED,
       "hooks.messages": HOOKS_MESSAGES_INCLUDED.enterprise,
+      "risk.assessments": RISK_ASSESSMENTS_INCLUDED.enterprise,
+      "risk.content_checks": RISK_CONTENT_CHECKS_INCLUDED.enterprise,
     },
     overage: "billed",
     termMonths: 12,
@@ -229,8 +262,10 @@ export const PLANS = {
         "email.recipients.second": perSecond(100, 500),
         "email.recipients.day": perDay(5_000_000),
         "email.marketing.recipients.second": perSecond(100, 500),
+        "email.inbound.megabytes.day": perDay(500_000),
         "sms.segments.second": perSecond(100, 500),
         "sms.segments.day": perDay(1_000_000),
+        "risk.assess": perSecond(100, 200),
       },
     },
     highlights: [

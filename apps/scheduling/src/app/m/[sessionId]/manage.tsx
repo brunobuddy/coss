@@ -2,8 +2,10 @@
 
 import { Badge } from "@coss/ui/components/badge";
 import { Button } from "@coss/ui/components/button";
+import { Field, FieldLabel } from "@coss/ui/components/field";
 import { Spinner } from "@coss/ui/components/spinner";
-import { CalendarIcon, GlobeIcon, MapPinIcon, PhoneIcon, VideoIcon } from "lucide-react";
+import { Textarea } from "@coss/ui/components/textarea";
+import { CalendarIcon, GlobeIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   BrandMark,
@@ -17,6 +19,7 @@ import {
 } from "@/components/page";
 import { SlotPicker } from "@/components/slot-picker";
 import { zoneLabel } from "@/components/time-zone-picker";
+import { type BookingLocation, Where } from "@/components/where";
 import { type Branding, useAccentColor } from "@/lib/branding";
 import { browserTimeZone, type ClientApiError, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
@@ -27,51 +30,11 @@ type Booking = {
   title: string;
   start: string;
   end: string;
-  location: {
-    type: string;
-    url?: string | null;
-    number?: string | null;
-    address?: string | null;
-  } | null;
+  location: BookingLocation;
   attendees: { time_zone: string }[];
 };
 
 type Session = Branding & { sandbox: boolean };
-
-function Where({ location }: { location: Booking["location"] }) {
-  if (!location) return null;
-  if (location.url) {
-    return (
-      <Detail icon={VideoIcon} label="Where">
-        <a
-          className="underline underline-offset-3"
-          href={location.url}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          Join the meeting
-        </a>
-      </Detail>
-    );
-  }
-  if (location.number) {
-    return (
-      <Detail icon={PhoneIcon} label="Where">
-        <a className="underline underline-offset-3" href={`tel:${location.number}`}>
-          {location.number}
-        </a>
-      </Detail>
-    );
-  }
-  if (location.address) {
-    return (
-      <Detail icon={MapPinIcon} label="Where">
-        {location.address}
-      </Detail>
-    );
-  }
-  return null;
-}
 
 const STATUS_BADGES: Record<string, { label: string; variant: "warning" | "error" }> = {
   pending_approval: { label: "Waiting for approval", variant: "warning" },
@@ -89,6 +52,7 @@ export function Manage({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
   const [moving, setMoving] = useState(false);
   const [moved, setMoved] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const [working, setWorking] = useState(false);
   const browserZone = useMemo(browserTimeZone, []);
   const timeZone = booking?.attendees[0]?.time_zone ?? browserZone;
@@ -199,12 +163,25 @@ export function Manage({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
             {confirmingCancel ? (
               <div className="flex w-full flex-col gap-3">
                 <p className="font-medium text-sm">Cancel this booking?</p>
+                <Field>
+                  <FieldLabel>Reason (optional)</FieldLabel>
+                  <Textarea
+                    maxLength={500}
+                    onChange={(event) => setCancelReason(event.target.value)}
+                    rows={2}
+                    value={cancelReason}
+                  />
+                </Field>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     disabled={working}
                     onClick={() =>
                       act(
-                        () => call<Booking>("/booking/cancel", { method: "POST" }),
+                        () =>
+                          call<Booking>("/booking/cancel", {
+                            method: "POST",
+                            body: cancelReason.trim() ? { reason: cancelReason.trim() } : {},
+                          }),
                         (value) => {
                           setConfirmingCancel(false);
                           setMoved(false);

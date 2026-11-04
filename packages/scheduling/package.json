@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./branding": "./src/branding.ts",
+    "./description-links": "./src/description-links.ts",
     "./engine": "./src/engine/index.ts",
     "./schemas": "./src/schemas.ts",
     "./testing": "./src/testing.ts",
@@ -20,9 +21,11 @@
   "dependencies": {
     "@coss/billing": "workspace:*",
     "@coss/compliance": "workspace:*",
+    "@coss/dashboard-routes": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/email-layout": "workspace:*",
     "@coss/logs": "workspace:*",
+    "@coss/notifications": "workspace:*",
     "@coss/retention": "workspace:*",
     "@coss/versioning": "workspace:*",
     "@coss/webhooks": "workspace:*",

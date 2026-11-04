@@ -8,7 +8,7 @@ The Java SDK (Java 8+) is `com.coss:coss` on Maven Central, built on OkHttp and 
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("com.coss:coss:0.1.0")
+    implementation("com.coss:coss:latest.release") // or a fixed version
 }
 ```
 
@@ -17,9 +17,12 @@ dependencies {
 <dependency>
   <groupId>com.coss</groupId>
   <artifactId>coss</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
 </dependency>
 ```
+
+Maven needs a fixed version: use the latest one on
+[Maven Central](https://central.sonatype.com/artifact/com.coss/coss).
 
 ```java
 import com.coss.Coss;

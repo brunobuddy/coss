@@ -58,6 +58,7 @@ export {
   checkIp,
   checkPhone,
   classifyContent,
+  classifyContentForCustomer,
   DEFAULT_CLASSIFY_TIMEOUT_MS,
   type LookupEnvironment,
   type PhoneCheckEnvironment,

@@ -20,7 +20,10 @@ export const MAX_BILLING_LIST_LIMIT = 100;
 export const MAX_USAGE_RANGE_DAYS = 400;
 export const MAX_HOURLY_USAGE_RANGE_DAYS = 7;
 
-const PeriodObject = z.object({ start: Timestamp, end: Timestamp });
+const PeriodObject = z.object({
+  start: Timestamp.meta({ description: "When the period starts (inclusive)." }),
+  end: Timestamp.meta({ description: "When the period ends (exclusive)." }),
+});
 
 // ---------------------------------------------------------------------------------------------
 // GET /v1/billing
@@ -68,22 +71,35 @@ const BILLING_EXAMPLE = {
 export const BillingObject = z
   .object({
     object: z.literal("billing"),
-    organization_id: z.string(),
+    organization_id: z.string().meta({ description: "The organization's id." }),
     plan: Plan.meta({ description: "The plan in effect now (`free` without a contract)." }),
     contract: z
       .object({
-        id: z.string(),
-        kind: z.enum(["self_serve", "sales", "internal"]),
-        effective_from: Timestamp,
-        effective_until: Timestamp.nullable(),
+        id: z.string().meta({ description: "The contract's id." }),
+        kind: z.enum(["self_serve", "sales", "internal"]).meta({
+          description:
+            "`self_serve`: chosen in the dashboard. `sales`: agreed with coss.com. `internal`: coss.com's own.",
+        }),
+        effective_from: Timestamp.meta({ description: "When it took effect." }),
+        effective_until: Timestamp.nullable().meta({
+          description: "When it ends. `null`: no end is set.",
+        }),
         term_end: Timestamp.nullable().meta({ description: "End of a committed term." }),
-        auto_renew: z.boolean(),
+        auto_renew: z
+          .boolean()
+          .meta({ description: "Whether a committed term renews when it ends." }),
       })
       .nullable()
       .meta({ description: "The contract in effect; `null` on the Free plan." }),
-    scheduled_change: z.object({ effective_at: Timestamp, plan: Plan }).nullable().meta({
-      description: "A plan change that takes effect later (a downgrade, a cancellation).",
-    }),
+    scheduled_change: z
+      .object({
+        effective_at: Timestamp.meta({ description: "When it takes effect." }),
+        plan: Plan.meta({ description: "The plan it changes to." }),
+      })
+      .nullable()
+      .meta({
+        description: "A plan change that takes effect later (a downgrade, a cancellation).",
+      }),
     status: z.enum(["active", "past_due", "delinquent"]).meta({
       description:
         "`past_due`: an invoice is overdue; `delinquent`: past its grace period, and live sending is held.",
@@ -91,22 +107,27 @@ export const BillingObject = z
     holds: z
       .array(
         z.object({
-          reason: z.enum(["delinquent", "spend_limit", "admin"]),
-          since: Timestamp,
+          reason: z.enum(["delinquent", "spend_limit", "admin"]).meta({
+            description:
+              "`delinquent`: an invoice is past its grace period. `spend_limit`: the spend limit was reached. `admin`: placed by coss.com.",
+          }),
+          since: Timestamp.meta({ description: "When the hold began." }),
         }),
       )
       .meta({ description: "Billing holds on live sending (sandbox keys keep working)." }),
-    currency: z.literal("usd"),
+    currency: z.literal("usd").meta({ description: "Always `usd`." }),
     period: PeriodObject.meta({ description: "The current billing month (UTC)." }),
-    usage: z.array(
-      z.object({
-        meter: Meter,
-        quantity: z.int().nonnegative(),
-        included: z.int().nonnegative().nullable().meta({
-          description: "The plan's monthly allowance where usage stops (Free), else `null`.",
+    usage: z
+      .array(
+        z.object({
+          meter: Meter,
+          quantity: z.int().nonnegative().meta({ description: "Units used so far this month." }),
+          included: z.int().nonnegative().nullable().meta({
+            description: "The plan's monthly allowance where usage stops (Free), else `null`.",
+          }),
         }),
-      }),
-    ),
+      )
+      .meta({ description: "This month's usage per meter." }),
     estimate: z
       .object({
         usage: Cents.meta({ description: "Usage this month at your rates." }),
@@ -125,34 +146,58 @@ export const BillingObject = z
       description: "Usage beyond the credit past which live sending is held; `null`: none.",
     }),
     payment_method: z
-      .object({ type: z.string(), brand: z.string().nullable(), last4: z.string().nullable() })
-      .nullable(),
+      .object({
+        type: z.string().meta({ description: "Its type, such as `card`." }),
+        brand: z
+          .string()
+          .nullable()
+          .meta({ description: "The card's brand. `null` for other types." }),
+        last4: z
+          .string()
+          .nullable()
+          .meta({ description: "The card's last four digits. `null` for other types." }),
+      })
+      .nullable()
+      .meta({ description: "The payment method on file. `null`: none." }),
     add_ons: z
       .array(
         z.object({
           key: z.string().meta({ description: "e.g. `dedicated_ips`." }),
-          name: z.string(),
-          quantity: z.int(),
+          name: z.string().meta({ description: "The add-on's name." }),
+          quantity: z.int().meta({ description: "How many units are on the contract." }),
           unit_amount: Cents.meta({ description: "The price per unit and interval, in cents." }),
-          interval: z.enum(["month", "quarter", "year"]),
+          interval: z
+            .enum(["month", "quarter", "year"])
+            .meta({ description: "How often it's charged." }),
         }),
       )
       .meta({ description: "Add-ons of the contract in effect, charged on top of the plan." }),
-    features: z.object({
-      tracking_domains: z.boolean(),
-      audit_log: z.boolean(),
-      log_drains: z.boolean(),
-      sso: z.boolean(),
-      scim: z.boolean(),
-      dedicated_ips: z.boolean(),
-    }),
+    features: z
+      .object({
+        tracking_domains: z.boolean().meta({ description: "Custom tracking domains." }),
+        audit_log: z.boolean().meta({ description: "The organization's audit log." }),
+        log_drains: z.boolean().meta({ description: "Log drains." }),
+        sso: z.boolean().meta({ description: "Single sign-on." }),
+        scim: z.boolean().meta({ description: "Directory sync (SCIM)." }),
+        dedicated_ips: z.boolean().meta({ description: "Dedicated IP pools." }),
+      })
+      .meta({ description: "Which features the plan includes." }),
     limits: z
       .object({
-        domains: z.int().nullable(),
-        members: z.int().nullable(),
-        webhook_endpoints_per_environment: z.int().nullable(),
-        contacts_per_environment: z.int().nullable(),
-        inboxes: z.int().nullable(),
+        domains: z.int().nullable().meta({ description: "Sending domains. `null`: unlimited." }),
+        members: z
+          .int()
+          .nullable()
+          .meta({ description: "Members of the organization. `null`: unlimited." }),
+        webhook_endpoints_per_environment: z
+          .int()
+          .nullable()
+          .meta({ description: "Webhook endpoints per environment. `null`: unlimited." }),
+        contacts_per_environment: z
+          .int()
+          .nullable()
+          .meta({ description: "Contacts per environment. `null`: unlimited." }),
+        inboxes: z.int().nullable().meta({ description: "Inboxes. `null`: unlimited." }),
       })
       .meta({ description: "Resource limits (`null`: unlimited)." }),
   })
@@ -199,9 +244,9 @@ export const UsageObject = z
       description:
         "Set with `group_by=user`: the member whose personal API key caused it (`null`: organization keys and the dashboard).",
     }),
-    start: Timestamp,
-    end: Timestamp,
-    quantity: z.int().nonnegative(),
+    start: Timestamp.meta({ description: "When this bucket starts (inclusive)." }),
+    end: Timestamp.meta({ description: "When this bucket ends (exclusive)." }),
+    quantity: z.int().nonnegative().meta({ description: "Units used in this bucket." }),
   })
   .meta({ id: "Usage", examples: [USAGE_EXAMPLE] });
 export type UsageObjectOutput = z.output<typeof UsageObject>;
@@ -278,11 +323,21 @@ export const InvoiceLineObject = z
   .object({
     object: z.literal("invoice_line"),
     id: z.string(),
-    kind: z.enum(LINE_KINDS),
-    description: z.string(),
-    meter: Meter.nullable(),
-    dimension: z.string().nullable(),
-    quantity: z.int().nullable(),
+    kind: z.enum(LINE_KINDS).meta({
+      description:
+        "What it's for: `plan_fee`, `proration`, `usage`, `credit`, `discount`, `commitment_fee`, `commitment_shortfall`, `add_on`, `adjustment` or `write_off`.",
+    }),
+    description: z.string().meta({ description: "The line as it reads on the invoice." }),
+    meter: Meter.nullable().meta({
+      description: "The meter of a `usage` line. `null` for other lines.",
+    }),
+    dimension: z.string().nullable().meta({
+      description: "What the meter is split by, such as `country=US`. `null`: not split.",
+    }),
+    quantity: z
+      .int()
+      .nullable()
+      .meta({ description: "Units on this line. `null` when it isn't priced by the unit." }),
     included_quantity: z
       .int()
       .nullable()
@@ -291,7 +346,7 @@ export const InvoiceLineObject = z
       description: "Dollars per unit, e.g. `0.0004`; `null` when the price varies by volume.",
     }),
     amount: Cents,
-    period: PeriodObject,
+    period: PeriodObject.meta({ description: "What period it covers." }),
   })
   .meta({ id: "InvoiceLine", examples: [INVOICE_LINE_EXAMPLE] });
 
@@ -322,11 +377,20 @@ const INVOICE_EXAMPLE = {
 const invoiceFields = {
   object: z.literal("invoice"),
   id: z.string(),
-  number: z.string().nullable(),
-  kind: z.enum(["period", "plan_change", "one_off", "final"]),
-  status: z.enum(INVOICE_STATUSES),
-  currency: z.literal("usd"),
-  period: PeriodObject,
+  number: z
+    .string()
+    .nullable()
+    .meta({ description: "The invoice number. `null` until it's finalized." }),
+  kind: z.enum(["period", "plan_change", "one_off", "final"]).meta({
+    description:
+      "`period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account.",
+  }),
+  status: z.enum(INVOICE_STATUSES).meta({
+    description:
+      "`open`: not paid yet. `paid`: settled. `void`: canceled. `uncollectible`: written off.",
+  }),
+  currency: z.literal("usd").meta({ description: "Always `usd`." }),
+  period: PeriodObject.meta({ description: "What period it covers." }),
   subtotal: Cents,
   discount: Cents,
   credit: Cents,
@@ -334,13 +398,21 @@ const invoiceFields = {
   total: Cents,
   amount_paid: Cents,
   amount_due: Cents,
-  collection_method: z.enum(["charge_automatically", "send_invoice"]),
-  due_at: Timestamp.nullable(),
-  finalized_at: Timestamp.nullable(),
-  paid_at: Timestamp.nullable(),
-  voided_at: Timestamp.nullable(),
+  collection_method: z.enum(["charge_automatically", "send_invoice"]).meta({
+    description:
+      "`charge_automatically`: charged to the payment method. `send_invoice`: paid by `due_at`.",
+  }),
+  due_at: Timestamp.nullable().meta({ description: "When payment is due. `null`: not set." }),
+  finalized_at: Timestamp.nullable().meta({
+    description: "When it was finalized. `null`: not yet.",
+  }),
+  paid_at: Timestamp.nullable().meta({ description: "When it was paid. `null`: not paid." }),
+  voided_at: Timestamp.nullable().meta({ description: "When it was voided. `null`: it wasn't." }),
   hosted_url: z.string().nullable().meta({ description: "A page to view (and pay) the invoice." }),
-  pdf_url: z.string().nullable(),
+  pdf_url: z
+    .string()
+    .nullable()
+    .meta({ description: "The invoice as a PDF. `null`: not available." }),
 };
 
 /** An invoice without its lines (lists and webhook events). */
@@ -412,8 +484,10 @@ export const CreditObject = z
       description:
         "`amount`: dollars (`amount` and `remaining` in cents); `units`: free units of `meter`.",
     }),
-    amount: z.int(),
-    remaining: z.int(),
+    amount: z
+      .int()
+      .meta({ description: "How much was granted: cents, or units for a `units` credit." }),
+    remaining: z.int().meta({ description: "How much is left, in the same unit as `amount`." }),
     meter: Meter.nullable().meta({ description: "What a `units` credit covers." }),
     meters: z
       .array(Meter)
@@ -422,11 +496,16 @@ export const CreditObject = z
     applies_to: z.enum(["usage", "any"]).meta({
       description: "`any`: also fees and other charges.",
     }),
-    source: z.enum(["fee", "commitment", "support", "promotion", "refund", "sla"]),
-    description: z.string(),
-    effective_at: Timestamp,
-    expires_at: Timestamp.nullable(),
-    voided_at: Timestamp.nullable(),
+    source: z.enum(["fee", "commitment", "support", "promotion", "refund", "sla"]).meta({
+      description:
+        "Where it came from: `fee`, `commitment`, `support`, `promotion`, `refund` or `sla`.",
+    }),
+    description: z.string().meta({ description: "What it's for." }),
+    effective_at: Timestamp.meta({ description: "When it can start being used." }),
+    expires_at: Timestamp.nullable().meta({
+      description: "When what's left expires. `null`: never.",
+    }),
+    voided_at: Timestamp.nullable().meta({ description: "When it was voided. `null`: it wasn't." }),
     created_at: Timestamp,
   })
   .meta({ id: "Credit", examples: [CREDIT_EXAMPLE] });
@@ -483,7 +562,7 @@ const eventFields = {
 };
 
 const eventData = {
-  organization_id: z.string(),
+  organization_id: z.string().meta({ description: "The organization's id." }),
   occurred_at: Timestamp.meta({ description: "When it happened: sort events by it." }),
 };
 

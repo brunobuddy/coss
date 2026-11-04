@@ -2,8 +2,11 @@
  * `POST /mcp` end to end: the built `coss-mcp/http` handler in the real app, with a real MCP client
  * speaking Streamable HTTP to `app.fetch`. The tools reach the API the way production does.
  */
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { db, pool } from "@coss/db";
+import { contact } from "@coss/db/schema";
+import { uniqueSuffix } from "@coss/db/testing";
 import { memoryLogWriter } from "@coss/logs/testing";
 import { cachedOverrides, clientIpResolver, setRateLimitOverride } from "@coss/ratelimit";
 import { memoryLimiter } from "@coss/ratelimit/testing";
@@ -11,6 +14,7 @@ import { createEnvironmentApiKey } from "@coss/tenancy";
 import { suspendOrganization } from "@coss/tenancy/admin";
 import { createTestTenant, createTestUser, type TestTenant } from "@coss/tenancy/testing";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
+import { SETUP_PRODUCTS } from "coss";
 import { createHostedMcp } from "coss-mcp/http";
 import {
   apiRequest,
@@ -327,7 +331,8 @@ describe("authentication", () => {
     });
     expect(refused.isError).toBe(true);
     expect(refused.data.error).toMatchObject({ status: 403, code: "insufficient_permissions" });
-    expect(refused.data.hint).toContain("get_account_status");
+    // The API's own hint.
+    expect(refused.data.hint).toContain("Keys keep the permissions");
   });
 
   test("sandbox and live keys see their own environment only", async () => {
@@ -720,6 +725,267 @@ describe("limits and logs", () => {
     expect(logged).toContain("/v1/emails");
     expect(logged).not.toContain('/mcp"');
     expect(logged).not.toContain(tenant.sandboxKey);
+  });
+});
+
+describe("tools, prompts and resources that came later", () => {
+  const LOCAL_ONLY = /upload_sign_document|COSS_API_KEY|COSS_BASE_URL|\.env\b|env file/;
+
+  test("coss://docs/index reads only the fixed docs origin, and never follows a redirect", async () => {
+    const tenant = await createTestTenant();
+    const { app, docsRequests } = hostedApp();
+    const client = await connect(app, tenant.sandboxKey);
+    const { resources } = await client.listResources();
+    expect(resources.map((resource) => resource.uri).sort()).toEqual([
+      "coss://docs/index",
+      "coss://setup",
+    ]);
+
+    const index = await client.readResource({ uri: "coss://docs/index" });
+    expect(index.contents[0]).toMatchObject({ mimeType: "text/markdown" });
+    expect(docsRequests.at(-1)).toEqual({ url: "https://coss.com/llms.txt", redirect: "manual" });
+  });
+
+  test("coss://setup answers for the key's environment, in hosted terms", async () => {
+    const tenant = await createTestTenant();
+    const { app } = hostedApp();
+    const client = await connect(app, tenant.sandboxKey);
+    const { contents } = await client.readResource({ uri: "coss://setup" });
+    const text = (contents[0] as { text: string }).text;
+    expect(JSON.parse(text).mode).toBe("sandbox");
+    expect(text).not.toMatch(LOCAL_ONLY);
+  });
+
+  test("no prompt points at something the hosted server doesn't have", async () => {
+    const tenant = await createTestTenant();
+    const { app } = hostedApp();
+    const client = await connect(app, tenant.sandboxKey);
+    const { prompts } = await client.listPrompts();
+    expect(prompts.length).toBeGreaterThan(0);
+    for (const prompt of prompts) {
+      const args = Object.fromEntries(
+        (prompt.arguments ?? []).filter((arg) => arg.required).map((arg) => [arg.name, "sign"]),
+      );
+      const { messages } = await client.getPrompt({ name: prompt.name, arguments: args });
+      expect(JSON.stringify(messages)).not.toMatch(LOCAL_ONLY);
+    }
+  });
+
+  test("get_setup never names a tool the hosted server doesn't have, for any product", async () => {
+    const tenant = await createTestTenant();
+    const { app } = hostedApp();
+    for (const key of [tenant.sandboxKey, tenant.liveKey]) {
+      const client = await connect(app, key);
+      for (const product of SETUP_PRODUCTS) {
+        const { isError, data } = await callTool(client, "get_setup", { product });
+        expect(isError).toBe(false);
+        expect(JSON.stringify(data)).not.toMatch(LOCAL_ONLY);
+      }
+      const sign = await callTool(client, "get_setup", { product: "sign" });
+      expect(sign.data.next).toContain("Upload a PDF (with the API or an SDK, or");
+    }
+  });
+
+  test("the instructions and every tool read correctly, and say nothing of Sign being off", async () => {
+    const tenant = await createTestTenant();
+    const { app } = hostedApp();
+    const client = await connect(app, tenant.sandboxKey);
+    const instructions = client.getInstructions() ?? "";
+    const { tools } = await client.listTools();
+    for (const text of [instructions, JSON.stringify(tools)]) {
+      expect(text).not.toMatch(LOCAL_ONLY);
+      expect(text).not.toMatch(/sign_unavailable|Sign isn't on/);
+    }
+    expect(instructions).toContain("upload the PDF with the API or an SDK");
+    // The new families are all here; only the file tool isn't.
+    const names = tools.map((tool) => tool.name);
+    for (const name of [
+      "api_get",
+      "diagnose_email",
+      "diagnose_sms",
+      "diagnose_verification",
+      "diagnose_sign_request",
+      "diagnose_form_submission",
+      "diagnose_hook_delivery",
+      "diagnose_scheduling_slots",
+      "create_sign_request",
+    ]) {
+      expect(names).toContain(name);
+    }
+  });
+
+  test("diagnose tools work through the API, and hosted answers name no local config", async () => {
+    const tenant = await createTestTenant();
+    const { app, dispatch } = hostedApp();
+    const client = await connect(app, tenant.sandboxKey);
+    const sent = await callTool(client, "send_email", {
+      from: "Acme <hello@acme.com>",
+      to: ["ada@example.com"],
+      subject: "Diagnose me",
+      text: "Hi",
+    });
+    await dispatch();
+    const diagnosis = await callTool(client, "diagnose_email", { email_id: sent.data.email.id });
+    expect(diagnosis.isError).toBe(false);
+    expect(diagnosis.data.verdict).toBe("delivered");
+
+    const { tools } = await client.listTools();
+    const missing = "email_01k7c8m4q2f3e9v6t5r1n0p8yz";
+    for (const tool of tools.filter((candidate) => candidate.name.startsWith("diagnose_"))) {
+      const { required = [], properties = {} } = tool.inputSchema as {
+        required?: string[];
+        properties?: Record<string, unknown>;
+      };
+      const fields = required.length > 0 ? required : Object.keys(properties).slice(0, 1);
+      const answer = await client.callTool({
+        name: tool.name,
+        arguments: Object.fromEntries(fields.map((name) => [name, missing])),
+      });
+      expect(JSON.stringify(answer)).not.toMatch(LOCAL_ONLY);
+    }
+  });
+});
+
+describe("api_get and the CSV exports", () => {
+  const EXPORT_PAGE = 1000;
+  const CONTACTS = EXPORT_PAGE * 2 + 500;
+
+  /** More contacts than one page of the export, in the tenant's sandbox environment. */
+  async function seedContacts(tenant: TestTenant) {
+    await db.insert(contact).values(
+      Array.from({ length: CONTACTS }, (_, i) => ({
+        organizationId: tenant.organization.id,
+        projectId: tenant.project.id,
+        environmentId: tenant.development.id,
+        address: `person-${i}-${uniqueSuffix()}@example.com`,
+        source: "api" as const,
+      })),
+    );
+  }
+
+  /** Counts the export's page queries. */
+  function countExportQueries() {
+    const spy = spyOn(pool, "query");
+    return {
+      count: () =>
+        spy.mock.calls.filter(([query]) => {
+          const text = typeof query === "string" ? query : (query as { text?: string }).text;
+          return text?.includes('from "contact"') && text.includes('order by "contact"."id"');
+        }).length,
+      restore: () => spy.mockRestore(),
+    };
+  }
+
+  const authorized = (key: string) => ({ headers: { Authorization: `Bearer ${key}` } });
+
+  test("reads JSON through the API", async () => {
+    const tenant = await createTestTenant();
+    const { app } = hostedApp();
+    const client = await connect(app, tenant.sandboxKey);
+    const answer = await callTool(client, "api_get", { path: "/v1/environment" });
+    expect(answer.isError).toBe(false);
+    expect(JSON.stringify(answer.data.data)).toContain(tenant.development.id);
+  });
+
+  test("refuses every spelling of an export, with nothing dispatched", async () => {
+    const tenant = await createTestTenant();
+    const { app } = hostedApp();
+    const seen: string[] = [];
+    const original = app.fetch.bind(app);
+    app.fetch = ((request: Request) => {
+      seen.push(new URL(request.url).pathname);
+      return original(request);
+    }) as typeof app.fetch;
+    const client = await connect(app, tenant.sandboxKey);
+    seen.length = 0;
+    for (const path of [
+      "/v1/contacts/export",
+      "/v1/contacts/export/",
+      "/v1/contacts/export?status=subscribed",
+      "/v1/suppressions/export",
+      "/v1/%63ontacts/export",
+      "/v1/contacts/../contacts/export",
+    ]) {
+      const refused = await client.callTool({ name: "api_get", arguments: { path } });
+      expect(refused.isError).toBe(true);
+    }
+    expect(seen.filter((path) => path.endsWith("/export"))).toEqual([]);
+  });
+
+  test("the real export pages through everything when it is read, as the control", async () => {
+    const tenant = await createTestTenant();
+    await seedContacts(tenant);
+    const { app } = hostedApp();
+    const queries = countExportQueries();
+    try {
+      const response = await app.request("/v1/contacts/export", authorized(tenant.sandboxKey));
+      expect(response.headers.get("content-type")).toContain("text/csv");
+      const csv = await response.text();
+      expect(csv.trim().split("\n").length).toBe(CONTACTS + 1);
+      expect(queries.count()).toBe(3);
+    } finally {
+      queries.restore();
+    }
+  });
+
+  test("the real export stops querying when its stream is cancelled", async () => {
+    const tenant = await createTestTenant();
+    await seedContacts(tenant);
+    const { app } = hostedApp();
+    const queries = countExportQueries();
+    try {
+      const response = await app.request("/v1/contacts/export", authorized(tenant.sandboxKey));
+      const reader = (response.body as ReadableStream<Uint8Array>).getReader();
+      await reader.read();
+      await reader.cancel();
+      const after = queries.count();
+      expect(after).toBeLessThan(3);
+      await Bun.sleep(100);
+      expect(queries.count()).toBe(after);
+    } finally {
+      queries.restore();
+    }
+  });
+
+  test("a real CSV route that got past api_get is refused unread, and stops", async () => {
+    const tenant = await createTestTenant();
+    await seedContacts(tenant);
+    const { app } = hostedApp();
+    const mcp = createHostedMcp({ apiBaseUrl: "http://api.test" });
+    const queries = countExportQueries();
+    try {
+      // `refusedPath` keeps tools off these routes. This is what's behind it, if one is ever missed.
+      const response = await mcp.handle(
+        new Request(MCP_URL, {
+          method: "POST",
+          headers: { ...MCP_HEADERS, "Mcp-Protocol-Version": "2025-06-18" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "tools/call",
+            params: { name: "api_get", arguments: { path: "/v1/contacts" } },
+          }),
+        }),
+        {
+          apiKey: tenant.sandboxKey,
+          apiFetch: (request) =>
+            app.fetch(new Request(`${new URL(request.url).origin}/v1/contacts/export`, request)),
+        },
+      );
+      expect(response.status).toBe(200);
+      const { result } = (await response.json()) as {
+        result: { isError?: boolean; content: { text: string }[] };
+      };
+      expect(result.isError).toBe(true);
+      expect(result.content[0]?.text).toContain("unsupported_response");
+      const after = queries.count();
+      expect(after).toBeLessThan(3);
+      await Bun.sleep(100);
+      expect(queries.count()).toBe(after);
+      expect(await mcp.drain(1_000)).toBe(true);
+    } finally {
+      queries.restore();
+    }
   });
 });
 

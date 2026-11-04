@@ -3,16 +3,14 @@ export {
   type Diagnosis,
   type DiagnosisContext,
   diagnoseEmail,
+  diagnoseSms,
   type RecipientDiagnosis,
   type RecipientOutcome,
-  type Verdict,
-} from "coss/diagnose";
-export {
-  diagnoseSms,
   type SmsDiagnosis,
   type SmsDiagnosisContext,
   type SmsVerdict,
-} from "./diagnose-sms.ts";
+  type Verdict,
+} from "coss/diagnose";
 export {
   type CossMcpServerOptions,
   createCossMcpServer,

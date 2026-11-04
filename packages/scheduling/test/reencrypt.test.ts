@@ -9,6 +9,7 @@ import {
 } from "@coss/webhooks";
 import { eq, sql } from "drizzle-orm";
 import {
+  cancelBooking,
   createBookerSession,
   createBooking,
   createEventType,
@@ -114,6 +115,36 @@ const sessionRow = async (id: string) => {
 };
 
 describe("reencryptSchedulingData", () => {
+  test("a cancellation reason moves to the new key, and one erased meanwhile stays erased", async () => {
+    const fixture = await setUp();
+    const kept = await book(fixture, 9, before);
+    await cancelBooking(fixture.env, kept.id, depsWith(before), actor, {
+      reason: "Feeling better",
+    });
+    const erased = await book(fixture, 10, before);
+    await cancelBooking(fixture.env, erased.id, depsWith(before), actor, { reason: "Other" });
+
+    const result = await reencryptSchedulingData({
+      keys: during,
+      scope: fixture.scope,
+      beforeWrite: async (id) => {
+        if (id !== erased.id) return;
+        await db
+          .update(schema.schedulingBooking)
+          .set({ encryptedCancellationReason: null })
+          .where(eq(schema.schedulingBooking.id, erased.id));
+      },
+    });
+
+    expect(result.conflicts).toBe(1);
+    expect((await getBooking(fixture.env, kept.id, depsWith(after))).cancellation_reason).toBe(
+      "Feeling better",
+    );
+    expect(
+      (await getBooking(fixture.env, erased.id, depsWith(after))).cancellation_reason,
+    ).toBeNull();
+  });
+
   test("lists every column this key ring encrypts, and no other", async () => {
     const { rows } = await db.execute<{ name: string }>(sql`
       select table_name || '.' || column_name as name
@@ -125,6 +156,7 @@ describe("reencryptSchedulingData", () => {
     // These two hold the webhook key ring's values (`CalendarDeps.secretsKeys`).
     const onWebhookKeys = [
       "scheduling_calendar_connection.encrypted_credentials",
+      "scheduling_calendar_delegation.encrypted_credentials",
       "scheduling_oauth_state.encrypted_code_verifier",
     ];
     expect(rows.map((row) => row.name)).toEqual(

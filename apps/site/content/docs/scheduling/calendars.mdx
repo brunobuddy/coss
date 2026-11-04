@@ -3,7 +3,10 @@ title: Calendars
 description: Keep hosts from being booked over something else, and put bookings on their calendars.
 ---
 
-A host connects their calendars on [their own page](/docs/scheduling/embedding), or through your UI.
+With hundreds of hosts on Google Workspace or Microsoft 365, an admin can authorize a whole domain once
+instead: see [calendar delegation](/docs/scheduling/delegation).
+
+Otherwise, a host connects their calendars on [their own page](/docs/scheduling/embedding), or through your UI.
 For Google and Microsoft, ask for a consent URL and open it in a new window, because providers refuse
 to be framed:
 
@@ -40,6 +43,30 @@ through Google or Microsoft or stored from any provider. CalDAV servers send who
 but their times is discarded as they're read. A booking is added to the host's chosen calendar as a
 private event titled "Appointment", with no attendees, so the host's colleagues learn nothing from it
 and their calendar provider sends nobody an invitation.
+
+If hosts need to see who they're meeting, set an event type's `host_calendar_details` to `full`:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.eventTypes.update("evtype_01kd2m9a0b1c2d3e4f5g6h7j8m", {
+  host_calendar_details: "full",
+});
+```
+
+The event is then titled "Intro call with Sam Lee", and its description lists the attendee and any guests with
+their names, emails and phone numbers. These details go to the host's calendar provider, so only turn this on if that
+suits your attendees. Events stay private, nobody is invited through the provider, and answers to your questions never
+go on them. A group session's event has just the event type's title, since its seats come and go. Zoom meetings stay
+neutral, since whoever joins sees their topic.
+
+Changing the setting rewrites upcoming events. Erasing someone takes their details off every event on a connected
+calendar, past ones included, and so does [retention](/docs/scheduling/privacy) once a booking's details expire. HIPAA
+mode refuses `full`, and takes details off events already written.
+
+Coss.com can only reach a calendar while it's connected. Disconnecting takes details off as many events as it can
+first, but copies on a calendar whose access was revoked at the provider, or whose host was deleted, stay there.
 
 A primary calendar counts by default. Choose others with `coss.scheduling.calendars.update`:
 `read_busy` for whether it blocks slots, and `write_target` for whether bookings go on it.
@@ -82,5 +109,5 @@ CalDAV servers must keep a host's calendars on the address they connected with, 
 there. iCloud's move from `caldav.icloud.com` to its partition hosts is the one exception.
 
 A hidden host is visible and fixable, and a double-booked patient isn't, so that's the default. To keep
-offering last known times, flagging those bookings instead, set `calendar_failure_mode` to `last_known`
-in your settings.
+offering last known times, set `calendar_failure_mode` to `last_known` in your settings. Bookings made
+this way aren't marked in any way.

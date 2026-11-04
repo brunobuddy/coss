@@ -34,6 +34,11 @@ directory unless they name a workspace.
   an undocumented path is `<METHOD>` alone; no `url.full`, its query and path can name people). Only the W3C trace
   headers the propagator writes go out (`traceparent`, `tracestate`: the API's CORS allows nothing else, and
   `baggage` is the app's own data), never over one of the SDK's own. `tracing: false` turns it off.
+- **Diagnosis** (`coss/diagnose`, `src/diagnose.ts` + `src/diagnose-*.ts`): one pure `diagnose*` and one `fetch*Diagnosis`
+  per product (email, SMS, Verify, Sign, Forms, Hooks, Scheduling), all verdict + summary + next steps, used by the MCP
+  server and the CLI, which name their own tools or commands through `references`. Each file's header names the
+  product files whose behaviour it mirrors. **Setup** (`src/setup.ts`): `fetchSetupReport(coss, { product })`, additive
+  on `describeSetup`'s shape; it describes a project's setup state, never whether a product is on in a deployment.
 - Error types are listed in three places: `ERROR_TYPES` (`apps/api/src/errors.ts`) and `CossErrorType` +
   `API_ERROR_TYPES` (`packages/sdk/src/core/errors.ts`).
 - The api contract tests import the SDK's built `dist`: turbo builds it first, but outside turbo run

@@ -11,6 +11,7 @@ import {
   check,
   customType,
   date,
+  doublePrecision,
   foreignKey,
   index,
   integer,
@@ -65,6 +66,12 @@ export type SchedulingLocation =
   | { type: "microsoft_teams" }
   | { type: "zoom"; url: string | null };
 
+/** A host's own: a location of an event type that leaves this value blank uses it. */
+export type SchedulingHostLocation =
+  | { type: "link"; url: string }
+  | { type: "phone"; number: string }
+  | { type: "in_person"; address: string };
+
 /** `true`/`false` per recipient and channel; absent events use the default policy. */
 export type SchedulingNotificationPolicy = Record<
   string,
@@ -91,6 +98,9 @@ export const schedulingEventTypeStatus = pgEnum("scheduling_event_type_status", 
   "archived",
 ]);
 export const schedulingHostRole = pgEnum("scheduling_host_role", ["required", "member"]);
+export const schedulingCalendarDetails = pgEnum("scheduling_calendar_details", ["neutral", "full"]);
+// In this order: bookings list their attendee before any guests.
+export const schedulingAttendeeRole = pgEnum("scheduling_attendee_role", ["attendee", "guest"]);
 export const schedulingCalendarProvider = pgEnum("scheduling_calendar_provider", [
   "google",
   "microsoft",
@@ -101,6 +111,18 @@ export const schedulingCalendarProvider = pgEnum("scheduling_calendar_provider",
 export const schedulingConnectionStatus = pgEnum("scheduling_connection_status", [
   "active",
   "needs_reauth",
+  // Its delegation lost access: every connection of it flips together, and back.
+  "delegation_failing",
+]);
+export const schedulingDelegationProvider = pgEnum("scheduling_delegation_provider", [
+  "google",
+  "microsoft",
+]);
+export const schedulingDelegationStatus = pgEnum("scheduling_delegation_status", [
+  "pending",
+  "active",
+  "failing",
+  "deleting",
 ]);
 export const schedulingBookingStatus = pgEnum("scheduling_booking_status", [
   "held",
@@ -150,12 +172,16 @@ export const schedulingHost = pgTable(
     name: text("name").notNull(),
     // Where notifications go; never an identity, and not unique.
     email: text("email"),
+    // The mailbox a calendar delegation connects, when it isn't `email` or matching is off.
+    calendarAccount: text("calendar_account"),
     timeZone: text("time_zone").notNull(),
     attributes: jsonb("attributes")
       .$type<Record<string, string | string[]>>()
       .notNull()
       .default({}),
     metadata: jsonb("metadata").$type<Record<string, string>>().notNull().default({}),
+    // At most one of each type. A booking copies what it uses, so changes reach only new bookings.
+    locations: jsonb("locations").$type<SchedulingHostLocation[]>().notNull().default([]),
     status: schedulingHostStatus("status").notNull().default("active"),
     screenedAt: instant("screened_at"),
     createdAt: createdAt(),
@@ -234,6 +260,8 @@ export const schedulingEventType = pgTable(
     environmentId: text("environment_id").notNull(),
     uid: text("uid"),
     title: text("title").notNull(),
+    // Shown on hosted pages, never in emails. Links only to the organization's verified domains.
+    description: text("description"),
     kind: schedulingEventTypeKind("kind").notNull().default("one_on_one"),
     status: schedulingEventTypeStatus("status").notNull().default("active"),
     durationMinutes: integer("duration_minutes").notNull(),
@@ -253,6 +281,14 @@ export const schedulingEventType = pgTable(
     holdTtlSeconds: integer("hold_ttl_seconds").notNull().default(600),
     cancelNoticeMinutes: integer("cancel_notice_minutes").notNull().default(0),
     rescheduleNoticeMinutes: integer("reschedule_notice_minutes").notNull().default(0),
+    // How many people an attendee can add to a booking; 0: none. Never on a group event type.
+    maxGuests: integer("max_guests").notNull().default(0),
+    // Null: no limit. Upcoming bookings of this event type one person can have at a time.
+    maxActiveBookingsPerAttendee: integer("max_active_bookings_per_attendee"),
+    // What hosts' calendars say about a booking. Read when an event is written.
+    hostCalendarDetails: schedulingCalendarDetails("host_calendar_details")
+      .notNull()
+      .default("neutral"),
     questions: jsonb("questions").$type<SchedulingQuestion[]>().notNull().default([]),
     locations: jsonb("locations").$type<SchedulingLocation[]>().notNull().default([]),
     // Attributes a host must have to be in this pool, on top of explicit members.
@@ -295,8 +331,10 @@ export const schedulingEventTypeHost = pgTable(
     weight: integer("weight").notNull().default(100),
     // False: only here to count a host a pool's `host_filter` found, who's no member of its own.
     assigned: boolean("assigned").notNull().default(true),
-    // Bookings assigned, net of cancellations before the start: the pool's fairness counter.
-    fairUnits: integer("fair_units").notNull().default(0),
+    // The pool's fairness counter: bookings assigned, net of cancellations before the start, from
+    // a start level with the pool. Fractional, because a new weight rescales it and rounding could
+    // leave someone a backlog.
+    fairUnits: doublePrecision("fair_units").notNull().default(0),
     lastAssignedAt: instant("last_assigned_at"),
     // Null: the host's default schedule.
     scheduleId: text("schedule_id"),
@@ -321,6 +359,51 @@ export const schedulingEventTypeHost = pgTable(
   ],
 );
 
+/**
+ * One admin's authorization for a whole domain: the customer's own service account or Entra app, so
+ * the provider itself keeps it to their Workspace or tenant. Hosts get ordinary connections of it.
+ */
+export const schedulingCalendarDelegation = pgTable(
+  "scheduling_calendar_delegation",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.schedulingCalendarDelegation)),
+    organizationId: text("organization_id").notNull(),
+    projectId: text("project_id").notNull(),
+    environmentId: text("environment_id").notNull(),
+    provider: schedulingDelegationProvider("provider").notNull(),
+    domain: text("domain").notNull(),
+    matchHostEmail: boolean("match_host_email").notNull().default(true),
+    status: schedulingDelegationStatus("status").notNull().default("pending"),
+    // `encryptSecret`, and listed in `reencryptWebhookSecrets`. Never returned.
+    encryptedCredentials: text("encrypted_credentials").notNull(),
+    clientId: text("client_id").notNull(),
+    tenantId: text("tenant_id"),
+    // A mailbox known to work: what a failure is checked against.
+    verifyAccount: text("verify_account"),
+    lastErrorCode: text("last_error_code"),
+    failingSince: instant("failing_since"),
+    secretExpiresAt: instant("secret_expires_at"),
+    nextReconcileAt: instant("next_reconcile_at").notNull().defaultNow(),
+    // How far through the hosts the worker has got: the last host id of its latest full batch.
+    reconcileCursor: text("reconcile_cursor"),
+    leaseUntil: instant("lease_until"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    foreignKey({
+      name: "scheduling_calendar_delegation_environment_fk",
+      columns: [t.environmentId, t.organizationId],
+      foreignColumns: [environment.id, environment.organizationId],
+    }).onDelete("cascade"),
+    unique("scheduling_calendar_delegation_id_organization_unique").on(t.id, t.organizationId),
+    unique("scheduling_calendar_delegation_domain_unique").on(t.environmentId, t.domain),
+    index("scheduling_calendar_delegation_due_idx").on(t.nextReconcileAt),
+  ],
+);
+
 export const schedulingCalendarConnection = pgTable(
   "scheduling_calendar_connection",
   {
@@ -334,7 +417,13 @@ export const schedulingCalendarConnection = pgTable(
     // The provider's name for the account (an address, or a CalDAV user and URL).
     accountId: text("account_id").notNull(),
     // `encryptSecret`, and listed in `reencryptWebhookSecrets`. Null for the simulated provider.
+    // A delegated connection's holds only its current access token.
     encryptedCredentials: text("encrypted_credentials"),
+    // Set: the delegation's credentials reach this mailbox, and it isn't the host's to end.
+    delegationId: text("delegation_id"),
+    // When a delegation first reached this mailbox. Null with one: it never has, so a host's calendars
+    // here are only a stand-in, and there are no events.
+    reachedAt: instant("reached_at"),
     status: schedulingConnectionStatus("status").notNull().default("active"),
     lastErrorCode: text("last_error_code"),
     lastErrorAt: instant("last_error_at"),
@@ -347,7 +436,18 @@ export const schedulingCalendarConnection = pgTable(
       columns: [t.hostId, t.organizationId],
       foreignColumns: [schedulingHost.id, schedulingHost.organizationId],
     }).onDelete("cascade"),
+    foreignKey({
+      name: "scheduling_calendar_connection_delegation_fk",
+      columns: [t.delegationId, t.organizationId],
+      foreignColumns: [
+        schedulingCalendarDelegation.id,
+        schedulingCalendarDelegation.organizationId,
+      ],
+    }).onDelete("cascade"),
     unique("scheduling_calendar_connection_id_organization_unique").on(t.id, t.organizationId),
+    index("scheduling_calendar_connection_delegation_idx")
+      .on(t.delegationId)
+      .where(sql`${t.delegationId} IS NOT NULL`),
     unique("scheduling_calendar_connection_account_unique").on(t.hostId, t.provider, t.accountId),
   ],
 );
@@ -532,6 +632,10 @@ export const schedulingBooking = pgTable(
     externalConflictAt: instant("external_conflict_at"),
     noShowAt: instant("no_show_at"),
     cancelledAt: instant("cancelled_at"),
+    // The kind of actor who cancelled it. Null: not cancelled.
+    cancelledBy: text("cancelled_by").$type<SchedulingActor["kind"]>(),
+    // Why, if they said. Free text, so only `getBooking` returns it: never events, webhooks or logs.
+    encryptedCancellationReason: text("encrypted_cancellation_reason"),
     redactedAt: instant("redacted_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -593,6 +697,9 @@ export const schedulingBookingHost = pgTable(
     hostId: text("host_id").notNull(),
     organizationId: text("organization_id").notNull(),
     role: schedulingHostRole("role").notNull().default("member"),
+    // What this booking added to a pool member's share (1 / weight at the time), so cancelling gives
+    // back what it took however the weight's changed since. Null: not a pool's, or from before this.
+    fairShare: doublePrecision("fair_share"),
   },
   (t) => [
     primaryKey({ columns: [t.bookingId, t.hostId] }),
@@ -696,6 +803,7 @@ export const schedulingAttendee = pgTable(
     organizationId: text("organization_id").notNull(),
     environmentId: text("environment_id").notNull(),
     bookingId: text("booking_id").notNull(),
+    role: schedulingAttendeeRole("role").notNull().default("attendee"),
     // The customer's own id for this person.
     uid: text("uid"),
     encryptedContact: text("encrypted_contact"),
@@ -767,6 +875,11 @@ export const schedulingCalendarEvent = pgTable(
     appliedVersion: integer("applied_version").notNull().default(0),
     providerEventId: text("provider_event_id"),
     externalState: schedulingExternalState("external_state").notNull().default("in_sync"),
+    // The provider's copy may say more than "Appointment": set before such a write is sent, cleared
+    // only after a neutral one. Erasing someone and enabling HIPAA mode rewrite these rows.
+    detailsWritten: boolean("details_written").notNull().default(false),
+    // Someone's details have to come off this event, so a failing write never gives up on it.
+    scrubPending: boolean("scrub_pending").notNull().default(false),
     nextAttemptAt: instant("next_attempt_at").notNull().defaultNow(),
     leaseUntil: instant("lease_until"),
     attempts: integer("attempts").notNull().default(0),
@@ -869,6 +982,8 @@ export const schedulingSession = pgTable(
     encryptedAttributes: text("encrypted_attributes"),
     // The fixed identity's `uid`, in the clear like `scheduling_attendee.uid`: how erasure finds it.
     attendeeUid: text("attendee_uid"),
+    // The fixed identity's address as `scheduling_attendee.email_hmac`, for erasing someone by it.
+    attendeeEmailHmac: text("attendee_email_hmac"),
     readOnly: boolean("read_only").notNull().default(false),
     apiKeyId: text("api_key_id"),
     createdByUserId: text("created_by_user_id"),
@@ -900,6 +1015,9 @@ export const schedulingSession = pgTable(
     unique("scheduling_session_token_hash_unique").on(t.tokenHash),
     index("scheduling_session_expires_at_idx").on(t.expiresAt),
     index("scheduling_session_booking_idx").on(t.bookingId),
+    index("scheduling_session_attendee_email_idx")
+      .on(t.environmentId, t.attendeeEmailHmac)
+      .where(sql`attendee_email_hmac is not null`),
     index("scheduling_session_attendee_uid_idx")
       .on(t.environmentId, t.attendeeUid)
       .where(sql`${t.attendeeUid} IS NOT NULL`),

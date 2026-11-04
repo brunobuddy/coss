@@ -71,6 +71,7 @@ import {
   refreshIdleZoomConnections,
   releaseOrganizationCalendars,
   renewDueCalendarChannels,
+  runDueCalendarDelegations,
   runDueCalendarSyncs,
   runDueCalendarWrites,
   runDueSchedulingNotifications,
@@ -124,7 +125,7 @@ import {
 import { reportDispatchBacklog } from "./backlog.ts";
 import { pollSesInbound, type SesInboundDeps } from "./inbound.ts";
 import type { Loop } from "./loop.ts";
-import { startLoop } from "./loop.ts";
+import { startLoop, watchLoops } from "./loop.ts";
 import { NOTIFICATION_KINDS } from "./notification-kinds.ts";
 import { runRetention } from "./retention.ts";
 import { pollSesEvents, type SqsApi } from "./sqs.ts";
@@ -256,6 +257,7 @@ export const WORKER_LOOP_NAMES = [
   "scheduling-calendar-sync",
   "scheduling-calendar-writes",
   "scheduling-calendar-channels",
+  "scheduling-calendar-delegations",
   "scheduling-calendar-host-edits",
   "email-dispatch",
   "email-dispatch-marketing",
@@ -776,8 +778,10 @@ export function startJobs(deps: WorkerDeps): Loop[] {
           name: "scheduling-calendar-writes",
           intervalMs: 2000,
           run: async () =>
-            (await runDueCalendarWrites(calendars, { limit: SCHEDULING_BATCH })) ===
-            SCHEDULING_BATCH,
+            (await runDueCalendarWrites(
+              { ...calendars, dataKeys: scheduling.dataKeys },
+              { limit: SCHEDULING_BATCH },
+            )) === SCHEDULING_BATCH,
         }),
         start({
           // Until a new calendar has its channel, changes to it wait for the 5 minute poll.
@@ -786,6 +790,12 @@ export function startJobs(deps: WorkerDeps): Loop[] {
           run: async () =>
             (await renewDueCalendarChannels(calendars, { limit: SCHEDULING_BATCH })) ===
             SCHEDULING_BATCH,
+        }),
+        start({
+          // A new host nudges its delegation, so this is how soon they're connected.
+          name: "scheduling-calendar-delegations",
+          intervalMs: 15_000,
+          run: async () => (await runDueCalendarDelegations(calendars, { limit: 5 })) === 5,
         }),
         start({
           name: "scheduling-calendar-host-edits",
@@ -947,5 +957,6 @@ export function startJobs(deps: WorkerDeps): Loop[] {
       }),
     );
   }
-  return loops.filter((loop): loop is Loop => loop !== null);
+  const running = loops.filter((loop): loop is Loop => loop !== null);
+  return running.length > 0 ? [...running, watchLoops(running)] : [];
 }

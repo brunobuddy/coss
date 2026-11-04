@@ -3,27 +3,35 @@ import type { HttpClient, RequestOptions } from "../core/http.ts";
 import type { List } from "../types/email.ts";
 import type {
   AuthorizeSchedulingCalendarParams,
+  CancelSchedulingBookingParams,
   CancelSchedulingSeriesParams,
   ConfirmSchedulingHoldParams,
   CreateSchedulingBookerSessionParams,
   CreateSchedulingBookingParams,
   CreateSchedulingCalendarConnectionParams,
+  CreateSchedulingCalendarDelegationParams,
   CreateSchedulingEventTypeParams,
   CreateSchedulingHoldParams,
   CreateSchedulingHostParams,
   CreateSchedulingHostSessionParams,
   CreateSchedulingSeriesParams,
   DeletedSchedulingCalendarConnection,
+  DeletedSchedulingCalendarDelegation,
   DeletedSchedulingHost,
   DeletedSchedulingSchedule,
+  ExplainSchedulingSlotParams,
+  ListSchedulingBookingEventsParams,
   ListSchedulingBookingsParams,
   ListSchedulingSlotsParams,
   RescheduleSchedulingBookingParams,
+  SchedulingAttendeeEmailErasure,
   SchedulingAttendeeErasure,
   SchedulingAvailabilitySearchResult,
   SchedulingBooking,
+  SchedulingBookingEventList,
   SchedulingCalendarAuthorization,
   SchedulingCalendarConnection,
+  SchedulingCalendarDelegation,
   SchedulingCancelledSeries,
   SchedulingEventType,
   SchedulingHost,
@@ -33,15 +41,18 @@ import type {
   SchedulingSeriesPreview,
   SchedulingSession,
   SchedulingSettings,
+  SchedulingSlotExplanation,
   SchedulingSlotList,
   SearchSchedulingAvailabilityParams,
   SetSchedulingSimulatedBusyParams,
   UpdateSchedulingBookingLocationParams,
+  UpdateSchedulingCalendarDelegationParams,
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
   UpdateSchedulingHostParams,
   UpdateSchedulingSettingsParams,
   UpsertSchedulingScheduleParams,
+  VerifySchedulingCalendarDelegationParams,
 } from "../types/scheduling.ts";
 import { listQuery } from "./list-query.ts";
 
@@ -272,6 +283,20 @@ export class SchedulingSlotsResource {
       signal: options?.signal,
     });
   }
+
+  /** Why one start can or can't be booked, host by host. It says when a host is busy: not for attendees. */
+  explain(
+    eventType: string,
+    params: ExplainSchedulingSlotParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingSlotExplanation>> {
+    return this.#http.request<SchedulingSlotExplanation>({
+      method: "GET",
+      path: `/v1/scheduling/event_types/${part(eventType)}/slots/explain`,
+      query: listQuery(params),
+      signal: options?.signal,
+    });
+  }
 }
 
 /** `coss.scheduling.availability`: who's free, across hosts. */
@@ -357,10 +382,29 @@ export class SchedulingBookingsResource {
   }
 
   /** Cancels a booking and frees the time. */
-  cancel(id: string, options?: ReadOptions): Promise<CossResult<SchedulingBooking>> {
+  cancel(
+    id: string,
+    params: CancelSchedulingBookingParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingBooking>> {
     return this.#http.request<SchedulingBooking>({
       method: "POST",
       path: `/v1/scheduling/bookings/${part(id)}/cancel`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** What's happened to a booking, oldest first, and who did it. */
+  events(
+    id: string,
+    params: ListSchedulingBookingEventsParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingBookingEventList>> {
+    return this.#http.request<SchedulingBookingEventList>({
+      method: "GET",
+      path: `/v1/scheduling/bookings/${part(id)}/events`,
+      query: listQuery(params),
       signal: options?.signal,
     });
   }
@@ -597,6 +641,90 @@ export class SchedulingCalendarsResource {
   }
 }
 
+/**
+ * `coss.scheduling.calendarDelegations`: an admin authorizes once, and every host on the domain gets
+ * their calendar with no consent screen.
+ */
+export class SchedulingCalendarDelegationsResource {
+  readonly #http: HttpClient;
+
+  /** @internal Use `new Coss().scheduling.calendarDelegations`. */
+  constructor(http: HttpClient) {
+    this.#http = http;
+  }
+
+  /** Adds one, `pending`: authorize what it returns, then verify it. Not retried. */
+  create(
+    params: CreateSchedulingCalendarDelegationParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingCalendarDelegation>> {
+    return this.#http.request<SchedulingCalendarDelegation>({
+      method: "POST",
+      path: "/v1/scheduling/calendar_delegations",
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
+  /** The environment's delegations, with how many hosts each has connected. */
+  list(options?: ReadOptions): Promise<CossResult<List<SchedulingCalendarDelegation>>> {
+    return this.#http.request<List<SchedulingCalendarDelegation>>({
+      method: "GET",
+      path: "/v1/scheduling/calendar_delegations",
+      signal: options?.signal,
+    });
+  }
+
+  get(id: string, options?: ReadOptions): Promise<CossResult<SchedulingCalendarDelegation>> {
+    return this.#http.request<SchedulingCalendarDelegation>({
+      method: "GET",
+      path: `/v1/scheduling/calendar_delegations/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** New credentials are tried on the verified mailbox before they replace the old ones. */
+  update(
+    id: string,
+    params: UpdateSchedulingCalendarDelegationParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingCalendarDelegation>> {
+    return this.#http.request<SchedulingCalendarDelegation>({
+      method: "PATCH",
+      path: `/v1/scheduling/calendar_delegations/${part(id)}`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Tries one real mailbox. Passing makes it `active`, and its hosts start connecting. */
+  verify(
+    id: string,
+    params: VerifySchedulingCalendarDelegationParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingCalendarDelegation>> {
+    return this.#http.request<SchedulingCalendarDelegation>({
+      method: "POST",
+      path: `/v1/scheduling/calendar_delegations/${part(id)}/verify`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Its hosts lose these calendars within minutes, and stay bookable with no conflict check. */
+  delete(
+    id: string,
+    options?: ReadOptions,
+  ): Promise<CossResult<DeletedSchedulingCalendarDelegation>> {
+    return this.#http.request<DeletedSchedulingCalendarDelegation>({
+      method: "DELETE",
+      path: `/v1/scheduling/calendar_delegations/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+}
+
 /** `coss.scheduling.sessions`: a browser's authority, without your API key. */
 export class SchedulingSessionsResource {
   readonly #http: HttpClient;
@@ -655,6 +783,19 @@ export class SchedulingAttendeesResource {
     this.#http = http;
   }
 
+  /** Removes this address's details and answers from every booking now: all there is of a guest. */
+  eraseByEmail(
+    email: string,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingAttendeeEmailErasure>> {
+    return this.#http.request<SchedulingAttendeeEmailErasure>({
+      method: "POST",
+      path: "/v1/scheduling/attendees/erase",
+      body: { email },
+      ...options,
+    });
+  }
+
   /** Removes this person's details and answers from every booking now. */
   erase(uid: string, options?: ReadOptions): Promise<CossResult<SchedulingAttendeeErasure>> {
     return this.#http.request<SchedulingAttendeeErasure>({
@@ -708,6 +849,7 @@ export class SchedulingResource {
   readonly holds: SchedulingHoldsResource;
   readonly series: SchedulingSeriesResource;
   readonly calendars: SchedulingCalendarsResource;
+  readonly calendarDelegations: SchedulingCalendarDelegationsResource;
   readonly sessions: SchedulingSessionsResource;
   readonly attendees: SchedulingAttendeesResource;
   readonly settings: SchedulingSettingsResource;
@@ -723,6 +865,7 @@ export class SchedulingResource {
     this.holds = new SchedulingHoldsResource(http);
     this.series = new SchedulingSeriesResource(http);
     this.calendars = new SchedulingCalendarsResource(http);
+    this.calendarDelegations = new SchedulingCalendarDelegationsResource(http);
     this.sessions = new SchedulingSessionsResource(http);
     this.attendees = new SchedulingAttendeesResource(http);
     this.settings = new SchedulingSettingsResource(http);

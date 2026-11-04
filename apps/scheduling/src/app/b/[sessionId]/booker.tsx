@@ -25,6 +25,7 @@ import {
   VideoIcon,
 } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { EventTypeDescription } from "@/components/event-type-description";
 import {
   BrandMark,
   BrokenLink,
@@ -37,6 +38,7 @@ import {
 } from "@/components/page";
 import { type Slot, SlotPicker } from "@/components/slot-picker";
 import { TimeZonePicker, zoneLabel } from "@/components/time-zone-picker";
+import { type BookingLocation, Where } from "@/components/where";
 import { type Branding, useAccentColor } from "@/lib/branding";
 import { browserTimeZone, ClientApiError, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
@@ -54,11 +56,13 @@ type Session = Branding & {
   attendee_fixed: boolean;
   event_type: {
     title: string;
+    description: string | null;
     duration_minutes: number;
     duration_options: number[];
     questions: Question[];
     locations: { type: string }[];
     requires_approval: boolean;
+    max_guests: number;
   };
 };
 
@@ -174,7 +178,12 @@ function QuestionField(props: {
   );
 }
 
-type Done = { status: string; start: string; attendee_emailed: boolean };
+type Done = {
+  status: string;
+  start: string;
+  location: BookingLocation;
+  attendee_emailed: boolean;
+};
 
 function Confirmed(props: { session: Session; done: Done; when: string; timeZone: string }) {
   const { session, done, when, timeZone } = props;
@@ -210,6 +219,7 @@ function Confirmed(props: { session: Session; done: Done; when: string; timeZone
           <Detail icon={GlobeIcon} label="Time zone">
             {zoneLabel(timeZone)}
           </Detail>
+          <Where location={done.location} />
         </DetailList>
       </Panel>
     </main>
@@ -226,6 +236,7 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [guests, setGuests] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [lostSlot, setLostSlot] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
@@ -266,6 +277,7 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
       setFormProblem(`Please answer "${unanswered.label}".`);
       return;
     }
+    const guestEmails = guests.map((guest) => guest.trim()).filter(Boolean);
     setSubmitting(true);
     setFormProblem(null);
     try {
@@ -278,6 +290,9 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
             ? { duration_minutes: duration }
             : {}),
           ...(session.attendee_fixed ? {} : { attendee: { name, email, time_zone: timeZone } }),
+          ...(guestEmails.length > 0
+            ? { guests: guestEmails.map((guest) => ({ email: guest })) }
+            : {}),
           ...(Object.keys(answers).length > 0 ? { answers } : {}),
         },
       });
@@ -323,6 +338,9 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
         <aside className="flex flex-col gap-5 border-b p-4 sm:p-6 md:border-e md:border-b-0">
           <BrandMark branding={session} />
           <PageTitle>{session.event_type.title}</PageTitle>
+          {session.event_type.description ? (
+            <EventTypeDescription text={session.event_type.description} />
+          ) : null}
           <DetailList>
             {slot ? (
               <Detail icon={CalendarIcon} label="When">
@@ -427,6 +445,49 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
                   />
                 </div>
               ))}
+              {session.event_type.max_guests > 0 ? (
+                <div className="flex flex-col gap-1.5">
+                  {guests.map((guest, index) => (
+                    // Guests only ever come and go from the end of the list.
+                    // biome-ignore lint/suspicious/noArrayIndexKey: see above.
+                    <div className="flex flex-col gap-1.5" key={index}>
+                      <Label htmlFor={`guest-${index}`}>Guest {index + 1} email</Label>
+                      <Input
+                        id={`guest-${index}`}
+                        onChange={(event) =>
+                          setGuests((all) =>
+                            all.map((value, at) => (at === index ? event.target.value : value)),
+                          )
+                        }
+                        type="email"
+                        value={guest}
+                      />
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    {guests.length < session.event_type.max_guests ? (
+                      <Button
+                        onClick={() => setGuests((all) => [...all, ""])}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        Add a guest
+                      </Button>
+                    ) : null}
+                    {guests.length > 0 ? (
+                      <Button
+                        onClick={() => setGuests((all) => all.slice(0, -1))}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        Remove the last guest
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
               {formProblem ? (
                 <p className="text-destructive-foreground text-sm" role="alert">
                   {formProblem}

@@ -5,9 +5,17 @@
 
 export type SchedulingAttributes = Record<string, string | string[]>;
 
+/** A host's own place to meet. `url` must be https, and `number` in E.164 format. */
+export type SchedulingHostLocation =
+  | { type: "link"; url: string }
+  | { type: "phone"; number: string }
+  | { type: "in_person"; address: string };
+
 export type SchedulingHostStatus = "active" | "disabled";
 
 export interface CreateSchedulingHostParams {
+  /** The mailbox a calendar delegation connects, when it isn't `email`. */
+  calendar_account?: string | null;
   /** Your own id for this host, unique in the environment. */
   uid?: string;
   name: string;
@@ -16,6 +24,11 @@ export interface CreateSchedulingHostParams {
   time_zone: string;
   /** What pools filter hosts by, such as `{ licensed_in: ["CA", "NY"] }`. */
   attributes?: SchedulingAttributes;
+  /**
+   * This host's own office, meeting link and phone number, at most one of each. An event type's
+   * location that leaves its value blank uses them.
+   */
+  locations?: SchedulingHostLocation[];
   metadata?: Record<string, string>;
 }
 
@@ -23,8 +36,12 @@ export interface UpdateSchedulingHostParams {
   uid?: string | null;
   name?: string;
   email?: string | null;
+  /** Moves a delegated calendar to this mailbox. Refused while bookings are still to come. */
+  calendar_account?: string | null;
   time_zone?: string;
   attributes?: SchedulingAttributes;
+  /** Replaces this host's own locations. Existing bookings keep the location they have. */
+  locations?: SchedulingHostLocation[];
   metadata?: Record<string, string>;
   /** A `disabled` host isn't offered. Its existing bookings stay. */
   status?: SchedulingHostStatus;
@@ -36,8 +53,10 @@ export interface SchedulingHost {
   uid: string | null;
   name: string;
   email: string | null;
+  calendar_account: string | null;
   time_zone: string;
   attributes: SchedulingAttributes;
+  locations: SchedulingHostLocation[];
   metadata: Record<string, string>;
   status: SchedulingHostStatus;
   created_at: string;
@@ -185,6 +204,24 @@ interface SchedulingEventTypeFields {
   hold_ttl_seconds?: number;
   cancel_notice_minutes?: number;
   reschedule_notice_minutes?: number;
+  /**
+   * Plain text, shown on hosted booking pages and never in emails. Links must be on your
+   * organization's verified domains and use `https`.
+   */
+  description?: string | null;
+  /** How many people an attendee can add to a booking. Default: 0. Not on `group`. */
+  max_guests?: number;
+  /**
+   * How many upcoming bookings of this event type one person can have at a time, known by `uid` or
+   * email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`.
+   */
+  max_active_bookings_per_attendee?: number | null;
+  /**
+   * What hosts' calendars say about a booking. `neutral` (the default): a private event titled
+   * "Appointment". `full`: this title with the attendee's name, plus who's coming in its
+   * description, which go to the host's calendar provider. Refused in HIPAA mode.
+   */
+  host_calendar_details?: SchedulingHostCalendarDetails;
   questions?: SchedulingQuestionInput[];
   locations?: SchedulingLocationInput[];
   host_filter?: SchedulingAttributes | null;
@@ -213,6 +250,7 @@ export interface SchedulingEventType {
   id: string;
   uid: string | null;
   title: string;
+  description: string | null;
   kind: SchedulingEventTypeKind;
   status: "active" | "archived";
   duration_minutes: number;
@@ -230,6 +268,9 @@ export interface SchedulingEventType {
   hold_ttl_seconds: number;
   cancel_notice_minutes: number;
   reschedule_notice_minutes: number;
+  max_guests: number;
+  max_active_bookings_per_attendee: number | null;
+  host_calendar_details: SchedulingHostCalendarDetails;
   questions: SchedulingQuestion[];
   locations: SchedulingLocation[];
   host_filter: SchedulingAttributes | null;
@@ -259,12 +300,80 @@ export interface SchedulingSlot {
   end: string;
   /** Who could take it. */
   hosts: string[];
+  /** Free seats at this start, for a `group` event type. `null` for the others. */
+  seats_left: number | null;
 }
 
 export interface SchedulingSlotList {
   object: "list";
   data: SchedulingSlot[];
   has_more: false;
+}
+
+export type SchedulingBookingActorKind =
+  | "api_key"
+  | "user"
+  | "host_session"
+  | "booker_session"
+  | "manage_session"
+  | "system";
+
+export interface CancelSchedulingBookingParams {
+  /** Why it's being cancelled. Only retrieving this booking returns it. */
+  reason?: string;
+}
+
+export interface ListSchedulingBookingEventsParams {
+  limit?: number;
+  /** The last id of the previous page. */
+  after?: string;
+}
+
+export interface SchedulingBookingEvent {
+  object: "scheduling.booking_event";
+  id: string;
+  /** This booking's events count up from 1. */
+  sequence: number;
+  /** What happened, such as `scheduling.booking.rescheduled`. */
+  type: string;
+  actor: { kind: SchedulingBookingActorKind; id: string | null };
+  /** More about it, such as `previous_start` on a reschedule. Never personal data. */
+  details: Record<string, unknown>;
+  occurred_at: string;
+}
+
+export interface SchedulingBookingEventList {
+  object: "list";
+  data: SchedulingBookingEvent[];
+  has_more: boolean;
+}
+
+export interface ExplainSchedulingSlotParams {
+  start: string;
+  /** Only this host (id or uid). */
+  host?: string;
+  duration_minutes?: number;
+  /** A JSON object narrowing a pool, such as `{"licensed_in":"CA"}`. */
+  attributes?: string;
+}
+
+export interface SchedulingSlotExplanation {
+  object: "scheduling.slot_explanation";
+  start: string;
+  end: string;
+  /** Whether it can be booked right now. */
+  available: boolean;
+  /** Why it can't, such as `host_busy` or `no_hosts`. With several hosts refused, the first one's reason. */
+  reason: string | null;
+  hosts: {
+    host: string;
+    /** `required` hosts must all be free. Only one `member` needs to be. */
+    role: "required" | "member";
+    available: boolean;
+    reason: string | null;
+    /** With `calendar_unverified`, why the calendars can't be trusted. */
+    calendar_reason: string | null;
+  }[];
 }
 
 export interface SearchSchedulingAvailabilityParams {
@@ -290,6 +399,12 @@ export type SchedulingBookingStatus =
   | "cancelled"
   | "declined";
 
+/** Someone else coming along. They're emailed about the booking, with no manage link. */
+export interface SchedulingGuestInput {
+  email: string;
+  name?: string;
+}
+
 export interface SchedulingAttendeeInput {
   /** Your own id for this person, used to erase their data later. */
   uid?: string;
@@ -308,6 +423,8 @@ export interface CreateSchedulingBookingParams {
   attributes?: SchedulingAttributes;
   duration_minutes?: number;
   attendee: SchedulingAttendeeInput;
+  /** Up to the event type's `max_guests`. */
+  guests?: SchedulingGuestInput[];
   answers?: Record<string, string | string[]>;
   location?: SchedulingLocationInput;
   metadata?: Record<string, string>;
@@ -315,8 +432,12 @@ export interface CreateSchedulingBookingParams {
 
 export type CreateSchedulingHoldParams = CreateSchedulingBookingParams;
 
+export type SchedulingHostCalendarDetails = "neutral" | "full";
+
 export interface SchedulingBookingAttendee {
   id: string;
+  /** `attendee` booked it and comes first; a `guest` was added by them. */
+  role: "attendee" | "guest";
   uid: string | null;
   name: string | null;
   email: string | null;
@@ -347,6 +468,10 @@ export interface SchedulingBooking {
   external_conflict_at: string | null;
   no_show_at: string | null;
   cancelled_at: string | null;
+  /** Who cancelled it. `null`: not cancelled, or cancelled before this was recorded. */
+  cancelled_by: SchedulingBookingActorKind | null;
+  /** Why, if they said. Only when retrieving one booking. */
+  cancellation_reason?: string | null;
   metadata: Record<string, string>;
   created_at: string;
   updated_at: string;
@@ -414,6 +539,11 @@ export interface SchedulingAttendeeErasure {
   erased: number;
 }
 
+export interface SchedulingAttendeeEmailErasure {
+  object: "scheduling.attendee_erasure";
+  erased: number;
+}
+
 export interface SchedulingNotificationSettings {
   email_attendee?: boolean;
   email_host?: boolean;
@@ -475,6 +605,8 @@ export interface SchedulingCalendarConnection {
   account: string;
   /** `needs_reauth`: access was lost, and this host isn't offered until it's back. */
   status: "active" | "needs_reauth";
+  /** The calendar delegation that manages it, which can't be disconnected or reconnected by itself. */
+  delegation: string | null;
   calendars: {
     id: string;
     external_id: string;
@@ -494,6 +626,73 @@ export interface DeletedSchedulingCalendarConnection {
 export interface UpdateSchedulingCalendarParams {
   read_busy?: boolean;
   write_target?: boolean;
+}
+
+export type CreateSchedulingCalendarDelegationParams =
+  | {
+      provider: "google";
+      domain: string;
+      /** Whether a host's `email` picks their mailbox when `calendar_account` isn't set. */
+      match_host_email?: boolean;
+      /** The whole JSON key of a service account in your Google Cloud project. */
+      service_account_key: string;
+    }
+  | {
+      provider: "microsoft";
+      domain: string;
+      /** Whether a host's `email` picks their mailbox when `calendar_account` isn't set. */
+      match_host_email?: boolean;
+      tenant_id: string;
+      client_id: string;
+      client_secret: string;
+      /** Owners and admins are warned 14 days before. */
+      secret_expires_at?: string;
+    };
+
+export interface UpdateSchedulingCalendarDelegationParams {
+  match_host_email?: boolean;
+  /** Tried on the verified mailbox before it replaces the old one. */
+  service_account_key?: string;
+  /** Tried on the verified mailbox before it replaces the old one. */
+  client_secret?: string;
+  secret_expires_at?: string | null;
+}
+
+export interface VerifySchedulingCalendarDelegationParams {
+  /** A real mailbox on the domain to try. */
+  account: string;
+}
+
+export interface SchedulingCalendarDelegation {
+  object: "scheduling.calendar_delegation";
+  id: string;
+  provider: "google" | "microsoft";
+  domain: string;
+  /**
+   * `pending`: not verified yet. `failing`: the provider refused access, and its hosts aren't offered
+   * until it's back. `deleting`: its connections are being removed.
+   */
+  status: "pending" | "active" | "failing" | "deleting";
+  match_host_email: boolean;
+  /** Google: the numeric client ID your Workspace admin authorizes. */
+  client_id: string;
+  tenant_id: string | null;
+  /** What to authorize: OAuth scopes in Google's Admin console, the permission in Entra. */
+  scopes: string[];
+  verified_account: string | null;
+  last_error_code: string | null;
+  failing_since: string | null;
+  secret_expires_at: string | null;
+  hosts_connected: number;
+  hosts_failed: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeletedSchedulingCalendarDelegation {
+  object: "scheduling.calendar_delegation";
+  id: string;
+  deleted: true;
 }
 
 export interface SetSchedulingSimulatedBusyParams {
@@ -544,9 +743,14 @@ export type SchedulingCalendarWebhookEventType =
   | "scheduling.calendar.needs_reauth"
   | "scheduling.calendar.disconnected";
 
+export type SchedulingCalendarDelegationWebhookEventType =
+  | "scheduling.calendar_delegation.failing"
+  | "scheduling.calendar_delegation.restored";
+
 export type SchedulingWebhookEventType =
   | SchedulingBookingWebhookEventType
-  | SchedulingCalendarWebhookEventType;
+  | SchedulingCalendarWebhookEventType
+  | SchedulingCalendarDelegationWebhookEventType;
 
 /** Ids, times and statuses only: a person's details and answers come from retrieving the booking. */
 export interface SchedulingBookingWebhookEventData {
@@ -578,4 +782,20 @@ export interface SchedulingCalendarWebhookEvent {
   api_version: string;
   created_at: string;
   data: { host_id: string; connection_id: string; provider: string; occurred_at: string };
+}
+
+export interface SchedulingCalendarDelegationWebhookEvent {
+  id: string;
+  object: "event";
+  type: SchedulingCalendarDelegationWebhookEventType;
+  api_version: string;
+  created_at: string;
+  data: {
+    delegation_id: string;
+    provider: string;
+    domain: string;
+    /** What the provider said, when it refused. */
+    code: string | null;
+    occurred_at: string;
+  };
 }

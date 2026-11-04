@@ -66,14 +66,25 @@ export const SubaccountQuotas = z
         "How many recipients a moment may take before the per-second rate applies; `null`: the per-second rate.",
     }),
   })
-  .meta({ id: "SubaccountQuotas", examples: [QUOTAS_EXAMPLE] });
+  .meta({
+    description: "Its own sending limits.",
+    id: "SubaccountQuotas",
+    examples: [QUOTAS_EXAMPLE],
+  });
 
 /** Quotas in a request: every field optional, `null` removes one. */
 const SubaccountQuotasInput = z
   .strictObject({
-    recipients_per_day: QuotaValue.nullable().optional(),
-    recipients_per_second: QuotaValue.nullable().optional(),
-    burst: QuotaValue.nullable().optional(),
+    recipients_per_day: QuotaValue.nullable()
+      .optional()
+      .meta({ description: "Most recipients a day. `null` removes the limit." }),
+    recipients_per_second: QuotaValue.nullable()
+      .optional()
+      .meta({ description: "Most recipients a second. `null` removes the limit." }),
+    burst: QuotaValue.nullable().optional().meta({
+      description:
+        "How many recipients a moment may take before the per-second rate applies. `null` removes it.",
+    }),
   })
   .meta({
     description: "Fields left out keep their value; `null` removes a quota.",
@@ -97,10 +108,18 @@ export const SubaccountReputation = z
       description:
         "What last changed it, e.g. `bounce_rate`, `complaint_rate`, `content_screening`.",
     }),
-    changed_at: Timestamp.nullable(),
-    reinstated_at: Timestamp.nullable(),
+    changed_at: Timestamp.nullable().meta({
+      description: "When its status last changed. `null`: never.",
+    }),
+    reinstated_at: Timestamp.nullable().meta({
+      description: "When it was last reinstated. `null`: never.",
+    }),
   })
-  .meta({ id: "SubaccountReputation", examples: [REPUTATION_EXAMPLE] });
+  .meta({
+    description: "Its own sending standing.",
+    id: "SubaccountReputation",
+    examples: [REPUTATION_EXAMPLE],
+  });
 
 const SUBACCOUNT_EXAMPLE = {
   object: "subaccount",
@@ -123,8 +142,8 @@ export const Subaccount = z
       description:
         "Your own id for it (e.g. your user's id), unique in the environment. Every path and send that takes a sub-account accepts its `id` or its `uid`.",
     }),
-    name: z.string(),
-    metadata: z.record(z.string(), z.string()),
+    name: z.string().meta({ description: "Your name for it." }),
+    metadata: z.record(z.string(), z.string()).meta({ description: "Your own key-value pairs." }),
     status: z.enum(SUBACCOUNT_STATUSES).meta({
       description:
         "`disabled`: you turned it off (its sends are refused). `deleting`: its domains are being released.",
@@ -160,7 +179,13 @@ export type CreateSubaccountRequestOutput = z.output<typeof CreateSubaccountRequ
 
 export const UpdateSubaccountRequest = z
   .strictObject({
-    name: z.string().trim().min(1).max(SUBACCOUNT_NAME_MAX_LENGTH).optional(),
+    name: z
+      .string()
+      .trim()
+      .min(1)
+      .max(SUBACCOUNT_NAME_MAX_LENGTH)
+      .optional()
+      .meta({ description: "Your name for it." }),
     uid: SubaccountUid.nullable().optional().meta({ description: "`null` removes it." }),
     metadata: Metadata.optional().meta({ description: "Replaces the metadata." }),
     status: z.enum(["active", "disabled"]).optional().meta({
@@ -228,13 +253,13 @@ const STATS_DAY_EXAMPLE = {
 
 export const SubaccountStatsDay = z
   .object({
-    date: DateOnly,
+    date: DateOnly.meta({ description: "The UTC date." }),
     recipients: z.number().int().meta({ description: "Recipients of the emails sent that day." }),
     sent: z.number().int().meta({ description: "Handed to the provider (delivered or not)." }),
-    delivered: z.number().int(),
-    bounced: z.number().int(),
-    complained: z.number().int(),
-    failed: z.number().int(),
+    delivered: z.number().int().meta({ description: "Deliveries that day." }),
+    bounced: z.number().int().meta({ description: "Bounces that day." }),
+    complained: z.number().int().meta({ description: "Complaints that day." }),
+    failed: z.number().int().meta({ description: "Failures that day." }),
     suppressed: z.number().int().meta({ description: "Skipped: on a suppression list." }),
   })
   .meta({ id: "SubaccountStatsDay", examples: [STATS_DAY_EXAMPLE] });
@@ -242,9 +267,9 @@ export const SubaccountStatsDay = z
 export const SubaccountStats = z
   .object({
     object: z.literal("subaccount_stats"),
-    subaccount_id: z.string(),
-    from: DateOnly,
-    to: DateOnly,
+    subaccount_id: z.string().meta({ description: "The sub-account's id." }),
+    from: DateOnly.meta({ description: "The first date included." }),
+    to: DateOnly.meta({ description: "The last date included." }),
     data: z.array(SubaccountStatsDay).meta({
       description:
         "One entry per day with sends, oldest first; recipients count by their current status.",
@@ -309,26 +334,33 @@ export const SubaccountWebhookEvent = z
   .object({
     id: z.string().meta({ description: "The event id, also sent as the `webhook-id` header." }),
     object: z.literal("event"),
-    type: z.enum(SUBACCOUNT_EVENT_TYPES),
+    type: z.enum(SUBACCOUNT_EVENT_TYPES).meta({ description: "What changed for the sub-account." }),
     api_version: z.string().meta({
       description:
         "The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.",
     }),
-    created_at: Timestamp,
-    data: z.object({
-      subaccount_id: z.string(),
-      uid: z.string().nullable(),
-      status: z.enum(SUBACCOUNT_REPUTATION_STATUSES),
-      previous_status: z.enum(SUBACCOUNT_REPUTATION_STATUSES),
-      trigger: z.string().nullable().meta({
-        description:
-          "What changed it: a check (`bounce_rate`, `complaint_rate`), `content_screening` or `reinstated`.",
-      }),
-      occurred_at: Timestamp,
-      checks: z.array(ReputationCheckObject).meta({
-        description: "The measurements behind the change (empty for reinstatements and screening).",
-      }),
-    }),
+    created_at: Timestamp.meta({ description: "When the event was created." }),
+    data: z
+      .object({
+        subaccount_id: z.string().meta({ description: "The sub-account's id." }),
+        uid: z.string().nullable().meta({ description: "Your own id for it. `null`: none." }),
+        status: z
+          .enum(SUBACCOUNT_REPUTATION_STATUSES)
+          .meta({ description: "Its status after this event." }),
+        previous_status: z
+          .enum(SUBACCOUNT_REPUTATION_STATUSES)
+          .meta({ description: "Its status before." }),
+        trigger: z.string().nullable().meta({
+          description:
+            "What changed it: a check (`bounce_rate`, `complaint_rate`), `content_screening` or `reinstated`.",
+        }),
+        occurred_at: Timestamp.meta({ description: "When this happened." }),
+        checks: z.array(ReputationCheckObject).meta({
+          description:
+            "The measurements behind the change (empty for reinstatements and screening).",
+        }),
+      })
+      .meta({ description: "The sub-account's standing." }),
   })
   .meta({ id: "SubaccountWebhookEvent", examples: [SUBACCOUNT_EVENT_EXAMPLE] });
 export type SubaccountWebhookEventOutput = z.output<typeof SubaccountWebhookEvent>;

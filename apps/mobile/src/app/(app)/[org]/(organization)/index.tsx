@@ -19,7 +19,7 @@ import { OrgAvatar } from "../../../../components/avatar";
 import { Badge, StatusDot } from "../../../../components/badge";
 import { EmptyState } from "../../../../components/empty";
 import { Icon } from "../../../../components/icon";
-import { ListRow, Panel, Ruled } from "../../../../components/panel";
+import { ListRow, Panel, PanelBody, Ruled } from "../../../../components/panel";
 import { ProductGlyph } from "../../../../components/product-glyph";
 import { RootToolbar } from "../../../../components/root-toolbar";
 import { Screen } from "../../../../components/screen";
@@ -156,21 +156,25 @@ export default function OrganizationScreen() {
   return (
     <Screen onRefresh={() => query.refetch()} title="Organization">
       <RootToolbar />
-      <View style={styles.identity}>
-        <OrgAvatar name={data.organization.name} size={44} />
-        <View style={styles.identityText}>
-          <Text numberOfLines={1} variant="heading">
-            {data.organization.name}
-          </Text>
-          <View style={styles.identityMeta}>
-            <Badge variant="outline">{roleLabel(data.organization.role)}</Badge>
-            {data.organization.suspended ? <Badge variant="error">Suspended</Badge> : null}
-            <Text muted variant="mono">
-              {data.organization.slug}
-            </Text>
+      <Panel>
+        <PanelBody>
+          <View style={styles.identity}>
+            <OrgAvatar name={data.organization.name} size={44} />
+            <View style={styles.identityText}>
+              <Text numberOfLines={1} variant="heading">
+                {data.organization.name}
+              </Text>
+              <View style={styles.identityMeta}>
+                <Badge variant="outline">{roleLabel(data.organization.role)}</Badge>
+                {data.organization.suspended ? <Badge variant="error">Suspended</Badge> : null}
+                <Text muted variant="mono">
+                  {data.organization.slug}
+                </Text>
+              </View>
+            </View>
           </View>
-        </View>
-      </View>
+        </PanelBody>
+      </Panel>
       <Alerts data={data} />
       {data.can.read_reputation ? (
         <Panel>

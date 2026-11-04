@@ -35,7 +35,13 @@ export type HostInputs = {
   sessions?: readonly GroupSessionState[];
 };
 
-export type GroupSessionState = { startMs: number; occupied: Interval; seatsLeft: number };
+export type GroupSessionState = {
+  startMs: number;
+  occupied: Interval;
+  seatsLeft: number;
+  /** Seats that are live right now. */
+  seatsTaken?: number;
+};
 
 export type NotBookableReason =
   | "not_on_grid"

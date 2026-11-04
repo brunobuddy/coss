@@ -17,7 +17,11 @@ export type RiskList = "allow" | "block";
  */
 export type RiskListEntryType = "email" | "domain" | "ip" | "asn" | "country" | "user";
 
-/** Signal groups an assessment was made without (a lookup failed or timed out). */
+/**
+ * Signal groups an assessment was made without (a lookup failed or timed out). `usage_limit` means
+ * it ran reduced and free: the plan's included assessments are used up, or a billing hold or budget
+ * applies, so velocity, memory of earlier events, content and address-level IP data were skipped.
+ */
 export type RiskDegradedSignal =
   | "email_dns"
   | "domain_age"
@@ -25,7 +29,8 @@ export type RiskDegradedSignal =
   | "velocity"
   | "captcha"
   | "content"
-  | "ip_privacy";
+  | "ip_privacy"
+  | "usage_limit";
 
 /** What content classification scores. */
 export type RiskContentCategory = "spam" | "phishing" | "malware" | "fraud";

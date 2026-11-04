@@ -11,7 +11,7 @@ import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { requestHash as hashRequest, withIdempotencyKey } from "@coss/db/idempotency";
 import { appendLogEntries } from "@coss/logs";
-import { enqueueWebhookMessage } from "@coss/webhooks";
+import { decryptSecret, encryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
 import {
   and,
   asc,
@@ -20,6 +20,7 @@ import {
   gt,
   gte,
   inArray,
+  isNotNull,
   isNull,
   lt,
   lte,
@@ -39,7 +40,10 @@ import {
   type Candidates,
   calendarFailureModeOf,
   candidatesOf,
+  checkWindow,
+  combineSlots,
   loadHostInputs,
+  type SlotResult,
   slotRuleOf,
   takeTurn,
 } from "./availability.ts";
@@ -57,9 +61,15 @@ import {
   releaseSessionClaim,
   tryClaim,
 } from "./claims.ts";
-import { type PoolMember, rankCandidates } from "./engine/rank.ts";
+import { type PoolMember, rankCandidates, startingUnits } from "./engine/rank.ts";
 import { expandRecurrence } from "./engine/recurrence.ts";
-import { isBookable, limitUsageKey, occupiedRange, type SlotRule } from "./engine/slots.ts";
+import {
+  isBookable,
+  limitUsageKey,
+  listSlots,
+  occupiedRange,
+  type SlotRule,
+} from "./engine/slots.ts";
 import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { type EventTypeRow, resolveEventType } from "./event-types.ts";
@@ -68,7 +78,9 @@ import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts
 import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
 import {
   type AttendeeInputOutput,
+  type BookingEventObjectOutput,
   type BookingObjectOutput,
+  type GuestInputOutput,
   MAX_SERIES_OCCURRENCES,
   type SchedulingWebhookEventType,
 } from "./schemas.ts";
@@ -107,6 +119,7 @@ export type BookingRequest = {
   attributes?: Record<string, string | string[]> | undefined;
   durationMinutes?: number | undefined;
   attendee: AttendeeInputOutput;
+  guests?: readonly GuestInputOutput[] | undefined;
   answers?: Answers | undefined;
   location?: Location | undefined;
   locationFromBrowser?: boolean | undefined;
@@ -116,6 +129,7 @@ export type BookingRequest = {
 
 const LIVE_CHECK_CANDIDATES = 3;
 const BOOKING_HISTORY_LIMIT = 100;
+const RECENT_HOST_BOOKINGS_MS = 30 * 86_400_000;
 
 /** Thrown inside a savepoint to undo a candidate's partial claims. Never leaves this file. */
 class LostSlot extends Error {
@@ -172,19 +186,121 @@ function checkAttendee(attendee: AttendeeInputOutput): void {
   }
 }
 
-/** What a meeting created on a host's account reverts to when another host takes the booking. */
-function locationForNewHost(location: BookingRow["location"]): BookingRow["location"] {
-  if (location?.type === "zoom") return { type: "zoom", url: null };
-  if (location?.type !== "link" || !("conference" in location)) return null;
-  return { type: location.conference as "google_meet" | "microsoft_teams" };
+/** The host a location came from, kept off the wire: it goes with them if they leave the booking. */
+const fromHostOf = (location: BookingRow["location"]): string | null =>
+  (location as { fromHost?: string } | null)?.fromHost ?? null;
+
+const isBlank = (location: Location): boolean =>
+  (location.type === "link" && !location.url) ||
+  (location.type === "phone" && !location.number) ||
+  (location.type === "in_person" && !location.address);
+
+/**
+ * A location that leaves its value open takes it from the first of these hosts who has one, by id,
+ * as with Zoom. Anything that names its own value keeps it, and with no host's value it stays blank.
+ */
+function withHostLocation(location: Location, hosts: readonly HostRow[]): Location {
+  if (!isBlank(location)) return location;
+  const sorted = [...hosts].sort((a, b) => (a.id < b.id ? -1 : 1));
+  for (const host of sorted) {
+    const own = host.locations.find((candidate) => candidate.type === location.type);
+    if (own) {
+      const filled = { ...own, fromHost: host.id };
+      return filled;
+    }
+  }
+  return location;
+}
+
+function blankOf(location: Location): Location {
+  if (location.type === "link") return { type: "link", url: null };
+  if (location.type === "phone") return { type: "phone", number: null };
+  if (location.type === "in_person") return { type: "in_person", address: null };
+  return location;
+}
+
+/**
+ * What a booking's location becomes when another host takes it, or `null` if it stays. A meeting
+ * made on the old host's account goes back to being made, and the old host's own office or link
+ * never stays: `leaving` had it, so the booking takes the hosts' it has now, or none.
+ */
+function locationForNewHost(
+  location: BookingRow["location"],
+  leaving: string | undefined,
+  hosts: readonly HostRow[],
+): BookingRow["location"] {
+  if (!location) return null;
+  if (location.type === "zoom") return { type: "zoom", url: null };
+  if (location.type === "link" && "conference" in location) {
+    return { type: location.conference as "google_meet" | "microsoft_teams" };
+  }
+  const fromHost = fromHostOf(location);
+  if (fromHost ? fromHost === leaving : isBlank(location)) {
+    return withHostLocation(blankOf(location), hosts);
+  }
+  return null;
+}
+
+/** Guests are emailed, so an event type has to allow them, and everyone is only told once. */
+function checkGuests(
+  eventType: EventTypeRow,
+  attendee: AttendeeInputOutput,
+  guests: readonly GuestInputOutput[] | undefined,
+): void {
+  if (!guests?.length) return;
+  const invalid = (message: string, param: string) =>
+    new SchedulingError("invalid_attendee", message, { param });
+  if (guests.length > eventType.maxGuests) {
+    throw invalid(
+      eventType.maxGuests === 0
+        ? "This event type doesn't allow guests."
+        : `This event type allows ${eventType.maxGuests} guests at most.`,
+      "guests",
+    );
+  }
+  const seen = new Set(attendee.email ? [attendee.email.trim().toLowerCase()] : []);
+  for (const [index, guest] of guests.entries()) {
+    if (guest.name && URL_LIKE.test(guest.name)) {
+      throw invalid("A name can't contain a link.", `guests[${index}].name`);
+    }
+    const email = guest.email.trim().toLowerCase();
+    if (seen.has(email)) {
+      throw invalid("Everyone on a booking needs their own email.", `guests[${index}].email`);
+    }
+    seen.add(email);
+  }
 }
 
 function wireLocation(location: BookingRow["location"]): BookingRow["location"] {
-  if (!location || !("conference" in location)) return location ?? null;
-  const { conference: _conference, ...rest } = location as typeof location & {
-    conference: string;
-  };
+  if (!location) return null;
+  if (!("conference" in location) && !fromHostOf(location)) return location;
+  const {
+    conference: _conference,
+    fromHost: _fromHost,
+    ...rest
+  } = location as typeof location & { conference?: string; fromHost?: string };
   return rest as BookingRow["location"];
+}
+
+/** Once hosts have won, a location left open takes the value of theirs. */
+async function settleHostLocation(
+  tx: Executor,
+  booking: BookingRow,
+  hosts: readonly HostRow[],
+): Promise<BookingRow> {
+  if (!booking.location) return booking;
+  const location = withHostLocation(booking.location, hosts);
+  if (location === booking.location) return booking;
+  await tx
+    .update(schedulingBooking)
+    .set({ location })
+    .where(
+      and(
+        eq(schedulingBooking.id, booking.id),
+        eq(schedulingBooking.organizationId, booking.organizationId),
+      ),
+    );
+  return { ...booking, location };
 }
 
 function chooseLocation(
@@ -242,6 +358,40 @@ const slotLost = (reason?: string) =>
     { param: "start" },
   );
 
+/** Hosts a pool's filter found have no row of their own until they're first chosen. */
+async function joinFoundHosts(
+  tx: Executor,
+  eventType: EventTypeRow,
+  hostIds: readonly string[],
+): Promise<void> {
+  const known = await tx
+    .select({ hostId: schedulingEventTypeHost.hostId })
+    .from(schedulingEventTypeHost)
+    .where(
+      and(
+        eq(schedulingEventTypeHost.eventTypeId, eventType.id),
+        eq(schedulingEventTypeHost.organizationId, eventType.organizationId),
+        inArray(schedulingEventTypeHost.hostId, [...hostIds]),
+      ),
+    );
+  const missing = hostIds.filter((id) => !known.some((row) => row.hostId === id));
+  if (missing.length === 0) return;
+  const { members } = await candidatesOf(tx, eventType, eventType);
+  const pool = members.flatMap(({ membership }) => (membership ? [membership] : []));
+  for (const hostId of missing) {
+    await tx
+      .insert(schedulingEventTypeHost)
+      .values({
+        eventTypeId: eventType.id,
+        hostId,
+        organizationId: eventType.organizationId,
+        assigned: false,
+        fairUnits: startingUnits(pool, 100),
+      })
+      .onConflictDoNothing();
+  }
+}
+
 async function lockHostsAndMemberships(
   tx: Executor,
   eventType: EventTypeRow,
@@ -261,17 +411,7 @@ async function lockHostsAndMemberships(
     .orderBy(asc(schedulingHost.id))
     .for("share");
   if (active.length !== sorted.length) throw new LostSlot("host_unavailable");
-  for (const hostId of sorted) {
-    await tx
-      .insert(schedulingEventTypeHost)
-      .values({
-        eventTypeId: eventType.id,
-        hostId,
-        organizationId: eventType.organizationId,
-        assigned: false,
-      })
-      .onConflictDoNothing();
-  }
+  await joinFoundHosts(tx, eventType, sorted);
   const memberships = await tx
     .select({ hostId: schedulingEventTypeHost.hostId })
     .from(schedulingEventTypeHost)
@@ -512,7 +652,7 @@ async function participants(
         eq(schedulingAttendee.organizationId, booking.organizationId),
       ),
     )
-    .orderBy(asc(schedulingAttendee.id));
+    .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id));
   return { hostIds: hosts.map((row) => row.hostId), attendees };
 }
 
@@ -649,24 +789,54 @@ async function chargeOnce(
 
 async function assignFairly(
   tx: Executor,
-  booking: Pick<BookingRow, "eventTypeId" | "organizationId">,
+  booking: Pick<BookingRow, "id" | "eventTypeId" | "organizationId">,
   hostIds: readonly string[],
   delta: 1 | -1,
 ): Promise<void> {
   if (hostIds.length === 0) return;
+  const members = and(
+    eq(schedulingEventTypeHost.eventTypeId, booking.eventTypeId),
+    eq(schedulingEventTypeHost.organizationId, booking.organizationId),
+    inArray(schedulingEventTypeHost.hostId, [...hostIds].sort()),
+  );
+  const thisBooking = and(
+    eq(schedulingBookingHost.bookingId, booking.id),
+    eq(schedulingBookingHost.organizationId, booking.organizationId),
+    inArray(schedulingBookingHost.hostId, [...hostIds]),
+  );
+  if (delta > 0) {
+    await tx
+      .update(schedulingEventTypeHost)
+      .set({
+        fairUnits: sql`${schedulingEventTypeHost.fairUnits} + 1`,
+        lastAssignedAt: sql`clock_timestamp()`,
+      })
+      .where(members);
+    await tx
+      .update(schedulingBookingHost)
+      .set({
+        fairShare: sql`1.0 / (
+          select member.weight from scheduling_event_type_host member
+          where member.event_type_id = ${booking.eventTypeId}
+            and member.organization_id = ${booking.organizationId}
+            and member.host_id = scheduling_booking_host.host_id
+        )`,
+      })
+      .where(thisBooking);
+    return;
+  }
+  // A weight changed since rescales what this booking added, so it's the share that comes back.
   await tx
     .update(schedulingEventTypeHost)
     .set({
-      fairUnits: sql`greatest(${schedulingEventTypeHost.fairUnits} + ${delta}, 0)`,
-      ...(delta > 0 ? { lastAssignedAt: sql`clock_timestamp()` } : {}),
+      fairUnits: sql`greatest(${schedulingEventTypeHost.fairUnits} - coalesce((
+        select added.fair_share from scheduling_booking_host added
+        where added.booking_id = ${booking.id}
+          and added.organization_id = ${booking.organizationId}
+          and added.host_id = scheduling_event_type_host.host_id
+      ) * scheduling_event_type_host.weight, 1), 0)`,
     })
-    .where(
-      and(
-        eq(schedulingEventTypeHost.eventTypeId, booking.eventTypeId),
-        eq(schedulingEventTypeHost.organizationId, booking.organizationId),
-        inArray(schedulingEventTypeHost.hostId, [...hostIds].sort()),
-      ),
-    );
+    .where(members);
 }
 
 /** What each host's calendar should now show. A seat's event is its session's. The worker converges. */
@@ -844,6 +1014,19 @@ async function insertAttendeeRow(
     timeZone: request.attendee.time_zone,
     locale: request.attendee.locale ?? null,
   });
+  if (!request.guests?.length) return;
+  // Shown the booking in the attendee's zone and language: nobody's asked for a guest's.
+  await tx.insert(schedulingAttendee).values(
+    request.guests.map((guest) => ({
+      organizationId: booking.organizationId,
+      environmentId: booking.environmentId,
+      bookingId: booking.id,
+      role: "guest" as const,
+      ...encryptContact({ ...guest, time_zone: request.attendee.time_zone }, deps),
+      timeZone: request.attendee.time_zone,
+      locale: request.attendee.locale ?? null,
+    })),
+  );
 }
 
 /** Sets the real expiry (from the claim's clock) and the hosts, once a host has won. */
@@ -994,6 +1177,123 @@ const isLiveSeat = () =>
     ),
   );
 
+const attendeeLimitReached = () =>
+  new SchedulingError(
+    "attendee_limit_reached",
+    "This person already has as many upcoming bookings of this event type as it allows.",
+  );
+
+type AttendeeIdentity = { uid: string | null; emailHmac: string | null };
+
+/**
+ * Holds what counts this person's bookings still, until the transaction ends. People are known by
+ * `uid` or email: someone with neither can't be counted, so this answers false. Advisory locks,
+ * because a row naming them would outlive erasing them, and they come before the hosts' so two
+ * tabs can't both take the last place.
+ */
+async function lockAttendeeLimit(
+  tx: Transaction,
+  eventType: EventTypeRow,
+  { uid, emailHmac }: AttendeeIdentity,
+): Promise<boolean> {
+  if (eventType.maxActiveBookingsPerAttendee === null || (!uid && !emailHmac)) return false;
+  const keys = [...(emailHmac ? [`email:${emailHmac}`] : []), ...(uid ? [`uid:${uid}`] : [])];
+  for (const key of keys.sort()) {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`scheduling-attendee:${eventType.id}:${key}`}, 0))`,
+    );
+  }
+  return true;
+}
+
+/** Call with `lockAttendeeLimit` held. Their other bookings count, and this one doesn't. */
+async function refuseOverAttendeeLimit(
+  tx: Transaction,
+  eventType: EventTypeRow,
+  { uid, emailHmac }: AttendeeIdentity,
+  ownBookingId: string,
+): Promise<void> {
+  const [row] = await tx
+    .select({ active: sql<number>`count(distinct ${schedulingBooking.id})::int` })
+    .from(schedulingBooking)
+    .innerJoin(
+      schedulingAttendee,
+      and(
+        eq(schedulingAttendee.bookingId, schedulingBooking.id),
+        eq(schedulingAttendee.organizationId, schedulingBooking.organizationId),
+      ),
+    )
+    .where(
+      and(
+        eq(schedulingBooking.eventTypeId, eventType.id),
+        eq(schedulingBooking.organizationId, eventType.organizationId),
+        ne(schedulingBooking.id, ownBookingId),
+        sql`${schedulingBooking.startAt} > clock_timestamp()`,
+        isLiveSeat(),
+        eq(schedulingAttendee.environmentId, eventType.environmentId),
+        eq(schedulingAttendee.role, "attendee"),
+        or(
+          ...(emailHmac ? [eq(schedulingAttendee.emailHmac, emailHmac)] : []),
+          ...(uid ? [eq(schedulingAttendee.uid, uid)] : []),
+        ),
+      ),
+    );
+  if ((row?.active ?? 0) >= (eventType.maxActiveBookingsPerAttendee as number)) {
+    throw attendeeLimitReached();
+  }
+}
+
+async function checkAttendeeLimit(
+  tx: Transaction,
+  eventType: EventTypeRow,
+  attendee: AttendeeIdentity,
+  ownBookingId: string,
+): Promise<void> {
+  if (await lockAttendeeLimit(tx, eventType, attendee)) {
+    await refuseOverAttendeeLimit(tx, eventType, attendee, ownBookingId);
+  }
+}
+
+async function attendeeIdentityOf(tx: Transaction, booking: BookingRow): Promise<AttendeeIdentity> {
+  const [attendee] = await tx
+    .select({ uid: schedulingAttendee.uid, emailHmac: schedulingAttendee.emailHmac })
+    .from(schedulingAttendee)
+    .where(
+      and(
+        eq(schedulingAttendee.bookingId, booking.id),
+        eq(schedulingAttendee.organizationId, booking.organizationId),
+        eq(schedulingAttendee.role, "attendee"),
+      ),
+    );
+  return attendee ?? { uid: null, emailHmac: null };
+}
+
+/**
+ * A hold or approval stops counting the moment it expires, which can happen while it's being
+ * converted. So the expiry is read under the person's locks: a request counting them waits for this
+ * one, and one that expired has to fit again.
+ */
+async function reservationExpiredUnderLimit(
+  tx: Transaction,
+  eventType: EventTypeRow,
+  booking: BookingRow,
+  expiresAt: Date | null,
+): Promise<{ expired: boolean; refuseIfOver: () => Promise<void> }> {
+  const attendee = await attendeeIdentityOf(tx, booking);
+  const limited = await lockAttendeeLimit(tx, eventType, attendee);
+  const [{ expired } = { expired: true }] = (
+    await tx.execute(
+      sql`select ${expiresAt?.toISOString() ?? null}::timestamptz <= clock_timestamp() as expired`,
+    )
+  ).rows as { expired: boolean | null }[];
+  return {
+    expired: Boolean(expired),
+    refuseIfOver: async () => {
+      if (limited) await refuseOverAttendeeLimit(tx, eventType, attendee, booking.id);
+    },
+  };
+}
+
 async function liveSeatCount(
   tx: Executor,
   session: { id: string; organizationId: string },
@@ -1045,11 +1345,10 @@ async function settleSessionLocation(
 function sharedLocation(
   eventType: EventTypeRow,
   chosen: Location | null,
-  actor: BookingActor,
+  fromBrowser: boolean | undefined,
 ): Location | null {
   if (!chosen) return null;
-  const browser = actor.kind === "booker_session" || actor.kind === "manage_session";
-  if (!browser && chosen.type !== "phone") return chosen;
+  if (!fromBrowser && chosen.type !== "phone") return chosen;
   return eventType.locations.find((location) => location.type === chosen.type) ?? chosen;
 }
 
@@ -1124,13 +1423,27 @@ async function createOne(
   plan: ClaimPlan,
 ): Promise<BookingRow> {
   const { env, eventType, deps, actor, now } = context;
+  await checkAttendeeLimit(
+    tx,
+    eventType,
+    {
+      uid: request.attendee.uid ?? null,
+      emailHmac: request.attendee.email ? emailLookup(request.attendee.email, deps) : null,
+    },
+    booking.id,
+  );
   await insertAttendeeRow(tx, booking, request, deps);
   let won: { hosts: HostRow[]; liveUntil: Date | null };
   let current = booking;
   if (eventType.kind === "group") {
     const entry = candidates.members[0] ?? candidates.required[0];
     if (!entry) throw slotLost("no_hosts");
-    const chosen = sharedLocation(eventType, chooseLocation(eventType, request.location), actor);
+    const shared = sharedLocation(
+      eventType,
+      chooseLocation(eventType, request.location),
+      request.locationFromBrowser,
+    );
+    const chosen = shared && withHostLocation(shared, [entry.host]);
     try {
       const joined = await tx.transaction((savepoint) =>
         joinGroupSession(
@@ -1153,6 +1466,7 @@ async function createOne(
     }
   } else {
     won = await assignAndClaim(tx, plan, candidates, booking.id, booking.id);
+    current = await settleHostLocation(tx, current, won.hosts);
   }
   current = await finishBookingRow(tx, current, won.hosts, candidates, won.liveUntil);
   const memberIds = won.hosts
@@ -1215,6 +1529,7 @@ export async function toBookingObject(
       const contact = decryptContact(attendee.encryptedContact, deps);
       return {
         id: attendee.id,
+        role: attendee.role,
         uid: attendee.uid,
         name: contact.name,
         email: contact.email,
@@ -1236,6 +1551,14 @@ export async function toBookingObject(
     external_conflict_at: booking.externalConflictAt?.toISOString() ?? null,
     no_show_at: booking.noShowAt?.toISOString() ?? null,
     cancelled_at: booking.cancelledAt?.toISOString() ?? null,
+    cancelled_by: booking.cancelledBy,
+    ...(opts.includeAnswers
+      ? {
+          cancellation_reason: booking.encryptedCancellationReason
+            ? decryptSecret(booking.encryptedCancellationReason, deps.dataKeys)
+            : null,
+        }
+      : {}),
     metadata: booking.metadata,
     created_at: booking.createdAt.toISOString(),
     updated_at: booking.updatedAt.toISOString(),
@@ -1298,6 +1621,7 @@ async function book(
   const durationMinutes = request.durationMinutes ?? eventType.durationMinutes;
   checkBookableEventType(eventType, durationMinutes);
   checkAnswers(eventType, request.answers);
+  checkGuests(eventType, request.attendee, request.guests);
   const location = chooseLocation(eventType, request.location, request.locationFromBrowser);
   const status = chooseStatus(eventType, wantHold);
   const ttlSeconds = ttlFor(eventType, status);
@@ -1447,18 +1771,20 @@ export async function confirmHold(
     const booking = await lockBooking(tx, env, id);
     if (booking.status === "confirmed" || booking.status === "pending_approval") return booking;
     if (booking.status !== "held") throw notChangeable(booking);
-    const [{ expired } = { expired: true }] = (
-      await tx.execute(
-        sql`select ${booking.holdExpiresAt?.toISOString() ?? null}::timestamptz <= clock_timestamp() as expired`,
-      )
-    ).rows as { expired: boolean }[];
+    const eventType = await resolveEventType(tx, env, booking.eventTypeId);
+    const { expired, refuseIfOver } = await reservationExpiredUnderLimit(
+      tx,
+      eventType,
+      booking,
+      booking.holdExpiresAt,
+    );
     if (expired && !opts.ifStillFree) {
       throw new SchedulingError(
         "hold_expired",
         "This hold has expired. Pass `if_still_free` to book anyway if nobody else took the slot.",
       );
     }
-    const eventType = await resolveEventType(tx, env, booking.eventTypeId);
+    if (expired) await refuseIfOver();
     const next: FinishedState = eventType.requiresApproval ? "pending_approval" : "confirmed";
     await convertClaims(tx, booking, eventType, env, next, expired ? nowOf(deps) : null);
     const updated = await bumped(tx, booking, {
@@ -1701,6 +2027,7 @@ async function endBooking(
   const updated = await bumped(tx, booking, {
     status,
     cancelledAt: now,
+    cancelledBy: status === "cancelled" ? actor.kind : null,
     holdExpiresAt: null,
     approvalExpiresAt: null,
   });
@@ -1777,12 +2104,27 @@ function checkNotice(
   }
 }
 
+async function hasErasedAttendee(tx: Executor, booking: BookingRow): Promise<boolean> {
+  const [erased] = await tx
+    .select({ id: schedulingAttendee.id })
+    .from(schedulingAttendee)
+    .where(
+      and(
+        eq(schedulingAttendee.bookingId, booking.id),
+        eq(schedulingAttendee.organizationId, booking.organizationId),
+        isNotNull(schedulingAttendee.redactedAt),
+      ),
+    )
+    .limit(1);
+  return Boolean(erased);
+}
+
 export async function cancelBooking(
   env: SchedulingEnvironment,
   id: string,
   deps: SchedulingDeps,
   actor: BookingActor,
-  opts: { enforceCutoffs?: boolean } = {},
+  opts: { enforceCutoffs?: boolean; reason?: string | undefined } = {},
 ): Promise<BookingObjectOutput> {
   const row = await db.transaction(async (tx) => {
     const booking = await lockBooking(tx, env, id);
@@ -1790,7 +2132,7 @@ export async function cancelBooking(
     if (booking.status === "declined") throw notChangeable(booking);
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
     checkNotice(booking, eventType.cancelNoticeMinutes, nowOf(deps), opts);
-    return endBooking(
+    const ended = await endBooking(
       tx,
       booking,
       "cancelled",
@@ -1799,6 +2141,20 @@ export async function cancelBooking(
       "scheduling.booking.cancelled",
       "Booking cancelled",
     );
+    const reason = opts.reason?.trim();
+    // Their details are gone for good, so nothing new about them goes back in.
+    if (reason && !booking.redactedAt && !(await hasErasedAttendee(tx, booking))) {
+      await tx
+        .update(schedulingBooking)
+        .set({ encryptedCancellationReason: encryptSecret(reason, deps.dataKeys) })
+        .where(
+          and(
+            eq(schedulingBooking.id, booking.id),
+            eq(schedulingBooking.organizationId, booking.organizationId),
+          ),
+        );
+    }
+    return ended;
   });
   return toBookingObject(db, row, deps);
 }
@@ -1836,6 +2192,13 @@ export async function approveBooking(
     if (booking.status === "confirmed") return booking;
     if (booking.status !== "pending_approval") throw notChangeable(booking);
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
+    const { expired, refuseIfOver } = await reservationExpiredUnderLimit(
+      tx,
+      eventType,
+      booking,
+      booking.approvalExpiresAt,
+    );
+    if (expired) await refuseIfOver();
     await convertClaims(tx, booking, eventType, env, "confirmed", null);
     const updated = await bumped(tx, booking, { status: "confirmed", approvalExpiresAt: null });
     const { hostIds } = await participants(tx, updated);
@@ -1852,6 +2215,81 @@ export async function approveBooking(
     return updated;
   });
   return toBookingObject(db, row, deps);
+}
+
+/**
+ * Where a booking could move to, answered the way `rescheduleBooking` checks: its own hosts, none
+ * disabled or taken off the event type and all of them free, at its own length and buffers, with its own claims
+ * left out. Its current time isn't a move.
+ */
+export async function listRescheduleSlots(
+  scope: Scope,
+  id: string,
+  input: { fromMs: number; toMs: number; nowMs: number },
+): Promise<SlotResult[]> {
+  checkWindow(input.fromMs, input.toMs);
+  const booking = await bookingRow(scope, id);
+  if (booking.groupSessionId) return [];
+  if (booking.status === "cancelled" || booking.status === "declined") return [];
+  const eventType = await resolveEventType(db, scope, booking.eventTypeId);
+  if (eventType.status !== "active") return [];
+  const { hostIds } = await participants(db, booking);
+  const hosts = await hostsByIds(db, scope, hostIds);
+  if (hosts.length === 0 || hosts.some((host) => host.status !== "active")) return [];
+  const memberships = await db
+    .select({
+      hostId: schedulingEventTypeHost.hostId,
+      scheduleId: schedulingEventTypeHost.scheduleId,
+      removedAt: schedulingEventTypeHost.removedAt,
+    })
+    .from(schedulingEventTypeHost)
+    .where(
+      and(
+        eq(schedulingEventTypeHost.eventTypeId, eventType.id),
+        eq(schedulingEventTypeHost.organizationId, eventType.organizationId),
+        inArray(schedulingEventTypeHost.hostId, hostIds),
+      ),
+    );
+  // Taken off the event type, a host keeps the booking but can't be moved on it.
+  if (memberships.some((row) => row.removedAt)) return [];
+  const schedules = new Map(memberships.map((row) => [row.hostId, row.scheduleId]));
+  const durationMinutes = (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS;
+  const rule = {
+    ...slotRuleOf(eventType, durationMinutes),
+    bufferBeforeMinutes: booking.bufferBeforeMinutes,
+    bufferAfterMinutes: booking.bufferAfterMinutes,
+  };
+  const loaded = await loadHostInputs(db, {
+    scope,
+    hosts: hosts.map((host) => ({
+      id: host.id,
+      timeZone: host.timeZone,
+      scheduleId: schedules.get(host.id) ?? null,
+    })),
+    eventTypeId: eventType.id,
+    fromMs: input.fromMs,
+    toMs: input.toMs,
+    nowMs: input.nowMs,
+    calendarFailureMode: await calendarFailureModeOf(db, scope),
+    exceptBookingId: booking.id,
+  });
+  const perHost = new Map<string, number[]>();
+  for (const [index, [hostId, host]] of [...loaded].entries()) {
+    await takeTurn(index);
+    perHost.set(
+      hostId,
+      listSlots({
+        nowMs: input.nowMs,
+        rule,
+        host,
+        fromMs: input.fromMs,
+        toMs: input.toMs,
+      }),
+    );
+  }
+  return combineSlots(perHost, hostIds, [], durationMinutes * MINUTE_MS).filter(
+    (slot) => slot.startMs !== booking.startAt.getTime(),
+  );
 }
 
 /** Moves a booking, keeping its id. The old time stays claimed until the new one is won. */
@@ -1878,6 +2316,24 @@ export async function rescheduleBooking(
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
     const now = nowOf(deps);
     checkNotice(booking, eventType.rescheduleNoticeMinutes, now, opts);
+    // A booking already behind them or lapsed wasn't counted, so bringing it back has to fit.
+    const reservedUntil =
+      booking.status === "held"
+        ? booking.holdExpiresAt
+        : booking.status === "pending_approval"
+          ? booking.approvalExpiresAt
+          : null;
+    // Read under the person's locks, since it can start or lapse while this waits for them.
+    const attendee = await attendeeIdentityOf(tx, booking);
+    if (await lockAttendeeLimit(tx, eventType, attendee)) {
+      const [{ lapsed } = { lapsed: false }] = (
+        await tx.execute(
+          sql`select (${booking.startAt.toISOString()}::timestamptz <= clock_timestamp()
+            or ${reservedUntil?.toISOString() ?? null}::timestamptz <= clock_timestamp()) as lapsed`,
+        )
+      ).rows as { lapsed: boolean | null }[];
+      if (lapsed) await refuseOverAttendeeLimit(tx, eventType, attendee, booking.id);
+    }
     const durationMinutes = (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS;
     const { hostIds } = await participants(tx, booking);
     const current = await hostsByIds(tx, env, hostIds);
@@ -1950,7 +2406,7 @@ export async function rescheduleBooking(
       if (error instanceof LostSlot) throw slotLost(error.reason);
       throw error;
     }
-    if (replacement && member) {
+    if (replacement && member && replacement.id !== member.hostId) {
       await tx
         .delete(schedulingBookingHost)
         .where(
@@ -1970,12 +2426,16 @@ export async function rescheduleBooking(
         })
         .onConflictDoNothing();
     }
-    const newLocation = replacement ? locationForNewHost(booking.location) : null;
+    // Naming the host it already has changes nothing about where it happens.
+    const newLocation =
+      replacement && replacement.id !== member?.hostId
+        ? locationForNewHost(booking.location, member?.hostId, hosts)
+        : null;
     const updated = await bumped(tx, booking, {
       startAt: new Date(input.startMs),
       endAt: new Date(input.startMs + durationMinutes * MINUTE_MS),
       externalConflictAt: null,
-      // The old host's meeting goes with them, so the new host's gets a new link.
+      // The old host's meeting or office goes with them, so the new host's takes its place.
       ...(newLocation ? { location: newLocation } : {}),
     });
     const after = await participants(tx, updated);
@@ -2009,6 +2469,8 @@ export async function markNoShow(
   const row = await db.transaction(async (tx) => {
     const booking = await lockBooking(tx, env, id);
     if (booking.status !== "confirmed") throw notChangeable(booking);
+    // Marked already: a second click tells nobody anything new, and keeps the first time.
+    if (booking.noShowAt) return booking;
     const now = nowOf(deps);
     if (booking.startAt.getTime() > now.getTime()) {
       throw new SchedulingError("booking_not_changeable", "This booking hasn't started yet.");
@@ -2099,6 +2561,43 @@ export async function getBooking(
   deps: Pick<SchedulingDeps, "dataKeys">,
 ): Promise<BookingObjectOutput> {
   return toBookingObject(db, await bookingRow(scope, id), deps, { includeAnswers: true });
+}
+
+/** What's happened to a booking, oldest first. No personal data lives here, or in `details`. */
+export async function listBookingEvents(
+  scope: Scope,
+  id: string,
+  query: { limit: number; after?: string | undefined },
+): Promise<{ data: BookingEventObjectOutput[]; hasMore: boolean }> {
+  const booking = await bookingRow(scope, id);
+  const inBooking = and(
+    eq(schedulingBookingEvent.bookingId, booking.id),
+    eq(schedulingBookingEvent.organizationId, booking.organizationId),
+  );
+  const previous = query.after
+    ? db
+        .select({ sequence: schedulingBookingEvent.sequence })
+        .from(schedulingBookingEvent)
+        .where(and(inBooking, eq(schedulingBookingEvent.id, query.after)))
+    : null;
+  const rows = await db
+    .select()
+    .from(schedulingBookingEvent)
+    .where(and(inBooking, previous ? gt(schedulingBookingEvent.sequence, previous) : undefined))
+    .orderBy(asc(schedulingBookingEvent.sequence))
+    .limit(query.limit + 1);
+  return {
+    data: rows.slice(0, query.limit).map((row) => ({
+      object: "scheduling.booking_event" as const,
+      id: row.id,
+      sequence: row.sequence,
+      type: row.type,
+      actor: { kind: row.actor.kind, id: "id" in row.actor ? row.actor.id : null },
+      details: row.details,
+      occurred_at: row.occurredAt.toISOString(),
+    })),
+    hasMore: rows.length > query.limit,
+  };
 }
 
 /** The dashboard's view of one booking: names and its history, never answers (only `getBooking`). */
@@ -2267,6 +2766,52 @@ export async function listUpcomingHostBookings(
       ),
     )
     .orderBy(asc(schedulingBooking.startAt), asc(schedulingBooking.id))
+    .limit(query.limit + 1);
+  const page = rows.slice(0, query.limit);
+  const last = page[page.length - 1];
+  return {
+    data: await Promise.all(page.map((row) => toBookingObject(db, row, deps))),
+    nextCursor:
+      rows.length > query.limit && last ? `${last.startAt.getTime()}_after_${last.id}` : null,
+  };
+}
+
+/**
+ * A host's confirmed bookings that have started, newest first: what can still be marked a no-show.
+ * Bounded, since the query walks the environment's bookings by start time.
+ */
+export async function listRecentHostBookings(
+  scope: Scope,
+  query: { hostId: string; now: Date; limit: number; cursor?: string | undefined },
+  deps: Pick<SchedulingDeps, "dataKeys">,
+): Promise<{ data: BookingObjectOutput[]; nextCursor: string | null }> {
+  const [cursorStart, cursorId] = query.cursor?.split("_after_") ?? [];
+  const cursorMs = cursorStart ? Number(cursorStart) : Number.NaN;
+  const rows = await db
+    .select()
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.organizationId, scope.organizationId),
+        eq(schedulingBooking.environmentId, scope.environmentId),
+        lt(schedulingBooking.startAt, query.now),
+        gte(schedulingBooking.startAt, new Date(query.now.getTime() - RECENT_HOST_BOOKINGS_MS)),
+        eq(schedulingBooking.status, "confirmed"),
+        sql`exists (select 1 from ${schedulingBookingHost}
+          where ${schedulingBookingHost.bookingId} = ${schedulingBooking.id}
+            and ${schedulingBookingHost.hostId} = ${query.hostId})`,
+        Number.isFinite(cursorMs) && cursorId
+          ? or(
+              lt(schedulingBooking.startAt, new Date(cursorMs)),
+              and(
+                eq(schedulingBooking.startAt, new Date(cursorMs)),
+                lt(schedulingBooking.id, cursorId),
+              ),
+            )
+          : undefined,
+      ),
+    )
+    .orderBy(desc(schedulingBooking.startAt), desc(schedulingBooking.id))
     .limit(query.limit + 1);
   const page = rows.slice(0, query.limit);
   const last = page[page.length - 1];
@@ -2451,6 +2996,7 @@ export async function createSeries(
   const durationMinutes = request.durationMinutes ?? eventType.durationMinutes;
   checkBookableEventType(eventType, durationMinutes);
   checkAnswers(eventType, request.answers);
+  checkGuests(eventType, request.attendee, request.guests);
   const location = chooseLocation(eventType, request.location, request.locationFromBrowser);
   const anchor = request.attendee.time_zone;
   const starts = expandedStarts(request, anchor);

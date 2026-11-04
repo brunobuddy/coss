@@ -77,4 +77,11 @@ repository root.
   `checkVerificationRisk` (counts as it judges; `uncountVerificationStart` takes a start back)/`recordVerificationApproval`; `VERIFICATION_REASONS`, `VERIFICATION_THRESHOLDS`):
   the environment's lists, line types, Tor and velocity (IP, user, number prefix and country with their
   approval rates, kind `phone_prefix`), no assessment row, fails open; `packages/verify/AGENTS.md`.
+  **Billing** (`billing.ts`): `risk.assessments` bills assessments asked for through the API (`metered` on
+  `AssessRiskInput`: only `apps/api`'s route sets it, so Forms' and the dashboard's sign-up assessments are free),
+  live only, never a replay or a `block`; content inside is part of the price. Admission only reads (`UsageGate.exhausted`); the unit is taken last in the assessment's transaction (`chargeAssessment`), under the `Idempotency-Key`'s lock.
+  An assessment **never fails over billing**, because customers treat errors as `allow`: past a capped plan's allowance,
+  on a billing hold or over a budget it runs reduced (`degraded: ["usage_limit", …]`, free): no velocity, memory reads,
+  content or address-level IP data, while its lists, rules, stateless signals and memory writes stay (what it didn't read is a missing fact, which no rule matches; a retry waits for a pending preparation, and a failed counter write loses the unit behind a savepoint). Standalone
+  `classify` is `risk.content_checks` (`classifyContentForCustomer`), which refuses like phone checks (402).
   Limit buckets need `risk:read`/`risk:update`; checks `risk:assess` and the `risk.limit` bucket (fails open, so the customer's own `on_failure` decides).

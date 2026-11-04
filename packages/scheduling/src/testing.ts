@@ -1,5 +1,5 @@
 /** Test helpers for packages using Scheduling. */
-import { createHash } from "node:crypto";
+import { createHash, createVerify, generateKeyPairSync } from "node:crypto";
 import { secretsKeyRing } from "@coss/webhooks";
 import type { SchedulingDeps } from "./types.ts";
 
@@ -18,6 +18,34 @@ export function testPng(width: number, height: number): string {
 
 export const TEST_PNG = testPng(400, 100);
 
+let serviceAccount: { key: string; publicKey: string } | undefined;
+
+/** A service account's JSON key, as Google hands them out. One per run: RSA keys are slow to make. */
+export function testServiceAccount(): { key: string; publicKey: string; clientId: string } {
+  const clientId = "117063284751902345678";
+  if (!serviceAccount) {
+    const { privateKey, publicKey } = generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" },
+    });
+    serviceAccount = {
+      publicKey,
+      key: JSON.stringify({
+        type: "service_account",
+        project_id: "test",
+        private_key_id: "key",
+        private_key: privateKey,
+        client_email: "coss@test.iam.gserviceaccount.com",
+        client_id: clientId,
+        // Never to be used: a crafted key could send the signed assertion anywhere.
+        token_uri: "https://attacker.example/token",
+      }),
+    };
+  }
+  return { ...serviceAccount, clientId };
+}
+
 export function testSchedulingDeps(overrides: Partial<SchedulingDeps> = {}): SchedulingDeps {
   return {
     dataKeys: secretsKeyRing([TEST_KEY]),
@@ -26,7 +54,14 @@ export function testSchedulingDeps(overrides: Partial<SchedulingDeps> = {}): Sch
   };
 }
 
-type FakeEvent = { id: string; startMs: number; endMs: number; deleted?: boolean; title: string };
+type FakeEvent = {
+  id: string;
+  startMs: number;
+  endMs: number;
+  deleted?: boolean;
+  title: string;
+  description?: string;
+};
 
 /**
  * Google Calendar as a `fetch`, for `CalendarDeps.fetcher`. Written events echo back as busy, as
@@ -47,6 +82,18 @@ export class FakeGoogleCalendarApi {
   loseNextAnswer = false;
   refreshFails = false;
   emptyFreeBusy = false;
+  /** Set to accept a service account's assertions, checked against this key. */
+  serviceAccountPublicKey: string | null = null;
+  /** What Google answers every assertion with, as when the admin takes the client ID away. */
+  delegationRefused: { error: string; error_description?: string } | null = null;
+  /** Mailboxes that aren't in the Workspace. */
+  readonly goneMailboxes = new Set<string>();
+  /** Mailboxes whose calendars don't answer: 503, every time. */
+  readonly unavailableMailboxes = new Set<string>();
+  /** Every mailbox a token was asked for. */
+  readonly minted: string[] = [];
+  /** Where each calendar's writes went, by the calendar in the path. */
+  readonly writtenTo: string[] = [];
   delayMs = 0;
   /** Set to see what clients ask a provider for: nothing should read titles. */
   fieldsAsked: string[] = [];
@@ -107,11 +154,45 @@ export class FakeGoogleCalendarApi {
     }
     if (parsed.hostname === "oauth2.googleapis.com") {
       if (parsed.pathname === "/revoke") return json(200, {});
+      const form = new URLSearchParams(String(init?.body ?? ""));
+      if (form.get("grant_type")?.endsWith("jwt-bearer")) {
+        const [header, claims, signature] = (form.get("assertion") ?? "").split(".");
+        const valid =
+          this.serviceAccountPublicKey !== null &&
+          createVerify("RSA-SHA256")
+            .update(`${header}.${claims}`)
+            .verify(this.serviceAccountPublicKey, signature ?? "", "base64url");
+        if (!valid) {
+          return json(400, { error: "invalid_grant", error_description: "Invalid JWT Signature." });
+        }
+        if (this.delegationRefused) return json(401, this.delegationRefused);
+        const { sub } = JSON.parse(Buffer.from(claims ?? "", "base64url").toString()) as {
+          sub: string;
+        };
+        if (this.goneMailboxes.has(sub)) {
+          return json(400, {
+            error: "invalid_grant",
+            error_description: "Invalid email or User ID",
+          });
+        }
+        this.minted.push(sub);
+        return json(200, { access_token: `dwd:${sub}`, expires_in: 3600 });
+      }
       if (this.refreshFails) return json(400, { error: "invalid_grant" });
       return json(200, { access_token: "access", refresh_token: "refresh", expires_in: 3600 });
     }
     const path = parsed.pathname.replace("/calendar/v3", "");
-    if (path === "/users/me/calendarList") return json(200, { items: this.calendars });
+    if (path === "/users/me/calendarList") {
+      const bearer = new Headers(init?.headers).get("authorization") ?? "";
+      const mailbox = /^Bearer dwd:(.+)$/.exec(bearer)?.[1];
+      if (mailbox && this.unavailableMailboxes.has(mailbox)) return json(503, {});
+      // Under `sub`, "me" is the mailbox, and its primary calendar has its address as an id.
+      return json(200, {
+        items: mailbox
+          ? [{ id: mailbox, summary: mailbox, primary: true, accessRole: "owner" }]
+          : this.calendars,
+      });
+    }
     if (path === "/freeBusy") {
       if (this.emptyFreeBusy) return json(200, {});
       const body = JSON.parse(String(init?.body)) as { items: { id: string }[] };
@@ -144,10 +225,14 @@ export class FakeGoogleCalendarApi {
     const eventMatch = /^\/calendars\/[^/]+\/events(?:\/([^/]+))?$/.exec(path);
     if (eventMatch) {
       const id = eventMatch[1] ? decodeURIComponent(eventMatch[1]) : undefined;
+      if (method !== "GET") {
+        this.writtenTo.push(decodeURIComponent(path.split("/")[2] ?? ""));
+      }
       const body = init?.body
         ? (JSON.parse(String(init.body)) as {
             id?: string;
             summary?: string;
+            description?: string;
             start?: { dateTime: string };
             end?: { dateTime: string };
             conferenceData?: unknown;
@@ -158,6 +243,7 @@ export class FakeGoogleCalendarApi {
         title: body.summary ?? "",
         startMs: Date.parse(body.start?.dateTime ?? ""),
         endMs: Date.parse(body.end?.dateTime ?? ""),
+        ...(body.description !== undefined ? { description: body.description } : {}),
       });
       const wire = (event: FakeEvent) => ({
         id: event.id,
@@ -186,11 +272,127 @@ export class FakeGoogleCalendarApi {
         return new Response(null, { status: 204 });
       }
       if (method === "PATCH" || method === "PUT") {
+        // PATCH leaves what it doesn't name, as Google's does; PUT replaces the event.
+        if (method === "PUT") delete existing.description;
         Object.assign(existing, toEvent(existing.id), { deleted: false });
         return json(200, wire(existing));
       }
     }
     return json(404, {});
+  };
+}
+
+/**
+ * Microsoft Graph with an app's token, as a `fetch`: every path names a user, which is how a client
+ * still on `/me` shows up. `consentRevoked` is what taking admin consent away looks like: tokens are
+ * still issued, and every call is refused.
+ */
+export class FakeGraphApi {
+  readonly requests: string[] = [];
+  readonly busy = new Map<string, { start: string; end: string }[]>();
+  readonly goneMailboxes = new Set<string>();
+  /** Outside the app's access policy: refused with the same answer a revoked consent gets. */
+  readonly deniedMailboxes = new Set<string>();
+  tenantId = "7d3f1c52-8e0b-4d6e-9a27-5c4b1e7d2f60";
+  clientSecret = "secret";
+  consentRevoked = false;
+  tokenRequests = 0;
+
+  #json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "content-type": "application/json" },
+    });
+
+  #answer(
+    path: string,
+    method: string,
+    body: string | undefined,
+  ): { status: number; body: unknown } {
+    const refused = { error: { code: "ErrorAccessDenied", message: "Access is denied." } };
+    if (this.consentRevoked) return { status: 403, body: refused };
+    const match = /^\/users\/([^/]+)(\/.*)$/.exec(path);
+    if (!match) return { status: 404, body: { error: { code: "ResourceNotFound" } } };
+    const mailbox = decodeURIComponent(match[1] as string);
+    if (this.deniedMailboxes.has(mailbox)) return { status: 403, body: refused };
+    if (this.goneMailboxes.has(mailbox)) {
+      return { status: 404, body: { error: { code: "ErrorInvalidUser" } } };
+    }
+    const rest = match[2] as string;
+    if (rest === "/calendars") {
+      return {
+        status: 200,
+        body: {
+          value: [
+            { id: `cal-${mailbox}`, name: "Calendar", isDefaultCalendar: true, canEdit: true },
+          ],
+        },
+      };
+    }
+    if (rest.endsWith("/calendarView")) {
+      return {
+        status: 200,
+        body: {
+          value: (this.busy.get(mailbox) ?? []).map((interval) => ({
+            showAs: "busy",
+            start: { dateTime: interval.start, timeZone: "UTC" },
+            end: { dateTime: interval.end, timeZone: "UTC" },
+          })),
+        },
+      };
+    }
+    if (rest.endsWith("/events") && method === "GET") return { status: 200, body: { value: [] } };
+    if (rest.endsWith("/events") && method === "POST") {
+      const event = JSON.parse(body ?? "{}") as { start: unknown; end: unknown };
+      return { status: 201, body: { id: `event-${mailbox}`, ...event } };
+    }
+    return { status: 404, body: { error: { code: "ResourceNotFound" } } };
+  }
+
+  readonly fetch = async (url: string, init?: RequestInit): Promise<Response> => {
+    const parsed = new URL(url);
+    const method = init?.method ?? "GET";
+    this.requests.push(`${method} ${parsed.pathname}`);
+    if (parsed.hostname === "login.microsoftonline.com") {
+      this.tokenRequests++;
+      const form = new URLSearchParams(String(init?.body ?? ""));
+      if (!parsed.pathname.startsWith(`/${this.tenantId}/`)) {
+        return this.#json(400, { error: "invalid_request", error_description: "AADSTS90002" });
+      }
+      if (form.get("client_secret") !== this.clientSecret) {
+        return this.#json(401, {
+          error: "invalid_client",
+          error_description: "AADSTS7000222: expired",
+        });
+      }
+      return this.#json(200, { access_token: "app-token", expires_in: 3600 });
+    }
+    const path = parsed.pathname.replace("/v1.0", "");
+    if (path === "/$batch") {
+      const { requests } = JSON.parse(String(init?.body)) as {
+        requests: { id: string; url: string; method: string }[];
+      };
+      return this.#json(200, {
+        responses: requests.map((request) => ({
+          id: request.id,
+          ...this.#answer(
+            new URL(request.url, "https://x.test").pathname,
+            request.method,
+            undefined,
+          ),
+        })),
+      });
+    }
+    if (path === "/subscriptions" && method === "POST") {
+      if (this.consentRevoked) return this.#json(403, { error: { code: "ErrorAccessDenied" } });
+      const { expirationDateTime } = JSON.parse(String(init?.body)) as {
+        expirationDateTime: string;
+      };
+      return this.#json(201, { id: "subscription", expirationDateTime });
+    }
+    if (path.startsWith("/subscriptions/")) return new Response(null, { status: 204 });
+    const answer = this.#answer(path, method, init?.body ? String(init.body) : undefined);
+    return this.#json(answer.status, answer.body);
   };
 }
 

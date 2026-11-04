@@ -365,6 +365,10 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.slots.list",
     args: (r) => [tsValue(r.path.event_type), queryParams(r)],
   },
+  "GET /v1/scheduling/event_types/{event_type}/slots/explain": {
+    method: "scheduling.slots.explain",
+    args: (r) => [tsValue(r.path.event_type), queryParams(r)],
+  },
   "POST /v1/scheduling/availability/search": {
     method: "scheduling.availability.search",
     args: (r) => [tsValue(r.body ?? {})],
@@ -381,13 +385,17 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.bookings.get",
     args: (r) => [pathId(r)],
   },
+  "GET /v1/scheduling/bookings/{id}/events": {
+    method: "scheduling.bookings.events",
+    args: (r) => [pathId(r), queryParams(r)],
+  },
   "POST /v1/scheduling/bookings/{id}/reschedule": {
     method: "scheduling.bookings.reschedule",
     args: (r) => [pathId(r), tsValue(r.body ?? {})],
   },
   "POST /v1/scheduling/bookings/{id}/cancel": {
     method: "scheduling.bookings.cancel",
-    args: (r) => [pathId(r)],
+    args: (r) => [pathId(r), ...(r.body ? [tsValue(r.body)] : [])],
   },
   "POST /v1/scheduling/bookings/{id}/approve": {
     method: "scheduling.bookings.approve",
@@ -433,6 +441,10 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.attendees.erase",
     args: (r) => [tsValue(r.path.uid)],
   },
+  "POST /v1/scheduling/attendees/erase": {
+    method: "scheduling.attendees.eraseByEmail",
+    args: (r) => [tsValue((r.body as { email: string }).email)],
+  },
   "POST /v1/scheduling/hosts/{host}/calendar_connections/authorize": {
     method: "scheduling.calendars.authorize",
     args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
@@ -456,6 +468,30 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
   "PUT /v1/scheduling/hosts/{host}/simulated_busy": {
     method: "scheduling.calendars.setSimulatedBusy",
     args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/calendar_delegations": {
+    method: "scheduling.calendarDelegations.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/calendar_delegations": {
+    method: "scheduling.calendarDelegations.list",
+    args: () => [],
+  },
+  "GET /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.get",
+    args: (r) => [pathId(r)],
+  },
+  "PATCH /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.update",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/calendar_delegations/{id}/verify": {
+    method: "scheduling.calendarDelegations.verify",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.delete",
+    args: (r) => [pathId(r)],
   },
   "POST /v1/scheduling/hosts/{host}/sessions": {
     method: "scheduling.sessions.createForHost",

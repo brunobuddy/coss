@@ -8,6 +8,7 @@ export type RiskErrorCode =
   | "classification_unavailable"
   | "phone_lookup_unavailable"
   | "billing_hold"
+  | "budget_exceeded"
   | "idempotency_key_reused"
   | "request_in_progress";
 

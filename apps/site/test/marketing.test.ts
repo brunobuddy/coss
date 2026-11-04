@@ -9,8 +9,16 @@ import path from "node:path";
 import { FEATURE_KEYS, LIMIT_KEYS, METER_KEYS, PLAN_KEYS } from "@coss/billing/catalog";
 import { renderInlineBillingComponents } from "../src/lib/billing-text";
 import { COMPARE_ROUTE, COMPETITORS } from "../src/lib/compare";
+import { BRIEF_ABOVE, briefCell } from "../src/lib/compare-briefs";
 import { MARKS, PRODUCT_GROUPS } from "../src/lib/marks";
-import { FOOTER_COLUMNS, PRODUCT_COLUMNS } from "../src/lib/nav";
+import {
+  ALL_PRODUCT_LINKS,
+  DEVELOPER_COLUMNS,
+  FOOTER_COLUMNS,
+  PLATFORM_LINKS,
+} from "../src/lib/nav";
+import { pagePricing } from "../src/lib/page-pricing";
+import { PRODUCT_VISUALS } from "../src/lib/product-visuals";
 import { renderSheetComponents } from "../src/lib/sheet-markdown";
 import { TOOLS_ROUTE } from "../src/lib/tools";
 
@@ -233,15 +241,44 @@ describe("comparisons", () => {
   });
 });
 
+describe("pricing sections", () => {
+  test("every one says how it bills and prices what it names, in a row that fills the tray", () => {
+    const priced = ["products", "solutions"].flatMap((dir) =>
+      pages(dir).flatMap(({ slug, body }) => {
+        const pricing = pagePricing(body);
+        return pricing ? [{ name: `${dir}/${slug}`, pricing, markdown: body }] : [];
+      }),
+    );
+    expect(priced.length).toBeGreaterThan(10);
+    for (const { name, pricing, markdown } of priced) {
+      const named = markdown.match(/<UsageRates meters="([^"]+)"/)?.[1]?.split(",");
+      const cells = pricing.tables.length + (pricing.included.length ? 1 : 0);
+      expect({
+        name,
+        lede: Boolean(pricing.lede),
+        meters: named ? pricing.tables.map((table): string => table.meter) : named,
+        fits: cells >= 2 && cells <= 4,
+      }).toEqual({ name, lede: true, meters: named, fits: true });
+    }
+  });
+
+  test("a page without a section has none", () => {
+    expect(pagePricing('<Section title="Specifications">x</Section>')).toBeNull();
+    // A paid plan's allowance in the prose isn't Free's.
+    expect(
+      pagePricing(
+        '<Section title="Pricing"><Included meter="risk.assessments" /> and <Included meter="risk.assessments" plan="pro" /></Section>',
+      )?.included,
+    ).toEqual(["10,000 risk assessments a month"]);
+  });
+});
+
 describe("navigation", () => {
   test("every footer and menu link on this site resolves", () => {
     const hrefs = [
       ...FOOTER_COLUMNS.flatMap((column) => column.links.map(([, href]) => href)),
-      ...PRODUCT_COLUMNS.flatMap((column) =>
-        column.links
-          .filter((link) => !link.zone && !link.href.startsWith("/#"))
-          .map((link) => link.href),
-      ),
+      ...ALL_PRODUCT_LINKS.map((link) => link.href),
+      ...PLATFORM_LINKS.map((link) => link.href),
     ].filter(
       (href) =>
         !href.startsWith("http") &&
@@ -249,6 +286,23 @@ describe("navigation", () => {
     );
     for (const href of hrefs) {
       expect({ href, resolves: resolves(href) }).toEqual({ href, resolves: true });
+    }
+  });
+
+  test("every product page is in the header's menus", () => {
+    const menus = new Set([
+      ...ALL_PRODUCT_LINKS.map((link) => link.href),
+      ...PLATFORM_LINKS.map((link) => link.href),
+      ...DEVELOPER_COLUMNS.flatMap((column) => column.links.map((link) => link.href)),
+    ]);
+    for (const slug of productSlugs) {
+      expect({ slug, linked: menus.has(`/products/${slug}`) }).toEqual({ slug, linked: true });
+    }
+  });
+
+  test("every product in the menu has its own tile", () => {
+    for (const { slug } of ALL_PRODUCT_LINKS) {
+      expect({ slug, tile: slug in PRODUCT_VISUALS }).toEqual({ slug, tile: true });
     }
   });
 
@@ -301,9 +355,34 @@ describe("the pages as Markdown", () => {
     expect(text).toContain("Enterprise");
   });
 
+  test("a page's hero sample stays out of its Markdown twin", () => {
+    const twin = renderSheetComponents(
+      '<HeroSample>\n\n```ts\nshort();\n```\n\n</HeroSample>\n\n<Section title="How it works">\n\n```ts\nfull();\n```\n\n</Section>',
+    );
+    expect(twin).not.toContain("short()");
+    expect(twin).toContain("full()");
+  });
+
+  test("every product and solution page has a hero sample and a showcase", () => {
+    for (const page of [...products, ...solutions]) {
+      expect({ page: page.slug, sample: page.body.includes("<HeroSample>") }).toEqual({
+        page: page.slug,
+        sample: true,
+      });
+    }
+    const showcaseDir = (dir: string) =>
+      readdirSync(path.join(ROOT, "src/components", dir)).map((name) =>
+        name.replace(/\.tsx?$/, ""),
+      );
+    const showcases = new Set(showcaseDir("products"));
+    for (const page of products) expect(showcases.has(page.slug)).toBe(true);
+    const solutionShowcases = new Set(showcaseDir("solutions"));
+    for (const page of solutions) expect(solutionShowcases.has(page.slug)).toBe(true);
+  });
+
   test("pages use only components the Markdown renderer knows", () => {
     const known =
-      /^(Section|Features|Feature|Specs|Spec|UsageRates|PlanTable|AddOns|Rate|PlansWith|Included|Limit|PlanPrice|RetentionPeriod|RetentionTable|RiskReasonTable|RiskRuleFieldTable|RiskThreshold|ApiKeyPermissionsTable|Callout|Cards|Card|Steps|Step|Tabs|Tab)$/;
+      /^(HeroSample|Section|Features|Feature|Specs|Spec|UsageRates|PlanTable|AddOns|Rate|PlansWith|Included|Limit|PlanPrice|RetentionPeriod|RetentionTable|RiskReasonTable|RiskRuleFieldTable|RiskThreshold|ApiKeyPermissionsTable|Callout|Cards|Card|Steps|Step|Tabs|Tab)$/;
     for (const page of [...products, ...solutions]) {
       const prose = page.body.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
       for (const [, name] of prose.matchAll(/<([A-Z][A-Za-z]*)/g)) {
@@ -332,6 +411,40 @@ describe("share images", () => {
       const own = readdirSync(dir).some((name) => name.startsWith("opengraph-image"));
       const passes = readFileSync(path.join(app, file), "utf8").includes("ownImage: true");
       expect({ file, ownImage: passes }).toEqual({ file, ownImage: own });
+    }
+  });
+});
+
+describe("comparison cells on the page", () => {
+  const cells = COMPETITORS.flatMap((c) => c.rows.flatMap((row) => [row.coss, row.them]));
+  const figures = (text: string): string[] => [...(text.match(/\$?\d[\d,.]*\d|\$?\d/g) ?? [])];
+
+  test("every long cell has a brief, shorter than the cell", () => {
+    for (const cell of cells.filter((text) => text.length > BRIEF_ABOVE)) {
+      const brief = briefCell(cell);
+      expect({ cell, shortened: brief !== cell && brief.length < cell.length }).toEqual({
+        cell,
+        shortened: true,
+      });
+    }
+  });
+
+  test("a brief's figures all come from its cell", () => {
+    for (const cell of cells) {
+      for (const figure of figures(briefCell(cell))) {
+        expect({ cell, figure, inCell: figures(cell).includes(figure) }).toEqual({
+          cell,
+          figure,
+          inCell: true,
+        });
+      }
+    }
+  });
+
+  test("a brief never fills in undefined or shows Markdown", () => {
+    for (const cell of cells) {
+      expect(briefCell(cell)).not.toContain("undefined");
+      expect(briefCell(cell)).not.toContain("`");
     }
   });
 });

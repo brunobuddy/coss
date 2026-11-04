@@ -2004,6 +2004,16 @@ describe("coss.scheduling against the API", () => {
       end: "2031-01-07T00:00:00.000Z",
     });
     expect(slots.data?.data.map((slot) => slot.start)).toContain(start);
+    expect(slots.data?.data[0]?.seats_left).toBeNull();
+
+    const free = await scheduling.slots.explain(eventType.id, { start });
+    expect(free.data?.object).toBe("scheduling.slot_explanation");
+    expect(free.data?.available).toBe(true);
+    const offGrid = await scheduling.slots.explain(eventType.id, {
+      start: "2031-01-06T15:07:00.000Z",
+    });
+    expect(offGrid.data?.available).toBe(false);
+    expect(offGrid.data?.reason).toBe("not_on_grid");
 
     const attendee = { uid: "patient_1", name: "Sam Lee", time_zone: "UTC" };
     const booking = must(
@@ -2019,7 +2029,14 @@ describe("coss.scheduling against the API", () => {
     const rescheduled = await scheduling.bookings.reschedule(booking.id, { start: moved });
     expect(rescheduled.data).toMatchObject({ id: booking.id, start: moved });
     expect((await scheduling.bookings.get(booking.id)).data?.attendees[0]?.uid).toBe("patient_1");
-    expect((await scheduling.bookings.cancel(booking.id)).data?.status).toBe("cancelled");
+    const cancelled = await scheduling.bookings.cancel(booking.id, { reason: "Feeling better" });
+    expect(cancelled.data?.status).toBe("cancelled");
+    expect(cancelled.data?.cancelled_by).toBe("api_key");
+    const history = await scheduling.bookings.events(booking.id);
+    expect(history.data?.data.at(-1)?.type).toBe("scheduling.booking.cancelled");
+    expect((await scheduling.bookings.get(booking.id)).data?.cancellation_reason).toBe(
+      "Feeling better",
+    );
 
     const hold = must(
       (await scheduling.holds.create({ event_type: eventType.id, start: later, attendee })).data,
@@ -2036,5 +2053,7 @@ describe("coss.scheduling against the API", () => {
 
     const erased = await scheduling.attendees.erase("patient_1");
     expect(erased.error).toBeNull();
+    const erasedByEmail = await scheduling.attendees.eraseByEmail("nobody@example.com");
+    expect(erasedByEmail.data?.erased).toBe(0);
   });
 });

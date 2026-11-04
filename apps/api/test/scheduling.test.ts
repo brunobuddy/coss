@@ -1,8 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import { createHmac } from "node:crypto";
+import { pool } from "@coss/db";
 import type { LogWriter } from "@coss/logs";
 import { memoryLogWriter } from "@coss/logs/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
+import {
+  createBookerSession,
+  createEventType,
+  createHostSession,
+  createManageSession,
+  getBookingOverview,
+  listBookableEventTypes,
+  listEventTypes,
+} from "@coss/scheduling";
 import { testPng, testSchedulingDeps } from "@coss/scheduling/testing";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
 import { Hono } from "hono";
@@ -12,6 +22,9 @@ import { createTestApp, errorOf, type TestApp, waitForLogLines } from "./helpers
 
 const MONDAY = "2031-01-06";
 const at = (time: string) => `${MONDAY}T${time}:00.000Z`;
+// Cutoffs reach a year at most, so testing one needs a booking closer than 2031.
+const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+const soon = (time: string) => `${tomorrow}T${time}:00.000Z`;
 
 function call(
   app: TestApp,
@@ -155,6 +168,74 @@ describe("scheduling API", () => {
     expect(((await cancelled.json()) as { status: string }).status).toBe("cancelled");
   });
 
+  test("a booking's history, and why it was cancelled", async () => {
+    const { app, key, eventType } = await setUp();
+    const created = (await (
+      await call(app, key, "POST", "/bookings", {
+        event_type: eventType,
+        start: at("09:00"),
+        attendee: { uid: "patient_1", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" },
+      })
+    ).json()) as { id: string };
+
+    const refused = await call(app, key, "POST", `/bookings/${created.id}/cancel`, {
+      reason: "x".repeat(501),
+    });
+    expect(refused.status).toBe(422);
+    const malformed = await app.request(`/v1/scheduling/bookings/${created.id}/cancel`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: "{nope",
+    });
+    expect(malformed.status).toBe(400);
+
+    const cancelled = await call(app, key, "POST", `/bookings/${created.id}/cancel`, {
+      reason: "Feeling better",
+    });
+    const body = (await cancelled.json()) as Record<string, unknown>;
+    expect(body.cancelled_by).toBe("api_key");
+    expect(body).not.toHaveProperty("cancellation_reason");
+
+    const read = (await (await call(app, key, "GET", `/bookings/${created.id}`)).json()) as {
+      cancellation_reason: string | null;
+    };
+    expect(read.cancellation_reason).toBe("Feeling better");
+
+    const history = (await (
+      await call(app, key, "GET", `/bookings/${created.id}/events`)
+    ).json()) as {
+      object: string;
+      data: { type: string; actor: { kind: string } }[];
+      has_more: boolean;
+    };
+    expect(history.object).toBe("list");
+    expect(history.has_more).toBe(false);
+    expect(history.data.map((event) => event.type)).toEqual([
+      "scheduling.booking.confirmed",
+      "scheduling.booking.cancelled",
+    ]);
+    expect(JSON.stringify(history)).not.toContain("Feeling better");
+
+    const missing = await call(app, key, "GET", "/bookings/nope/events");
+    expect(missing.status).toBe(404);
+
+    for (const body of [undefined, "", "  "]) {
+      const another = (await (
+        await call(app, key, "POST", "/bookings", {
+          event_type: eventType,
+          start: at(body === undefined ? "10:00" : body === "" ? "11:00" : "12:00"),
+          attendee: { uid: "patient_1", name: "Sam Lee", time_zone: "UTC" },
+        })
+      ).json()) as { id: string };
+      const empty = await app.request(`/v1/scheduling/bookings/${another.id}/cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        ...(body === undefined ? {} : { body }),
+      });
+      expect(empty.status).toBe(200);
+    }
+  });
+
   test("answers come back only when retrieving one booking", async () => {
     const { app, key, eventType } = await setUp();
     const created = (await (
@@ -194,6 +275,30 @@ describe("scheduling API", () => {
     for (const secret of ["sam@example.com", "Sam Lee", "headache"]) {
       expect(logged).not.toContain(secret);
     }
+  });
+
+  test("a guest is erased by address, and the address isn't kept in the audit log", async () => {
+    const { app, key, eventType, tenant } = await setUp();
+    await call(app, key, "PATCH", `/event_types/${eventType}`, { max_guests: 1 });
+    const created = (await (
+      await call(app, key, "POST", "/bookings", {
+        ...booking(eventType, at("09:00")),
+        guests: [{ email: "jo@example.com" }],
+      })
+    ).json()) as { id: string };
+    const erased = await call(app, key, "POST", "/attendees/erase", { email: "jo@example.com" });
+    expect(erased.status).toBe(200);
+    expect(await erased.json()).toEqual({ object: "scheduling.attendee_erasure", erased: 1 });
+    const one = (await (await call(app, key, "GET", `/bookings/${created.id}`)).json()) as {
+      attendees: { email: string | null }[];
+    };
+    expect(one.attendees.map((person) => person.email)).toEqual(["sam@example.com", null]);
+    const audited = await pool.query(
+      "select action, target_id, metadata from org_audit_event where organization_id = $1 and action = 'scheduling_attendee.erased'",
+      [tenant.organization.id],
+    );
+    expect(audited.rows.length).toBe(1);
+    expect(JSON.stringify(audited.rows)).not.toContain("jo@example.com");
   });
 
   test("erasing an attendee removes their details, and keeps the booking", async () => {
@@ -255,6 +360,38 @@ test("without its key, Scheduling answers 503 and everything else works", async 
     headers: { Authorization: `Bearer ${tenant.sandboxKey}` },
   });
   expect(environment.status).toBe(200);
+});
+
+describe("reads for the dashboard", () => {
+  test("every active event type can be chosen, archived ones can't, and a host's are theirs", async () => {
+    const s = await setUp();
+    const scope = {
+      organizationId: s.tenant.organization.id,
+      environmentId: s.tenant.development.id,
+    };
+    // Directly, since this many through the API would hit its rate limit.
+    const env = { ...scope, projectId: s.tenant.project.id, mode: "sandbox" as const };
+    const made: string[] = [];
+    for (let index = 0; index < 105; index += 1) {
+      const eventType = await createEventType(env, {
+        title: `Type ${index}`,
+        kind: "one_on_one",
+        duration_minutes: 30,
+        hosts: [],
+      });
+      made.push(eventType.id);
+    }
+    await call(s.app, s.key, "PATCH", `/event_types/${made[0]}`, { status: "archived" });
+    const bookable = (await listBookableEventTypes(scope)).map((row) => row.id);
+    expect(bookable).toHaveLength(105);
+    expect(bookable).toContain(s.eventType);
+    expect(bookable).not.toContain(made[0] as string);
+
+    const assigned = await listEventTypes(scope, { limit: 100, hostId: s.host });
+    expect(assigned.data.map((row) => row.id)).toEqual([s.eventType]);
+    await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, { hosts: [] });
+    expect((await listEventTypes(scope, { limit: 100, hostId: s.host })).data).toEqual([]);
+  });
 });
 
 describe("client API", () => {
@@ -338,6 +475,39 @@ describe("client API", () => {
     const booking = await booked.json();
     expect(JSON.stringify(booking)).not.toContain("host_");
     expect(JSON.stringify(booking)).not.toContain("sam@example.com");
+  });
+
+  test("a booker can add guests the event type allows, and sees only the attendee back", async () => {
+    const s = await setUp();
+    await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, { max_guests: 1 });
+    const { token } = await bookerSession(s);
+    const session = (await (await client(s.app, token, "GET", "/session")).json()) as {
+      event_type: { max_guests: number };
+    };
+    expect(session.event_type.max_guests).toBe(1);
+    const attendee = { name: "Sam", email: "sam@example.com", time_zone: "UTC" };
+    const tooMany = await client(s.app, token, "POST", "/bookings", {
+      start: new Date(at("09:00")).toISOString(),
+      attendee,
+      guests: [{ email: "a@example.com" }, { email: "b@example.com" }],
+    });
+    expect(tooMany.status).toBe(422);
+    expect((await errorOf(tooMany)).code).toBe("invalid_attendee");
+    const booked = await client(s.app, token, "POST", "/bookings", {
+      start: new Date(at("09:00")).toISOString(),
+      attendee,
+      guests: [{ email: "jo@example.com", name: "Jo Park" }],
+    });
+    expect(booked.status).toBe(201);
+    const booking = (await booked.json()) as { id: string; attendees: { name: string }[] };
+    expect(booking.attendees).toEqual([{ name: "Sam", time_zone: "UTC" }] as never);
+    const full = (await (await call(s.app, s.key, "GET", `/bookings/${booking.id}`)).json()) as {
+      attendees: { role: string; email: string }[];
+    };
+    expect(full.attendees.map((person) => [person.role, person.email])).toEqual([
+      ["attendee", "sam@example.com"],
+      ["guest", "jo@example.com"],
+    ]);
   });
 
   test("a session routes to a specialist: the browser can't see or widen it", async () => {
@@ -467,6 +637,99 @@ describe("client API", () => {
     });
   });
 
+  test("a host sets their own locations, and a booker only sees them once booked", async () => {
+    const s = await setUp();
+    const hostSession = async (body: object) => {
+      const res = await call(s.app, s.key, "POST", `/hosts/${s.host}/sessions`, body);
+      expect(res.status).toBe(201);
+      return ((await res.json()) as { token: string }).token;
+    };
+    const token = await hostSession({});
+    const office = { type: "in_person", address: "12 Main St" };
+
+    const empty = await client(s.app, token, "GET", "/host/locations");
+    expect(((await empty.json()) as { data: unknown[] }).data).toEqual([]);
+    const saved = await client(s.app, token, "PUT", "/host/locations", { locations: [office] });
+    expect(saved.status).toBe(200);
+    expect(((await saved.json()) as { data: unknown[] }).data).toEqual([office]);
+
+    const http = await client(s.app, token, "PUT", "/host/locations", {
+      locations: [{ type: "link", url: "http://host.example/room" }],
+    });
+    expect(http.status).toBe(422);
+    const linkInAddress = await client(s.app, token, "PUT", "/host/locations", {
+      locations: [{ type: "in_person", address: "https://evil.example/login" }],
+    });
+    expect((await errorOf(linkInAddress)).code).toBe("content_refused");
+
+    const readOnly = await hostSession({ read_only: true });
+    const refused = await client(s.app, readOnly, "PUT", "/host/locations", { locations: [] });
+    expect(refused.status).toBe(403);
+    const read = await client(s.app, readOnly, "GET", "/host/locations");
+    expect(read.status).toBe(200);
+
+    const host = (await (await call(s.app, s.key, "GET", "/hosts/doctor_1")).json()) as {
+      locations: unknown[];
+    };
+    expect(host.locations).toEqual([office]);
+
+    const visit = (await (
+      await call(s.app, s.key, "POST", "/event_types", {
+        title: "Visit",
+        duration_minutes: 30,
+        hosts: [{ host: s.host }],
+        locations: [{ type: "in_person", address: null }],
+      })
+    ).json()) as { id: string };
+    const { token: booker } = await bookerSession({ ...s, eventType: visit.id });
+    const session = await (await client(s.app, booker, "GET", "/session")).text();
+    expect(session).not.toContain(office.address);
+    const booked = await client(s.app, booker, "POST", "/bookings", {
+      start: at("09:00"),
+      attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+    });
+    expect(booked.status).toBe(201);
+    const body = (await booked.json()) as { location: unknown };
+    expect(body.location).toEqual(office);
+  });
+
+  test("an event type's or booking's link must be https, and an address can't hold a link", async () => {
+    const s = await setUp();
+    const create = (locations: object[]) =>
+      call(s.app, s.key, "POST", "/event_types", {
+        title: "Video visit",
+        duration_minutes: 30,
+        hosts: [{ host: s.host }],
+        locations,
+      });
+    expect((await create([{ type: "link", url: "javascript:alert(1)" }])).status).toBe(422);
+    expect((await create([{ type: "link", url: "http://video.example/room" }])).status).toBe(422);
+    const inAddress = await create([{ type: "in_person", address: "https://evil.example/login" }]);
+    expect(await errorOf(inAddress)).toMatchObject({ code: "content_refused", param: "locations" });
+
+    const created = await call(
+      s.app,
+      s.key,
+      "POST",
+      "/bookings",
+      booking(s.eventType, at("09:00")),
+    );
+    const { id } = (await created.json()) as { id: string };
+    const update = (url: string) =>
+      call(s.app, s.key, "PATCH", `/bookings/${id}/location`, { location: { type: "link", url } });
+    const refused = await update("javascript:alert(1)");
+    expect(refused.status).toBe(422);
+    expect((await update("https://video.example/room")).status).toBe(200);
+  });
+
+  test("a booker can't read or change a host's locations", async () => {
+    const s = await setUp();
+    const { token } = await bookerSession(s);
+    expect((await client(s.app, token, "GET", "/host/locations")).status).toBe(404);
+    const put = await client(s.app, token, "PUT", "/host/locations", { locations: [] });
+    expect(put.status).toBe(404);
+  });
+
   test("a host's portal lists coming bookings soonest first, leaving out cancelled ones", async () => {
     const s = await setUp();
     const ids: string[] = [];
@@ -552,6 +815,409 @@ describe("client API", () => {
     expect(stored.attendees[0]?.name).toBe("Real");
   });
 
+  describe("a host's own bookings", () => {
+    const hostToken = async (s: Awaited<ReturnType<typeof setUp>>, extra: object = {}) =>
+      (
+        (await (await call(s.app, s.key, "POST", `/hosts/${s.host}/sessions`, extra)).json()) as {
+          token: string;
+        }
+      ).token;
+    const book = async (s: Awaited<ReturnType<typeof setUp>>, start: string, extra: object = {}) =>
+      (
+        (await (
+          await call(s.app, s.key, "POST", "/bookings", booking(s.eventType, start, extra))
+        ).json()) as { id: string }
+      ).id;
+
+    test("a host moves one to a time the slots offer, past the attendee's cutoff", async () => {
+      const s = await setUp();
+      await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+        reschedule_notice_minutes: 525600,
+      });
+      const id = await book(s, soon("09:00"));
+      const token = await hostToken(s);
+      const slots = (await (
+        await client(
+          s.app,
+          token,
+          "GET",
+          `/host/bookings/${id}/slots?start=${soon("09:00")}&end=${soon("12:00")}`,
+        )
+      ).json()) as { data: { start: string; hosts?: unknown }[] };
+      expect(slots.data.map((slot) => slot.start)).toContain(soon("10:00"));
+      expect(slots.data.map((slot) => slot.start)).not.toContain(soon("09:00"));
+      expect(slots.data[0]?.hosts).toBeUndefined();
+      const moved = await client(s.app, token, "POST", `/host/bookings/${id}/reschedule`, {
+        start: soon("10:00"),
+      });
+      expect(moved.status).toBe(200);
+      const body = (await moved.json()) as Record<string, unknown>;
+      expect(body.start).toBe(soon("10:00"));
+      expect(body.answers).toBeUndefined();
+      const after = (await (await call(s.app, s.key, "GET", `/bookings/${id}`)).json()) as {
+        start: string;
+      };
+      expect(after.start).toBe(soon("10:00"));
+    });
+
+    test("a taken time is refused, and a browser can't choose another host", async () => {
+      const s = await setUp();
+      const id = await book(s, at("09:00"));
+      await book(s, at("10:00"), { attendee: { uid: "p2", time_zone: "UTC" } });
+      const token = await hostToken(s);
+      const taken = await client(s.app, token, "POST", `/host/bookings/${id}/reschedule`, {
+        start: at("10:00"),
+      });
+      expect(taken.status).toBe(422);
+      expect((await errorOf(taken)).code).toBe("slot_unavailable");
+      const elsewhere = await client(s.app, token, "POST", `/host/bookings/${id}/reschedule`, {
+        start: at("11:00"),
+        host: "doctor_1",
+      });
+      expect(elsewhere.status).toBe(422);
+    });
+
+    test("only the session's host can reach them, and a read-only session can only read", async () => {
+      const s = await setUp();
+      const id = await book(s, at("09:00"));
+      const other = await call(s.app, s.key, "POST", "/hosts", {
+        name: "Dr. Other",
+        time_zone: "UTC",
+      });
+      const otherHost = ((await other.json()) as { id: string }).id;
+      const { token: stranger } = (await (
+        await call(s.app, s.key, "POST", `/hosts/${otherHost}/sessions`, {})
+      ).json()) as { token: string };
+      const range = `start=${at("09:00")}&end=${at("12:00")}`;
+      for (const [method, path, body] of [
+        ["GET", `/host/bookings/${id}/slots?${range}`, undefined],
+        ["POST", `/host/bookings/${id}/reschedule`, { start: at("10:00") }],
+        ["POST", `/host/bookings/${id}/no_show`, undefined],
+      ] as const) {
+        expect((await client(s.app, stranger, method, path, body)).status).toBe(404);
+      }
+      const reader = await hostToken(s, { read_only: true });
+      expect(
+        (await client(s.app, reader, "GET", `/host/bookings/${id}/slots?${range}`)).status,
+      ).toBe(200);
+      expect(
+        (
+          await client(s.app, reader, "POST", `/host/bookings/${id}/reschedule`, {
+            start: at("10:00"),
+          })
+        ).status,
+      ).toBe(403);
+      expect((await client(s.app, reader, "POST", `/host/bookings/${id}/no_show`)).status).toBe(
+        403,
+      );
+    });
+
+    test("a no-show waits for the start, shows in the past list, and counts once", async () => {
+      const tenant = await createTestTenant();
+      let nowMs = Date.parse(`${MONDAY}T08:00:00.000Z`);
+      const { app } = createTestApp({
+        scheduling: testSchedulingDeps({ now: () => new Date(nowMs) }),
+      });
+      const key = tenant.sandboxKey;
+      const host = (await (
+        await call(app, key, "POST", "/hosts", { name: "Dr. Reyes", time_zone: "UTC" })
+      ).json()) as { id: string };
+      await call(app, key, "POST", `/hosts/${host.id}/schedules`, {
+        rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+      });
+      const eventType = (await (
+        await call(app, key, "POST", "/event_types", {
+          title: "Consultation",
+          duration_minutes: 30,
+          hosts: [{ host: host.id }],
+        })
+      ).json()) as { id: string };
+      const created = (await (
+        await call(app, key, "POST", "/bookings", booking(eventType.id, at("09:00")))
+      ).json()) as { id: string };
+      const env = {
+        organizationId: tenant.organization.id,
+        projectId: tenant.project.id,
+        environmentId: tenant.development.id,
+        mode: "sandbox" as const,
+      };
+      // The clock is the test's, and a session's expiry has to come from it too.
+      const { token } = await createHostSession(env, {
+        host: host.id,
+        publicUrl: null,
+        now: new Date(nowMs),
+        expiresIn: 86_400,
+      });
+      const early = await client(app, token, "POST", `/host/bookings/${created.id}/no_show`);
+      expect(early.status).toBe(422);
+      const pastList = async () =>
+        (await (await client(app, token, "GET", "/host/bookings?when=past")).json()) as {
+          data: { id: string; no_show_at: string | null }[];
+        };
+      expect((await pastList()).data).toEqual([]);
+
+      nowMs = Date.parse(at("09:45"));
+      const upcoming = (await (await client(app, token, "GET", "/host/bookings")).json()) as {
+        data: unknown[];
+      };
+      expect(upcoming.data).toEqual([]);
+      expect((await pastList()).data.map((item) => item.id)).toEqual([created.id]);
+      const marked = await client(app, token, "POST", `/host/bookings/${created.id}/no_show`);
+      expect(marked.status).toBe(200);
+      const first = (await pastList()).data[0]?.no_show_at;
+      expect(first).toBe(at("09:45"));
+
+      nowMs = Date.parse(at("09:50"));
+      const again = await client(app, token, "POST", `/host/bookings/${created.id}/no_show`);
+      expect(again.status).toBe(200);
+      expect((await pastList()).data[0]?.no_show_at).toBe(first ?? "");
+      const { events } = await getBookingOverview(env, created.id, testSchedulingDeps());
+      expect(events.filter((event) => event.type === "scheduling.booking.no_show")).toHaveLength(1);
+
+      nowMs = Date.parse(at("09:45")) + 31 * 86_400_000;
+      const later = await createHostSession(env, {
+        host: host.id,
+        publicUrl: null,
+        now: new Date(nowMs),
+      });
+      const aged = (await (
+        await client(app, later.token, "GET", "/host/bookings?when=past")
+      ).json()) as { data: unknown[] };
+      expect(aged.data).toEqual([]);
+    });
+
+    test("a group seat can't be moved", async () => {
+      const s = await setUp();
+      const group = (await (
+        await call(s.app, s.key, "POST", "/event_types", {
+          title: "Class",
+          kind: "group",
+          capacity: 3,
+          duration_minutes: 30,
+          hosts: [{ host: s.host }],
+        })
+      ).json()) as { id: string };
+      const seat = (await (
+        await call(s.app, s.key, "POST", "/bookings", booking(group.id, at("09:00")))
+      ).json()) as { id: string };
+      const token = await hostToken(s);
+      const moved = await client(s.app, token, "POST", `/host/bookings/${seat.id}/reschedule`, {
+        start: at("10:00"),
+      });
+      expect(moved.status).toBe(422);
+      expect((await errorOf(moved)).code).toBe("booking_not_changeable");
+    });
+
+    describe("the times offered for a move are the ones the move accepts", () => {
+      const offered = async (
+        s: Awaited<ReturnType<typeof setUp>>,
+        token: string,
+        id: string,
+        from = "09:00",
+        to = "13:00",
+      ) =>
+        (
+          (await (
+            await client(
+              s.app,
+              token,
+              "GET",
+              `/host/bookings/${id}/slots?start=${at(from)}&end=${at(to)}`,
+            )
+          ).json()) as { data: { start: string }[] }
+        ).data.map((slot) => slot.start);
+      const move = (s: Awaited<ReturnType<typeof setUp>>, token: string, id: string, to: string) =>
+        client(s.app, token, "POST", `/host/bookings/${id}/reschedule`, { start: to });
+
+      test("a booking doesn't count against a limit it would give back", async () => {
+        const s = await setUp();
+        await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+          limits: [{ period: "day", max: 1 }],
+        });
+        const id = await book(s, at("09:00"));
+        const token = await hostToken(s);
+        expect(await offered(s, token, id)).toContain(at("10:00"));
+        expect((await move(s, token, id, at("10:00"))).status).toBe(200);
+      });
+
+      test("nor does it block a time overlapping its own", async () => {
+        const s = await setUp();
+        await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, { step_minutes: 15 });
+        const id = await book(s, at("09:00"));
+        const token = await hostToken(s);
+        const times = await offered(s, token, id);
+        expect(times).toContain(at("09:15"));
+        expect(times).not.toContain(at("09:00"));
+        expect((await move(s, token, id, at("09:15"))).status).toBe(200);
+      });
+
+      test("its buffers are the ones it was booked with", async () => {
+        const s = await setUp();
+        await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+          buffer_after_minutes: 60,
+        });
+        const id = await book(s, at("09:00"));
+        await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+          buffer_after_minutes: 0,
+        });
+        await book(s, at("12:00"), { attendee: { uid: "p2", time_zone: "UTC" } });
+        const token = await hostToken(s);
+        const times = await offered(s, token, id);
+        expect(times).toContain(at("10:30"));
+        expect(times).not.toContain(at("11:00"));
+        expect((await move(s, token, id, at("11:00"))).status).toBe(422);
+        expect((await move(s, token, id, at("10:30"))).status).toBe(200);
+      });
+
+      test("a required host added since doesn't hold it back", async () => {
+        const s = await setUp();
+        const pool = (await (
+          await call(s.app, s.key, "POST", "/event_types", {
+            title: "Pool",
+            kind: "pool",
+            duration_minutes: 30,
+            hosts: [{ host: s.host }],
+          })
+        ).json()) as { id: string };
+        const created = (await (
+          await call(s.app, s.key, "POST", "/bookings", booking(pool.id, at("09:00")))
+        ).json()) as { id: string };
+        await call(s.app, s.key, "POST", "/hosts", { uid: "late", name: "Late", time_zone: "UTC" });
+        await call(s.app, s.key, "POST", "/hosts/late/schedules", {
+          rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "16:00", end: "17:00" }],
+        });
+        await call(s.app, s.key, "PATCH", `/event_types/${pool.id}`, {
+          hosts: [{ host: s.host }, { host: "late", role: "required" }],
+        });
+        const token = await hostToken(s);
+        expect(await offered(s, token, created.id)).toContain(at("10:00"));
+        expect((await move(s, token, created.id, at("10:00"))).status).toBe(200);
+      });
+
+      test("a host taken off the event type has nothing to offer, and the move agrees", async () => {
+        const s = await setUp();
+        const id = await book(s, at("09:00"));
+        await call(s.app, s.key, "POST", "/hosts", { uid: "new", name: "New", time_zone: "UTC" });
+        await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+          hosts: [{ host: "new" }],
+        });
+        const token = await hostToken(s);
+        expect(await offered(s, token, id)).toEqual([]);
+        expect((await move(s, token, id, at("10:00"))).status).toBe(422);
+      });
+
+      test("a disabled host has nothing to offer, and the move agrees", async () => {
+        const s = await setUp();
+        const id = await book(s, at("09:00"));
+        const token = await hostToken(s);
+        await call(s.app, s.key, "PATCH", `/hosts/${s.host}`, { status: "disabled" });
+        expect(await offered(s, token, id)).toEqual([]);
+        expect((await move(s, token, id, at("10:00"))).status).toBe(422);
+      });
+    });
+
+    test("moving keeps a booking's length after its event type changes", async () => {
+      const s = await setUp();
+      const id = await book(s, at("09:00"));
+      await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, { duration_minutes: 45 });
+      const token = await hostToken(s);
+      const range = `start=${at("09:00")}&end=${at("12:00")}`;
+      const offered = await client(s.app, token, "GET", `/host/bookings/${id}/slots?${range}`);
+      expect(offered.status).toBe(200);
+      const first = ((await offered.json()) as { data: { start: string; end: string }[] }).data[0];
+      expect(first ? Date.parse(first.end) - Date.parse(first.start) : 0).toBe(30 * 60_000);
+      const manage = (await (
+        await call(s.app, s.key, "POST", `/bookings/${id}/manage_sessions`)
+      ).json()) as { token: string };
+      expect((await client(s.app, manage.token, "GET", `/booking/slots?${range}`)).status).toBe(
+        200,
+      );
+    });
+  });
+
+  test("a browser can't set a group's shared location, even on a session a member opened", async () => {
+    const s = await setUp();
+    const group = (await (
+      await call(s.app, s.key, "POST", "/event_types", {
+        title: "Class",
+        kind: "group",
+        capacity: 3,
+        duration_minutes: 30,
+        hosts: [{ host: s.host }],
+        locations: [{ type: "link", url: "https://meet.example.com/real" }],
+      })
+    ).json()) as { id: string };
+    const env = {
+      organizationId: s.tenant.organization.id,
+      projectId: s.tenant.project.id,
+      environmentId: s.tenant.development.id,
+      mode: "sandbox" as const,
+    };
+    const session = await createBookerSession(
+      env,
+      { eventType: group.id, createdByUserId: s.tenant.owner.id, publicUrl: null },
+      testSchedulingDeps(),
+    );
+    const seat = await client(s.app, session.token, "POST", "/bookings", {
+      start: at("09:00"),
+      attendee: { name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+      location: { type: "link", url: "https://evil.example.com/" },
+    });
+    expect(seat.status).toBe(201);
+    const { location } = (await seat.json()) as { location: { url: string } };
+    expect(location.url).toBe("https://meet.example.com/real");
+    const { events } = await getBookingOverview(
+      env,
+      (
+        (await (await call(s.app, s.key, "GET", `/bookings?event_type=${group.id}`)).json()) as {
+          data: { id: string }[];
+        }
+      ).data[0]?.id as string,
+      testSchedulingDeps(),
+    );
+    expect(events.at(-1)?.actor).toBe("user");
+  });
+
+  test("a manage session a dashboard member opened acts as them, past the cutoffs", async () => {
+    const s = await setUp();
+    await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+      cancel_notice_minutes: 525600,
+      reschedule_notice_minutes: 525600,
+    });
+    const id = (
+      (await (
+        await call(s.app, s.key, "POST", "/bookings", booking(s.eventType, soon("09:00")))
+      ).json()) as { id: string }
+    ).id;
+    const attendee = (await (
+      await call(s.app, s.key, "POST", `/bookings/${id}/manage_sessions`)
+    ).json()) as { token: string };
+    const refused = await client(s.app, attendee.token, "POST", "/booking/reschedule", {
+      start: soon("10:00"),
+    });
+    expect(refused.status).toBe(422);
+
+    const env = {
+      organizationId: s.tenant.organization.id,
+      projectId: s.tenant.project.id,
+      environmentId: s.tenant.development.id,
+      mode: "sandbox" as const,
+    };
+    const session = await createManageSession(env, {
+      bookingId: id,
+      createdByUserId: s.tenant.owner.id,
+      publicUrl: null,
+    });
+    expect(session.expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(3_600_000);
+    const moved = await client(s.app, session.token, "POST", "/booking/reschedule", {
+      start: soon("10:00"),
+    });
+    expect(moved.status).toBe(200);
+    const { events } = await getBookingOverview(env, id, testSchedulingDeps());
+    expect(events[0]?.type).toBe("scheduling.booking.rescheduled");
+    expect(events[0]?.actor).toBe("user");
+  });
+
   test("a session reaches only its scope", async () => {
     const s = await setUp();
     const { token: booker } = await bookerSession(s);
@@ -617,7 +1283,25 @@ describe("client API", () => {
       start: at("10:00"),
     });
     expect(((await moved.json()) as { start: string }).start).toBe(at("10:00"));
-    expect((await client(s.app, manage.token, "POST", "/booking/cancel")).status).toBe(200);
+    const unsaid = await client(s.app, manage.token, "POST", "/booking/cancel", {
+      reason: "x".repeat(501),
+    });
+    expect(unsaid.status).not.toBe(200);
+    const said = await client(s.app, manage.token, "POST", "/booking/cancel", {
+      reason: "Feeling better",
+    });
+    expect(said.status).toBe(200);
+    const shown = JSON.stringify(await said.json());
+    expect(shown).not.toContain("Feeling better");
+    expect(shown).not.toContain("cancelled_by");
+
+    const another = (await (
+      await call(s.app, s.key, "POST", "/bookings", booking(s.eventType, at("11:00")))
+    ).json()) as { id: string };
+    const second = (await (
+      await call(s.app, s.key, "POST", `/bookings/${another.id}/manage_sessions`)
+    ).json()) as { token: string };
+    expect((await client(s.app, second.token, "POST", "/booking/cancel")).status).toBe(200);
     expect((await client(s.app, manage.token, "GET", "/booking")).status).toBe(404);
   });
 

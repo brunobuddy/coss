@@ -6,8 +6,11 @@ import type {
   CreateSignTemplateParams,
   SignRequest,
 } from "coss";
+import { fetchSignRequestDiagnosis } from "coss/diagnose";
 import { z } from "zod";
 import { ok, respond, run, unwrap } from "../result.ts";
+import { TOOL_REFERENCES } from "./diagnose-references.ts";
+import { SIGN_DIAGNOSIS_OUTPUT } from "./output-schemas.ts";
 import {
   compact,
   cursorSchema,
@@ -139,6 +142,28 @@ export function registerSignTools(ctx: ToolContext): void {
   );
 
   server.registerTool(
+    "diagnose_sign_request",
+    {
+      title: "Diagnose a signature request",
+      description:
+        'Answers "why isn\'t this signed yet?": a verdict (draft never sent, waiting, sealing, ' +
+        "completed, declined, expired, canceled), each signer's state (their turn, invited, " +
+        "viewed, signed, declined, an embedded signer who needs a link), the audit trail's steps " +
+        `and next steps. ${UNTRUSTED}`,
+      inputSchema: z.object({
+        id: z.string().describe("The request's id (sreq_…). list_sign_requests finds it."),
+      }),
+      outputSchema: SIGN_DIAGNOSIS_OUTPUT,
+      annotations: READ_ONLY,
+    },
+    ({ id }) =>
+      respond(
+        fetchSignRequestDiagnosis(coss, id, { now: ctx.now(), references: TOOL_REFERENCES }),
+        (diagnosis) => ({ note: UNTRUSTED, ...diagnosis }),
+      ),
+  );
+
+  server.registerTool(
     "get_sign_audit_trail",
     {
       title: "Get a request's audit trail",
@@ -163,7 +188,12 @@ export function registerSignTools(ctx: ToolContext): void {
       inputSchema: z.object({
         title: z.string(),
         message: z.string().optional(),
-        document_ids: z.array(z.string()).min(1).describe("From upload_sign_document."),
+        document_ids: z
+          .array(z.string())
+          .min(1)
+          .describe(
+            projectDir === null ? "Uploaded with the API or an SDK." : "From upload_sign_document.",
+          ),
         signers: z
           .array(
             signerSchema.extend({
@@ -300,7 +330,7 @@ export function registerSignTools(ctx: ToolContext): void {
     {
       title: "Create a signature template",
       description:
-        "A reusable request: documents from upload_sign_document, roles like `client`, and fields " +
+        `A reusable request: documents ${projectDir === null ? "uploaded with the API or an SDK" : "from upload_sign_document"}, roles like \`client\`, and fields ` +
         "for each role.",
       inputSchema: z.object({
         name: z.string(),

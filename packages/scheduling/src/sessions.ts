@@ -11,6 +11,7 @@ import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { withoutTrailingSlashes } from "@coss/db/url";
 import { decryptSecret, encryptSecret } from "@coss/webhooks";
 import { and, eq, isNull, sql } from "drizzle-orm";
+import { emailLookup } from "./attendees.ts";
 import type { BookingActor } from "./bookings.ts";
 import { SchedulingError } from "./errors.ts";
 import { resolveEventType } from "./event-types.ts";
@@ -56,6 +57,7 @@ type MintInput = {
   encryptedAttendee?: string | null;
   encryptedAttributes?: string | null;
   attendeeUid?: string | null;
+  attendeeEmailHmac?: string | null;
   readOnly?: boolean;
   apiKeyId?: string | null;
   createdByUserId?: string | null;
@@ -79,6 +81,7 @@ async function mint(input: MintInput): Promise<Created> {
     encryptedAttendee: input.encryptedAttendee ?? null,
     encryptedAttributes: input.encryptedAttributes ?? null,
     attendeeUid: input.attendeeUid ?? null,
+    attendeeEmailHmac: input.attendeeEmailHmac ?? null,
     readOnly: input.readOnly ?? false,
     apiKeyId: input.apiKeyId ?? null,
     createdByUserId: input.createdByUserId ?? null,
@@ -138,10 +141,11 @@ export async function createBookerSession(
     attendee?: AttendeeInputOutput | undefined;
     expiresIn?: number | undefined;
     apiKeyId?: string | null;
+    createdByUserId?: string | null;
     publicUrl: string | null;
     now?: Date;
   },
-  deps: Pick<SchedulingDeps, "dataKeys">,
+  deps: Pick<SchedulingDeps, "dataKeys" | "lookupKey">,
 ): Promise<Created> {
   const eventType = await resolveEventType(db, env, input.eventType);
   const host = input.host ? await resolveHost(db, env, input.host) : null;
@@ -157,18 +161,24 @@ export async function createBookerSession(
       ? encryptSecret(JSON.stringify(input.attributes), deps.dataKeys)
       : null,
     attendeeUid: input.attendee?.uid ?? null,
+    attendeeEmailHmac: input.attendee?.email ? emailLookup(input.attendee.email, deps) : null,
     apiKeyId: input.apiKeyId ?? null,
+    createdByUserId: input.createdByUserId ?? null,
     expiresAt: expiry(input.now ?? new Date(), input.expiresIn, BOOKER_DEFAULT_SECONDS),
     publicUrl: input.publicUrl,
   });
 }
 
-/** Rescheduling and cancelling one booking, until a day after it ends. */
+/**
+ * Rescheduling and cancelling one booking, until a day after it ends. A dashboard member's lasts an
+ * hour: it opens now, for them, and isn't a link anyone keeps.
+ */
 export async function createManageSession(
   env: SchedulingEnvironment,
   input: {
     bookingId: string;
     apiKeyId?: string | null;
+    createdByUserId?: string | null;
     publicUrl: string | null;
     now?: Date;
   },
@@ -187,12 +197,15 @@ export async function createManageSession(
     );
   if (!booking) throw notFound;
   const now = input.now ?? new Date();
-  const until = Math.max(booking.endAt.getTime() + MANAGE_GRACE_MS, now.getTime() + 3_600_000);
+  const until = input.createdByUserId
+    ? now.getTime() + HOST_DEFAULT_SECONDS * 1000
+    : Math.max(booking.endAt.getTime() + MANAGE_GRACE_MS, now.getTime() + 3_600_000);
   return mint({
     env,
     kind: "manage",
     bookingId: booking.id,
     apiKeyId: input.apiKeyId ?? null,
+    createdByUserId: input.createdByUserId ?? null,
     expiresAt: new Date(until),
     publicUrl: input.publicUrl,
   });
@@ -283,7 +296,9 @@ export async function sessionEnvironment(
   return row ?? null;
 }
 
+/** A session a dashboard member opened acts as them, whichever page it opens. */
 export function sessionActor(session: SessionRow): BookingActor {
+  if (session.createdByUserId) return { kind: "user", id: session.createdByUserId };
   if (session.kind === "host") return { kind: "host_session", id: session.id };
   if (session.kind === "booker") return { kind: "booker_session", id: session.id };
   return { kind: "manage_session", id: session.id };
