@@ -94,9 +94,17 @@ async function renewLease(row: LedgerRow, now: Date): Promise<LedgerRow | null> 
   return renewed ?? null;
 }
 
-// A session's event can go and come back, as a new row, while a booking's key lasts for good.
+/**
+ * A session's event can go and come back, as a new row. A booking's row comes back itself when a
+ * host leaves and returns, so its generation makes a key not yet used: Graph's answer to a repeated
+ * `transactionId` is undocumented, and it could be the deleted event. It goes first because Meet's
+ * `requestId` is the key's first 64 characters, and a new event needs a new one of those too.
+ */
 const eventKey = (row: LedgerRow) =>
-  (row.groupSessionId ? row.id : `${row.bookingId}-${row.calendarId}`).replace(/[^a-z0-9_-]/gi, "");
+  (row.groupSessionId
+    ? row.id
+    : `${row.keyGeneration > 0 ? `g${row.keyGeneration}-` : ""}${row.bookingId}-${row.calendarId}`
+  ).replace(/[^a-z0-9_-]/gi, "");
 
 type Location = BookingRow["location"];
 
@@ -200,10 +208,15 @@ async function setMeetingLink(
     const [updated] = await tx
       .update(schedulingBooking)
       .set({
-        // Remembers where the link came from, for when another host takes the booking.
+        // Remembers where the link came from and whose it is, for when hosts change.
         location: zoom
           ? { type: "zoom", url }
-          : ({ type: "link", url, conference: location.type } as never),
+          : ({
+              type: "link",
+              url,
+              conference: location.type,
+              conference_host_id: hostId,
+            } as never),
         version: sql`${schedulingBooking.version} + 1`,
       })
       .where(
@@ -215,24 +228,23 @@ async function setMeetingLink(
       .returning();
     if (!updated) return;
     await carryReminders(tx, updated);
-    // The host's calendar event went out without the link.
-    if (zoom) {
-      await tx
-        .update(schedulingCalendarEvent)
-        .set({
-          desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
-          nextAttemptAt: now,
-          attempts: 0,
-        })
-        .where(
-          and(
-            eq(schedulingCalendarEvent.bookingId, booking.id),
-            eq(schedulingCalendarEvent.organizationId, booking.organizationId),
-            eq(schedulingCalendarEvent.desiredState, "present"),
-            notZoomMeeting(),
-          ),
-        );
-    }
+    // Other events went out without the link. A Meet's own event already shows it.
+    await tx
+      .update(schedulingCalendarEvent)
+      .set({
+        desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
+        nextAttemptAt: now,
+        attempts: 0,
+      })
+      .where(
+        and(
+          eq(schedulingCalendarEvent.bookingId, booking.id),
+          eq(schedulingCalendarEvent.organizationId, booking.organizationId),
+          eq(schedulingCalendarEvent.desiredState, "present"),
+          notZoomMeeting(),
+          zoom ? undefined : ne(schedulingCalendarEvent.hostId, hostId),
+        ),
+      );
     await announce(tx, updated, "scheduling.booking.location_ready", "Meeting link ready", now);
   });
 }
@@ -398,6 +410,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarDeps): Promise<void> {
       await settle({
         appliedVersion: row.desiredVersion,
         providerEventId: null,
+        keyGeneration: row.keyGeneration + 1,
         attempts: 0,
         lastErrorCode: null,
       });

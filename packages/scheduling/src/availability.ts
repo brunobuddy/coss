@@ -22,6 +22,8 @@ import { MAX_SLOT_WINDOW_DAYS } from "./schemas.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
 const {
+  schedulingBooking,
+  schedulingBookingHost,
   schedulingBusyInterval,
   schedulingCalendar,
   schedulingCalendarConnection,
@@ -522,6 +524,74 @@ export async function listEventTypeSlots(
     hostRefs: input.hostRefs,
     attributes: input.attributes,
   });
+  return slotsAmong(scope, eventType, candidates, input, duration);
+}
+
+/**
+ * Where a booking could move, keeping its hosts: not who the event type would pick today. Filters
+ * and hosts change after a booking is made, and moving one never changes who it's with.
+ */
+export async function listBookingSlots(
+  scope: Scope,
+  input: { bookingId: string; fromMs: number; toMs: number; nowMs: number },
+): Promise<SlotResult[]> {
+  checkWindow(input.fromMs, input.toMs);
+  const [booking] = await db
+    .select()
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.id, input.bookingId),
+        eq(schedulingBooking.organizationId, scope.organizationId),
+        eq(schedulingBooking.environmentId, scope.environmentId),
+      ),
+    );
+  if (!booking) return [];
+  const eventType = await resolveEventType(db, scope, booking.eventTypeId);
+  if (eventType.status !== "active") return [];
+  const assigned = await db
+    .select({ hostId: schedulingBookingHost.hostId, role: schedulingBookingHost.role })
+    .from(schedulingBookingHost)
+    .where(
+      and(
+        eq(schedulingBookingHost.bookingId, booking.id),
+        eq(schedulingBookingHost.organizationId, scope.organizationId),
+      ),
+    );
+  const [hosts, memberships] = await Promise.all([
+    hostsByIds(
+      db,
+      scope,
+      assigned.map((row) => row.hostId),
+    ),
+    eventTypeHosts(db, eventType),
+  ]);
+  const byHost = new Map(memberships.map((row) => [row.hostId, row]));
+  // As booking refuses them: a slot here would only fail on the way in.
+  const movable =
+    assigned.length > 0 &&
+    hosts.length === assigned.length &&
+    hosts.every((host) => host.status === "active" && !byHost.get(host.id)?.removedAt);
+  if (!movable) return [];
+  const entryOf = (role: "required" | "member") =>
+    assigned
+      .filter((row) => row.role === role)
+      .flatMap((row) => {
+        const host = hosts.find((candidate) => candidate.id === row.hostId);
+        return host ? [{ host, membership: byHost.get(host.id) ?? null }] : [];
+      });
+  const candidates = { required: entryOf("required"), members: entryOf("member") } as Candidates;
+  const duration = (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS;
+  return slotsAmong(scope, eventType, candidates, input, duration);
+}
+
+async function slotsAmong(
+  scope: Scope,
+  eventType: EventTypeRow,
+  candidates: Candidates,
+  input: { fromMs: number; toMs: number; nowMs: number },
+  duration: number,
+): Promise<SlotResult[]> {
   const all = [...candidates.required, ...candidates.members];
   const loaded = await loadHostInputs(db, {
     scope,

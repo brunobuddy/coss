@@ -1,0 +1,1 @@
+ALTER TABLE "scheduling_calendar_event" ADD COLUMN "key_generation" integer DEFAULT 0 NOT NULL;

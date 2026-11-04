@@ -766,6 +766,8 @@ export const schedulingCalendarEvent = pgTable(
     desiredVersion: integer("desired_version").notNull().default(1),
     appliedVersion: integer("applied_version").notNull().default(0),
     providerEventId: text("provider_event_id"),
+    // Goes up each time the event is deleted, so one that comes back gets a key not yet used.
+    keyGeneration: integer("key_generation").notNull().default(0),
     externalState: schedulingExternalState("external_state").notNull().default("in_sync"),
     nextAttemptAt: instant("next_attempt_at").notNull().defaultNow(),
     leaseUntil: instant("lease_until"),

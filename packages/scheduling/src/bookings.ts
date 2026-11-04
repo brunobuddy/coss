@@ -181,10 +181,44 @@ function locationForNewHost(location: BookingRow["location"]): BookingRow["locat
 
 function wireLocation(location: BookingRow["location"]): BookingRow["location"] {
   if (!location || !("conference" in location)) return location ?? null;
-  const { conference: _conference, ...rest } = location as typeof location & {
-    conference: string;
-  };
+  const {
+    conference: _conference,
+    conference_host_id: _conferenceHost,
+    ...rest
+  } = location as typeof location & { conference: string; conference_host_id?: string };
   return rest as BookingRow["location"];
+}
+
+/** Whose account runs a booking's meeting, when that's known: older Meet and Teams links don't say. */
+async function meetingOwnerOf(tx: Executor, booking: BookingRow): Promise<string | null> {
+  const location = booking.location;
+  if (location?.type === "link" && "conference_host_id" in location) {
+    return location.conference_host_id as string;
+  }
+  if (location?.type !== "zoom") return null;
+  const [row] = await tx
+    .select({ hostId: schedulingCalendarEvent.hostId })
+    .from(schedulingCalendarEvent)
+    .innerJoin(schedulingCalendar, eq(schedulingCalendar.id, schedulingCalendarEvent.calendarId))
+    .where(
+      and(
+        eq(schedulingCalendarEvent.bookingId, booking.id),
+        eq(schedulingCalendarEvent.organizationId, booking.organizationId),
+        eq(schedulingCalendarEvent.desiredState, "present"),
+        eq(schedulingCalendar.externalId, ZOOM_CALENDAR_ID),
+      ),
+    );
+  return row?.hostId ?? null;
+}
+
+/** The location once a host leaves, or null if it stands: the meeting may be someone else's. */
+async function locationWithoutHost(
+  tx: Executor,
+  booking: BookingRow,
+  hostId: string,
+): Promise<BookingRow["location"]> {
+  const owner = await meetingOwnerOf(tx, booking);
+  return owner && owner !== hostId ? null : locationForNewHost(booking.location);
 }
 
 function chooseLocation(
@@ -677,6 +711,29 @@ async function setCalendarState(
   state: "present" | "absent",
 ): Promise<void> {
   if (hostIds.length === 0) return;
+  const sessionId = booking.groupSessionId;
+  if (state === "absent") {
+    // Whatever these hosts' events are on now, which may not be where they'd be written today.
+    await tx
+      .update(schedulingCalendarEvent)
+      .set({
+        desiredState: "absent",
+        desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
+        nextAttemptAt: sql`clock_timestamp()`,
+        attempts: 0,
+      })
+      .where(
+        and(
+          sessionId
+            ? eq(schedulingCalendarEvent.groupSessionId, sessionId)
+            : eq(schedulingCalendarEvent.bookingId, booking.id),
+          eq(schedulingCalendarEvent.organizationId, booking.organizationId),
+          inArray(schedulingCalendarEvent.hostId, [...hostIds]),
+          eq(schedulingCalendarEvent.desiredState, "present"),
+        ),
+      );
+    return;
+  }
   const calendars = await tx
     .select({
       id: schedulingCalendar.id,
@@ -703,14 +760,12 @@ async function setCalendarState(
     .orderBy(asc(schedulingCalendar.hostId));
   const targets = calendars.filter((calendar) => calendar.writeTarget);
   if (booking.location?.type === "zoom") {
-    // One meeting however many hosts there are: the first with Zoom connected runs it.
-    const meeting = calendars.find((calendar) => calendar.externalId === ZOOM_CALENDAR_ID);
+    // One meeting however many hosts there are: whoever runs it now, or the first with Zoom connected.
+    const zooms = calendars.filter((calendar) => calendar.externalId === ZOOM_CALENDAR_ID);
+    const owner = await meetingOwnerOf(tx, booking);
+    const meeting = zooms.find((calendar) => calendar.hostId === owner) ?? zooms[0];
     if (meeting) targets.push(meeting);
-    else if (
-      state === "present" &&
-      !booking.location.url &&
-      !targets.some((target) => target.provider === "simulated")
-    ) {
+    else if (!booking.location.url && !targets.some((target) => target.provider === "simulated")) {
       await announce(
         tx,
         booking,
@@ -720,9 +775,8 @@ async function setCalendarState(
       );
     }
   }
-  const sessionId = booking.groupSessionId;
   // A session can come back after its event went, and a provider's key doesn't work twice.
-  if (sessionId && state === "present") {
+  if (sessionId) {
     await tx
       .delete(schedulingCalendarEvent)
       .where(
@@ -1970,12 +2024,13 @@ export async function rescheduleBooking(
         })
         .onConflictDoNothing();
     }
-    const newLocation = replacement ? locationForNewHost(booking.location) : null;
+    // The old host's meeting goes with them, so someone else's gets a new link.
+    const newLocation =
+      replacement && member ? await locationWithoutHost(tx, booking, member.hostId) : null;
     const updated = await bumped(tx, booking, {
       startAt: new Date(input.startMs),
       endAt: new Date(input.startMs + durationMinutes * MINUTE_MS),
       externalConflictAt: null,
-      // The old host's meeting goes with them, so the new host's gets a new link.
       ...(newLocation ? { location: newLocation } : {}),
     });
     const after = await participants(tx, updated);

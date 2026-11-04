@@ -105,9 +105,18 @@ embeds the booker. Local dates (overrides, limits) never pass through `Date`.
   idle ones alive. `notZoomMeeting()` keeps these rows out of what's subtracted from busy times. Losing Zoom never hides
   a host. The app's deauthorization event comes to `POST /scheduling/zoom/events`.
 
-A Meet or Teams link becomes a `link` location on the booking, stored with `conference` (stripped from the wire), so a
-new host gets a meeting of their own (`locationForNewHost`). A browser only chooses among an event type's `locations`
-(`locationFromBrowser`): it can't supply its own link or address.
+A Meet or Teams link becomes a `link` location on the booking, stored with `conference` and `conference_host_id` (both
+stripped from the wire), so when a host leaves, the link only resets if the meeting was theirs (`locationWithoutHost`).
+A Zoom meeting's owner is its ledger row (`meetingOwnerOf`), and it keeps running the meeting however hosts sort. Links
+older than `conference_host_id` have no known owner, so they reset. Co-hosts each ask for a Meet at creation, and only
+the first answer becomes the booking's link: a co-host's event can hold its own unused conference, though its location
+text is rewritten to the booking's. A browser only chooses among an event type's `locations` (`locationFromBrowser`):
+it can't supply its own link or address.
+
+A booking's ledger row can come back when a host leaves and returns, and its `key_generation` makes a key not yet used
+(`eventKey`). Removing an event (`setCalendarState` with `absent`) goes by the ledger's rows, not today's write target,
+so an event on a calendar that's stopped being one still goes. Slots for moving a booking come from the hosts it has
+(`listBookingSlots`), never `candidatesOf`, which answers who'd take a new one.
 
 ## Sessions and the client API
 

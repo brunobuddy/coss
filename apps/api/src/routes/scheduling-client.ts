@@ -23,6 +23,7 @@ import {
   getHost,
   getLogoRow,
   getSettingsRow,
+  listBookingSlots,
   listConnections,
   listEventTypeSlots,
   listSchedules,
@@ -256,45 +257,42 @@ export function createSchedulingClientRoutes(opts: {
     return c.json(base);
   });
 
-  const slotsFor = async (
-    c: Context<ClientEnv>,
-    eventType: string,
-    hostRefs: readonly string[] | undefined,
-    durationMinutes?: number,
-    attributes?: Record<string, string | string[]>,
-  ) => {
+  const slotQueryOf = (c: Context<ClientEnv>) => {
     const query = SlotQuery.safeParse({
       start: c.req.query("start"),
       end: c.req.query("end"),
       duration_minutes: c.req.query("duration_minutes"),
     });
     if (!query.success) throw invalidBody("`start` and `end` are required.");
-    const slots = await listEventTypeSlots(c.var.session.env, {
-      eventTypeRef: eventType,
+    return {
       fromMs: instant(query.data.start, "start"),
       toMs: instant(query.data.end, "end"),
       nowMs: (deps.now?.() ?? new Date()).getTime(),
-      hostRefs,
-      attributes,
-      durationMinutes: durationMinutes ?? query.data.duration_minutes,
-    });
-    // An attendee sees times, never who else could take them.
-    return c.json({
-      object: "list" as const,
-      data: slots.map((slot) => ({ start: iso(slot.startMs), end: iso(slot.endMs) })),
-      has_more: false,
-    });
+      durationMinutes: query.data.duration_minutes,
+    };
   };
 
-  router.get("/slots", async (c) =>
-    slotsFor(
-      c,
-      eventTypeOf(c),
-      c.var.session.session.hostId ? [c.var.session.session.hostId] : undefined,
-      undefined,
-      sessionAttributes(c.var.session.session, deps),
-    ),
-  );
+  // An attendee sees times, never who else could take them.
+  const slotList = (slots: readonly { startMs: number; endMs: number }[]) => ({
+    object: "list" as const,
+    data: slots.map((slot) => ({ start: iso(slot.startMs), end: iso(slot.endMs) })),
+    has_more: false,
+  });
+
+  router.get("/slots", async (c) => {
+    // The session's kind first: the wrong one is a 404, whatever the query says.
+    const eventTypeRef = eventTypeOf(c);
+    return c.json(
+      slotList(
+        await listEventTypeSlots(c.var.session.env, {
+          ...slotQueryOf(c),
+          eventTypeRef,
+          hostRefs: c.var.session.session.hostId ? [c.var.session.session.hostId] : undefined,
+          attributes: sessionAttributes(c.var.session.session, deps),
+        }),
+      ),
+    );
+  });
 
   router.post("/bookings", async (c) => {
     const eventType = eventTypeOf(c);
@@ -348,10 +346,18 @@ export function createSchedulingClientRoutes(opts: {
   });
 
   router.get("/booking/slots", async (c) => {
-    const id = bookingOf(c);
-    const booking = await getBooking(c.var.session.env, id, deps);
-    const duration = (Date.parse(booking.end) - Date.parse(booking.start)) / 60_000;
-    return slotsFor(c, booking.event_type, booking.hosts, duration);
+    const bookingId = bookingOf(c);
+    const { fromMs, toMs, nowMs } = slotQueryOf(c);
+    return c.json(
+      slotList(
+        await listBookingSlots(c.var.session.env, {
+          bookingId,
+          fromMs,
+          toMs,
+          nowMs,
+        }),
+      ),
+    );
   });
 
   router.post("/booking/reschedule", async (c) => {
