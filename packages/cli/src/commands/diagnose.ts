@@ -28,9 +28,9 @@ import { client } from "./list-output.ts";
 export const PRODUCT_REFERENCES: ProductReferences = {
   search_logs: "`coss logs tail --since 1d`",
   get_account_status: "`coss api reputation`",
-  check_email_suppression: "`coss api suppressions -f address=<address>`",
+  check_email_suppression: "`coss suppressions check <address>`",
   list_sms_numbers: "`coss sms numbers`",
-  check_sms_suppression: "`coss sms suppressions list`",
+  check_sms_suppression: "`coss sms suppressions check <number>`",
   remove_sms_suppression: "`coss sms suppressions remove <suppression>`",
   start_verification: "`coss verify start <to>`",
   get_verify_settings: "`coss verify settings get`",
@@ -43,7 +43,7 @@ export const PRODUCT_REFERENCES: ProductReferences = {
   download_signed_document: "`coss sign download <request>`",
   create_sign_request: "`coss sign create`",
   release_form_submission: "`coss forms release <form> <submission>`",
-  update_form: "`coss api -X PATCH forms/<form>`",
+  update_form: "`coss forms update <form>`",
   find_emails: "`coss emails list --to <address>`",
   list_webhook_endpoints: "`coss webhooks list`",
   list_hook_attempts: "`coss hooks attempts <app> <delivery>`",
@@ -52,9 +52,9 @@ export const PRODUCT_REFERENCES: ProductReferences = {
     "`coss api -X PATCH hooks/applications/<app>/endpoints/<endpoint> -F enabled=true`",
   recover_hook_endpoint:
     "`coss api -X POST hooks/applications/<app>/endpoints/<endpoint>/recover -f since=<time>`",
-  save_scheduling_host: "`coss api -X PATCH scheduling/hosts/<host>`",
-  save_scheduling_schedule: "`coss api -X POST scheduling/hosts/<host>/schedules`",
-  save_scheduling_event_type: "`coss api -X PATCH scheduling/event_types/<event-type>`",
+  save_scheduling_host: "`coss scheduling hosts update <host>`",
+  save_scheduling_schedule: "`coss scheduling schedules create <host>`",
+  save_scheduling_event_type: "`coss scheduling event-types update <event-type>`",
   list_scheduling_calendars: "`coss scheduling calendars <host>`",
   authorize_scheduling_calendar:
     "`coss api -X POST scheduling/hosts/<host>/calendar_connections/authorize`",

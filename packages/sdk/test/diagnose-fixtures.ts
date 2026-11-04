@@ -329,6 +329,8 @@ export function schedulingEventType(
     object: "scheduling.event_type",
     id: "set_1",
     uid: null,
+    max_guests: 0,
+    host_calendar_details: "neutral",
     title: "Intro call",
     kind: "one_on_one",
     status: "active",
