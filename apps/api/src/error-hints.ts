@@ -69,7 +69,7 @@ export const ERROR_HINTS: Record<string, string> = {
   account_suspended: `This organization is suspended, so sending and changes are refused until it is reinstated. ${DOCS.delivery}`,
   sending_paused: `Sending is paused because of its reputation, so look at its bounces and complaints. Sandbox keys still work. ${DOCS.reputation}`,
   marketing_paused: `Look at the marketing stream's bounces and complaints, and send transactional email in the meantime. ${DOCS.reputation}`,
-  billing_hold: `Pay the overdue invoice or raise the spend limit in the organization's billing settings. Sandbox keys still work. ${DOCS.billing}`,
+  billing_hold: `Pay the overdue invoice or raise the spend limit in the organization's billing settings; a credit limit rises as payments settle, or support can raise it. Sandbox keys still work. ${DOCS.billing}`,
   budget_exceeded: `A monthly budget of the member, project or API key is used up. Owners can raise it on the Spend page's Budgets tab. ${DOCS.spend}`,
   plan_feature_unavailable: `Change the plan or add the add-on in the organization's billing settings. ${DOCS.billing}`,
   plan_limit_reached: `Upgrade the plan in the organization's billing settings, or remove something you no longer use. ${DOCS.billing}`,

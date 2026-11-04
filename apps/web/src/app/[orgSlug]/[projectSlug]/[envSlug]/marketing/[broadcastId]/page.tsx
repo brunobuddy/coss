@@ -48,7 +48,7 @@ export const metadata: Metadata = { title: "Broadcast" };
 
 const PAUSE_REASONS: Record<string, string> = {
   paused: "You paused it.",
-  billing_hold: "An unpaid invoice holds sending; it resumes on its own once it is paid.",
+  billing_hold: "A billing hold pauses sending; it resumes on its own once the hold is lifted.",
   usage_limit: "Your plan's included emails are used up; it resumes when there is room again.",
   sending_paused: "Sending is paused for this organization; it resumes on its own once lifted.",
   marketing_paused:

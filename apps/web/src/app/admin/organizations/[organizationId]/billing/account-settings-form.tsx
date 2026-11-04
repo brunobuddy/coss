@@ -30,6 +30,7 @@ export type AccountSettingsValues = {
   taxId: string;
   graceDays: number;
   holdExemptUntil: string;
+  creditLimit: string;
   notes: string;
 };
 
@@ -146,7 +147,23 @@ export function AccountSettingsForm(props: {
       <Field>
         <FieldLabel>Hold exemption until</FieldLabel>
         <Input defaultValue={values.holdExemptUntil} name="holdExemptUntil" type="date" />
-        <FieldDescription>Overdue invoices don't pause sending before this date.</FieldDescription>
+        <FieldDescription>
+          Overdue invoices and the credit limit don't pause sending before this date.
+        </FieldDescription>
+      </Field>
+      <Field>
+        <FieldLabel>Credit limit (USD)</FieldLabel>
+        <Input
+          defaultValue={values.creditLimit}
+          min={0}
+          name="creditLimit"
+          step="0.01"
+          type="number"
+        />
+        <FieldDescription>
+          Empty: automatic for self-serve, none for contracts and net terms. A value replaces it and
+          also clears a hold from a fraud dispute or a failed charge.
+        </FieldDescription>
       </Field>
       <Field>
         <FieldLabel>Billing email</FieldLabel>

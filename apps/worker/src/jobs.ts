@@ -15,6 +15,7 @@ import {
   runDueBillingNotifications,
   runDueBillingPeriods,
   runDueBillingSync,
+  runDueCreditChecks,
   runDueCreditNoteSync,
 } from "@coss/billing";
 import type { UsageGate } from "@coss/billing/gate";
@@ -292,6 +293,7 @@ export const WORKER_LOOP_NAMES = [
   "billing-collection",
   "billing-events",
   "billing-usage",
+  "billing-credit",
   "billing-reconcile",
   "billing-notifications",
   "auth-emails",
@@ -669,6 +671,15 @@ export function startJobs(deps: WorkerDeps): Loop[] {
       intervalMs: 5 * 60_000,
       run: async () => {
         await runBillingUsageChecks({ systemOrganizationId: system });
+      },
+    }),
+    start({
+      // Charges usage over its threshold and holds live sending over the credit limit. Every
+      // minute, not with the usage checks: minutes of expensive SMS can outrun a new account's limit.
+      name: "billing-credit",
+      intervalMs: 60_000,
+      run: async () => {
+        await runDueCreditChecks({ systemOrganizationId: system });
       },
     }),
     start({

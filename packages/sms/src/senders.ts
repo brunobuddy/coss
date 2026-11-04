@@ -59,8 +59,8 @@ export async function authorizeLiveSmsSender(input: {
   if (await isOnBillingHold(input.organizationId)) {
     throw new SmsError(
       "billing_hold",
-      "Live sending is paused for this organization: an invoice is overdue or its spend limit " +
-        "was reached. Sandbox keys still work. See the organization's billing settings.",
+      "Live sending is paused for this organization: an invoice is overdue or its spend or " +
+        "credit limit was reached. Sandbox keys still work. See the organization's billing settings.",
     );
   }
   const row = await senderRows(input.organizationId, { phoneNumber: input.from });

@@ -8,6 +8,7 @@ import { desc, eq } from "drizzle-orm";
 import { type BillingAccount, getBillingAccount } from "./accounts.ts";
 import { rateCardAt } from "./catalog/rates.ts";
 import { type Contract, pendingContract } from "./contracts.ts";
+import { type CreditStanding, creditStandingOf } from "./credit.ts";
 import { composePeriodInvoice } from "./engine/compose.ts";
 import { resolveTerms } from "./engine/terms.ts";
 import type { Composition, Segment, UsageTotal } from "./engine/types.ts";
@@ -30,6 +31,8 @@ export type PeriodEstimate = {
   /** Credit usable this month (fee credit, prepaid commitments, support credit). */
   creditCents: bigint;
   creditUsedCents: bigint;
+  /** Usage threshold charges drawn down: already paid for, so neither credit nor still to pay. */
+  alreadyChargedCents: bigint;
   /** What the month's invoice would be today (without next month's advance charges). */
   totals: ReturnType<typeof invoiceTotals>;
 };
@@ -41,6 +44,8 @@ export type BillingOverview = {
   estimate: PeriodEstimate;
   grants: Grant[];
   holds: { reason: string; createdAt: Date }[];
+  /** Where it stands against its credit limit (`null`: not under one). */
+  credit: CreditStanding | null;
 };
 
 export async function billingOverview(
@@ -56,7 +61,8 @@ export async function billingOverview(
   ]);
   const period = periodOf(now);
   const grants = await grantsFor(organizationId, period);
-  return { account, state, pending, estimate, grants, holds };
+  const credit = account ? await creditStandingOf(account, state, now) : null;
+  return { account, state, pending, estimate, grants, holds, credit };
 }
 
 /** The running month's invoice as it would be if it closed now. */
@@ -79,11 +85,17 @@ function summarize(period: Interval, composition: Composition, grants: Grant[]):
     .filter((line) => line.kind === "usage")
     .reduce((sum, line) => sum + line.amountCents, 0n);
   const creditCents = grants
-    .filter((grant) => grant.kind === "amount")
+    .filter((grant) => grant.kind === "amount" && grant.source !== "threshold")
     .reduce((sum, grant) => sum + (grant.remaining > 0n ? grant.remaining : 0n), 0n);
-  const creditUsedCents = -composition.lines
-    .filter((line) => line.kind === "credit")
+  const charged = new Set(
+    grants.filter((grant) => grant.source === "threshold").map((grant) => grant.id),
+  );
+  const applied = composition.lines.filter((line) => line.kind === "credit");
+  const alreadyChargedCents = -applied
+    .filter((line) => line.grantId && charged.has(line.grantId))
     .reduce((sum, line) => sum + line.amountCents, 0n);
+  const creditUsedCents =
+    -applied.reduce((sum, line) => sum + line.amountCents, 0n) - alreadyChargedCents;
   return {
     period,
     usage: composition.usage,
@@ -91,6 +103,7 @@ function summarize(period: Interval, composition: Composition, grants: Grant[]):
     usageCents,
     creditCents,
     creditUsedCents,
+    alreadyChargedCents,
     totals: invoiceTotals(composition.lines),
   };
 }

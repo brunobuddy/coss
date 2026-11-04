@@ -100,6 +100,21 @@ repository root.
     it. Holds are independent of reputation suspensions: never fold one into the other. Spend limits place a
     `spend_limit` hold (worker `billing-usage`), lifted by the next month or a higher limit. coss.com's own organization is
     never held or capped (`systemOrganizationId`).
+  - **Credit control** (`./credit`, worker `billing-credit`, every minute; numbers in `CREDIT_POLICY`,
+    `./catalog`): usage is billed after it happens and coss.com pays its providers either way, so unbilled usage
+    reaching the threshold is charged at once and what could still be lost is capped. A `threshold` invoice has one
+    `adjustment` line (no contract, so commitments never count it) and funds a `threshold` credit grant
+    (`applies_to: any`, no expiry), which the month's invoice draws down: **rating stays the engine's**, re-rating the
+    whole month, and a charge that fails is still owed exactly once. One open at a time; once a month's invoice drew it down it can't be voided (that would lose the usage), only credited. Threshold grants aren't credit:
+    `creditCents`/`creditUsedCents` leave them out (`alreadyChargedCents`), so they never loosen a spend limit. The
+    limit is on `usedCents`: unbilled usage (months not closed yet too) + open invoices + threshold charges paid in the last `settleDays`, so
+    a stolen card that pays every charge stays capped until its payments settle; only settled payments (net of
+    refunds and disputes) raise it. Over it, or on a fraud dispute, or when a threshold charge fails with nothing
+    settled yet: a `credit_limit` hold, re-evaluated every run and lifted by the same evaluation.
+    `holdExemptUntil` exempts; `billing_account.credit_limit_cents` (admin) replaces the limit and those signals, and
+    is the only way a contract or net-terms account comes under it. Checked every minute, not at acceptance, so an
+    account can pass its limit by a minute of traffic plus sends already queued (accepted: the plan's rate limits bound
+    that minute, and Free's cap stays the only hard reservation).
   - **Provider events**: the dashboard's `/api/billing/webhook` (public) verifies Stripe's signature and only stores the
     event (`billing_provider_event`); the worker's `billing-events` loop re-reads each object from Stripe and moves
     states forward only (`paid` is final). `billing-reconcile` re-checks quiet open invoices hourly.

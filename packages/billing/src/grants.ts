@@ -72,6 +72,7 @@ export function toGrantBalance(grant: Grant): GrantBalance {
     effectiveAt: grant.effectiveAt,
     expiresAt: grant.expiresAt,
     createdAt: grant.createdAt,
+    ...(grant.source === "threshold" ? { lineDescription: "Usage already charged" } : {}),
   };
 }
 
@@ -123,7 +124,10 @@ export async function insertComposedGrants(
         source: grant.source,
         grantKey: grant.key,
         contractId: grant.contractId,
-        invoiceId: grant.source === "fee" || grant.source === "commitment" ? invoiceId : null,
+        invoiceId:
+          grant.source === "fee" || grant.source === "commitment" || grant.source === "threshold"
+            ? invoiceId
+            : null,
         description: grant.description,
         effectiveAt: grant.effectiveAt,
         expiresAt: grant.expiresAt,

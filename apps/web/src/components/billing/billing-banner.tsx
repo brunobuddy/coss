@@ -20,7 +20,9 @@ export function BillingBanner(props: { state: BillingBannerState; href: string; 
             ? "An invoice is overdue. Sending resumes as soon as it is paid."
             : held === "spend_limit"
               ? "This month's usage reached your spend limit. Raise it, or sending resumes next month."
-              : "coss.com paused live sending for billing reasons."}{" "}
+              : held === "credit_limit"
+                ? "Your organization reached its credit limit, or a usage charge failed. Pay anything open; the limit rises as payments settle."
+                : "coss.com paused live sending for billing reasons."}{" "}
           {held !== "delinquent" && held !== "spend_limit" ? (
             <>
               <SupportLink orgSlug={props.orgSlug} subject="Billing hold" topic="billing" />.{" "}

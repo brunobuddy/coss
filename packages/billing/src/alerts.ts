@@ -143,7 +143,7 @@ export async function checkOrganizationSpend(organizationId: string, now: Date):
   }
 
   // Spend limit: usage beyond the month's credit (not fees or commitment shortfalls, which the
-  // contract owes whatever is sent).
+  // contract owes whatever is sent). Threshold charges aren't credit: they paid for this usage early.
   const usageNet = estimate.composition.lines
     .filter(
       (line) =>

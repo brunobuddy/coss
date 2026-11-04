@@ -14,6 +14,7 @@ export * from "./catalog/index.ts";
 export * from "./changes.ts";
 export * from "./collection.ts";
 export * from "./contracts.ts";
+export * from "./credit.ts";
 export * from "./deletion.ts";
 export * from "./enforcement.ts";
 export * from "./engine/index.ts";
