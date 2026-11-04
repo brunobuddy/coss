@@ -8,7 +8,11 @@ import {
   domainsListCommand,
   domainsVerifyCommand,
 } from "./commands/domains.ts";
-import { emailsSendCommand } from "./commands/emails.ts";
+import {
+  emailsCancelCommand,
+  emailsRescheduleCommand,
+  emailsSendCommand,
+} from "./commands/emails.ts";
 import {
   emailsDiagnoseCommand,
   emailsEventsCommand,
@@ -71,6 +75,8 @@ export const COMMANDS: readonly Command[] = [
   emailsGetCommand,
   emailsEventsCommand,
   emailsDiagnoseCommand,
+  emailsCancelCommand,
+  emailsRescheduleCommand,
   ...SUPPRESSIONS_COMMANDS,
   ...SUBACCOUNTS_COMMANDS,
   ...MARKETING_COMMANDS,
