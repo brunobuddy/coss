@@ -273,6 +273,8 @@ export function EventTypeStatusButton(
   const next = status === "active" ? "archived" : "active";
   const [state, formAction, pending] = useActionToast(setEventTypeStatusAction, {
     success: next === "active" ? "Event type restored" : "Event type archived",
+    // Restoring is one click, with nowhere inline to say what went wrong. Archiving has a dialog.
+    errors: next === "active" ? "toast" : "inline",
   });
   if (next === "active") {
     return (
