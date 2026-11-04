@@ -3,6 +3,11 @@ import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 import { env } from "@/env";
 import { clientIpFromForwardedFor } from "@/lib/client-ip";
+import {
+  answersNotFoundWhenSignedOut,
+  NOT_FOUND_HEADERS,
+  notFoundDocument,
+} from "@/lib/signed-out";
 
 /**
  * Reachable without a session cookie. /accept-invitation and /sso render their own signed-out state;
@@ -59,6 +64,12 @@ export function proxy(request: NextRequest) {
 
   const signIn = new URL("/sign-in", request.url);
   if (pathname !== DASHBOARD_PATH) signIn.searchParams.set("next", `${pathname}${search}`);
+  if (answersNotFoundWhenSignedOut({ method: request.method, pathname })) {
+    return new NextResponse(notFoundDocument(`${signIn.pathname}${signIn.search}`), {
+      status: 404,
+      headers: NOT_FOUND_HEADERS,
+    });
+  }
   return NextResponse.redirect(signIn);
 }
 
