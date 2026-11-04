@@ -474,6 +474,45 @@ describe("a host's email and mailbox", () => {
   });
 });
 
+describe("a host's mailbox changing under a connection being made", () => {
+  test("a calendar_account set during the fetch wins, and the old mailbox isn't connected", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    const delegation = await activeGoogle(env, deps);
+    const held = api.hold("POST", /freeBusy$/);
+    const running = run(env, deps);
+    await held.arrived;
+    await updateHost(env, ana.id, { calendar_account: `ana.new@${DOMAIN}` });
+    held.release();
+    await running;
+    expect(await listConnections(env, ana.id)).toEqual([]);
+    // The run's clock is pinned ahead of the nudge's, which in production comes after the claim.
+    await dueNow(delegation.id);
+    await run(env, deps);
+    expect(await listConnections(env, ana.id)).toMatchObject([{ account: `ana.new@${DOMAIN}` }]);
+  });
+
+  test("an email moving to another delegation's domain doesn't add a second mailbox", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    await activeGoogle(env, deps);
+    const other = await createCalendarDelegation(
+      env,
+      { provider: "google", domain: "other.example", service_account_key: account.key },
+      deps,
+    );
+    await verifyCalendarDelegation(env, other.id, { account: "boss@other.example" }, deps);
+    await run(env, deps);
+    await updateHost(env, ana.id, { email: "ana@other.example" });
+    await run(env, deps);
+    expect(await listConnections(env, ana.id)).toMatchObject([{ account: `ana@${DOMAIN}` }]);
+  });
+});
+
 describe("a host who already connected by OAuth", () => {
   async function connectedByOAuth() {
     const env = await environment();
@@ -540,6 +579,44 @@ describe("a host who already connected by OAuth", () => {
       refreshToken: string | null;
     };
     expect(held.refreshToken).toBeNull();
+  });
+
+  test("a personal account subscribed to their work calendar isn't taken over", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    api.calendars.length = 0;
+    api.calendars.push(
+      { id: "ana@gmail.example", summary: "Personal", primary: true, accessRole: "owner" },
+      { id: `ana@${DOMAIN}`, summary: "Work", accessRole: "reader" },
+    );
+    const { url } = await startCalendarAuthorization(
+      env,
+      ana.id,
+      { provider: "google", returnUrl: null },
+      deps,
+    );
+    await completeCalendarAuthorization(
+      {
+        provider: "google",
+        state: new URL(url).searchParams.get("state") as string,
+        code: "code",
+        error: null,
+      },
+      deps,
+    );
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    const connections = await listConnections(env, ana.id);
+    expect(connections.map((row) => [row.account, row.delegation !== null]).sort()).toEqual([
+      ["ana@acme.example", true],
+      ["ana@gmail.example", false],
+    ]);
+    const personal = connections.find((row) => row.account === "ana@gmail.example");
+    expect(
+      personal?.calendars.find((row) => row.external_id === "ana@gmail.example"),
+    ).toMatchObject({ write_target: true });
   });
 
   test("a consent after that leaves the delegated row as it is", async () => {
@@ -932,6 +1009,55 @@ describe("Microsoft 365", () => {
     expect((await getCalendarDelegation(env, delegation.id)).status).toBe("active");
     expect(await listConnections(env, ana.id)).toMatchObject([{ status: "needs_reauth" }]);
     expect(await listConnections(env, ben.id)).toMatchObject([{ status: "active" }]);
+  });
+
+  test("with only one mailbox to ask, a revoked consent still reaches the owners and recovers", async () => {
+    const env = await environment();
+    const api = new FakeGraphApi();
+    const deps = graphDeps(api);
+    const only = await hostOn(env, "only");
+    const delegation = await createCalendarDelegation(
+      env,
+      {
+        provider: "microsoft",
+        domain: DOMAIN,
+        tenant_id: api.tenantId,
+        client_id: randomUUID(),
+        client_secret: api.clientSecret,
+      },
+      deps,
+    );
+    await verifyCalendarDelegation(env, delegation.id, { account: `only@${DOMAIN}` }, deps);
+    await run(env, deps);
+    api.consentRevoked = true;
+    await db
+      .update(schema.schedulingCalendar)
+      .set({ nextSyncAt: new Date(0) })
+      .where(eq(schema.schedulingCalendar.hostId, only.id));
+    await runDueCalendarSyncs(deps, { scope: scope(env) });
+    expect((await getCalendarDelegation(env, delegation.id)).status).toBe("failing");
+    const emails = (await listNotifications(env.organizationId)).filter(
+      (row) => row.kind === "scheduling.delegation_failing",
+    );
+    expect(emails).toHaveLength(1);
+    api.consentRevoked = false;
+    await verifyCalendarDelegation(env, delegation.id, { account: `only@${DOMAIN}` }, deps);
+    expect(await listConnections(env, only.id)).toMatchObject([{ status: "active" }]);
+  });
+
+  test("verifying retries a mailbox straight away, instead of at the next hourly look", async () => {
+    const { env, api, deps, ana, delegation } = await connected();
+    api.goneMailboxes.add(`ana@${DOMAIN}`);
+    await db
+      .update(schema.schedulingCalendar)
+      .set({ nextSyncAt: new Date(0) })
+      .where(eq(schema.schedulingCalendar.hostId, ana.id));
+    await runDueCalendarSyncs(deps, { scope: scope(env) });
+    expect(await listConnections(env, ana.id)).toMatchObject([{ status: "needs_reauth" }]);
+    api.goneMailboxes.clear();
+    await verifyCalendarDelegation(env, delegation.id, { account: `ana@${DOMAIN}` }, deps);
+    await run(env, deps);
+    expect(await listConnections(env, ana.id)).toMatchObject([{ status: "active" }]);
   });
 
   test("an expired secret is the delegation's problem, not each host's", async () => {

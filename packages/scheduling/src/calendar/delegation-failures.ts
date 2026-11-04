@@ -175,8 +175,11 @@ export async function checkMailbox(
 }
 
 /**
- * Asks about the mailbox known to work, then a couple of others, leaving out the one in question. A
- * mailbox that's simply gone says nothing about the credentials, so that alone is never `refused`.
+ * Asks about the mailbox known to work, then a couple of others, leaving out the one in question,
+ * unless it's the only one there is. A mailbox that's simply gone says nothing about the credentials,
+ * so that alone is never `refused`. With one mailbox a revocation can't be told from a problem of its
+ * own, so that counts as the delegation's: the owners hear, and it recovers by itself. Nothing checked
+ * says nothing, so that's `inconclusive`.
  */
 export async function probeDelegation(
   delegation: DelegationRow,
@@ -197,7 +200,7 @@ export async function probeDelegation(
       ),
     )
     .limit(PROBE_MAILBOXES);
-  const mailboxes = [
+  const candidates = [
     ...new Set([
       ...(delegation.verifyAccount && delegation.verifyAccount !== opts.except
         ? [delegation.verifyAccount]
@@ -205,6 +208,8 @@ export async function probeDelegation(
       ...others.map((row) => row.account),
     ]),
   ].slice(0, PROBE_MAILBOXES);
+  const mailboxes = candidates.length > 0 || !opts.except ? candidates : [opts.except];
+  if (mailboxes.length === 0) return "inconclusive";
   let refused = false;
   let inconclusive = false;
   for (const mailbox of mailboxes) {

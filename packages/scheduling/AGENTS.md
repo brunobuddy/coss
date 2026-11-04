@@ -119,15 +119,17 @@ once, and every host on it gets their calendar with no consent screen.
   availability don't branch: only `clientFor` does. `encrypted_credentials` caches its access token (`refreshToken:
   null`), per mailbox. A delegation's credentials go only in `scheduling_calendar_delegation`, through `encryptSecret`.
 - **The mailbox is stamped when a host connects** (`accountId`), and `email` changing later moves nothing, since it's
-  "never an identity". Otherwise old events are orphaned, and a new connection has no write target. Only
-  `calendar_account` moves it (`releaseOldMailbox`, `hosts.ts`), refused while bookings are live. `match_host_email`
+  "never an identity". Otherwise old events are orphaned, and a new connection has no write target. A host has one
+  delegated mailbox, even if their email moves to another delegation's domain. Only `calendar_account` moves it
+  (`releaseOldMailbox`, `hosts.ts`), refused while bookings are live, under the host's lock, which `connectHost` takes
+  too before committing what it fetched. `match_host_email`
   trusts `host.email`, which the docs warn about: a customer taking emails from end users must turn it off.
 - **`runDueCalendarDelegations`** connects a batch per run. `connectHost` fetches everything first (calendars, a
   channel, the first read) and commits it all in one transaction, so a host goes from no calendar to a verified one,
   never hidden or empty, and adds nothing to the shared read queue. A delegation with hosts left runs again at once;
   `nudgeDelegations` asks for a run when a host is created or changed.
-- **Taking over an OAuth row** matches on a remote calendar's `externalId`, then the account, keeping calendars, write
-  target and ledger. Never revoke the old token: Google's revoke drops all of the project's tokens for that person,
+- **Taking over an OAuth row** matches only on the account, keeping calendars, write target and ledger. A calendar in
+  common proves nothing: a personal account can subscribe to a work calendar, and would get the wrong credentials. Never revoke the old token: Google's revoke drops all of the project's tokens for that person,
   which could be another host's. `saveConnection` leaves a delegated row alone, or a host's consent would replace the
   delegation's token. `markNeedsReauth` re-reads the row, so a late failure of the old tokens does nothing.
 - **Losing access**: every `auth` failure goes through `handleAccessLost`. Refused credentials flip every connection
@@ -135,7 +137,8 @@ once, and every host on it gets their calendar with no consent screen.
   every `status = 'active'` filter works with no join in the availability path, and one update brings them back. On
   the wire that status is `needs_reauth`. One mailbox gone only marks that connection, with no email to the host, who
   can't fix it. Graph's 403 can't say which, so `probeDelegation` asks about up to three mailboxes: a person leaving
-  must not hide everyone, including when they're the verified one. An inconclusive probe changes nothing and backs off.
+  must not hide everyone, including when they're the verified one. With no other mailbox to ask it can't tell, and
+  counts as the delegation's, so someone hears. An inconclusive probe changes nothing and backs off.
 - **Tokens outlive a revocation** by up to an hour: Google's and Entra's tokens aren't recalled. A delegated client
   raises `auth` for what a revocation looks like (Graph's inner `$batch` 401/403, Google's `insufficientPermissions`),
   or it'd pass as a failed read or a permanent write failure.

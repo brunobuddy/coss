@@ -9,7 +9,7 @@
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
 import { enqueueNotification } from "@coss/notifications";
-import { and, asc, eq, inArray, isNull, lt, lte, notExists, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, lt, lte, notExists, or, sql } from "drizzle-orm";
 import { SchedulingError } from "../errors.ts";
 import type {
   CalendarDelegationObjectOutput,
@@ -17,7 +17,7 @@ import type {
   UpdateCalendarDelegationRequestOutput,
 } from "../schemas.ts";
 import type { SchedulingEnvironment } from "../types.ts";
-import { type CalendarClient, CalendarError, type RemoteCalendar } from "./client.ts";
+import { type CalendarClient, CalendarError } from "./client.ts";
 import {
   addRemoteCalendars,
   type CalendarDeps,
@@ -286,6 +286,7 @@ export async function verifyCalendarDelegation(
     })
     .where(eq(schedulingCalendarDelegation.id, delegation.id));
   if (delegation.status === "failing") await restoreDelegation(delegation, deps);
+  await retryLostMailboxes(delegation);
   return getCalendarDelegation(scope, id);
 }
 
@@ -356,6 +357,7 @@ export async function updateCalendarDelegation(
     })
     .where(eq(schedulingCalendarDelegation.id, delegation.id))
     .returning();
+  if (encryptedCredentials) await retryLostMailboxes(delegation);
   // Tried above, so this outage is over.
   if (encryptedCredentials && delegation.verifyAccount && delegation.status === "failing") {
     await restoreDelegation(delegation, deps);
@@ -386,6 +388,19 @@ export async function deleteCalendarDelegation(
 
 type Host = { id: string; mailbox: string; existing: ConnectionRow | null };
 
+/** Someone just fixed what was wrong: mailboxes given up on for now are tried on the next run. */
+const retryLostMailboxes = (delegation: Pick<DelegationRow, "id" | "organizationId">) =>
+  db
+    .update(schedulingCalendarConnection)
+    .set({ lastErrorAt: new Date(0) })
+    .where(
+      and(
+        eq(schedulingCalendarConnection.delegationId, delegation.id),
+        eq(schedulingCalendarConnection.organizationId, delegation.organizationId),
+        eq(schedulingCalendarConnection.status, "needs_reauth"),
+      ),
+    );
+
 /** The mailbox a host wants: `calendar_account`, or their email if this delegation may match it. */
 const hostMailbox = (delegation: DelegationRow) =>
   delegation.matchHostEmail
@@ -403,6 +418,7 @@ async function hostsToConnect(delegation: DelegationRow, now: Date): Promise<Hos
         eq(schedulingHost.environmentId, delegation.environmentId),
         eq(schedulingHost.status, "active"),
         sql`split_part(${mailbox}, '@', 2) = ${delegation.domain}`,
+        // Any delegation's: a host has one delegated mailbox, and only `calendar_account` moves it.
         notExists(
           db
             .select({ id: schedulingCalendarConnection.id })
@@ -410,7 +426,7 @@ async function hostsToConnect(delegation: DelegationRow, now: Date): Promise<Hos
             .where(
               and(
                 eq(schedulingCalendarConnection.hostId, schedulingHost.id),
-                eq(schedulingCalendarConnection.delegationId, delegation.id),
+                isNotNull(schedulingCalendarConnection.delegationId),
               ),
             ),
         ),
@@ -436,14 +452,18 @@ async function hostsToConnect(delegation: DelegationRow, now: Date): Promise<Hos
   ];
 }
 
-/** A host's OAuth connection to this same mailbox, which the delegation takes over. */
+/**
+ * A host's OAuth connection to this same mailbox, which the delegation takes over. The account is
+ * what says so: a calendar in common doesn't, since a personal account can subscribe to a work
+ * calendar, and its credentials would then be replaced by another mailbox's. An alias of the mailbox
+ * isn't recognized, which leaves two connections reading one calendar: wasteful, and still right.
+ */
 async function connectionToUpgrade(
   tx: Executor,
   delegation: DelegationRow,
   host: Host,
-  remote: readonly RemoteCalendar[],
 ): Promise<ConnectionRow | null> {
-  const owned = await tx
+  const [owned] = await tx
     .select()
     .from(schedulingCalendarConnection)
     .where(
@@ -452,32 +472,11 @@ async function connectionToUpgrade(
         eq(schedulingCalendarConnection.organizationId, delegation.organizationId),
         eq(schedulingCalendarConnection.provider, delegation.provider),
         isNull(schedulingCalendarConnection.delegationId),
+        sql`lower(${schedulingCalendarConnection.accountId}) = ${host.mailbox}`,
       ),
     )
     .for("update");
-  if (owned.length === 0) return null;
-  const sameCalendar = await tx
-    .select({ connectionId: schedulingCalendar.connectionId })
-    .from(schedulingCalendar)
-    .where(
-      and(
-        eq(schedulingCalendar.organizationId, delegation.organizationId),
-        inArray(
-          schedulingCalendar.connectionId,
-          owned.map((row) => row.id),
-        ),
-        inArray(
-          schedulingCalendar.externalId,
-          remote.map((calendar) => calendar.externalId),
-        ),
-      ),
-    )
-    .limit(1);
-  return (
-    owned.find((row) => row.id === sameCalendar[0]?.connectionId) ??
-    owned.find((row) => row.accountId.toLowerCase() === host.mailbox) ??
-    null
-  );
+  return owned ?? null;
 }
 
 /**
@@ -525,7 +524,34 @@ async function connectHost(
     throw new CalendarError("transient", "read_failed", "Couldn't read the calendar.");
   const now = deps.now?.() ?? new Date();
   await db.transaction(async (tx) => {
-    const upgraded = host.existing ? null : await connectionToUpgrade(tx, delegation, host, remote);
+    // All of that took time. `updateHost` changes a mailbox under this same lock, so what's asked for
+    // now is settled: a connection to a mailbox nobody wants any more would never be looked at again.
+    const [current] = await tx
+      .select({ mailbox: hostMailbox(delegation) })
+      .from(schedulingHost)
+      .where(
+        and(
+          eq(schedulingHost.id, host.id),
+          eq(schedulingHost.organizationId, delegation.organizationId),
+        ),
+      )
+      .for("update");
+    if (!current) return;
+    if (host.existing) {
+      const [stillThere] = await tx
+        .select({ id: schedulingCalendarConnection.id })
+        .from(schedulingCalendarConnection)
+        .where(
+          and(
+            eq(schedulingCalendarConnection.id, host.existing.id),
+            eq(schedulingCalendarConnection.organizationId, delegation.organizationId),
+          ),
+        );
+      if (!stillThere) return;
+    } else if (current.mailbox !== host.mailbox) {
+      return;
+    }
+    const upgraded = host.existing ? null : await connectionToUpgrade(tx, delegation, host);
     const fields = {
       delegationId: delegation.id,
       encryptedCredentials: encryptCredentials(tokens, deps.secretsKeys),
