@@ -296,6 +296,28 @@ describe("repeated changes", () => {
   });
 });
 
+test("a move superseding a notice the worker already claimed stops it going out", async () => {
+  const s = await setUp();
+  const { booking } = await book(s);
+  await rescheduleBooking(s.env, booking.id, { startMs: at("10:00") }, deps, actor);
+  const n = notifier();
+  const send = n.notification.notifier.email;
+  let moved = false;
+  n.notification.notifier.email = async (message) => {
+    if (!moved) {
+      moved = true;
+      await rescheduleBooking(s.env, booking.id, { startMs: at("11:00") }, deps, actor);
+    }
+    return send(message);
+  };
+  await run(s.env, n.notification);
+  await run(s.env, n.notification);
+  const toAttendee = n.emails.filter(
+    (email) => email.to === attendee.email && email.subject.startsWith("Rescheduled"),
+  );
+  expect(toAttendee.length).toBe(1);
+});
+
 describe("reminders", () => {
   const dayBefore = () => new Date(at("09:00") - 24 * 3_600_000 + 1000);
 

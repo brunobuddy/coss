@@ -664,7 +664,16 @@ export async function runDueSchedulingNotifications(
             eq(schedulingBooking.organizationId, row.organizationId),
           ),
         );
-      if (!found || isStale(row, found)) {
+      // Claimed a while ago, maybe: carried forward or superseded since.
+      const [current] = await db
+        .select({
+          bookingVersion: schedulingNotification.bookingVersion,
+          finishedAt: schedulingNotification.finishedAt,
+        })
+        .from(schedulingNotification)
+        .where(eq(schedulingNotification.id, row.id));
+      if (!current || current.finishedAt) continue;
+      if (!found || isStale({ ...row, bookingVersion: current.bookingVersion }, found)) {
         await finish(row, "stale", now);
         continue;
       }

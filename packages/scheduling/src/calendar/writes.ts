@@ -143,7 +143,7 @@ async function redrive(row: LedgerRow, now: Date): Promise<void> {
     );
 }
 
-/** A meeting this worker made is spare once the row names another: Zoom has no idempotency key. */
+/** An event this worker made is spare once the row names another or has gone. */
 async function dropSpareEvent(
   row: LedgerRow,
   client: CalendarClient,
@@ -159,16 +159,44 @@ async function dropSpareEvent(
         eq(schedulingCalendarEvent.organizationId, row.organizationId),
       ),
     );
-  if (current?.providerEventId && current.providerEventId !== providerEventId) {
+  // With no row left, nothing else will ever clean up what this request made.
+  if (!current || (current.providerEventId && current.providerEventId !== providerEventId)) {
     await client.deleteEvent(calendarId, providerEventId).catch(() => {});
   }
 }
 
-async function setMeetingLink(booking: BookingRow, url: string, now: Date): Promise<void> {
+async function setMeetingLink(
+  booking: BookingRow,
+  hostId: string,
+  url: string,
+  now: Date,
+): Promise<void> {
   const location = booking.location;
   if (!location || location.type === "link") return;
   const zoom = location.type === "zoom";
   await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ location: schedulingBooking.location })
+      .from(schedulingBooking)
+      .where(
+        and(
+          eq(schedulingBooking.id, booking.id),
+          eq(schedulingBooking.organizationId, booking.organizationId),
+        ),
+      )
+      .for("update");
+    const [assigned] = await tx
+      .select({ hostId: schedulingBookingHost.hostId })
+      .from(schedulingBookingHost)
+      .where(
+        and(
+          eq(schedulingBookingHost.bookingId, booking.id),
+          eq(schedulingBookingHost.organizationId, booking.organizationId),
+          eq(schedulingBookingHost.hostId, hostId),
+        ),
+      );
+    // A slow answer for a host who's since been replaced: their meeting isn't this booking's.
+    if (!assigned || current?.location?.type !== location.type) return;
     const [updated] = await tx
       .update(schedulingBooking)
       .set({
@@ -399,7 +427,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarDeps): Promise<void> {
     }
     if (written.meetingUrl) {
       if (session) await setSessionMeetingLink(session, written.meetingUrl, now);
-      else if (booking) await setMeetingLink(booking, written.meetingUrl, now);
+      else if (booking) await setMeetingLink(booking, row.hostId, written.meetingUrl, now);
     }
   } catch (error) {
     if (!(error instanceof CalendarError)) {

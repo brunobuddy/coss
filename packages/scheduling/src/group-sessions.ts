@@ -18,6 +18,10 @@ export async function withSessionLocation<T extends BookingRow>(
   booking: T,
 ): Promise<T> {
   if (!booking.groupSessionId) return booking;
+  // Someone who left isn't told where a later meeting of this session is.
+  if (booking.status === "cancelled" || booking.status === "declined") {
+    return { ...booking, location: null };
+  }
   const [session] = await executor
     .select({
       location: schedulingGroupSession.location,

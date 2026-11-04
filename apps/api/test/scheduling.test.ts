@@ -494,6 +494,37 @@ describe("client API", () => {
     expect(page.next_cursor).toBeNull();
   });
 
+  test("a manage page offers times for a pool with a required host", async () => {
+    const s = await setUp();
+    await call(s.app, s.key, "POST", "/hosts", { uid: "member", name: "M", time_zone: "UTC" });
+    await call(s.app, s.key, "POST", "/hosts/member/schedules", {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+    });
+    const pool = (await (
+      await call(s.app, s.key, "POST", "/event_types", {
+        title: "Supervised",
+        kind: "pool",
+        duration_minutes: 30,
+        hosts: [{ host: s.host, role: "required" }, { host: "member" }],
+      })
+    ).json()) as { id: string };
+    const created = (await (
+      await call(s.app, s.key, "POST", "/bookings", booking(pool.id, at("09:00")))
+    ).json()) as { id: string };
+    const manage = (await (
+      await call(s.app, s.key, "POST", `/bookings/${created.id}/manage_sessions`)
+    ).json()) as { token: string };
+    const slots = (await (
+      await client(
+        s.app,
+        manage.token,
+        "GET",
+        `/booking/slots?start=${at("10:00")}&end=${at("11:00")}`,
+      )
+    ).json()) as { data: unknown[] };
+    expect(slots.data.length).toBeGreaterThan(0);
+  });
+
   test("a fixed attendee can't be replaced from the browser", async () => {
     const s = await setUp();
     const { token } = await bookerSession(s, {

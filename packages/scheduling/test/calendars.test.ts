@@ -836,6 +836,81 @@ describe("writing to calendars", () => {
     expect(moved.location).toEqual({ type: "google_meet" });
   });
 
+  test("a slow answer from the old host can't put their link on a moved booking", async () => {
+    const setup = await setUp();
+    const api = new FakeGoogleCalendarApi();
+    const other = await createHost(setup.env, { name: "Dr. Chen", time_zone: "UTC" });
+    await createSchedule(setup.env, other.id, {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+    });
+    const meet = await createEventType(setup.env, {
+      title: "Video",
+      kind: "pool",
+      duration_minutes: 30,
+      locations: [{ type: "google_meet" }],
+      hosts: [
+        { host: setup.host.id, role: "member", weight: 100, schedule: null },
+        { host: other.id, role: "member", weight: 100, schedule: null },
+      ],
+    } as never);
+    const plain = testSchedulingDeps({ now: () => NOW });
+    let bookingId = "";
+    let moved = false;
+    const deps: CalendarDeps = {
+      ...calendarDeps(api),
+      fetcher: async (input, init) => {
+        const res = await api.fetch(input, init);
+        if (bookingId && !moved && init?.method === "POST" && String(input).includes("/events")) {
+          moved = true;
+          await rescheduleBooking(
+            setup.env,
+            bookingId,
+            { startMs: at("10:00"), host: other.id },
+            plain,
+            actor,
+          );
+        }
+        return res;
+      },
+    };
+    await connectGoogle(setup.env, setup.host.id, deps);
+    await runDueCalendarSyncs(deps, { scope: scope(setup.env) });
+    const { booking } = await createBooking(
+      setup.env,
+      { eventType: meet.id, startMs: at("09:00"), host: setup.host.id, attendee },
+      plain,
+      actor,
+    );
+    bookingId = booking.id;
+    await runDueCalendarWrites(deps, { scope: scope(setup.env) });
+    expect(moved).toBe(true);
+    expect((await getBooking(setup.env, booking.id, plain)).location).toEqual({
+      type: "google_meet",
+    });
+  });
+
+  test("an event made for a ledger row that's gone doesn't stay on the calendar", async () => {
+    const w = await writable();
+    await book(w);
+    let dropped = false;
+    const deps: CalendarDeps = {
+      ...w.deps,
+      fetcher: async (input, init) => {
+        const res = await w.api.fetch(input, init);
+        if (!dropped && init?.method === "POST" && String(input).includes("/events")) {
+          dropped = true;
+          await db
+            .delete(schema.schedulingCalendarEvent)
+            .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
+        }
+        return res;
+      },
+    };
+    await runDueCalendarWrites(deps, { scope: scope(w.env) });
+    expect(dropped).toBe(true);
+    expect([...w.api.events.values()].filter((event) => !event.deleted)).toEqual([]);
+  });
+
   test("a host deleting the event is recorded, and the booking stays", async () => {
     const w = await writable();
     const { booking } = await book(w);

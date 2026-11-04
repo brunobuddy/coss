@@ -259,7 +259,7 @@ export function createSchedulingClientRoutes(opts: {
   const slotsFor = async (
     c: Context<ClientEnv>,
     eventType: string,
-    hostRef: string | undefined,
+    hostRefs: readonly string[] | undefined,
     durationMinutes?: number,
     attributes?: Record<string, string | string[]>,
   ) => {
@@ -274,7 +274,7 @@ export function createSchedulingClientRoutes(opts: {
       fromMs: instant(query.data.start, "start"),
       toMs: instant(query.data.end, "end"),
       nowMs: (deps.now?.() ?? new Date()).getTime(),
-      hostRef,
+      hostRefs,
       attributes,
       durationMinutes: durationMinutes ?? query.data.duration_minutes,
     });
@@ -290,7 +290,7 @@ export function createSchedulingClientRoutes(opts: {
     slotsFor(
       c,
       eventTypeOf(c),
-      c.var.session.session.hostId ?? undefined,
+      c.var.session.session.hostId ? [c.var.session.session.hostId] : undefined,
       undefined,
       sessionAttributes(c.var.session.session, deps),
     ),
@@ -351,7 +351,7 @@ export function createSchedulingClientRoutes(opts: {
     const id = bookingOf(c);
     const booking = await getBooking(c.var.session.env, id, deps);
     const duration = (Date.parse(booking.end) - Date.parse(booking.start)) / 60_000;
-    return slotsFor(c, booking.event_type, booking.hosts[0], duration);
+    return slotsFor(c, booking.event_type, booking.hosts, duration);
   });
 
   router.post("/booking/reschedule", async (c) => {

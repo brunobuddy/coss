@@ -754,3 +754,34 @@ test("a host with past group seats can be deleted, and the seats stay", async ()
   expect(after.status).toBe("cancelled");
   expect(after.group_session).toBeNull();
 });
+
+test("someone who left a session isn't shown where its next meeting is", async () => {
+  const env = await tenantEnv();
+  const host = await hostWithHours(env);
+  const eventType = await createEventType(env, {
+    title: "Class",
+    kind: "group",
+    duration_minutes: 30,
+    capacity: 3,
+    locations: [{ type: "link", url: "https://meet.example.com/room" }],
+    hosts: [{ host: host.id, role: "member", weight: 100, schedule: null }],
+  } as never);
+  const { booking } = await createBooking(env, seat(eventType.id, "a"), deps, actor);
+  await cancelBooking(env, booking.id, deps, actor);
+  expect((await getBooking(env, booking.id, deps)).location).toBeNull();
+});
+
+test("an expired seat reviving a session is held to hours again", async () => {
+  const env = await tenantEnv();
+  const host = await hostWithHours(env);
+  const eventType = await groupOf(env, host.id);
+  const { booking: hold } = await createHold(env, seat(eventType.id, "a"), deps, actor);
+  await expireSeats(hold.group_session, [hold.id]);
+  await db
+    .update(schema.schedulingSchedule)
+    .set({ rules: [{ days: [0, 1, 2, 3, 4, 5, 6], startMinute: 780, endMinute: 1020 }] })
+    .where(eq(schema.schedulingSchedule.hostId, host.id));
+  expect(await code(confirmHold(env, hold.id, { ifStillFree: true }, deps, actor))).toBe(
+    "slot_unavailable",
+  );
+});

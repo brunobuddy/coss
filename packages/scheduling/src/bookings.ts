@@ -1458,7 +1458,7 @@ export async function confirmHold(
     }
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
     const next: FinishedState = eventType.requiresApproval ? "pending_approval" : "confirmed";
-    await convertClaims(tx, booking, eventType, env, next, expired);
+    await convertClaims(tx, booking, eventType, env, next, expired ? nowOf(deps) : null);
     const updated = await bumped(tx, booking, {
       status: next,
       holdExpiresAt: null,
@@ -1527,6 +1527,25 @@ async function convertSeat(
   return true;
 }
 
+/** Joining a session someone else is keeping alive commits the host to nothing new. */
+async function sessionClaimIsLive(tx: Executor, booking: BookingRow): Promise<boolean> {
+  if (!booking.groupSessionId) return false;
+  const [claim] = await tx
+    .select({ id: schedulingClaim.id })
+    .from(schedulingClaim)
+    .where(
+      and(
+        eq(schedulingClaim.groupSessionId, booking.groupSessionId),
+        eq(schedulingClaim.organizationId, booking.organizationId),
+        or(
+          isNull(schedulingClaim.liveUntil),
+          sql`${schedulingClaim.liveUntil} > clock_timestamp()`,
+        ),
+      ),
+    );
+  return Boolean(claim);
+}
+
 /** It stopped counting towards hours and limits when it expired, so they apply again. */
 async function recheckExpiredHold(
   tx: Transaction,
@@ -1534,11 +1553,13 @@ async function recheckExpiredHold(
   eventType: EventTypeRow,
   env: SchedulingEnvironment,
   hosts: readonly HostRow[],
+  nowMs: number,
 ): Promise<void> {
-  const rule = slotRuleOf(
-    eventType,
-    (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS,
-  );
+  // Notice was met when it was held: being late to confirm shouldn't count against it.
+  const rule = {
+    ...slotRuleOf(eventType, (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS),
+    minNoticeMinutes: 0,
+  };
   const startMs = booking.startAt.getTime();
   await lockHostsAndMemberships(
     tx,
@@ -1565,8 +1586,7 @@ async function recheckExpiredHold(
       rule,
       scope: env,
       startMs,
-      // Notice was met when it was held: being late to confirm shouldn't count against it.
-      nowMs: booking.createdAt.getTime(),
+      nowMs,
       failureMode: await calendarFailureModeOf(tx, env),
       ttlSeconds: null,
     },
@@ -1589,7 +1609,7 @@ async function convertClaims(
   eventType: EventTypeRow,
   env: SchedulingEnvironment,
   next: FinishedState,
-  expired: boolean,
+  expiredAt: Date | null,
 ): Promise<void> {
   const ttlSeconds = next === "pending_approval" ? eventType.approvalTtlMinutes * 60 : null;
   const hostRows = await tx
@@ -1612,10 +1632,12 @@ async function convertClaims(
   if (hosts.length === 0) throw slotLost("host_unavailable");
   try {
     await inSavepoint(tx, async (savepoint) => {
+      if (expiredAt && !(await sessionClaimIsLive(savepoint, booking))) {
+        await recheckExpiredHold(savepoint, booking, eventType, env, hosts, expiredAt.getTime());
+      }
       if (booking.groupSessionId) {
         if (await convertSeat(savepoint, booking, ttlSeconds)) return;
       } else {
-        if (expired) await recheckExpiredHold(savepoint, booking, eventType, env, hosts);
         await releaseBookingClaims(savepoint, booking);
       }
       const occupied = {
@@ -1812,7 +1834,7 @@ export async function approveBooking(
     if (booking.status === "confirmed") return booking;
     if (booking.status !== "pending_approval") throw notChangeable(booking);
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
-    await convertClaims(tx, booking, eventType, env, "confirmed", false);
+    await convertClaims(tx, booking, eventType, env, "confirmed", null);
     const updated = await bumped(tx, booking, { status: "confirmed", approvalExpiresAt: null });
     const { hostIds } = await participants(tx, updated);
     await showOnCalendars(tx, updated, hostIds);
