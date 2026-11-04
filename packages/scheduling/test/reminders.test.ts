@@ -609,6 +609,60 @@ describe("changing a list", () => {
     expect(subjects(n).filter(isReminder).length).toBe(1);
   });
 
+  const timedAt = (before_minutes: number) =>
+    rule({ key: "day", anchor: "start", before_minutes, send: ["email_attendee"] });
+
+  test("made sooner than now, it isn't lost when the walk gets there", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, { reminders: [timedAt(60)] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [timedAt(120)] });
+    // Its new moment is already behind the walk, and saving a list sends nothing at once.
+    await runDueReminderSyncs({ now: () => new Date(START - 90 * MINUTE) }, scope(s));
+    const waiting = (await rows(s, booking.id)).filter((row) => row.reminder_key === "day");
+    expect(waiting.map((row) => row.outcome)).toEqual([null]);
+    expect(subjects(await runAt(s, START - 89 * MINUTE)).filter(isReminder)).toEqual([]);
+    // So it goes at the moment it had.
+    expect(subjects(await runAt(s, START - 60 * MINUTE)).filter(isReminder).length).toBe(1);
+  });
+
+  test("made later after it went out, it doesn't go again", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, { reminders: [timedAt(120)] });
+    await book(s);
+    expect(subjects(await runAt(s, START - 120 * MINUTE)).filter(isReminder).length).toBe(1);
+    await updateSettings(s.env, { reminders: [timedAt(60)] });
+    await runDueReminderSyncs({ now: () => new Date(START - 110 * MINUTE) }, scope(s));
+    expect(subjects(await runAt(s, START - 60 * MINUTE)).filter(isReminder)).toEqual([]);
+  });
+
+  test("a walk moves what's waiting to the rule's new moment, sooner or later", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, { reminders: [timedAt(60)] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [timedAt(120)] });
+    await runDueReminderSyncs({ now: () => new Date(START - 200 * MINUTE) }, scope(s));
+    const found = (await rows(s, booking.id)).filter((row) => row.reminder_key === "day");
+    expect(found.length).toBe(1);
+    expect(found[0]?.due_at).toBe(new Date(START - 120 * MINUTE).toISOString());
+    expect(subjects(await runAt(s, START - 120 * MINUTE)).filter(isReminder).length).toBe(1);
+    expect(subjects(await runAt(s, START - 60 * MINUTE)).filter(isReminder)).toEqual([]);
+  });
+
+  test("a recipient taken off and put back doesn't get it twice", async () => {
+    const s = await setUp();
+    const to = (send: string[]) => rule({ key: "day", anchor: "start", before_minutes: 120, send });
+    await updateSettings(s.env, { reminders: [to(["email_attendee", "email_host"])] });
+    await book(s);
+    const first = await runAt(s, START - 120 * MINUTE);
+    expect(first.emails.filter((email) => isReminder(email.subject)).length).toBe(2);
+    await updateSettings(s.env, { reminders: [to(["email_host"])] });
+    await runDueReminderSyncs({ now: () => new Date(START - 100 * MINUTE) }, scope(s));
+    await updateSettings(s.env, { reminders: [to(["email_attendee", "email_host"])] });
+    await runDueReminderSyncs({ now: () => new Date(START - 90 * MINUTE) }, scope(s));
+    expect(subjects(await runAt(s, START - 80 * MINUTE)).filter(isReminder)).toEqual([]);
+  });
+
   test("a deleted reminder doesn't go, even before the walk", async () => {
     const s = await setUp();
     await updateSettings(s.env, { reminders: [day] });

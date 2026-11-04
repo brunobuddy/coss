@@ -315,10 +315,14 @@ const isTimedRow = () =>
   );
 
 /**
- * Makes a confirmed booking's timed rows what its rules and times now ask for. `newBooking`: the
- * booking itself just changed, so a passed moment is recorded and `send_if_late` catches up. A list
- * that changed adds only moments still ahead: saving a list never sends anything right away, to
- * every upcoming booking at once. Either way a row its rule still wants stays, due or not.
+ * Makes a confirmed booking's timed rows what its rules and times now ask for. What identifies a row
+ * is its rule, recipient and moment, not its timing: a rule given a new offset is the same rule, so
+ * a row still waiting takes the new timing, and one that went out counts as done rather than leaving
+ * a new one to send.
+ *
+ * `newBooking`: the booking itself just changed, so a passed moment is recorded and `send_if_late`
+ * catches up. A list that changed adds only moments still ahead: saving a list never sends anything
+ * right away, to every upcoming booking at once. A row made sooner than now keeps its old moment.
  */
 export async function reconcileReminders(
   tx: Executor,
@@ -327,33 +331,76 @@ export async function reconcileReminders(
   now: Date,
   opts: { newBooking: boolean },
 ): Promise<void> {
-  const desired = [
-    ...rules
-      .filter((rule) => rule.anchor === "start" || rule.anchor === "end")
-      .flatMap((rule) => rowsOfRule(rule, booking, now)),
-    ...momentRows(booking),
-  ];
-  await tx
-    .update(schedulingNotification)
-    .set({ finishedAt: now, outcome: "superseded", leaseUntil: null })
+  const timedRules = rules.filter((rule) => rule.anchor === "start" || rule.anchor === "end");
+  const moments = momentRows(booking);
+  const momentKeys = new Set(moments.map((row) => row.dedupeKey));
+  const existing = await tx
+    .select()
+    .from(schedulingNotification)
     .where(
       and(
         eq(schedulingNotification.bookingId, booking.id),
         eq(schedulingNotification.organizationId, booking.organizationId),
-        isNull(schedulingNotification.finishedAt),
         isTimedRow(),
-        notInArray(
-          schedulingNotification.dedupeKey,
-          desired.map((row) => row.dedupeKey),
-        ),
       ),
     );
-  await insertReminderRows(
-    tx,
-    opts.newBooking
-      ? desired
-      : desired.filter((row) => row.kind !== "reminder" || row.dueAt.getTime() > now.getTime()),
-  );
+  const identity = (key: string, target: Target) => `${key}:${target.channel}:${target.recipient}`;
+  const present = new Set<string>();
+  const dropped: string[] = [];
+  for (const row of existing) {
+    const waiting = row.finishedAt === null;
+    if (row.kind !== "reminder") {
+      if (waiting && !momentKeys.has(row.dedupeKey)) dropped.push(row.id);
+      continue;
+    }
+    const rule = timedRules.find(
+      (candidate) => candidate.key === row.reminderKey && candidate.anchor === row.reminderAnchor,
+    );
+    const moment = rule && anchorMoment(rule, booking, now);
+    const wanted =
+      rule &&
+      moment &&
+      row.anchorAt?.getTime() === moment.getTime() &&
+      targetsOf(rule).some(
+        (target) => target.channel === row.channel && target.recipient === row.recipient,
+      );
+    if (wanted) {
+      if (row.outcome !== "stale" && row.outcome !== "superseded") {
+        present.add(identity(rule.key, row));
+      }
+      const due = moment.getTime() + offsetOf(rule) * MINUTE_MS;
+      if (waiting && offsetOf(rule) !== row.reminderOffsetMinutes && due > now.getTime()) {
+        await tx
+          .update(schedulingNotification)
+          .set({ dueAt: new Date(due), reminderOffsetMinutes: offsetOf(rule) })
+          .where(eq(schedulingNotification.id, row.id));
+      }
+      continue;
+    }
+    // Queued by a task from before anchors, mid-deploy, and already due: nothing will replace it.
+    if (row.anchorAt === null && row.dueAt.getTime() <= now.getTime()) continue;
+    if (waiting) dropped.push(row.id);
+  }
+  if (dropped.length > 0) {
+    await tx
+      .update(schedulingNotification)
+      .set({ finishedAt: now, outcome: "superseded", leaseUntil: null })
+      .where(inArray(schedulingNotification.id, dropped));
+  }
+  const missing = timedRules
+    .flatMap((rule) =>
+      rowsOfRule(rule, booking, now).filter(
+        (row) =>
+          !present.has(
+            identity(rule.key, {
+              channel: row.channel as Target["channel"],
+              recipient: row.recipient as Target["recipient"],
+            }),
+          ),
+      ),
+    )
+    .filter((row) => opts.newBooking || row.dueAt.getTime() > now.getTime());
+  await insertReminderRows(tx, [...missing, ...moments]);
 }
 
 /** The booking's over before its time: nothing timed from it will happen. */
