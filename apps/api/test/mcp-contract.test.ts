@@ -589,7 +589,7 @@ describe("coss-mcp against the API", () => {
     const blocked = await call("diagnose_verification", { to: "+19005551234" });
     expect(blocked.isError).toBe(false);
     expect(blocked.data.verdict).toBe("blocked");
-    expect(blocked.data.reasons[0].explanation).toContain("premium-rate");
+    expect(blocked.data.reasons[0].explanation).toContain("SMS pumping");
 
     // Sign: a draft, then waiting on its embedded signer.
     const document = await call("upload_sign_document", { path: "nda.pdf" });
