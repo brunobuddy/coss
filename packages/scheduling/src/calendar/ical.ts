@@ -256,15 +256,21 @@ export function holidaysFromIcs(
           String(vevent.getFirstPropertyValue("recurrence-id")),
         ),
       );
+      // Every occurrence lasts as long as the first: a three-day closure is one every year.
+      const first = event.startDate.toString();
+      const end = event.endDate?.isDate ? event.endDate.toString() : shiftDate(first, 1);
+      if (end > shiftDate(first, MAX_HOLIDAY_SPAN_DAYS)) throw new UnreadableCalendarData();
+      const days = Math.max(1, Math.round((Date.parse(end) - Date.parse(first)) / DAY));
       const iterator = event.iterator();
       cyclesLeft = budget.cycles;
       try {
         for (let next = iterator.next(), count = 0; next; next = iterator.next(), count++) {
-          if (count > MAX_OCCURRENCES_PER_EVENT) break;
+          // Stopping here would be a partial read, and what's missing would be taken away.
+          if (count > MAX_OCCURRENCES_PER_EVENT) throw new UnreadableCalendarData();
           const date = next.toString();
           if (date >= to) break;
           if (!moved.has(date)) {
-            add(date, shiftDate(date, 1), nameOf(master), regionOf(master));
+            add(date, shiftDate(date, days), nameOf(master), regionOf(master));
           }
         }
       } catch (error) {

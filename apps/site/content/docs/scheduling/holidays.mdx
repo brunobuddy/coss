@@ -48,7 +48,8 @@ Give `ics_url` instead of `country`, for company closures or anything else. It's
 since links like these often hold an access token, so it's never shown again. Only whole-day events count. Feeds are only
 read in live environments.
 
-If a feed can't be read, what's there stays, and `last_error` says so. It never takes holidays away because of a bad read.
+If a feed can't be read, what's there stays, and `last_error` says so. It never takes holidays away because of a bad read,
+and a feed that's suddenly empty counts as one: delete the calendar to take them all away.
 
 ## Cover and bookings
 

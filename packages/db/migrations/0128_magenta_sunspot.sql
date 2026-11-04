@@ -20,6 +20,7 @@ CREATE TABLE "scheduling_holiday_calendar" (
 	"existing_bookings" "scheduling_out_of_office_existing" DEFAULT 'leave' NOT NULL,
 	"last_read_at" timestamp with time zone,
 	"last_error" text,
+	"settings_changed_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"next_sync_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"lease_until" timestamp with time zone,
 	"deleted_at" timestamp with time zone,

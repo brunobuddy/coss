@@ -1144,6 +1144,8 @@ export const schedulingHolidayCalendar = pgTable(
     existingBookings: schedulingOutOfOfficeExisting("existing_bookings").notNull().default("leave"),
     lastReadAt: instant("last_read_at"),
     lastError: text("last_error"),
+    // Not `updated_at`, which every sync moves: an entry newer than this is someone's own choice.
+    settingsChangedAt: instant("settings_changed_at").notNull().defaultNow(),
     nextSyncAt: instant("next_sync_at").notNull().defaultNow(),
     leaseUntil: instant("lease_until"),
     deletedAt: instant("deleted_at"),

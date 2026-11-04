@@ -440,6 +440,8 @@ async function reassignOne(
         : ranked({ required: [], members: candidates.members }, `${booking.id}:${booking.version}`);
       const seen = new Set<string>();
       choices = [...preferred, ...ranking].filter((host) => {
+        // Preferring someone doesn't make them fit how this was routed: `any_host` says that.
+        if (!memberIds.has(host.id) && !anyHost) return false;
         if (opts.toHosts && !opts.toHosts.has(host.id)) return false;
         if (seen.has(host.id) || taken.has(host.id)) return false;
         seen.add(host.id);
@@ -654,6 +656,7 @@ async function reassignSession(
       : ranked({ required: [], members: candidates.members }, `${session.id}:${now.getTime()}`);
     const seen = new Set<string>([session.hostId]);
     choices = [...preferred, ...others].filter((host) => {
+      if (!memberIds.has(host.id) && !anyHost) return false;
       if (opts.toHosts && !opts.toHosts.has(host.id)) return false;
       if (seen.has(host.id)) return false;
       seen.add(host.id);

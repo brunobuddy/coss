@@ -24,6 +24,7 @@ import {
   type SchedulingEnvironment,
   updateHolidayCalendar,
   updateHost,
+  updateOutOfOffice,
 } from "../src/index.ts";
 import { testSchedulingDeps } from "../src/testing.ts";
 
@@ -234,6 +235,36 @@ describe("reading a feed", () => {
     ].join("\n");
     const found = holidaysFromIcs(ics(event), "2030-01-01", "2033-01-01");
     expect(found.map((holiday) => holiday.date)).toEqual(["2030-01-05", "2032-01-05"]);
+  });
+
+  test("every occurrence lasts as long as the first", () => {
+    const event = [
+      "UID:closure@test",
+      "DTSTAMP:20300101T000000Z",
+      "DTSTART;VALUE=DATE:20301224",
+      "DTEND;VALUE=DATE:20301227",
+      "RRULE:FREQ=YEARLY",
+      "SUMMARY:Closure",
+    ].join("\n");
+    const found = holidaysFromIcs(ics(event), "2031-01-01", "2032-01-01");
+    expect(found.map((holiday) => holiday.date)).toEqual([
+      "2031-12-24",
+      "2031-12-25",
+      "2031-12-26",
+    ]);
+  });
+
+  test("a rule too long to reach the window is a failed read, not fewer holidays", () => {
+    const event = [
+      "UID:daily@test",
+      "DTSTAMP:20000101T000000Z",
+      "DTSTART;VALUE=DATE:20000101",
+      "RRULE:FREQ=DAILY",
+      "SUMMARY:Every day",
+    ].join("\n");
+    expect(() => holidaysFromIcs(ics(event), "2031-01-01", "2032-01-01")).toThrow(
+      UnreadableCalendarData,
+    );
   });
 
   test("a moved occurrence is where it moved to", () => {
@@ -462,6 +493,66 @@ describe("syncing", () => {
       expect(after.last_error).toBeTruthy();
       expect(after.last_error).not.toContain("secret-token");
     }
+  });
+
+  test("a feed that's suddenly empty keeps what's there", async () => {
+    const env = await environment();
+    const a = await host(env, "A");
+    const created = await calendar(env, [a.id]);
+    const { state, transport } = feed(ics(day("2031-01-05", "One")));
+    await sync(env, transport);
+    state.body = ics();
+    await dueAgain(created.id);
+    await sync(env, transport);
+    expect(await datesOf(env, a.id)).toEqual(["2031-01-05"]);
+    expect((await getHolidayCalendar(env, created.id)).last_error).toBeTruthy();
+  });
+
+  test("a feed with nothing in it yet is fine", async () => {
+    const env = await environment();
+    const a = await host(env, "A");
+    const created = await calendar(env, [a.id]);
+    await sync(env, feed(ics()).transport);
+    expect((await getHolidayCalendar(env, created.id)).last_error).toBeNull();
+  });
+
+  test("changing who covers reaches the entries already there", async () => {
+    const env = await environment();
+    const [a, b, c] = [await host(env, "A"), await host(env, "B"), await host(env, "C")];
+    const created = await calendar(env, [a.id], { delegates: [b.id] });
+    const { transport } = feed(ics(day("2031-01-05", "One")));
+    await sync(env, transport);
+    expect((await entriesOf(env, a.id))[0]?.delegates).toEqual([b.id]);
+    await updateHolidayCalendar(
+      env,
+      created.id,
+      { delegates: [c.id], existing_bookings: "reassign" },
+      plain,
+    );
+    await sync(env, transport);
+    expect((await entriesOf(env, a.id))[0]).toMatchObject({
+      delegates: [c.id],
+      existing_bookings: "reassign",
+    });
+  });
+
+  test("someone's own change to an entry isn't undone by the next sync", async () => {
+    const env = await environment();
+    const [a, b, c] = [await host(env, "A"), await host(env, "B"), await host(env, "C")];
+    const created = await calendar(env, [a.id], { delegates: [b.id] });
+    const { transport } = feed(ics(day("2031-01-05", "One")));
+    await sync(env, transport);
+    const [entry] = await entriesOf(env, a.id);
+    await updateOutOfOffice(env, entry?.id as string, { delegates: [c.id] } as never, plain, {
+      kind: "system",
+    });
+    await db
+      .update(schema.schedulingHolidayCalendar)
+      .set({ settingsChangedAt: new Date("2020-01-01T00:00:00Z") })
+      .where(eq(schema.schedulingHolidayCalendar.id, created.id));
+    await dueAgain(created.id);
+    await sync(env, transport);
+    expect((await entriesOf(env, a.id))[0]?.delegates).toEqual([c.id]);
   });
 
   test("a good read clears the error, and the names are on its own list", async () => {

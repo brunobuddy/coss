@@ -12,6 +12,7 @@ import {
   getBookingOverview,
   listBookableEventTypes,
   listEventTypes,
+  runDueReassignments,
 } from "@coss/scheduling";
 import { testPng, testSchedulingDeps } from "@coss/scheduling/testing";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
@@ -1336,7 +1337,7 @@ describe("out of office", () => {
           headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
-    return { app, send, host, eventType, tokenFor, client };
+    return { app, tenant, send, host, eventType, tokenFor, client };
   }
 
   const FAR = { start: "2031-01-06T00:00:00.000Z", end: "2031-01-07T00:00:00.000Z" };
@@ -1711,6 +1712,66 @@ describe("out of office", () => {
       expect(list.data.map((row) => row.id)).toEqual([id]);
     });
 
+    test("can't name someone off the team as who leaves a booking", async () => {
+      const { lead, host, peer, outsider, send } = await team();
+      const panel = (await (
+        await send("/event_types", "POST", {
+          title: "Panel",
+          kind: "collective",
+          duration_minutes: 30,
+          hosts: [
+            { host: host.id, role: "required" },
+            { host: outsider.id, role: "required" },
+          ],
+        })
+      ).json()) as { id: string };
+      const booking = (await (
+        await send("/bookings", "POST", {
+          event_type: panel.id,
+          start: START,
+          attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+        })
+      ).json()) as { id: string };
+      const refused = await lead("/manager/reassignments", "POST", {
+        selection: { host: host.id },
+        strategy: {
+          assignments: [{ booking: booking.id, to_host: peer.id, from_host: outsider.id }],
+        },
+        reason_code: "other",
+        overrides: ["any_host"],
+      });
+      expect(refused.status).toBe(422);
+    });
+
+    test("undoing only gives back between its own people", async () => {
+      const { tenant, lead, host, peer, outsider, bookFor, send } = await team();
+      const mine = await bookFor(host.id, START);
+      const later = await bookFor(host.id, "2031-01-06T11:00:00.000Z");
+      // Someone with an API key moved them, one on the team and one off it.
+      const made = (await (
+        await send("/reassignments", "POST", {
+          selection: { host: host.id },
+          strategy: {
+            assignments: [
+              { booking: mine.id, to_host: peer.id, from_host: host.id },
+              { booking: later.id, to_host: outsider.id, from_host: host.id },
+            ],
+          },
+          reason_code: "other",
+        })
+      ).json()) as { id: string };
+      const testDeps = testSchedulingDeps();
+      const scope = { organizationIds: [tenant.organization.id] };
+      await runDueReassignments(testDeps, { scope });
+      const undone = await lead(`/manager/reassignments/${made.id}/undo`, "POST", {});
+      expect(undone.status).toBe(202);
+      await runDueReassignments(testDeps, { scope });
+      const hostsOf = async (id: string) =>
+        ((await (await send(`/bookings/${id}`, "GET")).json()) as { hosts: string[] }).hosts;
+      expect(await hostsOf(mine.id)).toEqual([host.id]);
+      expect(await hostsOf(later.id)).toEqual([outsider.id]);
+    });
+
     test("another team's run doesn't exist", async () => {
       const { send, host, peer, client, outsider, lead } = await team();
       const other = (await (
@@ -1877,6 +1938,20 @@ describe("out of office", () => {
         ].sort(),
       );
     });
+  });
+
+  test("a host's session can't start moving bookings by changing an entry", async () => {
+    const { host, tokenFor, client } = await booker();
+    const mine = client(await tokenFor(`/hosts/${host.id}/sessions`, {}));
+    const created = await mine("/host/out_of_office", "POST", {
+      start_date: "2031-01-06",
+      end_date: "2031-01-06",
+    });
+    const entry = (await created.json()) as { id: string };
+    const refused = await mine(`/host/out_of_office/${entry.id}`, "PATCH", {
+      existing_bookings: "reassign",
+    });
+    expect(refused.status).toBe(422);
   });
 
   test("a read-only host session can look but not change anything", async () => {

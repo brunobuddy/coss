@@ -158,7 +158,7 @@ function windowOf(when: When, host: Pick<HostRow, "timeZone">): Window {
   };
 }
 
-async function delegatesOf(
+export async function delegatesOf(
   executor: Executor,
   rows: readonly Pick<OutOfOfficeRow, "id" | "organizationId">[],
 ): Promise<Map<string, string[]>> {

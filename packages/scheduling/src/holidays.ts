@@ -17,7 +17,12 @@ import { DAY_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { HOLIDAY_COUNTRIES } from "./holiday-countries.ts";
 import { attributesMatch, type HostRow, resolveHost } from "./hosts.ts";
-import { createOutOfOffice, deleteOutOfOffice } from "./out-of-office.ts";
+import {
+  createOutOfOffice,
+  delegatesOf,
+  deleteOutOfOffice,
+  updateOutOfOffice,
+} from "./out-of-office.ts";
 import type {
   CreateHolidayCalendarRequestOutput,
   HolidayCalendarObjectOutput,
@@ -212,7 +217,7 @@ export async function updateHolidayCalendar(
         : {}),
       // Who it covers may have changed, and that shouldn't wait for tomorrow.
       nextSyncAt: nowOf(deps),
-      updatedAt: nowOf(deps),
+      settingsChangedAt: nowOf(deps),
     })
     .where(
       and(
@@ -458,6 +463,8 @@ async function reconcile(
       sourceKey: schedulingOutOfOffice.sourceKey,
       deletedAt: schedulingOutOfOffice.deletedAt,
       startDate: schedulingOutOfOffice.startDate,
+      existingBookings: schedulingOutOfOffice.existingBookings,
+      updatedAt: schedulingOutOfOffice.updatedAt,
     })
     .from(schedulingOutOfOffice)
     .where(
@@ -484,6 +491,34 @@ async function reconcile(
           eq(schedulingOutOfOffice.organizationId, row.organizationId),
         ),
       );
+    budget--;
+  }
+  // The calendar's settings changed since this entry was: anything newer is someone's own choice.
+  const stale = existing.filter(
+    (entry) =>
+      !entry.deletedAt &&
+      entry.updatedAt < row.settingsChangedAt &&
+      wanted.has(entry.sourceKey as string) &&
+      (entry.startDate ?? today) >= today,
+  );
+  const delegates = await delegatesOf(
+    db,
+    stale.map((entry) => ({ id: entry.id, organizationId: row.organizationId })),
+  );
+  for (const entry of stale) {
+    const host = wanted.get(entry.sourceKey as string)?.host as HostRow;
+    const want = row.delegateIds.filter((id) => id !== host.id);
+    const have = delegates.get(entry.id) ?? [];
+    const same = want.length === have.length && want.every((id, index) => id === have[index]);
+    if (same && entry.existingBookings === row.existingBookings) continue;
+    if (budget <= 0) return true;
+    await updateOutOfOffice(
+      env,
+      entry.id,
+      { delegates: want, existing_bookings: row.existingBookings },
+      deps,
+      { kind: "system" },
+    );
     budget--;
   }
   for (const [key, { host, date }] of wanted) {
@@ -554,6 +589,10 @@ async function syncOne(
     try {
       const url = decryptSecret(row.encryptedIcsUrl, keys(deps));
       holidays = holidaysFromIcs(await readFeed(transport, url), today, until);
+      // A feed that's suddenly empty is a broken feed, and shouldn't take every holiday away.
+      if (holidays.length === 0 && row.holidays?.some((holiday) => holiday.date >= today)) {
+        throw new UnreadableCalendarData("empty");
+      }
       read = { lastReadAt: now, lastError: null, holidays };
     } catch (error) {
       // The message can't name the URL, which may hold a token.

@@ -944,6 +944,85 @@ describe("races, on real Postgres", () => {
   });
 });
 
+describe("preferred hosts and routing", () => {
+  test("preferring someone doesn't make them fit how it was routed", async () => {
+    const { env, third, booking } = await poolBooking({ specialty: "skin" });
+    await expect(
+      reassign(env, booking.id, change({ auto: true, preferred_hosts: [third.id] })),
+    ).resolves.toMatchObject({ hosts: expect.not.arrayContaining([third.id]) });
+  });
+
+  test("with no one else, it's refused rather than going to them", async () => {
+    const env = await environment();
+    const first = await host(env, "First", { attributes: { specialty: "skin" } });
+    const heart = await host(env, "Heart", { attributes: { specialty: "heart" } });
+    const pool = await eventTypeWith(env, "pool", [member(first), member(heart)]);
+    const { booking } = await createBooking(
+      env,
+      {
+        eventType: pool.id,
+        startMs: at("10:00"),
+        host: first.id,
+        attendee,
+        attributes: { specialty: "skin" },
+      },
+      plain,
+      actor,
+    );
+    await expect(
+      reassign(env, booking.id, change({ auto: true, preferred_hosts: [heart.id] })),
+    ).rejects.toMatchObject({ code: "no_reassign_candidate" });
+    const moved = await reassign(
+      env,
+      booking.id,
+      change({ auto: true, preferred_hosts: [heart.id] }, { overrides: ["any_host"] }),
+    );
+    expect(moved.hosts).toEqual([heart.id]);
+  });
+
+  test("a whole session keeps to its event type too", async () => {
+    const env = await environment();
+    const first = await host(env, "First");
+    const outsider = await host(env, "Outsider");
+    const group = await eventTypeWith(env, "group", [member(first)], { capacity: 3 });
+    const { booking } = await createBooking(
+      env,
+      { eventType: group.id, startMs: at("10:00"), attendee },
+      plain,
+      actor,
+    );
+    await expect(
+      reassign(env, booking.id, change({ auto: true, preferred_hosts: [outsider.id] })),
+    ).rejects.toMatchObject({ code: "no_reassign_candidate" });
+  });
+
+  test("an event type that keeps its hosts can't change one by rescheduling either", async () => {
+    const env = await environment();
+    const first = await host(env, "First");
+    const second = await host(env, "Second");
+    const pool = await eventTypeWith(env, "pool", [member(first), member(second)], {
+      reassignment_enabled: false,
+    });
+    const { booking } = await createBooking(
+      env,
+      { eventType: pool.id, startMs: at("10:00"), host: first.id, attendee },
+      plain,
+      actor,
+    );
+    await expect(
+      rescheduleBooking(env, booking.id, { startMs: at("11:00"), host: second.id }, plain, actor),
+    ).rejects.toMatchObject({ code: "booking_not_changeable" });
+    const same = await rescheduleBooking(
+      env,
+      booking.id,
+      { startMs: at("11:00"), host: first.id },
+      plain,
+      actor,
+    );
+    expect(same.hosts).toEqual([first.id]);
+  });
+});
+
 describe("where it happens", () => {
   /** A one-on-one that leaves its address to the host. */
   async function atHostsOffice(secondLocations: object[]) {

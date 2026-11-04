@@ -189,8 +189,14 @@ describe("Zoom when a booking's hosts change", () => {
 
   test("when the host running the meeting leaves, someone still here runs a new one", async () => {
     const env = await environment();
-    const member = await hostWithHours(env, "Member");
-    const required = await hostWithHours(env, "Required");
+    // Whoever sorts first runs the meeting, and two ids from one millisecond can go either way.
+    const [member, required] = [
+      await hostWithHours(env, "Member"),
+      await hostWithHours(env, "Required"),
+    ].sort((a, b) => (a.id < b.id ? -1 : 1)) as [
+      Awaited<ReturnType<typeof hostWithHours>>,
+      Awaited<ReturnType<typeof hostWithHours>>,
+    ];
     const next = await hostWithHours(env, "Next");
     const api = zoomApi();
     const calendar = deps(api.fetch);

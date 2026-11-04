@@ -196,7 +196,7 @@ export function checkManagedRun(
     strategy:
       | { kind: "to_host"; host_id: string }
       | { kind: "auto"; preferred_host_ids: string[]; otherwise: "auto" | "leave" }
-      | { kind: "assignments"; assignments: { to_host_id: string }[] };
+      | { kind: "assignments"; assignments: { to_host_id: string; from_host_id?: string }[] };
   },
   hostIds: ReadonlySet<string>,
 ): void {
@@ -217,6 +217,13 @@ export function checkManagedRun(
         : strategy.assignments.map((item) => item.to_host_id);
   if (targets.some((id) => !hostIds.has(id))) {
     throw refused("They can only go to someone on this team.", "strategy");
+  }
+  // Naming who leaves a booking with several hosts is as much a reach as naming who joins it.
+  if (
+    strategy.kind === "assignments" &&
+    strategy.assignments.some((item) => item.from_host_id && !hostIds.has(item.from_host_id))
+  ) {
+    throw refused("They can only come from someone on this team.", "strategy");
   }
 }
 

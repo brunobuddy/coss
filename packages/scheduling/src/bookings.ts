@@ -2259,6 +2259,12 @@ export async function rescheduleBooking(
     const member = rows.find((row) => row.role === "member");
     // Asking for the host it has is just moving the booking.
     const replacing = replacement && replacement.id !== member?.hostId ? replacement : null;
+    if (replacing && !eventType.reassignmentEnabled) {
+      throw new SchedulingError(
+        "booking_not_changeable",
+        "This event type's bookings stay with their hosts.",
+      );
+    }
     let replacementCoverage: Map<string, Interval[]> | undefined;
     if (replacement && !member) {
       throw new SchedulingError("invalid_event_type", "This booking's hosts can't be changed.", {

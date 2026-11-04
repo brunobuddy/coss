@@ -1,5 +1,5 @@
 {
-  "id": "d98da141-94a8-48db-b3e0-1e28b82a44bc",
+  "id": "2c44ddd6-f8e1-4039-8698-19287e4fafd4",
   "prevId": "d09f1f6e-9294-45c3-8700-b4db33285970",
   "version": "7",
   "dialect": "postgresql",
@@ -23421,6 +23421,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "settings_changed_at": {
+          "name": "settings_changed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         },
         "next_sync_at": {
           "name": "next_sync_at",

@@ -123,7 +123,8 @@ const HostReassignRequest = z.strictObject({
   note: z.string().max(500).optional(),
 });
 
-const ManagerUpdateOutOfOfficeRequest = UpdateOutOfOfficeRequest.omit({
+/** Moving bookings is its own step from a browser, with its own rules about who can. */
+const SessionOutOfOfficeChange = UpdateOutOfOfficeRequest.omit({
   existing_bookings: true,
   reassign: true,
 });
@@ -585,7 +586,7 @@ export function createSchedulingClientRoutes(opts: {
     const entry = await updateOutOfOffice(
       c.var.session.env,
       c.req.param("id"),
-      await parsed(c, UpdateOutOfOfficeRequest),
+      await parsed(c, SessionOutOfOfficeChange),
       deps,
       sessionActor(c.var.session.session),
       { hostId },
@@ -794,7 +795,7 @@ export function createSchedulingClientRoutes(opts: {
     const updated = await updateOutOfOffice(
       manager.env,
       entry.id,
-      await parsed(c, ManagerUpdateOutOfOfficeRequest),
+      await parsed(c, SessionOutOfOfficeChange),
       deps,
       sessionActor(manager.session),
       { hostId: entry.host },
@@ -914,7 +915,8 @@ export function createSchedulingClientRoutes(opts: {
 
   router.post("/manager/reassignments/:id/undo", async (c) => {
     const manager = writableManager(c);
-    await managedRun(manager, c.req.param("id"));
+    const team = await teamOf(manager);
+    await assertManagedRun(manager.env, c.req.param("id"), team.ids);
     return c.json(
       await undoReassignment(
         manager.env,
@@ -922,6 +924,7 @@ export function createSchedulingClientRoutes(opts: {
         await parsed(c, UndoReassignmentRequest),
         deps,
         sessionActor(manager.session),
+        { onlyHosts: team.set },
       ),
       202,
     );

@@ -531,6 +531,7 @@ export async function undoReassignment(
   params: UndoReassignmentRequestOutput,
   deps: Keys,
   actor: BookingActor,
+  opts: { onlyHosts?: ReadonlySet<string> | undefined } = {},
 ): Promise<ReassignmentObjectOutput> {
   checkOverrides(params);
   const run = await runRow(db, env, id);
@@ -540,7 +541,7 @@ export async function undoReassignment(
       "This reassignment is still running: cancel it, or wait for it to finish.",
     );
   }
-  const moved = await db
+  const items = await db
     .select()
     .from(schedulingReassignmentItem)
     .where(
@@ -551,6 +552,17 @@ export async function undoReassignment(
         isNotNull(schedulingReassignmentItem.fromHostId),
       ),
     );
+  // A team page gives back only between its own people: a run from elsewhere may have gone further.
+  const { onlyHosts } = opts;
+  const moved = onlyHosts
+    ? items.filter(
+        (item) =>
+          item.fromHostId &&
+          item.toHostId &&
+          onlyHosts.has(item.fromHostId) &&
+          onlyHosts.has(item.toHostId),
+      )
+    : items;
   const row = await queueReassignment(db, {
     organizationId: env.organizationId,
     projectId: env.projectId,
