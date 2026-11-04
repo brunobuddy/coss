@@ -47,6 +47,11 @@ directory unless they name a workspace.
   `confirmLive`). Text someone else wrote goes through `printable`. `broadcasts send` asks before a live send and needs
   `--yes` off a terminal; `broadcasts create` and `sign create` make drafts (`sign create --send` sends); `verify
   check` exits 1 for a wrong code.
+- `sms|verify|sign|forms|hooks|scheduling diagnose` (`src/commands/diagnose.ts`) print the SDK's `coss/diagnose`;
+  `PRODUCT_REFERENCES` names commands in next steps (`test/diagnose.test.ts` checks they exist; use `coss api …` where
+  there's no command). `init --product` passes through to `fetchSetupReport`. `test/docs.test.ts` requires every
+  command in `(tools)/cli.mdx` and the README, and `apps/api/test/agent-surface.test.ts` every API operation to be used
+  or exempted (delete a stale line in `agent-surface-exemptions.ts` when a command starts using one).
 - `logs tail` polls `GET /v1/logs` like the dashboard's live mode (re-reads from a minute before the newest line,
   prints unseen ids oldest first, `src/logs/tail.ts`); `emails send --simulate` uses the mailbox simulator addresses
   (`src/emails/simulate.ts`, must match `packages/email/src/providers/fake.ts`).

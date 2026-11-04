@@ -39,7 +39,7 @@ ID and notarized by Apple (since 0.3.0), so one downloaded with a browser runs w
 | `coss whoami` | The key in use, where it comes from, and its organization, project and environment. |
 | `coss profiles list` | The saved profiles: each one's environment, whether `coss login` created its key or it was pasted, and which is the default. |
 | `coss use <profile>` | Makes a saved profile the default. |
-| `coss init` | Sets the project in the current directory up: installs `coss` with its package manager (`--no-install` doesn't) and writes a new development key, approved in the dashboard and named after the project, to `.env.local` (Next.js) or `.env` (`--env-file` picks another). A key already there is kept unless `--force`. It adds notes on coss.com for coding agents to the project's `AGENTS.md` (`--no-agents` skips them) and prints the one next step for the key. |
+| `coss init` | Sets the project in the current directory up: installs `coss` with its package manager (`--no-install` doesn't) and writes a new development key, approved in the dashboard and named after the project, to `.env.local` (Next.js) or `.env` (`--env-file` picks another). A key already there is kept unless `--force`. It adds notes on coss.com for coding agents to the project's `AGENTS.md` (`--no-agents` skips them) and prints the one next step for the key (`--product sms`: that product's). |
 | `coss open [page]` | Opens the environment's page in the dashboard: `overview`, `emails`, `logs`, `webhooks`, `api-keys`, `domains`, `billing`, … (`--print` prints the URL). |
 | `coss emails send` | A test email: `--to`, or `--simulate delivered\|bounced\|complained\|suppressed` for the mailbox simulator; `--template` with `--var name=value`; `--wait` follows it to its outcome (up to `--timeout`, 60 s). |
 | `coss emails list` | The environment's emails, newest first, with where each stands. Filter with `--to`, `--status`, `--recipient-status`, `-q`, `--category`, `--batch`, `--since`/`--until`; `--limit` (20). |
@@ -48,14 +48,17 @@ ID and notarized by Apple (since 0.3.0), so one downloaded with a browser runs w
 | `coss emails diagnose <id>` | Whether it was delivered and, if not, why and what to do (or `--to <address>` for the newest email to it). |
 | `coss sms send` | A test text message: `--to +14155550123`, or `--simulate delivered\|invalid\|filtered\|opted-out\|reply` for the SMS simulator (sandbox keys); `--from` (default for sandbox keys `+14155550100`; live keys need one of your registered numbers), `--body`; `--wait` follows it to its outcome (and shows the simulator's reply). |
 | `coss sms list`, `coss sms get <message>`, `coss sms received`, `coss sms numbers` | Messages and their events, what your numbers received, and which numbers can send. |
+| `coss sms diagnose <message>` | Whether it was delivered and, if not, why and what to do (or `--to <number>` for the newest message to it). |
 | `coss sms suppressions list`, `coss sms suppressions add <number>`, `coss sms suppressions remove <suppression>` | The numbers that won't be texted. |
 | `coss verify start <to>`, `coss verify check --code <code>` | [One-time codes](https://coss.com/docs/verify): sends one, and compares what the end user typed (`--id` or `--to`; exits 0 only when it's right). |
 | `coss verify list`, `coss verify get <verification>`, `coss verify cancel <verification>` | Verifications and what happened to each. |
 | `coss verify settings get`, `coss verify settings set` | Code length, lifetime and attempts, the senders and allowed countries. |
+| `coss verify diagnose <verification>` | Why no code arrived or a check failed (or `--to <to>` for the newest one). Never shows a code. |
 | `coss contacts list`, `coss contacts get <contact>`, `coss contacts add <email>`, `coss contacts remove <contact>` | [Marketing contacts](https://coss.com/docs/email/contacts). |
 | `coss broadcasts list`, `coss broadcasts get <broadcast>`, `coss broadcasts create`, `coss broadcasts test <broadcast>`, `coss broadcasts send <broadcast>`, `coss broadcasts cancel <broadcast>` | [Marketing sends](https://coss.com/docs/email/broadcasts): `create` makes a draft from files, `send` asks before a live send (`--yes` off a terminal, `--at` to schedule). |
 | `coss sign upload <file.pdf>`, `coss sign create`, `coss sign send <request>` | [Signatures](https://coss.com/docs/sign): a PDF, a draft request (`--document` or `--template`, `--signer "Name <email>"`) and sending it. |
 | `coss sign list`, `coss sign get <request>`, `coss sign remind <request>`, `coss sign cancel <request>`, `coss sign download <request>`, `coss sign audit <request>`, `coss sign templates` | Requests, reminders, the sealed PDF, the audit trail and templates. |
+| `coss sign diagnose <request>` | Where a request stands: each signer's state, whose turn it is, and what to do next. |
 | `coss logs tail` | New lines of the environment's log as they arrive: API requests, email events, webhook attempts. Filter with `--source`, `--level`, `--type`, `--status`, `-q`; `--since 15m` starts earlier; `--interval` sets the poll interval (2000 ms). |
 | `coss inbox` | The environment's inbound domain, then each email it receives as it arrives (`--since`, `--interval`). |
 | `coss inbox get <id>` | A received email: verdicts, attachments and its text (`--html`, `--headers`); `--raw > message.eml` saves the message as received. |
@@ -74,13 +77,16 @@ ID and notarized by Apple (since 0.3.0), so one downloaded with a browser runs w
 | `coss hooks send <app> <event-type>` | Sends a message: the payload from `--data '{…}'`, `-F name=value` fields, or the type's first example. |
 | `coss hooks deliveries <app>`, `coss hooks attempts <app> <delivery>`, `coss hooks retry <app> <delivery>` | Deliveries (`--endpoint`, `--message`, `--status`), each HTTP request of one, and one more attempt. |
 | `coss hooks portal <app>` | A portal link for the application's users (`--open`, `--read-only`, `--expires-in`). |
+| `coss hooks diagnose <app> <delivery>` | What the endpoint answered on each attempt, the next retry, and whether it's disabled (or `--message`, `--endpoint`). |
 | `coss risk assess --event <event>` | Assesses an event (`--email`, `--ip`, `--user`, `--content`, `--data '{…}'`…) and prints the decision, score and reasons. Sandbox fixtures (`192.0.2.1`, `disposable.test`, `[coss-test:spam]`…) produce each decision. |
 | `coss risk assessments`, `coss risk feedback <assessment> --outcome <outcome>` | Assessments (`--review open`: the review queue), and what a user turned out to be. |
 | `coss risk lists list`, `coss risk lists add <allow\|block> <type> <value>`, `coss risk lists remove <entry>` | The allow and block lists (`--note`, `--expires 7d`). |
 | `coss scheduling hosts`, `coss scheduling bookings`, `coss scheduling event-types` | The environment's [hosts, bookings and event types](https://coss.com/docs/scheduling). |
 | `coss scheduling slots <event-type>`, `coss scheduling booking <booking>`, `coss scheduling cancel <booking>`, `coss scheduling calendars <host>` | Bookable starts (`--start`, `--end`), one booking, cancelling it, and a host's calendar connections. |
+| `coss scheduling diagnose <event-type>` | Why there are no slots, each finding certain, likely or possible (`--start`, `--end`, `--host`). |
 | `coss forms list`, `coss forms get <form>`, `coss forms create <name>` | The environment's [forms](https://coss.com/docs/forms) and their endpoints. |
 | `coss forms submissions <form>`, `coss forms submission <form> <submission>`, `coss forms release <form> <submission>` | A form's submissions (`--status held`: Risk's review queue), one's values, and accepting a held one. |
+| `coss forms diagnose <form> [submission]` | What happened to a submission (the newest without an id): held, spam and why, waiting to be confirmed, or accepted and where it goes. |
 | `coss domains list` | The organization's sending domains and their status. |
 | `coss domains add <domain>` | Adds a domain and prints the DNS records to publish (`--format bind` prints zone-file lines). |
 | `coss domains get <domain>` | A domain's records and what the last DNS check saw (verified, missing, mismatch). `--format bind` too. |
