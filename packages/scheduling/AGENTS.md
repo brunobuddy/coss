@@ -248,12 +248,42 @@ attendee sees times, never other hosts.
 ## Notifications
 
 `notifications.ts` resolves policy once, into outbox rows in the deciding transaction: core code never branches on it.
-Rows hold no content; a row's rendered at send time and dropped if stale. A change that keeps a booking's time but
-bumps its version (a location, a meeting link) calls `carryReminders`, or its reminder would look stale. Booking emails use `@coss/email-layout` with
+Rows hold no content; a row's rendered at send time and dropped if stale. Booking emails use `@coss/email-layout` with
 no customer HTML and no links but the manage link, and pass `screeningExempt`: per-email screening would send patients'
 names to the AI Gateway. In exchange, text a customer controls is screened at setup (`screening.ts`) and can't hold a
 link. Never add a free-form field to these emails without screening it. SMS goes through `@coss/sms`, so it's sampled
 as usual: keep names out of it.
+
+`reminders.ts` is what a `reminders` list means, at the event type (which replaces the environment's) or the
+environment; `null` everywhere is the old one reminder a day before, on `notifications.reminder`'s channels, keyed
+`reminder`. Each rule makes rows, `started` and `ended` are rows every confirmed booking gets, and these rules hold:
+
+- A rule's row names its rule and is timed from `anchor_at`, the moment as it was when queued. That, not the booking's
+  `version`, is what makes it stale: a location or a no-show bumps the version and moves nothing. A row with no
+  `anchor_at` came from a task older than this, mid-deploy, and keeps the version check.
+- The dedupe key names the rule, timing and moment, so planning is safe to repeat (`reconcileReminders`, also run by
+  the `scheduling-reminder-sync` loop when a list changes). A conflict revives a row only if it was `superseded` or
+  `stale`: a booking moved away and back gets its reminder back, and nothing `sent` goes twice.
+- **A rule is read again when its row is due** (`ruleVerdict`, `addEditedTargets`), so a row takes its rule's current
+  words, timing and recipients and a removal needs no rebuild. Only a new rule needs rows made for existing bookings,
+  and only for ones that haven't ended. A row never assumes the walk has run: it may not have, and it reaches only some
+  bookings. The keys make the two safe together.
+- **Customer words never leave under coss.com's address.** `subject`, `message` and `button` need `email_from`, and
+  `coss*` on `SchedulingEmail` are always fixed copy, which is what the fallback sends. That also caps what coss.com
+  pays for: without `email_from`, at most two rules send email (`withinCossAllowance`, checked at save and when due).
+- `attendee_name` is what a booker typed, aimed at an address they chose: `safeName` renders one with a link in it as
+  nothing. Answers are never variables. `sms_message` can't use names. `reminder-copy.ts` is client-safe, so the
+  dashboard's preview runs the same code as the worker.
+- A reminder's standard words, labels and values follow the recipient's language like any other message's
+  (`standardSubject`, `standardLead`, `timeUntil`), and a fixed address takes the first host's. What a customer wrote
+  has one version, in whatever language they wrote it.
+- A `button` or `email_to` is checked against the injected `verifiedAddress` in live environments, and refused without
+  one. A button's URL takes only `{{booking_id}}`, so what's sent is what was checked.
+- A webhook row reports and finishes in one transaction, booking locked first like every other writer of these rows, so
+  two workers can't both report. A webhook is never dropped for being late; an email or text is (`too_late`).
+- `email_attendee` reaches guests too, on the same terms as other mail (`guestsAreTold`, `ownSenderOnly`): only from the customer's
+  own address, with no manage link, and not for what isn't about them (a request, a no-show).
+- What became of every row is public (`listBookingNotifications`) and never says who it went to.
 
 Branding only applies under the customer's own `email_from`: `renderMessage` puts their name or logo and accent in
 `html`, and `cossHtml`, what coss.com's address sends, has none of them. `scheduling_logo` holds a PNG or JPEG checked

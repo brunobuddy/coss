@@ -76,6 +76,7 @@ import {
   runDueCalendarDelegations,
   runDueCalendarSyncs,
   runDueCalendarWrites,
+  runDueReminderSyncs,
   runDueSchedulingNotifications,
   type SchedulingWorkerDeps,
 } from "@coss/scheduling";
@@ -257,6 +258,7 @@ export const WORKER_LOOP_NAMES = [
   "scheduling-expiry",
   "scheduling-host-fees",
   "scheduling-notifications",
+  "scheduling-reminder-sync",
   "scheduling-calendar-sync",
   "scheduling-calendar-writes",
   "scheduling-calendar-channels",
@@ -762,6 +764,12 @@ export function startJobs(deps: WorkerDeps): Loop[] {
         name: "scheduling-expiry",
         intervalMs: 30_000,
         run: async () => (await expireDueBookings(scheduling)) === SCHEDULING_BATCH,
+      }),
+      start({
+        // A changed `reminders` list reaching the bookings that already exist.
+        name: "scheduling-reminder-sync",
+        intervalMs: 5000,
+        run: async () => (await runDueReminderSyncs(scheduling)) > 0,
       }),
       start({
         // A day of every live host (`scheduling.hosts`), charged when the day starts.

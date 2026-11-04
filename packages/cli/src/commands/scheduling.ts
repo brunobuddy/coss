@@ -381,6 +381,123 @@ const cancel: Command = defineCommand({
   },
 });
 
+const noShow: Command = defineCommand({
+  name: "scheduling no-show",
+  summary: "Mark a booking as a no-show",
+  usage: "<booking>",
+  description:
+    "Records that the attendee didn't come, once the booking has started. Webhooks fire and any reminder timed from it is sent. It can't be undone.",
+  flags: BOOKING_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof BOOKING_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling no-show <booking>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.bookings.markNoShow(id);
+    if (error) throw apiError("Couldn't mark the booking", error);
+    printBooking(context, data);
+    return 0;
+  },
+});
+
+const NOTIFICATIONS_FLAGS = {
+  limit: LIMIT,
+  json: { type: "boolean", description: "One notification per line, as JSON" },
+} as const satisfies Flags;
+
+const notifications: Command = defineCommand({
+  name: "scheduling notifications",
+  summary: "List what was queued for a booking",
+  usage: "<booking>",
+  description:
+    "What's been queued for a booking and what became of it, including why a reminder wasn't sent.",
+  flags: NOTIFICATIONS_FLAGS,
+  positionals: true,
+  run: async ({ positionals, values, context }: CommandInput<typeof NOTIFICATIONS_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling notifications <booking>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.bookings.notifications(id, {
+      ...(values.limit !== undefined && { limit: limitOf(values.limit) }),
+    });
+    if (error) throw apiError("Couldn't list the notifications", error);
+    const { out } = context;
+    if (out.json) {
+      for (const item of data.data) out.data(item);
+      return 0;
+    }
+    if (data.data.length === 0) {
+      out.info("Nothing queued.");
+      return 0;
+    }
+    const lines = table([
+      ["DUE", "WHAT", "CHANNEL", "TO", "OUTCOME"],
+      ...data.data.map((item) => [
+        when(item.due_at),
+        printable(item.reminder_key ?? item.kind),
+        item.channel,
+        item.recipient,
+        item.outcome ?? "scheduled",
+      ]),
+    ]);
+    out.line(out.style("dim", lines[0] ?? ""));
+    for (const line of lines.slice(1)) out.line(line);
+    return 0;
+  },
+});
+
+const REMINDERS_FLAGS = {
+  "event-type": {
+    type: "string",
+    value: "<event-type>",
+    description: "This event type's own list",
+  },
+  json: { type: "boolean", description: "One reminder per line, as JSON" },
+} as const satisfies Flags;
+
+const reminders: Command = defineCommand({
+  name: "scheduling reminders",
+  summary: "List what goes out around a booking",
+  description:
+    "Lists the environment's reminders, or an event type's own. Nothing listed means the default: a reminder a day before, or for an event type, the environment's list.",
+  flags: REMINDERS_FLAGS,
+  run: async ({ values, context }: CommandInput<typeof REMINDERS_FLAGS>) => {
+    const coss = await client(context);
+    const eventType = values["event-type"];
+    const result = eventType
+      ? await coss.scheduling.eventTypes.get(eventType)
+      : await coss.scheduling.settings.get();
+    if (result.error) throw apiError("Couldn't read the reminders", result.error);
+    const list = result.data.reminders ?? [];
+    const { out } = context;
+    if (out.json) {
+      for (const item of list) out.data(item);
+      return 0;
+    }
+    if (list.length === 0) {
+      out.info(
+        result.data.reminders === null
+          ? eventType
+            ? "This event type uses the environment's list."
+            : "The default: a reminder a day before."
+          : "No reminders.",
+      );
+      return 0;
+    }
+    const lines = table([
+      ["KEY", "ANCHOR", "BEFORE", "AFTER", "SEND"],
+      ...list.map((item) => [
+        printable(item.key),
+        item.anchor,
+        item.before_minutes === null ? "" : `${item.before_minutes}m`,
+        item.after_minutes === null ? "" : `${item.after_minutes}m`,
+        [...item.send, ...item.email_to.map((address) => printable(address))].join(", "),
+      ]),
+    ]);
+    out.line(out.style("dim", lines[0] ?? ""));
+    for (const line of lines.slice(1)) out.line(line);
+    return 0;
+  },
+});
+
 const CALENDARS_FLAGS = {
   json: { type: "boolean", description: "One connection per line, as JSON" },
 } as const satisfies Flags;
@@ -1157,4 +1274,7 @@ export const SCHEDULING_COMMANDS: readonly Command[] = [
   decline,
   cancel,
   calendars,
+  noShow,
+  notifications,
+  reminders,
 ];

@@ -20,6 +20,7 @@ export * from "./logo.ts";
 export * from "./notifications.ts";
 export * from "./plan.ts";
 export * from "./reencrypt.ts";
+export * from "./reminders.ts";
 export * from "./retention.ts";
 export * from "./schedules.ts";
 export * from "./screening.ts";

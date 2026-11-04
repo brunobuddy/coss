@@ -13,6 +13,27 @@ export function locationOfSession(
   return session.meetingUrl ? { type: "link", url: session.meetingUrl } : session.location;
 }
 
+/**
+ * What a booking's location was chosen as, for matching against it: a session's meeting link says
+ * only where to go, and the session keeps what was asked for.
+ */
+export async function chosenLocation(
+  executor: Executor,
+  booking: BookingRow,
+): Promise<BookingRow["location"]> {
+  if (!booking.groupSessionId) return booking.location;
+  const [session] = await executor
+    .select({ location: schedulingGroupSession.location })
+    .from(schedulingGroupSession)
+    .where(
+      and(
+        eq(schedulingGroupSession.id, booking.groupSessionId),
+        eq(schedulingGroupSession.organizationId, booking.organizationId),
+      ),
+    );
+  return session?.location ?? booking.location;
+}
+
 export async function withSessionLocation<T extends BookingRow>(
   executor: Executor,
   booking: T,

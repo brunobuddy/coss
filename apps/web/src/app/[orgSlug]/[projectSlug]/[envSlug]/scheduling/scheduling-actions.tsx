@@ -52,6 +52,7 @@ import {
   createHostAction,
   declineBookingAction,
   deleteHostAction,
+  markNoShowAction,
   openBookerAction,
   openBookingManagerAction,
   openHostPortalAction,
@@ -106,6 +107,11 @@ export function NewHostDialog(props: EnvTarget) {
               <FieldLabel>Email</FieldLabel>
               <Input name="email" type="email" />
               <FieldDescription>Where their booking emails go. Optional.</FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel>Phone</FieldLabel>
+              <Input name="phone" placeholder="+15551234567" type="tel" />
+              <FieldDescription>Where their SMS reminders go. Optional.</FieldDescription>
             </Field>
             <Field>
               <FieldLabel>Time zone</FieldLabel>
@@ -323,6 +329,7 @@ export function HostForm(
       id: string;
       name: string;
       email: string | null;
+      phone: string | null;
       uid: string | null;
       time_zone: string;
       attributes: Record<string, string | string[]>;
@@ -338,6 +345,7 @@ export function HostForm(
   const [values, setValues] = useState({
     name: host.name,
     email: host.email ?? "",
+    phone: host.phone ?? "",
     timeZone: host.time_zone,
     uid: host.uid ?? "",
     attributes: formatOptionalJson(host.attributes),
@@ -362,6 +370,11 @@ export function HostForm(
             <FieldLabel>Email</FieldLabel>
             <Input {...field("email")} type="email" />
             <FieldDescription>Where their booking emails go. Optional.</FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel>Phone</FieldLabel>
+            <Input {...field("phone")} placeholder="+15551234567" type="tel" />
+            <FieldDescription>Where their SMS reminders go. Optional.</FieldDescription>
           </Field>
           <Field>
             <FieldLabel>Time zone</FieldLabel>
@@ -731,6 +744,40 @@ export function CancelBookingButton(props: EnvTarget & { bookingId: string }) {
   );
 }
 
+export function MarkNoShowButton(props: EnvTarget & { bookingId: string }) {
+  const [state, formAction, pending] = useActionToast(markNoShowAction, {
+    success: "Marked as a no-show",
+  });
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button size="sm" variant="ghost" />}>
+        Mark no-show
+      </AlertDialogTrigger>
+      <AlertDialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...props} />
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark this as a no-show?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your webhook is told, follow-ups are skipped and any no-show reminder goes out. This
+              can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6">
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogClose render={<Button variant="ghost" />}>Keep it</AlertDialogClose>
+            <Button disabled={pending} type="submit">
+              Mark no-show
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </AlertDialogPopup>
+    </AlertDialog>
+  );
+}
+
 function LogoField(props: {
   canEdit: boolean;
   logo: { data_url: string; width: number; height: number } | null;
@@ -818,6 +865,7 @@ export function SettingsForm(
       accent_color: string | null;
       logo: { data_url: string; width: number; height: number } | null;
       email_from: string | null;
+      email_reply_to: string | null;
       sms_from: string | null;
       calendar_failure_mode: "hide" | "last_known";
     };
@@ -843,6 +891,13 @@ export function SettingsForm(
           <Input defaultValue={settings.email_from ?? ""} name="emailFrom" type="email" />
           <FieldDescription>
             On one of your verified domains. Without it, emails come from coss.com on your behalf.
+          </FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel>Reply-to address</FieldLabel>
+          <Input defaultValue={settings.email_reply_to ?? ""} name="emailReplyTo" type="email" />
+          <FieldDescription>
+            Where replies go, for emails from your own address. Optional.
           </FieldDescription>
         </Field>
         <Field>

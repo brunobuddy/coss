@@ -8,14 +8,13 @@
  */
 import { recordUsage } from "@coss/billing/metering";
 import { db, type Executor, schema, type Transaction } from "@coss/db";
-import { ID_PREFIXES, isId, newId } from "@coss/db/id";
+import { ID_PREFIXES, isId } from "@coss/db/id";
 import {
   requestHash as hashRequest,
   IDEMPOTENCY_KEY_TTL_MS,
   withIdempotencyKey,
 } from "@coss/db/idempotency";
-import { appendLogEntries } from "@coss/logs";
-import { decryptSecret, encryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
+import { decryptSecret, encryptSecret } from "@coss/webhooks";
 import {
   and,
   asc,
@@ -51,6 +50,7 @@ import {
   slotRuleOf,
   takeTurn,
 } from "./availability.ts";
+import { type BookingActor, participants, recordChange } from "./booking-record.ts";
 import { hostsBusyNow } from "./calendar/live-check.ts";
 import { announce } from "./calendar/writes.ts";
 import { ZOOM_CALENDAR_ID } from "./calendar/zoom.ts";
@@ -79,7 +79,11 @@ import { SchedulingError } from "./errors.ts";
 import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { confirmedSeats, withSessionLocation } from "./group-sessions.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
-import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
+import {
+  carryAnchorlessReminders,
+  enqueueBookingNotifications,
+  enqueueNoShowReminders,
+} from "./notifications.ts";
 import { refuseNewBookingWhileHeld, requireLiveFeature, requireRouting } from "./plan.ts";
 import {
   type AttendeeInputOutput,
@@ -110,12 +114,11 @@ const {
 } = schema;
 
 export type BookingRow = typeof schedulingBooking.$inferSelect;
-type AttendeeRow = typeof schedulingAttendee.$inferSelect;
 type Scope = Pick<SchedulingEnvironment, "organizationId" | "environmentId">;
 type Answers = Record<string, string | string[]>;
 type Location = NonNullable<BookingRow["location"]>;
 
-export type BookingActor = NonNullable<typeof schedulingBookingEvent.$inferInsert.actor>;
+export type { BookingActor } from "./booking-record.ts";
 
 export type BookingRequest = {
   /** The API's gate on `attributes`. A session's were checked when it was made, so it passes none. */
@@ -613,138 +616,6 @@ async function assignAndClaim(
     }
   }
   throw slotLost(lastReason);
-}
-
-function toWebhookData(
-  booking: BookingRow,
-  hostIds: readonly string[],
-  attendeeUids: readonly string[],
-  occurredAt: Date,
-  extra: { previousStart?: Date } = {},
-) {
-  return {
-    booking_id: booking.id,
-    event_type_id: booking.eventTypeId,
-    status: booking.status,
-    start: booking.startAt.toISOString(),
-    end: booking.endAt.toISOString(),
-    host_ids: [...hostIds],
-    attendee_uids: [...attendeeUids],
-    series_id: booking.seriesId,
-    ...(extra.previousStart ? { previous_start: extra.previousStart.toISOString() } : {}),
-    occurred_at: occurredAt.toISOString(),
-  };
-}
-
-async function participants(
-  tx: Executor,
-  booking: Pick<BookingRow, "id" | "organizationId">,
-): Promise<{ hostIds: string[]; attendees: AttendeeRow[] }> {
-  const hosts = await tx
-    .select({ hostId: schedulingBookingHost.hostId })
-    .from(schedulingBookingHost)
-    .where(
-      and(
-        eq(schedulingBookingHost.bookingId, booking.id),
-        eq(schedulingBookingHost.organizationId, booking.organizationId),
-      ),
-    )
-    .orderBy(asc(schedulingBookingHost.hostId));
-  const attendees = await tx
-    .select()
-    .from(schedulingAttendee)
-    .where(
-      and(
-        eq(schedulingAttendee.bookingId, booking.id),
-        eq(schedulingAttendee.organizationId, booking.organizationId),
-      ),
-    )
-    .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id));
-  return { hostIds: hosts.map((row) => row.hostId), attendees };
-}
-
-/**
- * What every change records: its history row (sequenced under the booking's lock), webhook and log
- * line. None of them carry a person's details.
- */
-async function recordChange(
-  tx: Executor,
-  booking: BookingRow,
-  input: {
-    type: string;
-    webhook: SchedulingWebhookEventType | null;
-    actor: BookingActor;
-    occurredAt: Date;
-    details?: Record<string, unknown>;
-    previousStart?: Date;
-    message: string;
-    level?: "info" | "warning";
-  },
-): Promise<void> {
-  const [last] = await tx
-    .select({ sequence: schedulingBookingEvent.sequence })
-    .from(schedulingBookingEvent)
-    .where(
-      and(
-        eq(schedulingBookingEvent.bookingId, booking.id),
-        eq(schedulingBookingEvent.organizationId, booking.organizationId),
-      ),
-    )
-    .orderBy(desc(schedulingBookingEvent.sequence))
-    .limit(1);
-  await tx.insert(schedulingBookingEvent).values({
-    organizationId: booking.organizationId,
-    bookingId: booking.id,
-    sequence: (last?.sequence ?? 0) + 1,
-    type: input.type,
-    actor: input.actor,
-    details: input.details ?? {},
-    occurredAt: input.occurredAt,
-  });
-  const { hostIds, attendees } = await participants(tx, booking);
-  if (input.webhook) {
-    const id = newId(ID_PREFIXES.webhookEvent);
-    await enqueueWebhookMessage(tx, {
-      id,
-      organizationId: booking.organizationId,
-      environmentId: booking.environmentId,
-      type: input.webhook,
-      payload: {
-        id,
-        object: "event",
-        type: input.webhook,
-        created_at: input.occurredAt.toISOString(),
-        data: toWebhookData(
-          booking,
-          hostIds,
-          attendees.flatMap((attendee) => (attendee.uid ? [attendee.uid] : [])),
-          input.occurredAt,
-          input.previousStart ? { previousStart: input.previousStart } : {},
-        ),
-      },
-    });
-  }
-  await appendLogEntries(tx, [
-    {
-      organizationId: booking.organizationId,
-      projectId: booking.projectId,
-      environmentId: booking.environmentId,
-      occurredAt: input.occurredAt,
-      source: "scheduling",
-      level: input.level ?? "info",
-      type: input.type,
-      message: input.message,
-      resourceType: "scheduling_booking",
-      resourceId: booking.id,
-      attributes: {
-        event_type_id: booking.eventTypeId,
-        status: booking.status,
-        host_ids: hostIds,
-        start: booking.startAt.toISOString(),
-      },
-      searchTerms: [booking.eventTypeId, ...hostIds],
-    },
-  ]);
 }
 
 /** One unit per confirmed booking, or per group session. Sandbox bookings aren't billed. */
@@ -2518,6 +2389,8 @@ export async function markNoShow(
     if (booking.startAt.getTime() > now.getTime()) {
       throw new SchedulingError("booking_not_changeable", "This booking hasn't started yet.");
     }
+    // Once is the news: marking it again would send everything timed from it again.
+    if (booking.noShowAt) return booking;
     const updated = await bumped(tx, booking, { noShowAt: now });
     await recordChange(tx, updated, {
       type: "scheduling.booking.no_show",
@@ -2526,6 +2399,7 @@ export async function markNoShow(
       occurredAt: now,
       message: "Attendee marked as a no-show",
     });
+    await enqueueNoShowReminders(tx, updated, now);
     return updated;
   });
   return toBookingObject(db, row, deps);
@@ -2543,9 +2417,9 @@ export async function updateBookingLocation(
     if (booking.status === "cancelled" || booking.status === "declined") {
       throw notChangeable(booking);
     }
-    // A seat's version stays: nothing about the seat changed, and a bump would drop its reminder.
+    // A seat's version stays: nothing about the seat changed.
     const updated = booking.groupSessionId ? booking : await bumped(tx, booking, { location });
-    if (!booking.groupSessionId) await carryReminders(tx, updated);
+    if (!booking.groupSessionId) await carryAnchorlessReminders(tx, updated);
     await recordChange(tx, updated, {
       type: "scheduling.booking.location_ready",
       webhook: "scheduling.booking.location_ready",

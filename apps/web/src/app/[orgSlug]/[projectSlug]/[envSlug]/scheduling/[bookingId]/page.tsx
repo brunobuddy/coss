@@ -1,4 +1,4 @@
-import { getBookingOverview, SchedulingError } from "@coss/scheduling";
+import { getBookingOverview, listBookingNotifications, SchedulingError } from "@coss/scheduling";
 import type { BookingObjectOutput } from "@coss/scheduling/schemas";
 import {
   Table,
@@ -17,7 +17,11 @@ import { BookingStatusDot } from "@/components/scheduling-badges";
 import { SpecItem, SpecList } from "@/components/spec-list";
 import { formatDateTime } from "@/lib/format";
 import { schedulingPageContext } from "../page-context";
-import { CancelBookingButton, RescheduleBookingButton } from "../scheduling-actions";
+import {
+  CancelBookingButton,
+  MarkNoShowButton,
+  RescheduleBookingButton,
+} from "../scheduling-actions";
 
 export const metadata: Metadata = { title: "Booking" };
 
@@ -33,6 +37,40 @@ const EVENT_LABEL: Record<string, string> = {
   "scheduling.booking.external_conflict": "Conflict found on a calendar",
   "scheduling.booking.calendar_write_failed": "Couldn't update a calendar",
   "scheduling.booking.location_ready": "Location set",
+  "scheduling.booking.started": "Started",
+  "scheduling.booking.ended": "Ended",
+  "scheduling.booking.reminder": "Reminder webhook",
+};
+
+const NOTIFICATION_KIND_LABEL: Record<string, string> = {
+  confirmed: "Confirmation",
+  pending_approval: "Request received",
+  rescheduled: "Rescheduled notice",
+  cancelled: "Cancellation notice",
+  declined: "Declined notice",
+  started: "Started webhook",
+  ended: "Ended webhook",
+};
+
+const NOTIFICATION_TO_LABEL = {
+  "email:attendee": "Attendee email",
+  "email:host": "Host email",
+  "email:address": "Fixed addresses",
+  "sms:attendee": "Attendee SMS",
+  "sms:host": "Host SMS",
+  "webhook:endpoint": "Your webhook",
+} as Record<string, string>;
+
+const OUTCOME_LABEL: Record<string, string> = {
+  sent: "Sent",
+  too_late: "Skipped: too late",
+  filtered: "Skipped: its conditions didn't match",
+  no_show: "Skipped: marked a no-show",
+  no_address: "Skipped: nowhere to send it",
+  no_sender: "Skipped: needs your own sender",
+  stale: "Dropped: no longer applied",
+  superseded: "Dropped: the booking changed",
+  failed: "Failed",
 };
 
 const ACTOR_LABEL = {
@@ -75,7 +113,10 @@ export default async function BookingPage({
     if (error instanceof SchedulingError && error.code === "not_found") notFound();
     throw error;
   });
+  const page = await listBookingNotifications(scope, booking.id, { limit: 100 });
+  const notifications = [...page.data].sort((a, b) => a.due_at.localeCompare(b.due_at));
   const ended = booking.status === "cancelled" || booking.status === "declined";
+  const started = booking.status === "confirmed" && new Date(booking.start) <= new Date();
   // A group seat is moved by cancelling it and booking another session.
   const canMove =
     (booking.status === "confirmed" || booking.status === "pending_approval") &&
@@ -89,6 +130,9 @@ export default async function BookingPage({
         actions={
           !ended && can({ scheduling: ["update"] }) ? (
             <div className="flex gap-2">
+              {started && !booking.no_show_at ? (
+                <MarkNoShowButton {...target} bookingId={booking.id} />
+              ) : null}
               {canMove ? <RescheduleBookingButton {...target} bookingId={booking.id} /> : null}
               <CancelBookingButton {...target} bookingId={booking.id} />
             </div>
@@ -208,6 +252,48 @@ export default async function BookingPage({
               ))}
             </SpecList>
           </PanelBody>
+        </Panel>
+      ) : null}
+
+      {notifications.length > 0 ? (
+        <Panel
+          description={
+            page.hasMore
+              ? "The latest 100 queued for this booking, and what became of them."
+              : "What's queued for this booking and what became of it."
+          }
+          title="Reminders and notices"
+        >
+          <Table variant="card">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Due</TableHead>
+                <TableHead>What</TableHead>
+                <TableHead>To</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {notifications.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{formatDateTime(row.due_at)}</TableCell>
+                  <TableCell>
+                    {row.reminder_key ? (
+                      <span className="font-mono text-[0.8125rem]">{row.reminder_key}</span>
+                    ) : (
+                      (NOTIFICATION_KIND_LABEL[row.kind] ?? row.kind)
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {NOTIFICATION_TO_LABEL[`${row.channel}:${row.recipient}`] ?? row.channel}
+                  </TableCell>
+                  <TableCell>
+                    {row.outcome ? (OUTCOME_LABEL[row.outcome] ?? row.outcome) : "Scheduled"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </Panel>
       ) : null}
 

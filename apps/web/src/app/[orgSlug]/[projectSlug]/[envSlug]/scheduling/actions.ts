@@ -16,6 +16,7 @@ import {
   deleteHost,
   getEventType,
   getHost,
+  markNoShow,
   SchedulingError,
   updateCalendarDelegation,
   updateEventType,
@@ -26,6 +27,7 @@ import {
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import {
   EVENT_TYPE_KINDS,
+  Reminders,
   UpdateEventTypeRequest,
   UpdateHostLocationsRequest,
   UpdateHostRequest,
@@ -255,6 +257,10 @@ export async function createHostAction(
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "create");
     const email = formString(formData, "email");
+    const phone = formString(formData, "phone");
+    if (phone && !/^\+[1-9]\d{6,14}$/.test(phone)) {
+      throw new ActionError("Enter the phone number with its country code, like +15551234567.");
+    }
     const billing = await usageGate();
     const host = await friendly(() =>
       createHost(
@@ -263,6 +269,7 @@ export async function createHostAction(
           name: formString(formData, "name"),
           time_zone: formString(formData, "timeZone"),
           ...(email ? { email } : {}),
+          ...(phone ? { phone } : {}),
         },
         {
           screen: configuredDeps().screenSetup,
@@ -358,6 +365,7 @@ export async function updateHostAction(_prev: ActionResult | null, formData: For
     const current = await friendly(() => getHost(env, id));
     const name = formString(formData, "name");
     const email = formString(formData, "email") || null;
+    const phone = formString(formData, "phone") || null;
     const uid = formString(formData, "uid") || null;
     const timeZone = formString(formData, "timeZone");
     // Only what changed: a name goes through screening. The schema is the API's, so a blank name or
@@ -366,6 +374,7 @@ export async function updateHostAction(_prev: ActionResult | null, formData: For
       UpdateHostRequest.safeParse({
         ...(name !== current.name.trim() ? { name } : {}),
         ...(email !== (current.email?.trim() || null) ? { email } : {}),
+        ...(phone !== (current.phone?.trim() || null) ? { phone } : {}),
         ...(uid !== (current.uid?.trim() || null) ? { uid } : {}),
         ...(timeZone !== current.time_zone ? { time_zone: timeZone } : {}),
         attributes: readJson(formString(formData, "attributes"), "Attributes") ?? {},
@@ -609,6 +618,55 @@ export async function declineBookingAction(_prev: ActionResult | null, formData:
   });
 }
 
+export async function markNoShowAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const booking = await friendly(() =>
+      markNoShow(env, formString(formData, "bookingId"), configuredDeps(), actorOf(context)),
+    );
+    await audit(context, "scheduling_booking.no_show", {
+      type: "scheduling_booking",
+      id: booking.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+/** A whole list at a time, for the environment or one event type; `null` goes back to inheriting. */
+export async function saveRemindersAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const eventTypeId = formString(formData, "eventTypeId");
+    const raw: unknown = JSON.parse(formString(formData, "reminders"));
+    const parsed = raw === null ? null : Reminders.safeParse(raw);
+    if (parsed && !parsed.success) {
+      throw new ActionError(parsed.error.issues[0]?.message ?? "This reminder isn't valid.");
+    }
+    const reminders = parsed ? parsed.data : null;
+    const deps = configuredDeps();
+    const checks = { screen: deps.screenSetup, verifiedAddress: deps.verifiedAddress };
+    if (eventTypeId) {
+      const eventType = await friendly(() =>
+        updateEventType(env, eventTypeId, { reminders }, checks),
+      );
+      await audit(context, "scheduling_event_type.updated", {
+        type: "scheduling_event_type",
+        id: eventType.id,
+        label: eventType.title,
+      });
+    } else {
+      await friendly(() => updateSettings(env, { reminders }, checks));
+      await audit(context, "scheduling_settings.updated", {
+        type: "scheduling_settings",
+        id: env.environmentId,
+      });
+    }
+    refresh();
+    return null;
+  });
+}
+
 export async function saveSettingsAction(_prev: ActionResult | null, formData: FormData) {
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "update");
@@ -617,6 +675,7 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
       .filter(Boolean);
     const brandName = formString(formData, "brandName");
     const emailFrom = formString(formData, "emailFrom");
+    const emailReplyTo = formString(formData, "emailReplyTo");
     const smsFrom = formString(formData, "smsFrom");
     const accentColor = formString(formData, "accentColor");
     const useAccent = formString(formData, "useAccentColor") === "on";
@@ -641,11 +700,15 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
               ? { logo: null }
               : {}),
           email_from: emailFrom || null,
+          email_reply_to: emailReplyTo || null,
           sms_from: smsFrom || null,
           calendar_failure_mode:
             formString(formData, "calendarFailureMode") === "last_known" ? "last_known" : "hide",
         },
-        { screen: configuredDeps().screenSetup },
+        {
+          screen: configuredDeps().screenSetup,
+          verifiedAddress: configuredDeps().verifiedAddress,
+        },
       ),
     );
     await audit(context, "scheduling_settings.updated", {
