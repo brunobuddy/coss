@@ -139,6 +139,22 @@ const NOVEMBER_2026: RateCard = {
     // priced when the meters were added; they had no usage before.
     "email.attachment_data": { default: flatRate(250_000n) },
     "email.received_data": { default: flatRate(750_000n) },
+    // Risk (first priced when the meters were added; they had no usage before). $1 per 1,000
+    // assessments; $0.50 from the 1,000,001st; $0.25 from the 10,000,001st. Blocked decisions are
+    // never metered.
+    "risk.assessments": {
+      default: {
+        mode: "graduated",
+        tiers: [
+          { upTo: 1_000_000, unitNanos: 1_000_000n },
+          { upTo: 10_000_000, unitNanos: 500_000n },
+          { upTo: null, unitNanos: 250_000n },
+        ],
+      },
+    },
+    // $0.25 per 1,000 content checks. Jev costs about $0.042 per million input tokens, so at most
+    // about $0.10 per 1,000 for the longest text classified (8,000 characters).
+    "risk.content_checks": { default: flatRate(250_000n) },
   },
 };
 

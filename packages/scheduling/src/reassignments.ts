@@ -17,7 +17,7 @@ import { type Interval, normalizeIntervals, subtractIntervals } from "./engine/i
 import { isBookable, limitUsageKey, occupiedRange } from "./engine/slots.ts";
 import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
-import { resolveEventType } from "./event-types.ts";
+import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { type HostRow, resolveHost } from "./hosts.ts";
 import { checkManagedRun, managedRunWhere } from "./manager.ts";
 import { reassignBooking, skipsOfOverrides } from "./reassign.ts";
@@ -713,6 +713,14 @@ export async function previewReassignment(
     ]);
   }
   const items: ReassignmentPreviewOutput["items"] = [];
+  const prepared = new Map<
+    string,
+    {
+      eventType: EventTypeRow;
+      everyone: ReadonlyMap<string, HostRow>;
+      loaded: Awaited<ReturnType<typeof loadHostInputs>>;
+    }
+  >();
   for (const [eventTypeId, group] of byEventType) {
     const eventType = await resolveEventType(db, env, eventTypeId);
     const unrouted = await candidatesOf(db, env, eventType, {});
@@ -739,7 +747,18 @@ export async function previewReassignment(
       nowMs: now.getTime(),
       calendarFailureMode: failureMode,
     });
-    for (const booking of group) {
+    prepared.set(eventTypeId, { eventType, everyone, loaded });
+  }
+  // In the order a run takes them, whatever their event type: what each uses up is the next one's.
+  const inRunOrder = [...chosen].sort(
+    (a, b) => a.startAt.getTime() - b.startAt.getTime() || (a.id < b.id ? -1 : 1),
+  );
+  for (const booking of inRunOrder) {
+    const { eventTypeId } = booking;
+    const { eventType, everyone, loaded } = prepared.get(eventTypeId) as NonNullable<
+      ReturnType<typeof prepared.get>
+    >;
+    {
       const rows = hostRows.filter((row) => row.bookingId === booking.id);
       const current = new Set(rows.map((row) => row.hostId));
       const members = rows.filter((row) => row.role === "member");

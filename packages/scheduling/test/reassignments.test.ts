@@ -329,6 +329,27 @@ describe("what a run covers", () => {
     expect(await hostsOf(second.id)).toEqual([first.host]);
   });
 
+  test("takes them in the run's order, whatever their event type", async () => {
+    const env = await environment();
+    const [a, c, b] = await Promise.all([host(env, "A"), host(env, "C"), host(env, "B")]);
+    const limits = [{ period: "day", max: 2, scope: "host" }];
+    const x = await pool(env, [a, b], { limits });
+    const y = await pool(env, [c, b], { limits });
+    const nine = await book(env, x.id, at("09:00"), a.id);
+    const noon = await book(env, x.id, at("12:00"), a.id);
+    const ten = await book(env, y.id, at("10:00"), c.id);
+    const selection = { booking_ids: [nine.id, noon.id, ten.id] };
+    const strategy = { to_host: b.id };
+    const { items } = await previewReassignment(env, request(selection, strategy), plain);
+    const proposed = Object.fromEntries(items.map((item) => [item.booking, item.to_host]));
+    expect(proposed).toEqual({ [nine.id]: b.id, [ten.id]: b.id, [noon.id]: null });
+    await start(env, request(selection, strategy));
+    await drain(env);
+    expect(await hostsOf(nine.id)).toEqual([b.id]);
+    expect(await hostsOf(ten.id)).toEqual([b.id]);
+    expect(await hostsOf(noon.id)).toEqual([a.id]);
+  });
+
   test("a limit on an event type only counts what's proposed from it", async () => {
     const env = await environment();
     const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);

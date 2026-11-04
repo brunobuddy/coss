@@ -66,6 +66,7 @@ export type EventTypeFormState = {
   cancelNotice: string;
   rescheduleNotice: string;
   maxGuests: string;
+  maxActivePerAttendee: string;
   calendarDetails: EventTypeObjectOutput["host_calendar_details"];
   questions: QuestionRow[];
   locations: LocationRow[];
@@ -112,6 +113,7 @@ export function eventTypeFormState(eventType: EventTypeObjectOutput): EventTypeF
     cancelNotice: String(eventType.cancel_notice_minutes),
     rescheduleNotice: String(eventType.reschedule_notice_minutes),
     maxGuests: String(eventType.max_guests),
+    maxActivePerAttendee: String(eventType.max_active_bookings_per_attendee ?? ""),
     calendarDetails: eventType.host_calendar_details,
     questions: eventType.questions.map((question, index) => ({
       id: `question-${index}`,
@@ -209,6 +211,9 @@ export function eventTypePayload(state: EventTypeFormState, kind: EventTypeObjec
     reschedule_notice_minutes: Number(state.rescheduleNotice),
     // Each person at a group session takes a seat of their own, so it never has guests.
     max_guests: kind === "group" ? 0 : Number(state.maxGuests),
+    max_active_bookings_per_attendee: state.maxActivePerAttendee.trim()
+      ? Number(state.maxActivePerAttendee)
+      : null,
     host_calendar_details: state.calendarDetails,
     questions: state.questions.map((question) => ({
       key: question.key.trim(),
@@ -334,6 +339,7 @@ const FIELD_LABEL: Record<string, string> = {
   cancel_notice_minutes: "Cancellation notice",
   reschedule_notice_minutes: "Reschedule notice",
   max_guests: "Guests",
+  max_active_bookings_per_attendee: "Upcoming bookings per person",
   host_calendar_details: "Host calendars",
   host_filter: "Attributes to include",
   metadata: "Metadata",

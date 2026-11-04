@@ -209,6 +209,11 @@ interface SchedulingEventTypeFields {
   /** How many people an attendee can add to a booking. Default: 0. Not on `group`. */
   max_guests?: number;
   /**
+   * How many upcoming bookings of this event type one person can have at a time, known by `uid` or
+   * email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`.
+   */
+  max_active_bookings_per_attendee?: number | null;
+  /**
    * What hosts' calendars say about a booking. `neutral` (the default): a private event titled
    * "Appointment". `full`: this title with the attendee's name, plus who's coming in its
    * description, which go to the host's calendar provider. Refused in HIPAA mode.
@@ -261,6 +266,7 @@ export interface SchedulingEventType {
   cancel_notice_minutes: number;
   reschedule_notice_minutes: number;
   max_guests: number;
+  max_active_bookings_per_attendee: number | null;
   host_calendar_details: SchedulingHostCalendarDetails;
   questions: SchedulingQuestion[];
   locations: SchedulingLocation[];

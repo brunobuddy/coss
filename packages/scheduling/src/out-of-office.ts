@@ -11,6 +11,7 @@ import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { decryptSecret, encryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, notInArray, or, sql } from "drizzle-orm";
+import type { Interval } from "./engine/intervals.ts";
 import { DAY_MS, parseLocalDate, wallClockToInstant } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { attributesMatch, checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
@@ -221,6 +222,51 @@ async function delegateIdsOf(
     if (!ids.includes(host.id)) ids.push(host.id);
   }
   return ids;
+}
+
+/**
+ * What a host's standing in for now, read with their row locked. A booking worked out who could take
+ * it before it waited for that lock, and changing cover takes the same lock (`coveringOf`).
+ */
+export async function standingCover(
+  executor: Executor,
+  scope: Scope,
+  hostIds: readonly string[],
+): Promise<ReadonlyMap<string, readonly Interval[]>> {
+  const found = new Map<string, Interval[]>();
+  if (hostIds.length === 0) return found;
+  const rows = await executor
+    .select({
+      hostId: schedulingOutOfOfficeDelegate.hostId,
+      startAt: schedulingOutOfOffice.startAt,
+      endAt: schedulingOutOfOffice.endAt,
+    })
+    .from(schedulingOutOfOfficeDelegate)
+    .innerJoin(
+      schedulingOutOfOffice,
+      eq(schedulingOutOfOffice.id, schedulingOutOfOfficeDelegate.outOfOfficeId),
+    )
+    .where(
+      and(
+        eq(schedulingOutOfOfficeDelegate.organizationId, scope.organizationId),
+        inArray(schedulingOutOfOfficeDelegate.hostId, [...hostIds]),
+        isNull(schedulingOutOfOffice.deletedAt),
+      ),
+    );
+  for (const row of rows) {
+    const windows = found.get(row.hostId) ?? [];
+    windows.push({ startMs: row.startAt.getTime(), endMs: row.endAt.getTime() });
+    found.set(row.hostId, windows);
+  }
+  return found;
+}
+
+/** Whose rows bookers hold while taking this entry's cover: changing it waits for them. */
+async function coveringOf(
+  executor: Executor,
+  row: Pick<OutOfOfficeRow, "id" | "organizationId">,
+): Promise<string[]> {
+  return (await delegatesOf(executor, [row])).get(row.id) ?? [];
 }
 
 /** Someone can't cover for themselves. Across many hosts, that only drops them from their own list. */
@@ -910,7 +956,11 @@ export async function updateOutOfOffice(
   const delegates = await delegateIdsOf(env, params.delegates, opts.allowedDelegates);
   refuseSelfCover(delegates, found.hostId);
   const row = await db.transaction(async (tx) => {
-    await lockHosts(tx, env, [found.hostId]);
+    await lockHosts(tx, env, [
+      found.hostId,
+      ...(await coveringOf(tx, found)),
+      ...(delegates ?? []),
+    ]);
     // First: a run this change starts prefers whoever's covering, and reads them from here.
     if (delegates) await setDelegates(tx, found, delegates);
     return applyChange(tx, env, found.id, params, deps, actor, now, strategy, only, opts);
@@ -991,11 +1041,11 @@ export async function putOutOfOffice(
             isNull(schedulingOutOfOffice.deletedAt),
           ),
         );
-      await lockHosts(
-        tx,
-        env,
-        existing && existing.hostId !== host.id ? [existing.hostId, host.id] : [host.id],
-      );
+      await lockHosts(tx, env, [
+        host.id,
+        ...(existing ? [existing.hostId, ...(await coveringOf(tx, existing))] : []),
+        ...(delegates ?? []),
+      ]);
       if (existing) {
         const [row] = await tx
           .update(schedulingOutOfOffice)
@@ -1083,7 +1133,7 @@ export async function deleteOutOfOffice(
   const now = nowOf(deps);
   return db.transaction(async (tx) => {
     const row = await entryRow(tx, scope, id, only);
-    await lockHosts(tx, scope, [row.hostId]);
+    await lockHosts(tx, scope, [row.hostId, ...(await coveringOf(tx, row))]);
     const [deleted] = await tx
       .update(schedulingOutOfOffice)
       // Nobody will read these again, so they don't wait for the row to go.

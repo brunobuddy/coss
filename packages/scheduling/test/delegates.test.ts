@@ -636,6 +636,71 @@ describe("saying who", () => {
     expect(await listPossibleDelegates(env, gone.id)).toEqual([]);
   });
 
+  describe("taken back while a booking waits", () => {
+    async function lockedDelegate() {
+      const env = await environment();
+      const [a, d] = await Promise.all([host(env, "A"), host(env, "D")]);
+      const type = await eventType(env, "one_on_one", [member(a)]);
+      const [entry] = await away(env, a.id, [d.id]);
+      let release = () => {};
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      let locked = () => {};
+      const holding = new Promise<void>((resolve) => {
+        locked = resolve;
+      });
+      return { env, a, d, type, entry, gate, release, holding, locked };
+    }
+
+    test("a booking finding the cover gone doesn't go to who was covering", async () => {
+      const { env, d, type, entry, gate, release, holding, locked } = await lockedDelegate();
+      const change = db.transaction(async (tx) => {
+        await tx
+          .select({ id: schema.schedulingHost.id })
+          .from(schema.schedulingHost)
+          .where(eq(schema.schedulingHost.id, d.id))
+          .for("update");
+        locked();
+        await gate;
+        await tx
+          .update(schema.schedulingOutOfOffice)
+          .set({ deletedAt: NOW })
+          .where(eq(schema.schedulingOutOfOffice.id, entry?.id as string));
+      });
+      await holding;
+      const booking = book(env, type.id, at("10:00"), { host: d.id });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      release();
+      await change;
+      await expect(booking).rejects.toBeDefined();
+    });
+
+    test("taking it back waits for a booking that's taking it", async () => {
+      const { env, d, entry, gate, release, holding, locked } = await lockedDelegate();
+      const booker = db.transaction(async (tx) => {
+        await tx
+          .select({ id: schema.schedulingHost.id })
+          .from(schema.schedulingHost)
+          .where(eq(schema.schedulingHost.id, d.id))
+          .for("share");
+        locked();
+        await gate;
+      });
+      await holding;
+      let done = false;
+      const removal = deleteOutOfOffice(env, entry?.id as string, plain).then(() => {
+        done = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(done).toBe(false);
+      release();
+      await booker;
+      await removal;
+      expect(done).toBe(true);
+    });
+  });
+
   test("a host can name only those who take the same event types", async () => {
     const env = await environment();
     const [a, b, c] = await Promise.all([host(env, "A"), host(env, "B"), host(env, "C")]);

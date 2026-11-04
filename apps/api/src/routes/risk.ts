@@ -96,8 +96,11 @@ export const createRiskAssessmentRoute = createRoute({
     "Signals that are unavailable at the moment are skipped and listed in `degraded`. " +
     "Call it from your server, never from the browser, and treat errors as `allow` " +
     "(fail open) so an outage never locks your users out. `review` decisions also fire a " +
-    "`risk.assessment.review` webhook. Sandbox (`coss_test_…`) keys accept documented test " +
-    "addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).",
+    "`risk.assessment.review` webhook. Live assessments are billed (`risk.assessments`; plans " +
+    "include some every month) unless they end in `block`. Past Free's allowance, on a billing " +
+    "hold or over a budget, they are free and made without velocity, memory or content " +
+    "(`usage_limit` in `degraded`); they never fail over billing. Sandbox (`coss_test_…`) keys " +
+    "accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).",
   security: [{ bearerAuth: [] }],
   middleware: [
     requireApiKey({ risk: ["assess"] }),
@@ -325,13 +328,15 @@ export function createRiskRoutes(deps: RiskDeps): OpenAPIHono<AppEnv> {
     async (c) => {
       const params = c.req.valid("json");
       const idempotencyKey = c.req.valid("header")["Idempotency-Key"];
-      const { apiKeyId, organizationId, projectId, environmentId, mode } = c.var.auth;
+      const { apiKeyId, ownerUserId, organizationId, projectId, environmentId, mode } = c.var.auth;
       // Tenancy always comes from the authenticated key, never from the request.
       const { assessment, replayed } = await assessRisk(deps, {
         environment: { organizationId, projectId, environmentId, mode },
         params,
         idempotencyKey,
         apiKeyId,
+        userId: ownerUserId,
+        metered: true,
         requestId: c.var.requestId,
       });
       if (replayed) c.header("Idempotent-Replayed", "true");
