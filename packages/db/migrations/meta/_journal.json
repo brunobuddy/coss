@@ -911,6 +911,13 @@
       "when": 1793816022462,
       "tag": "0129_lowly_mentor",
       "breakpoints": true
+    },
+    {
+      "idx": 130,
+      "version": "7",
+      "when": 1793817104534,
+      "tag": "0130_sloppy_chat",
+      "breakpoints": true
     }
   ]
 }

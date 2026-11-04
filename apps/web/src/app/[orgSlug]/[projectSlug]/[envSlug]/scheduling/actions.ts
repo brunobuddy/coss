@@ -4,21 +4,31 @@ import {
   approveBooking,
   type BookingActor,
   cancelBooking,
+  cancelReassignment,
   createEventType,
   createHost,
   createHostSession,
   createOutOfOffice,
+  createReassignment,
   createSchedule,
   declineBooking,
   deleteHost,
   deleteOutOfOffice,
+  previewReassignment,
   reassignBooking,
   SchedulingError,
+  undoReassignment,
   updateHost,
   updateSettings,
 } from "@coss/scheduling";
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
-import { ReassignBookingRequest } from "@coss/scheduling/schemas";
+import {
+  CreateReassignmentRequest,
+  ReassignBookingRequest,
+  type ReassignmentObjectOutput,
+  type ReassignmentPreviewOutput,
+  UndoReassignmentRequest,
+} from "@coss/scheduling/schemas";
 import { getEnvironment } from "@coss/tenancy";
 import { refresh } from "next/cache";
 import type { ActionResult } from "@/lib/action-result";
@@ -172,6 +182,7 @@ export async function createOutOfOfficeAction(_prev: ActionResult | null, formDa
           public_message: optional("publicMessage"),
           notes: optional("notes"),
           show_on_calendar: formData.get("showOnCalendar") === "on",
+          existing_bookings: formData.get("moveBookings") === "on" ? "reassign" : "leave",
         },
         configuredDeps(),
         actorOf(context),
@@ -186,6 +197,110 @@ export async function createOutOfOfficeAction(_prev: ActionResult | null, formDa
     }
     refresh();
     return null;
+  });
+}
+
+/** A read, so it's allowed to whoever can change what it shows, and it doesn't toast. */
+export async function previewReassignmentAction(
+  _prev: ActionResult<ReassignmentPreviewOutput> | null,
+  formData: FormData,
+) {
+  return runAction(async () => {
+    const { env } = await contextFor(formData, "update");
+    const entry = formString(formData, "outOfOfficeId");
+    const host = formString(formData, "fromHost");
+    if (!entry && !host) throw new ActionError("Choose whose bookings.");
+    const before = formString(formData, "startBefore");
+    const preferred = formString(formData, "preferredHost");
+    return friendly(() =>
+      previewReassignment(
+        env,
+        {
+          selection: {
+            ...(entry ? { out_of_office: entry } : { host }),
+            ...(before ? { start_before: before } : {}),
+          },
+          strategy: preferred ? { preferred_hosts: [preferred] } : {},
+        },
+        configuredDeps(),
+      ),
+    );
+  });
+}
+
+export async function startReassignmentAction(
+  _prev: ActionResult<ReassignmentObjectOutput> | null,
+  formData: FormData,
+) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    let assignments: unknown;
+    try {
+      assignments = JSON.parse(formString(formData, "assignments"));
+    } catch {
+      throw new ActionError("That doesn't look right. Please try again.");
+    }
+    const note = formString(formData, "note");
+    const parsed = CreateReassignmentRequest.safeParse({
+      selection: {},
+      strategy: { assignments },
+      reason_code: formString(formData, "reasonCode"),
+      ...(note ? { note } : {}),
+      notify: { attendees: formData.get("notifyAttendees") === "on" },
+    });
+    if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
+    const { reassignment } = await friendly(() =>
+      createReassignment(env, parsed.data, configuredDeps(), actorOf(context)),
+    );
+    await audit(context, "scheduling_reassignment.created", {
+      type: "scheduling_reassignment",
+      id: reassignment.id,
+    });
+    refresh();
+    return reassignment;
+  });
+}
+
+export async function cancelReassignmentAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const row = await friendly(() =>
+      cancelReassignment(env, formString(formData, "reassignmentId"), configuredDeps()),
+    );
+    await audit(context, "scheduling_reassignment.cancelled", {
+      type: "scheduling_reassignment",
+      id: row.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function undoReassignmentAction(
+  _prev: ActionResult<ReassignmentObjectOutput> | null,
+  formData: FormData,
+) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const parsed = UndoReassignmentRequest.safeParse({
+      notify: { attendees: formData.get("notifyAttendees") === "on" },
+    });
+    if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
+    const row = await friendly(() =>
+      undoReassignment(
+        env,
+        formString(formData, "reassignmentId"),
+        parsed.data,
+        configuredDeps(),
+        actorOf(context),
+      ),
+    );
+    await audit(context, "scheduling_reassignment.undone", {
+      type: "scheduling_reassignment",
+      id: row.id,
+    });
+    refresh();
+    return row;
   });
 }
 

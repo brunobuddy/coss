@@ -91,10 +91,32 @@ const { data } = await coss.scheduling.outOfOffice.conflicts(entryId);
 They carry ids, times and statuses, not the attendee's details. If you didn't mark them away from their own page, the
 host also gets an email saying how many there are.
 
-To move them, [reassign](/docs/scheduling/reassigning) each one.
+To move them, [reassign](/docs/scheduling/reassigning) one, or [many at once](/docs/scheduling/reassigning#many-at-once).
 
 A hold that was already there can still be confirmed, and a request can still be approved, during an entry. Both show
 up as conflicts.
+
+## Move what it's in the way of
+
+Existing bookings only move if you say so:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.outOfOffice.create({
+  host: "doctor_482",
+  start_date: "2027-08-02",
+  end_date: "2027-08-13",
+  existing_bookings: "reassign",
+  reassign: { preferred_hosts: ["doctor_518"] },
+});
+```
+
+That starts a [reassignment](/docs/scheduling/reassigning#many-at-once) when there's anything to move, and again if the
+entry's times change later. `reassign` takes `to_host`, or `preferred_hosts` and `otherwise`; without it, each goes to
+the fairest who's free. A booking nobody can take stays where it is. The host's email comes a little later and only
+counts what's left.
 
 ## What people booking see
 

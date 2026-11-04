@@ -104,6 +104,77 @@ gets a new one, and the attendee hears when it's ready. If they stay, the link d
 `reason_code` and `note` stay in the booking's history. They're never in webhooks, logs or emails, and the note is
 encrypted and goes when the attendee's details do.
 
+## Many at once
+
+When someone's away, leaving or has too much on, a run moves up to 5,000 bookings in the background. See who each would
+go to first:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: preview } = await coss.scheduling.reassignments.preview({
+  selection: { host: "doctor_482", start_before: "2027-08-14T00:00:00.000Z" },
+  strategy: { preferred_hosts: ["doctor_518"] },
+});
+```
+
+Each item says who it would go to, or why it would stay. The preview works down them in order, so two can't both be
+promised the same free hour, and covers the first 500. Change any of it and start the run with what you've decided:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const bookingId: string;
+// ---cut---
+const { data: run } = await coss.scheduling.reassignments.create(
+  {
+    selection: {},
+    strategy: { assignments: [{ booking: bookingId, to_host: "doctor_518" }] },
+    reason_code: "out_of_office",
+  },
+  { idempotencyKey: "cover-priya-august" },
+);
+```
+
+Or skip the preview and say how to choose. A `selection` needs a `host`, an `out_of_office` entry, `booking_ids` or a
+`series`, and can be narrowed with `start_after`, `start_before`, `event_types` and `external_conflict`. A `strategy` is
+one of:
+
+| Strategy | What it does |
+|---|---|
+| `{ to_host }` | Gives them all to one host |
+| `{ preferred_hosts }` | Tries these in order, then the fairest who's free |
+| `{ preferred_hosts, otherwise: "leave" }` | Tries these in order, and leaves the rest where they are |
+| `{ assignments }` | Says who each goes to |
+
+The run decides again for each booking, since things change. **Nothing's ever cancelled**: a booking nobody can take
+stays where it is, and the run says so. Each booking is its own transaction, so one that can't move never holds up the
+rest, and a series stays on one host where it can. A group session counts once.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const runId: string;
+// ---cut---
+const { data: progress } = await coss.scheduling.reassignments.get(runId);
+const { data: items } = await coss.scheduling.reassignments.items(runId);
+await coss.scheduling.reassignments.cancel(runId);
+await coss.scheduling.reassignments.undo(runId);
+```
+
+`counts` says how it's going, and each item what happened: `reassigned`, `skipped_changed` (it moved on since),
+`no_candidate`, `failed` or `cancelled`. Cancelling stops what hasn't happened yet. Undoing gives back what moved, as a
+new run: a booking that's moved on since stays where it went, and a former host who's no longer free keeps theirs from
+going back, unless you pass `overrides`.
+
+By default each host gets one email for the run, saying how many came and went, and attendees hear per booking.
+`notify: { hosts: "each" }` sends hosts one per booking, `"none"` none, and `attendees: false` leaves attendees out.
+
+To move a host's bookings when they go away, say so on [the entry](/docs/scheduling/out-of-office#move-what-its-in-the-way-of).
+
 ## Webhooks
 
-`scheduling.booking.reassigned` carries `host_ids` and `previous_host_ids`. See [Webhooks](/docs/webhooks).
+`scheduling.booking.reassigned` carries `host_ids` and `previous_host_ids`, and `reassignment_id` when a run moved it.
+`scheduling.reassignment.completed` says a run's finished or was cancelled, with its `counts`. See
+[Webhooks](/docs/webhooks).

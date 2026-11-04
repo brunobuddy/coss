@@ -71,6 +71,25 @@ export type SchedulingNotificationPolicy = Record<
   { emailAttendee?: boolean; emailHost?: boolean; smsAttendee?: boolean }
 >;
 
+export type SchedulingReassignmentSelection = {
+  host_id?: string;
+  start_after?: string;
+  start_before?: string;
+  event_type_ids?: string[];
+  booking_ids?: string[];
+  out_of_office_id?: string;
+  series_id?: string;
+  external_conflict?: boolean;
+};
+
+export type SchedulingReassignmentStrategy =
+  | { kind: "to_host"; host_id: string }
+  | { kind: "auto"; preferred_host_ids: string[]; otherwise: "auto" | "leave" }
+  | {
+      kind: "assignments";
+      assignments: { booking_id: string; to_host_id: string; from_host_id?: string }[];
+    };
+
 export type SchedulingActor =
   | { kind: "api_key"; id: string }
   | { kind: "user"; id: string }
@@ -137,6 +156,29 @@ export const schedulingOutOfOfficeSource = pgEnum("scheduling_out_of_office_sour
   "manager",
   "dashboard",
   "holiday",
+]);
+export const schedulingReassignmentStatus = pgEnum("scheduling_reassignment_status", [
+  "pending",
+  "running",
+  "completed",
+  "cancelled",
+]);
+export const schedulingReassignmentOutcome = pgEnum("scheduling_reassignment_outcome", [
+  "pending",
+  "reassigned",
+  "skipped_changed",
+  "no_candidate",
+  "failed",
+  "cancelled",
+]);
+export const schedulingReassignmentHostNotice = pgEnum("scheduling_reassignment_host_notice", [
+  "digest",
+  "each",
+  "none",
+]);
+export const schedulingOutOfOfficeExisting = pgEnum("scheduling_out_of_office_existing", [
+  "leave",
+  "reassign",
 ]);
 export const schedulingCalendarFailureMode = pgEnum("scheduling_calendar_failure_mode", [
   "hide",
@@ -205,6 +247,9 @@ export const schedulingOutOfOffice = pgTable(
     encryptedNotes: text("encrypted_notes"),
     publicMessage: text("public_message"),
     showOnCalendar: boolean("show_on_calendar").notNull().default(true),
+    // What happens to bookings already in the way: never touched unless this says `reassign`.
+    existingBookings: schedulingOutOfOfficeExisting("existing_bookings").notNull().default("leave"),
+    reassignStrategy: jsonb("reassign_strategy").$type<SchedulingReassignmentStrategy | null>(),
     source: schedulingOutOfOfficeSource("source").notNull(),
     externalId: text("external_id"),
     // One request across several hosts.
@@ -909,6 +954,8 @@ export const schedulingNotification = pgTable(
     environmentId: text("environment_id").notNull(),
     bookingId: text("booking_id"),
     hostId: text("host_id"),
+    // A digest of a bulk reassignment. No FK: it's worth sending if the report's gone.
+    reassignmentId: text("reassignment_id"),
     kind: text("kind").notNull(),
     channel: schedulingNotificationChannel("channel").notNull(),
     recipient: schedulingNotificationRecipient("recipient").notNull(),
@@ -1000,6 +1047,90 @@ export const schedulingSession = pgTable(
         OR (${t.kind} = 'booker' AND (${t.eventTypeId} IS NOT NULL OR ${t.hostId} IS NOT NULL))
         OR (${t.kind} = 'manage' AND ${t.bookingId} IS NOT NULL)`,
     ),
+  ],
+);
+
+/** Moving many bookings at once: what it covers, what to do with them, and how it went. */
+export const schedulingReassignment = pgTable(
+  "scheduling_reassignment",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.schedulingReassignment)),
+    organizationId: text("organization_id").notNull(),
+    projectId: text("project_id").notNull(),
+    environmentId: text("environment_id").notNull(),
+    status: schedulingReassignmentStatus("status").notNull().default("pending"),
+    selection: jsonb("selection").$type<SchedulingReassignmentSelection>().notNull(),
+    strategy: jsonb("strategy").$type<SchedulingReassignmentStrategy>().notNull(),
+    reasonCode: text("reason_code").notNull(),
+    encryptedNote: text("encrypted_note"),
+    overrides: jsonb("overrides").$type<string[]>().notNull().default([]),
+    notifyAttendees: boolean("notify_attendees").notNull().default(true),
+    notifyHosts: schedulingReassignmentHostNotice("notify_hosts").notNull().default("digest"),
+    // No FK on either: a report outlives the entry it came from, and the run it undid.
+    outOfOfficeId: text("out_of_office_id"),
+    undoOfId: text("undo_of_id"),
+    actor: jsonb("actor").$type<SchedulingActor>().notNull(),
+    idempotencyKey: text("idempotency_key"),
+    requestHash: text("request_hash"),
+    leaseUntil: instant("lease_until"),
+    expandedAt: instant("expanded_at"),
+    startedAt: instant("started_at"),
+    finishedAt: instant("finished_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    foreignKey({
+      name: "scheduling_reassignment_environment_fk",
+      columns: [t.environmentId, t.organizationId],
+      foreignColumns: [environment.id, environment.organizationId],
+    }).onDelete("cascade"),
+    unique("scheduling_reassignment_id_organization_unique").on(t.id, t.organizationId),
+    unique("scheduling_reassignment_idempotency_unique").on(t.environmentId, t.idempotencyKey),
+    index("scheduling_reassignment_environment_idx").on(t.environmentId, t.id),
+    index("scheduling_reassignment_due_idx")
+      .on(t.createdAt)
+      .where(sql`${t.status} IN ('pending', 'running')`),
+    index("scheduling_reassignment_created_at_idx").on(t.createdAt),
+  ],
+);
+
+/** One booking of a run, and how it went. A group session has one, for one of its seats. */
+export const schedulingReassignmentItem = pgTable(
+  "scheduling_reassignment_item",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.schedulingReassignmentItem)),
+    organizationId: text("organization_id").notNull(),
+    reassignmentId: text("reassignment_id").notNull(),
+    bookingId: text("booking_id").notNull(),
+    // Host ids and no FKs: a report still says who it went to after they've been deleted.
+    fromHostId: text("from_host_id"),
+    toHostId: text("to_host_id"),
+    seriesId: text("series_id"),
+    startAt: instant("start_at").notNull(),
+    outcome: schedulingReassignmentOutcome("outcome").notNull().default("pending"),
+    errorCode: text("error_code"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    foreignKey({
+      name: "scheduling_reassignment_item_reassignment_fk",
+      columns: [t.reassignmentId, t.organizationId],
+      foreignColumns: [schedulingReassignment.id, schedulingReassignment.organizationId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "scheduling_reassignment_item_booking_fk",
+      columns: [t.bookingId, t.organizationId],
+      foreignColumns: [schedulingBooking.id, schedulingBooking.organizationId],
+    }).onDelete("cascade"),
+    unique("scheduling_reassignment_item_booking_unique").on(t.reassignmentId, t.bookingId),
+    index("scheduling_reassignment_item_pending_idx")
+      .on(t.reassignmentId, t.startAt, t.id)
+      .where(sql`${t.outcome} = 'pending'`),
+    index("scheduling_reassignment_item_booking_idx").on(t.bookingId),
   ],
 );
 

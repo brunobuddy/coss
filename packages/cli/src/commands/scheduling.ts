@@ -3,6 +3,7 @@ import type {
   Coss,
   SchedulingBooking,
   SchedulingBookingStatus,
+  SchedulingReassignmentCounts,
   SchedulingReassignmentOverride,
   SchedulingReassignmentReason,
 } from "coss";
@@ -382,6 +383,182 @@ const candidates: Command = defineCommand({
   },
 });
 
+const MANY_FLAGS = {
+  from: { type: "string", value: "<host>", description: "Whose bookings, by id or uid" },
+  ooo: { type: "string", value: "<id>", description: "The bookings in this out of office entry" },
+  to: { type: "string", value: "<host>", description: "Give them all to this host" },
+  preferred: {
+    type: "string",
+    value: "<hosts>",
+    description: "Try these first, comma-separated",
+  },
+  "leave-rest": {
+    type: "boolean",
+    description: "After --preferred, keep the rest where they are",
+  },
+  after: { type: "string", value: "<time>", description: "Only bookings ending after this" },
+  before: { type: "string", value: "<time>", description: "Only bookings starting before this" },
+  reason: REASSIGN_FLAGS.reason,
+  note: REASSIGN_FLAGS.note,
+  "no-notify": { type: "boolean", description: "Don't tell attendees" },
+  "dry-run": { type: "boolean", description: "Show who they'd go to, and move nothing" },
+  json: { type: "boolean", description: "One item per line, as JSON" },
+} as const satisfies Flags;
+
+const reassignMany: Command = defineCommand({
+  name: "scheduling reassign-many",
+  summary: "Move many bookings to other hosts",
+  usage: "(--from <host> | --ooo <id>)",
+  description:
+    "Moves them in the background. Each host hears once, and attendees per booking unless --no-notify. A booking nobody can take stays where it is. Start with --dry-run to see who they'd go to.",
+  flags: MANY_FLAGS,
+  run: async ({ values, context }: CommandInput<typeof MANY_FLAGS>) => {
+    if (Boolean(values.from) === Boolean(values.ooo)) {
+      throw new UsageError("Pass one of --from <host> and --ooo <id>.");
+    }
+    if (values.to && values.preferred) {
+      throw new UsageError("Pass one of --to and --preferred.");
+    }
+    const reason = (values.reason ?? "other") as SchedulingReassignmentReason;
+    if (!REASSIGN_REASONS.includes(reason)) {
+      throw new UsageError(`--reason takes one of ${REASSIGN_REASONS.join(", ")}.`);
+    }
+    const selection = {
+      ...(values.from ? { host: values.from } : {}),
+      ...(values.ooo ? { out_of_office: values.ooo } : {}),
+      ...(values.after ? { start_after: values.after } : {}),
+      ...(values.before ? { start_before: values.before } : {}),
+    };
+    const strategy = {
+      ...(values.to ? { to_host: values.to } : {}),
+      ...(values.preferred ? { preferred_hosts: values.preferred.split(",") } : {}),
+      ...(values["leave-rest"] ? { otherwise: "leave" as const } : {}),
+    };
+    const coss = await client(context);
+    const { out } = context;
+    if (values["dry-run"]) {
+      const { data, error } = await coss.scheduling.reassignments.preview({ selection, strategy });
+      if (error) throw apiError("Couldn't preview that", error);
+      if (out.json) {
+        for (const item of data.items) out.data(item);
+        return 0;
+      }
+      if (data.items.length === 0) {
+        out.info("Nothing to move.");
+        return 0;
+      }
+      const lines = table([
+        ["BOOKING", "START", "FROM", "TO", "WHY NOT"],
+        ...data.items.map((item) => [
+          item.booking,
+          when(item.start),
+          item.from_host ?? "",
+          item.to_host ?? "stays",
+          item.reason ?? "",
+        ]),
+      ]);
+      for (const line of lines) out.line(line);
+      if (data.truncated) out.info("That's the first 500.");
+      return 0;
+    }
+    const { data, error } = await coss.scheduling.reassignments.create({
+      selection,
+      strategy,
+      reason_code: reason,
+      ...(values.note ? { note: values.note } : {}),
+      ...(values["no-notify"] ? { notify: { attendees: false } } : {}),
+    });
+    if (error) throw apiError("Couldn't start that", error);
+    if (out.json) {
+      out.data(data);
+      return 0;
+    }
+    out.line(data.id);
+    out.info(`Follow it with: coss scheduling reassignment ${data.id}`);
+    return 0;
+  },
+});
+
+const REASSIGNMENTS_FLAGS = {
+  limit: LIMIT,
+  json: { type: "boolean", description: "One run per line, as JSON" },
+} as const satisfies Flags;
+
+const countsLine = (counts: SchedulingReassignmentCounts) =>
+  `${counts.reassigned} of ${counts.total} moved, ${counts.no_candidate} stayed, ${counts.skipped} skipped, ${counts.failed} failed`;
+
+const reassignments: Command = defineCommand({
+  name: "scheduling reassignments",
+  summary: "List bulk reassignments",
+  description: "The environment's runs, newest first, with how each went.",
+  flags: REASSIGNMENTS_FLAGS,
+  run: async ({ values, context }: CommandInput<typeof REASSIGNMENTS_FLAGS>) => {
+    const coss = await client(context);
+    const limit = limitOf(values.limit);
+    const { data, error } = await coss.scheduling.reassignments.list(limit ? { limit } : {});
+    if (error) throw apiError("Couldn't list reassignments", error);
+    const { out } = context;
+    if (out.json) {
+      for (const item of data.data) out.data(item);
+      return 0;
+    }
+    if (data.data.length === 0) {
+      out.info("No reassignments yet.");
+      return 0;
+    }
+    const lines = table([
+      ["ID", "STATUS", "CREATED", "PROGRESS"],
+      ...data.data.map((row) => [row.id, row.status, when(row.created_at), countsLine(row.counts)]),
+    ]);
+    for (const line of lines) out.line(line);
+    return 0;
+  },
+});
+
+const REASSIGNMENT_FLAGS = {
+  cancel: { type: "boolean", description: "Stop what hasn't happened yet" },
+  undo: { type: "boolean", description: "Give back what it moved, as a new run" },
+  json: { type: "boolean", description: "As JSON" },
+} as const satisfies Flags;
+
+const reassignment: Command = defineCommand({
+  name: "scheduling reassignment",
+  summary: "Show, cancel or undo a bulk reassignment",
+  usage: "<id> [--cancel | --undo]",
+  description: "How a run went, and what happened to each booking that didn't move.",
+  flags: REASSIGNMENT_FLAGS,
+  positionals: true,
+  run: async ({ positionals, values, context }: CommandInput<typeof REASSIGNMENT_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling reassignment <id>") as [string];
+    if (values.cancel && values.undo) throw new UsageError("Pass one of --cancel and --undo.");
+    const coss = await client(context);
+    const { out } = context;
+    const { data, error } = values.cancel
+      ? await coss.scheduling.reassignments.cancel(id)
+      : values.undo
+        ? await coss.scheduling.reassignments.undo(id)
+        : await coss.scheduling.reassignments.get(id);
+    if (error) throw apiError("Couldn't do that", error);
+    if (out.json) {
+      out.data(data);
+      return 0;
+    }
+    out.line(`${data.id}  ${data.status}`);
+    out.line(countsLine(data.counts));
+    if (values.undo) return 0;
+    const items = await coss.scheduling.reassignments.items(id, { limit: 100 });
+    if (items.error) throw apiError("Couldn't list what happened", items.error);
+    const unmoved = items.data.data.filter((item) => item.outcome !== "reassigned");
+    if (unmoved.length === 0) return 0;
+    const lines = table([
+      ["BOOKING", "OUTCOME", "CODE"],
+      ...unmoved.map((item) => [item.booking, item.outcome, item.error_code ?? ""]),
+    ]);
+    for (const line of lines) out.line(line);
+    return 0;
+  },
+});
+
 const OOO_FLAGS = {
   host: { type: "string", value: "<host>", description: "One host's entries, by id or uid" },
   limit: LIMIT,
@@ -476,6 +653,9 @@ export const SCHEDULING_COMMANDS: readonly Command[] = [
   cancel,
   reassign,
   candidates,
+  reassignMany,
+  reassignments,
+  reassignment,
   outOfOffice,
   calendars,
 ];

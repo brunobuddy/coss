@@ -74,6 +74,7 @@ import {
   renewDueCalendarChannels,
   runDueCalendarSyncs,
   runDueCalendarWrites,
+  runDueReassignments,
   runDueSchedulingNotifications,
   type SchedulingWorkerDeps,
 } from "@coss/scheduling";
@@ -259,6 +260,7 @@ export const WORKER_LOOP_NAMES = [
   "scheduling-calendar-channels",
   "scheduling-calendar-host-edits",
   "scheduling-out-of-office",
+  "scheduling-reassignments",
   "email-dispatch",
   "email-dispatch-marketing",
   "webhooks",
@@ -757,6 +759,12 @@ export function startJobs(deps: WorkerDeps): Loop[] {
         run: async () =>
           (await announceDueOutOfOffice(scheduling, { limit: SCHEDULING_BATCH })) ===
           SCHEDULING_BATCH,
+      }),
+      start({
+        // A run's fifty bookings at a time, one transaction each. Soon, since someone's waiting.
+        name: "scheduling-reassignments",
+        intervalMs: 2000,
+        run: async () => (await runDueReassignments(scheduling, { limit: 5 })) > 0,
       }),
     );
     const notifications = deps.schedulingNotifications;

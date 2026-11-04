@@ -48,8 +48,9 @@ what someone needs; the browser never sees them or sends its own.
 `out-of-office.ts`: time a host is away, one row per host. `HostInputs.away` keeps them from being offered, and
 `isBookable` checks it before the calendar's verdict, so the reason's honest, and before the session branch, so a
 running session can't be joined; `joinGroupSession` checks it too, since a join with live seats never calls
-`isBookable`. **It never touches an existing booking**, which it only reports as a conflict (`listOutOfOfficeConflicts`,
-and a count-only email to the host unless they did it themselves). Accepted: confirming a hold or approving a request
+`isBookable`. **It only touches an existing booking if it's asked to** (`existing_bookings: "reassign"`, which starts a
+run; see "Moving many"). Otherwise it reports them as conflicts (`listOutOfOfficeConflicts`, and a count-only email to
+the host unless they did it themselves). Accepted: confirming a hold or approving a request
 that was already there skips the check, and those bookings show up as conflicts.
 
 - A write takes `for no key update` on the host row, and bookers hold `share`, so a booking either commits first and
@@ -86,6 +87,32 @@ source only takes `key share`, with no status check, since leaving a disabled ho
   which outlives the attendee's data) and goes with their details.
 - Host emails address `hostId`, and only those joining and leaving hear: a co-host has nothing new to know. Later
   changes supersede earlier ones, so going to someone and back says nothing stale.
+
+## Moving many
+
+`reassignments.ts`: a run is a row and its items, and each booking goes through `reassignBooking` in its own transaction,
+so one that can't move never holds up the rest. **It never cancels a booking**: one nobody can take stays, and its item
+says `no_candidate`.
+
+- Creating a run only inserts its row. The worker's `scheduling-reassignments` loop works out the items once: an item's
+  FK takes `key share` on a booking, and doing that under out of office's hold on the host would deadlock with a
+  reschedule, which takes the booking and then the host. `reassignment-row.ts` is what out of office calls, and imports
+  only the database, since `out-of-office.ts` is imported by `bookings.ts`, whose internals `reassign.ts` destructures
+  when it loads: importing `reassign.ts` from there is an import cycle that crashes.
+- A run is leased (`lease_until`, `for update skip locked`), and renewing the lease before each item is the fence: a
+  worker that lost it, or a run that's been cancelled, stops. A move's outcome is written by `onMoved`, in the move's own
+  transaction, so a report can't disagree with what happened, and a crash in between can't leave a booking moved and
+  its item pending. An outcome that isn't a move only writes over `pending`.
+- A preview simulates: it adds what it's proposed to each host's claims and limits, and to a pool's counts, so two
+  bookings can't be promised one free hour. It uses `isBookable` and `candidatesOf` per booking's routing, like the run,
+  and promises nothing: the run decides again.
+- A session counts once, as `min(id)` of its seats: never page bookings and dedupe afterwards, or a big session eats the
+  limit. The 5,000 cap counts the same way.
+- Hosts get one `reassignment_summary` email per run, with counts read at send time, and `quietHosts` keeps per-booking
+  ones away. Attendees still hear per booking. Each booking's history gets its own copy of the note; the run's is
+  cleared when it finishes, and only exists for that long.
+- `existing_bookings: "reassign"` delays the conflicts email by 15 minutes, since it counts what's left when it's sent.
+  Changing an entry's notes doesn't start another run; changing its times does.
 
 ## Slots
 

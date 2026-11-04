@@ -33,10 +33,12 @@ export const SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES = [
   "scheduling.out_of_office.ended",
 ] as const;
 export type OutOfOfficeWebhookEventType = (typeof SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES)[number];
+export const SCHEDULING_REASSIGNMENT_EVENT_TYPES = ["scheduling.reassignment.completed"] as const;
 export const SCHEDULING_WEBHOOK_EVENT_TYPES = [
   ...SCHEDULING_BOOKING_EVENT_TYPES,
   ...SCHEDULING_CALENDAR_EVENT_TYPES,
   ...SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES,
+  ...SCHEDULING_REASSIGNMENT_EVENT_TYPES,
 ] as const;
 export type SchedulingWebhookEventType = (typeof SCHEDULING_WEBHOOK_EVENT_TYPES)[number];
 
@@ -235,6 +237,30 @@ const outOfOfficeWhen = {
   }),
 };
 
+const OutOfOfficeReassign = z
+  .strictObject({
+    to_host: z.string().optional().meta({ description: "Give them all to this host." }),
+    preferred_hosts: z.array(z.string()).max(20).optional().meta({
+      description: "Try these first, in order.",
+    }),
+    otherwise: z.enum(["auto", "leave"]).optional().meta({
+      description:
+        "After `preferred_hosts`: `auto` picks the fairest who's free (the default), `leave` keeps it where it is.",
+    }),
+  })
+  .meta({ id: "SchedulingOutOfOfficeReassign" });
+
+const outOfOfficeExisting = {
+  existing_bookings: z.enum(["leave", "reassign"]).optional().meta({
+    description:
+      "What happens to bookings already in the way. `leave` (the default) only reports them. `reassign` moves them, and any nobody can take stay where they are.",
+  }),
+  reassign: OutOfOfficeReassign.optional().meta({
+    description:
+      "With `existing_bookings: reassign`: who they go to. Default: the fairest who's free.",
+  }),
+};
+
 const outOfOfficeDetails = {
   reason: OutOfOfficeReasonKey.optional(),
   notes: z.string().max(2000).optional().meta({
@@ -265,6 +291,7 @@ export const CreateOutOfOfficeRequest = z
     }),
     ...outOfOfficeWhen,
     ...outOfOfficeDetails,
+    ...outOfOfficeExisting,
     external_id: z.string().min(1).max(255).optional().meta({
       description: "Your own id for this entry, unique in the environment. Needs one host.",
     }),
@@ -293,6 +320,7 @@ export const PutOutOfOfficeRequest = z
     host: z.string().meta({ description: "The host, by id or uid." }),
     ...outOfOfficeWhen,
     ...outOfOfficeDetails,
+    ...outOfOfficeExisting,
   })
   .meta({
     id: "PutSchedulingOutOfOfficeRequest",
@@ -314,6 +342,7 @@ export const UpdateOutOfOfficeRequest = z
     notes: z.string().max(2000).nullable().optional(),
     public_message: z.string().max(300).nullable().optional(),
     show_on_calendar: z.boolean().optional(),
+    ...outOfOfficeExisting,
   })
   .meta({
     id: "UpdateSchedulingOutOfOfficeRequest",
@@ -332,6 +361,7 @@ const OUT_OF_OFFICE_EXAMPLE = {
   notes: null,
   public_message: "Back on the 16th.",
   show_on_calendar: true,
+  existing_bookings: "leave" as const,
   external_id: null,
   group: null,
   source: "api" as const,
@@ -354,6 +384,7 @@ export const OutOfOfficeObject = z
     notes: z.string().nullable(),
     public_message: z.string().nullable(),
     show_on_calendar: z.boolean(),
+    existing_bookings: z.enum(["leave", "reassign"]),
     external_id: z.string().nullable(),
     group: z.string().nullable().meta({
       description: "Shared by the entries one request made for several hosts.",
@@ -1225,6 +1256,243 @@ export const ReassignBookingRequest = z
   });
 export type ReassignBookingRequestOutput = z.output<typeof ReassignBookingRequest>;
 
+const REASSIGNMENT_NOTIFY = z
+  .strictObject({
+    attendees: z.boolean().optional().meta({ description: "Tell attendees. Default: true." }),
+    hosts: z.enum(["digest", "each", "none"]).optional().meta({
+      description: "`digest` (the default) sends each host one email for the run.",
+    }),
+  })
+  .optional();
+
+const REASSIGNMENT_SELECTION = z
+  .strictObject({
+    host: z.string().optional().meta({ description: "This host's bookings, by id or uid." }),
+    out_of_office: z.string().optional().meta({
+      description: "The bookings that fall in this entry.",
+    }),
+    booking_ids: z.array(z.string()).max(5000).optional(),
+    series: z.string().optional().meta({ description: "A series' occurrences still to come." }),
+    start_after: Instant.optional(),
+    start_before: Instant.optional(),
+    event_types: z.array(z.string()).max(100).optional(),
+    external_conflict: z.boolean().optional().meta({
+      description: "Only those with something else on the host's calendar at that time.",
+    }),
+  })
+  .meta({ id: "SchedulingReassignmentSelection" });
+
+const REASSIGNMENT_STRATEGY = z
+  .strictObject({
+    to_host: z.string().optional().meta({ description: "Give them all to this host." }),
+    preferred_hosts: z.array(z.string()).max(20).optional().meta({
+      description: "Try these first, in order.",
+    }),
+    otherwise: z.enum(["auto", "leave"]).optional().meta({
+      description:
+        "After `preferred_hosts`: `auto` picks the fairest who's free, `leave` keeps it where it is.",
+    }),
+    assignments: z
+      .array(
+        z.strictObject({
+          booking: z.string(),
+          to_host: z.string(),
+          from_host: z.string().optional(),
+        }),
+      )
+      .max(5000)
+      .optional()
+      .meta({ description: "Who each goes to: a preview, with your changes." }),
+  })
+  .meta({ id: "SchedulingReassignmentStrategy" });
+
+export const PreviewReassignmentRequest = z
+  .strictObject({
+    selection: REASSIGNMENT_SELECTION,
+    strategy: REASSIGNMENT_STRATEGY.default({}),
+    overrides: z.array(z.enum(REASSIGNMENT_OVERRIDES)).max(6).optional(),
+  })
+  .meta({
+    id: "PreviewSchedulingReassignmentRequest",
+    examples: [
+      {
+        selection: { host: "doctor_482", start_before: "2027-08-14T00:00:00.000Z" },
+        strategy: { preferred_hosts: ["doctor_518"] },
+      },
+    ],
+  });
+export type PreviewReassignmentRequestOutput = z.output<typeof PreviewReassignmentRequest>;
+
+export const CreateReassignmentRequest = z
+  .strictObject({
+    selection: REASSIGNMENT_SELECTION,
+    strategy: REASSIGNMENT_STRATEGY.default({}),
+    reason_code: z.enum(REASSIGNMENT_REASONS),
+    note: z.string().max(500).optional().meta({
+      description: "Why, in your words: required with an override of someone's availability.",
+    }),
+    overrides: z.array(z.enum(REASSIGNMENT_OVERRIDES)).max(6).optional(),
+    notify: REASSIGNMENT_NOTIFY,
+  })
+  .meta({
+    id: "CreateSchedulingReassignmentRequest",
+    examples: [
+      {
+        selection: { out_of_office: "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m" },
+        strategy: { preferred_hosts: ["doctor_518"] },
+        reason_code: "out_of_office",
+      },
+    ],
+  });
+export type CreateReassignmentRequestOutput = z.output<typeof CreateReassignmentRequest>;
+
+export const UndoReassignmentRequest = z
+  .strictObject({
+    reason_code: z.enum(REASSIGNMENT_REASONS).optional(),
+    note: z.string().max(500).optional(),
+    overrides: z.array(z.enum(REASSIGNMENT_OVERRIDES)).max(6).optional(),
+    notify: REASSIGNMENT_NOTIFY,
+  })
+  .meta({ id: "UndoSchedulingReassignmentRequest", examples: [{ reason_code: "other" }] });
+export type UndoReassignmentRequestOutput = z.output<typeof UndoReassignmentRequest>;
+
+const REASSIGNMENT_COUNTS = {
+  total: 12,
+  pending: 0,
+  reassigned: 11,
+  skipped: 0,
+  no_candidate: 1,
+  failed: 0,
+  cancelled: 0,
+};
+
+const ReassignmentCounts = z.object({
+  total: z.number(),
+  pending: z.number(),
+  reassigned: z.number(),
+  skipped: z.number().meta({ description: "They'd moved on since it was selected." }),
+  no_candidate: z.number().meta({ description: "Nobody could take them: they stayed." }),
+  failed: z.number(),
+  cancelled: z.number(),
+});
+
+const REASSIGNMENT_EXAMPLE = {
+  object: "scheduling.reassignment" as const,
+  id: "reasn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  status: "completed" as const,
+  reason_code: "out_of_office" as const,
+  out_of_office: "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  undo_of: null,
+  counts: REASSIGNMENT_COUNTS,
+  created_at: "2027-01-01T10:00:00.000Z",
+  started_at: "2027-01-01T10:00:01.000Z",
+  finished_at: "2027-01-01T10:00:09.000Z",
+};
+
+export const ReassignmentObject = z
+  .object({
+    object: z.literal("scheduling.reassignment"),
+    id: z.string(),
+    status: z.enum(["pending", "running", "completed", "cancelled"]),
+    reason_code: z.enum(REASSIGNMENT_REASONS),
+    out_of_office: z.string().nullable(),
+    undo_of: z.string().nullable(),
+    counts: ReassignmentCounts,
+    created_at: z.string(),
+    started_at: z.string().nullable(),
+    finished_at: z.string().nullable(),
+  })
+  .meta({ id: "SchedulingReassignment", examples: [REASSIGNMENT_EXAMPLE] });
+export type ReassignmentObjectOutput = z.output<typeof ReassignmentObject>;
+
+export const ReassignmentList = listOf(
+  ReassignmentObject,
+  "SchedulingReassignmentList",
+  REASSIGNMENT_EXAMPLE,
+);
+
+const REASSIGNMENT_ITEM_EXAMPLE = {
+  object: "scheduling.reassignment_item" as const,
+  id: "reasi_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  booking: "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  from_host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  to_host: "host_01kd2m9a0b1c2d3e4f5g6h7j8n",
+  outcome: "reassigned" as const,
+  error_code: null,
+};
+
+export const ReassignmentItemObject = z
+  .object({
+    object: z.literal("scheduling.reassignment_item"),
+    id: z.string(),
+    booking: z.string(),
+    from_host: z.string().nullable(),
+    to_host: z.string().nullable(),
+    outcome: z.enum([
+      "pending",
+      "reassigned",
+      "skipped_changed",
+      "no_candidate",
+      "failed",
+      "cancelled",
+    ]),
+    error_code: z.string().nullable(),
+  })
+  .meta({ id: "SchedulingReassignmentItem", examples: [REASSIGNMENT_ITEM_EXAMPLE] });
+export type ReassignmentItemObjectOutput = z.output<typeof ReassignmentItemObject>;
+
+export const ReassignmentItemList = listOf(
+  ReassignmentItemObject,
+  "SchedulingReassignmentItemList",
+  REASSIGNMENT_ITEM_EXAMPLE,
+);
+
+export const ReassignmentPreview = z
+  .object({
+    object: z.literal("scheduling.reassignment_preview"),
+    items: z.array(
+      z.object({
+        booking: z.string(),
+        event_type: z.string(),
+        title: z.string(),
+        status: z.enum(BOOKING_STATUSES),
+        start: z.string(),
+        end: z.string(),
+        series: z.string().nullable(),
+        group_session: z.string().nullable(),
+        from_host: z.string().nullable(),
+        to_host: z.string().nullable().meta({ description: "Null when nobody could take it." }),
+        reason: z.string().nullable().meta({ description: "Why it would stay where it is." }),
+      }),
+    ),
+    truncated: z.boolean().meta({ description: "There are more than a preview covers." }),
+  })
+  .meta({
+    id: "SchedulingReassignmentPreview",
+    examples: [
+      {
+        object: "scheduling.reassignment_preview",
+        items: [
+          {
+            booking: "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            title: "Consultation",
+            status: "confirmed",
+            start: "2027-08-03T15:00:00.000Z",
+            end: "2027-08-03T15:30:00.000Z",
+            series: null,
+            group_session: null,
+            from_host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            to_host: "host_01kd2m9a0b1c2d3e4f5g6h7j8n",
+            reason: null,
+          },
+        ],
+        truncated: false,
+      },
+    ],
+  });
+export type ReassignmentPreviewOutput = z.output<typeof ReassignmentPreview>;
+
 export const ReassignCandidatesQuery = z.object({
   from_host: z.string().optional().meta({
     description: "The host who'd leave, when it could be several.",
@@ -1411,6 +1679,38 @@ export const SchedulingOutOfOfficeWebhookEvent = z
           start: "2027-08-02T04:00:00.000Z",
           end: "2027-08-14T04:00:00.000Z",
           group: null,
+          occurred_at: "2027-01-01T10:00:00.000Z",
+        },
+      },
+    ],
+  });
+
+export const SchedulingReassignmentWebhookEvent = z
+  .object({
+    ...webhookEnvelope,
+    type: z.enum(SCHEDULING_REASSIGNMENT_EVENT_TYPES),
+    data: z.object({
+      reassignment_id: z.string(),
+      status: z.enum(["completed", "cancelled"]),
+      out_of_office_id: z.string().nullable(),
+      counts: ReassignmentCounts,
+      occurred_at: z.string(),
+    }),
+  })
+  .meta({
+    id: "SchedulingReassignmentWebhookEvent",
+    examples: [
+      {
+        id: "evt_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        object: "event",
+        type: "scheduling.reassignment.completed",
+        api_version: LATEST_API_VERSION,
+        created_at: "2027-01-01T10:00:00.000Z",
+        data: {
+          reassignment_id: "reasn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+          status: "completed",
+          out_of_office_id: null,
+          counts: REASSIGNMENT_COUNTS,
           occurred_at: "2027-01-01T10:00:00.000Z",
         },
       },

@@ -433,6 +433,13 @@ coss scheduling bookings --host doctor_482 --status confirmed
   pick. `--from` says who's leaving, if it has several hosts; `--reason` says why, with `--note` in your
   own words; `--any-host` allows someone who doesn't take the event type, `--override` goes past what
   a candidate couldn't do, and `--no-notify` doesn't tell the attendee.
+- `coss scheduling reassign-many --from <host>` [moves many bookings](/docs/scheduling/reassigning#many-at-once),
+  or `--ooo <id>` those in an out of office entry. `--to` gives them all to one host; `--preferred` tries
+  those first (comma-separated) and then the fairest who's free, unless `--leave-rest`. `--after` and
+  `--before` narrow it, `--reason` and `--note` say why, `--no-notify` doesn't tell attendees, and
+  `--dry-run` shows who they'd go to and moves nothing.
+- `coss scheduling reassignments` lists runs (`--limit`). `coss scheduling reassignment <id>` shows one
+  and what didn't move, `--cancel` stops what hasn't happened yet, and `--undo` gives back what it moved.
 - `coss scheduling ooo` lists time [hosts are away](/docs/scheduling/out-of-office) (`--host`, `--limit`).
 - `coss scheduling calendars <host>` lists a host's calendar connections. `needs_reauth` means that
   calendar can't be read, so the host isn't offered.

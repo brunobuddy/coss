@@ -316,6 +316,34 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.bookings.reassignCandidates",
     args: (r) => [pathId(r), queryParams(r)],
   },
+  "POST /v1/scheduling/reassignments": {
+    method: "scheduling.reassignments.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/reassignments/preview": {
+    method: "scheduling.reassignments.preview",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/reassignments": {
+    method: "scheduling.reassignments.list",
+    args: (r) => [queryParams(r)],
+  },
+  "GET /v1/scheduling/reassignments/{id}": {
+    method: "scheduling.reassignments.get",
+    args: (r) => [pathId(r)],
+  },
+  "GET /v1/scheduling/reassignments/{id}/items": {
+    method: "scheduling.reassignments.items",
+    args: (r) => [pathId(r), queryParams(r)],
+  },
+  "POST /v1/scheduling/reassignments/{id}/cancel": {
+    method: "scheduling.reassignments.cancel",
+    args: (r) => [pathId(r)],
+  },
+  "POST /v1/scheduling/reassignments/{id}/undo": {
+    method: "scheduling.reassignments.undo",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
   "POST /v1/scheduling/out_of_office": {
     method: "scheduling.outOfOffice.create",
     args: (r) => [tsValue(r.body ?? {})],

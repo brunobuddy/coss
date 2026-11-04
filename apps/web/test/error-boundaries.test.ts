@@ -73,6 +73,7 @@ const NOT_MUTATIONS = new Set([
   "addPaymentMethodAction",
   "managePaymentMethodsAction",
   "searchNumbersAction",
+  "previewReassignmentAction",
   "revealHookEndpointSecretAction",
   "revealLogDrainSecretAction",
   "revealWebhookSecretAction",

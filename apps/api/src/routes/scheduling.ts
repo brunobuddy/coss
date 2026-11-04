@@ -9,6 +9,7 @@ import {
   type BookingActor,
   type CalendarDeps,
   cancelBooking,
+  cancelReassignment,
   cancelSeries,
   confirmHold,
   connectCaldav,
@@ -21,6 +22,7 @@ import {
   createHostSession,
   createManageSession,
   createOutOfOffice,
+  createReassignment,
   createSchedule,
   createSeries,
   declineBooking,
@@ -34,6 +36,7 @@ import {
   getEventType,
   getHost,
   getOutOfOffice,
+  getReassignment,
   getSchedule,
   getSettings,
   getSettingsRow,
@@ -45,8 +48,11 @@ import {
   listOutOfOffice,
   listOutOfOfficeConflicts,
   listReassignCandidates,
+  listReassignmentItems,
+  listReassignments,
   listSchedules,
   markNoShow,
+  previewReassignment,
   previewSeries,
   putOutOfOffice,
   reassignBooking,
@@ -58,6 +64,7 @@ import {
   setSimulatedBusy,
   startCalendarAuthorization,
   toConnectionObject,
+  undoReassignment,
   updateBookingLocation,
   updateCalendar,
   updateEventType,
@@ -85,6 +92,7 @@ import {
   CreateHoldRequest,
   CreateHostRequest,
   CreateOutOfOfficeRequest,
+  CreateReassignmentRequest,
   CreateSeriesRequest,
   DeletedCalendarConnection,
   DeletedHost,
@@ -101,10 +109,15 @@ import {
   OutOfOfficeList,
   OutOfOfficeObject,
   PageQuery,
+  PreviewReassignmentRequest,
   PutOutOfOfficeRequest,
   ReassignBookingRequest,
   ReassignCandidateList,
   ReassignCandidatesQuery,
+  ReassignmentItemList,
+  ReassignmentList,
+  ReassignmentObject,
+  ReassignmentPreview,
   RescheduleBookingRequest,
   ScheduleList,
   ScheduleObject,
@@ -114,6 +127,7 @@ import {
   SettingsObject,
   SlotList,
   SlotsQuery,
+  UndoReassignmentRequest,
   UpdateBookingLocationRequest,
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
@@ -143,6 +157,7 @@ const TAG_SERIES = "Scheduling series";
 const TAG_SETTINGS = "Scheduling settings";
 const TAG_CALENDARS = "Scheduling calendars";
 const TAG_OUT_OF_OFFICE = "Scheduling out of office";
+const TAG_REASSIGNMENTS = "Scheduling reassignments";
 
 const read = () => [requireApiKey({ scheduling: ["read"] }), rateLimit("api.read")];
 const writing = (
@@ -210,6 +225,14 @@ const refusedChange = errorDoc(
 const BookingIdempotency = idempotencyHeaders(
   "Makes retries safe: a repeated request with the same key and body returns the original " +
     "booking instead of creating another, for 24 hours. A refused request keeps no key.",
+);
+
+const ReassignmentParams = z.object({
+  id: z.string().meta({ description: "The reassignment's id." }),
+});
+const ReassignmentIdempotency = idempotencyHeaders(
+  "Makes retries safe: a repeated request with the same key and body returns the original run " +
+    "instead of starting another, for 24 hours.",
 );
 
 const createdBooking = (description: string, schema: z.ZodType = BookingObject) => ({
@@ -1144,6 +1167,157 @@ export const listReassignCandidatesRoute = createRoute({
   },
 });
 
+export const previewReassignmentRoute = createRoute({
+  method: "post",
+  path: "/scheduling/reassignments/preview",
+  operationId: "previewSchedulingReassignment",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "Preview a bulk reassignment",
+  description:
+    "Who each booking would go to, and why not when nobody can take it, without moving anything. It works down them in order, so two can't both be promised the same free hour. Change any of it and start the run with `assignments`. Covers the first 500. Things can change before you start it: the run decides again.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: PreviewReassignmentRequest } },
+    },
+  },
+  responses: {
+    200: jsonDoc("What would happen.", ReassignmentPreview),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: errorDoc("The selection or strategy doesn't make sense (`invalid_reassignment`)."),
+  },
+});
+
+export const createReassignmentRoute = createRoute({
+  method: "post",
+  path: "/scheduling/reassignments",
+  operationId: "createSchedulingReassignment",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "Start a bulk reassignment",
+  description:
+    "Moves up to 5,000 bookings in the background, each on its own, so one that can't move never holds up the rest. Nothing's ever cancelled: a booking nobody can take stays where it is, and its item says so. It answers at once: follow the run by its id, or wait for `scheduling.reassignment.completed`.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/reassignments"),
+  request: {
+    headers: ReassignmentIdempotency,
+    body: {
+      required: true,
+      content: { "application/json": { schema: CreateReassignmentRequest } },
+    },
+  },
+  responses: {
+    202: createdBooking("The run, waiting to start.", ReassignmentObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    409: errorDoc("A request with this key is still running (`idempotency_in_progress`)."),
+    422: errorDoc(
+      "The selection or strategy doesn't make sense, or covers too many bookings (`invalid_reassignment`).",
+    ),
+  },
+});
+
+export const listReassignmentsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/reassignments",
+  operationId: "listSchedulingReassignments",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "List bulk reassignments",
+  description: "Newest first, with how each is going.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { query: PageQuery },
+  responses: {
+    200: jsonDoc("The runs.", ReassignmentList),
+    ...commonErrors,
+    422: invalid,
+  },
+});
+
+export const getReassignmentRoute = createRoute({
+  method: "get",
+  path: "/scheduling/reassignments/{id}",
+  operationId: "getSchedulingReassignment",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "Retrieve a bulk reassignment",
+  description: "How it's going.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: ReassignmentParams },
+  responses: {
+    200: jsonDoc("The run.", ReassignmentObject),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
+export const listReassignmentItemsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/reassignments/{id}/items",
+  operationId: "listSchedulingReassignmentItems",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "List a bulk reassignment's bookings",
+  description:
+    "Each booking it covers and what happened to it. A group session has one, for one of its seats. Empty until the worker's started on it.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: ReassignmentParams, query: PageQuery },
+  responses: {
+    200: jsonDoc("The items.", ReassignmentItemList),
+    ...commonErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const cancelReassignmentRoute = createRoute({
+  method: "post",
+  path: "/scheduling/reassignments/{id}/cancel",
+  operationId: "cancelSchedulingReassignment",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "Cancel a bulk reassignment",
+  description:
+    "Stops what hasn't happened yet. What's moved stays moved: undo it for that. Cancelling one that's finished changes nothing.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/reassignments/{id}/cancel"),
+  request: { params: ReassignmentParams },
+  responses: {
+    200: jsonDoc("The run.", ReassignmentObject),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
+export const undoReassignmentRoute = createRoute({
+  method: "post",
+  path: "/scheduling/reassignments/{id}/undo",
+  operationId: "undoSchedulingReassignment",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "Undo a bulk reassignment",
+  description:
+    "Gives back what a finished run moved, as a new run. A booking that's moved on since stays where it went, and a former host who's no longer free keeps it from going back, unless you pass `overrides`.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/reassignments/{id}/undo"),
+  request: {
+    params: ReassignmentParams,
+    body: {
+      required: true,
+      content: { "application/json": { schema: UndoReassignmentRequest } },
+    },
+  },
+  responses: {
+    202: jsonDoc("The new run.", ReassignmentObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: errorDoc("It's still running (`reassignment_not_finished`)."),
+  },
+});
+
 export const createOutOfOfficeRoute = createRoute({
   method: "post",
   path: "/scheduling/out_of_office",
@@ -1442,6 +1616,76 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       deps,
     );
     return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
+
+  router.openapi(previewReassignmentRoute, async (c) =>
+    c.json(await previewReassignment(c.var.auth, c.req.valid("json"), deps), 200),
+  );
+
+  router.openapi(
+    createReassignmentRoute,
+    async (c) => {
+      const { reassignment, replayed } = await createReassignment(
+        c.var.auth,
+        c.req.valid("json"),
+        deps,
+        actorOf(c.var.auth),
+        { idempotencyKey: c.req.valid("header")["Idempotency-Key"] },
+      );
+      if (replayed) c.header("Idempotent-Replayed", "true");
+      else {
+        await recordApiAudit(c, {
+          action: "scheduling_reassignment.created",
+          target: { type: "scheduling_reassignment", id: reassignment.id },
+        });
+      }
+      return c.json(reassignment, 202);
+    },
+    (result) => {
+      idempotencyHook(result);
+    },
+  );
+
+  router.openapi(listReassignmentsRoute, async (c) => {
+    const page = await listReassignments(c.var.auth, c.req.valid("query"));
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
+
+  router.openapi(getReassignmentRoute, async (c) =>
+    c.json(await getReassignment(c.var.auth, c.req.valid("param").id), 200),
+  );
+
+  router.openapi(listReassignmentItemsRoute, async (c) => {
+    const page = await listReassignmentItems(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("query"),
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
+
+  router.openapi(cancelReassignmentRoute, async (c) => {
+    const reassignment = await cancelReassignment(c.var.auth, c.req.valid("param").id, deps);
+    await recordApiAudit(c, {
+      action: "scheduling_reassignment.cancelled",
+      target: { type: "scheduling_reassignment", id: reassignment.id },
+    });
+    return c.json(reassignment, 200);
+  });
+
+  router.openapi(undoReassignmentRoute, async (c) => {
+    const reassignment = await undoReassignment(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      deps,
+      actorOf(c.var.auth),
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_reassignment.undone",
+      target: { type: "scheduling_reassignment", id: reassignment.id },
+    });
+    return c.json(reassignment, 202);
   });
 
   router.openapi(createOutOfOfficeRoute, async (c) => {

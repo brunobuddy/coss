@@ -44,6 +44,7 @@ import {
 import {
   purgeExpiredBookings,
   purgeExpiredOutOfOffice,
+  purgeExpiredReassignments,
   purgeSchedulingLeftovers,
   redactExpiredBookings,
   redactExpiredOutOfOffice,
@@ -98,6 +99,7 @@ const STEPS: { name: string; purge: (opts: StepOptions) => Promise<number | numb
   { name: "bookings", purge: purgeExpiredBookings },
   { name: "out of office notes", purge: redactExpiredOutOfOffice },
   { name: "out of office", purge: purgeExpiredOutOfOffice },
+  { name: "bulk reassignments", purge: purgeExpiredReassignments },
   { name: "scheduling leftovers", purge: purgeSchedulingLeftovers },
   // The fake file store's stand-in for the S3 bucket's lifecycle rule.
   { name: "fake form files", purge: purgeExpiredFormFakeObjects },

@@ -17,6 +17,7 @@ import { buildIcs } from "./calendar/ical.ts";
 import { withSessionLocation } from "./group-sessions.ts";
 import { getLogoRow, LOGO_CONTENT_ID, type SchedulingLogoRow } from "./logo.ts";
 import { countHostConflicts } from "./out-of-office.ts";
+import { reassignmentCountsForHost } from "./reassignment-counts.ts";
 import { createHostInvitationSession, createManageSession } from "./sessions.ts";
 import type { SchedulingDeps } from "./types.ts";
 
@@ -729,6 +730,13 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
       and(eq(schedulingHost.id, row.hostId), eq(schedulingHost.organizationId, row.organizationId)),
     );
   if (!host?.email) return "no_address";
+  const summary =
+    row.kind === "reassignment_summary" && row.reassignmentId
+      ? await reassignmentCountsForHost(row.organizationId, row.reassignmentId, host.id)
+      : null;
+  if (row.kind === "reassignment_summary" && (!summary || summary.joined + summary.left === 0)) {
+    return "stale";
+  }
   // Counted now: they may have been moved since this was decided, and then there's nothing to say.
   const conflicts =
     row.kind === "out_of_office_conflicts"
@@ -743,6 +751,17 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
     : null;
   const zoom = row.kind === "zoom_needs_reauth";
   const content = (() => {
+    if (summary) {
+      const count = (n: number) => (n === 1 ? "1 booking" : `${n} bookings`);
+      const joined = summary.joined ? `${count(summary.joined)} came to you` : "";
+      const left = summary.left ? `${count(summary.left)} went to someone else` : "";
+      return {
+        subject: "Your bookings have changed",
+        paragraph: `${[joined, left].filter(Boolean).join(", and ")}. Times haven't changed, and your calendar's being updated.`,
+        button: "See your bookings",
+        fallback: `Please see them through ${senderName}.`,
+      };
+    }
     if (row.kind === "out_of_office_conflicts") {
       return {
         subject: "You have bookings during your time off",

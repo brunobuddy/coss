@@ -297,6 +297,23 @@ export function sampleWebhookEvent(type: TestWebhookEventType, now: Date): Store
       connection_id: newId(ID_PREFIXES.schedulingCalendarConnection),
       occurred_at: at,
     };
+  } else if (type.startsWith("scheduling.reassignment.")) {
+    data = {
+      ...base,
+      reassignment_id: newId(ID_PREFIXES.schedulingReassignment),
+      status: "completed",
+      out_of_office_id: null,
+      counts: {
+        total: 3,
+        pending: 0,
+        reassigned: 2,
+        skipped: 0,
+        no_candidate: 1,
+        failed: 0,
+        cancelled: 0,
+      },
+      occurred_at: at,
+    };
   } else if (type.startsWith("scheduling.out_of_office.")) {
     data = {
       ...base,

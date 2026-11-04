@@ -418,7 +418,7 @@ export const RETENTION_POLICY: readonly RetentionRule[] = [
     id: "scheduling_bookings",
     label: "Bookings",
     description:
-      "A booking's time, host, event type, status and history, without its attendee's details. Calendars contribute only busy times, which are replaced as calendars change and deleted when a calendar is disconnected.",
+      "A booking's time, host, event type, status and history, including who it was reassigned from and reports of bulk reassignments, without its attendee's details. Calendars contribute only busy times, which are replaced as calendars change and deleted when a calendar is disconnected.",
     period: { days: RETENTION_DAYS.schedulingBookings, after: "booking_end" },
   },
   {

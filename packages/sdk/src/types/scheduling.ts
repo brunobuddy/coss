@@ -561,10 +561,13 @@ export type SchedulingOutOfOfficeWebhookEventType =
   | "scheduling.out_of_office.started"
   | "scheduling.out_of_office.ended";
 
+export type SchedulingReassignmentWebhookEventType = "scheduling.reassignment.completed";
+
 export type SchedulingWebhookEventType =
   | SchedulingBookingWebhookEventType
   | SchedulingCalendarWebhookEventType
-  | SchedulingOutOfOfficeWebhookEventType;
+  | SchedulingOutOfOfficeWebhookEventType
+  | SchedulingReassignmentWebhookEventType;
 
 /** Ids, times and statuses only: a person's details and answers come from retrieving the booking. */
 export interface SchedulingBookingWebhookEventData {
@@ -619,6 +622,131 @@ export interface SchedulingOutOfOfficeWebhookEvent {
   };
 }
 
+/** Ids and counts only: why they moved is never in a webhook. */
+export interface SchedulingReassignmentWebhookEvent {
+  id: string;
+  object: "event";
+  type: SchedulingReassignmentWebhookEventType;
+  api_version: string;
+  created_at: string;
+  data: {
+    reassignment_id: string;
+    status: "completed" | "cancelled";
+    out_of_office_id: string | null;
+    counts: SchedulingReassignmentCounts;
+    occurred_at: string;
+  };
+}
+
+export interface SchedulingReassignmentCounts {
+  total: number;
+  pending: number;
+  reassigned: number;
+  /** They'd moved on since it was selected. */
+  skipped: number;
+  /** Nobody could take them: they stayed. */
+  no_candidate: number;
+  failed: number;
+  cancelled: number;
+}
+
+export interface SchedulingReassignmentSelection {
+  /** This host's bookings, by id or uid. */
+  host?: string;
+  /** The bookings that fall in this entry. */
+  out_of_office?: string;
+  booking_ids?: string[];
+  /** A series' occurrences still to come. */
+  series?: string;
+  start_after?: string;
+  start_before?: string;
+  event_types?: string[];
+  /** Only those with something else on the host's calendar at that time. */
+  external_conflict?: boolean;
+}
+
+export interface SchedulingReassignmentStrategy {
+  /** Give them all to this host. */
+  to_host?: string;
+  /** Try these first, in order. */
+  preferred_hosts?: string[];
+  /** After `preferred_hosts`: `auto` picks the fairest who's free, `leave` keeps it where it is. */
+  otherwise?: "auto" | "leave";
+  /** Who each goes to: a preview, with your changes. */
+  assignments?: { booking: string; to_host: string; from_host?: string }[];
+}
+
+export interface PreviewSchedulingReassignmentParams {
+  selection: SchedulingReassignmentSelection;
+  strategy?: SchedulingReassignmentStrategy;
+  overrides?: ReassignSchedulingBookingParams["overrides"];
+}
+
+export interface CreateSchedulingReassignmentParams extends PreviewSchedulingReassignmentParams {
+  reason_code: ReassignSchedulingBookingParams["reason_code"];
+  /** Why, in your words: required with an override of someone's availability. */
+  note?: string;
+  notify?: {
+    /** Tell attendees. Default: true. */
+    attendees?: boolean;
+    /** `digest` (the default) sends each host one email for the run. */
+    hosts?: "digest" | "each" | "none";
+  };
+}
+
+export interface UndoSchedulingReassignmentParams {
+  reason_code?: ReassignSchedulingBookingParams["reason_code"];
+  note?: string;
+  overrides?: ReassignSchedulingBookingParams["overrides"];
+  notify?: CreateSchedulingReassignmentParams["notify"];
+}
+
+export interface SchedulingReassignment {
+  object: "scheduling.reassignment";
+  id: string;
+  status: "pending" | "running" | "completed" | "cancelled";
+  reason_code: ReassignSchedulingBookingParams["reason_code"];
+  /** The entry that started it, if one did. */
+  out_of_office: string | null;
+  /** The run this gives back. */
+  undo_of: string | null;
+  counts: SchedulingReassignmentCounts;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export interface SchedulingReassignmentItem {
+  object: "scheduling.reassignment_item";
+  id: string;
+  booking: string;
+  from_host: string | null;
+  to_host: string | null;
+  outcome: "pending" | "reassigned" | "skipped_changed" | "no_candidate" | "failed" | "cancelled";
+  error_code: string | null;
+}
+
+export interface SchedulingReassignmentPreview {
+  object: "scheduling.reassignment_preview";
+  items: {
+    booking: string;
+    event_type: string;
+    title: string;
+    status: SchedulingBookingStatus;
+    start: string;
+    end: string;
+    series: string | null;
+    group_session: string | null;
+    from_host: string | null;
+    /** Null when nobody could take it. */
+    to_host: string | null;
+    /** Why it would stay where it is. */
+    reason: string | null;
+  }[];
+  /** There are more than a preview covers. */
+  truncated: boolean;
+}
+
 /** Either instants, for part of a day, or whole dates, ending with `end_date` itself. */
 interface SchedulingOutOfOfficeWhen {
   start?: string;
@@ -638,6 +766,14 @@ interface SchedulingOutOfOfficeDetails {
   public_message?: string;
   /** Put a private "Out of office" event on the host's calendar. Default: true. */
   show_on_calendar?: boolean;
+  /** Bookings already in the way: `leave` (the default) only reports them, `reassign` moves them. */
+  existing_bookings?: "leave" | "reassign";
+  /** With `existing_bookings: reassign`: who they go to. Default: the fairest who's free. */
+  reassign?: {
+    to_host?: string;
+    preferred_hosts?: string[];
+    otherwise?: "auto" | "leave";
+  };
 }
 
 /** Give exactly one of `host`, `hosts` and `host_filter`. */
@@ -663,6 +799,8 @@ export interface UpdateSchedulingOutOfOfficeParams extends SchedulingOutOfOffice
   notes?: string | null;
   public_message?: string | null;
   show_on_calendar?: boolean;
+  existing_bookings?: "leave" | "reassign";
+  reassign?: SchedulingOutOfOfficeDetails["reassign"];
 }
 
 export interface ListSchedulingOutOfOfficeParams extends SchedulingPageParams {
@@ -687,6 +825,7 @@ export interface SchedulingOutOfOffice {
   notes: string | null;
   public_message: string | null;
   show_on_calendar: boolean;
+  existing_bookings: "leave" | "reassign";
   external_id: string | null;
   /** Shared by the entries one request made for several hosts. */
   group: string | null;

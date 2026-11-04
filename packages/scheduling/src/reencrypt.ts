@@ -9,6 +9,7 @@ const {
   schedulingBooking,
   schedulingBookingEvent,
   schedulingOutOfOffice,
+  schedulingReassignment,
   schedulingSession,
 } = schema;
 
@@ -19,6 +20,7 @@ export const SCHEDULING_DATA_KEY_COLUMNS = [
   "scheduling_booking.encrypted_attributes",
   "scheduling_booking_event.encrypted_note",
   "scheduling_out_of_office.encrypted_notes",
+  "scheduling_reassignment.encrypted_note",
   "scheduling_session.encrypted_attendee",
   "scheduling_session.encrypted_attributes",
 ] as const;
@@ -286,6 +288,65 @@ async function reencryptBookingEvents(
   }
 }
 
+async function reencryptReassignments(
+  opts: Options,
+  result: SchedulingReencryptResult,
+): Promise<void> {
+  const batchSize = opts.batchSize ?? 200;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingReassignment.id,
+        organizationId: schedulingReassignment.organizationId,
+        note: schedulingReassignment.encryptedNote,
+      })
+      .from(schedulingReassignment)
+      .where(
+        and(
+          gt(schedulingReassignment.id, after),
+          isNotNull(schedulingReassignment.encryptedNote),
+          opts.scope
+            ? inArray(schedulingReassignment.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingReassignment.id))
+      .limit(batchSize);
+    for (const row of rows) {
+      result.checked++;
+      const next = rewritten(
+        row,
+        [["scheduling_reassignment.encrypted_note", row.note]],
+        opts,
+        result,
+      );
+      if (!next) continue;
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      await opts.beforeWrite?.(row.id);
+      const [updated] = await db
+        .update(schedulingReassignment)
+        .set({ encryptedNote: next.get("scheduling_reassignment.encrypted_note") ?? null })
+        .where(
+          and(
+            eq(schedulingReassignment.id, row.id),
+            eq(schedulingReassignment.organizationId, row.organizationId),
+            eq(schedulingReassignment.encryptedNote, row.note as string),
+          ),
+        )
+        .returning({ id: schedulingReassignment.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < batchSize) break;
+    after = last.id;
+  }
+}
+
 async function reencryptOutOfOffice(
   opts: Options,
   result: SchedulingReencryptResult,
@@ -430,6 +491,7 @@ export async function reencryptSchedulingData(opts: Options): Promise<Scheduling
   await reencryptBookings(opts, result);
   await reencryptBookingEvents(opts, result);
   await reencryptOutOfOffice(opts, result);
+  await reencryptReassignments(opts, result);
   await reencryptSessions(opts, result);
   return result;
 }

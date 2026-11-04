@@ -227,6 +227,7 @@ import type {
   CreateHoldRequest,
   CreateHostRequest,
   CreateOutOfOfficeRequest,
+  CreateReassignmentRequest,
   CreateSeriesRequest,
   ErasedAttendee,
   EventTypeObject,
@@ -234,20 +235,26 @@ import type {
   ListOutOfOfficeQuery,
   OutOfOfficeConflict,
   OutOfOfficeObject,
+  PreviewReassignmentRequest,
   PutOutOfOfficeRequest,
   ReassignBookingRequest,
   ReassignCandidate,
+  ReassignmentItemObject,
+  ReassignmentObject,
+  ReassignmentPreview,
   RescheduleBookingRequest,
   ScheduleObject,
   SchedulingBookingWebhookEvent,
   SchedulingCalendarWebhookEvent,
   SchedulingOutOfOfficeWebhookEvent,
+  SchedulingReassignmentWebhookEvent,
   SeriesPreview,
   SeriesResult,
   SetSimulatedBusyRequest,
   SettingsObject,
   SlotList,
   SlotsQuery,
+  UndoReassignmentRequest,
   UpdateBookingLocationRequest,
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
@@ -316,6 +323,7 @@ import type {
   CreateSchedulingHoldParams,
   CreateSchedulingHostParams,
   CreateSchedulingOutOfOfficeParams,
+  CreateSchedulingReassignmentParams,
   CreateSchedulingSeriesParams,
   CreateSegmentParams,
   CreateSubaccountParams,
@@ -361,6 +369,7 @@ import type {
   LogDrainLine,
   LogDrainSource,
   PollWebhookListenerParams,
+  PreviewSchedulingReassignmentParams,
   PublishEmailTemplateParams,
   PutSchedulingOutOfOfficeParams,
   ReassignSchedulingBookingParams,
@@ -381,6 +390,9 @@ import type {
   SchedulingOutOfOffice,
   SchedulingOutOfOfficeConflict,
   SchedulingReassignCandidate,
+  SchedulingReassignment,
+  SchedulingReassignmentItem,
+  SchedulingReassignmentPreview,
   SchedulingSchedule,
   SchedulingSeries,
   SchedulingSeriesPreview,
@@ -498,6 +510,7 @@ import type {
   SubaccountStatsParams,
   TestBroadcastParams,
   TrackingOptions,
+  UndoSchedulingReassignmentParams,
   UpdateBroadcastParams,
   UpdateContactParams,
   UpdateContactPropertyParams,
@@ -775,7 +788,8 @@ export type Contract = [
       | z.output<typeof FormSubmissionWebhookEvent>
       | z.output<typeof SchedulingBookingWebhookEvent>
       | z.output<typeof SchedulingCalendarWebhookEvent>
-      | z.output<typeof SchedulingOutOfOfficeWebhookEvent>,
+      | z.output<typeof SchedulingOutOfOfficeWebhookEvent>
+      | z.output<typeof SchedulingReassignmentWebhookEvent>,
       WebhookEvent
     >
   >,
@@ -1089,6 +1103,24 @@ export type SubaccountContract = [
   >,
   Assert<MutuallyAssignable<z.output<typeof ReassignCandidate>, SchedulingReassignCandidate>>,
   Assert<MutuallyAssignable<z.output<typeof OutOfOfficeConflict>, SchedulingOutOfOfficeConflict>>,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof PreviewReassignmentRequest>,
+      PreviewSchedulingReassignmentParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof CreateReassignmentRequest>,
+      CreateSchedulingReassignmentParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<z.input<typeof UndoReassignmentRequest>, UndoSchedulingReassignmentParams>
+  >,
+  Assert<MutuallyAssignable<z.output<typeof ReassignmentObject>, SchedulingReassignment>>,
+  Assert<MutuallyAssignable<z.output<typeof ReassignmentItemObject>, SchedulingReassignmentItem>>,
+  Assert<MutuallyAssignable<z.output<typeof ReassignmentPreview>, SchedulingReassignmentPreview>>,
   Assert<
     MutuallyAssignable<
       Omit<z.input<typeof ListOutOfOfficeQuery>, "limit">,

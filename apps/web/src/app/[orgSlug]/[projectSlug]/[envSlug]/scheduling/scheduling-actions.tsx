@@ -38,14 +38,16 @@ import {
 } from "@coss/ui/components/select";
 import { Switch } from "@coss/ui/components/switch";
 import { Textarea } from "@coss/ui/components/textarea";
-import { CalendarClockIcon, PalmtreeIcon, UserRoundIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowRightLeftIcon, CalendarClockIcon, PalmtreeIcon, UserRoundIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import {
   approveBookingAction,
   cancelBookingAction,
+  cancelReassignmentAction,
   createEventTypeAction,
   createHostAction,
   createOutOfOfficeAction,
@@ -53,9 +55,12 @@ import {
   deleteHostAction,
   deleteOutOfOfficeAction,
   openHostPortalAction,
+  previewReassignmentAction,
   reassignBookingAction,
   saveSettingsAction,
   setHostStatusAction,
+  startReassignmentAction,
+  undoReassignmentAction,
 } from "./actions";
 
 export type EnvTarget = { orgSlug: string; projectSlug: string; envSlug: string };
@@ -386,7 +391,8 @@ export function NewOutOfOfficeDialog(props: EnvTarget & { hosts: { id: string; n
             <DialogIcon icon={PalmtreeIcon} />
             <DialogTitle>Add time off</DialogTitle>
             <DialogDescription>
-              They won't be offered during it. Bookings they already have stay as they are.
+              They won't be offered during it. Bookings they already have stay, unless you move
+              them.
             </DialogDescription>
           </DialogHeader>
           <DialogPanel className="flex flex-col gap-4">
@@ -469,6 +475,10 @@ export function NewOutOfOfficeDialog(props: EnvTarget & { hosts: { id: string; n
               <Checkbox defaultChecked name="showOnCalendar" />
               Show on their calendar
             </Label>
+            <Label className="font-normal">
+              <Checkbox name="moveBookings" />
+              Move bookings already in this time to whoever's free
+            </Label>
             {state && !state.ok ? <FormError message={state.error} /> : null}
           </DialogPanel>
           <DialogFooter>
@@ -480,6 +490,323 @@ export function NewOutOfOfficeDialog(props: EnvTarget & { hosts: { id: string; n
         </form>
       </DialogPopup>
     </Dialog>
+  );
+}
+
+const previewDay = new Intl.DateTimeFormat("en-US", {
+  timeZone: "UTC",
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+const WHY_STAYS: Record<string, string> = {
+  ...WHY_NOT,
+  no_candidate: "Nobody's free",
+  routing_unknown: "Booked before coss.com kept its routing: choose someone",
+  reassignment_disabled: "This event type's bookings stay with their hosts",
+  several_hosts: "Has several hosts",
+  already_a_host: "Already a host of this booking",
+  not_a_member: "Doesn't take this event type",
+  host_unavailable: "Not available",
+};
+
+/**
+ * Moving many: choose whose, see who each would go to, change any of it, then start. What's started
+ * is what was seen, as `assignments`, with the run deciding again for each.
+ */
+export function ReassignManyDialog(
+  props: EnvTarget & {
+    hosts: readonly { id: string; name: string }[];
+    runsPath: string;
+    outOfOfficeId?: string;
+    label?: string;
+  },
+) {
+  const { hosts, runsPath, outOfOfficeId, label, ...target } = props;
+  const router = useRouter();
+  const [preview, previewAction, previewing] = useActionState(previewReassignmentAction, null);
+  const [state, formAction, pending] = useActionToast(startReassignmentAction, {
+    success: "Moving bookings",
+  });
+  const [open, setOpen] = useState(false);
+  // Whether the answer's on screen: the action's last answer outlives closing and going back.
+  const [showing, setShowing] = useState(false);
+  const [choices, setChoices] = useState<Record<string, string>>({});
+  const [before, setBefore] = useState("");
+  const startOver = () => {
+    setShowing(false);
+    setChoices({});
+  };
+  useEffect(() => {
+    if (preview?.ok) setShowing(true);
+  }, [preview]);
+  useEffect(() => {
+    if (state?.ok) {
+      setOpen(false);
+      router.push(`${runsPath}/${state.data.id}`);
+    }
+  }, [state, router, runsPath]);
+  const items = showing && preview?.ok ? preview.data.items : null;
+  const targetOf = (item: { booking: string; to_host: string | null }) =>
+    choices[item.booking] ?? item.to_host ?? "";
+  const assignments = (items ?? []).flatMap((item) => {
+    const to = targetOf(item);
+    if (!to) return [];
+    return [
+      {
+        booking: item.booking,
+        to_host: to,
+        ...(item.from_host ? { from_host: item.from_host } : {}),
+      },
+    ];
+  });
+  const nameOf = new Map(hosts.map((host) => [host.id, host.name]));
+  const hostItems = hosts.map((host) => ({ value: host.id, label: host.name }));
+  return (
+    <Dialog
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) startOver();
+      }}
+      open={open}
+    >
+      <DialogTrigger render={<Button size="sm" variant={outOfOfficeId ? "ghost" : "default"} />}>
+        {label ?? "Move bookings"}
+      </DialogTrigger>
+      <DialogPopup className="max-w-2xl">
+        <DialogHeader>
+          <DialogIcon icon={ArrowRightLeftIcon} />
+          <DialogTitle>Move bookings</DialogTitle>
+          <DialogDescription>
+            Times stay the same. Each host hears once. A booking nobody can take stays where it is.
+          </DialogDescription>
+        </DialogHeader>
+        {items === null ? (
+          <form action={previewAction} className="contents">
+            <Hidden
+              {...target}
+              {...(outOfOfficeId ? { outOfOfficeId } : {})}
+              startBefore={before ? new Date(before).toISOString() : ""}
+            />
+            <DialogPanel className="flex flex-col gap-4">
+              {outOfOfficeId ? null : (
+                <>
+                  <Field>
+                    <FieldLabel>Whose bookings</FieldLabel>
+                    <Select items={hostItems} name="fromHost">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a host" />
+                      </SelectTrigger>
+                      <SelectPopup>
+                        {hosts.map((host) => (
+                          <SelectItem key={host.id} value={host.id}>
+                            {host.name}
+                          </SelectItem>
+                        ))}
+                      </SelectPopup>
+                    </Select>
+                  </Field>
+                  <Field>
+                    <FieldLabel>Starting before</FieldLabel>
+                    <Input
+                      onChange={(event) => setBefore(event.target.value)}
+                      type="datetime-local"
+                      value={before}
+                    />
+                    <FieldDescription>Leave empty for all of them.</FieldDescription>
+                  </Field>
+                </>
+              )}
+              <Field>
+                <FieldLabel>Try first</FieldLabel>
+                <Select items={hostItems} name="preferredHost">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Whoever's fairest" />
+                  </SelectTrigger>
+                  <SelectPopup>
+                    {hosts.map((host) => (
+                      <SelectItem key={host.id} value={host.id}>
+                        {host.name}
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </Select>
+              </Field>
+              {preview && !preview.ok ? <FormError message={preview.error} /> : null}
+            </DialogPanel>
+            <DialogFooter>
+              <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
+              <Button disabled={previewing} type="submit">
+                See who they'd go to
+              </Button>
+            </DialogFooter>
+          </form>
+        ) : (
+          <form action={formAction} className="contents">
+            <Hidden {...target} assignments={JSON.stringify(assignments)} />
+            <DialogPanel className="flex flex-col gap-4">
+              {items.length === 0 ? (
+                <p className="text-muted-foreground text-sm">There's nothing to move.</p>
+              ) : (
+                <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto rounded-lg border p-2">
+                  {items.map((item) => (
+                    <li
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md p-2"
+                      key={item.booking}
+                    >
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="text-sm">
+                          {previewDay.format(new Date(item.start))} UTC
+                        </span>
+                        <span className="text-muted-foreground text-xs">
+                          {item.title}
+                          {item.from_host
+                            ? `, from ${nameOf.get(item.from_host) ?? "another host"}`
+                            : ""}
+                          {item.reason && !choices[item.booking]
+                            ? `. ${WHY_STAYS[item.reason] ?? "Not available"}`
+                            : ""}
+                        </span>
+                      </span>
+                      <div className="w-48">
+                        <Select
+                          items={hostItems}
+                          onValueChange={(next) =>
+                            setChoices((current) => ({ ...current, [item.booking]: String(next) }))
+                          }
+                          value={targetOf(item) || null}
+                        >
+                          <SelectTrigger aria-label="Who it goes to">
+                            <SelectValue placeholder="Stays" />
+                          </SelectTrigger>
+                          <SelectPopup>
+                            {hosts.map((host) => (
+                              <SelectItem key={host.id} value={host.id}>
+                                {host.name}
+                              </SelectItem>
+                            ))}
+                          </SelectPopup>
+                        </Select>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {preview?.ok && preview.data.truncated ? (
+                <p className="text-muted-foreground text-xs">
+                  That's the first 500. Move these, then do the rest.
+                </p>
+              ) : null}
+              {items.length === 0 ? null : (
+                <>
+                  <Field>
+                    <FieldLabel>Reason</FieldLabel>
+                    <Select
+                      defaultValue={outOfOfficeId ? "out_of_office" : "other"}
+                      items={REASSIGN_REASON_ITEMS}
+                      name="reasonCode"
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectPopup>
+                        {REASSIGN_REASON_ITEMS.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectPopup>
+                    </Select>
+                  </Field>
+                  <Field>
+                    <FieldLabel>Note</FieldLabel>
+                    <Textarea maxLength={500} name="note" />
+                    <FieldDescription>
+                      Optional. Only shown in each booking's history.
+                    </FieldDescription>
+                  </Field>
+                  <Label className="font-normal">
+                    <Checkbox defaultChecked name="notifyAttendees" />
+                    Tell attendees
+                  </Label>
+                </>
+              )}
+              {state && !state.ok ? <FormError message={state.error} /> : null}
+            </DialogPanel>
+            <DialogFooter>
+              <Button onClick={startOver} type="button" variant="ghost">
+                Back
+              </Button>
+              {items.length === 0 ? null : (
+                <Button disabled={pending || assignments.length === 0} type="submit">
+                  Move {assignments.length} {assignments.length === 1 ? "booking" : "bookings"}
+                </Button>
+              )}
+            </DialogFooter>
+          </form>
+        )}
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+export function CancelReassignmentButton(props: EnvTarget & { reassignmentId: string }) {
+  const [, formAction, pending] = useActionToast(cancelReassignmentAction, {
+    success: "Reassignment cancelled",
+    errors: "toast",
+  });
+  return (
+    <form action={formAction}>
+      <Hidden {...props} />
+      <Button disabled={pending} size="sm" type="submit" variant="outline">
+        Cancel the rest
+      </Button>
+    </form>
+  );
+}
+
+export function UndoReassignmentDialog(
+  props: EnvTarget & { reassignmentId: string; moved: number; runsPath: string },
+) {
+  const { moved, runsPath, ...hidden } = props;
+  const router = useRouter();
+  const [state, formAction, pending] = useActionToast(undoReassignmentAction, {
+    success: "Giving bookings back",
+  });
+  useEffect(() => {
+    if (state?.ok) router.push(`${runsPath}/${state.data.id}`);
+  }, [state, router, runsPath]);
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button size="sm" variant="outline" />}>Undo</AlertDialogTrigger>
+      <AlertDialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...hidden} />
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Give back {moved} {moved === 1 ? "booking" : "bookings"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Each goes back to who had it, if they're still free. One that's moved on since stays
+              where it went. Each host hears once.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-3 px-6">
+            <Label className="font-normal">
+              <Checkbox defaultChecked name="notifyAttendees" />
+              Tell attendees
+            </Label>
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogClose render={<Button variant="ghost" />}>Keep them</AlertDialogClose>
+            <Button disabled={pending} type="submit">
+              Give them back
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </AlertDialogPopup>
+    </AlertDialog>
   );
 }
 

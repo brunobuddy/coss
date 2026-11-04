@@ -18,6 +18,7 @@ const {
   schedulingLimitBucket,
   schedulingOauthState,
   schedulingOutOfOffice,
+  schedulingReassignment,
   schedulingSeries,
   schedulingSession,
 } = schema;
@@ -182,6 +183,30 @@ export async function purgeExpiredOutOfOffice(opts: PurgeOptions = {}): Promise<
     .delete(schedulingOutOfOffice)
     .where(and(inArray(schedulingOutOfOffice.id, due), where))
     .returning({ id: schedulingOutOfOffice.id });
+  return deleted.length;
+}
+
+/** A run's report goes when its bookings' rows do. Its note went when it finished. */
+export async function purgeExpiredReassignments(opts: PurgeOptions = {}): Promise<number> {
+  const now = opts.now ?? new Date();
+  const cutoff = new Date(now.getTime() - RETENTION_DAYS.schedulingBookings * DAY_MS);
+  const where = and(
+    lt(schedulingReassignment.createdAt, cutoff),
+    or(
+      eq(schedulingReassignment.status, "completed"),
+      eq(schedulingReassignment.status, "cancelled"),
+    ),
+    scoped(schedulingReassignment.organizationId, opts),
+  );
+  const due = db
+    .select({ id: schedulingReassignment.id })
+    .from(schedulingReassignment)
+    .where(where)
+    .limit(opts.limit ?? 1000);
+  const deleted = await db
+    .delete(schedulingReassignment)
+    .where(and(inArray(schedulingReassignment.id, due), where))
+    .returning({ id: schedulingReassignment.id });
   return deleted.length;
 }
 

@@ -14,6 +14,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, or, sql } from "drizz
 import { DAY_MS, parseLocalDate, wallClockToInstant } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { attributesMatch, checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
+import { queueReassignment, type ReassignmentStrategy } from "./reassignment-row.ts";
 import {
   type CreateOutOfOfficeRequestOutput,
   MAX_OUT_OF_OFFICE_DAYS,
@@ -63,6 +64,7 @@ export function toOutOfOfficeObject(row: OutOfOfficeRow, keys: Keys): OutOfOffic
     notes: row.encryptedNotes ? decryptSecret(row.encryptedNotes, keys.dataKeys) : null,
     public_message: row.publicMessage,
     show_on_calendar: row.showOnCalendar,
+    existing_bookings: row.existingBookings,
     external_id: row.externalId,
     group: row.groupId,
     source: row.source,
@@ -156,6 +158,27 @@ async function checkReason(scope: Scope, reason: string | undefined): Promise<vo
     `"${reason}" isn't one of this environment's reasons.`,
     { param: "reason" },
   );
+}
+
+/** Host references become ids, once, so a later rename doesn't change who was meant. */
+async function reassignStrategyOf(
+  scope: Scope,
+  params: Pick<CreateOutOfOfficeRequestOutput, "existing_bookings" | "reassign">,
+): Promise<ReassignmentStrategy | null> {
+  if (params.existing_bookings !== "reassign" || !params.reassign) return null;
+  if (params.reassign.to_host) {
+    const host = await resolveHost(db, scope, params.reassign.to_host);
+    return { kind: "to_host", host_id: host.id };
+  }
+  const preferred: string[] = [];
+  for (const ref of params.reassign.preferred_hosts ?? []) {
+    preferred.push((await resolveHost(db, scope, ref)).id);
+  }
+  return {
+    kind: "auto",
+    preferred_host_ids: preferred,
+    otherwise: params.reassign.otherwise ?? "auto",
+  };
 }
 
 async function checkMessage(
@@ -364,14 +387,19 @@ const liveBooking = (now: Date) =>
     or(isNull(schedulingBooking.holdExpiresAt), gt(schedulingBooking.holdExpiresAt, now)),
   );
 
-/** Tells the host, unless it was them just now, looking at the page that shows this. */
+/**
+ * Tells the host, unless it was them just now, looking at the page that shows this. With
+ * `existing_bookings: reassign` it also starts moving them, and what's told is what's left: the
+ * email's counted when it's sent, a while later, so it doesn't say what the run's about to fix.
+ */
 async function noteConflicts(
   tx: Executor,
+  env: Pick<SchedulingEnvironment, "projectId">,
   row: OutOfOfficeRow,
   actor: Actor,
   now: Date,
+  before?: OutOfOfficeRow,
 ): Promise<void> {
-  if (actor.kind === "host_session") return;
   const [conflict] = await tx
     .select({ id: schedulingBooking.id })
     .from(schedulingBookingHost)
@@ -388,6 +416,25 @@ async function noteConflicts(
     )
     .limit(1);
   if (!conflict) return;
+  const reassigning = row.existingBookings === "reassign";
+  // Changing an entry's notes isn't a reason to move anything again.
+  const widened =
+    before?.existingBookings !== "reassign" ||
+    before.startAt.getTime() !== row.startAt.getTime() ||
+    before.endAt.getTime() !== row.endAt.getTime();
+  if (reassigning && widened) {
+    await queueReassignment(tx, {
+      organizationId: row.organizationId,
+      projectId: env.projectId,
+      environmentId: row.environmentId,
+      selection: { host_id: row.hostId, out_of_office_id: row.id },
+      strategy: row.reassignStrategy ?? { kind: "auto", preferred_host_ids: [], otherwise: "auto" },
+      reasonCode: "out_of_office",
+      outOfOfficeId: row.id,
+      actor,
+    });
+  }
+  if (actor.kind === "host_session") return;
   await tx
     .insert(schedulingNotification)
     .values({
@@ -398,7 +445,7 @@ async function noteConflicts(
       channel: "email",
       recipient: "host",
       dedupeKey: `out_of_office_conflicts:${row.id}:${row.updatedAt.getTime()}`,
-      dueAt: now,
+      dueAt: reassigning ? new Date(now.getTime() + 15 * 60_000) : now,
     })
     .onConflictDoNothing();
 }
@@ -425,6 +472,7 @@ export async function createOutOfOffice(
   await checkMessage(env, params.public_message, deps.screenSetup);
   const now = nowOf(deps);
   const groupId = hosts.length > 1 ? newId(ID_PREFIXES.schedulingOutOfOfficeGroup) : null;
+  const reassignStrategy = await reassignStrategyOf(env, params);
   const encryptedNotes = params.notes ? encryptSecret(params.notes, deps.dataKeys) : null;
   try {
     const rows = await db.transaction(async (tx) => {
@@ -447,6 +495,8 @@ export async function createOutOfOffice(
             encryptedNotes,
             publicMessage: params.public_message ?? null,
             showOnCalendar: params.show_on_calendar ?? true,
+            existingBookings: params.existing_bookings ?? "leave",
+            reassignStrategy,
             source,
             externalId: params.external_id ?? null,
             groupId,
@@ -458,7 +508,7 @@ export async function createOutOfOffice(
         const inserted = row as OutOfOfficeRow;
         await setOutOfOfficeCalendar(tx, inserted, now);
         await recordEvent(tx, inserted, "scheduling.out_of_office.created", now);
-        await noteConflicts(tx, inserted, actor, now);
+        await noteConflicts(tx, env, inserted, actor, now);
         created.push(inserted);
       }
       return created;
@@ -557,6 +607,7 @@ function changesOf(
   params: UpdateOutOfOfficeRequestOutput,
   keys: Keys,
   now: Date,
+  strategy: ReassignmentStrategy | null | undefined,
 ): Partial<typeof schedulingOutOfOffice.$inferInsert> {
   const moving =
     params.start !== undefined ||
@@ -580,6 +631,10 @@ function changesOf(
       : {}),
     ...(params.public_message !== undefined ? { publicMessage: params.public_message } : {}),
     ...(params.show_on_calendar !== undefined ? { showOnCalendar: params.show_on_calendar } : {}),
+    ...(params.existing_bookings !== undefined
+      ? { existingBookings: params.existing_bookings }
+      : {}),
+    ...(strategy !== undefined ? { reassignStrategy: strategy } : {}),
   };
 }
 
@@ -610,9 +665,11 @@ export async function updateOutOfOffice(
   await checkMessage(env, params.public_message, deps.screenSetup);
   const now = nowOf(deps);
   const found = await entryRow(db, env, id, only);
+  const strategy =
+    params.existing_bookings === undefined ? undefined : await reassignStrategyOf(env, params);
   const row = await db.transaction(async (tx) => {
     await lockHosts(tx, env, [found.hostId]);
-    return applyChange(tx, env, found.id, params, deps, actor, now, only);
+    return applyChange(tx, env, found.id, params, deps, actor, now, strategy, only);
   });
   return toOutOfOfficeObject(row, deps);
 }
@@ -625,6 +682,7 @@ async function applyChange(
   keys: Keys,
   actor: Actor,
   now: Date,
+  strategy: ReassignmentStrategy | null | undefined,
   only: Only = {},
 ): Promise<OutOfOfficeRow> {
   const current = await entryRow(tx, env, id, only);
@@ -632,7 +690,7 @@ async function applyChange(
   if (!host) throw new SchedulingError("not_found", `No out of office entry "${id}".`);
   const [row] = await tx
     .update(schedulingOutOfOffice)
-    .set({ ...changesOf(current, host, params, keys, now), updatedAt: new Date() })
+    .set({ ...changesOf(current, host, params, keys, now, strategy), updatedAt: new Date() })
     .where(
       and(
         eq(schedulingOutOfOffice.id, current.id),
@@ -643,7 +701,7 @@ async function applyChange(
   const updated = row as OutOfOfficeRow;
   await setOutOfOfficeCalendar(tx, updated, now);
   await recordEvent(tx, updated, "scheduling.out_of_office.updated", now);
-  await noteConflicts(tx, updated, actor, now);
+  await noteConflicts(tx, env, updated, actor, now, current);
   return updated;
 }
 
@@ -670,6 +728,8 @@ export async function putOutOfOffice(
     encryptedNotes,
     publicMessage: params.public_message ?? null,
     showOnCalendar: params.show_on_calendar ?? true,
+    existingBookings: params.existing_bookings ?? ("leave" as const),
+    reassignStrategy: await reassignStrategyOf(env, params),
   };
   try {
     return await db.transaction(async (tx) => {
@@ -728,7 +788,7 @@ export async function putOutOfOffice(
         }
         await setOutOfOfficeCalendar(tx, updated, now);
         await recordEvent(tx, updated, "scheduling.out_of_office.updated", now);
-        await noteConflicts(tx, updated, actor, now);
+        await noteConflicts(tx, env, updated, actor, now, existing);
         return { entry: toOutOfOfficeObject(updated, deps), created: false };
       }
       const [row] = await tx
@@ -747,7 +807,7 @@ export async function putOutOfOffice(
       const inserted = row as OutOfOfficeRow;
       await setOutOfOfficeCalendar(tx, inserted, now);
       await recordEvent(tx, inserted, "scheduling.out_of_office.created", now);
-      await noteConflicts(tx, inserted, actor, now);
+      await noteConflicts(tx, env, inserted, actor, now);
       return { entry: toOutOfOfficeObject(inserted, deps), created: true };
     });
   } catch (error) {

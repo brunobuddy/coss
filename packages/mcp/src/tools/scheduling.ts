@@ -484,6 +484,156 @@ export function registerSchedulingTools(ctx: ToolContext): void {
       ),
   );
 
+  const reassignmentSelection = z.object({
+    host: z.string().optional().describe("This host's bookings, by id or uid."),
+    out_of_office: z.string().optional().describe("The bookings that fall in this entry."),
+    booking_ids: z.array(z.string()).optional(),
+    series: z.string().optional().describe("A series' occurrences still to come."),
+    start_after: z.string().optional().describe("ISO 8601."),
+    start_before: z.string().optional().describe("ISO 8601."),
+    event_types: z.array(z.string()).optional(),
+    external_conflict: z
+      .boolean()
+      .optional()
+      .describe("Only those with something else on the host's calendar at that time."),
+  });
+  const reassignmentStrategy = z.object({
+    to_host: z.string().optional().describe("Give them all to this host."),
+    preferred_hosts: z.array(z.string()).optional().describe("Try these first, in order."),
+    otherwise: z
+      .enum(["auto", "leave"])
+      .optional()
+      .describe("After preferred_hosts: pick the fairest who's free, or leave it where it is."),
+    assignments: z
+      .array(
+        z.object({
+          booking: z.string(),
+          to_host: z.string(),
+          from_host: z.string().optional(),
+        }),
+      )
+      .optional()
+      .describe("Who each goes to: a preview, with any changes."),
+  });
+  const reassignmentOverrides = z
+    .array(
+      z.enum([
+        "any_host",
+        "out_of_office",
+        "outside_availability",
+        "host_busy",
+        "limit_reached",
+        "calendar_unverified",
+      ]),
+    )
+    .optional();
+
+  server.registerTool(
+    "preview_scheduling_reassignment",
+    {
+      title: "Preview a bulk reassignment",
+      description:
+        "Who each of many bookings would go to, and why not, without moving anything. Always call this before create_scheduling_reassignment and show the user what would happen.",
+      inputSchema: z.object({
+        selection: reassignmentSelection,
+        strategy: reassignmentStrategy.optional(),
+        overrides: reassignmentOverrides,
+      }),
+      annotations: READ_ONLY,
+    },
+    ({ selection, strategy, overrides }) =>
+      respond(
+        coss.scheduling.reassignments.preview({
+          selection,
+          ...given({ strategy, overrides }),
+        }),
+        (preview) => preview,
+      ),
+  );
+
+  server.registerTool(
+    "create_scheduling_reassignment",
+    {
+      title: "Start a bulk reassignment",
+      description:
+        "Moves many bookings to other hosts in the background, telling each host once and attendees per booking. A booking nobody can take stays where it is. Follow it with get_scheduling_reassignment. Only with the user's go-ahead on a preview.",
+      inputSchema: z.object({
+        selection: reassignmentSelection,
+        strategy: reassignmentStrategy.optional(),
+        reason_code: z.enum([
+          "host_unavailable",
+          "out_of_office",
+          "workload",
+          "customer_request",
+          "offboarding",
+          "other",
+        ]),
+        note: z.string().optional().describe("Why. Required with an availability override."),
+        overrides: reassignmentOverrides,
+        notify_attendees: z.boolean().optional().describe("Default: true."),
+      }),
+      annotations: SENDS,
+    },
+    ({ selection, strategy, reason_code, note, overrides, notify_attendees }) =>
+      respond(
+        coss.scheduling.reassignments.create({
+          selection,
+          reason_code,
+          ...given({ strategy, note, overrides }),
+          ...(notify_attendees === undefined ? {} : { notify: { attendees: notify_attendees } }),
+        }),
+        (run) => run,
+      ),
+  );
+
+  server.registerTool(
+    "get_scheduling_reassignment",
+    {
+      title: "Get a bulk reassignment",
+      description:
+        "How a run is going, with a count per outcome and what happened to each booking.",
+      inputSchema: z.object({ reassignment_id: z.string() }),
+      annotations: READ_ONLY,
+    },
+    async ({ reassignment_id }) => {
+      const run = await coss.scheduling.reassignments.get(reassignment_id);
+      if (run.error) return respond(Promise.resolve(run), (value) => value);
+      return respond(
+        coss.scheduling.reassignments.items(reassignment_id, { limit: 100 }),
+        (items) => ({
+          ...run.data,
+          items: items.data,
+          more_items: items.has_more,
+        }),
+      );
+    },
+  );
+
+  server.registerTool(
+    "cancel_scheduling_reassignment",
+    {
+      title: "Cancel a bulk reassignment",
+      description: "Stops what hasn't happened yet. What's moved stays moved.",
+      inputSchema: z.object({ reassignment_id: z.string() }),
+      annotations: WRITE,
+    },
+    ({ reassignment_id }) =>
+      respond(coss.scheduling.reassignments.cancel(reassignment_id), (run) => run),
+  );
+
+  server.registerTool(
+    "undo_scheduling_reassignment",
+    {
+      title: "Undo a bulk reassignment",
+      description:
+        "Gives back what a finished run moved, as a new run. A booking that's moved on since stays where it went. Everyone's told again.",
+      inputSchema: z.object({ reassignment_id: z.string() }),
+      annotations: SENDS,
+    },
+    ({ reassignment_id }) =>
+      respond(coss.scheduling.reassignments.undo(reassignment_id), (run) => run),
+  );
+
   server.registerTool(
     "list_scheduling_out_of_office",
     {

@@ -13,6 +13,7 @@ import type {
   CreateSchedulingHostParams,
   CreateSchedulingHostSessionParams,
   CreateSchedulingOutOfOfficeParams,
+  CreateSchedulingReassignmentParams,
   CreateSchedulingSeriesParams,
   DeletedSchedulingCalendarConnection,
   DeletedSchedulingHost,
@@ -21,6 +22,7 @@ import type {
   ListSchedulingBookingsParams,
   ListSchedulingOutOfOfficeParams,
   ListSchedulingSlotsParams,
+  PreviewSchedulingReassignmentParams,
   PutSchedulingOutOfOfficeParams,
   ReassignSchedulingBookingParams,
   RescheduleSchedulingBookingParams,
@@ -36,6 +38,9 @@ import type {
   SchedulingOutOfOfficeConflict,
   SchedulingPageParams,
   SchedulingReassignCandidate,
+  SchedulingReassignment,
+  SchedulingReassignmentItem,
+  SchedulingReassignmentPreview,
   SchedulingSchedule,
   SchedulingSeries,
   SchedulingSeriesPreview,
@@ -44,6 +49,7 @@ import type {
   SchedulingSlotList,
   SearchSchedulingAvailabilityParams,
   SetSchedulingSimulatedBusyParams,
+  UndoSchedulingReassignmentParams,
   UpdateSchedulingBookingLocationParams,
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
@@ -706,6 +712,106 @@ export class SchedulingAttendeesResource {
   }
 }
 
+/** `coss.scheduling.reassignments`: moving many bookings at once. */
+export class SchedulingReassignmentsResource {
+  readonly #http: HttpClient;
+
+  /** @internal Use `new Coss().scheduling.reassignments`. */
+  constructor(http: HttpClient) {
+    this.#http = http;
+  }
+
+  /**
+   * Who each booking would go to, and why not, without moving anything. Change any of it and pass
+   * it to `create` as `assignments`.
+   */
+  preview(
+    params: PreviewSchedulingReassignmentParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingReassignmentPreview>> {
+    return this.#http.request<SchedulingReassignmentPreview>({
+      method: "POST",
+      path: "/v1/scheduling/reassignments/preview",
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Starts moving them, in the background. Follow it with `get`, or the webhook. */
+  create(
+    params: CreateSchedulingReassignmentParams,
+    options?: WriteOptions,
+  ): Promise<CossResult<SchedulingReassignment>> {
+    return this.#http.request<SchedulingReassignment>({
+      method: "POST",
+      path: "/v1/scheduling/reassignments",
+      body: params,
+      idempotencyKey: options?.idempotencyKey,
+      signal: options?.signal,
+    });
+  }
+
+  /** Lists runs, newest first. Pass the last `id` as `after` while `has_more` is true. */
+  list(
+    params: SchedulingPageParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingReassignment>>> {
+    return this.#http.request<List<SchedulingReassignment>>({
+      method: "GET",
+      path: "/v1/scheduling/reassignments",
+      query: listQuery(params),
+      signal: options?.signal,
+    });
+  }
+
+  /** Retrieves a run, with how it's going. */
+  get(id: string, options?: ReadOptions): Promise<CossResult<SchedulingReassignment>> {
+    return this.#http.request<SchedulingReassignment>({
+      method: "GET",
+      path: `/v1/scheduling/reassignments/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Each booking a run covers and what happened to it. */
+  items(
+    id: string,
+    params: SchedulingPageParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingReassignmentItem>>> {
+    return this.#http.request<List<SchedulingReassignmentItem>>({
+      method: "GET",
+      path: `/v1/scheduling/reassignments/${part(id)}/items`,
+      query: listQuery(params),
+      signal: options?.signal,
+    });
+  }
+
+  /** Stops what hasn't happened yet. What's moved stays moved. */
+  cancel(id: string, options?: ReadOptions): Promise<CossResult<SchedulingReassignment>> {
+    return this.#http.request<SchedulingReassignment>({
+      method: "POST",
+      path: `/v1/scheduling/reassignments/${part(id)}/cancel`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Gives back what a finished run moved, as a new run. Not retried: it would start another. */
+  undo(
+    id: string,
+    params: UndoSchedulingReassignmentParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingReassignment>> {
+    return this.#http.request<SchedulingReassignment>({
+      method: "POST",
+      path: `/v1/scheduling/reassignments/${part(id)}/undo`,
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+}
+
 /** `coss.scheduling.outOfOffice`: time a host is away. */
 export class SchedulingOutOfOfficeResource {
   readonly #http: HttpClient;
@@ -856,12 +962,14 @@ export class SchedulingResource {
   readonly sessions: SchedulingSessionsResource;
   readonly attendees: SchedulingAttendeesResource;
   readonly outOfOffice: SchedulingOutOfOfficeResource;
+  readonly reassignments: SchedulingReassignmentsResource;
   readonly settings: SchedulingSettingsResource;
 
   /** @internal Use `new Coss().scheduling`. */
   constructor(http: HttpClient) {
     this.hosts = new SchedulingHostsResource(http);
     this.outOfOffice = new SchedulingOutOfOfficeResource(http);
+    this.reassignments = new SchedulingReassignmentsResource(http);
     this.schedules = new SchedulingSchedulesResource(http);
     this.eventTypes = new SchedulingEventTypesResource(http);
     this.slots = new SchedulingSlotsResource(http);

@@ -3,6 +3,7 @@
  * Wire-level drift between the API and the SDK's hand-written types fails here or in
  * contract-types.ts (compile time).
  */
+
 import { describe, expect, test } from "bun:test";
 import { createCreditGrant, runDueBillingPeriods } from "@coss/billing";
 import { createTestContract, recordTestUsage } from "@coss/billing/testing";
@@ -25,6 +26,8 @@ import { createLogWriter } from "@coss/logs";
 import { cachedOverrides, setRateLimitOverride } from "@coss/ratelimit";
 import { memoryLimiter } from "@coss/ratelimit/testing";
 import { suspendOrganization } from "@coss/reputation";
+import { runDueReassignments } from "@coss/scheduling";
+import { testSchedulingDeps } from "@coss/scheduling/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { API_VERSIONS, LATEST_API_VERSION } from "@coss/versioning";
 import {
@@ -1963,6 +1966,137 @@ describe("coss.risk checkouts, devices and calibration against the API", () => {
       checkout: { amount: 1, currency: "USD", card: { funding: "prepaid" } },
     });
     expect(again.data?.score).toBe(0.6);
+  });
+});
+
+describe("coss.scheduling.reassignments against the API", () => {
+  test("previews, runs, reports, undoes and cancels", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const rules = [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }];
+    const first = must(
+      (await scheduling.hosts.create({ uid: "first", name: "First", time_zone: "UTC" })).data,
+    );
+    const second = must(
+      (await scheduling.hosts.create({ uid: "second", name: "Second", time_zone: "UTC" })).data,
+    );
+    await scheduling.schedules.create("first", { rules });
+    await scheduling.schedules.create("second", { rules });
+    const pool = must(
+      (
+        await scheduling.eventTypes.create({
+          title: "Consultation",
+          kind: "pool",
+          duration_minutes: 30,
+          hosts: [{ host: "first" }, { host: "second" }],
+        })
+      ).data,
+    );
+    const booking = must(
+      (
+        await scheduling.bookings.create({
+          event_type: pool.id,
+          start: "2031-01-06T10:00:00.000Z",
+          host: "first",
+          attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+        })
+      ).data,
+    );
+    const preview = must(
+      (
+        await scheduling.reassignments.preview({
+          selection: { host: "first" },
+          strategy: { preferred_hosts: ["second"] },
+        })
+      ).data,
+    );
+    expect(preview.items[0]).toMatchObject({ booking: booking.id, to_host: second.id });
+
+    const created = await scheduling.reassignments.create(
+      {
+        selection: { host: "first" },
+        strategy: { to_host: "second" },
+        reason_code: "out_of_office",
+      },
+      { idempotencyKey: "move-them" },
+    );
+    const run = must(created.data);
+    expect(run).toMatchObject({ object: "scheduling.reassignment", status: "pending" });
+    const replay = await scheduling.reassignments.create(
+      {
+        selection: { host: "first" },
+        strategy: { to_host: "second" },
+        reason_code: "out_of_office",
+      },
+      { idempotencyKey: "move-them" },
+    );
+    expect(replay.data?.id).toBe(run.id);
+
+    const early = await scheduling.reassignments.undo(run.id);
+    expect(early.error?.code).toBe("reassignment_not_finished");
+
+    const deps = testSchedulingDeps();
+    await runDueReassignments(deps, { scope: { organizationIds: [tenant.organization.id] } });
+    const done = must((await scheduling.reassignments.get(run.id)).data);
+    expect(done.status).toBe("completed");
+    expect(done.counts.reassigned).toBe(1);
+    const items = must((await scheduling.reassignments.items(run.id)).data);
+    expect(items.data[0]).toMatchObject({
+      object: "scheduling.reassignment_item",
+      booking: booking.id,
+      from_host: first.id,
+      to_host: second.id,
+      outcome: "reassigned",
+    });
+    const list = must((await scheduling.reassignments.list()).data);
+    expect(list.data.map((row) => row.id)).toContain(run.id);
+
+    const undo = must((await scheduling.reassignments.undo(run.id)).data);
+    expect(undo.undo_of).toBe(run.id);
+    const cancelled = must((await scheduling.reassignments.cancel(undo.id)).data);
+    expect(cancelled.status).toBe("cancelled");
+  });
+
+  test("an out of office entry can start one", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const rules = [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }];
+    await scheduling.hosts.create({ uid: "first", name: "First", time_zone: "UTC" });
+    await scheduling.hosts.create({ uid: "second", name: "Second", time_zone: "UTC" });
+    await scheduling.schedules.create("first", { rules });
+    await scheduling.schedules.create("second", { rules });
+    const pool = must(
+      (
+        await scheduling.eventTypes.create({
+          title: "Consultation",
+          kind: "pool",
+          duration_minutes: 30,
+          hosts: [{ host: "first" }, { host: "second" }],
+        })
+      ).data,
+    );
+    await scheduling.bookings.create({
+      event_type: pool.id,
+      start: "2031-01-06T10:00:00.000Z",
+      host: "first",
+      attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+    });
+    const entries = must(
+      (
+        await scheduling.outOfOffice.create({
+          host: "first",
+          start: "2031-01-06T09:00:00.000Z",
+          end: "2031-01-06T18:00:00.000Z",
+          existing_bookings: "reassign",
+          reassign: { preferred_hosts: ["second"] },
+        })
+      ).data,
+    );
+    expect(entries.data[0]?.existing_bookings).toBe("reassign");
+    const runs = must((await scheduling.reassignments.list()).data);
+    expect(runs.data[0]?.out_of_office).toBe(entries.data[0]?.id as string);
   });
 });
 

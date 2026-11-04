@@ -47,6 +47,19 @@ const {
 type BookingRow = typeof schedulingBooking.$inferSelect;
 type Scope = Pick<SchedulingEnvironment, "organizationId" | "environmentId">;
 type HostRole = (typeof schedulingBookingHost.$inferSelect)["role"];
+type Keys = Pick<SchedulingDeps, "dataKeys" | "now">;
+type Options = {
+  /** The bulk reassignment this is part of. */
+  reassignmentId?: string | undefined;
+  /** It'll tell the hosts itself, once. */
+  quietHosts?: boolean | undefined;
+  /** With `auto`: only the preferred hosts, not whoever else a pool would pick. */
+  onlyPreferred?: boolean | undefined;
+  /** In the same transaction, so a report can't disagree with what happened. */
+  onMoved?:
+    | ((tx: Transaction, moves: readonly { from: string; to: string }[]) => Promise<void>)
+    | undefined;
+};
 
 const {
   LostSlot,
@@ -93,7 +106,9 @@ const refusedByHost = (reason: string) =>
 const invalid = (message: string, param = "changes") =>
   new SchedulingError("invalid_reassignment", message, { param });
 
-function skipsOf(overrides: ReassignBookingRequestOutput["overrides"]): NotBookableReason[] {
+export function skipsOfOverrides(
+  overrides: ReassignBookingRequestOutput["overrides"],
+): NotBookableReason[] {
   const skipped: NotBookableReason[] = [...ALREADY_DECIDED];
   for (const override of overrides ?? []) {
     if (override in OVERRIDE_REASONS) {
@@ -291,9 +306,9 @@ export async function reassignBooking(
   env: SchedulingEnvironment,
   id: string,
   input: ReassignBookingRequestOutput,
-  deps: SchedulingDeps,
+  deps: Keys,
   actor: BookingActor,
-  opts: { reassignmentId?: string | undefined; quietHosts?: boolean | undefined } = {},
+  opts: Options = {},
 ): Promise<BookingObjectOutput> {
   checkRequest(input);
   const row = await retryingDeadlocks(() =>
@@ -323,9 +338,9 @@ async function reassignOne(
   env: SchedulingEnvironment,
   booking: BookingRow,
   input: ReassignBookingRequestOutput,
-  deps: SchedulingDeps,
+  deps: Keys,
   actor: BookingActor,
-  opts: { reassignmentId?: string | undefined; quietHosts?: boolean | undefined },
+  opts: Options,
 ): Promise<BookingRow> {
   checkChangeable(booking);
   const now = nowOf(deps);
@@ -357,7 +372,7 @@ async function reassignOne(
     nowMs: now.getTime(),
     failureMode: await calendarFailureModeOf(tx, env),
     ttlSeconds: null,
-    skip: skipsOf(input.overrides),
+    skip: skipsOfOverrides(input.overrides),
   };
   const schedules = schedulesOf(candidates);
   const taken = new Set(rows.map((row) => row.hostId));
@@ -398,10 +413,9 @@ async function reassignOne(
         );
       }
       const preferred = await hostsInOrder(tx, env, change.preferred_hosts ?? []);
-      const ranking = ranked(
-        { required: [], members: candidates.members },
-        `${booking.id}:${booking.version}`,
-      );
+      const ranking = opts.onlyPreferred
+        ? []
+        : ranked({ required: [], members: candidates.members }, `${booking.id}:${booking.version}`);
       const seen = new Set<string>();
       choices = [...preferred, ...ranking].filter((host) => {
         if (seen.has(host.id) || taken.has(host.id)) return false;
@@ -497,6 +511,10 @@ async function reassignOne(
       now,
     );
   }
+  await opts.onMoved?.(
+    tx,
+    swaps.map((swap) => ({ from: swap.from.hostId, to: swap.to.id })),
+  );
   return current;
 }
 
@@ -523,9 +541,9 @@ async function reassignSession(
   sessionId: string,
   askedSeatId: string,
   input: ReassignBookingRequestOutput,
-  deps: SchedulingDeps,
+  deps: Keys,
   actor: BookingActor,
-  opts: { reassignmentId?: string | undefined; quietHosts?: boolean | undefined },
+  opts: Options,
 ): Promise<BookingRow> {
   const now = nowOf(deps);
   await tx
@@ -593,10 +611,9 @@ async function reassignSession(
     choices = [named];
   } else {
     const preferred = await hostsInOrder(tx, env, change.preferred_hosts ?? []);
-    const others = ranked(
-      { required: [], members: candidates.members },
-      `${session.id}:${now.getTime()}`,
-    );
+    const others = opts.onlyPreferred
+      ? []
+      : ranked({ required: [], members: candidates.members }, `${session.id}:${now.getTime()}`);
     const seen = new Set<string>([session.hostId]);
     choices = [...preferred, ...others].filter((host) => {
       if (seen.has(host.id)) return false;
@@ -626,7 +643,7 @@ async function reassignSession(
     nowMs: now.getTime(),
     failureMode: await calendarFailureModeOf(tx, env),
     ttlSeconds: null,
-    skip: skipsOf(input.overrides),
+    skip: skipsOfOverrides(input.overrides),
   };
   const schedules = schedulesOf(candidates);
   let target: HostRow | null = null;
@@ -735,6 +752,7 @@ async function reassignSession(
     }
     if (updated.id === askedSeatId) result = updated;
   }
+  await opts.onMoved?.(tx, [{ from: previousHostId, to: target.id }]);
   return result;
 }
 

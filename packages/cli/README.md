@@ -80,6 +80,7 @@ ID and notarized by Apple (since 0.3.0), so one downloaded with a browser runs w
 | `coss scheduling hosts`, `coss scheduling bookings`, `coss scheduling event-types` | The environment's [hosts, bookings and event types](https://coss.com/docs/scheduling). |
 | `coss scheduling slots <event-type>`, `coss scheduling booking <booking>`, `coss scheduling cancel <booking>`, `coss scheduling calendars <host>` | Bookable starts (`--start`, `--end`), one booking, cancelling it, and a host's calendar connections. |
 | `coss scheduling candidates <booking>`, `coss scheduling reassign <booking>`, `coss scheduling ooo` | Who a booking could go to, [giving it to them](https://coss.com/docs/scheduling/reassigning) (`--to`, `--auto`), and [time hosts are away](https://coss.com/docs/scheduling/out-of-office). |
+| `coss scheduling reassign-many`, `coss scheduling reassignments`, `coss scheduling reassignment <id>` | [Moving many bookings](https://coss.com/docs/scheduling/reassigning#many-at-once) (`--from`, `--ooo`, `--to`, `--preferred`, `--dry-run`), its runs, and one run (`--cancel`, `--undo`). |
 | `coss forms list`, `coss forms get <form>`, `coss forms create <name>` | The environment's [forms](https://coss.com/docs/forms) and their endpoints. |
 | `coss forms submissions <form>`, `coss forms submission <form> <submission>`, `coss forms release <form> <submission>` | A form's submissions (`--status held`: Risk's review queue), one's values, and accepting a held one. |
 | `coss domains list` | The organization's sending domains and their status. |

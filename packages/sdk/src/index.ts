@@ -70,6 +70,7 @@ export type {
   SchedulingHoldsResource,
   SchedulingHostsResource,
   SchedulingOutOfOfficeResource,
+  SchedulingReassignmentsResource,
   SchedulingResource,
   SchedulingSchedulesResource,
   SchedulingSeriesResource,
