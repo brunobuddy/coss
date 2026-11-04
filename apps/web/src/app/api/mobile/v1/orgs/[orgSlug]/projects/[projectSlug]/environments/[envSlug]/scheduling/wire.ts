@@ -67,11 +67,13 @@ export function toMobileBooking(
     status: booking.status,
     start: booking.start,
     end: booking.end,
-    attendees: booking.attendees.map((attendee) => ({
-      name: attendee.name,
-      uid: attendee.uid,
-      time_zone: attendee.time_zone,
-    })),
+    attendees: booking.attendees
+      .filter((attendee) => attendee.role === "attendee")
+      .map((attendee) => ({
+        name: attendee.name,
+        uid: attendee.uid,
+        time_zone: attendee.time_zone,
+      })),
     hosts: booking.hosts.map((id) => ({ id, name: hostNames.get(id) ?? "Removed host" })),
     location: toLocation(booking.location),
     approval_expires_at: booking.approval_expires_at,

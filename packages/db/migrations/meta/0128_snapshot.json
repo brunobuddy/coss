@@ -1,6 +1,6 @@
 {
-  "id": "2a920fac-acb4-412f-b76f-faea12867d05",
-  "prevId": "dfb953d5-6bf9-4249-a438-b54f4e440144",
+  "id": "d98da141-94a8-48db-b3e0-1e28b82a44bc",
+  "prevId": "d09f1f6e-9294-45c3-8700-b4db33285970",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -20915,6 +20915,14 @@
           "primaryKey": false,
           "notNull": true
         },
+        "role": {
+          "name": "role",
+          "type": "scheduling_attendee_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'attendee'"
+        },
         "uid": {
           "name": "uid",
           "type": "text",
@@ -21531,6 +21539,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'::jsonb"
+        },
+        "encrypted_note": {
+          "name": "encrypted_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "occurred_at": {
           "name": "occurred_at",
@@ -22246,6 +22260,20 @@
           "notNull": true,
           "default": "'in_sync'"
         },
+        "details_written": {
+          "name": "details_written",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "scrub_pending": {
+          "name": "scrub_pending",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "next_attempt_at": {
           "name": "next_attempt_at",
           "type": "timestamp with time zone",
@@ -22815,6 +22843,13 @@
           "notNull": true,
           "default": false
         },
+        "reassignment_enabled": {
+          "name": "reassignment_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
         "approval_ttl_minutes": {
           "name": "approval_ttl_minutes",
           "type": "integer",
@@ -22842,6 +22877,21 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "max_guests": {
+          "name": "max_guests",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "host_calendar_details": {
+          "name": "host_calendar_details",
+          "type": "scheduling_calendar_details",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'neutral'"
         },
         "questions": {
           "name": "questions",
@@ -23275,6 +23325,198 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.scheduling_holiday_calendar": {
+      "name": "scheduling_holiday_calendar",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "environment_id": {
+          "name": "environment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "country_code": {
+          "name": "country_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "encrypted_ics_url": {
+          "name": "encrypted_ics_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "holidays": {
+          "name": "holidays",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "regions": {
+          "name": "regions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "host_ids": {
+          "name": "host_ids",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "host_filter": {
+          "name": "host_filter",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "delegate_ids": {
+          "name": "delegate_ids",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "existing_bookings": {
+          "name": "existing_bookings",
+          "type": "scheduling_out_of_office_existing",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'leave'"
+        },
+        "last_read_at": {
+          "name": "last_read_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "next_sync_at": {
+          "name": "next_sync_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "lease_until": {
+          "name": "lease_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "scheduling_holiday_calendar_environment_idx": {
+          "name": "scheduling_holiday_calendar_environment_idx",
+          "columns": [
+            {
+              "expression": "environment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scheduling_holiday_calendar_due_idx": {
+          "name": "scheduling_holiday_calendar_due_idx",
+          "columns": [
+            {
+              "expression": "next_sync_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scheduling_holiday_calendar_environment_fk": {
+          "name": "scheduling_holiday_calendar_environment_fk",
+          "tableFrom": "scheduling_holiday_calendar",
+          "tableTo": "environment",
+          "columnsFrom": [
+            "environment_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.scheduling_host": {
       "name": "scheduling_host",
       "schema": "",
@@ -23340,6 +23582,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'::jsonb"
+        },
+        "locations": {
+          "name": "locations",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "status": {
           "name": "status",
@@ -23662,6 +23911,12 @@
         },
         "host_id": {
           "name": "host_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reassignment_id": {
+          "name": "reassignment_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -24016,12 +24271,32 @@
           "notNull": true,
           "default": true
         },
+        "existing_bookings": {
+          "name": "existing_bookings",
+          "type": "scheduling_out_of_office_existing",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'leave'"
+        },
+        "reassign_strategy": {
+          "name": "reassign_strategy",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "source": {
           "name": "source",
           "type": "scheduling_out_of_office_source",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
+        },
+        "source_key": {
+          "name": "source_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "external_id": {
           "name": "external_id",
@@ -24081,6 +24356,28 @@
         }
       },
       "indexes": {
+        "scheduling_out_of_office_source_key_idx": {
+          "name": "scheduling_out_of_office_source_key_idx",
+          "columns": [
+            {
+              "expression": "environment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"scheduling_out_of_office\".\"source_key\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "scheduling_out_of_office_external_id_idx": {
           "name": "scheduling_out_of_office_external_id_idx",
           "columns": [
@@ -24235,6 +24532,578 @@
           "value": "\"scheduling_out_of_office\".\"start_at\" < \"scheduling_out_of_office\".\"end_at\""
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.scheduling_out_of_office_delegate": {
+      "name": "scheduling_out_of_office_delegate",
+      "schema": "",
+      "columns": {
+        "out_of_office_id": {
+          "name": "out_of_office_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "host_id": {
+          "name": "host_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "scheduling_out_of_office_delegate_host_idx": {
+          "name": "scheduling_out_of_office_delegate_host_idx",
+          "columns": [
+            {
+              "expression": "host_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scheduling_out_of_office_delegate_entry_fk": {
+          "name": "scheduling_out_of_office_delegate_entry_fk",
+          "tableFrom": "scheduling_out_of_office_delegate",
+          "tableTo": "scheduling_out_of_office",
+          "columnsFrom": [
+            "out_of_office_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "scheduling_out_of_office_delegate_host_fk": {
+          "name": "scheduling_out_of_office_delegate_host_fk",
+          "tableFrom": "scheduling_out_of_office_delegate",
+          "tableTo": "scheduling_host",
+          "columnsFrom": [
+            "host_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "scheduling_out_of_office_delegate_pk": {
+          "name": "scheduling_out_of_office_delegate_pk",
+          "columns": [
+            "out_of_office_id",
+            "host_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scheduling_public_holiday": {
+      "name": "scheduling_public_holiday",
+      "schema": "",
+      "columns": {
+        "country_code": {
+          "name": "country_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "region": {
+          "name": "region",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "scheduling_public_holiday_pk": {
+          "name": "scheduling_public_holiday_pk",
+          "columns": [
+            "country_code",
+            "date"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scheduling_public_holiday_source": {
+      "name": "scheduling_public_holiday_source",
+      "schema": "",
+      "columns": {
+        "country_code": {
+          "name": "country_code",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "read_at": {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "next_read_at": {
+          "name": "next_read_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scheduling_reassignment": {
+      "name": "scheduling_reassignment",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "environment_id": {
+          "name": "environment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "scheduling_reassignment_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "selection": {
+          "name": "selection",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "strategy": {
+          "name": "strategy",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason_code": {
+          "name": "reason_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "encrypted_note": {
+          "name": "encrypted_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overrides": {
+          "name": "overrides",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "notify_attendees": {
+          "name": "notify_attendees",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "notify_hosts": {
+          "name": "notify_hosts",
+          "type": "scheduling_reassignment_host_notice",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'digest'"
+        },
+        "out_of_office_id": {
+          "name": "out_of_office_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "undo_of_id": {
+          "name": "undo_of_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor": {
+          "name": "actor",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "request_hash": {
+          "name": "request_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lease_until": {
+          "name": "lease_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expanded_at": {
+          "name": "expanded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "scheduling_reassignment_environment_idx": {
+          "name": "scheduling_reassignment_environment_idx",
+          "columns": [
+            {
+              "expression": "environment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scheduling_reassignment_due_idx": {
+          "name": "scheduling_reassignment_due_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"scheduling_reassignment\".\"status\" IN ('pending', 'running')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scheduling_reassignment_created_at_idx": {
+          "name": "scheduling_reassignment_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scheduling_reassignment_environment_fk": {
+          "name": "scheduling_reassignment_environment_fk",
+          "tableFrom": "scheduling_reassignment",
+          "tableTo": "environment",
+          "columnsFrom": [
+            "environment_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "scheduling_reassignment_id_organization_unique": {
+          "name": "scheduling_reassignment_id_organization_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organization_id"
+          ]
+        },
+        "scheduling_reassignment_idempotency_unique": {
+          "name": "scheduling_reassignment_idempotency_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "environment_id",
+            "idempotency_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scheduling_reassignment_item": {
+      "name": "scheduling_reassignment_item",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reassignment_id": {
+          "name": "reassignment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "booking_id": {
+          "name": "booking_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_host_id": {
+          "name": "from_host_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_host_id": {
+          "name": "to_host_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "series_id": {
+          "name": "series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_at": {
+          "name": "start_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "scheduling_reassignment_outcome",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "scheduling_reassignment_item_pending_idx": {
+          "name": "scheduling_reassignment_item_pending_idx",
+          "columns": [
+            {
+              "expression": "reassignment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "start_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"scheduling_reassignment_item\".\"outcome\" = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scheduling_reassignment_item_booking_idx": {
+          "name": "scheduling_reassignment_item_booking_idx",
+          "columns": [
+            {
+              "expression": "booking_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scheduling_reassignment_item_reassignment_fk": {
+          "name": "scheduling_reassignment_item_reassignment_fk",
+          "tableFrom": "scheduling_reassignment_item",
+          "tableTo": "scheduling_reassignment",
+          "columnsFrom": [
+            "reassignment_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "scheduling_reassignment_item_booking_fk": {
+          "name": "scheduling_reassignment_item_booking_fk",
+          "tableFrom": "scheduling_reassignment_item",
+          "tableTo": "scheduling_booking",
+          "columnsFrom": [
+            "booking_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "scheduling_reassignment_item_booking_unique": {
+          "name": "scheduling_reassignment_item_booking_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "reassignment_id",
+            "booking_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.scheduling_schedule": {
@@ -24654,6 +25523,24 @@
           "primaryKey": false,
           "notNull": false
         },
+        "manager_host_ids": {
+          "name": "manager_host_ids",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "manager_host_filter": {
+          "name": "manager_host_filter",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attendee_email_hmac": {
+          "name": "attendee_email_hmac",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "read_only": {
           "name": "read_only",
           "type": "boolean",
@@ -24720,6 +25607,28 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scheduling_session_attendee_email_idx": {
+          "name": "scheduling_session_attendee_email_idx",
+          "columns": [
+            {
+              "expression": "environment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "attendee_email_hmac",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "attendee_email_hmac is not null",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -24823,7 +25732,7 @@
       "checkConstraints": {
         "scheduling_session_scope": {
           "name": "scheduling_session_scope",
-          "value": "(\"scheduling_session\".\"kind\" = 'host' AND \"scheduling_session\".\"host_id\" IS NOT NULL)\n        OR (\"scheduling_session\".\"kind\" = 'booker' AND (\"scheduling_session\".\"event_type_id\" IS NOT NULL OR \"scheduling_session\".\"host_id\" IS NOT NULL))\n        OR (\"scheduling_session\".\"kind\" = 'manage' AND \"scheduling_session\".\"booking_id\" IS NOT NULL)"
+          "value": "(\"scheduling_session\".\"kind\" = 'host' AND \"scheduling_session\".\"host_id\" IS NOT NULL)\n        OR (\"scheduling_session\".\"kind\" = 'booker' AND (\"scheduling_session\".\"event_type_id\" IS NOT NULL OR \"scheduling_session\".\"host_id\" IS NOT NULL))\n        OR (\"scheduling_session\".\"kind\" = 'manage' AND \"scheduling_session\".\"booking_id\" IS NOT NULL)\n        OR (\"scheduling_session\".\"kind\"::text = 'manager' AND (\"scheduling_session\".\"manager_host_ids\" IS NOT NULL OR \"scheduling_session\".\"manager_host_filter\" IS NOT NULL))"
         }
       },
       "isRLSEnabled": false
@@ -24898,6 +25807,20 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "name_host_in_attendee_emails": {
+          "name": "name_host_in_attendee_emails",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "host_reassignment": {
+          "name": "host_reassignment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'off'"
         },
         "calendar_failure_mode": {
           "name": "calendar_failure_mode",
@@ -31037,6 +31960,14 @@
         "failed"
       ]
     },
+    "public.scheduling_attendee_role": {
+      "name": "scheduling_attendee_role",
+      "schema": "public",
+      "values": [
+        "attendee",
+        "guest"
+      ]
+    },
     "public.scheduling_booking_status": {
       "name": "scheduling_booking_status",
       "schema": "public",
@@ -31046,6 +31977,14 @@
         "confirmed",
         "cancelled",
         "declined"
+      ]
+    },
+    "public.scheduling_calendar_details": {
+      "name": "scheduling_calendar_details",
+      "schema": "public",
+      "values": [
+        "neutral",
+        "full"
       ]
     },
     "public.scheduling_calendar_event_state": {
@@ -31142,6 +32081,14 @@
         "host"
       ]
     },
+    "public.scheduling_out_of_office_existing": {
+      "name": "scheduling_out_of_office_existing",
+      "schema": "public",
+      "values": [
+        "leave",
+        "reassign"
+      ]
+    },
     "public.scheduling_out_of_office_source": {
       "name": "scheduling_out_of_office_source",
       "schema": "public",
@@ -31153,13 +32100,45 @@
         "holiday"
       ]
     },
+    "public.scheduling_reassignment_host_notice": {
+      "name": "scheduling_reassignment_host_notice",
+      "schema": "public",
+      "values": [
+        "digest",
+        "each",
+        "none"
+      ]
+    },
+    "public.scheduling_reassignment_outcome": {
+      "name": "scheduling_reassignment_outcome",
+      "schema": "public",
+      "values": [
+        "pending",
+        "reassigned",
+        "skipped_changed",
+        "no_candidate",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "public.scheduling_reassignment_status": {
+      "name": "scheduling_reassignment_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "running",
+        "completed",
+        "cancelled"
+      ]
+    },
     "public.scheduling_session_kind": {
       "name": "scheduling_session_kind",
       "schema": "public",
       "values": [
         "host",
         "booker",
-        "manage"
+        "manage",
+        "manager"
       ]
     },
     "public.sign_authentication": {

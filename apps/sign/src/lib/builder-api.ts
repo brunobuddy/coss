@@ -177,7 +177,8 @@ async function route(
     { buckets: ["sign.ip"], subject: deps.clientIp ?? "unattributed" },
   ]);
   const store = deps.store;
-  if (!store) throw new BuilderApiError(503, "sign_unavailable", "Sign isn't available yet.");
+  if (!store)
+    throw new BuilderApiError(503, "sign_unavailable", "Sign is temporarily unavailable.");
   const token = /^Bearer (\S+)$/.exec(request.headers.get("authorization") ?? "")?.[1];
   if (!token) throw NOT_FOUND;
   const access = await authenticateSignBuilderSession({ id: sessionId, token, now: deps.now });

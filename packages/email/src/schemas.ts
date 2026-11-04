@@ -275,7 +275,10 @@ const TagPart = z
   .string()
   .regex(TAG_PART, "Must be 1-256 characters: ASCII letters, numbers, underscores or dashes.");
 
-const Tag = z.strictObject({ name: TagPart, value: TagPart });
+const Tag = z.strictObject({
+  name: TagPart.meta({ description: "The tag's name, unique on the email." }),
+  value: TagPart.meta({ description: "The tag's value." }),
+});
 
 /** A send's `category` (and a topic's `key`). */
 export const Category = z
@@ -405,10 +408,10 @@ export const SubaccountRef = z.string().min(1).max(256);
 /** The fields of a send request (inboxes pick theirs from it). */
 export const SendEmailRequestFields = z.strictObject({
   from: EmailAddress,
-  to: addressList(1),
-  cc: addressList(0).optional(),
-  bcc: addressList(0).optional(),
-  reply_to: addressList(0).optional(),
+  to: addressList(1).meta({ description: "Who it goes to." }),
+  cc: addressList(0).optional().meta({ description: "Who it's copied to." }),
+  bcc: addressList(0).optional().meta({ description: "Who it's blind copied to." }),
+  reply_to: addressList(0).optional().meta({ description: "Where replies go." }),
   subject: EmailSubject.optional().meta({
     description: "Required unless the email is sent from a template (`template_id`).",
   }),
@@ -516,7 +519,8 @@ export const SendEmailRequestFields = z.strictObject({
         seen.add(tag.name);
       }
     })
-    .optional(),
+    .optional()
+    .meta({ description: "Your tags on the email." }),
   category: Category.optional().meta({
     description:
       'What kind of email this is, e.g. "marketing". Recipients suppressed for this category ' +
@@ -979,16 +983,25 @@ const DELIVERED_EVENT_EXAMPLE = {
 export const EmailRecipient = z
   .object({
     address: z.string().meta({ description: "The bare, lower-cased address." }),
-    type: z.enum(EMAIL_RECIPIENT_TYPES),
+    type: z
+      .enum(EMAIL_RECIPIENT_TYPES)
+      .meta({ description: "Which list it's on: `to`, `cc` or `bcc`." }),
     status: z.enum(EMAIL_RECIPIENT_STATUSES).meta({
       description:
         "Delivery status of this recipient. `suppressed` means the address is on the " +
         "environment's suppression list (for every email or for this email's category), so it " +
         "was skipped. `canceled` means the scheduled email was canceled before it was sent.",
     }),
-    last_event_at: z.iso.datetime().nullable(),
+    last_event_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When its latest delivery event happened. `null`: none yet." }),
   })
-  .meta({ id: "EmailRecipient", examples: [RECIPIENT_EXAMPLE] });
+  .meta({
+    description: "One recipient of an email and how delivery to them went.",
+    id: "EmailRecipient",
+    examples: [RECIPIENT_EXAMPLE],
+  });
 
 export const SUPPRESSION_REASONS = [
   "bounce",
@@ -1025,31 +1038,76 @@ export const EmailEventData = z
   .object({
     bounce: z
       .object({
-        type: z.enum(["permanent", "transient", "undetermined"]),
-        sub_type: z.string(),
-        diagnostic_code: z.string().nullable(),
+        type: z
+          .enum(["permanent", "transient", "undetermined"])
+          .meta({ description: "`permanent`, `transient` or `undetermined`." }),
+        sub_type: z
+          .string()
+          .meta({ description: "The provider's finer classification of the bounce." }),
+        diagnostic_code: z
+          .string()
+          .nullable()
+          .meta({ description: "What the receiving server answered. `null`: not reported." }),
       })
       .optional(),
     complaint: z
-      .object({ feedback_type: z.string().nullable(), sub_type: z.string().nullable() })
+      .object({
+        feedback_type: z.string().nullable().meta({
+          description: "The kind of complaint the mailbox provider reported. `null`: not reported.",
+        }),
+        sub_type: z
+          .string()
+          .nullable()
+          .meta({ description: "The provider's finer classification. `null`: not reported." }),
+      })
       .optional(),
     delay: z
       .object({
-        type: z.string(),
-        expires_at: z.iso.datetime().nullable(),
-        diagnostic_code: z.string().nullable(),
+        type: z.string().meta({ description: "The provider's reason for the delay." }),
+        expires_at: z.iso
+          .datetime()
+          .nullable()
+          .meta({ description: "When the provider stops trying. `null`: not reported." }),
+        diagnostic_code: z
+          .string()
+          .nullable()
+          .meta({ description: "What the receiving server answered. `null`: not reported." }),
       })
       .optional(),
-    delivery: z.object({ smtp_response: z.string().nullable() }).optional(),
-    failure: z.object({ code: z.string(), message: z.string() }).optional(),
+    delivery: z
+      .object({
+        smtp_response: z
+          .string()
+          .nullable()
+          .meta({ description: "What the receiving server answered. `null`: not reported." }),
+      })
+      .optional(),
+    failure: z
+      .object({
+        code: z.string().meta({ description: "Machine-readable reason." }),
+        message: z.string().meta({ description: "Human-readable explanation." }),
+      })
+      .optional(),
     suppression: z
-      .object({ id: z.string(), scope: z.string(), reason: SuppressionReasonEnum })
+      .object({
+        id: z.string().meta({ description: "The suppression's id." }),
+        scope: z.string().meta({
+          description: "What it covers: every email, every marketing email, or one category.",
+        }),
+        reason: SuppressionReasonEnum,
+      })
       .optional()
       .meta({ description: "Only for `email.suppressed`: the entry that matched the recipient." }),
     unsubscribe: z
       .object({
-        contact_id: z.string().nullable(),
-        topic: z.string().nullable(),
+        contact_id: z
+          .string()
+          .nullable()
+          .meta({ description: "The contact who unsubscribed. `null`: none." }),
+        topic: z
+          .string()
+          .nullable()
+          .meta({ description: "The topic they left. `null`: marketing altogether." }),
       })
       .optional()
       .meta({
@@ -1058,7 +1116,12 @@ export const EmailEventData = z
           "unsubscribed (from marketing, or from the email's topic, `topic`).",
       }),
     open: z
-      .object({ user_agent: z.string().nullable() })
+      .object({
+        user_agent: z
+          .string()
+          .nullable()
+          .meta({ description: "The client's `User-Agent`. `null`: not sent." }),
+      })
       .optional()
       .meta({ description: "Only for `email.opened`." }),
     click: z
@@ -1068,7 +1131,10 @@ export const EmailEventData = z
           .number()
           .int()
           .meta({ description: "Index of the link among the email's tracked links." }),
-        user_agent: z.string().nullable(),
+        user_agent: z
+          .string()
+          .nullable()
+          .meta({ description: "The client's `User-Agent`. `null`: not sent." }),
       })
       .optional()
       .meta({ description: "Only for `email.clicked`." }),
@@ -1080,7 +1146,11 @@ export const EmailEventData = z
       .optional()
       .meta({ description: "Only for `email.rescheduled`." }),
   })
-  .meta({ id: "EmailEventData", examples: [DELIVERED_EVENT_EXAMPLE.data] });
+  .meta({
+    description: "Details of the event: only what its `type` has.",
+    id: "EmailEventData",
+    examples: [DELIVERED_EVENT_EXAMPLE.data],
+  });
 
 export type EmailEventDataOutput = z.output<typeof EmailEventData>;
 
@@ -1088,13 +1158,15 @@ export const EmailEvent = z
   .object({
     object: z.literal("email_event"),
     id: z.string().meta({ examples: ["evt_01k7c8m4q2f3e9v6t5r1n0p8yz"] }),
-    email_id: z.string(),
-    type: z.enum(EMAIL_EVENT_TYPES),
+    email_id: z.string().meta({ description: "The email's id." }),
+    type: z
+      .enum(EMAIL_EVENT_TYPES)
+      .meta({ description: "What happened, such as `email.delivered` or `email.bounced`." }),
     recipient: z
       .string()
       .nullable()
       .meta({ description: "The recipient this event is about; `null` for the whole email." }),
-    occurred_at: z.iso.datetime(),
+    occurred_at: z.iso.datetime().meta({ description: "When it happened." }),
     data: EmailEventData,
   })
   .meta({ id: "EmailEvent", examples: [DELIVERED_EVENT_EXAMPLE] });
@@ -1234,12 +1306,27 @@ export const EmailTracking = z
     unsubscribe: z.boolean().meta({
       description: "Whether the email carries one-click unsubscribe headers (RFC 8058).",
     }),
-    open_count: z.number().int(),
-    first_opened_at: z.iso.datetime().nullable(),
-    last_opened_at: z.iso.datetime().nullable(),
-    click_count: z.number().int(),
-    first_clicked_at: z.iso.datetime().nullable(),
-    last_clicked_at: z.iso.datetime().nullable(),
+    open_count: z
+      .number()
+      .int()
+      .meta({ description: "Times opened. Mail clients that prefetch images inflate it." }),
+    first_opened_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was first opened. `null`: not yet." }),
+    last_opened_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was last opened. `null`: not yet." }),
+    click_count: z.number().int().meta({ description: "Link clicks. Link scanners inflate it." }),
+    first_clicked_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When a link was first clicked. `null`: not yet." }),
+    last_clicked_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When a link was last clicked. `null`: not yet." }),
   })
   .meta({
     id: "EmailTracking",
@@ -1278,12 +1365,21 @@ export const EmailLink = z
   .object({
     object: z.literal("email_link"),
     id: z.string().meta({ examples: [LINK_EXAMPLE.id] }),
-    email_id: z.string(),
+    email_id: z.string().meta({ description: "The email's id." }),
     position: z.number().int().meta({ description: "Index of the link among the tracked links." }),
-    url: z.string(),
-    click_count: z.number().int(),
-    first_clicked_at: z.iso.datetime().nullable(),
-    last_clicked_at: z.iso.datetime().nullable(),
+    url: z.string().meta({ description: "The original link." }),
+    click_count: z
+      .number()
+      .int()
+      .meta({ description: "Times it was clicked. Link scanners inflate it." }),
+    first_clicked_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was first clicked. `null`: not yet." }),
+    last_clicked_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was last clicked. `null`: not yet." }),
   })
   .meta({ id: "EmailLink", examples: [LINK_EXAMPLE] });
 
@@ -1326,18 +1422,36 @@ export const EmailObject = z
   .object({
     object: z.literal("email"),
     id: z.string().meta({ examples: [EMAIL_ID_EXAMPLE] }),
-    from: z.string(),
-    to: z.array(z.string()),
-    cc: z.array(z.string()),
-    bcc: z.array(z.string()),
-    reply_to: z.array(z.string()),
-    subject: z.string(),
-    html: z.string().nullable(),
-    text: z.string().nullable(),
-    headers: z.record(z.string(), z.string()),
-    tags: z.array(z.object({ name: z.string(), value: z.string() })),
-    category: z.string().nullable(),
-    stream: z.enum(EMAIL_STREAMS),
+    from: z.string().meta({ description: "Who it's sent from." }),
+    to: z.array(z.string()).meta({ description: "The `To` addresses." }),
+    cc: z.array(z.string()).meta({ description: "The `Cc` addresses." }),
+    bcc: z.array(z.string()).meta({ description: "The `Bcc` addresses." }),
+    reply_to: z.array(z.string()).meta({ description: "The `Reply-To` addresses." }),
+    subject: z.string().meta({ description: "The subject, rendered if it came from a template." }),
+    html: z
+      .string()
+      .nullable()
+      .meta({ description: "The HTML part. `null`: none, or the body was discarded." }),
+    text: z
+      .string()
+      .nullable()
+      .meta({ description: "The plain text part. `null`: none, or the body was discarded." }),
+    headers: z
+      .record(z.string(), z.string())
+      .meta({ description: "The custom headers it was sent with." }),
+    tags: z
+      .array(
+        z.object({
+          name: z.string().meta({ description: "The tag's name." }),
+          value: z.string().meta({ description: "The tag's value." }),
+        }),
+      )
+      .meta({ description: "Your tags on the email." }),
+    category: z.string().nullable().meta({
+      description:
+        "The email's category, which suppressions and tracking rules can scope to. `null`: none.",
+    }),
+    stream: z.enum(EMAIL_STREAMS).meta({ description: "`transactional` or `marketing`." }),
     status: z.enum(EMAIL_STATUSES).meta({
       description:
         "Whether the email was handed to the delivery provider. `scheduled` emails wait for " +
@@ -1347,7 +1461,9 @@ export const EmailObject = z
     failure: z.union([EmailFailure, z.null()]).meta({
       description: "Why the email failed; `null` unless `status` is `failed`.",
     }),
-    recipients: z.array(EmailRecipient),
+    recipients: z
+      .array(EmailRecipient)
+      .meta({ description: "Each recipient, with how delivery to them went." }),
     attachments: z.array(EmailAttachmentObject).meta({
       description: "Attachment metadata. Content is never returned, and is discarded once sent.",
     }),
@@ -1356,7 +1472,10 @@ export const EmailObject = z
       .meta({ description: "True when sent from a sandbox environment (never delivered)." }),
     tracking: EmailTracking,
     created_at: z.iso.datetime(),
-    sent_at: z.iso.datetime().nullable(),
+    sent_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was handed to the provider. `null`: not yet." }),
     scheduled_at: z.iso
       .datetime()
       .nullable()
@@ -1824,7 +1943,7 @@ export const TrackingDomainObject = z
     }),
     record: z
       .object({
-        type: z.literal("CNAME"),
+        type: z.literal("CNAME").meta({ description: "The record's type." }),
         name: z.string().meta({ description: "The fully qualified record name to create." }),
         value: z.string().meta({ description: "The host the record must point at." }),
         status: z.enum(DOMAIN_RECORD_STATUSES).meta({
@@ -1840,9 +1959,18 @@ export const TrackingDomainObject = z
       description: "What is holding the hostname up, when the certificate provider said.",
     }),
     created_at: z.iso.datetime(),
-    last_checked_at: z.iso.datetime().nullable(),
-    activated_at: z.iso.datetime().nullable(),
-    failed_at: z.iso.datetime().nullable(),
+    last_checked_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was last checked. `null`: not yet." }),
+    activated_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it became active. `null`: it isn't." }),
+    failed_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it failed. `null`: it hasn't." }),
   })
   .meta({
     id: "TrackingDomain",
@@ -1881,10 +2009,10 @@ export const ReceivingDomainObject = z
     }),
     record: z
       .object({
-        type: z.literal("MX"),
+        type: z.literal("MX").meta({ description: "The record's type." }),
         name: z.string().meta({ description: "The fully qualified record name to create." }),
         value: z.string().meta({ description: "The mail exchange the record must point at." }),
-        priority: z.number().int(),
+        priority: z.number().int().meta({ description: "The MX record's priority." }),
         status: z.enum(DOMAIN_RECORD_STATUSES).meta({
           description:
             "What the last DNS check saw: `verified` once the most preferred MX records point " +
@@ -1900,7 +2028,10 @@ export const ReceivingDomainObject = z
           "is received as soon as it reaches coss.com; the check only shows what DNS serves.",
       }),
     created_at: z.iso.datetime(),
-    last_checked_at: z.iso.datetime().nullable(),
+    last_checked_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was last checked. `null`: not yet." }),
   })
   .meta({
     id: "ReceivingDomain",
@@ -1926,18 +2057,32 @@ export const DomainObject = z
     can_send: z
       .boolean()
       .meta({ description: "Whether live keys may send from this domain right now." }),
-    region: z.string().nullable(),
+    region: z
+      .string()
+      .nullable()
+      .meta({ description: "The provider region it sends from. `null`: not set up there." }),
     mail_from_domain: z
       .string()
       .meta({ description: "The envelope sender subdomain bounces come back to." }),
-    mail_from_status: z.enum(MAIL_FROM_STATUSES),
+    mail_from_status: z
+      .enum(MAIL_FROM_STATUSES)
+      .meta({ description: "How setting up its bounce-handling `MAIL FROM` domain went." }),
     records: z
       .array(DomainRecordObject)
       .meta({ description: "The DNS records to publish, with the result of the last check." }),
     created_at: z.iso.datetime(),
-    last_checked_at: z.iso.datetime().nullable(),
-    verified_at: z.iso.datetime().nullable(),
-    failed_at: z.iso.datetime().nullable(),
+    last_checked_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When DNS was last checked. `null`: not yet." }),
+    verified_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was verified. `null`: it isn't." }),
+    failed_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When verification failed. `null`: it hasn't." }),
     // The custom tracking domain (`null` when none is set up). A union, not `.nullable()`, and no
     // `.meta()`: the OpenAPI generator would drop the `null` or inline the `TrackingDomain` schema.
     tracking: z.union([TrackingDomainObject, z.null()]),
@@ -2241,7 +2386,7 @@ export type SuppressionListOutput = z.output<typeof SuppressionList>;
 export const SuppressionCheck = z
   .object({
     object: z.literal("suppression_check"),
-    address: z.string(),
+    address: z.string().meta({ description: "The address checked." }),
     suppressed: z
       .boolean()
       .meta({ description: "Whether a send (with the given category) would skip this address." }),
@@ -2338,7 +2483,9 @@ export const TrackingSettings = z
     object: z.literal("tracking_settings"),
     // A union, not `.nullable()`, and no `.meta()`: the OpenAPI generator would drop the `null`
     // or inline the `TrackingRule` schema (as for `Domain.tracking`).
-    default: z.union([TrackingRule, z.null()]),
+    default: z
+      .union([TrackingRule, z.null()])
+      .meta({ description: "The environment's tracking default. `null`: none is set." }),
     categories: z.array(TrackingRule).meta({ description: "Category rules, by category name." }),
   })
   .meta({
@@ -2614,11 +2761,11 @@ const Verdict = z.union([z.enum(VERDICT_STATUSES), z.null()]);
 
 export const ReceivedEmailVerdicts = z
   .object({
-    spam: Verdict,
-    virus: Verdict,
-    spf: Verdict,
-    dkim: Verdict,
-    dmarc: Verdict,
+    spam: Verdict.meta({ description: "The spam verdict." }),
+    virus: Verdict.meta({ description: "The virus verdict." }),
+    spf: Verdict.meta({ description: "The SPF verdict." }),
+    dkim: Verdict.meta({ description: "The DKIM verdict." }),
+    dmarc: Verdict.meta({ description: "The DMARC verdict." }),
     dmarc_policy: z.string().nullable().meta({
       description:
         "The sender domain's DMARC policy (`none`, `quarantine` or `reject`) when DMARC failed.",
@@ -2640,7 +2787,9 @@ const receivedEmailSummaryShape = {
       "`received`, or `blocked` when the message carried a virus: then only its envelope and " +
       "verdicts are kept, never its content.",
   }),
-  blocked_reason: z.union([z.enum(RECEIVED_EMAIL_BLOCKED_REASONS), z.null()]),
+  blocked_reason: z
+    .union([z.enum(RECEIVED_EMAIL_BLOCKED_REASONS), z.null()])
+    .meta({ description: "Why it's `blocked`. `null`: it isn't." }),
   mail_from: z.string().meta({
     description: "The envelope sender (`MAIL FROM`); empty for bounces.",
   }),
@@ -2652,14 +2801,16 @@ const receivedEmailSummaryShape = {
   from: z.string().nullable().meta({ description: "The `From` header." }),
   to: z.array(z.string()).meta({ description: "The `To` header's addresses." }),
   cc: z.array(z.string()).meta({ description: "The `Cc` header's addresses." }),
-  subject: z.string().nullable(),
+  subject: z.string().nullable().meta({ description: "The `Subject` header. `null`: none." }),
   message_id: z.string().nullable().meta({ description: "The `Message-ID` header." }),
-  attachments: z.array(ReceivedEmailAttachmentObject),
+  attachments: z
+    .array(ReceivedEmailAttachmentObject)
+    .meta({ description: "Its attachments, without their bytes." }),
   size: z.number().int().meta({ description: "Size of the raw message in bytes." }),
   spam: z.boolean().meta({ description: "Whether the spam verdict is `fail`." }),
   verdicts: ReceivedEmailVerdicts,
   sandbox: z.boolean().meta({ description: "Whether it was received by a sandbox environment." }),
-  received_at: z.iso.datetime(),
+  received_at: z.iso.datetime().meta({ description: "When it arrived." }),
 };
 
 export const ReceivedEmailSummary = z
@@ -2671,17 +2822,31 @@ export type ReceivedEmailSummaryOutput = z.output<typeof ReceivedEmailSummary>;
 export const ReceivedEmailObject = z
   .object({
     ...receivedEmailSummaryShape,
-    reply_to: z.array(z.string()),
-    in_reply_to: z.string().nullable(),
+    reply_to: z.array(z.string()).meta({ description: "The `Reply-To` header's addresses." }),
+    in_reply_to: z
+      .string()
+      .nullable()
+      .meta({ description: "The `In-Reply-To` header. `null`: none." }),
     references: z
       .array(z.string())
       .meta({ description: "Message ids of the `References` header." }),
     sent_at: z.iso.datetime().nullable().meta({ description: "The `Date` header, when valid." }),
     headers: z
-      .array(z.object({ name: z.string(), value: z.string() }))
+      .array(
+        z.object({
+          name: z.string().meta({ description: "The header's name." }),
+          value: z.string().meta({ description: "The header's value." }),
+        }),
+      )
       .meta({ description: "Every header in message order (duplicates included)." }),
-    text: z.string().nullable(),
-    html: z.string().nullable(),
+    text: z
+      .string()
+      .nullable()
+      .meta({ description: "The plain text body. `null`: none, or it's `blocked`." }),
+    html: z
+      .string()
+      .nullable()
+      .meta({ description: "The HTML body. `null`: none, or it's `blocked`." }),
     truncated: z.boolean().meta({
       description:
         "Whether `text`, `html` or `headers` were shortened (2 MB per body, 64 KB of headers). " +
@@ -2893,15 +3058,25 @@ const Alignment = z.enum(["r", "s"]);
 export const DmarcPublishedRecord = z
   .object({
     value: z.string().meta({ description: "The `v=DMARC1` TXT record as published." }),
-    p: z.union([DmarcPolicyValue, z.null()]),
-    sp: z.union([DmarcPolicyValue, z.null()]),
-    np: z.union([DmarcPolicyValue, z.null()]),
-    adkim: z.union([Alignment, z.null()]),
-    aspf: z.union([Alignment, z.null()]),
+    p: z.union([DmarcPolicyValue, z.null()]).meta({ description: "The domain's policy tag." }),
+    sp: z
+      .union([DmarcPolicyValue, z.null()])
+      .meta({ description: "The subdomain policy tag. `null`: not published." }),
+    np: z
+      .union([DmarcPolicyValue, z.null()])
+      .meta({ description: "The policy tag for non-existent subdomains. `null`: not published." }),
+    adkim: z
+      .union([Alignment, z.null()])
+      .meta({ description: "The DKIM alignment tag. `null`: not published." }),
+    aspf: z
+      .union([Alignment, z.null()])
+      .meta({ description: "The SPF alignment tag. `null`: not published." }),
     pct: z.union([z.number().int(), z.null()]).meta({
       description: "Removed by RFC 9989 but still honored by many receivers.",
     }),
-    t: z.union([z.enum(["y", "n"]), z.null()]),
+    t: z
+      .union([z.enum(["y", "n"]), z.null()])
+      .meta({ description: "The testing tag. `null`: not published." }),
     rua: z.array(z.string()).meta({ description: "Aggregate report addresses." }),
   })
   .meta({
@@ -2973,7 +3148,7 @@ const DOMAIN_DMARC_EXAMPLE = {
 export const DomainDmarc = z
   .object({
     object: z.literal("domain_dmarc"),
-    domain_id: z.string(),
+    domain_id: z.string().meta({ description: "The domain's id." }),
     report_address: z.union([z.string(), z.null()]).meta({
       description:
         "Where the domain's DMARC aggregate reports go (`rua=mailto:…`). `null` when this " +
@@ -3010,8 +3185,8 @@ export const DomainDmarc = z
     next: z
       .union([
         z.object({
-          kind: z.enum(DMARC_NEXT_STEP_KINDS),
-          policy: DmarcPolicyValue,
+          kind: z.enum(DMARC_NEXT_STEP_KINDS).meta({ description: "The kind of step this is." }),
+          policy: DmarcPolicyValue.meta({ description: "The policy that step gets to." }),
           record: z
             .string()
             .meta({ description: "The TXT record to publish at `_dmarc.<domain>`." }),
@@ -3027,29 +3202,40 @@ export const DomainDmarc = z
     checks: z
       .array(
         z.object({
-          id: z.enum(DMARC_CHECK_IDS),
-          ok: z.boolean(),
-          message: z.string(),
+          id: z.enum(DMARC_CHECK_IDS).meta({ description: "Which check this is." }),
+          ok: z.boolean().meta({ description: "Whether it passes." }),
+          message: z.string().meta({ description: "What it found." }),
         }),
       )
       .meta({
         description: "The readiness checks gating `next`, from the last 14 days of reports.",
       }),
-    warnings: z.array(z.string()),
-    report_summary: z.object({
-      period_start: z.iso.datetime(),
-      period_end: z.iso.datetime(),
-      reports: z.number().int(),
-      messages: z.number().int(),
-      passing: z.number().int(),
-      coss_messages: z.number().int(),
-      coss_passing: z.number().int(),
-      first_report_at: z.union([z.iso.datetime(), z.null()]),
-      last_report_at: z.union([z.iso.datetime(), z.null()]),
-      sources: z
-        .array(DmarcSource)
-        .meta({ description: "The 50 sources with the most messages in the period." }),
-    }),
+    warnings: z
+      .array(z.string())
+      .meta({ description: "Things to look at before tightening the policy." }),
+    report_summary: z
+      .object({
+        period_start: z.iso.datetime().meta({ description: "When the period starts." }),
+        period_end: z.iso.datetime().meta({ description: "When the period ends." }),
+        reports: z.number().int().meta({ description: "Reports received." }),
+        messages: z.number().int().meta({ description: "Messages they cover." }),
+        passing: z.number().int().meta({ description: "Of those, how many passed DMARC." }),
+        coss_messages: z
+          .number()
+          .int()
+          .meta({ description: "Of those, how many were sent through coss.com." }),
+        coss_passing: z.number().int().meta({ description: "Of those, how many passed DMARC." }),
+        first_report_at: z
+          .union([z.iso.datetime(), z.null()])
+          .meta({ description: "When the first report arrived. `null`: none yet." }),
+        last_report_at: z
+          .union([z.iso.datetime(), z.null()])
+          .meta({ description: "When the latest report arrived. `null`: none yet." }),
+        sources: z
+          .array(DmarcSource)
+          .meta({ description: "The 50 sources with the most messages in the period." }),
+      })
+      .meta({ description: "What the aggregate reports of this period say." }),
   })
   .meta({ id: "DomainDmarc", examples: [DOMAIN_DMARC_EXAMPLE] });
 
@@ -3085,30 +3271,37 @@ export const DmarcReportSummary = z
   .object({
     object: z.literal("dmarc_report"),
     id: z.string(),
-    domain_id: z.string(),
-    reporter: z.object({ org_name: z.string(), email: z.union([z.string(), z.null()]) }),
+    domain_id: z.string().meta({ description: "The domain's id." }),
+    reporter: z
+      .object({
+        org_name: z.string().meta({ description: "The reporting organization." }),
+        email: z.union([z.string(), z.null()]).meta({ description: "Its contact address." }),
+      })
+      .meta({ description: "Who sent the report." }),
     report_id: z.string().meta({ description: "The reporter's own id of the report." }),
-    period_start: z.iso.datetime(),
-    period_end: z.iso.datetime(),
+    period_start: z.iso.datetime().meta({ description: "When the period it covers starts." }),
+    period_end: z.iso.datetime().meta({ description: "When the period it covers ends." }),
     policy_published: z
       .object({
-        domain: z.string(),
-        p: z.union([z.string(), z.null()]),
-        sp: z.union([z.string(), z.null()]),
-        np: z.union([z.string(), z.null()]),
-        adkim: z.union([z.string(), z.null()]),
-        aspf: z.union([z.string(), z.null()]),
-        pct: z.union([z.number().int(), z.null()]),
-        testing: z.union([z.string(), z.null()]),
+        domain: z.string().meta({ description: "The domain the policy was published for." }),
+        p: z.union([z.string(), z.null()]).meta({ description: "The domain's policy tag." }),
+        sp: z.union([z.string(), z.null()]).meta({ description: "The subdomain policy tag." }),
+        np: z
+          .union([z.string(), z.null()])
+          .meta({ description: "The policy tag for non-existent subdomains." }),
+        adkim: z.union([z.string(), z.null()]).meta({ description: "The DKIM alignment tag." }),
+        aspf: z.union([z.string(), z.null()]).meta({ description: "The SPF alignment tag." }),
+        pct: z.union([z.number().int(), z.null()]).meta({ description: "The percentage tag." }),
+        testing: z.union([z.string(), z.null()]).meta({ description: "The testing tag." }),
       })
       .meta({ description: "The policy the reporter found when it evaluated the mail." }),
-    messages: z.number().int(),
-    passing: z.number().int(),
+    messages: z.number().int().meta({ description: "Messages the report covers." }),
+    passing: z.number().int().meta({ description: "Of those, how many passed DMARC." }),
     truncated: z.boolean().meta({
       description:
         "The report listed more rows than are kept (10,000); totals cover the kept rows.",
     }),
-    received_at: z.iso.datetime(),
+    received_at: z.iso.datetime().meta({ description: "When coss.com received it." }),
   })
   .meta({ id: "DmarcReportSummary", examples: [DMARC_REPORT_SUMMARY_EXAMPLE] });
 
@@ -3133,34 +3326,54 @@ const DMARC_RECORD_EXAMPLE = {
 
 export const DmarcReportRecord = z
   .object({
-    source_ip: z.string(),
-    count: z.number().int(),
+    source_ip: z.string().meta({ description: "The address the messages came from." }),
+    count: z.number().int().meta({ description: "How many messages this line covers." }),
     disposition: z
       .enum(DMARC_DISPOSITIONS)
       .meta({ description: "What the receiver did with the messages." }),
     dkim: z.enum(DMARC_ALIGNED_RESULTS).meta({ description: "Aligned DKIM result." }),
     spf: z.enum(DMARC_ALIGNED_RESULTS).meta({ description: "Aligned SPF result." }),
-    dmarc_pass: z.boolean(),
-    header_from: z.string(),
-    envelope_from: z.union([z.string(), z.null()]),
-    via_coss: z.boolean(),
-    auth_results: z.object({
-      dkim: z.array(
-        z.object({
-          domain: z.string(),
-          selector: z.union([z.string(), z.null()]),
-          result: z.string(),
-        }),
-      ),
-      spf: z.array(
-        z.object({
-          domain: z.string(),
-          scope: z.union([z.string(), z.null()]),
-          result: z.string(),
-        }),
-      ),
+    dmarc_pass: z.boolean().meta({ description: "Whether they passed DMARC." }),
+    header_from: z.string().meta({ description: "The domain in their `From` header." }),
+    envelope_from: z
+      .union([z.string(), z.null()])
+      .meta({ description: "The domain in their envelope sender." }),
+    via_coss: z.boolean().meta({
+      description:
+        "Whether they were sent through coss.com, by its DKIM selectors or bounce domain.",
     }),
-    reasons: z.array(z.object({ type: z.string(), comment: z.union([z.string(), z.null()]) })),
+    auth_results: z
+      .object({
+        dkim: z
+          .array(
+            z.object({
+              domain: z.string().meta({ description: "The signing domain." }),
+              selector: z.union([z.string(), z.null()]).meta({ description: "The selector." }),
+              result: z.string().meta({ description: "The result." }),
+            }),
+          )
+          .meta({ description: "Each DKIM signature's result." }),
+        spf: z
+          .array(
+            z.object({
+              domain: z.string().meta({ description: "The checked domain." }),
+              scope: z
+                .union([z.string(), z.null()])
+                .meta({ description: "What it was checked against." }),
+              result: z.string().meta({ description: "The result." }),
+            }),
+          )
+          .meta({ description: "Each SPF check's result." }),
+      })
+      .meta({ description: "What receivers saw for DKIM and SPF." }),
+    reasons: z
+      .array(
+        z.object({
+          type: z.string().meta({ description: "The kind of override." }),
+          comment: z.union([z.string(), z.null()]).meta({ description: "The receiver's comment." }),
+        }),
+      )
+      .meta({ description: "Why receivers overrode the policy." }),
   })
   .meta({ id: "DmarcReportRecord", examples: [DMARC_RECORD_EXAMPLE] });
 

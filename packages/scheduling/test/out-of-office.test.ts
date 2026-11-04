@@ -944,8 +944,11 @@ describe("the host's email about conflicts", () => {
 });
 
 describe("the host's calendar", () => {
-  function calendarDeps(api: FakeGoogleCalendarApi): CalendarDeps {
+  function calendarDeps(
+    api: FakeGoogleCalendarApi,
+  ): CalendarDeps & { dataKeys: typeof plain.dataKeys } {
     return {
+      dataKeys: plain.dataKeys,
       secretsKeys: secretsKeyRing([createHash("sha256").update("out of office").digest()]),
       apps: {
         google: { clientId: "google-client", clientSecret: "google-secret" },

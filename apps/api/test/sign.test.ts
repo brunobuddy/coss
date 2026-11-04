@@ -101,7 +101,10 @@ describe("Sign documents", () => {
       body: { filename: "nda.pdf", content: await buildTestPdfBase64() },
     });
     expect(response.status).toBe(503);
-    expect((await errorOf(response)).code).toBe("sign_unavailable");
+    const error = await errorOf(response);
+    expect(error.code).toBe("sign_unavailable");
+    expect(error.message).toBe("Sign is temporarily unavailable.");
+    expect(error.hint).toBe("Retry later.");
   });
 });
 

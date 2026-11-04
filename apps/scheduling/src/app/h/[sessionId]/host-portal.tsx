@@ -16,6 +16,7 @@ import { postToHost, reportHeight } from "@/lib/embed";
 import { Bookings } from "./bookings";
 import { Calendars } from "./calendars";
 import { Availability } from "./hours";
+import { Locations } from "./locations";
 import { TimeOff } from "./time-off";
 import type { HostSession } from "./types";
 
@@ -58,6 +59,7 @@ export function HostPortal({ sessionId, apiUrl }: { sessionId: string; apiUrl: s
               <TabsTab value="hours">Hours</TabsTab>
               <TabsTab value="time-off">Time off</TabsTab>
               <TabsTab value="calendars">Calendars</TabsTab>
+              <TabsTab value="locations">Locations</TabsTab>
               <TabsTab value="bookings">Bookings</TabsTab>
             </TabsList>
           </div>
@@ -69,6 +71,9 @@ export function HostPortal({ sessionId, apiUrl }: { sessionId: string; apiUrl: s
           </TabsPanel>
           <TabsPanel className="p-4 sm:p-6" value="calendars">
             <Calendars call={call} session={session} />
+          </TabsPanel>
+          <TabsPanel className="p-4 sm:p-6" value="locations">
+            <Locations call={call} session={session} />
           </TabsPanel>
           <TabsPanel className="p-4 sm:p-6" value="bookings">
             <Bookings call={call} session={session} />

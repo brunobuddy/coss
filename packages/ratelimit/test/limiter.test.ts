@@ -302,11 +302,12 @@ describe("overrides", () => {
       await Promise.all(changes);
     }
 
+    // createdAt is when each transaction began; sequence is assigned while holding the lock.
     const events = await db
       .select()
       .from(schema.adminAuditEvent)
       .where(eq(schema.adminAuditEvent.organizationId, organizationId))
-      .orderBy(asc(schema.adminAuditEvent.createdAt), asc(schema.adminAuditEvent.sequence));
+      .orderBy(asc(schema.adminAuditEvent.sequence));
     expect(events).toHaveLength(2);
     const first = events[0]?.metadata;
     const second = events[1]?.metadata;

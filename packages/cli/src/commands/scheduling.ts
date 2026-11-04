@@ -1,18 +1,43 @@
 /** `coss scheduling …`: the environment's hosts and bookings, on the public API. */
 import type {
   Coss,
+  CreateSchedulingBookingParams,
+  CreateSchedulingEventTypeParams,
+  CreateSchedulingHostParams,
+  SchedulingAttributes,
   SchedulingBooking,
   SchedulingBookingStatus,
+  SchedulingEventType,
+  SchedulingEventTypeKind,
+  SchedulingHost,
   SchedulingReassignmentCounts,
   SchedulingReassignmentOverride,
   SchedulingReassignmentReason,
+  SchedulingSchedule,
+  SchedulingWeeklyRule,
+  UpdateSchedulingEventTypeParams,
+  UpdateSchedulingHostParams,
+  UpsertSchedulingScheduleParams,
 } from "coss";
-import { type Flags, requireArgs } from "../args.ts";
+import { type Flags, pairs, requireArgs } from "../args.ts";
 import { type Command, type CommandInput, defineCommand } from "../command.ts";
 import { type Context, clientFor, resolveCredentials } from "../context.ts";
 import { printable } from "../emails/format.ts";
 import { apiError, UsageError } from "../errors.ts";
+import { jsonObject } from "../fields.ts";
+import type { Output } from "../output.ts";
 import { table } from "../table.ts";
+import {
+  confirmLive,
+  eitherOf,
+  integerOf,
+  oneOf,
+  orNull,
+  pairsOf,
+  printDeleted,
+  printList,
+  printOne,
+} from "./list-output.ts";
 
 const STATUSES: readonly SchedulingBookingStatus[] = [
   "held",
@@ -60,7 +85,9 @@ const HOSTS_FLAGS = {
 const hosts: Command = defineCommand({
   name: "scheduling hosts",
   summary: "List the people who can be booked",
-  description: "Lists the environment's scheduling hosts, newest first.",
+  description:
+    "Lists the environment's scheduling hosts, newest first. `coss scheduling hosts " +
+    "create|update|remove` manage them.",
   flags: HOSTS_FLAGS,
   run: async ({ values, context }: CommandInput<typeof HOSTS_FLAGS>) => {
     const coss = await client(context);
@@ -156,7 +183,9 @@ const TYPES_FLAGS = {
 const eventTypes: Command = defineCommand({
   name: "scheduling event-types",
   summary: "List what can be booked",
-  description: "Lists the environment's event types, with their length and hosts.",
+  description:
+    "Lists the environment's event types, with their length and hosts. `coss scheduling " +
+    "event-types create|update` manage them.",
   flags: TYPES_FLAGS,
   run: async ({ values, context }: CommandInput<typeof TYPES_FLAGS>) => {
     const coss = await client(context);
@@ -644,12 +673,736 @@ const calendars: Command = defineCommand({
   },
 });
 
+/** `--data`: the rest of a request body, which the flags win over. */
+const DATA_FLAG = {
+  type: "string",
+  value: "<json>",
+  description: "More of the request body, as JSON: inline, @file or - for stdin; flags win over it",
+} as const;
+
+const REMOVE_FLAGS = {
+  json: { type: "boolean", description: "Print the result as JSON" },
+} as const satisfies Flags;
+
+/** A repeatable `name=value` flag where a name given twice makes a list: `licensed_in=CA`. */
+function multiPairs(
+  values: string[] | undefined,
+  flag: string,
+): Record<string, string | string[]> | undefined {
+  if (!values) return undefined;
+  const out: Record<string, string | string[]> = {};
+  for (const [name, value] of pairs(values, flag)) {
+    const current = out[name];
+    if (current === undefined) out[name] = value;
+    else out[name] = [...(Array.isArray(current) ? current : [current]), value];
+  }
+  return out;
+}
+
+// ── Hosts ───────────────────────────────────────────────────────────────────────────────────────
+
+function printHost(out: Output, host: SchedulingHost): void {
+  out.line(
+    `${host.id} ${printable(host.name)}${host.status === "active" ? "" : out.style("yellow", ` (${host.status})`)}`,
+  );
+  if (host.uid) out.line(`  Uid        ${printable(host.uid)}`);
+  if (host.email) out.line(`  Email      ${printable(host.email)}`);
+  out.line(`  Time zone  ${host.time_zone}`);
+  for (const [name, value] of Object.entries(host.attributes)) {
+    out.line(`  ${printable(name)}: ${printable(Array.isArray(value) ? value.join(", ") : value)}`);
+  }
+}
+
+const HOST_FIELD_FLAGS = {
+  uid: { type: "string", value: "<uid>", description: "Your own id for this host" },
+  email: { type: "string", value: "<address>", description: "Where its notifications go" },
+  attribute: {
+    type: "string",
+    multiple: true,
+    value: "<name=value>",
+    description: "What pools filter hosts by: licensed_in=CA (repeat a name for a list)",
+  },
+  metadata: {
+    type: "string",
+    multiple: true,
+    value: "<name=value>",
+    description: "Metadata (repeatable)",
+  },
+} as const satisfies Flags;
+
+const HOSTS_CREATE_FLAGS = {
+  "time-zone": { type: "string", value: "<zone>", description: "Its IANA time zone: Europe/Paris" },
+  ...HOST_FIELD_FLAGS,
+  data: DATA_FLAG,
+  json: { type: "boolean", description: "Print the host as JSON" },
+} as const satisfies Flags;
+
+const hostsCreate: Command = defineCommand({
+  name: "scheduling hosts create",
+  summary: "Create a host: someone who can be booked",
+  usage: "<name> --time-zone <zone> [options]",
+  description:
+    "Creates a host. Give it a schedule next: `coss scheduling schedules create`. Creation is " +
+    "never retried, since the API doesn't deduplicate it.",
+  flags: HOSTS_CREATE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof HOSTS_CREATE_FLAGS>) => {
+    const [name] = requireArgs(
+      positionals,
+      1,
+      "scheduling hosts create <name> --time-zone <zone>",
+    ) as [string];
+    const base = values.data === undefined ? {} : await jsonObject(context.io, values.data, "data");
+    const zone = values["time-zone"] ?? (base.time_zone as string | undefined);
+    if (!zone) throw new UsageError("Pass --time-zone <zone>, e.g. --time-zone Europe/Paris.");
+    const attributes = multiPairs(values.attribute, "attribute");
+    const metadata = pairsOf(values.metadata, "metadata");
+    const params = {
+      ...base,
+      name,
+      time_zone: zone,
+      ...(values.uid !== undefined && { uid: values.uid }),
+      ...(values.email !== undefined && { email: values.email }),
+      ...(attributes && { attributes }),
+      ...(metadata && { metadata }),
+    } as CreateSchedulingHostParams;
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.hosts.create(params);
+    if (error) throw apiError("Couldn't create the host", error);
+    printOne(context.out, data, printHost);
+    return 0;
+  },
+});
+
+const HOST_STATUSES = ["active", "disabled"] as const;
+
+const HOSTS_UPDATE_FLAGS = {
+  name: { type: "string", value: "<name>", description: "Its new name" },
+  "time-zone": { type: "string", value: "<zone>", description: "Its IANA time zone" },
+  status: {
+    type: "string",
+    value: "<status>",
+    choices: HOST_STATUSES,
+    description: "active, or disabled to stop offering it (its bookings stay)",
+  },
+  ...HOST_FIELD_FLAGS,
+  uid: { type: "string", value: "<uid>", description: "Your own id for this host (none: remove)" },
+  email: {
+    type: "string",
+    value: "<address>",
+    description: "Where its notifications go (none: remove)",
+  },
+  data: DATA_FLAG,
+  json: { type: "boolean", description: "Print the host as JSON" },
+} as const satisfies Flags;
+
+const hostsUpdate: Command = defineCommand({
+  name: "scheduling hosts update",
+  summary: "Change a host, or disable it",
+  usage: "<host> [options]",
+  description: "Changes what is given on a host, by id or uid; the rest stays.",
+  flags: HOSTS_UPDATE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof HOSTS_UPDATE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling hosts update <host> [options]") as [
+      string,
+    ];
+    const status = oneOf("--status", values.status, HOST_STATUSES);
+    const base = values.data === undefined ? {} : await jsonObject(context.io, values.data, "data");
+    const attributes = multiPairs(values.attribute, "attribute");
+    const metadata = pairsOf(values.metadata, "metadata");
+    const params = {
+      ...base,
+      ...(values.name !== undefined && { name: values.name }),
+      ...(values["time-zone"] !== undefined && { time_zone: values["time-zone"] }),
+      ...(status && { status }),
+      ...(values.uid !== undefined && { uid: orNull(values.uid, "none") }),
+      ...(values.email !== undefined && { email: orNull(values.email, "none") }),
+      ...(attributes && { attributes }),
+      ...(metadata && { metadata }),
+    } as UpdateSchedulingHostParams;
+    if (Object.keys(params).length === 0) {
+      throw new UsageError(
+        "Pass at least one thing to change (coss scheduling hosts update --help).",
+      );
+    }
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.hosts.update(id, params);
+    if (error) throw apiError("Couldn't change the host", error);
+    printOne(context.out, data, printHost);
+    return 0;
+  },
+});
+
+const hostsRemove: Command = defineCommand({
+  name: "scheduling hosts remove",
+  summary: "Delete a host",
+  usage: "<host>",
+  description: "Deletes a host, by id or uid. To stop offering it instead: --status disabled.",
+  flags: REMOVE_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof REMOVE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling hosts remove <host>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.hosts.remove(id);
+    if (error) throw apiError("Couldn't delete the host", error);
+    printDeleted(context.out, data);
+    return 0;
+  },
+});
+
+// ── Schedules ───────────────────────────────────────────────────────────────────────────────────
+
+const DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+function dayOf(word: string, rule: string): number {
+  const digit = /^[0-6]$/.test(word) ? Number(word) : -1;
+  const day = digit >= 0 ? digit : DAY_NAMES.indexOf(word.toLowerCase().slice(0, 3));
+  if (day < 0) throw new UsageError(`--rule: "${word}" isn't a day, in "${rule}".`);
+  return day;
+}
+
+/** `--rule "mon-fri 09:00-17:00"`, `"sat,sun 10:00-12:00"`, `"fri-mon 08:00-24:00"`. */
+export function parseRule(text: string): SchedulingWeeklyRule {
+  const match = /^\s*(\S+)\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*$/.exec(text);
+  if (!match) {
+    throw new UsageError(
+      `--rule takes "<days> <start>-<end>": "mon-fri 09:00-17:00"; got "${text}".`,
+    );
+  }
+  const [, words, start, end] = match as unknown as [string, string, string, string];
+  const days = new Set<number>();
+  for (const part of words.split(",").filter(Boolean)) {
+    const [from, to] = part.split("-") as [string, string | undefined];
+    const first = dayOf(from, text);
+    const last = to === undefined ? first : dayOf(to, text);
+    for (let day = first; ; day = (day + 1) % 7) {
+      days.add(day);
+      if (day === last) break;
+    }
+  }
+  return { days: [...days].sort((a, b) => a - b), start, end };
+}
+
+function printSchedule(out: Output, schedule: SchedulingSchedule): void {
+  out.line(
+    `${schedule.id} ${printable(schedule.name)}${schedule.is_default ? out.style("dim", " (default)") : ""}`,
+  );
+  out.line(`  Time zone  ${schedule.time_zone}`);
+  for (const rule of schedule.rules) {
+    const days = rule.days.map((day) => DAY_NAMES[day] ?? String(day)).join(",");
+    out.line(`  ${days} ${rule.start}-${rule.end}`);
+  }
+  if (schedule.overrides.length > 0) out.line(`  ${schedule.overrides.length} overrides`);
+}
+
+const SCHEDULES_LIST_FLAGS = {
+  json: { type: "boolean", description: "One schedule per line, as JSON" },
+} as const satisfies Flags;
+
+const schedulesList: Command = defineCommand({
+  name: "scheduling schedules list",
+  summary: "List a host's weekly schedules",
+  usage: "<host>",
+  description: "Lists a host's schedules, oldest first.",
+  flags: SCHEDULES_LIST_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof SCHEDULES_LIST_FLAGS>) => {
+    const [host] = requireArgs(positionals, 1, "scheduling schedules list <host>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.schedules.list(host);
+    if (error) throw apiError("Couldn't list the schedules", error);
+    const { out } = context;
+    printList(out, data.data, {
+      empty: "No schedules: `coss scheduling schedules create` adds one.",
+      header: ["ID", "NAME", "TIME ZONE", "DEFAULT", "RULES"],
+      row: (item) => [
+        item.id,
+        printable(item.name),
+        item.time_zone,
+        item.is_default ? "yes" : "",
+        String(item.rules.length),
+      ],
+    });
+    return 0;
+  },
+});
+
+const SCHEDULE_FLAGS = {
+  rule: {
+    type: "string",
+    multiple: true,
+    value: '"<days> <start>-<end>"',
+    description: 'When it\'s free, in local time: "mon-fri 09:00-17:00" (repeatable)',
+  },
+  name: { type: "string", value: "<name>", description: "Its name" },
+  "time-zone": { type: "string", value: "<zone>", description: "Default: the host's" },
+  default: { type: "boolean", description: "Make it the host's default schedule" },
+  data: {
+    type: "string",
+    value: "<json>",
+    description:
+      "More of the request body (overrides), as JSON: inline, @file or - for stdin; flags win over it",
+  },
+  json: { type: "boolean", description: "Print the schedule as JSON" },
+} as const satisfies Flags;
+
+type ScheduleValues = CommandInput<typeof SCHEDULE_FLAGS>["values"];
+
+async function scheduleFields(context: Context, values: ScheduleValues) {
+  const base = values.data === undefined ? {} : await jsonObject(context.io, values.data, "data");
+  return {
+    ...base,
+    ...(values.rule && { rules: values.rule.map(parseRule) }),
+    ...(values.name !== undefined && { name: values.name }),
+    ...(values["time-zone"] !== undefined && { time_zone: values["time-zone"] }),
+    ...(values.default && { is_default: true }),
+  } as Partial<UpsertSchedulingScheduleParams>;
+}
+
+const schedulesCreate: Command = defineCommand({
+  name: "scheduling schedules create",
+  summary: "Add a weekly schedule to a host",
+  usage: '<host> --rule "mon-fri 09:00-17:00" [options]',
+  description:
+    "Adds a schedule; a host's first is its default. Creation is never retried, since the API " +
+    "doesn't deduplicate it.",
+  flags: SCHEDULE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof SCHEDULE_FLAGS>) => {
+    const [host] = requireArgs(
+      positionals,
+      1,
+      "scheduling schedules create <host> --rule <rule>",
+    ) as [string];
+    const fields = await scheduleFields(context, values);
+    if (!fields.rules) throw new UsageError('Pass --rule, e.g. --rule "mon-fri 09:00-17:00".');
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.schedules.create(
+      host,
+      fields as UpsertSchedulingScheduleParams,
+    );
+    if (error) throw apiError("Couldn't create the schedule", error);
+    printOne(context.out, data, printSchedule);
+    return 0;
+  },
+});
+
+const schedulesUpdate: Command = defineCommand({
+  name: "scheduling schedules update",
+  summary: "Change a schedule",
+  usage: "<host> <schedule> [options]",
+  description:
+    "Changes what is given: --rule replaces its rules, and without one they stay as they are. " +
+    "Existing bookings stay.",
+  flags: SCHEDULE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof SCHEDULE_FLAGS>) => {
+    const [host, id] = requireArgs(
+      positionals,
+      2,
+      "scheduling schedules update <host> <schedule> [options]",
+    ) as [string, string];
+    const fields = await scheduleFields(context, values);
+    if (Object.keys(fields).length === 0) {
+      throw new UsageError(
+        "Pass at least one thing to change (coss scheduling schedules update --help).",
+      );
+    }
+    const coss = await client(context);
+    // The API replaces a schedule whole, so a change of name alone resends its rules.
+    let rules = fields.rules;
+    if (!rules) {
+      const current = await coss.scheduling.schedules.get(host, id);
+      if (current.error) throw apiError("Couldn't read the schedule", current.error);
+      rules = current.data.rules;
+    }
+    const { data, error } = await coss.scheduling.schedules.update(host, id, { ...fields, rules });
+    if (error) throw apiError("Couldn't change the schedule", error);
+    printOne(context.out, data, printSchedule);
+    return 0;
+  },
+});
+
+const schedulesRemove: Command = defineCommand({
+  name: "scheduling schedules remove",
+  summary: "Delete a schedule (not the host's default)",
+  usage: "<host> <schedule>",
+  description: "Deletes a schedule. The API refuses to delete the host's default.",
+  flags: REMOVE_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof REMOVE_FLAGS>) => {
+    const [host, id] = requireArgs(
+      positionals,
+      2,
+      "scheduling schedules remove <host> <schedule>",
+    ) as [string, string];
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.schedules.remove(host, id);
+    if (error) throw apiError("Couldn't delete the schedule", error);
+    printDeleted(context.out, data);
+    return 0;
+  },
+});
+
+// ── Event types ─────────────────────────────────────────────────────────────────────────────────
+
+const KINDS: readonly SchedulingEventTypeKind[] = ["one_on_one", "pool", "collective", "group"];
+const EVENT_TYPE_STATUSES = ["active", "archived"] as const;
+
+function printEventType(out: Output, type: SchedulingEventType): void {
+  out.line(
+    `${type.id} ${printable(type.title)}${type.status === "active" ? "" : out.style("yellow", ` (${type.status})`)}`,
+  );
+  if (type.uid) out.line(`  Uid       ${printable(type.uid)}`);
+  out.line(`  Kind      ${type.kind}, ${type.duration_minutes} minutes`);
+  out.line(`  Hosts     ${type.hosts.map((host) => host.host).join(", ") || "none"}`);
+  if (type.requires_approval) out.line("  Bookings need approval");
+}
+
+const EVENT_TYPE_FLAGS = {
+  minutes: { type: "string", value: "<n>", description: "How long it lasts" },
+  uid: { type: "string", value: "<uid>", description: "Your own id for it" },
+  host: {
+    type: "string",
+    multiple: true,
+    value: "<host>",
+    description: "A host who takes it, by id or uid (repeatable)",
+  },
+  "requires-approval": { type: "boolean", description: "Bookings wait for approval" },
+  "no-approval": { type: "boolean", description: "Bookings are confirmed at once" },
+  data: {
+    type: "string",
+    value: "<json>",
+    description:
+      "More of the request body (buffers, limits, questions, locations…), as JSON: inline, @file " +
+      "or - for stdin; flags win over it",
+  },
+  json: { type: "boolean", description: "Print the event type as JSON" },
+} as const satisfies Flags;
+
+type EventTypeValues = CommandInput<typeof EVENT_TYPE_FLAGS>["values"];
+
+async function eventTypeFields(context: Context, values: EventTypeValues) {
+  const minutes = integerOf("--minutes", values.minutes);
+  const approval = eitherOf(values["requires-approval"], values["no-approval"], [
+    "--requires-approval",
+    "--no-approval",
+  ]);
+  const base = values.data === undefined ? {} : await jsonObject(context.io, values.data, "data");
+  return {
+    ...base,
+    ...(minutes !== undefined && { duration_minutes: minutes }),
+    ...(values.host && { hosts: values.host.map((host) => ({ host })) }),
+    ...(approval !== undefined && { requires_approval: approval }),
+  };
+}
+
+const EVENT_TYPE_CREATE_FLAGS = {
+  ...EVENT_TYPE_FLAGS,
+  kind: {
+    type: "string",
+    value: "<kind>",
+    choices: KINDS,
+    description: "one_on_one (the default), pool, collective or group",
+  },
+} as const satisfies Flags;
+
+const eventTypesCreate: Command = defineCommand({
+  name: "scheduling event-types create",
+  summary: "Create something that can be booked",
+  usage: "<title> --minutes <n> [options]",
+  description:
+    "Creates an event type. Creation is never retried, since the API doesn't deduplicate it.",
+  flags: EVENT_TYPE_CREATE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof EVENT_TYPE_CREATE_FLAGS>) => {
+    const [title] = requireArgs(
+      positionals,
+      1,
+      "scheduling event-types create <title> --minutes <n>",
+    ) as [string];
+    const kind = oneOf("--kind", values.kind, KINDS);
+    const fields = await eventTypeFields(context, values);
+    if (!("duration_minutes" in fields)) throw new UsageError("Pass --minutes <n>.");
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.eventTypes.create({
+      ...fields,
+      title,
+      ...(values.uid !== undefined && { uid: values.uid }),
+      ...(kind && { kind }),
+    } as CreateSchedulingEventTypeParams);
+    if (error) throw apiError("Couldn't create the event type", error);
+    printOne(context.out, data, printEventType);
+    return 0;
+  },
+});
+
+const EVENT_TYPE_UPDATE_FLAGS = {
+  title: { type: "string", value: "<title>", description: "Its new title" },
+  status: {
+    type: "string",
+    value: "<status>",
+    choices: EVENT_TYPE_STATUSES,
+    description: "active or archived",
+  },
+  ...EVENT_TYPE_FLAGS,
+  uid: { type: "string", value: "<uid>", description: "Your own id for it (none: remove it)" },
+  host: {
+    type: "string",
+    multiple: true,
+    value: "<host>",
+    description: "Replaces the hosts (repeatable; those removed keep their bookings)",
+  },
+} as const satisfies Flags;
+
+const eventTypesUpdate: Command = defineCommand({
+  name: "scheduling event-types update",
+  summary: "Change an event type, or archive it",
+  usage: "<event-type> [options]",
+  description: "Changes what is given on an event type, by id or uid; the rest stays.",
+  flags: EVENT_TYPE_UPDATE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof EVENT_TYPE_UPDATE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling event-types update <event-type>") as [
+      string,
+    ];
+    const status = oneOf("--status", values.status, EVENT_TYPE_STATUSES);
+    const params = {
+      ...(await eventTypeFields(context, values)),
+      ...(values.title !== undefined && { title: values.title }),
+      ...(values.uid !== undefined && { uid: orNull(values.uid, "none") }),
+      ...(status && { status }),
+    } as UpdateSchedulingEventTypeParams;
+    if (Object.keys(params).length === 0) {
+      throw new UsageError(
+        "Pass at least one thing to change (coss scheduling event-types update --help).",
+      );
+    }
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.eventTypes.update(id, params);
+    if (error) throw apiError("Couldn't change the event type", error);
+    printOne(context.out, data, printEventType);
+    return 0;
+  },
+});
+
+// ── Booking ─────────────────────────────────────────────────────────────────────────────────────
+
+const BOOK_FLAGS = {
+  start: { type: "string", value: "<time>", description: "When: a start from `scheduling slots`" },
+  name: { type: "string", value: "<name>", description: "The attendee's name" },
+  email: { type: "string", value: "<address>", description: "The attendee's address" },
+  phone: { type: "string", value: "<number>", description: "The attendee's number" },
+  "time-zone": { type: "string", value: "<zone>", description: "The attendee's IANA time zone" },
+  uid: { type: "string", value: "<uid>", description: "Your own id for the attendee" },
+  host: { type: "string", value: "<host>", description: "This host (default: chosen fairly)" },
+  minutes: { type: "string", value: "<n>", description: "One of the event type's durations" },
+  attribute: {
+    type: "string",
+    multiple: true,
+    value: "<name=value>",
+    description: "Narrows a pool: licensed_in=CA (repeat a name for a list)",
+  },
+  answer: {
+    type: "string",
+    multiple: true,
+    value: "<name=value>",
+    description: "An answer to one of the event type's questions (repeat a name for a list)",
+  },
+  metadata: {
+    type: "string",
+    multiple: true,
+    value: "<name=value>",
+    description: "Metadata (repeatable)",
+  },
+  data: DATA_FLAG,
+  yes: { type: "boolean", description: "Don't ask before telling people with a live key" },
+  json: { type: "boolean", description: "Print the booking as JSON" },
+} as const satisfies Flags;
+
+const book: Command = defineCommand({
+  name: "scheduling book",
+  summary: "Book a slot and tell the attendee and hosts",
+  usage: "<event-type> --start <time> --time-zone <zone> [options]",
+  description:
+    "Books a slot (`coss scheduling slots` lists them): it holds the time, adds the calendar " +
+    "event and tells the attendee and hosts. With a live key it asks first; off a terminal it " +
+    "needs --yes.",
+  flags: BOOK_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof BOOK_FLAGS>) => {
+    const [eventType] = requireArgs(
+      positionals,
+      1,
+      "scheduling book <event-type> --start <time> --time-zone <zone>",
+    ) as [string];
+    const base = values.data === undefined ? {} : await jsonObject(context.io, values.data, "data");
+    const baseAttendee = (base.attendee ?? {}) as Partial<
+      CreateSchedulingBookingParams["attendee"]
+    >;
+    const start = values.start ?? (base.start as string | undefined);
+    const zone = values["time-zone"] ?? baseAttendee.time_zone;
+    if (!start || !zone) throw new UsageError("A booking needs --start and --time-zone.");
+    const minutes = integerOf("--minutes", values.minutes);
+    const attributes: SchedulingAttributes | undefined = multiPairs(values.attribute, "attribute");
+    const answers = multiPairs(values.answer, "answer");
+    const metadata = pairsOf(values.metadata, "metadata");
+    const params = {
+      ...base,
+      event_type: eventType,
+      start,
+      attendee: {
+        ...baseAttendee,
+        time_zone: zone,
+        ...(values.name !== undefined && { name: values.name }),
+        ...(values.email !== undefined && { email: values.email }),
+        ...(values.phone !== undefined && { phone: values.phone }),
+        ...(values.uid !== undefined && { uid: values.uid }),
+      },
+      ...(values.host !== undefined && { host: values.host }),
+      ...(minutes !== undefined && { duration_minutes: minutes }),
+      ...(attributes && { attributes }),
+      ...(answers && { answers }),
+      ...(metadata && { metadata }),
+    } as CreateSchedulingBookingParams;
+    const credentials = await resolveCredentials(context);
+    const who = params.attendee.email ?? params.attendee.name ?? "the attendee";
+    const go = await confirmLive(
+      context,
+      credentials.apiKey,
+      values.yes,
+      `Book ${who} on ${eventType} at ${start} and tell them?`,
+    );
+    if (!go) return 1;
+    const coss = clientFor(context.io, credentials);
+    const { data, error } = await coss.scheduling.bookings.create(params);
+    if (error) throw apiError("Couldn't book the slot", error);
+    printBooking(context, data);
+    return 0;
+  },
+});
+
+const RESCHEDULE_FLAGS = {
+  start: { type: "string", value: "<time>", description: "The new start" },
+  host: { type: "string", value: "<host>", description: "Move a pool booking to this host" },
+  yes: { type: "boolean", description: "Don't ask before telling people with a live key" },
+  json: { type: "boolean", description: "Print the booking as JSON" },
+} as const satisfies Flags;
+
+const reschedule: Command = defineCommand({
+  name: "scheduling reschedule",
+  summary: "Move a booking and tell the attendee",
+  usage: "<booking> --start <time> [options]",
+  description:
+    "Moves a booking, keeping its id; the old time stays booked if the new one isn't free. It " +
+    "tells the attendee, so with a live key it asks first; off a terminal it needs --yes.",
+  flags: RESCHEDULE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof RESCHEDULE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling reschedule <booking> --start <time>") as [
+      string,
+    ];
+    if (!values.start) throw new UsageError("Pass --start <time>.");
+    const credentials = await resolveCredentials(context);
+    const go = await confirmLive(
+      context,
+      credentials.apiKey,
+      values.yes,
+      `Move ${id} to ${values.start} and tell the attendee?`,
+    );
+    if (!go) return 1;
+    const coss = clientFor(context.io, credentials);
+    const { data, error } = await coss.scheduling.bookings.reschedule(id, {
+      start: values.start,
+      ...(values.host !== undefined && { host: values.host }),
+    });
+    if (error) throw apiError("Couldn't move the booking", error);
+    printBooking(context, data);
+    return 0;
+  },
+});
+
+const DECIDE_FLAGS = {
+  yes: { type: "boolean", description: "Don't ask before telling people with a live key" },
+  json: { type: "boolean", description: "Print the booking as JSON" },
+} as const satisfies Flags;
+
+const approve: Command = defineCommand({
+  name: "scheduling approve",
+  summary: "Confirm a booking waiting for approval",
+  usage: "<booking> [--yes]",
+  description:
+    "Confirms a pending_approval booking. It tells the attendee, so with a live key it asks " +
+    "first; off a terminal it needs --yes.",
+  flags: DECIDE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof DECIDE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling approve <booking>") as [string];
+    const credentials = await resolveCredentials(context);
+    const go = await confirmLive(
+      context,
+      credentials.apiKey,
+      values.yes,
+      `Confirm ${id} and tell the attendee?`,
+    );
+    if (!go) return 1;
+    const coss = clientFor(context.io, credentials);
+    const { data, error } = await coss.scheduling.bookings.approve(id);
+    if (error) throw apiError("Couldn't approve the booking", error);
+    printBooking(context, data);
+    return 0;
+  },
+});
+
+const decline: Command = defineCommand({
+  name: "scheduling decline",
+  summary: "Refuse a booking waiting for approval",
+  usage: "<booking> [--yes]",
+  description:
+    "Refuses a pending_approval booking and frees the time. It tells the attendee, so with a " +
+    "live key it asks first; off a terminal it needs --yes.",
+  flags: DECIDE_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof DECIDE_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling decline <booking>") as [string];
+    const credentials = await resolveCredentials(context);
+    const go = await confirmLive(
+      context,
+      credentials.apiKey,
+      values.yes,
+      `Refuse ${id} and tell the attendee?`,
+    );
+    if (!go) return 1;
+    const coss = clientFor(context.io, credentials);
+    const { data, error } = await coss.scheduling.bookings.decline(id);
+    if (error) throw apiError("Couldn't decline the booking", error);
+    printBooking(context, data);
+    return 0;
+  },
+});
+
 export const SCHEDULING_COMMANDS: readonly Command[] = [
   hosts,
+  { ...hosts, name: "scheduling hosts list" },
+  hostsCreate,
+  hostsUpdate,
+  hostsRemove,
+  schedulesList,
+  schedulesCreate,
+  schedulesUpdate,
+  schedulesRemove,
   eventTypes,
+  { ...eventTypes, name: "scheduling event-types list" },
+  eventTypesCreate,
+  eventTypesUpdate,
   slots,
+  book,
   bookings,
   booking,
+  reschedule,
+  approve,
+  decline,
   cancel,
   reassign,
   candidates,

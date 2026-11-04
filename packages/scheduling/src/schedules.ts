@@ -1,6 +1,6 @@
 /** A host's weekly hours and date overrides. Rules are wall clock, in the schedule's own zone. */
 import { db, type Executor, schema } from "@coss/db";
-import { and, asc, eq, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { parseLocalDate } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { checkTimeZone, resolveHost } from "./hosts.ts";
@@ -219,6 +219,28 @@ export async function listSchedules(
     )
     .orderBy(asc(schedulingSchedule.id));
   return Promise.all(rows.map(async (row) => toScheduleObject(row, await overridesOf(db, row))));
+}
+
+/** Every host's schedules by name, in one read, for choosing one on an event type. */
+export async function listScheduleNames(
+  scope: Scope,
+  hostIds: readonly string[],
+): Promise<{ id: string; hostId: string; name: string }[]> {
+  if (hostIds.length === 0) return [];
+  return db
+    .select({
+      id: schedulingSchedule.id,
+      hostId: schedulingSchedule.hostId,
+      name: schedulingSchedule.name,
+    })
+    .from(schedulingSchedule)
+    .where(
+      and(
+        inArray(schedulingSchedule.hostId, [...hostIds]),
+        eq(schedulingSchedule.organizationId, scope.organizationId),
+      ),
+    )
+    .orderBy(asc(schedulingSchedule.name), asc(schedulingSchedule.id));
 }
 
 export async function getSchedule(

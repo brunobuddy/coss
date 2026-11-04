@@ -32,7 +32,6 @@ import {
   getOutOfOffice,
   getReassignment,
   getSettingsRow,
-  listBookingSlots,
   listConnections,
   listEventTypeSlots,
   listManagedBookings,
@@ -42,10 +41,13 @@ import {
   listReassignCandidates,
   listReassignmentItems,
   listReassignments,
+  listRecentHostBookings,
+  listRescheduleSlots,
   listSchedules,
   listUpcomingHostBookings,
   logoDataUrl,
   managedHosts,
+  markNoShow,
   previewReassignment,
   reassignBooking,
   rescheduleBooking,
@@ -59,6 +61,7 @@ import {
   toManagedHost,
   undoReassignment,
   updateCalendar,
+  updateHost,
   updateOutOfOffice,
   updateSchedule,
 } from "@coss/scheduling";
@@ -76,6 +79,7 @@ import {
   RescheduleBookingRequest,
   UndoReassignmentRequest,
   UpdateCalendarRequest,
+  UpdateHostLocationsRequest,
   UpdateOutOfOfficeRequest,
   UpsertScheduleRequest,
 } from "@coss/scheduling/schemas";
@@ -257,6 +261,7 @@ export function createSchedulingClientRoutes(opts: {
       questions: eventType.questions,
       locations: eventType.locations.map((location) => ({ type: location.type })),
       requires_approval: eventType.requires_approval,
+      max_guests: eventType.max_guests,
     };
   };
 
@@ -315,7 +320,7 @@ export function createSchedulingClientRoutes(opts: {
     return awayNoticeOf(env, only.host, now);
   };
 
-  const slotQueryOf = (c: Context<ClientEnv>) => {
+  const slotWindow = (c: Context<ClientEnv>) => {
     const query = SlotQuery.safeParse({
       start: c.req.query("start"),
       end: c.req.query("end"),
@@ -330,28 +335,36 @@ export function createSchedulingClientRoutes(opts: {
     };
   };
 
-  // An attendee sees times, never who else could take them.
-  const slotList = (slots: readonly { startMs: number; endMs: number }[]) => ({
-    object: "list" as const,
-    data: slots.map((slot) => ({ start: iso(slot.startMs), end: iso(slot.endMs) })),
-    has_more: false,
-  });
+  /** An attendee sees times, never who else could take them. */
+  const slotList = (
+    c: Context<ClientEnv>,
+    slots: { startMs: number; endMs: number }[],
+    extra: Record<string, unknown> = {},
+  ) =>
+    c.json({
+      object: "list" as const,
+      data: slots.map((slot) => ({ start: iso(slot.startMs), end: iso(slot.endMs) })),
+      has_more: false,
+      ...extra,
+    });
+
+  /** Where this booking could move to: its own hosts, length and buffers. */
+  const rescheduleSlots = async (c: Context<ClientEnv>, id: string) => {
+    const { fromMs, toMs, nowMs } = slotWindow(c);
+    return slotList(c, await listRescheduleSlots(c.var.session.env, id, { fromMs, toMs, nowMs }));
+  };
 
   router.get("/slots", async (c) => {
     // The session's kind first: the wrong one is a 404, whatever the query says.
     const eventTypeRef = eventTypeOf(c);
     const { env, session } = c.var.session;
-    const hostRefs = session.hostId ? [session.hostId] : undefined;
     const slots = await listEventTypeSlots(env, {
-      ...slotQueryOf(c),
+      ...slotWindow(c),
       eventTypeRef,
-      hostRefs,
+      hostRefs: session.hostId ? [session.hostId] : undefined,
       attributes: sessionAttributes(session, deps),
     });
-    return c.json({
-      ...slotList(slots),
-      away: await awayNoticeFor(env, eventTypeRef, session.hostId),
-    });
+    return slotList(c, slots, { away: await awayNoticeFor(env, eventTypeRef, session.hostId) });
   });
 
   router.post("/bookings", async (c) => {
@@ -370,6 +383,7 @@ export function createSchedulingClientRoutes(opts: {
         attributes: sessionAttributes(session, deps),
         durationMinutes: body.duration_minutes,
         attendee,
+        guests: body.guests,
         answers: body.answers,
         location: body.location,
         locationFromBrowser: true,
@@ -380,7 +394,7 @@ export function createSchedulingClientRoutes(opts: {
     );
     if (replayed) c.header("Idempotent-Replayed", "true");
     const emailed =
-      booking.attendees.some((person) => person.email) &&
+      booking.attendees.some((person) => person.role === "attendee" && person.email) &&
       (await attendeeEmailedOnConfirm(env, session.eventTypeId as string));
     return c.json({ ...clientBooking(booking), attendee_emailed: emailed }, 201);
   });
@@ -394,10 +408,9 @@ export function createSchedulingClientRoutes(opts: {
     start: booking.start,
     end: booking.end,
     location: booking.location,
-    attendees: booking.attendees.map((attendee) => ({
-      name: attendee.name,
-      time_zone: attendee.time_zone,
-    })),
+    attendees: booking.attendees
+      .filter((attendee) => attendee.role === "attendee")
+      .map((attendee) => ({ name: attendee.name, time_zone: attendee.time_zone })),
   });
 
   router.get("/booking", async (c) => {
@@ -405,20 +418,7 @@ export function createSchedulingClientRoutes(opts: {
     return c.json(clientBooking(await getBooking(c.var.session.env, id, deps)));
   });
 
-  router.get("/booking/slots", async (c) => {
-    const bookingId = bookingOf(c);
-    const { fromMs, toMs, nowMs } = slotQueryOf(c);
-    return c.json(
-      slotList(
-        await listBookingSlots(c.var.session.env, {
-          bookingId,
-          fromMs,
-          toMs,
-          nowMs,
-        }),
-      ),
-    );
-  });
+  router.get("/booking/slots", async (c) => rescheduleSlots(c, bookingOf(c)));
 
   router.post("/booking/reschedule", async (c) => {
     const id = bookingOf(c);
@@ -430,7 +430,7 @@ export function createSchedulingClientRoutes(opts: {
       { startMs: instant(body.start, "start") },
       deps,
       sessionActor(session),
-      { enforceCutoffs: true },
+      { enforceCutoffs: session.createdByUserId === null },
     );
     return c.json(clientBooking(booking));
   });
@@ -439,7 +439,7 @@ export function createSchedulingClientRoutes(opts: {
     const id = bookingOf(c);
     const { env, session } = c.var.session;
     const booking = await cancelBooking(env, id, deps, sessionActor(session), {
-      enforceCutoffs: true,
+      enforceCutoffs: session.createdByUserId === null,
     });
     return c.json(clientBooking(booking));
   });
@@ -612,9 +612,31 @@ export function createSchedulingClientRoutes(opts: {
     return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore });
   });
 
-  /** A host's own bookings, with attendee names but not their answers. */
+  router.get("/host/locations", async (c) => {
+    const host = await getHost(c.var.session.env, hostOf(c));
+    return c.json({ object: "list" as const, data: host.locations, has_more: false });
+  });
+
+  /** A host's own words for attendees' emails, so they're screened like anything else in them. */
+  router.put("/host/locations", async (c) => {
+    const hostId = writableHost(c);
+    const { locations } = await parsed(c, UpdateHostLocationsRequest);
+    const host = await updateHost(
+      c.var.session.env,
+      hostId,
+      { locations },
+      { screen: deps.screenSetup },
+    );
+    return c.json({ object: "list" as const, data: host.locations, has_more: false });
+  });
+
+  /**
+   * A host's own bookings, with attendee names but not their answers: those to come, or with
+   * `?when=past`, those that have started in the last 30 days.
+   */
   router.get("/host/bookings", async (c) => {
-    const page = await listUpcomingHostBookings(
+    const list = c.req.query("when") === "past" ? listRecentHostBookings : listUpcomingHostBookings;
+    const page = await list(
       c.var.session.env,
       {
         hostId: hostOf(c),
@@ -633,6 +655,8 @@ export function createSchedulingClientRoutes(opts: {
         title: booking.title,
         start: booking.start,
         end: booking.end,
+        no_show_at: booking.no_show_at,
+        group_session: booking.group_session,
         attendees: booking.attendees.map((attendee) => ({ name: attendee.name })),
       })),
       has_more: page.nextCursor !== null,
@@ -906,7 +930,39 @@ export function createSchedulingClientRoutes(opts: {
   const hostsOwnBooking = async (c: Context<ClientEnv>, hostId: string, id: string) => {
     const booking = await getBooking(c.var.session.env, id, deps);
     if (!booking.hosts.includes(hostId)) throw notFound();
+    return booking;
   };
+
+  router.get("/host/bookings/:id/slots", async (c) => {
+    const id = c.req.param("id");
+    await hostsOwnBooking(c, hostOf(c), id);
+    return rescheduleSlots(c, id);
+  });
+
+  /** Moves it for everyone on it. A host isn't held to the cutoffs attendees are. */
+  router.post("/host/bookings/:id/reschedule", async (c) => {
+    const hostId = writableHost(c);
+    const id = c.req.param("id");
+    await hostsOwnBooking(c, hostId, id);
+    const { env, session } = c.var.session;
+    const body = await parsed(c, StartBody);
+    const booking = await rescheduleBooking(
+      env,
+      id,
+      { startMs: instant(body.start, "start") },
+      deps,
+      sessionActor(session),
+    );
+    return c.json(clientBooking(booking));
+  });
+
+  router.post("/host/bookings/:id/no_show", async (c) => {
+    const hostId = writableHost(c);
+    const id = c.req.param("id");
+    await hostsOwnBooking(c, hostId, id);
+    const { env, session } = c.var.session;
+    return c.json(clientBooking(await markNoShow(env, id, deps, sessionActor(session))));
+  });
 
   router.post("/host/bookings/:id/approve", async (c) => {
     const hostId = writableHost(c);

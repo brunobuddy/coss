@@ -1,6 +1,6 @@
 {
-  "id": "dfb953d5-6bf9-4249-a438-b54f4e440144",
-  "prevId": "a4afc925-7783-4789-aab6-062ad775edfb",
+  "id": "d09f1f6e-9294-45c3-8700-b4db33285970",
+  "prevId": "b2ce9d5e-da75-4d24-9428-00a6111ab223",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -20915,6 +20915,14 @@
           "primaryKey": false,
           "notNull": true
         },
+        "role": {
+          "name": "role",
+          "type": "scheduling_attendee_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'attendee'"
+        },
         "uid": {
           "name": "uid",
           "type": "text",
@@ -21167,12 +21175,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'::jsonb"
-        },
-        "encrypted_attributes": {
-          "name": "encrypted_attributes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "idempotency_key": {
           "name": "idempotency_key",
@@ -22225,13 +22227,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "key_generation": {
-          "name": "key_generation",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
         "external_state": {
           "name": "external_state",
           "type": "scheduling_external_state",
@@ -22239,6 +22234,20 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'in_sync'"
+        },
+        "details_written": {
+          "name": "details_written",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "scrub_pending": {
+          "name": "scrub_pending",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "next_attempt_at": {
           "name": "next_attempt_at",
@@ -22813,6 +22822,21 @@
           "notNull": true,
           "default": 0
         },
+        "max_guests": {
+          "name": "max_guests",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "host_calendar_details": {
+          "name": "host_calendar_details",
+          "type": "scheduling_calendar_details",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'neutral'"
+        },
         "questions": {
           "name": "questions",
           "type": "jsonb",
@@ -23310,6 +23334,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'::jsonb"
+        },
+        "locations": {
+          "name": "locations",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "status": {
           "name": "status",
@@ -24319,6 +24350,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "attendee_email_hmac": {
+          "name": "attendee_email_hmac",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "read_only": {
           "name": "read_only",
           "type": "boolean",
@@ -24385,6 +24422,28 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scheduling_session_attendee_email_idx": {
+          "name": "scheduling_session_attendee_email_idx",
+          "columns": [
+            {
+              "expression": "environment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "attendee_email_hmac",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "attendee_email_hmac is not null",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -30696,6 +30755,14 @@
         "failed"
       ]
     },
+    "public.scheduling_attendee_role": {
+      "name": "scheduling_attendee_role",
+      "schema": "public",
+      "values": [
+        "attendee",
+        "guest"
+      ]
+    },
     "public.scheduling_booking_status": {
       "name": "scheduling_booking_status",
       "schema": "public",
@@ -30705,6 +30772,14 @@
         "confirmed",
         "cancelled",
         "declined"
+      ]
+    },
+    "public.scheduling_calendar_details": {
+      "name": "scheduling_calendar_details",
+      "schema": "public",
+      "values": [
+        "neutral",
+        "full"
       ]
     },
     "public.scheduling_calendar_event_state": {

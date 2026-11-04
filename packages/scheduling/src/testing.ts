@@ -34,6 +34,7 @@ type FakeEvent = {
   deleted?: boolean;
   title: string;
   location?: string | undefined;
+  description?: string;
 };
 
 /**
@@ -160,6 +161,7 @@ export class FakeGoogleCalendarApi {
             id?: string;
             summary?: string;
             location?: string;
+            description?: string;
             start?: { dateTime: string };
             end?: { dateTime: string };
             conferenceData?: unknown;
@@ -172,6 +174,7 @@ export class FakeGoogleCalendarApi {
         location: body.location,
         startMs: Date.parse(body.start?.dateTime ?? ""),
         endMs: Date.parse(body.end?.dateTime ?? ""),
+        ...(body.description !== undefined ? { description: body.description } : {}),
       });
       const wire = (event: FakeEvent) => {
         const pending = this.conferencePendingNext;
@@ -206,6 +209,8 @@ export class FakeGoogleCalendarApi {
         return new Response(null, { status: 204 });
       }
       if (method === "PATCH" || method === "PUT") {
+        // PATCH leaves what it doesn't name, as Google's does; PUT replaces the event.
+        if (method === "PUT") delete existing.description;
         Object.assign(existing, toEvent(existing.id), { deleted: false });
         return json(200, wire(existing));
       }

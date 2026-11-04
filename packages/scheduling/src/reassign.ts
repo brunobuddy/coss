@@ -28,7 +28,7 @@ import { isBookable, type NotBookableReason, occupiedRange } from "./engine/slot
 import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { type EventTypeRow, resolveEventType } from "./event-types.ts";
-import { type HostRow, resolveHost } from "./hosts.ts";
+import { type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
 import { carryReminders, enqueueReassignment } from "./notifications.ts";
 import type { BookingObjectOutput, ReassignBookingRequestOutput } from "./schemas.ts";
 import { nowOf, type SchedulingDeps, type SchedulingEnvironment } from "./types.ts";
@@ -73,6 +73,7 @@ const {
   assignFairly,
   bumped,
   coverageWindows,
+  locationForNewHost,
   locationWithoutHost,
   lockBooking,
   lockHostsAndMemberships,
@@ -476,9 +477,20 @@ async function reassignOne(
   let current = booking;
   const previousHostIds = rows.map((row) => row.hostId).sort();
   // Worked out before anything moves: whose meeting it is depends on the ledger as it stands.
+  const leavingIds = new Set(swaps.map((swap) => swap.from.hostId));
+  const hostsAfter = await hostsByIds(tx, env, [
+    ...rows.map((row) => row.hostId).filter((id) => !leavingIds.has(id)),
+    ...swaps.map((swap) => swap.to.id),
+  ]);
   let location: BookingRow["location"] = null;
   for (const swap of swaps) {
-    location = (await locationWithoutHost(tx, current, swap.from.hostId)) ?? location;
+    const moved = await locationWithoutHost(
+      tx,
+      location ? { ...current, location } : current,
+      swap.from.hostId,
+      hostsAfter,
+    );
+    location = moved ?? location;
   }
   for (const swap of swaps) {
     await releaseHostClaim(tx, {
@@ -703,6 +715,7 @@ async function reassignSession(
       : refusedByHost(lastReason);
   }
   const previousHostId = session.hostId;
+  const sessionLocation = locationForNewHost(session.location, previousHostId, [target]);
   await releaseHostClaim(tx, {
     groupSessionId: session.id,
     organizationId: session.organizationId,
@@ -710,8 +723,12 @@ async function reassignSession(
   });
   await tx
     .update(schedulingGroupSession)
-    // The link was made on the old host's account, and goes with their event.
-    .set({ hostId: target.id, meetingUrl: null })
+    // The link was made on the old host's account, and goes with their event, as their office does.
+    .set({
+      hostId: target.id,
+      meetingUrl: null,
+      ...(sessionLocation ? { location: sessionLocation } : {}),
+    })
     .where(
       and(
         eq(schedulingGroupSession.id, session.id),
@@ -1007,7 +1024,7 @@ async function providerNeeded(
   const location = booking.location;
   const leaving = fromHost ?? sourceOrNull(rows);
   if (!leaving) return null;
-  const reset = await locationWithoutHost(tx, booking, leaving);
+  const reset = await locationWithoutHost(tx, booking, leaving, []);
   const type = reset?.type ?? location?.type;
   // A reset of anything else, or one that stands, isn't this host's to make.
   if (!reset || !type) return null;

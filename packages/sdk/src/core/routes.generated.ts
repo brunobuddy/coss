@@ -120,6 +120,7 @@ export const ROUTES: readonly string[] = [
   "/v1/risk/rules/{id}",
   "/v1/risk/settings",
   "/v1/risk/users/{user_id}",
+  "/v1/scheduling/attendees/erase",
   "/v1/scheduling/attendees/{uid}",
   "/v1/scheduling/availability/search",
   "/v1/scheduling/booker_sessions",

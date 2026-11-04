@@ -9,23 +9,18 @@ import {
 } from "@coss/ui/components/table";
 import { CalendarClockIcon } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CursorPager } from "@/components/cursor-pager";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
+import { EVENT_TYPE_KIND_LABEL, EventTypeStatusDot } from "@/components/scheduling-badges";
 import { schedulingPageContext } from "../page-context";
 import { NewEventTypeDialog } from "../scheduling-actions";
 
 export const metadata: Metadata = { title: "Event types" };
 
 const PAGE_SIZE = 50;
-
-const KIND_LABEL = {
-  one_on_one: "One host",
-  pool: "Pool",
-  collective: "Collective",
-  group: "Group session",
-} as const;
 
 export default async function EventTypesPage({
   params,
@@ -86,16 +81,24 @@ export default async function EventTypesPage({
                 <TableHead>Kind</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead>Hosts</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Id</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {page.data.map((eventType) => (
                 <TableRow key={eventType.id}>
-                  <TableCell>{eventType.title}</TableCell>
-                  <TableCell>{KIND_LABEL[eventType.kind]}</TableCell>
+                  <TableCell>
+                    <Link className="font-medium hover:underline" href={`${path}/${eventType.id}`}>
+                      {eventType.title}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{EVENT_TYPE_KIND_LABEL[eventType.kind]}</TableCell>
                   <TableCell>{eventType.duration_minutes} min</TableCell>
                   <TableCell>{eventType.hosts.length}</TableCell>
+                  <TableCell>
+                    <EventTypeStatusDot status={eventType.status} />
+                  </TableCell>
                   <TableCell className="font-mono text-xs">{eventType.id}</TableCell>
                 </TableRow>
               ))}

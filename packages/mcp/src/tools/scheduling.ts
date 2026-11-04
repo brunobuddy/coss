@@ -8,8 +8,11 @@ import type {
   UpdateSchedulingEventTypeParams,
   UpsertSchedulingScheduleParams,
 } from "coss";
+import { fetchSchedulingSlotsDiagnosis } from "coss/diagnose";
 import { z } from "zod";
 import { failWith, respond } from "../result.ts";
+import { TOOL_REFERENCES } from "./diagnose-references.ts";
+import { SCHEDULING_DIAGNOSIS_OUTPUT } from "./output-schemas.ts";
 import {
   compact,
   cursorSchema,
@@ -353,6 +356,40 @@ export function registerSchedulingTools(ctx: ToolContext): void {
   );
 
   server.registerTool(
+    "diagnose_scheduling_slots",
+    {
+      title: "Diagnose missing slots",
+      description:
+        'Answers "why are there no slots?" for an event type and range: each finding is `certain`, ' +
+        "`likely` or `possible` (no host, a disabled host, no schedule, a duration longer than the " +
+        "working hours, a calendar that needs reauthorizing, minimum notice, the booking window, " +
+        "limits, bookings and buffers). A calendar's busy times aren't readable, so they can only " +
+        "be `possible`. Also says when the next slot after the range is. With slots, it stops " +
+        "early and says so.",
+      inputSchema: z.object({
+        event_type: z.string().describe("The event type's id or uid."),
+        start: z.string().optional().describe("ISO 8601. Default: now."),
+        end: z.string().optional().describe("ISO 8601, at most 62 days on. Default: 7 days on."),
+        host: z.string().optional().describe("Only this host (id or uid)."),
+        duration_minutes: z.number().int().optional(),
+      }),
+      outputSchema: SCHEDULING_DIAGNOSIS_OUTPUT,
+      annotations: READ_ONLY,
+    },
+    ({ event_type, start, end, host, duration_minutes }) =>
+      respond(
+        fetchSchedulingSlotsDiagnosis(coss, event_type, {
+          ...(start ? { start } : {}),
+          ...(end ? { end } : {}),
+          ...(host ? { host } : {}),
+          ...(duration_minutes ? { durationMinutes: duration_minutes } : {}),
+          now: ctx.now(),
+          references: TOOL_REFERENCES,
+        }),
+      ),
+  );
+
+  server.registerTool(
     "search_scheduling_availability",
     {
       title: "Search hosts' availability",
@@ -377,7 +414,7 @@ export function registerSchedulingTools(ctx: ToolContext): void {
     {
       title: "Book a slot",
       description:
-        "Books a start from list_scheduling_slots. The attendee is told by email, and the booking " +
+        "Books a start from list_scheduling_slots. The attendee and any guests are told by email, and the booking " +
         "is billed on a live key: confirm it with the user first.",
       inputSchema: z.object({
         event_type: z.string(),
@@ -388,6 +425,10 @@ export function registerSchedulingTools(ctx: ToolContext): void {
         attendee: z
           .record(z.string(), z.unknown())
           .describe("{ name, email, time_zone, uid? }: read_docs on /docs/scheduling."),
+        guests: z
+          .array(z.object({ email: z.string(), name: z.string().optional() }))
+          .optional()
+          .describe("Up to the event type's max_guests. Each one is emailed."),
         answers: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
       }),
       annotations: SENDS,
@@ -727,13 +768,22 @@ export function registerSchedulingTools(ctx: ToolContext): void {
         host: z.string().optional(),
         event_type: z.string().optional(),
         booking_id: z.string().optional(),
+        manager_hosts: z
+          .array(z.string())
+          .optional()
+          .describe("A team lead's page for these hosts: who's away, and moving their bookings."),
         expires_in: z.number().int().optional().describe("Seconds."),
       }),
       annotations: WRITE,
     },
-    ({ host: hostRef, event_type, booking_id, expires_in }) => {
-      if ([hostRef, event_type, booking_id].filter(Boolean).length !== 1) {
-        return failWith("Pass exactly one of host, event_type and booking_id.");
+    ({ host: hostRef, event_type, booking_id, manager_hosts, expires_in }) => {
+      if ([hostRef, event_type, booking_id, manager_hosts].filter(Boolean).length !== 1) {
+        return failWith("Pass exactly one of host, event_type, booking_id and manager_hosts.");
+      }
+      if (manager_hosts) {
+        return respond(
+          coss.scheduling.sessions.createForManager(given({ hosts: manager_hosts, expires_in })),
+        );
       }
       if (booking_id) return respond(coss.scheduling.sessions.createForBooking(booking_id));
       if (event_type) {

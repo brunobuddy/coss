@@ -3,7 +3,7 @@
  * they see the same world; inside a booking's transaction it also sees the bucket locks' effects.
  */
 import { db, type Executor, schema } from "@coss/db";
-import { and, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { notZoomMeeting } from "./calendar/zoom.ts";
 import { buildAvailability, overrideDateRange } from "./engine/availability.ts";
 import { type CalendarFreshness, calendarVerdict } from "./engine/calendar-verdict.ts";
@@ -22,8 +22,6 @@ import { MAX_SLOT_WINDOW_DAYS } from "./schemas.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
 const {
-  schedulingBooking,
-  schedulingBookingHost,
   schedulingBusyInterval,
   schedulingCalendar,
   schedulingCalendarConnection,
@@ -105,6 +103,8 @@ export async function loadHostInputs(
     /** Group events: this event type's sessions are joinable rather than blocking. */
     groupSessions?: boolean;
     calendarFailureMode: "hide" | "last_known";
+    /** Moving a booking: its own claims don't count, since the move gives them up first. */
+    exceptBookingId?: string | undefined;
   },
 ): Promise<Map<string, LoadedHost>> {
   const { scope, hosts, fromMs, toMs, nowMs } = input;
@@ -161,6 +161,12 @@ export async function loadHostInputs(
           isNull(schedulingClaim.liveUntil),
           sql`${schedulingClaim.liveUntil} > clock_timestamp()`,
         ),
+        input.exceptBookingId
+          ? or(
+              isNull(schedulingClaim.bookingId),
+              ne(schedulingClaim.bookingId, input.exceptBookingId),
+            )
+          : undefined,
       ),
     );
   const sessions = input.groupSessions
@@ -590,7 +596,7 @@ export async function candidatesOf(
   return { required, members };
 }
 
-function checkWindow(fromMs: number, toMs: number): void {
+export function checkWindow(fromMs: number, toMs: number): void {
   if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || toMs <= fromMs) {
     throw new SchedulingError("invalid_time", "`end` must be a valid time after `start`.");
   }
@@ -673,64 +679,6 @@ export async function listEventTypeSlots(
     hostRefs: input.hostRefs,
     attributes: input.attributes,
   });
-  return slotsAmong(scope, eventType, candidates, input, duration);
-}
-
-/**
- * Where a booking could move, keeping its hosts: not who the event type would pick today. Filters
- * and hosts change after a booking is made, and moving one never changes who it's with.
- */
-export async function listBookingSlots(
-  scope: Scope,
-  input: { bookingId: string; fromMs: number; toMs: number; nowMs: number },
-): Promise<SlotResult[]> {
-  checkWindow(input.fromMs, input.toMs);
-  const [booking] = await db
-    .select()
-    .from(schedulingBooking)
-    .where(
-      and(
-        eq(schedulingBooking.id, input.bookingId),
-        eq(schedulingBooking.organizationId, scope.organizationId),
-        eq(schedulingBooking.environmentId, scope.environmentId),
-      ),
-    );
-  if (!booking) return [];
-  const eventType = await resolveEventType(db, scope, booking.eventTypeId);
-  if (eventType.status !== "active") return [];
-  const assigned = await db
-    .select({ hostId: schedulingBookingHost.hostId, role: schedulingBookingHost.role })
-    .from(schedulingBookingHost)
-    .where(
-      and(
-        eq(schedulingBookingHost.bookingId, booking.id),
-        eq(schedulingBookingHost.organizationId, scope.organizationId),
-      ),
-    );
-  const [hosts, memberships] = await Promise.all([
-    hostsByIds(
-      db,
-      scope,
-      assigned.map((row) => row.hostId),
-    ),
-    eventTypeHosts(db, eventType),
-  ]);
-  const byHost = new Map(memberships.map((row) => [row.hostId, row]));
-  // As booking refuses them: a slot here would only fail on the way in.
-  const movable =
-    assigned.length > 0 &&
-    hosts.length === assigned.length &&
-    hosts.every((host) => host.status === "active" && !byHost.get(host.id)?.removedAt);
-  if (!movable) return [];
-  const entryOf = (role: "required" | "member") =>
-    assigned
-      .filter((row) => row.role === role)
-      .flatMap((row) => {
-        const host = hosts.find((candidate) => candidate.id === row.hostId);
-        return host ? [{ host, membership: byHost.get(host.id) ?? null }] : [];
-      });
-  const candidates = { required: entryOf("required"), members: entryOf("member") } as Candidates;
-  const duration = (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS;
   return slotsAmong(scope, eventType, candidates, input, duration);
 }
 

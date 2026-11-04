@@ -17,7 +17,11 @@ import { BookingStatusDot } from "@/components/scheduling-badges";
 import { SpecItem, SpecList } from "@/components/spec-list";
 import { formatDateTime } from "@/lib/format";
 import { schedulingPageContext } from "../page-context";
-import { CancelBookingButton, ReassignBookingDialog } from "../scheduling-actions";
+import {
+  CancelBookingButton,
+  ReassignBookingDialog,
+  RescheduleBookingButton,
+} from "../scheduling-actions";
 
 export const metadata: Metadata = { title: "Booking" };
 
@@ -78,6 +82,11 @@ export default async function BookingPage({
     throw error;
   });
   const ended = booking.status === "cancelled" || booking.status === "declined";
+  // A group seat is moved by cancelling it and booking another session.
+  const canMove =
+    (booking.status === "confirmed" || booking.status === "pending_approval") &&
+    !booking.group_session &&
+    Date.parse(booking.end) > Date.now();
   const metadataEntries = Object.entries(booking.metadata);
   const canUpdate = !ended && can({ scheduling: ["update"] });
   const candidates = canUpdate ? await listReassignCandidates(scope, booking.id, {}, deps) : null;
@@ -86,16 +95,19 @@ export default async function BookingPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         actions={
-          canUpdate && candidates ? (
-            <>
-              <ReassignBookingDialog
-                {...target}
-                bookingId={booking.id}
-                candidates={candidates.data}
-                hosts={hosts}
-              />
+          canUpdate ? (
+            <div className="flex gap-2">
+              {canMove ? <RescheduleBookingButton {...target} bookingId={booking.id} /> : null}
+              {candidates ? (
+                <ReassignBookingDialog
+                  {...target}
+                  bookingId={booking.id}
+                  candidates={candidates.data}
+                  hosts={hosts}
+                />
+              ) : null}
               <CancelBookingButton {...target} bookingId={booking.id} />
-            </>
+            </div>
           ) : null
         }
         description="Answers to booking questions are only available through the API."
@@ -110,14 +122,26 @@ export default async function BookingPage({
               {booking.id}
             </SpecItem>
             <SpecItem label="Event type">
-              <Link className="hover:underline" href={`${schedulingPath}/event-types`}>
+              <Link
+                className="hover:underline"
+                href={`${schedulingPath}/event-types/${booking.event_type}`}
+              >
                 {eventTypeTitle ?? booking.event_type}
               </Link>
             </SpecItem>
             <SpecItem label="Starts">{formatDateTime(booking.start)}</SpecItem>
             <SpecItem label="Ends">{formatDateTime(booking.end)}</SpecItem>
             <SpecItem label="Hosts">
-              {hosts.length > 0 ? hosts.map((host) => host.name).join(", ") : "—"}
+              {hosts.length > 0
+                ? hosts.map((host, index) => (
+                    <span key={host.id}>
+                      {index > 0 ? ", " : ""}
+                      <Link className="hover:underline" href={`${schedulingPath}/hosts/${host.id}`}>
+                        {host.name}
+                      </Link>
+                    </span>
+                  ))
+                : "—"}
             </SpecItem>
             <SpecItem label="Location">{locationText(booking.location)}</SpecItem>
             <SpecItem label="Created">{formatDateTime(booking.created_at)}</SpecItem>
@@ -173,7 +197,12 @@ export default async function BookingPage({
           <TableBody>
             {booking.attendees.map((attendee) => (
               <TableRow key={attendee.id}>
-                <TableCell>{attendee.name ?? "—"}</TableCell>
+                <TableCell>
+                  {attendee.name ?? "—"}
+                  {attendee.role === "guest" ? (
+                    <span className="text-muted-foreground"> (guest)</span>
+                  ) : null}
+                </TableCell>
                 <TableCell>{attendee.email ?? "—"}</TableCell>
                 <TableCell>{attendee.phone ?? "—"}</TableCell>
                 <TableCell className="font-mono text-[0.8125rem]">{attendee.uid ?? "—"}</TableCell>

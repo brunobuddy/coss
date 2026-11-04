@@ -258,6 +258,7 @@ export function caldavCalendarClient(input: {
     buildIcs({
       uid: event.key,
       title: event.title,
+      description: event.description ?? null,
       startMs: event.startMs,
       endMs: event.endMs,
       stampMs: now(),

@@ -17,7 +17,7 @@ import {
   decryptRouting,
   eraseAttendee,
   getBooking,
-  listBookingSlots,
+  listRescheduleSlots,
   redactExpiredBookings,
   reencryptSchedulingData,
   rescheduleBooking,
@@ -60,8 +60,11 @@ async function hostWithHours(
   return host;
 }
 
-function deps(fetcher: CalendarDeps["fetcher"]): CalendarDeps {
+function deps(
+  fetcher: CalendarDeps["fetcher"],
+): CalendarDeps & { dataKeys: typeof plain.dataKeys } {
   return {
+    dataKeys: plain.dataKeys,
     secretsKeys: secretsKeyRing([createHash("sha256").update("host changes").digest()]),
     apps: {
       google: { clientId: "google-client", clientSecret: "google-secret" },
@@ -460,7 +463,7 @@ describe("slots for moving a booking", () => {
       actor,
     );
     await updateHost(env, host.id, { attributes: { team: "b" } });
-    const slots = await listBookingSlots(env, { bookingId: booking.id, ...window });
+    const slots = await listRescheduleSlots(env, booking.id, window);
     expect(slots.map((slot) => slot.startMs)).toContain(at("10:00"));
     await rescheduleBooking(env, booking.id, { startMs: at("10:00") }, plain, actor);
   });
@@ -484,7 +487,7 @@ describe("slots for moving a booking", () => {
     await updateEventType(env, eventType.id, {
       hosts: [{ host: later.id, role: "required", weight: 100, schedule: null }],
     } as never);
-    expect(await listBookingSlots(env, { bookingId: booking.id, ...window })).toEqual([]);
+    expect(await listRescheduleSlots(env, booking.id, window)).toEqual([]);
     await expect(
       rescheduleBooking(env, booking.id, { startMs: at("10:00") }, plain, actor),
     ).rejects.toMatchObject({ code: "slot_unavailable" });
@@ -506,7 +509,7 @@ describe("slots for moving a booking", () => {
       actor,
     );
     await updateHost(env, host.id, { status: "disabled" });
-    expect(await listBookingSlots(env, { bookingId: booking.id, ...window })).toEqual([]);
+    expect(await listRescheduleSlots(env, booking.id, window)).toEqual([]);
   });
 });
 

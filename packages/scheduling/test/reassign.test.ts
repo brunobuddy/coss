@@ -944,6 +944,121 @@ describe("races, on real Postgres", () => {
   });
 });
 
+describe("where it happens", () => {
+  /** A one-on-one that leaves its address to the host. */
+  async function atHostsOffice(secondLocations: object[]) {
+    const env = await environment();
+    const first = await host(env, "First");
+    const second = await host(env, "Second");
+    await updateHost(env, first.id, {
+      locations: [{ type: "in_person", address: "1 First Street" }],
+    } as never);
+    await updateHost(env, second.id, { locations: secondLocations } as never);
+    const eventType = await eventTypeWith(env, "pool", [member(first), member(second)], {
+      locations: [{ type: "in_person", address: null }],
+    });
+    const { booking } = await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("10:00"), host: first.id, attendee },
+      plain,
+      actor,
+    );
+    return { env, first, second, eventType, booking };
+  }
+
+  test("a host's own office goes with them, to the new host's", async () => {
+    const { env, second, booking } = await atHostsOffice([
+      { type: "in_person", address: "2 Second Street" },
+    ]);
+    expect(booking.location).toEqual({ type: "in_person", address: "1 First Street" });
+    const moved = await reassign(env, booking.id, change(second.id));
+    expect(moved.location).toEqual({ type: "in_person", address: "2 Second Street" });
+  });
+
+  test("a new host with no office of their own leaves it blank, not the old one's", async () => {
+    const { env, second, booking } = await atHostsOffice([]);
+    const moved = await reassign(env, booking.id, change(second.id));
+    expect(moved.location).toEqual({ type: "in_person", address: null });
+  });
+
+  test("an address the event type names itself stays", async () => {
+    const env = await environment();
+    const first = await host(env, "First");
+    const second = await host(env, "Second");
+    const eventType = await eventTypeWith(env, "pool", [member(first), member(second)], {
+      locations: [{ type: "in_person", address: "9 Clinic Road" }],
+    });
+    const { booking } = await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("10:00"), host: first.id, attendee },
+      plain,
+      actor,
+    );
+    const moved = await reassign(env, booking.id, change(second.id));
+    expect(moved.location).toEqual({ type: "in_person", address: "9 Clinic Road" });
+  });
+
+  test("a whole session moves to the new host's office", async () => {
+    const env = await environment();
+    const first = await host(env, "First");
+    const second = await host(env, "Second");
+    await updateHost(env, first.id, {
+      locations: [{ type: "in_person", address: "1 First Street" }],
+    } as never);
+    await updateHost(env, second.id, {
+      locations: [{ type: "in_person", address: "2 Second Street" }],
+    } as never);
+    const group = await eventTypeWith(env, "group", [member(first)], {
+      capacity: 3,
+      locations: [{ type: "in_person", address: null }],
+    });
+    const { booking } = await createBooking(
+      env,
+      { eventType: group.id, startMs: at("10:00"), attendee },
+      plain,
+      actor,
+    );
+    expect(booking.location).toEqual({ type: "in_person", address: "1 First Street" });
+    const moved = await reassign(env, booking.id, change(second.id, { overrides: ["any_host"] }));
+    expect(moved.location).toEqual({ type: "in_person", address: "2 Second Street" });
+  });
+
+  test("a delegate's own office is the one that's used", async () => {
+    const env = await environment();
+    const first = await host(env, "First");
+    const cover = await host(env, "Cover");
+    await updateHost(env, first.id, {
+      locations: [{ type: "in_person", address: "1 First Street" }],
+    } as never);
+    await updateHost(env, cover.id, {
+      locations: [{ type: "in_person", address: "3 Cover Street" }],
+    } as never);
+    const eventType = await eventTypeWith(env, "one_on_one", [member(first)], {
+      locations: [{ type: "in_person", address: null }],
+    });
+    await createOutOfOffice(
+      env,
+      {
+        host: first.id,
+        start: new Date(at("09:00")).toISOString(),
+        end: new Date(at("13:00")).toISOString(),
+        delegates: [cover.id],
+      } as never,
+      plain,
+      actor,
+      "api",
+    );
+    const { booking } = await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("10:00"), attendee },
+      plain,
+      actor,
+    );
+    expect(booking.hosts).toEqual([cover.id]);
+    expect(booking.location).toEqual({ type: "in_person", address: "3 Cover Street" });
+  });
+});
+
 describe("who's told", () => {
   const sender = () => {
     const sent: SchedulingEmail[] = [];
@@ -1209,8 +1324,11 @@ describe("the reason and note", () => {
 });
 
 describe("meetings and calendars", () => {
-  function deps(fetcher: CalendarDeps["fetcher"]): CalendarDeps {
+  function deps(
+    fetcher: CalendarDeps["fetcher"],
+  ): CalendarDeps & { dataKeys: typeof plain.dataKeys } {
     return {
+      dataKeys: plain.dataKeys,
       secretsKeys: secretsKeyRing([createHash("sha256").update("reassign").digest()]),
       apps: {
         google: { clientId: "google-client", clientSecret: "google-secret" },
