@@ -288,6 +288,8 @@ export class FakeGraphApi {
   readonly requests: string[] = [];
   readonly busy = new Map<string, { start: string; end: string }[]>();
   readonly goneMailboxes = new Set<string>();
+  /** Outside the app's access policy: refused with the same answer a revoked consent gets. */
+  readonly deniedMailboxes = new Set<string>();
   tenantId = "7d3f1c52-8e0b-4d6e-9a27-5c4b1e7d2f60";
   clientSecret = "secret";
   consentRevoked = false;
@@ -309,6 +311,7 @@ export class FakeGraphApi {
     const match = /^\/users\/([^/]+)(\/.*)$/.exec(path);
     if (!match) return { status: 404, body: { error: { code: "ResourceNotFound" } } };
     const mailbox = decodeURIComponent(match[1] as string);
+    if (this.deniedMailboxes.has(mailbox)) return { status: 403, body: refused };
     if (this.goneMailboxes.has(mailbox)) {
       return { status: 404, body: { error: { code: "ErrorInvalidUser" } } };
     }

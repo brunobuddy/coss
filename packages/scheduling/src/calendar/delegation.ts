@@ -563,121 +563,132 @@ async function connectHost(
     if (error instanceof CalendarError && error.kind !== "auth") return null;
     throw error;
   });
-  const busy = await client.fetchBusy({
-    calendarIds: [primary.externalId],
-    fromMs: startedAt.getTime() - DAY_MS,
-    toMs: startedAt.getTime() + SYNC_HORIZON_DAYS * DAY_MS,
-  });
-  const intervals = busy[primary.externalId];
-  if (!intervals)
-    throw new CalendarError("transient", "read_failed", "Couldn't read the calendar.");
-  const now = deps.now?.() ?? new Date();
-  await db.transaction(async (tx) => {
-    if (!(await hostStillWants(tx, delegation, host))) return;
-    // Waits out a bulk flip in progress, and holds off the next: a connection activated after one
-    // has finished would escape the outage, since nothing would flip it again.
-    const [state] = await tx
-      .select({ status: schedulingCalendarDelegation.status })
-      .from(schedulingCalendarDelegation)
-      .where(
-        and(
-          eq(schedulingCalendarDelegation.id, delegation.id),
-          eq(schedulingCalendarDelegation.organizationId, delegation.organizationId),
-        ),
-      )
-      .for("share");
-    if (state?.status !== "active") return;
-    const upgraded = host.existing ? null : await connectionToUpgrade(tx, delegation, host);
-    const fields = {
-      delegationId: delegation.id,
-      encryptedCredentials: encryptCredentials(tokens, deps.secretsKeys),
-      status: "active" as const,
-      lastErrorCode: null,
-      lastErrorAt: null,
-    };
-    const existingId = host.existing?.id ?? upgraded?.id;
-    const [saved] = existingId
-      ? await tx
-          .update(schedulingCalendarConnection)
-          .set(fields)
+  // A channel nothing will remember only costs the provider's capacity and useless pushes.
+  let channelKept = false;
+  try {
+    const busy = await client.fetchBusy({
+      calendarIds: [primary.externalId],
+      fromMs: startedAt.getTime() - DAY_MS,
+      toMs: startedAt.getTime() + SYNC_HORIZON_DAYS * DAY_MS,
+    });
+    const intervals = busy[primary.externalId];
+    if (!intervals)
+      throw new CalendarError("transient", "read_failed", "Couldn't read the calendar.");
+    const now = deps.now?.() ?? new Date();
+    channelKept = await db.transaction(async (tx): Promise<boolean> => {
+      if (!(await hostStillWants(tx, delegation, host))) return false;
+      // Waits out a bulk flip in progress, and holds off the next: a connection activated after one
+      // has finished would escape the outage, since nothing would flip it again.
+      const [state] = await tx
+        .select({ status: schedulingCalendarDelegation.status })
+        .from(schedulingCalendarDelegation)
+        .where(
+          and(
+            eq(schedulingCalendarDelegation.id, delegation.id),
+            eq(schedulingCalendarDelegation.organizationId, delegation.organizationId),
+          ),
+        )
+        .for("share");
+      if (state?.status !== "active") return false;
+      const upgraded = host.existing ? null : await connectionToUpgrade(tx, delegation, host);
+      const fields = {
+        delegationId: delegation.id,
+        encryptedCredentials: encryptCredentials(tokens, deps.secretsKeys),
+        status: "active" as const,
+        lastErrorCode: null,
+        lastErrorAt: null,
+      };
+      const existingId = host.existing?.id ?? upgraded?.id;
+      const [saved] = existingId
+        ? await tx
+            .update(schedulingCalendarConnection)
+            .set(fields)
+            .where(
+              and(
+                eq(schedulingCalendarConnection.id, existingId),
+                eq(schedulingCalendarConnection.organizationId, delegation.organizationId),
+              ),
+            )
+            .returning()
+        : await tx
+            .insert(schedulingCalendarConnection)
+            .values({
+              organizationId: delegation.organizationId,
+              environmentId: delegation.environmentId,
+              hostId: host.id,
+              provider: delegation.provider,
+              accountId: host.mailbox,
+              ...fields,
+            })
+            .onConflictDoUpdate({
+              target: [
+                schedulingCalendarConnection.hostId,
+                schedulingCalendarConnection.provider,
+                schedulingCalendarConnection.accountId,
+              ],
+              set: fields,
+            })
+            .returning();
+      const connection = saved as ConnectionRow;
+      // Channels made with the old credentials can't be stopped with these, and they run out.
+      if (upgraded) {
+        await tx
+          .update(schedulingCalendar)
+          .set({
+            channelId: null,
+            channelResourceId: null,
+            channelTokenHash: null,
+            channelExpiresAt: null,
+            nextSyncAt: now,
+          })
           .where(
             and(
-              eq(schedulingCalendarConnection.id, existingId),
-              eq(schedulingCalendarConnection.organizationId, delegation.organizationId),
+              eq(schedulingCalendar.connectionId, connection.id),
+              eq(schedulingCalendar.organizationId, connection.organizationId),
             ),
-          )
-          .returning()
-      : await tx
-          .insert(schedulingCalendarConnection)
-          .values({
-            organizationId: delegation.organizationId,
-            environmentId: delegation.environmentId,
-            hostId: host.id,
-            provider: delegation.provider,
-            accountId: host.mailbox,
-            ...fields,
-          })
-          .onConflictDoUpdate({
-            target: [
-              schedulingCalendarConnection.hostId,
-              schedulingCalendarConnection.provider,
-              schedulingCalendarConnection.accountId,
-            ],
-            set: fields,
-          })
-          .returning();
-    const connection = saved as ConnectionRow;
-    // Channels made with the old credentials can't be stopped with these, and they run out.
-    if (upgraded) {
-      await tx
-        .update(schedulingCalendar)
-        .set({
-          channelId: null,
-          channelResourceId: null,
-          channelTokenHash: null,
-          channelExpiresAt: null,
-          nextSyncAt: now,
-        })
+          );
+      }
+      await addRemoteCalendars(tx, connection, remote, now);
+      const [calendar] = await tx
+        .select()
+        .from(schedulingCalendar)
         .where(
           and(
             eq(schedulingCalendar.connectionId, connection.id),
             eq(schedulingCalendar.organizationId, connection.organizationId),
+            eq(schedulingCalendar.externalId, primary.externalId),
           ),
-        );
+        )
+        .for("update");
+      if (calendar?.readBusy) {
+        await tx
+          .delete(schedulingBusyInterval)
+          .where(eq(schedulingBusyInterval.calendarId, calendar.id));
+        await insertBusyIntervals(tx, calendar, intervals);
+        await tx
+          .update(schedulingCalendar)
+          .set({
+            verifiedAt: startedAt,
+            lastFetchStartedAt: startedAt,
+            coveredUntil: new Date(startedAt.getTime() + SYNC_HORIZON_DAYS * DAY_MS),
+            dirtyAt: null,
+            syncFailures: 0,
+            leaseUntil: null,
+            nextSyncAt: now,
+            ...(channel ?? {}),
+          })
+          .where(eq(schedulingCalendar.id, calendar.id));
+      }
+      await recordCalendarEvent(tx, connection, "scheduling.calendar.connected", now);
+      return Boolean(calendar?.readBusy);
+    });
+  } finally {
+    if (channel && !channelKept) {
+      await client
+        .unsubscribe?.({ channelId: channel.channelId, resourceId: channel.channelResourceId })
+        .catch(() => {});
     }
-    await addRemoteCalendars(tx, connection, remote, now);
-    const [calendar] = await tx
-      .select()
-      .from(schedulingCalendar)
-      .where(
-        and(
-          eq(schedulingCalendar.connectionId, connection.id),
-          eq(schedulingCalendar.organizationId, connection.organizationId),
-          eq(schedulingCalendar.externalId, primary.externalId),
-        ),
-      )
-      .for("update");
-    if (calendar?.readBusy) {
-      await tx
-        .delete(schedulingBusyInterval)
-        .where(eq(schedulingBusyInterval.calendarId, calendar.id));
-      await insertBusyIntervals(tx, calendar, intervals);
-      await tx
-        .update(schedulingCalendar)
-        .set({
-          verifiedAt: startedAt,
-          lastFetchStartedAt: startedAt,
-          coveredUntil: new Date(startedAt.getTime() + SYNC_HORIZON_DAYS * DAY_MS),
-          dirtyAt: null,
-          syncFailures: 0,
-          leaseUntil: null,
-          nextSyncAt: now,
-          ...(channel ?? {}),
-        })
-        .where(eq(schedulingCalendar.id, calendar.id));
-    }
-    await recordCalendarEvent(tx, connection, "scheduling.calendar.connected", now);
-  });
+  }
 }
 
 /** One mailbox that can't be reached. A row says so, once, and it's tried again now and then. */
@@ -744,7 +755,11 @@ async function connectHosts(delegation: DelegationRow, deps: CalendarDeps): Prom
       await connectHost(delegation, credentials, host, deps);
     } catch (error) {
       if (!(error instanceof CalendarError)) throw error;
+      // One calendar that can't be read says nothing about the rest. It comes up again next pass.
+      if (error.code === "read_failed") continue;
       if (error.kind === "rate_limited" || error.kind === "transient") {
+        // Past this host, whatever else happens: a mailbox that always fails can't block the domain.
+        if (reached) await moveCursor(reached);
         const retryMs = error.retryAfterSeconds ? error.retryAfterSeconds * 1000 : BACKOFF_MS;
         return new Date(started + retryMs);
       }
@@ -752,7 +767,10 @@ async function connectHosts(delegation: DelegationRow, deps: CalendarDeps): Prom
         error.kind === "auth"
           ? await settleRefusal(delegation, host.mailbox, error, deps)
           : "mailbox";
-      if (settled === "stop") return new Date(started + BACKOFF_MS);
+      if (settled === "stop") {
+        if (reached) await moveCursor(reached);
+        return new Date(started + BACKOFF_MS);
+      }
       await recordMailboxFailure(delegation, host, error.code, now);
     }
   }

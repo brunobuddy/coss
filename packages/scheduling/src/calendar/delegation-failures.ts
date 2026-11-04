@@ -9,7 +9,7 @@ import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueNotification } from "@coss/notifications";
 import { enqueueWebhookMessage } from "@coss/webhooks";
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import type { SchedulingDelegationWebhookEventType } from "../webhook-types.ts";
 import { CalendarError } from "./client.ts";
 import {
@@ -112,7 +112,13 @@ export async function markDelegationFailing(
     if (!changed) return;
     await tx
       .update(schedulingCalendarConnection)
-      .set({ status: "delegation_failing", lastErrorCode: code, lastErrorAt: now })
+      // Tokens go too: after a consent comes back, ones issued without it would still be refused.
+      .set({
+        status: "delegation_failing",
+        encryptedCredentials: null,
+        lastErrorCode: code,
+        lastErrorAt: now,
+      })
       .where(
         and(
           eq(schedulingCalendarConnection.delegationId, changed.id),
@@ -265,7 +271,15 @@ export async function settleRefusal(
     });
     return "stop";
   }
-  return result === "ok" && scope === "ambiguous" ? "mailbox" : "stop";
+  if (result !== "ok" || scope !== "ambiguous") return "stop";
+  // Everyone else is fine, but the answer may be that same old one: ask about this mailbox too.
+  try {
+    await checkMailbox(current, mailbox, deps);
+    return "stop";
+  } catch (recheck) {
+    if (!(recheck instanceof CalendarError)) throw recheck;
+    return recheck.kind === "auth" ? "mailbox" : "stop";
+  }
 }
 
 /** Where every `auth` failure of a calendar goes, delegated or not. */
@@ -284,5 +298,19 @@ export async function handleAccessLost(
     .where(rowOf({ id: connection.delegationId, organizationId: connection.organizationId }));
   if (delegation?.status !== "active") return;
   const settled = await settleRefusal(delegation, connection.accountId, error, deps);
-  if (settled === "mailbox") await markNeedsReauth(connection, error.code, deps);
+  if (settled === "mailbox") {
+    await markNeedsReauth(connection, error.code, deps);
+    return;
+  }
+  // Whatever's wrong isn't this mailbox, so the token that was refused shouldn't be tried again.
+  await db
+    .update(schedulingCalendarConnection)
+    .set({ encryptedCredentials: null })
+    .where(
+      and(
+        eq(schedulingCalendarConnection.id, connection.id),
+        eq(schedulingCalendarConnection.organizationId, connection.organizationId),
+        isNotNull(schedulingCalendarConnection.delegationId),
+      ),
+    );
 }

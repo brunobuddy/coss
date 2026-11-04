@@ -129,7 +129,8 @@ once, and every host on it gets their calendar with no consent screen.
   never hidden or empty. A push can't find a channel that isn't stored yet, so the calendar is read once more straight
   after. Before activating it takes the delegation's row `FOR SHARE`, or it could land just after a bulk flip to
   `delegation_failing` and escape the outage. Delegations are claimed one at a time, and a lease is fenced. A delegation with hosts left runs again at once, walking
-  them with a cursor, so hosts that keep failing can't hold up the ones behind them; `nudgeDelegations` asks for a run
+  them with a cursor that moves past every host it tried, however that went, so hosts that keep failing can't hold up
+  the ones behind them; `nudgeDelegations` asks for a run
   when a host is created or changed.
 - **Taking over an OAuth row** matches only on the account, keeping calendars, write target and ledger. A calendar in
   common proves nothing: a personal account can subscribe to a work calendar, and would get the wrong credentials. Never revoke the old token: Google's revoke drops all of the project's tokens for that person,
@@ -141,7 +142,8 @@ once, and every host on it gets their calendar with no consent screen.
   Refused credentials flip every connection to `delegation_failing` in one update (compare-and-set on the delegation: one webhook, log line and owner email), so
   every `status = 'active'` filter works with no join in the availability path, and one update brings them back. On
   the wire that status is `needs_reauth`. One mailbox gone only marks that connection, with no email to the host, who
-  can't fix it. Graph's 403 can't say which, so `probeDelegation` asks about up to three mailboxes: a person leaving
+  can't fix it, and only after that mailbox has been asked again with today's credentials. Graph's 403 can't say which,
+  so `probeDelegation` asks about up to three mailboxes: a person leaving
   must not hide everyone, including when they're the verified one. With no other mailbox to ask it can't tell, and
   counts as the delegation's, so someone hears. An inconclusive probe changes nothing and backs off.
 - **Tokens outlive a revocation** by up to an hour: Google's and Entra's tokens aren't recalled. A delegated client

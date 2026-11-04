@@ -322,6 +322,37 @@ describe("connecting hosts", () => {
     expect(await slotStarts(env, eventType.id)).toEqual(["09:30", "10:00"]);
   });
 
+  test("one calendar that can't be read doesn't stop the others, and leaves no channel", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const bad = await hostOn(env, "bad");
+    const good = await hostOn(env, "good");
+    api.erroredCalendars.add(`bad@${DOMAIN}`);
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    expect(await listConnections(env, bad.id)).toEqual([]);
+    expect(await listConnections(env, good.id)).toMatchObject([{ status: "active" }]);
+    const watched = api.requests.filter((request) => request.endsWith("/events/watch")).length;
+    const stopped = api.requests.filter((request) => request.endsWith("/channels/stop")).length;
+    expect(watched).toBe(2);
+    expect(stopped).toBe(1);
+  });
+
+  test("a mailbox that always fails to answer doesn't block the domain", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    await hostOn(env, "aaa");
+    const later = await hostOn(env, "bbb");
+    const delegation = await activeGoogle(env, deps);
+    api.failNext = { path: /calendarList$/, status: 503 };
+    await run(env, deps);
+    await dueNow(delegation.id);
+    await run(env, deps);
+    expect(await listConnections(env, later.id)).toMatchObject([{ status: "active" }]);
+  });
+
   test("hosts that keep failing can't hold up the ones behind them", async () => {
     const env = await environment();
     const api = new FakeGoogleCalendarApi();
@@ -949,6 +980,23 @@ describe("losing access", () => {
     ).toBe("calendar_delegation_refused");
   });
 
+  test("a refusal that's since gone away leaves a healthy mailbox alone", async () => {
+    const { env, api, deps, ana, ben, delegation } = await connected();
+    api.failNext = {
+      path: /freeBusy$/,
+      status: 403,
+      body: { error: { errors: [{ reason: "insufficientPermissions" }] } },
+    };
+    await db
+      .update(schema.schedulingCalendar)
+      .set({ nextSyncAt: new Date(0) })
+      .where(eq(schema.schedulingCalendar.hostId, ana.id));
+    await runDueCalendarSyncs(deps, { scope: scope(env) });
+    expect((await getCalendarDelegation(env, delegation.id)).status).toBe("active");
+    expect(await listConnections(env, ana.id)).toMatchObject([{ status: "active" }]);
+    expect(await listConnections(env, ben.id)).toMatchObject([{ status: "active" }]);
+  });
+
   test("a failure while it's already failing doesn't announce again", async () => {
     const { env, delegation } = await connected();
     const row = { id: delegation.id, organizationId: env.organizationId };
@@ -1279,6 +1327,19 @@ describe("Microsoft 365", () => {
     await verifyCalendarDelegation(env, delegation.id, { account: `ana@${DOMAIN}` }, deps);
     await run(env, deps);
     expect(await listConnections(env, ana.id)).toMatchObject([{ status: "active" }]);
+  });
+
+  test("a mailbox outside the app's access policy only affects that host", async () => {
+    const { env, api, deps, ana, ben, delegation } = await connected();
+    api.deniedMailboxes.add(`ana@${DOMAIN}`);
+    await db
+      .update(schema.schedulingCalendar)
+      .set({ nextSyncAt: new Date(0) })
+      .where(eq(schema.schedulingCalendar.hostId, ana.id));
+    await runDueCalendarSyncs(deps, { scope: scope(env) });
+    expect((await getCalendarDelegation(env, delegation.id)).status).toBe("active");
+    expect(await listConnections(env, ana.id)).toMatchObject([{ status: "needs_reauth" }]);
+    expect(await listConnections(env, ben.id)).toMatchObject([{ status: "active" }]);
   });
 
   test("an expired secret is the delegation's problem, not each host's", async () => {
