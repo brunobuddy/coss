@@ -72,8 +72,8 @@ after removing it. On a contract, add-ons are part of the contract.
   its inbox-days and new live Scheduling hosts past its host-days. Received mail past its allowance is dropped (and counted on **Received emails**).
 - If an invoice can't be collected, we retry it and email your billing contacts. Once it's
   overdue past the grace period (14 days unless your contract says otherwise), live sending is
-  paused (`402`, `billing_hold`) until it's paid. So are new live bookings, signature requests and
-  inboxes, and hosted forms stop accepting submissions. Sandbox keys keep working, scheduled emails
+  paused (`402`, `billing_hold`) until it's paid. So are new live bookings, Scheduling hosts, signature
+  requests and inboxes, and hosted forms stop accepting submissions. Sandbox keys keep working, scheduled emails
   wait rather than fail, and bookings already made stay. Mail still arrives, and monthly charges for
   inboxes, hosts and phone numbers you keep continue.
 - Owners can set a **spend limit**: when usage beyond your credit reaches it, live sending pauses

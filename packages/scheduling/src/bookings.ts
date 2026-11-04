@@ -9,7 +9,11 @@
 import { recordUsage } from "@coss/billing/metering";
 import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
-import { requestHash as hashRequest, withIdempotencyKey } from "@coss/db/idempotency";
+import {
+  requestHash as hashRequest,
+  IDEMPOTENCY_KEY_TTL_MS,
+  withIdempotencyKey,
+} from "@coss/db/idempotency";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
 import {
@@ -1422,8 +1426,9 @@ const idempotencyErrors = {
 };
 
 /**
- * What the plan decides about a new live request. A retry of a key already used skips it: whatever
- * the plan says now, what it made is answered with (`withIdempotencyKey` checks that it matches).
+ * What the plan decides about a new live request. A retry of a key still in its window skips it:
+ * whatever the plan says now, what it made is answered with (`withIdempotencyKey` checks that it
+ * matches). An expired key makes something new, so it meets the plan.
  */
 async function gateNewRequest(
   env: SchedulingEnvironment,
@@ -1434,7 +1439,7 @@ async function gateNewRequest(
   if (env.mode !== "live" || !deps.plans) return;
   if (request.idempotencyKey) {
     const [made] = await db
-      .select({ id: opts.table.id })
+      .select({ createdAt: opts.table.createdAt })
       .from(opts.table)
       .where(
         and(
@@ -1444,7 +1449,7 @@ async function gateNewRequest(
         ),
       )
       .limit(1);
-    if (made) return;
+    if (made && nowOf(deps).getTime() - made.createdAt.getTime() <= IDEMPOTENCY_KEY_TTL_MS) return;
   }
   if (opts.hold) await requireLiveFeature(env, deps.plans, "schedulingHolds");
   if (request.gateRouting) await requireRouting(env, deps.plans, request.attributes);
@@ -1485,7 +1490,11 @@ async function book(
     ttlSeconds,
   };
   const context: NewBookingContext = { env, eventType, deps, actor, now };
-  const hash = hashRequest({ wantHold, request: { ...request, idempotencyKey: undefined } });
+  const hash = hashRequest({
+    wantHold,
+    // `gateRouting` isn't part of what was asked: keep hashes equal to those already stored.
+    request: { ...request, idempotencyKey: undefined, gateRouting: undefined },
+  });
   const checked = await withLiveCheck(env, candidates, plan, request.idempotencyKey ?? hash, deps);
 
   const run = (tx: Transaction, key: string | null) =>
@@ -2760,7 +2769,9 @@ export async function createSeries(
   const status = chooseStatus(eventType, false);
   const ttlSeconds = ttlFor(eventType, status);
   const rule = slotRuleOf(eventType, durationMinutes);
-  const hash = hashRequest({ series: { ...request, idempotencyKey: undefined } });
+  const hash = hashRequest({
+    series: { ...request, idempotencyKey: undefined, gateRouting: undefined },
+  });
   const context: NewBookingContext = { env, eventType, deps, actor, now };
 
   const memberRanking = candidates.members.length > 0 ? ranked(candidates, hash) : [];

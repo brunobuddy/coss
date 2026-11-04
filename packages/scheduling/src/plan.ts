@@ -34,6 +34,23 @@ export async function requireRouting(
   }
 }
 
+/** A new live host is a new monthly charge: an overdue invoice, spend limit or project budget stops it. */
+export async function refuseNewHostWhileHeld(env: SchedulingEnvironment): Promise<void> {
+  if (env.mode !== "live") return;
+  if (await isOnBillingHold(env.organizationId)) {
+    throw new SchedulingError(
+      "billing_hold",
+      "New live hosts are paused: your organization has an overdue invoice or reached its spend " +
+        "limit. Sandbox keys still work.",
+    );
+  }
+  const held = await budgetHoldFor({
+    organizationId: env.organizationId,
+    projectId: env.projectId,
+  });
+  if (held) throw new SchedulingError("budget_exceeded", BUDGET_EXCEEDED_MESSAGES[held]);
+}
+
 /**
  * A live new booking is usage: an overdue invoice, spend limit or project budget stops it. Called
  * once the row is known to be new, so a retry of a booking already made still answers with it.

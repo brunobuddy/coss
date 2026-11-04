@@ -23,6 +23,7 @@ import {
 } from "drizzle-orm";
 import { isValidTimeZone } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
+import { refuseNewHostWhileHeld } from "./plan.ts";
 import type {
   CreateHostRequestOutput,
   HostLocationOutput,
@@ -144,6 +145,7 @@ export async function createHost(
   refuseLinksInAddresses(params.locations);
   await screenSetup(env, params.name, opts.screen, "name");
   await screenLocations(env, params.locations, opts.screen);
+  await refuseNewHostWhileHeld(env);
   const live = env.mode === "live";
   const now = opts.now ?? new Date();
   const pricedFrom = meterPricedFrom(HOST_FEE_METER) ?? now;

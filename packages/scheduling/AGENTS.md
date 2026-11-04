@@ -215,14 +215,15 @@ Injected as `SchedulingDeps.plans`; without it nothing is enforced. What the pla
 - `scheduling.slots.second` (`limitSchedulingSlots` in the API): live slot lists and searches per organization.
 
 Gates take a connection of their own, so they never run inside a transaction: holding one connection while waiting for
-another stalls the pool under load. They run before it, and `gateNewRequest` skips a retry of a key already used.
+another stalls the pool under load. They run before it, and `gateNewRequest` skips a retry of a key still in its window (an expired key makes something
+new, so it meets the plan).
 
 A person on a hosted page never meets a plan gate (Free's booking allowance aside): a session's attributes aren't
 checked again. Never gate the double-booking guarantee, calendars or series. A filter or a group size that exists keeps working whatever the plan; a downgrade is refused only for live
 `host_filter`s (the dashboard's preflight).
 
 `refuseNewBookingWhileHeld`, once the row is known to be new so a retry still answers with what it made: a billing hold
-or the project's budget stops new live bookings, holds and series (402), and
+or the project's budget stops new live bookings, holds and series (402; new hosts too, `refuseNewHostWhileHeld`), and
 the booker's page says only that the account can't take bookings. Confirming a hold and approving keep working: the
 customer may have taken payment for them.
 

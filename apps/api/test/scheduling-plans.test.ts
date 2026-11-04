@@ -7,7 +7,8 @@ import { createForm, type FormEnvironment } from "@coss/forms";
 import { CreateFormRequest } from "@coss/forms/schemas";
 import { testFormChecks } from "@coss/forms/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
-import { chargeDueHostFees, countLiveHosts, createHost } from "@coss/scheduling";
+import { chargeDueHostFees, countLiveHosts, createBooking, createHost } from "@coss/scheduling";
+import { testSchedulingDeps } from "@coss/scheduling/testing";
 import { buildTestPdfBase64 } from "@coss/sign/testing";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
 import { apiRequest, createTestApp, errorOf, type TestApp } from "./helpers.ts";
@@ -169,6 +170,60 @@ describe("Scheduling's plan gates", () => {
     expect(replay.status).toBe(201);
     expect(replay.headers.get("Idempotent-Replayed")).toBe("true");
     expect((await keyed(lower, "another-key", { ...body, start: at("10:00") })).status).toBe(402);
+  });
+
+  test("an expired key makes something new, so it meets the plan", async () => {
+    const free = await createTestTenant();
+    const app = enforced();
+    const eventType = await bookable(app, free.liveKey);
+    const body = { event_type: eventType, start: at("09:00"), attendee };
+    const withKey = (path: string, payload: object) =>
+      app.request(`/v1/scheduling${path}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${free.liveKey}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": "old-key",
+        },
+        body: JSON.stringify(payload),
+      });
+    expect((await withKey("/bookings", body)).status).toBe(201);
+    await pool.query(
+      "update scheduling_booking set created_at = now() - interval '2 days' where organization_id = $1 and idempotency_key = 'old-key'",
+      [free.organization.id],
+    );
+    expect((await withKey("/holds", { ...body, start: at("10:00") })).status).toBe(402);
+  });
+
+  test("the API's retry of a request made before the gate existed still replays", async () => {
+    const tenant = await onPlan("scale");
+    const app = enforced();
+    const eventType = await bookable(app, tenant.liveKey);
+    const start = at("09:00");
+    // What a pre-deploy request hashed: no `gateRouting` in it.
+    const { booking } = await createBooking(
+      {
+        organizationId: tenant.organization.id,
+        projectId: tenant.project.id,
+        environmentId: tenant.production.id,
+        mode: "live",
+      },
+      { eventType, startMs: new Date(start).getTime(), attendee, idempotencyKey: "pre-deploy" },
+      testSchedulingDeps(),
+      { kind: "api_key", id: "key_test" },
+    );
+    const replay = await app.request("/v1/scheduling/bookings", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tenant.liveKey}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": "pre-deploy",
+      },
+      body: JSON.stringify({ event_type: eventType, start, attendee }),
+    });
+    expect(replay.status).toBe(201);
+    expect(replay.headers.get("Idempotent-Replayed")).toBe("true");
+    expect(((await replay.json()) as { id: string }).id).toBe(booking.id);
   });
 
   test("the embedded host portal needs Scale", async () => {
@@ -497,6 +552,16 @@ describe("holds reach every new live usage", () => {
     expect((await keyed("/bookings", { ...booking, start: at("10:00") }, "new-key")).status).toBe(
       402,
     );
+  });
+
+  test("new live hosts are refused: they would be a new monthly charge", async () => {
+    const tenant = await held();
+    const app = enforced();
+    await hold(tenant);
+    const refused = await call(app, tenant.liveKey, "POST", "/hosts", hostBody("a"));
+    expect(refused.status).toBe(402);
+    expect((await errorOf(refused)).code).toBe("billing_hold");
+    expect((await call(app, tenant.sandboxKey, "POST", "/hosts", hostBody("a"))).status).toBe(201);
   });
 
   test("the person on the booking page doesn't hear about the customer's billing", async () => {
