@@ -447,7 +447,8 @@ const EventTypeHostInput = z
 
 const eventTypeFields = {
   title: z.string().min(1).max(120).meta({
-    description: "Shown to attendees and in emails. Host calendars always show a neutral title.",
+    description:
+      "Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.",
   }),
   duration_minutes: z
     .number()
@@ -640,7 +641,8 @@ export const EventTypeObject = z
         "Your own id for this event type, accepted wherever its id is. `null` when none is set.",
     }),
     title: z.string().meta({
-      description: "Shown to attendees and in emails. Host calendars always show a neutral title.",
+      description:
+        "Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.",
     }),
     kind: z.enum(EVENT_TYPE_KINDS).meta({
       description:
@@ -896,8 +898,13 @@ export type AttendeeInputOutput = z.output<typeof AttendeeInput>;
 
 const GuestInput = z
   .strictObject({
-    email: z.email().max(320),
-    name: z.string().min(1).max(100).optional(),
+    email: z.email().max(320).meta({ description: "Where they're emailed about the booking." }),
+    name: z
+      .string()
+      .min(1)
+      .max(100)
+      .optional()
+      .meta({ description: "Their name, if you have it." }),
   })
   .meta({
     id: "SchedulingGuestInput",
@@ -1192,13 +1199,23 @@ export const ErasedAttendee = z
     examples: [{ object: "scheduling.attendee_erasure", uid: "patient_77", erased: 3 }],
   });
 
-export const EraseAttendeeByEmailRequest = z.strictObject({ email: z.email().max(320) }).meta({
-  id: "EraseSchedulingAttendeeByEmailRequest",
-  examples: [{ email: "sam@example.com" }],
-});
+export const EraseAttendeeByEmailRequest = z
+  .strictObject({
+    email: z
+      .email()
+      .max(320)
+      .meta({ description: "The address to forget, an attendee's or a guest's." }),
+  })
+  .meta({
+    id: "EraseSchedulingAttendeeByEmailRequest",
+    examples: [{ email: "sam@example.com" }],
+  });
 
 export const ErasedAttendeeByEmail = z
-  .object({ object: z.literal("scheduling.attendee_erasure"), erased: z.number() })
+  .object({
+    object: z.literal("scheduling.attendee_erasure"),
+    erased: z.number().meta({ description: "How many attendee and guest records were erased." }),
+  })
   .meta({
     id: "SchedulingAttendeeErasureByEmail",
     examples: [{ object: "scheduling.attendee_erasure", erased: 3 }],
@@ -1284,7 +1301,7 @@ export const BookingObject = z
     hosts: z.array(z.string()).meta({ description: "The ids of the hosts taking it." }),
     attendees: z.array(BookingAttendee).meta({
       description:
-        "Who's booked. A group session's seat is its own booking, with its own attendee.",
+        "Who's booked: the attendee first, then any guests they added. A group session's seat is its own booking.",
     }),
     location: Location.nullable(),
     hold_expires_at: z
