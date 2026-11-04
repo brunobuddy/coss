@@ -8,7 +8,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import type * as PageTree from "fumadocs-core/page-tree";
 import Link, { type LinkProps } from "next/link";
 import { usePathname } from "next/navigation";
-import { type ComponentProps, type ReactNode, useState } from "react";
+import { type ComponentProps, Fragment, type ReactNode, useState } from "react";
+import { ProductTile } from "@/components/marketing/product-tile";
 import {
   activeSection,
   type DocsSection,
@@ -17,7 +18,7 @@ import {
   rootFolders,
   sectionsOf,
 } from "@/lib/docs-tree";
-import { PRODUCT_COLUMNS } from "@/lib/nav";
+import { PLATFORM_LINKS, PRODUCT_LINKS } from "@/lib/nav";
 import type { NavItem } from "@/lib/site";
 import { SectionIcon } from "./section-icon";
 
@@ -88,29 +89,40 @@ export function MobileNav({
               )}
             </div>
           </div>
-          <div className="flex flex-col gap-8">
-            {PRODUCT_COLUMNS.map((column) => (
-              <div className="flex flex-col gap-3" key={column.title}>
-                <div className="font-medium text-sm">{column.title}</div>
-                <div className="flex flex-col gap-0.5">
-                  {column.links.map((link) =>
-                    link.zone ? (
-                      <a
-                        className="flex items-center gap-2 py-1.5 text-muted-foreground"
-                        href={link.href}
-                        key={link.label}
-                      >
-                        {link.label}
-                      </a>
-                    ) : (
-                      <MobileLink href={link.href} key={link.label} onOpenChange={setOpen}>
-                        {link.label}
-                      </MobileLink>
-                    ),
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="flex flex-col gap-3">
+            <div className="font-medium text-sm">Products</div>
+            <div className="flex flex-col gap-0.5">
+              {PRODUCT_LINKS.map((product) => (
+                <Fragment key={product.slug}>
+                  <MobileLink className="gap-3" href={product.href} onOpenChange={setOpen}>
+                    <ProductTile size="sm" slug={product.slug} />
+                    {product.label}
+                  </MobileLink>
+                  {product.items ? (
+                    <div className="ms-3.5 flex flex-col gap-0.5 border-border/64 border-s ps-[1.3125rem]">
+                      {product.items.map((item) => (
+                        <MobileLink href={item.href} key={item.slug} onOpenChange={setOpen}>
+                          {item.label}
+                        </MobileLink>
+                      ))}
+                    </div>
+                  ) : null}
+                </Fragment>
+              ))}
+              <MobileLink href="/products" onOpenChange={setOpen}>
+                All products
+              </MobileLink>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3">
+            <div className="font-medium text-sm">Platform</div>
+            <div className="flex flex-col gap-0.5">
+              {PLATFORM_LINKS.map((link) => (
+                <MobileLink href={link.href} key={link.href} onOpenChange={setOpen}>
+                  {link.label}
+                </MobileLink>
+              ))}
+            </div>
           </div>
           {!onDocsPage && docs}
         </DrawerPanel>

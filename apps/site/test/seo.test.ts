@@ -11,7 +11,7 @@ import { rateRows } from "../src/lib/billing-text";
 import { CHANGELOG, changelogMarkdown, changelogRss } from "../src/lib/changelog";
 import { COMPETITORS } from "../src/lib/compare";
 import { withoutNestedFolders } from "../src/lib/docs-tree";
-import { FOOTER_COLUMNS, PRODUCT_COLUMNS } from "../src/lib/nav";
+import { ALL_PRODUCT_LINKS, FOOTER_COLUMNS } from "../src/lib/nav";
 import { singleOperationProps } from "../src/lib/openapi-single-operation";
 import { rateTables } from "../src/lib/pricing";
 import { metaDescription } from "../src/lib/seo";
@@ -160,7 +160,7 @@ describe("what the site says exists", () => {
       SITE_DESCRIPTION,
       ...PRODUCTS.map((product) => product.name),
       ...CATALOG.map((product) => product.name),
-      ...PRODUCT_COLUMNS.flatMap((column) => column.links.map((link) => link.label)),
+      ...ALL_PRODUCT_LINKS.map((link) => link.label),
       ...FOOTER_COLUMNS.flatMap((column) => column.links.map(([label]) => label)),
       ...rateRows().map((row) => row.product),
       ...rateTables().map((table) => table.product),
