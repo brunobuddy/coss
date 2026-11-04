@@ -308,6 +308,9 @@ function fromSmsError(error: SmsError): ApiError {
 
 function fromSignError(error: SignError): ApiError {
   switch (error.code) {
+    case "billing_hold":
+    case "budget_exceeded":
+      return new ApiError(402, { type: "billing_error", code: error.code, message: error.message });
     case "request_in_progress":
     case "idempotency_key_reused":
       return fromIdempotencyError({ code: error.code, message: error.message });
@@ -398,6 +401,10 @@ function fromFormError(error: FormError): ApiError {
 
 function fromSchedulingError(error: SchedulingError): ApiError {
   switch (error.code) {
+    case "billing_hold":
+    case "budget_exceeded":
+      // Paying or raising the budget is the fix: 402, never retried by the SDK.
+      return new ApiError(402, { type: "billing_error", code: error.code, message: error.message });
     case "not_found":
       return new ApiError(404, {
         type: "not_found_error",
@@ -480,6 +487,9 @@ function fromContactError(error: ContactError): ApiError {
 }
 
 function fromInboxError(error: InboxError): ApiError {
+  if (error.code === "billing_hold" || error.code === "budget_exceeded") {
+    return new ApiError(402, { type: "billing_error", code: error.code, message: error.message });
+  }
   if (error.code.endsWith("not_found")) {
     return new ApiError(404, {
       type: "not_found_error",

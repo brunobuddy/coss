@@ -69,6 +69,7 @@ import {
   previewSeries,
   putOutOfOffice,
   reassignBooking,
+  requireRouting,
   rescheduleBooking,
   resolveHost,
   type SchedulingDeps,
@@ -171,15 +172,17 @@ import {
   UpsertScheduleRequest,
   VerifyCalendarDelegationRequest,
 } from "@coss/scheduling/schemas";
+import { apiKeyHasPermissions } from "@coss/tenancy";
 import { secretsKeyRing } from "@coss/webhooks";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { recordApiAudit } from "../audit.ts";
 import { ApiError } from "../errors.ts";
 import { requireApiKey } from "../middleware/api-key.ts";
 import { upgradeRequestBody } from "../middleware/api-version.ts";
-import { rateLimit } from "../middleware/rate-limit.ts";
+import { limitSchedulingSlots, rateLimit } from "../middleware/rate-limit.ts";
 import type { AppEnv } from "../types.ts";
 import { billingErrorDoc, commonErrors, errorDoc, jsonDoc, requestIdHeader } from "./docs.ts";
 import { idempotencyHeaders, idempotencyHook, idempotentReplayedHeader } from "./idempotency.ts";
@@ -195,6 +198,20 @@ const TAG_CALENDARS = "Scheduling calendars";
 const TAG_OUT_OF_OFFICE = "Scheduling out of office";
 const TAG_REASSIGNMENTS = "Scheduling reassignments";
 const TAG_HOLIDAY_CALENDARS = "Scheduling holiday calendars";
+
+/**
+ * A key that can only create can't reassign, and something it creates that moves bookings is
+ * reassigning them, later and from the worker, where nothing would ask.
+ */
+async function requireMovingBookings(c: Context<AppEnv>, existing: string | undefined) {
+  if (existing !== "reassign") return;
+  if (await apiKeyHasPermissions(c.var.auth.apiKeyId, { scheduling: ["update"] })) return;
+  throw new ApiError(403, {
+    type: "permission_error",
+    code: "insufficient_permissions",
+    message: "Moving existing bookings needs the scheduling:update permission.",
+  });
+}
 
 const read = () => [requireApiKey({ scheduling: ["read"] }), rateLimit("api.read")];
 const writing = (
@@ -248,6 +265,15 @@ const bodyErrors = {
   400: errorDoc("The body is not valid JSON (`invalid_json`)."),
   415: errorDoc("The body is not sent as `application/json` (`unsupported_media_type`)."),
 };
+const planRefused = errorDoc(
+  "In live environments: the plan doesn't include this (`plan_feature_unavailable`), or it's past " +
+    "the plan's limit (`plan_limit_reached`).",
+);
+const bookingRefused = errorDoc(
+  "In live environments: an overdue invoice or spend limit (`billing_hold`), the project's budget " +
+    "(`budget_exceeded`), the plan's allowance (`usage_limit_exceeded`) or what it includes " +
+    "(`plan_feature_unavailable`).",
+);
 const notFound = errorDoc("Nothing with this id or uid exists in the environment (`not_found`).");
 const invalid = errorDoc(
   "The request failed validation (`validation_error`, see `issues`), or can't be done: see `code`.",
@@ -320,6 +346,7 @@ export const createHostRoute = createRoute({
     body: { required: true, content: { "application/json": { schema: CreateHostRequest } } },
   },
   responses: {
+    402: planRefused,
     201: jsonDoc("The host.", HostObject),
     ...commonErrors,
     ...bodyErrors,
@@ -503,6 +530,7 @@ export const createEventTypeRoute = createRoute({
     body: { required: true, content: { "application/json": { schema: CreateEventTypeRequest } } },
   },
   responses: {
+    402: planRefused,
     201: jsonDoc("The event type.", EventTypeObject),
     ...commonErrors,
     ...bodyErrors,
@@ -557,6 +585,7 @@ export const updateEventTypeRoute = createRoute({
     body: { required: true, content: { "application/json": { schema: UpdateEventTypeRequest } } },
   },
   responses: {
+    402: planRefused,
     200: jsonDoc("The event type.", EventTypeObject),
     ...commonErrors,
     ...bodyErrors,
@@ -578,6 +607,7 @@ export const listSlotsRoute = createRoute({
   middleware: read(),
   request: { params: EventTypeParams, query: SlotsQuery },
   responses: {
+    402: planRefused,
     200: jsonDoc("The slots.", SlotList),
     ...commonErrors,
     404: notFound,
@@ -598,6 +628,7 @@ export const explainSlotRoute = createRoute({
   middleware: read(),
   request: { params: EventTypeParams, query: ExplainSlotQuery },
   responses: {
+    402: planRefused,
     200: jsonDoc("Whether it can be booked, and why.", SlotExplanation),
     ...commonErrors,
     404: notFound,
@@ -626,6 +657,7 @@ export const searchAvailabilityRoute = createRoute({
     },
   },
   responses: {
+    402: planRefused,
     200: jsonDoc("Hosts with slots.", AvailabilitySearchResult),
     ...commonErrors,
     ...bodyErrors,
@@ -650,6 +682,7 @@ export const createBookingRoute = createRoute({
     body: { required: true, content: { "application/json": { schema: CreateBookingRequest } } },
   },
   responses: {
+    402: bookingRefused,
     201: createdBooking("The booking."),
     ...commonErrors,
     ...bodyErrors,
@@ -859,6 +892,7 @@ export const createHoldRoute = createRoute({
     body: { required: true, content: { "application/json": { schema: CreateHoldRequest } } },
   },
   responses: {
+    402: bookingRefused,
     201: createdBooking("The held booking."),
     ...commonErrors,
     ...bodyErrors,
@@ -925,6 +959,7 @@ export const createSeriesRoute = createRoute({
     body: { required: true, content: { "application/json": { schema: CreateSeriesRequest } } },
   },
   responses: {
+    402: bookingRefused,
     201: createdBooking("The series and its bookings.", SeriesResult),
     ...commonErrors,
     ...bodyErrors,
@@ -951,6 +986,7 @@ export const previewSeriesRoute = createRoute({
     body: { required: true, content: { "application/json": { schema: CreateSeriesRequest } } },
   },
   responses: {
+    402: planRefused,
     200: jsonDoc("Each occurrence.", SeriesPreview),
     ...commonErrors,
     ...bodyErrors,
@@ -1393,6 +1429,7 @@ export const createHostSessionRoute = createRoute({
     body: { required: true, content: { "application/json": { schema: CreateHostSessionRequest } } },
   },
   responses: {
+    402: planRefused,
     201: jsonDoc("The session.", CreatedSessionBody),
     ...commonErrors,
     ...bodyErrors,
@@ -1443,6 +1480,7 @@ export const createBookerSessionRoute = createRoute({
     },
   },
   responses: {
+    402: planRefused,
     201: jsonDoc("The session.", CreatedSessionBody),
     ...commonErrors,
     ...bodyErrors,
@@ -2017,7 +2055,11 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   });
 
   router.openapi(createHostRoute, async (c) => {
-    const host = await createHost(c.var.auth, c.req.valid("json"), { screen: deps.screenSetup });
+    const host = await createHost(c.var.auth, c.req.valid("json"), {
+      screen: deps.screenSetup,
+      plans: deps.plans,
+      billing: deps.billing,
+    });
     await recordApiAudit(c, {
       action: "scheduling_host.created",
       target: { type: "scheduling_host", id: host.id, label: host.name },
@@ -2046,7 +2088,9 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   });
 
   router.openapi(deleteHostRoute, async (c) => {
-    const { id } = await deleteHost(c.var.auth, c.req.valid("param").host);
+    const { id } = await deleteHost(c.var.auth, c.req.valid("param").host, {
+      billing: deps.billing,
+    });
     await recordApiAudit(c, {
       action: "scheduling_host.deleted",
       target: { type: "scheduling_host", id },
@@ -2154,6 +2198,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   });
 
   router.openapi(createHolidayCalendarRoute, async (c) => {
+    await requireMovingBookings(c, c.req.valid("json").existing_bookings);
     const calendar = await createHolidayCalendar(c.var.auth, c.req.valid("json"), deps);
     await recordApiAudit(c, {
       action: "scheduling_holiday_calendar.created",
@@ -2206,6 +2251,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   });
 
   router.openapi(createOutOfOfficeRoute, async (c) => {
+    await requireMovingBookings(c, c.req.valid("json").existing_bookings);
     const data = await createOutOfOffice(
       c.var.auth,
       c.req.valid("json"),
@@ -2321,6 +2367,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   router.openapi(createEventTypeRoute, async (c) => {
     const eventType = await createEventType(c.var.auth, c.req.valid("json"), {
       screen: deps.screenSetup,
+      plans: deps.plans,
     });
     await recordApiAudit(c, {
       action: "scheduling_event_type.created",
@@ -2343,7 +2390,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       c.var.auth,
       c.req.valid("param").event_type,
       c.req.valid("json"),
-      { screen: deps.screenSetup },
+      { screen: deps.screenSetup, plans: deps.plans },
     );
     await recordApiAudit(c, {
       action: "scheduling_event_type.updated",
@@ -2354,6 +2401,8 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
 
   router.openapi(listSlotsRoute, async (c) => {
     const query = c.req.valid("query");
+    await limitSchedulingSlots(c.var.rateLimiter, c.var.auth);
+    await requireRouting(c.var.auth, deps.plans, attributesParam(query.attributes));
     const slots = await listEventTypeSlots(c.var.auth, {
       eventTypeRef: c.req.valid("param").event_type,
       fromMs: instant(query.start, "start"),
@@ -2380,6 +2429,8 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
 
   router.openapi(explainSlotRoute, async (c) => {
     const query = c.req.valid("query");
+    await limitSchedulingSlots(c.var.rateLimiter, c.var.auth);
+    await requireRouting(c.var.auth, deps.plans, attributesParam(query.attributes));
     const explained = await explainSlot(c.var.auth, {
       eventTypeRef: c.req.valid("param").event_type,
       startMs: instant(query.start, "start"),
@@ -2409,6 +2460,9 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
 
   router.openapi(searchAvailabilityRoute, async (c) => {
     const body = c.req.valid("json");
+    await limitSchedulingSlots(c.var.rateLimiter, c.var.auth);
+    await requireRouting(c.var.auth, deps.plans, body.attributes);
+    const { organizationId, mode } = c.var.auth;
     const found = await searchAvailability(c.var.auth, {
       eventTypeRef: body.event_type,
       fromMs: instant(body.start, "start"),
@@ -2418,6 +2472,10 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       hostRefs: body.hosts,
       slotsPerHost: body.slots_per_host,
       limit: body.limit,
+      maxHosts:
+        mode === "live"
+          ? await deps.plans?.currentLimit(organizationId, "schedulingSearchHosts")
+          : null,
     });
     return c.json(
       {
@@ -2437,6 +2495,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     body: z.output<typeof CreateBookingRequest>,
     idempotencyKey: string | undefined,
   ) => ({
+    gateRouting: true,
     eventType: body.event_type,
     startMs: instant(body.start, "start"),
     host: body.host,
@@ -2627,6 +2686,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   );
 
   router.openapi(previewSeriesRoute, async (c) => {
+    await requireRouting(c.var.auth, deps.plans, c.req.valid("json").attributes);
     const data = await previewSeries(
       c.var.auth,
       seriesRequest(c.req.valid("json"), undefined),
@@ -2848,6 +2908,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   router.openapi(createManagerSessionRoute, async (c) => {
     const body = c.req.valid("json");
     const session = await createManagerSession(c.var.auth, {
+      plans: deps.plans,
       hosts: body.hosts,
       hostFilter: body.host_filter,
       expiresIn: body.expires_in,
@@ -2866,12 +2927,14 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       readOnly: body.read_only,
       apiKeyId: c.var.auth.apiKeyId,
       publicUrl: deps.publicUrl ?? null,
+      plans: deps.plans,
     });
     return c.json(sessionBody(session), 201);
   });
 
   router.openapi(createBookerSessionRoute, async (c) => {
     const body = c.req.valid("json");
+    await requireRouting(c.var.auth, deps.plans, body.attributes);
     const session = await createBookerSession(
       c.var.auth,
       {

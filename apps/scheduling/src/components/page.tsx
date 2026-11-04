@@ -8,7 +8,24 @@ import type { Branding } from "@/lib/branding";
 const LOGO_MAX_WIDTH = 180;
 const LOGO_MAX_HEIGHT = 40;
 
-/** The customer's logo, else their name; nothing of coss.com's on a page that's theirs. */
+/** "Scheduling by coss.com", below the page, on plans without the white label. */
+export function CossAttribution({ branding }: { branding: Branding | null | undefined }) {
+  if (!branding?.coss_attribution) return null;
+  return (
+    <p className="text-center text-muted-foreground text-xs">
+      <a
+        className="underline-offset-4 hover:text-foreground hover:underline"
+        href="https://coss.com/products/scheduling"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        Scheduling by coss.com
+      </a>
+    </p>
+  );
+}
+
+/** The customer's logo, else their name; the attribution above is the only mark of coss.com's. */
 export function BrandMark({ branding }: { branding: Branding }) {
   const { logo, brand_name: name } = branding;
   if (logo) {

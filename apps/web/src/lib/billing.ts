@@ -57,10 +57,20 @@ export function planGate(): PlanGate {
   return {
     requireFeature: async (organizationId, feature) =>
       (await gate()).requireFeature(organizationId, feature),
+    hasFeature: async (organizationId, feature) =>
+      (await gate()).hasFeature(organizationId, feature),
     requireCapacity: async (organizationId, limit, current, count) =>
       (await gate()).requireCapacity(organizationId, limit, current, count),
     limit: async (organizationId, limit) => (await gate()).limit(organizationId, limit),
+    currentLimit: async (organizationId, limit) =>
+      (await gate()).currentLimit(organizationId, limit),
   };
+}
+
+/** Whether a contract with sales (or coss.com's own) is in effect: never a self-serve plan. */
+export async function hasManagedContract(organizationId: string): Promise<boolean> {
+  const { contract } = await billingStateAt(organizationId, new Date());
+  return contract?.kind === "sales" || contract?.kind === "internal";
 }
 
 /** The organization's plan rate limits (the rate limiter's plan layer). */

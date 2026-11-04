@@ -82,7 +82,7 @@ export function toMobileAddOns(): PlansResponse["add_ons"] {
 
 export function toMobileUsagePrices(now: Date): PlansResponse["usage_prices"] {
   const rates = rateCardAt(now).rates;
-  return METER_KEYS.map((meter) => ({
+  return METER_KEYS.filter((meter) => rates[meter]).map((meter) => ({
     label: METERS[meter].label,
     rates: formatMeterRates(meter, rates[meter]),
   }));

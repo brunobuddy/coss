@@ -15,6 +15,7 @@ export const SMS_PRICES_2027_01_01: {
     US: 14_200_000n,
   },
   inbound: {
+    CA: 10_400_000n,
     US: 16_000_000n,
   },
 };

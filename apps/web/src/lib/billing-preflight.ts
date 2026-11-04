@@ -2,12 +2,12 @@ import "server-only";
 import { FEATURE_LABELS, type FeatureKey, PLANS, type PlanKey } from "@coss/billing";
 import { db } from "@coss/db";
 import { hasLiveSubaccounts } from "@coss/email";
-import { hasCalendarDelegations } from "@coss/scheduling";
+import { hasCalendarDelegations, hasLiveHostFilters } from "@coss/scheduling";
 import { getOrganizationSsoProvider, hasScimConnection } from "@coss/tenancy";
 
 /** How much of each feature the organization uses now (what a downgrade would leave behind). */
 async function featureUsage(organizationId: string): Promise<Record<FeatureKey, number>> {
-  const [sso, scim, drain, tracking, subaccount, delegation] = await Promise.all([
+  const [sso, scim, drain, tracking, subaccount, delegation, hostFilters] = await Promise.all([
     getOrganizationSsoProvider({ organizationId }),
     hasScimConnection({ organizationId }),
     db.query.logDrain.findFirst({
@@ -21,6 +21,7 @@ async function featureUsage(organizationId: string): Promise<Record<FeatureKey, 
     // Live sub-accounts (sandbox ones are free on every plan).
     hasLiveSubaccounts(organizationId),
     hasCalendarDelegations(organizationId),
+    hasLiveHostFilters(organizationId),
   ]);
   return {
     sso: sso ? 1 : 0,
@@ -33,6 +34,11 @@ async function featureUsage(organizationId: string): Promise<Record<FeatureKey, 
     dedicatedIps: 0,
     subaccounts: subaccount ? 1 : 0,
     calendarDelegation: delegation ? 1 : 0,
+    // Holds in flight still confirm, sessions end by themselves and the footer just comes back.
+    schedulingHolds: 0,
+    schedulingHostPortal: 0,
+    schedulingRouting: hostFilters ? 1 : 0,
+    schedulingWhiteLabel: 0,
   };
 }
 
@@ -45,6 +51,10 @@ const REMOVE: Record<FeatureKey, string> = {
   dedicatedIps: "",
   subaccounts: "Delete your live email sub-accounts.",
   calendarDelegation: "Delete your calendar delegations (Scheduling → Calendar delegation).",
+  schedulingHolds: "",
+  schedulingHostPortal: "",
+  schedulingRouting: "Remove host filters from your live event types (Scheduling).",
+  schedulingWhiteLabel: "",
 };
 
 /**

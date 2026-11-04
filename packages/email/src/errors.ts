@@ -157,6 +157,8 @@ export class ContactError extends Error {
 }
 
 export type InboxErrorCode =
+  | "billing_hold"
+  | "budget_exceeded"
   | "not_found"
   | "thread_not_found"
   | "message_not_found"

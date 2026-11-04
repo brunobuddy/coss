@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   BrandMark,
   BrokenLink,
+  CossAttribution,
   LoadingPanel,
   PageTitle,
   Panel,
@@ -80,6 +81,7 @@ export function HostPortal({ sessionId, apiUrl }: { sessionId: string; apiUrl: s
           </TabsPanel>
         </Tabs>
       </Panel>
+      <CossAttribution branding={session} />
     </main>
   );
 }

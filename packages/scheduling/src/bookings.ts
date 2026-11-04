@@ -9,7 +9,11 @@
 import { recordUsage } from "@coss/billing/metering";
 import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
-import { requestHash as hashRequest, withIdempotencyKey } from "@coss/db/idempotency";
+import {
+  requestHash as hashRequest,
+  IDEMPOTENCY_KEY_TTL_MS,
+  withIdempotencyKey,
+} from "@coss/db/idempotency";
 import { appendLogEntries } from "@coss/logs";
 import { decryptSecret, encryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
 import {
@@ -85,6 +89,7 @@ import {
   enqueueReassignment,
 } from "./notifications.ts";
 import { hostsAwayDuring, standingCover } from "./out-of-office.ts";
+import { refuseNewBookingWhileHeld, requireLiveFeature, requireRouting } from "./plan.ts";
 import {
   type AttendeeInputOutput,
   type BookingEventObjectOutput,
@@ -122,6 +127,8 @@ type Location = NonNullable<BookingRow["location"]>;
 export type BookingActor = NonNullable<typeof schedulingBookingEvent.$inferInsert.actor>;
 
 export type BookingRequest = {
+  /** The API's gate on `attributes`. A session's were checked when it was made, so it passes none. */
+  gateRouting?: boolean | undefined;
   eventType: string;
   startMs: number;
   host?: string | undefined;
@@ -1780,6 +1787,36 @@ const idempotencyErrors = {
     ),
 };
 
+/**
+ * What the plan decides about a new live request. A retry of a key still in its window skips it:
+ * whatever the plan says now, what it made is answered with (`withIdempotencyKey` checks that it
+ * matches). An expired key makes something new, so it meets the plan.
+ */
+async function gateNewRequest(
+  env: SchedulingEnvironment,
+  request: Pick<BookingRequest, "attributes" | "gateRouting" | "idempotencyKey">,
+  deps: SchedulingDeps,
+  opts: { hold: boolean; table: typeof schedulingBooking | typeof schedulingSeries },
+): Promise<void> {
+  if (env.mode !== "live" || !deps.plans) return;
+  if (request.idempotencyKey) {
+    const [made] = await db
+      .select({ createdAt: opts.table.createdAt })
+      .from(opts.table)
+      .where(
+        and(
+          eq(opts.table.organizationId, env.organizationId),
+          eq(opts.table.environmentId, env.environmentId),
+          eq(opts.table.idempotencyKey, request.idempotencyKey),
+        ),
+      )
+      .limit(1);
+    if (made && nowOf(deps).getTime() - made.createdAt.getTime() <= IDEMPOTENCY_KEY_TTL_MS) return;
+  }
+  if (opts.hold) await requireLiveFeature(env, deps.plans, "schedulingHolds");
+  if (request.gateRouting) await requireRouting(env, deps.plans, request.attributes);
+}
+
 async function book(
   env: SchedulingEnvironment,
   request: BookingRequest,
@@ -1787,6 +1824,7 @@ async function book(
   actor: BookingActor,
   wantHold: boolean,
 ): Promise<{ booking: BookingObjectOutput; replayed: boolean }> {
+  await gateNewRequest(env, request, deps, { hold: wantHold, table: schedulingBooking });
   checkStart(request.startMs);
   checkAttendee(request.attendee);
   const eventType = await resolveEventType(db, env, request.eventType);
@@ -1816,7 +1854,11 @@ async function book(
     coverPrincipals: coverPrincipals(candidates),
   };
   const context: NewBookingContext = { env, eventType, deps, actor, now };
-  const hash = hashRequest({ wantHold, request: { ...request, idempotencyKey: undefined } });
+  const hash = hashRequest({
+    wantHold,
+    // `gateRouting` isn't part of what was asked: keep hashes equal to those already stored.
+    request: { ...request, idempotencyKey: undefined, gateRouting: undefined },
+  });
   const checked = await withLiveCheck(env, candidates, plan, request.idempotencyKey ?? hash, deps);
 
   const run = (tx: Transaction, key: string | null) =>
@@ -1831,6 +1873,7 @@ async function book(
         idempotencyKey: key,
       });
       if (!inserted) return undefined;
+      await refuseNewBookingWhileHeld(env, tx);
       return createOne(tx, context, request, inserted, checked, plan);
     })();
 
@@ -3247,6 +3290,7 @@ export async function createSeries(
   deps: SchedulingDeps,
   actor: BookingActor,
 ): Promise<{ result: SeriesResult; replayed: boolean }> {
+  await gateNewRequest(env, request, deps, { hold: false, table: schedulingSeries });
   checkStart(request.startMs);
   checkAttendee(request.attendee);
   const eventType = await resolveEventType(db, env, request.eventType);
@@ -3266,7 +3310,9 @@ export async function createSeries(
   const status = chooseStatus(eventType, false);
   const ttlSeconds = ttlFor(eventType, status);
   const rule = slotRuleOf(eventType, durationMinutes);
-  const hash = hashRequest({ series: { ...request, idempotencyKey: undefined } });
+  const hash = hashRequest({
+    series: { ...request, idempotencyKey: undefined, gateRouting: undefined },
+  });
   const context: NewBookingContext = { env, eventType, deps, actor, now };
 
   const memberRanking = candidates.members.length > 0 ? ranked(candidates, hash) : [];
@@ -3352,6 +3398,7 @@ export async function createSeries(
       })
       .returning();
     if (!series) return undefined;
+    await refuseNewBookingWhileHeld(env, tx);
     let best: { chosen: Candidates; conflicts: number } | null = null;
     for (const chosen of choiceSets) {
       try {

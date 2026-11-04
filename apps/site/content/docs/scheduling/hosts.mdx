@@ -18,6 +18,10 @@ await coss.scheduling.hosts.create({
 });
 ```
 
+Your plan sets how many live hosts your organization can have: <Limit of="schedulingHosts" plan="free" /> on
+Free and <Limit of="schedulingHosts" plan="pro" /> on Pro. Scale includes <Included meter="scheduling.hosts" plan="scale" />
+and charges <Rate meter="scheduling.hosts" /> for more. Delete a host to stop counting them.
+
 An `email` is where their notifications go, not an identity: two hosts can share one, and a host
 needs none. `attributes` are what [pools](/docs/scheduling/pools-and-groups) choose hosts by.
 

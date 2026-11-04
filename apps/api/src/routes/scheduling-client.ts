@@ -87,6 +87,7 @@ import {
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { z } from "zod";
 import { ApiError } from "../errors.ts";
+import { limitSchedulingSlots } from "../middleware/rate-limit.ts";
 import type { AppEnv } from "../types.ts";
 
 export const SCHEDULING_CLIENT_PATH = "/scheduling/client";
@@ -202,6 +203,24 @@ export function createSchedulingClientRoutes(opts: {
     await next();
   });
 
+  /** The person booking isn't the customer: their billing stays out of what the page says. */
+  const bookingForPerson = async <T>(run: () => Promise<T>): Promise<T> => {
+    try {
+      return await run();
+    } catch (error) {
+      if (
+        error instanceof SchedulingError &&
+        (error.code === "billing_hold" || error.code === "budget_exceeded")
+      ) {
+        throw new SchedulingError(
+          "account_suspended",
+          "This account can't take bookings right now.",
+        );
+      }
+      throw error;
+    }
+  };
+
   const authenticated: MiddlewareHandler<ClientEnv> = async (c, next) => {
     const byAddress = await c.var.rateLimiter.consume({
       buckets: ["scheduling.ip"],
@@ -300,6 +319,11 @@ export function createSchedulingClientRoutes(opts: {
       brand_name: settings?.brandName ?? null,
       accent_color: settings?.accentColor ?? null,
       logo: logo ? { data_url: logoDataUrl(logo), width: logo.width, height: logo.height } : null,
+      // "Scheduling by coss.com" on a live page, on plans without the white label.
+      coss_attribution:
+        env.mode === "live" && deps.plans
+          ? !(await deps.plans.hasFeature(env.organizationId, "schedulingWhiteLabel"))
+          : false,
     };
   };
 
@@ -383,6 +407,7 @@ export function createSchedulingClientRoutes(opts: {
 
   /** Where this booking could move to: its own hosts, length and buffers. */
   const rescheduleSlots = async (c: Context<ClientEnv>, id: string) => {
+    await limitSchedulingSlots(c.var.rateLimiter, c.var.session.env);
     const { fromMs, toMs, nowMs } = slotWindow(c);
     return slotList(c, await listRescheduleSlots(c.var.session.env, id, { fromMs, toMs, nowMs }));
   };
@@ -391,6 +416,7 @@ export function createSchedulingClientRoutes(opts: {
     // The session's kind first: the wrong one is a 404, whatever the query says.
     const eventTypeRef = eventTypeOf(c);
     const { env, session } = c.var.session;
+    await limitSchedulingSlots(c.var.rateLimiter, env);
     const slots = await listEventTypeSlots(env, {
       ...slotWindow(c),
       eventTypeRef,
@@ -407,23 +433,25 @@ export function createSchedulingClientRoutes(opts: {
     const fixed = fixedAttendee(session, deps);
     const attendee = fixed ?? body.attendee;
     if (!attendee) throw invalidBody("`attendee` is required.", "attendee");
-    const { booking, replayed } = await createBooking(
-      env,
-      {
-        eventType,
-        startMs: instant(body.start, "start"),
-        host: session.hostId ?? undefined,
-        attributes: sessionAttributes(session, deps),
-        durationMinutes: body.duration_minutes,
-        attendee,
-        guests: body.guests,
-        answers: body.answers,
-        location: body.location,
-        locationFromBrowser: true,
-        idempotencyKey: c.req.header("idempotency-key"),
-      },
-      deps,
-      sessionActor(session),
+    const { booking, replayed } = await bookingForPerson(() =>
+      createBooking(
+        env,
+        {
+          eventType,
+          startMs: instant(body.start, "start"),
+          host: session.hostId ?? undefined,
+          attributes: sessionAttributes(session, deps),
+          durationMinutes: body.duration_minutes,
+          attendee,
+          guests: body.guests,
+          answers: body.answers,
+          location: body.location,
+          locationFromBrowser: true,
+          idempotencyKey: c.req.header("idempotency-key"),
+        },
+        deps,
+        sessionActor(session),
+      ),
     );
     if (replayed) c.header("Idempotent-Replayed", "true");
     const emailed =

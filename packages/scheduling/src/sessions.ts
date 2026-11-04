@@ -6,6 +6,7 @@
  * can do, expires, and stops working when the booking is cancelled.
  */
 import { createHash, randomBytes } from "node:crypto";
+import type { PlanGate } from "@coss/billing/gate";
 import { db, schema } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { withoutTrailingSlashes } from "@coss/db/url";
@@ -16,6 +17,7 @@ import type { BookingActor } from "./bookings.ts";
 import { SchedulingError } from "./errors.ts";
 import { resolveEventType } from "./event-types.ts";
 import { resolveHost } from "./hosts.ts";
+import { requireLiveFeature } from "./plan.ts";
 import type { AttendeeInputOutput } from "./schemas.ts";
 import type { SchedulingDeps, SchedulingEnvironment } from "./types.ts";
 
@@ -118,6 +120,7 @@ function expiry(now: Date, seconds: number | undefined, fallback: number): Date 
 export async function createManagerSession(
   env: SchedulingEnvironment,
   input: {
+    plans?: PlanGate | undefined;
     hosts?: readonly string[] | undefined;
     hostFilter?: Record<string, string | string[]> | undefined;
     expiresIn?: number | undefined;
@@ -137,6 +140,7 @@ export async function createManagerSession(
     throw refused("`host_filter` is empty, which would mean every host.", "host_filter");
   }
   if (input.hosts?.length === 0) throw refused("`hosts` is empty.", "hosts");
+  await requireLiveFeature(env, input.plans, "schedulingHostPortal");
   const ids: string[] = [];
   for (const ref of input.hosts ?? []) {
     const host = await resolveHost(db, env, ref);
@@ -188,8 +192,11 @@ export async function createHostSession(
     createdByUserId?: string | null;
     publicUrl: string | null;
     now?: Date;
+    /** The API's gate for embedding the portal. A dashboard member's own look passes none. */
+    plans?: PlanGate | undefined;
   },
 ): Promise<Created> {
+  await requireLiveFeature(env, input.plans, "schedulingHostPortal");
   const host = await resolveHost(db, env, input.host);
   return mint({
     env,

@@ -16,11 +16,18 @@ import {
   runDueReassignments,
 } from "@coss/scheduling";
 import { testPng, testSchedulingDeps } from "@coss/scheduling/testing";
+import { createEnvironmentApiKey } from "@coss/tenancy";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
 import { Hono } from "hono";
 import { createSchedulingCallbackRoutes } from "../src/routes/scheduling-callbacks.ts";
 import type { AppEnv } from "../src/types.ts";
-import { createTestApp, errorOf, type TestApp, waitForLogLines } from "./helpers.ts";
+import {
+  createTestApp,
+  errorOf,
+  setKeyPermissions,
+  type TestApp,
+  waitForLogLines,
+} from "./helpers.ts";
 
 const MONDAY = "2031-01-06";
 const at = (time: string) => `${MONDAY}T${time}:00.000Z`;
@@ -2230,6 +2237,40 @@ describe("out of office", () => {
       existing_bookings: "reassign",
     });
     expect(refused.status).toBe(422);
+  });
+
+  test("a key that can only create can't start moving bookings", async () => {
+    const { tenant, app, send, host } = await booker();
+    const created = await createEnvironmentApiKey({
+      organizationId: tenant.organization.id,
+      environmentId: tenant.development.id,
+      name: "Create only",
+      userId: tenant.owner.id,
+      permissions: "full",
+    });
+    await setKeyPermissions(created.id, { scheduling: ["create"] });
+    const key = created.key;
+    const asThem = (path: string, body: unknown) =>
+      app.request(`/v1/scheduling${path}`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    const entry = { host: host.id, start_date: "2031-01-06", end_date: "2031-01-06" };
+    const moving = await asThem("/out_of_office", { ...entry, existing_bookings: "reassign" });
+    expect(moving.status).toBe(403);
+    expect((await errorOf(moving)).code).toBe("insufficient_permissions");
+    const calendar = { name: "UK", country: "GB", hosts: [host.id] };
+    const holidays = await asThem("/holiday_calendars", {
+      ...calendar,
+      existing_bookings: "reassign",
+    });
+    expect(holidays.status).toBe(403);
+    // Time away that leaves bookings alone is theirs to add.
+    expect((await asThem("/out_of_office", entry)).status).toBe(201);
+    expect((await asThem("/holiday_calendars", calendar)).status).toBe(201);
+    const runs = (await (await send("/reassignments", "GET")).json()) as { data: unknown[] };
+    expect(runs.data).toEqual([]);
   });
 
   test("a host's session isn't told why a colleague can't take a booking", async () => {

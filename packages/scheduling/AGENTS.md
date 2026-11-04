@@ -405,6 +405,44 @@ One `scheduling.bookings` unit per confirmed booking, series occurrence or group
 on `usage_recorded_at` (`recordUsage` doesn't dedupe). `reserve` runs after a host has won. Holds and pending approvals
 aren't charged; reschedules are free; cancelled stays charged.
 
+`scheduling.hosts` is one unit per day a live host exists (`next_fee_at`, its presence is what makes a host live for
+the plan's count): on creation (reserved like a new inbox: past a capped plan's allowance it's refused), then
+`chargeDueHostFees` (the worker's `scheduling-host-fees`, which also gives a date to any live host without one, such as
+one an older task made during a rollout), and `deleteHost` charges what's due (those two only ever write
+off past the allowance). Nothing is recorded before `meterPricedFrom` (2027-01-01): hosts wait with `next_fee_at` at that date.
+
+## Plans and holds
+
+`plan.ts`. **Live only**: sandbox has everything on every plan, so a team builds first and meets the plan at go-live.
+Injected as `SchedulingDeps.plans`; without it nothing is enforced. What the plan decides:
+
+- `schedulingHosts` (`createHost`, across live environments, under an advisory lock). Free and Pro stop; Scale has no
+  limit and is charged past what it includes.
+- `schedulingHolds` (`createHold`), `schedulingHostPortal` (`createHostSession` from the API only: a dashboard member's
+  own look passes no gate, and host invitation emails stay on every plan), `schedulingRouting` (`host_filter`, and
+  `attributes` at the API's routes, never in `book()`: a session's were checked when it was made).
+- `schedulingGroupSeats` (growing a `capacity`) and `schedulingSearchHosts` (`maxHosts`: a search looks at that many and
+  says `has_more`, it never fails).
+- `schedulingWhiteLabel` (`coss_attribution` in the client API's `/session`).
+- `scheduling.slots.second` (`limitSchedulingSlots` in the API): live slot lists and searches per organization.
+
+Using a feature reads the plan in effect (`requireLiveFeature`, `currentLimit`): a scheduled downgrade changes nothing
+until it applies. Setting up something that outlives the request (`requireLiveFeatureToCreate`, `requireCapacity`) is also
+checked against the plan to come, like every creation in billing.
+
+Gates take a connection of their own, so they never run inside a transaction: holding one connection while waiting for
+another stalls the pool under load. They run before it, and `gateNewRequest` skips a retry of a key still in its window (an expired key makes something
+new, so it meets the plan).
+
+A person on a hosted page never meets a plan gate (Free's booking allowance aside): a session's attributes aren't
+checked again. Never gate the double-booking guarantee, calendars or series. A filter or a group size that exists keeps working whatever the plan; a downgrade is refused only for live
+`host_filter`s (the dashboard's preflight).
+
+`refuseNewBookingWhileHeld`, once the row is known to be new so a retry still answers with what it made: a billing hold
+or the project's budget stops new live bookings, holds and series (402; new hosts too, `refuseNewHostWhileHeld`), and
+the booker's page says only that the account can't take bookings. Confirming a hold and approving keep working: the
+customer may have taken payment for them.
+
 ## Testing
 
 `test/bookings.test.ts` races on real Postgres. `test/engine-differential.test.ts` compares `buildAvailability` with

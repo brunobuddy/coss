@@ -103,6 +103,54 @@ for (const status of [201, 422]) {
   });
 }
 
+// Why someone's away can be medical, notes are encrypted everywhere else, and a feed's address or a
+// session's link is a credential.
+for (const [path, secret] of [
+  ["/v1/scheduling/out_of_office", "Recovering from surgery"],
+  ["/v1/scheduling/out_of_office/ooo_1", "Recovering from surgery"],
+  ["/v1/scheduling/out_of_office/by_external_id/leave_1", "Recovering from surgery"],
+  ["/v1/scheduling/reassignments", "Recovering from surgery"],
+  ["/v1/scheduling/reassignments/preview", "Recovering from surgery"],
+  ["/v1/scheduling/holiday_calendars", "https://example.com/feed.ics?token=secret"],
+] as const) {
+  test(`${path} keeps no body either way`, async () => {
+    const { app, writer } = loggedApp(() => Response.json({}));
+    app.post(path, async (c) => {
+      const body = await c.req.json();
+      return Response.json({ object: "scheduling.thing", id: "x_1", ...body }, { status: 201 });
+    });
+    await app.request(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ notes: secret, note: secret, ics_url: secret }),
+    });
+    const [line] = await waitForLogLines(writer, 1);
+    expect(JSON.stringify(line)).not.toContain(secret);
+  });
+}
+
+test("a manager session's link stays out of its response's log line", async () => {
+  const { app, writer } = loggedApp(() => Response.json({}));
+  const path = "/v1/scheduling/manager_sessions";
+  app.post(path, () =>
+    Response.json(
+      {
+        id: "schs_1",
+        token: "cossch_secret",
+        url: "https://book.example.com/t/schs_1#cossch_secret",
+      },
+      { status: 201 },
+    ),
+  );
+  await app.request(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ hosts: ["host_1"] }),
+  });
+  const [line] = await waitForLogLines(writer, 1);
+  expect(JSON.stringify(line)).not.toContain("cossch_secret");
+});
+
 for (const path of ["/v1/risk/email/check", "/v1/risk/ip/check", "/v1/risk/content/classify"]) {
   for (const status of [200, 422, 500]) {
     test(`${path} omits both bodies at status ${status}`, async () => {

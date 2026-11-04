@@ -22,6 +22,7 @@ export * from "./logo.ts";
 export * from "./manager.ts";
 export * from "./notifications.ts";
 export * from "./out-of-office.ts";
+export * from "./plan.ts";
 export * from "./reassign.ts";
 export * from "./reassignments.ts";
 export * from "./reencrypt.ts";
