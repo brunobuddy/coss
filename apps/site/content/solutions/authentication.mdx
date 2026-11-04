@@ -24,6 +24,34 @@ faq:
     answer: Yes. Define a bucket with coss.risk.limitBuckets.create() and check a key, such as an email address or IP address, with coss.risk.limit() on every request. It uses the same GCRA limiter as coss.com's own API.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const form: { email: string; phone: string; device: string; code: string };
+declare const request: { ip: string; userAgent: string };
+// ---cut---
+// [!code word:coss.risk.assess]
+const { data: assessment } = await coss.risk.assess({
+  event: "signup",
+  user: { email: form.email },
+  ip: request.ip,
+  user_agent: request.userAgent,
+  device: { token: form.device },
+});
+
+// The fraud guard runs before anything is sent.
+await coss.verify.start({ to: form.phone, ip: request.ip });
+
+const { data: check } = await coss.verify.check({
+  to: form.phone,
+  code: form.code,
+});
+```
+
+</HeroSample>
+
 <Section title="The problem" lede="Every sign-up form is a target: fake accounts, credential stuffing, toll fraud on SMS codes, and emails that have to arrive.">
 
 A sign-up and login flow needs account emails that arrive (verification, password reset, magic links), one-time codes that prove someone has a phone number or mailbox, a way to tell a real sign-up from the hundredth one from the same browser, and limits on the endpoints attackers hammer. Each is usually a separate vendor with its own key, dashboard and bill.

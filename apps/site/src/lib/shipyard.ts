@@ -3,8 +3,7 @@ import { type NavItem, SITE_URL } from "./site.ts";
 /**
  * Shipyard's landing page and docs at coss.com/shipyard (moved here from the coss ui repository's
  * `apps/shipyard`, where they were served with that base path). The landing page draws its own
- * pictures (components/shipyard/drawings.tsx); the harbour paintings the coss.com landing page's
- * banner shows are served from `public/shipyard/assets`, the docs' screenshots from
+ * pictures (components/shipyard/drawings.tsx); the docs' screenshots are served from
  * `public/shipyard/shots`, so the page's path doubles as their base.
  */
 export const SHIPYARD = {

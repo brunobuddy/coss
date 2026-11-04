@@ -34,6 +34,26 @@ faq:
     answer: Yes. The API publishes an OpenAPI 3.1 document at api.coss.com/openapi.json. The API reference and the generated SDKs are built from it.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+// ---cut---
+// [!code word:coss.email.send]
+const coss = new Coss(); // reads COSS_API_KEY
+
+const { data, error } = await coss.email.send({
+  from: "Acme <hello@acme.com>",
+  to: "ada@example.com",
+  subject: "Your receipt",
+  text: "Thanks for your order.",
+});
+
+if (error) console.error(error.type, error.code, error.request_id);
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="One client covers every product. Methods return results instead of throwing, and retries are safe by default.">
 
 ```ts twoslash
