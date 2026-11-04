@@ -298,7 +298,7 @@ describe("a host", () => {
 });
 
 describe("changing a booking", () => {
-  const post = (route: typeof approve) =>
+  const post = (route: { POST: (request: Request, context: never) => Promise<Response> }) =>
     route.POST(new Request(`${ENV}/bookings/book_1/x`, { method: "POST", headers }), bookingCtx);
 
   test.each([

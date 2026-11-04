@@ -2,17 +2,18 @@ import type { EnvironmentHomeResponse, HomeAttention, HomeSeverity } from "@coss
 import { getProduct, type ProductKey } from "@coss/dashboard-routes";
 import * as Haptics from "expo-haptics";
 import { type Href, Link, router } from "expo-router";
-import { ArrowRight, Check, ChevronRight, Code, Webhook } from "lucide-react-native";
+import { ArrowRight, Check, ChevronRight, Code, FolderPlus, Webhook } from "lucide-react-native";
 import { Pressable, StyleSheet, View } from "react-native";
+import { useActiveEnvironment } from "../lib/active-environment";
 import { formatAgo, formatCompact } from "../lib/format";
 import { ATTENTION_ICONS, attentionHref, PRODUCT_ICONS, productHref } from "../lib/products";
-import { useMe, useOrganization } from "../lib/queries";
+import { useMe } from "../lib/queries";
 import { useEnvironmentHome } from "../lib/queries-scheduling";
 import { colors, radius, space, type Tone, useFinish, useProductText } from "../lib/theme";
 import { type EnvironmentParams, environmentPath, openOnWeb } from "../lib/web";
 import { Badge, StatusDot } from "./badge";
 import { CountUp } from "./count-up";
-import { DraftingGrid } from "./empty";
+import { DraftingGrid, EmptyState } from "./empty";
 import { Icon } from "./icon";
 import { ListRow, Panel, PanelBody, Ruled } from "./panel";
 import { ProductGlyph } from "./product-glyph";
@@ -163,11 +164,23 @@ export function EnvironmentHome(props: {
   const finish = useFinish();
   const home = useEnvironmentHome(params);
   const me = useMe();
-  const organization = useOrganization(params?.org ?? "");
+  const { organization } = useActiveEnvironment();
   const base = params ? environmentPath(params) : "";
-  const can = organization.data?.can;
+  const can = organization?.can;
   const toolbar = props.root ? <RootToolbar environment /> : null;
 
+  if (!props.pending && !params) {
+    return (
+      <Screen title="Home">
+        {toolbar}
+        <EmptyState
+          description="Projects you create on coss.com appear here."
+          icon={FolderPlus}
+          title="No projects yet"
+        />
+      </Screen>
+    );
+  }
   if (props.pending || !params || home.isPending) {
     return (
       <Screen loading="stats" title="Home">

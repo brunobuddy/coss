@@ -1,7 +1,8 @@
 import { PRODUCT_CATEGORIES, PRODUCTS, type ProductKey } from "@coss/dashboard-routes";
 import * as Haptics from "expo-haptics";
 import type { Href } from "expo-router";
-import { Code, ExternalLink } from "lucide-react-native";
+import { Code, ExternalLink, FolderPlus } from "lucide-react-native";
+import { EmptyState } from "../../../../components/empty";
 import { Icon } from "../../../../components/icon";
 import { ListRow, Panel, Ruled } from "../../../../components/panel";
 import { ProductGlyph } from "../../../../components/product-glyph";
@@ -15,6 +16,18 @@ import { environmentPath, openOnWeb } from "../../../../lib/web";
 export default function ProductsScreen() {
   const { params, organization, isPending } = useActiveEnvironment();
   const home = useEnvironmentHome(params);
+  if (!isPending && !params) {
+    return (
+      <Screen title="Products">
+        <RootToolbar />
+        <EmptyState
+          description="Projects you create on coss.com appear here."
+          icon={FolderPlus}
+          title="No projects yet"
+        />
+      </Screen>
+    );
+  }
   if (isPending || !params || home.isPending) {
     return (
       <Screen loading="list" title="Products">

@@ -21,8 +21,7 @@ export default function OrganizationsSheet() {
         <OrganizationList
           organizations={me.data.organizations}
           onSelect={(org) => {
-            router.dismissAll();
-            router.replace({ pathname: "/[org]", params: { org } });
+            router.dismissTo({ pathname: "/[org]", params: { org } });
           }}
         />
       ) : null}
