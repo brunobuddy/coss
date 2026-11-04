@@ -246,6 +246,47 @@ const slots: Command = defineCommand({
   },
 });
 
+const EXPLAIN_FLAGS = {
+  start: { type: "string", value: "<time>", description: "The ISO 8601 instant to explain" },
+  host: { type: "string", value: "<host>", description: "Only this host (id or uid)" },
+  json: { type: "boolean", description: "Print the explanation as JSON" },
+} as const satisfies Flags;
+
+const explain: Command = defineCommand({
+  name: "scheduling slots explain",
+  summary: "Explain why one start can or can't be booked",
+  usage: "<event-type> --start <time>",
+  description:
+    "Says whether one start can be booked right now and, host by host, why not, decided the same way a booking is.",
+  flags: EXPLAIN_FLAGS,
+  positionals: true,
+  run: async ({ values, positionals, context }: CommandInput<typeof EXPLAIN_FLAGS>) => {
+    const [eventType] = requireArgs(positionals, 1, "scheduling slots explain <event-type>") as [
+      string,
+    ];
+    if (!values.start) throw new UsageError("Pass --start.");
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.slots.explain(eventType, {
+      start: values.start,
+      ...(values.host !== undefined && { host: values.host }),
+    });
+    if (error) throw apiError("Couldn't explain the slot", error);
+    const { out } = context;
+    if (out.json) {
+      out.data(data);
+      return 0;
+    }
+    out.line(
+      `${when(data.start)}  ${data.available ? "available" : (data.reason ?? "unavailable")}`,
+    );
+    for (const host of data.hosts) {
+      const why = host.calendar_reason ?? host.reason ?? "free";
+      out.line(`  ${host.host}  ${host.role}  ${why}`);
+    }
+    return 0;
+  },
+});
+
 const BOOKING_FLAGS = {
   json: { type: "boolean", description: "Print the booking as JSON" },
 } as const satisfies Flags;
@@ -1065,6 +1106,7 @@ export const SCHEDULING_COMMANDS: readonly Command[] = [
   { ...eventTypes, name: "scheduling event-types list" },
   eventTypesCreate,
   eventTypesUpdate,
+  explain,
   slots,
   book,
   bookings,

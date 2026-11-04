@@ -48,9 +48,12 @@ function skipped(method: string, path: string): boolean {
 const CONTENT_RESPONSES = ["/v1/received_emails", "/v1/inboxes", "/v1/sms/received"];
 /** Form submissions: what people typed into a customer's form (`/v1/forms/{id}/submissions…`). */
 const FORM_SUBMISSIONS = /^\/v1\/forms\/[^/]+\/submissions(\/|$)/;
-/** Scheduling's attendee details and answers: these requests carry them both ways, always. */
+/**
+ * Scheduling's attendee details and answers: these requests carry them both ways, always. A calendar
+ * delegation's requests carry a service account's private key or an app's client secret.
+ */
 const SCHEDULING_PERSONAL =
-  /^\/v1\/scheduling\/((bookings|holds|series|attendees|booker_sessions)(\/|$)|hosts\/[^/]+\/calendar_connections)/;
+  /^\/v1\/scheduling\/((bookings|holds|series|attendees|booker_sessions|calendar_delegations)(\/|$)|hosts\/[^/]+\/calendar_connections)/;
 /**
  * Responses that are capabilities: preference links change a contact's consent and need
  * `contact:update`, and Sign's session links (the token is in the URL's fragment too) sign as a
