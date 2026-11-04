@@ -1228,6 +1228,7 @@ async function refuseOverAttendeeLimit(
         ne(schedulingBooking.id, ownBookingId),
         sql`${schedulingBooking.startAt} > clock_timestamp()`,
         isLiveSeat(),
+        eq(schedulingAttendee.environmentId, eventType.environmentId),
         eq(schedulingAttendee.role, "attendee"),
         or(
           ...(emailHmac ? [eq(schedulingAttendee.emailHmac, emailHmac)] : []),
@@ -2282,8 +2283,16 @@ export async function rescheduleBooking(
         : booking.status === "pending_approval"
           ? booking.approvalExpiresAt
           : null;
-    if (booking.startAt <= now || (reservedUntil && reservedUntil <= now)) {
-      await checkAttendeeLimit(tx, eventType, await attendeeIdentityOf(tx, booking), booking.id);
+    // Read under the person's locks, since it can start or lapse while this waits for them.
+    const attendee = await attendeeIdentityOf(tx, booking);
+    if (await lockAttendeeLimit(tx, eventType, attendee)) {
+      const [{ lapsed } = { lapsed: false }] = (
+        await tx.execute(
+          sql`select (${booking.startAt.toISOString()}::timestamptz <= clock_timestamp()
+            or ${reservedUntil?.toISOString() ?? null}::timestamptz <= clock_timestamp()) as lapsed`,
+        )
+      ).rows as { lapsed: boolean | null }[];
+      if (lapsed) await refuseOverAttendeeLimit(tx, eventType, attendee, booking.id);
     }
     const durationMinutes = (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS;
     const { hostIds } = await participants(tx, booking);
