@@ -663,6 +663,19 @@ describe("syncing", () => {
     expect((await getHolidayCalendar(env, created.id)).last_error).toBeTruthy();
   });
 
+  test("a feed emptied during a holiday still running west of UTC keeps it", async () => {
+    const env = await environment();
+    const a = await host(env, "A", { time_zone: "America/Los_Angeles" });
+    const created = await calendar(env, [a.id]);
+    const { state, transport } = feed(ics(day("2031-01-05", "One")));
+    await sync(env, transport);
+    state.body = ics();
+    await dueAgain(created.id);
+    await sync(env, transport, new Date("2031-01-06T01:00:00Z"));
+    expect(await datesOf(env, a.id)).toEqual(["2031-01-05"]);
+    expect((await getHolidayCalendar(env, created.id)).last_error).toBeTruthy();
+  });
+
   test("a feed with nothing in it yet is fine", async () => {
     const env = await environment();
     const a = await host(env, "A");

@@ -1528,6 +1528,32 @@ describe("who's told", () => {
     expect(subjectsTo(sent, "first@example.com")).toContain("No longer yours: Call");
   });
 
+  test("a seat cancelling before the news goes out still takes that seat's invitation away", async () => {
+    const env = await environment();
+    const first = await host(env, "Dr. First", { email: "first@example.com" });
+    const second = await host(env, "Dr. Second", { email: "second@example.com" });
+    const group = await eventTypeWith(env, "group", [member(first)], { capacity: 5 });
+    const seats = [];
+    for (const uid of ["one", "two"]) {
+      const { booking } = await createBooking(
+        env,
+        { eventType: group.id, startMs: at("10:00"), attendee: { ...attendee, uid } },
+        plain,
+        actor,
+      );
+      seats.push(booking);
+    }
+    await runDueSchedulingNotifications(sender().deps as never, { scope: scope(env) });
+    await reassign(env, seats[0]?.id as string, change(second.id, ANY_HOST));
+    await cancelBooking(env, seats[1]?.id as string, plain, actor);
+    const { sent, deps } = sender();
+    await runDueSchedulingNotifications(deps as never, { scope: scope(env) });
+    const toFirst = sent.filter((message) => message.subject === "No longer yours: Call");
+    expect(toFirst.map((message) => message.ics?.method)).toEqual(["CANCEL", "CANCEL"]);
+    const uids = toFirst.map((message) => message.ics?.content.match(/^UID:(.*)$/m)?.[1]);
+    expect(uids.sort()).toEqual(seats.map((seat) => `${seat.id}@coss.com`).sort());
+  });
+
   test("going on to a third still tells the first, and not the one in between", async () => {
     const { env, booking, second } = await pair();
     const third = await host(env, "Dr. Third", { email: "third@example.com" });

@@ -621,7 +621,6 @@ async function syncOne(
         .set({ leaseUntil: null, ...(unchanged ? values : {}) })
         .where(here);
     });
-  const today = dayOf(now);
   const until = dayOf(new Date(now.getTime() + LOOK_AHEAD_DAYS * DAY_MS));
   let holidays: Holiday[];
   let read: Partial<typeof schedulingHolidayCalendar.$inferInsert> = {};
@@ -645,7 +644,8 @@ async function syncOne(
       const url = decryptSecret(row.encryptedIcsUrl, keys(deps));
       holidays = holidaysFromIcs(await readFeed(transport, url), earliestDay(now), until);
       // A feed that's suddenly empty is a broken feed, and shouldn't take every holiday away.
-      if (holidays.length === 0 && row.holidays?.some((holiday) => holiday.date >= today)) {
+      // From the same day the read does: yesterday's can still be running, west of UTC.
+      if (holidays.length === 0 && row.holidays?.some((day) => day.date >= earliestDay(now))) {
         throw new UnreadableCalendarData("empty");
       }
       read = { lastReadAt: now, lastError: null, holidays };

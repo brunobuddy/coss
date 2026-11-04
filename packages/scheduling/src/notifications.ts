@@ -532,8 +532,8 @@ function isStale(row: Claimed, booking: BookingRow): boolean {
 }
 
 /**
- * Hosts hear about a session moving through one of its seats. That seat cancelling says nothing about
- * the session, which goes on with whoever's left.
+ * A session's new host hears about it through one of its seats. That seat cancelling says nothing
+ * about the session, which goes on with whoever's left.
  */
 async function seatStillStanding(row: Claimed, booking: BookingRow): Promise<BookingRow | null> {
   if (row.kind !== "reassigned" || row.recipient !== "host" || !booking.groupSessionId) return null;
@@ -1263,8 +1263,10 @@ export async function runDueSchedulingNotifications(
         .where(eq(schedulingNotification.id, row.id));
       if (!current || current.finishedAt || current.dueAt > now) continue;
       const stale = !found || isStale({ ...row, bookingVersion: current.bookingVersion }, found);
-      const seat = stale && found ? await seatStillStanding(row, found) : null;
-      if (!found || (stale && !seat && !(await lostItBeforeItEnded(row, found)))) {
+      // Who lost a seat is told about that seat, whose invitation they hold, whatever else stands.
+      const lost = stale && found ? await lostItBeforeItEnded(row, found) : false;
+      const seat = stale && found && !lost ? await seatStillStanding(row, found) : null;
+      if (!found || (stale && !lost && !seat)) {
         await finish(row, "stale", now);
         continue;
       }
