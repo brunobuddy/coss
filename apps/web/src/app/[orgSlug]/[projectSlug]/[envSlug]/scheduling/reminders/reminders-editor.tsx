@@ -613,6 +613,7 @@ export function RemindersEditor(
     eventTypes: { id: string; title: string; own: boolean }[];
     hasEmailFrom: boolean;
     hasSmsFrom: boolean;
+    moreEventTypes: boolean;
     rules: ReminderRule[];
     schedulingPath: string;
     source: "event_type" | "environment" | "default";
@@ -705,6 +706,15 @@ export function RemindersEditor(
             reminders={null}
             success="It uses the list for all event types"
           />
+        ) : null}
+        {props.moreEventTypes ? (
+          <p className="text-muted-foreground text-sm">
+            Showing the newest 100. For others, open{" "}
+            <Link className="underline" href={`${schedulingPath}/event-types`}>
+              the event type
+            </Link>{" "}
+            and go to its reminders from there.
+          </p>
         ) : null}
         {inherited ? (
           <p className="text-muted-foreground text-sm">

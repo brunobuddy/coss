@@ -7,7 +7,9 @@ import {
   listScheduleNames,
   SchedulingError,
 } from "@coss/scheduling";
+import { Button } from "@coss/ui/components/button";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyValue } from "@/components/copy-value";
 import { PageHeader } from "@/components/page-header";
@@ -50,7 +52,7 @@ export default async function EventTypePage({
   params,
 }: PageProps<"/[orgSlug]/[projectSlug]/[envSlug]/scheduling/event-types/[eventTypeId]">) {
   const { eventTypeId, ...rest } = await params;
-  const { scope, can, target } = await schedulingPageContext(rest);
+  const { scope, can, target, schedulingPath } = await schedulingPageContext(rest);
   const eventType = await getEventType(scope, eventTypeId).catch((error: unknown) => {
     if (error instanceof SchedulingError && error.code === "not_found") notFound();
     throw error;
@@ -71,6 +73,13 @@ export default async function EventTypePage({
       <PageHeader
         actions={
           <div className="flex gap-2">
+            <Button
+              render={<Link href={`${schedulingPath}/reminders?event_type=${eventType.id}`} />}
+              size="sm"
+              variant="ghost"
+            >
+              Reminders
+            </Button>
             {canEdit ? (
               <EventTypeStatusButton
                 {...target}

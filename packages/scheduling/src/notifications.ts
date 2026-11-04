@@ -795,6 +795,23 @@ async function sendBookingSms(
   return sent ? "sent" : "no_address";
 }
 
+/** Its rule's timing changed: it's due at the new moment, and this claim wasn't an attempt. */
+async function moveRow(
+  executor: Executor,
+  row: Pick<Claimed, "id">,
+  move: { moveTo: Date; offsetMinutes: number },
+): Promise<void> {
+  await executor
+    .update(schedulingNotification)
+    .set({
+      dueAt: move.moveTo,
+      reminderOffsetMinutes: move.offsetMinutes,
+      leaseUntil: null,
+      attempts: sql`${schedulingNotification.attempts} - 1`,
+    })
+    .where(eq(schedulingNotification.id, row.id));
+}
+
 /**
  * A webhook row reports in one transaction with finishing the row: two workers holding it can't both
  * report. The booking's locked first, like everything else that touches these rows.
@@ -842,6 +859,7 @@ export async function sendTimedWebhook(
     const location = await chosenLocation(tx, booking);
     const rules = effectiveRules(await policiesOf(tx, booking));
     const verdict = ruleVerdict(current, { ...booking, location }, rules, now);
+    if ("moveTo" in verdict) return moveRow(tx, current, verdict);
     if ("outcome" in verdict) return finish(verdict.outcome);
     const { rule } = verdict;
     const scheduledFor = new Date((current.anchorAt ?? now).getTime() + offsetOf(rule) * 60_000);
@@ -1013,6 +1031,10 @@ export async function runDueSchedulingNotifications(
         const rules = effectiveRules(await policiesOf(db, found));
         const location = await chosenLocation(db, found);
         const verdict = ruleVerdict(row, { ...found, location }, rules, now);
+        if ("moveTo" in verdict) {
+          await moveRow(db, row, verdict);
+          continue;
+        }
         if ("outcome" in verdict) {
           await finish(row, verdict.outcome, now);
           continue;

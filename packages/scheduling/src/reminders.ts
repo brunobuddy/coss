@@ -363,14 +363,22 @@ export function ruleVerdict(
   booking: Pick<BookingRow, "metadata" | "noShowAt" | "location" | "startAt">,
   rules: readonly ReminderRule[],
   now: Date,
-): { rule: ReminderRule } | { outcome: "stale" | "filtered" | "no_show" | "too_late" } {
+):
+  | { rule: ReminderRule }
+  | { outcome: "stale" | "filtered" | "no_show" | "too_late" }
+  | { moveTo: Date; offsetMinutes: number } {
   const rule = rules.find(
-    (candidate) =>
-      candidate.key === row.reminderKey &&
-      candidate.anchor === row.reminderAnchor &&
-      offsetOf(candidate) === row.reminderOffsetMinutes,
+    (candidate) => candidate.key === row.reminderKey && candidate.anchor === row.reminderAnchor,
   );
   if (!rule) return { outcome: "stale" };
+  if (offsetOf(rule) !== row.reminderOffsetMinutes) {
+    // On a start or end, the changed list's walk has made a row for the new moment. Nothing walks
+    // what's timed from something that's happened, so that row takes the new timing itself, or the
+    // edit would lose it. An edit to sooner can only be seen once the row comes due: it goes then.
+    if (rule.anchor === "start" || rule.anchor === "end") return { outcome: "stale" };
+    const due = (row.anchorAt?.getTime() ?? now.getTime()) + offsetOf(rule) * MINUTE_MS;
+    if (due > now.getTime()) return { moveTo: new Date(due), offsetMinutes: offsetOf(rule) };
+  }
   const targeted = targetsOf(rule).some(
     (target) => target.channel === row.channel && target.recipient === row.recipient,
   );

@@ -1746,3 +1746,45 @@ describe("reading what's queued", () => {
     expect(all.hasMore).toBe(false);
   });
 });
+
+describe("a waiting reminder whose timing is edited", () => {
+  const confirmedRule = (after_minutes: number) =>
+    rule({ key: "welcome", anchor: "confirmed", after_minutes, send: ["email_attendee"] });
+  const outcome = async (s: Setup, id: string) =>
+    (await rows(s, id)).find((row) => row.reminder_key === "welcome");
+
+  test("waits for the later moment, and goes once", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, { reminders: [confirmedRule(10)] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [confirmedRule(20)] });
+    await runAt(s, NOW.getTime() + 10 * MINUTE);
+    const moved = await outcome(s, booking.id);
+    expect(moved?.outcome).toBeNull();
+    expect(moved?.due_at).toBe(new Date(NOW.getTime() + 20 * MINUTE).toISOString());
+    await runAt(s, NOW.getTime() + 20 * MINUTE);
+    expect((await outcome(s, booking.id))?.outcome).toBe("sent");
+  });
+
+  test("goes when it comes due, if it's been made sooner", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, { reminders: [confirmedRule(20)] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [confirmedRule(10)] });
+    await runAt(s, NOW.getTime() + 20 * MINUTE);
+    expect((await outcome(s, booking.id))?.outcome).toBe("sent");
+  });
+
+  test("a webhook takes the new timing too", async () => {
+    const s = await setUp();
+    const hook = (after_minutes: number) =>
+      rule({ key: "welcome", anchor: "confirmed", after_minutes, send: ["webhook"] });
+    await updateSettings(s.env, { reminders: [hook(10)] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [hook(20)] });
+    await runAt(s, NOW.getTime() + 10 * MINUTE);
+    expect((await outcome(s, booking.id))?.outcome).toBeNull();
+    await runAt(s, NOW.getTime() + 20 * MINUTE);
+    expect((await outcome(s, booking.id))?.outcome).toBe("sent");
+  });
+});
