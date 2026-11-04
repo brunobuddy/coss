@@ -13,7 +13,8 @@ names, error codes or webhook payloads.
 
 ## Read the docs first
 
-- https://coss.com/llms.txt opens with a short brief and lists every docs page.
+- https://coss.com/llms.txt opens with a short brief, lists the guides and links each product's
+  API operations.
 - Every docs page is Markdown at its URL plus `.md`, e.g. https://coss.com/docs/email/sending.md.
   API reference pages (`https://coss.com/docs/api-reference/<resource>/<operation>.md`) give the
   method and URL, every parameter and body field, the responses and errors, and examples in

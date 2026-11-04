@@ -104,7 +104,8 @@ export function agentNotes(envFile: string): string {
 This project uses [coss.com](https://coss.com) through its SDK (email, SMS, Verify, Sign, Forms,
 Scheduling, Hooks, Risk and webhooks, on one key).
 
-- Docs: https://coss.com/llms.txt lists every page, and every docs page is Markdown at its URL plus
+- Docs: https://coss.com/llms.txt lists the guides and links each product's API operations, and
+  every docs page is Markdown at its URL plus
   \`.md\` (e.g. https://coss.com/docs/email/sending.md). API reference pages give each operation's
   parameters, request body, responses and errors. Read the page before writing code against it.
 - Develop and test with the development key (\`coss_test_…\`) in \`${envFile}\` as \`COSS_API_KEY\`:

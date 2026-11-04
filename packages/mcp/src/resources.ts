@@ -9,7 +9,7 @@ import { type DocsOptions, docsOrigin } from "./tools/docs.ts";
 export const DOCS_INDEX_URI = "coss://docs/index";
 export const SETUP_URI = "coss://setup";
 
-/** The docs' index, `/llms.txt`: every page with a line about it. */
+/** The docs' index, `/llms.txt`: the guides, and where each product's API operations are. */
 export function registerDocsResources(server: McpServer, options: DocsOptions = {}): void {
   const origin = docsOrigin(options);
   const request = options.fetch ?? fetch;
@@ -19,7 +19,7 @@ export function registerDocsResources(server: McpServer, options: DocsOptions = 
     {
       title: "coss.com docs index",
       description:
-        "Every page of coss.com's docs (guides, SDKs, API reference) with a line about it. read_docs reads one.",
+        "coss.com's guides, and a link to each product's API operations. read_docs reads a page.",
       mimeType: "text/markdown",
     },
     async (uri) => {

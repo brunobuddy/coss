@@ -110,7 +110,9 @@ export function registerDocsTools(server: McpServer, options: DocsOptions = {}):
         query,
         results,
         ...(results.length === 0
-          ? { hint: `Nothing matched: try other words, or read ${origin}/llms.txt for every page.` }
+          ? {
+              hint: `Nothing matched: try other words, or read ${origin}/llms.txt for the guides and each product's API operations.`,
+            }
           : {}),
       });
     },

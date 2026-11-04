@@ -73,7 +73,7 @@ describe("coss … diagnose", () => {
     };
     const { code, io } = await diagnose(["verify", "diagnose", "vrf_1"], routes);
     expect(code).toBe(0);
-    expect(io.output()).toContain("ip.tor: The end user's IP address is a Tor exit node.");
+    expect(io.output()).toContain("ip.tor: The request came through Tor");
     expect(io.output()).toContain("`coss risk lists add allow <type> <value>`");
     const json = await diagnose(["verify", "diagnose", "vrf_1", "--json"], routes);
     expect(JSON.parse(json.io.output())).toMatchObject({
