@@ -289,7 +289,9 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
           ...(duration && duration !== session.event_type.duration_minutes
             ? { duration_minutes: duration }
             : {}),
-          ...(session.attendee_fixed ? {} : { attendee: { name, email, time_zone: timeZone } }),
+          ...(session.attendee_fixed
+            ? {}
+            : { attendee: { name, email, time_zone: timeZone, locale: navigator.language } }),
           ...(guestEmails.length > 0
             ? { guests: guestEmails.map((guest) => ({ email: guest })) }
             : {}),

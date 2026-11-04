@@ -3,6 +3,12 @@
 Hosts, availability, calendars and bookings. A native engine with no runtime dependency on Cal.com:
 pure logic (`engine/`) was ported from it with its test cases, and orchestration rewritten.
 
+## Languages
+
+What booking emails and texts say lives in `i18n.ts`, so adding a sentence means adding it to every catalog (the type
+fails otherwise). Only our words are translated, never a title or brand. Reply `STOP` stays in English in every
+language, since that's the keyword carriers act on. The hosted pages are still English only.
+
 ## The double-booking guarantee
 
 `scheduling_claim_no_overlap` (a custom migration: drizzle can't declare it) refuses two claims of a host that
