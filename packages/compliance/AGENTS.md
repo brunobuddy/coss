@@ -38,10 +38,14 @@ data limits apply to live environments only (`hipaaModeApplies`).
   admin's override can't turn it back on. `classifyContent` refuses;
   `assessmentContentScores` answers no scores, not degraded and uncharged; `hostedPageScreening` and
   `screenSetup` skip it.
-- **Mail through coss.com's organization** (Forms, Sign, Verify fallbacks): the row belongs to
-  coss.com, so screening's own check can't see it. Each sender passes `screeningExempt` when the
-  originating organization is in the mode. A new sender that can fall back to coss.com's environment
-  must do the same.
+- **Mail through coss.com's organization** (Forms, Sign, Verify and Scheduling fallbacks): the row
+  belongs to coss.com, so the mode's checks can't see it. Each sender passes `hipaaOrigin` when the
+  originating organization is in the mode (`email.hipaa_origin`): not screened, no stored content,
+  required TLS and never coss.com's dedicated pool, hidden from staff. A new sender that can fall
+  back to coss.com's environment must do the same.
+- **Turning it on while messages wait**: settings are snapshotted at acceptance, so they're read
+  again where they matter: `claimRouting` and `hipaaAtClaim` at the claim, and `purgeSendContent` and
+  `discardSmsBody` for a message that finishes without one (canceled, refused).
 - **SMS**: live messages to `HIPAA_SMS_COUNTRIES` only (checked at acceptance and again at dispatch),
   always `discardBody`. Verify's shared numbers are refused. Scheduling skips a number it can't text
   rather than retrying.
@@ -77,5 +81,7 @@ data limits apply to live environments only (`hipaaModeApplies`).
   process-wide and `organization_id` is only a tag some events carry (not worker loops, public form
   posts or traces), so it can't be guaranteed off per customer. Its row in `HIPAA_VENDORS` says
   `no_baa` until one is signed.
+- A push already being sent as the mode turns on can still reach Apple: organization and project
+  names only, in a window of milliseconds, before the customer has sent any PHI.
 - What `REQUIRE` does on a real send: AWS documents that SES drops the message, not whether an event
   follows. Without one, the recipient stays `sent`. Test it against a server without TLS.

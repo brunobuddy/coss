@@ -208,7 +208,104 @@ describe("turning HIPAA mode on", () => {
   });
 });
 
+describe("an email that finishes without being claimed", () => {
+  test("a scheduled email canceled after the mode turned on keeps no content", async () => {
+    const tenant = await createTestTenant();
+    const service = createEmailService({
+      linkKeys: DEVELOPMENT_LINK_KEYS,
+      liveProvider: new FakeEmailProvider({ log: false }),
+      sandboxProvider: new FakeEmailProvider({ log: false }),
+      queue: memoryDispatchQueue(),
+    });
+    const { email } = await service.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({
+        from: await verifiedFrom(tenant.organization.id),
+        subject: "Your biopsy results",
+        html: "<p>Results</p>",
+        scheduled_at: new Date(Date.now() + 86_400_000).toISOString(),
+      }),
+    });
+    await enableTestHipaaMode(tenant.organization.id);
+
+    await service.cancel({ ...liveEnv(tenant), emailId: email.id });
+
+    const stored = await getEmail({ ...liveEnv(tenant), id: email.id });
+    expect(stored?.status).toBe("canceled");
+    expect(stored?.subject).toBe("");
+    expect(stored?.html).toBeNull();
+    expect(stored?.content_storage.mode).toBe("discard");
+  });
+
+  test("other organizations' canceled emails keep theirs", async () => {
+    const tenant = await createTestTenant();
+    const service = createEmailService({
+      linkKeys: DEVELOPMENT_LINK_KEYS,
+      liveProvider: new FakeEmailProvider({ log: false }),
+      sandboxProvider: new FakeEmailProvider({ log: false }),
+      queue: memoryDispatchQueue(),
+    });
+    const { email } = await service.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({
+        from: await verifiedFrom(tenant.organization.id),
+        subject: "Welcome",
+        scheduled_at: new Date(Date.now() + 86_400_000).toISOString(),
+      }),
+    });
+
+    await service.cancel({ ...liveEnv(tenant), emailId: email.id });
+
+    const stored = await getEmail({ ...liveEnv(tenant), id: email.id });
+    expect(stored?.subject).toBe("Welcome");
+  });
+});
+
 describe("mail coss.com sends for an organization in HIPAA mode", () => {
+  test("stays off coss.com's own dedicated pool, which needn't require TLS", async () => {
+    const coss = await createTestTenant();
+    const organizationId = coss.organization.id;
+    const scope = { organizationIds: [organizationId] };
+    const dedicatedIps = new FakeDedicatedIpProvider();
+    const identity = new FakeIdentityProvider();
+    await ensureOrgTenant(organizationId, identity);
+    const deps = { dedicatedIps, identity };
+    await reconcileDedicatedIpPools({ entitled: [organizationId], scope }, deps);
+    await reconcileDedicatedIpPools({ entitled: [organizationId], scope }, deps);
+    const from = await verifiedFrom(organizationId);
+    const sentMessages: { dedicatedPool?: boolean; requireTls?: boolean }[] = [];
+    const inner = new FakeEmailProvider({ log: false });
+    const recording = {
+      name: inner.name,
+      send: async (message: Parameters<FakeEmailProvider["send"]>[0]) => {
+        sentMessages.push(message);
+        return inner.send(message);
+      },
+    } as unknown as FakeEmailProvider;
+    const service = dispatchingEmailService({
+      liveProvider: recording,
+      sandboxProvider: recording,
+    });
+
+    await service.send({
+      environment: sendEnvironment(coss.production),
+      apiKeyId: null,
+      params: params({ from }),
+    });
+    await service.send({
+      environment: sendEnvironment(coss.production),
+      apiKeyId: null,
+      params: params({ from, subject: "New submission" }),
+      hipaaOrigin: true,
+    });
+
+    expect(sentMessages[0]?.dedicatedPool).toBe(true);
+    expect(sentMessages[1]?.dedicatedPool).toBe(false);
+    expect(sentMessages[1]?.requireTls).toBe(true);
+  });
+
   async function sendAsCoss() {
     const coss = await createTestTenant();
     const { service, sent } = setup();

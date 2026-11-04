@@ -291,8 +291,12 @@ function claimRouting(row: EmailRow, provider: string, sandbox: boolean) {
     provider,
   });
   return {
-    dedicatedPool:
-      subaccountTenant === false ? pool : sql<boolean>`(not (${subaccountTenant}) and ${pool})`,
+    // Sent for another organization, so coss.com's own pool (which needn't require TLS) won't do.
+    dedicatedPool: row.hipaaOrigin
+      ? false
+      : subaccountTenant === false
+        ? pool
+        : sql<boolean>`(not (${subaccountTenant}) and ${pool})`,
     subaccountTenant,
     requireTls: hipaa,
     storeContent: sql<boolean>`(${email.storeContent} and not ${hipaa})`,

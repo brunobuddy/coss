@@ -132,6 +132,33 @@ describe("HIPAA mode", () => {
     expect(row?.body).toBe("");
   });
 
+  test("a scheduled message canceled after the mode turned on keeps no body", async () => {
+    const tenant = await createTestTenant();
+    const from = await liveSender(tenant);
+    const service = dispatchingSmsService();
+    const { sms: scheduled } = await service.send({
+      environment: env(tenant.production),
+      apiKeyId: null,
+      params: SendSmsRequest.parse({
+        from,
+        to: SMS_SIMULATOR.delivered,
+        body: "Your results",
+        scheduled_at: new Date(Date.now() + 86_400_000).toISOString(),
+      }),
+    });
+    await enableTestHipaaMode(tenant.organization.id);
+
+    await service.cancel({
+      organizationId: tenant.organization.id,
+      environmentId: tenant.production.id,
+      smsId: scheduled.id,
+    });
+
+    const [row] = await db.select().from(smsMessage).where(eq(smsMessage.id, scheduled.id));
+    expect(row?.status).toBe("canceled");
+    expect(row?.body).toBe("");
+  });
+
   test("sandbox environments reach no vendor, so they keep their text and any country", async () => {
     const tenant = await createTestTenant();
     await enableTestHipaaMode(tenant.organization.id);

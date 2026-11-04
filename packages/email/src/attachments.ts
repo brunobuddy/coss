@@ -6,6 +6,7 @@
  * is the whole content of one sent while its environment's content storage was `discard`.
  */
 import { createHash } from "node:crypto";
+import { hipaaModeAppliesSql } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { and, asc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import type { OutboundAttachment } from "./provider.ts";
@@ -100,13 +101,14 @@ export async function purgeSendContent(
       text: null,
       headers: {},
       variables: null,
+      storeContent: false,
       contentDiscardedAt: sql`now()`,
     })
     .where(
       and(
         eq(email.id, row.id),
         eq(email.organizationId, row.organizationId),
-        eq(email.storeContent, false),
+        or(eq(email.storeContent, false), hipaaModeAppliesSql(email.environmentId)),
         isNull(email.contentDiscardedAt),
       ),
     )

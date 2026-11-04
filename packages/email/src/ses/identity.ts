@@ -116,7 +116,7 @@ export class SesIdentityProvider implements IdentityProvider {
       if (!isSesError(error, "NotFoundException") && !isSesError(error, "AccessDeniedException")) {
         throw error;
       }
-      console.warn(`[email:ses] ${tenantName} has no required-TLS set yet: run ses:bootstrap.`);
+      console.error(`[email:ses] ${tenantName} has no required-TLS set: run ses:bootstrap.`);
     }
     return { tenantName, tenantArn };
   }

@@ -85,6 +85,14 @@ export function hipaaModeSql(organizationId: unknown) {
   return sql<boolean>`exists (select 1 from organization_hipaa_mode h where h.organization_id = ${organizationId})`;
 }
 
+/**
+ * SQL for `hipaaModeApplies`, for what ends a message. A message can finish without ever being
+ * claimed (canceled, refused), so the mode must also be read where its content is cleared.
+ */
+export function hipaaModeAppliesSql(environmentId: unknown) {
+  return sql<boolean>`exists (select 1 from environment e join organization_hipaa_mode h on h.organization_id = e.organization_id where e.id = ${environmentId} and e.mode = 'live')`;
+}
+
 export type HipaaImpact = {
   membersWithoutTwoFactor: number;
   liveEnvironmentsTracking: number;
