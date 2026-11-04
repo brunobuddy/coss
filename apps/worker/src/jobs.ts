@@ -124,7 +124,7 @@ import {
 import { reportDispatchBacklog } from "./backlog.ts";
 import { pollSesInbound, type SesInboundDeps } from "./inbound.ts";
 import type { Loop } from "./loop.ts";
-import { startLoop } from "./loop.ts";
+import { startLoop, watchLoops } from "./loop.ts";
 import { NOTIFICATION_KINDS } from "./notification-kinds.ts";
 import { runRetention } from "./retention.ts";
 import { pollSesEvents, type SqsApi } from "./sqs.ts";
@@ -949,5 +949,6 @@ export function startJobs(deps: WorkerDeps): Loop[] {
       }),
     );
   }
-  return loops.filter((loop): loop is Loop => loop !== null);
+  const running = loops.filter((loop): loop is Loop => loop !== null);
+  return running.length > 0 ? [...running, watchLoops(running)] : [];
 }
