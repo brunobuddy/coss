@@ -6,8 +6,12 @@ icon: Otp
 
 `coss.verify` sends a one-time code to a phone number (SMS) or an email address and checks the
 code the person typed. coss.com makes the code, sends it, keeps only a keyed hash of it, counts
-the attempts and expires it; your backend makes two calls. SMS codes go from coss.com's own
-numbers unless you choose one of yours, so there is nothing to register first.
+the attempts and expires it; your backend makes two calls.
+
+Sandbox keys and email codes work right away. Live SMS codes need a
+[sender](/docs/verify/sms#which-number-sends-it): while coss.com's shared numbers roll out, set one of
+your registered numbers in Verify's settings, or the call fails with
+`503 shared_sender_unavailable`.
 
 ```ts twoslash
 import { Coss } from "coss";
@@ -65,16 +69,16 @@ of its verified domains; restricted keys need the `verify:update` permission.
 
 ## Pricing
 
-You pay per **approved** verification, plus the channel: an SMS from coss.com's numbers is billed
-at the SMS price of its country (`verify.sms`), one from your own number as any SMS, and email
-costs nothing extra. Verifications that are blocked, fail or expire cost only the messages
+You pay per **approved** verification, plus the channel: an SMS from your own number is billed as
+any SMS, one from coss.com's shared numbers at the SMS price of its country (`verify.sms`), and
+email costs nothing extra. Verifications that are blocked, fail or expire cost only the messages
 actually sent. See [pricing](/pricing).
 
 ## What's in it
 
 <Cards>
   <Card title="SMS codes" href="/docs/verify/sms">
-    coss.com's shared numbers or your own, countries and opt-outs.
+    Your own number or coss.com's shared numbers, countries and opt-outs.
   </Card>
   <Card title="Email codes" href="/docs/verify/email">
     Your own sender or coss.com's, and what the email says.
