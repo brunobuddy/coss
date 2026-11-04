@@ -14,13 +14,14 @@ import {
   enqueueWebhookMessage,
   type SecretsKeyRing,
 } from "@coss/webhooks";
-import { and, asc, eq, inArray, lt, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, lt, ne, sql } from "drizzle-orm";
 import type { Interval } from "../engine/intervals.ts";
 import { SchedulingError } from "../errors.ts";
 import { resolveHost } from "../hosts.ts";
 import type { SchedulingCalendarWebhookEventType } from "../webhook-types.ts";
 import { caldavCalendarClient, type DavTransport, pinnedDavTransport } from "./caldav.ts";
 import { type CalendarClient, CalendarError, type HttpFetch } from "./client.ts";
+import { NEUTRAL_EVENT } from "./details.ts";
 import { googleCalendarClient } from "./google.ts";
 import { microsoftCalendarClient } from "./microsoft.ts";
 import {
@@ -40,6 +41,7 @@ const {
   schedulingBusyInterval,
   schedulingCalendar,
   schedulingCalendarConnection,
+  schedulingCalendarEvent,
   schedulingHost,
   schedulingOauthState,
   schedulingNotification,
@@ -71,6 +73,8 @@ export type CalendarDeps = {
 
 type CaldavCredentials = { url: string; username: string; password: string };
 const OAUTH_STATE_TTL_MS = 10 * 60_000;
+const SCRUB_MAX_EVENTS = 200;
+const SCRUB_BUDGET_MS = 15_000;
 const REFRESH_MARGIN_MS = 2 * 60_000;
 const REQUEST_TIMEOUT_MS = 30_000;
 // Past a year: a weekly series of 52 has to fit, or its last occurrences couldn't be verified.
@@ -853,7 +857,54 @@ export async function refreshIdleZoomConnections(
 }
 
 /** Best effort at the provider: leaving is never blocked by one being down. */
+/**
+ * Details come off events while there's still access to them, newest first and within a budget, so
+ * disconnecting stays quick. Best effort: whatever's left, like everything on a calendar whose
+ * access the host revoked at the provider, is out of coss.com's reach.
+ */
+async function scrubDetailedEvents(connection: ConnectionRow, deps: CalendarDeps): Promise<void> {
+  if (connection.status !== "active") return;
+  const rows = await db
+    .select({ event: schedulingCalendarEvent, calendarId: schedulingCalendar.externalId })
+    .from(schedulingCalendarEvent)
+    .innerJoin(schedulingCalendar, eq(schedulingCalendar.id, schedulingCalendarEvent.calendarId))
+    .where(
+      and(
+        eq(schedulingCalendar.connectionId, connection.id),
+        eq(schedulingCalendarEvent.organizationId, connection.organizationId),
+        eq(schedulingCalendarEvent.detailsWritten, true),
+        eq(schedulingCalendarEvent.desiredState, "present"),
+        isNotNull(schedulingCalendarEvent.providerEventId),
+      ),
+    )
+    .orderBy(desc(schedulingCalendarEvent.desiredEnd))
+    .limit(SCRUB_MAX_EVENTS);
+  if (rows.length === 0) return;
+  const deadline = Date.now() + SCRUB_BUDGET_MS;
+  try {
+    const client = await clientFor(connection, deps);
+    for (const { event, calendarId } of rows) {
+      if (Date.now() > deadline) return;
+      await client
+        .updateEvent(calendarId, event.providerEventId as string, {
+          key: event.providerEventId as string,
+          ...NEUTRAL_EVENT,
+          startMs: event.desiredStart.getTime(),
+          endMs: event.desiredEnd.getTime(),
+          conference: null,
+          location: null,
+        })
+        .catch((error) => {
+          if (!(error instanceof CalendarError)) throw error;
+        });
+    }
+  } catch (error) {
+    if (!(error instanceof CalendarError)) throw error;
+  }
+}
+
 async function releaseConnection(connection: ConnectionRow, deps: CalendarDeps): Promise<void> {
+  await scrubDetailedEvents(connection, deps);
   if (connection.provider === "simulated" || connection.provider === "caldav") return;
   const calendars = await db
     .select()

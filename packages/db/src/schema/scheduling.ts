@@ -777,8 +777,8 @@ export const schedulingCalendarEvent = pgTable(
     appliedVersion: integer("applied_version").notNull().default(0),
     providerEventId: text("provider_event_id"),
     externalState: schedulingExternalState("external_state").notNull().default("in_sync"),
-    // The provider may hold someone's details: set before such a write is sent, cleared only after
-    // one without them. Erasing someone rewrites these rows.
+    // The provider's copy may say more than "Appointment": set before such a write is sent, cleared
+    // only after a neutral one. Erasing someone and enabling HIPAA mode rewrite these rows.
     detailsWritten: boolean("details_written").notNull().default(false),
     nextAttemptAt: instant("next_attempt_at").notNull().defaultNow(),
     leaseUntil: instant("lease_until"),
@@ -882,6 +882,8 @@ export const schedulingSession = pgTable(
     encryptedAttributes: text("encrypted_attributes"),
     // The fixed identity's `uid`, in the clear like `scheduling_attendee.uid`: how erasure finds it.
     attendeeUid: text("attendee_uid"),
+    // The fixed identity's address as `scheduling_attendee.email_hmac`, for erasing someone by it.
+    attendeeEmailHmac: text("attendee_email_hmac"),
     readOnly: boolean("read_only").notNull().default(false),
     apiKeyId: text("api_key_id"),
     createdByUserId: text("created_by_user_id"),
@@ -913,6 +915,9 @@ export const schedulingSession = pgTable(
     unique("scheduling_session_token_hash_unique").on(t.tokenHash),
     index("scheduling_session_expires_at_idx").on(t.expiresAt),
     index("scheduling_session_booking_idx").on(t.bookingId),
+    index("scheduling_session_attendee_email_idx")
+      .on(t.environmentId, t.attendeeEmailHmac)
+      .where(sql`attendee_email_hmac is not null`),
     index("scheduling_session_attendee_uid_idx")
       .on(t.environmentId, t.attendeeUid)
       .where(sql`${t.attendeeUid} IS NOT NULL`),

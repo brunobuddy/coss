@@ -1,5 +1,5 @@
 {
-  "id": "45b9a392-048c-41be-92b1-43409c89fc58",
+  "id": "e8584e53-7e9b-4c09-be26-9c61900087c3",
   "prevId": "05854061-63ad-4a3c-b76c-02b6f4a74d47",
   "version": "7",
   "dialect": "postgresql",
@@ -24336,6 +24336,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "attendee_email_hmac": {
+          "name": "attendee_email_hmac",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "read_only": {
           "name": "read_only",
           "type": "boolean",
@@ -24402,6 +24408,28 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scheduling_session_attendee_email_idx": {
+          "name": "scheduling_session_attendee_email_idx",
+          "columns": [
+            {
+              "expression": "environment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "attendee_email_hmac",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "attendee_email_hmac is not null",
           "concurrently": false,
           "method": "btree",
           "with": {}

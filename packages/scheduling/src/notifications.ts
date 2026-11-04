@@ -233,6 +233,8 @@ export type SchedulingEmail = {
   /** Inline in `html`, so it goes only with that, never with `cossHtml`. */
   logo: { filename: string; content: string; contentType: string; contentId: string } | null;
   idempotencyKey: string;
+  /** To someone who asked for nothing: goes from the customer's own address or not at all. */
+  ownSenderOnly: boolean;
 };
 
 export type SchedulingSms = {
@@ -544,6 +546,7 @@ async function sendBookingEmail(
         ics: withIcs ? ics({ name: contact.name, email: contact.email }) : null,
         logo: message.logo,
         idempotencyKey: `${key}:${attendee.id}`,
+        ownSenderOnly: guest,
       });
       sent = true;
     }
@@ -597,6 +600,7 @@ async function sendBookingEmail(
       ics: withIcs ? ics({ name: host.name, email: host.email }) : null,
       logo: message.logo,
       idempotencyKey: `${key}:${host.id}`,
+      ownSenderOnly: false,
     });
     sent = true;
   }
@@ -695,6 +699,7 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
     ics: null,
     logo: message.logo,
     idempotencyKey: `scheduling:${row.id}`,
+    ownSenderOnly: false,
   });
   return "sent";
 }

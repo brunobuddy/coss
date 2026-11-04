@@ -39,7 +39,10 @@ export function hostEventText(title: string, people: readonly Person[]): HostEve
   };
 }
 
-/** Asks for these bookings' events to be written again, wherever they may hold someone's details. */
+/**
+ * Asks for these bookings' events to be written again, wherever they may hold someone's details.
+ * Call it after changing the attendee rows, in the same transaction: see `detailsToSend`.
+ */
 export async function rewriteDetailedEvents(
   tx: Executor,
   scope: { organizationId: string },

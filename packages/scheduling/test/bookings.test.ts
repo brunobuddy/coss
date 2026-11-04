@@ -1498,6 +1498,27 @@ describe("guests", () => {
     expect(after.attendees[1]).toMatchObject({ role: "guest", email: null, name: null });
   });
 
+  test("an address ends a session fixed to it, even with no uid and no booking", async () => {
+    const { env, eventType } = await allowing(0);
+    const session = await createBookerSession(
+      env,
+      {
+        eventType: eventType.id,
+        attendee: { email: "kai@example.com", time_zone: "UTC" },
+        publicUrl: null,
+      },
+      deps,
+    );
+    expect(await eraseAttendeeByEmail(env, { email: "KAI@example.com" }, deps)).toBe(0);
+    const [row] = await db
+      .select()
+      .from(schema.schedulingSession)
+      .where(eq(schema.schedulingSession.id, session.id));
+    expect(row?.revokedAt).not.toBeNull();
+    expect(row?.encryptedAttendee).toBeNull();
+    expect(row?.attendeeEmailHmac).toBeNull();
+  });
+
   test("an address ends a booker session fixed to the person it finds", async () => {
     const { env, eventType } = await allowing(0);
     await createBooking(env, request(eventType.id, []), deps, actor);

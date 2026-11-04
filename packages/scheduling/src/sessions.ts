@@ -11,6 +11,7 @@ import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { withoutTrailingSlashes } from "@coss/db/url";
 import { decryptSecret, encryptSecret } from "@coss/webhooks";
 import { and, eq, isNull, sql } from "drizzle-orm";
+import { emailLookup } from "./attendees.ts";
 import type { BookingActor } from "./bookings.ts";
 import { SchedulingError } from "./errors.ts";
 import { resolveEventType } from "./event-types.ts";
@@ -56,6 +57,7 @@ type MintInput = {
   encryptedAttendee?: string | null;
   encryptedAttributes?: string | null;
   attendeeUid?: string | null;
+  attendeeEmailHmac?: string | null;
   readOnly?: boolean;
   apiKeyId?: string | null;
   createdByUserId?: string | null;
@@ -79,6 +81,7 @@ async function mint(input: MintInput): Promise<Created> {
     encryptedAttendee: input.encryptedAttendee ?? null,
     encryptedAttributes: input.encryptedAttributes ?? null,
     attendeeUid: input.attendeeUid ?? null,
+    attendeeEmailHmac: input.attendeeEmailHmac ?? null,
     readOnly: input.readOnly ?? false,
     apiKeyId: input.apiKeyId ?? null,
     createdByUserId: input.createdByUserId ?? null,
@@ -141,7 +144,7 @@ export async function createBookerSession(
     publicUrl: string | null;
     now?: Date;
   },
-  deps: Pick<SchedulingDeps, "dataKeys">,
+  deps: Pick<SchedulingDeps, "dataKeys" | "lookupKey">,
 ): Promise<Created> {
   const eventType = await resolveEventType(db, env, input.eventType);
   const host = input.host ? await resolveHost(db, env, input.host) : null;
@@ -157,6 +160,7 @@ export async function createBookerSession(
       ? encryptSecret(JSON.stringify(input.attributes), deps.dataKeys)
       : null,
     attendeeUid: input.attendee?.uid ?? null,
+    attendeeEmailHmac: input.attendee?.email ? emailLookup(input.attendee.email, deps) : null,
     apiKeyId: input.apiKeyId ?? null,
     expiresAt: expiry(input.now ?? new Date(), input.expiresIn, BOOKER_DEFAULT_SECONDS),
     publicUrl: input.publicUrl,

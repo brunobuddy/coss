@@ -448,6 +448,12 @@ describe("a group session on a calendar", () => {
     const [event] = c.shown();
     expect(event?.title).toBe("Yoga");
     expect(event?.description).toBeUndefined();
+    // Marked all the same: HIPAA mode has to find a title like this to take it off.
+    const [row] = await db
+      .select({ detailsWritten: schema.schedulingCalendarEvent.detailsWritten })
+      .from(schema.schedulingCalendarEvent)
+      .where(eq(schema.schedulingCalendarEvent.hostId, c.host.id));
+    expect(row?.detailsWritten).toBe(true);
   });
 
   test("direct seats share one event and one Meet link", async () => {

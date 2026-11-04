@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { HipaaModeError } from "@coss/compliance";
 import { enableTestHipaaMode } from "@coss/compliance/testing";
@@ -615,7 +615,7 @@ describe("writing to calendars", () => {
       expect(w.event()?.description).toBe("Guest: Jo Park, jo@example.com");
     });
 
-    test("erasing everyone clears the description and the row's mark", async () => {
+    test("erasing everyone clears the description", async () => {
       const w = await detailed();
       await w.bookIt();
       await w.write();
@@ -624,7 +624,128 @@ describe("writing to calendars", () => {
       await w.write();
       expect(w.event()?.title).toBe("Intro call");
       expect(w.event()?.description).toBe("");
-      expect((await w.ledger()).detailsWritten).toBe(false);
+    });
+
+    test("a write waits for an erasure that hasn't committed, and sends nothing of it", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      let finishWrite: Promise<number> | undefined;
+      await db.transaction(async (tx) => {
+        await tx
+          .update(schema.schedulingAttendee)
+          .set({ encryptedContact: null, emailHmac: null, uid: null, redactedAt: NOW })
+          .where(eq(schema.schedulingAttendee.environmentId, w.env.environmentId));
+        finishWrite = w.write();
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        // The event isn't written while the erasure is open, whatever the row's mark says yet.
+        expect(w.event()).toBeUndefined();
+      });
+      await finishWrite;
+      expect(w.event()?.title).toBe("Intro call");
+      expect(w.event()?.description ?? "").toBe("");
+    });
+
+    test("a write waits for HIPAA mode being turned on, and stays neutral", async () => {
+      const w = await detailed("live");
+      await w.bookIt();
+      let finishWrite: Promise<number> | undefined;
+      await db.transaction(async (tx) => {
+        await tx
+          .update(schema.organization)
+          .set({ requireTwoFactor: true })
+          .where(eq(schema.organization.id, w.env.organizationId));
+        finishWrite = w.write();
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        expect(w.event()).toBeUndefined();
+        await tx.insert(schema.organizationHipaaMode).values({
+          organizationId: w.env.organizationId,
+          baaSignedAt: NOW,
+          baaReference: "BAA-1",
+          enabledByUserId: (await createTestUser()).id,
+        });
+      });
+      await finishWrite;
+      expect(w.event()?.title).toBe("Appointment");
+      expect(JSON.stringify(w.event())).not.toContain("Sam");
+    });
+
+    test("a stale writer's details don't survive the rewrite that follows", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      let stolen = false;
+      const stale: CalendarWriteDeps = {
+        ...w.deps,
+        fetcher: async (url, init) => {
+          const answer = await w.api.fetch(url, init);
+          if (!stolen && init?.method === "POST" && url.includes("/events")) {
+            stolen = true;
+            // Another worker took the row over and went neutral while this request was out.
+            await updateEventType(w.env, w.eventType.id, { host_calendar_details: "neutral" });
+            await db
+              .update(schema.schedulingCalendarEvent)
+              .set({
+                leaseUntil: new Date(NOW.getTime() + 3_600_000),
+                detailsWritten: false,
+              })
+              .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
+          }
+          return answer;
+        },
+      };
+      await runDueCalendarWrites(stale, { scope: scope(w.env) });
+      expect(stolen).toBe(true);
+      expect((await w.ledger()).detailsWritten).toBe(true);
+      await db
+        .update(schema.schedulingCalendarEvent)
+        .set({ leaseUntil: null, nextAttemptAt: NOW })
+        .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
+      await w.write();
+      expect(w.event()?.title).toBe("Appointment");
+      expect(w.event()?.description).toBe("");
+    });
+
+    test("taking details off isn't given up on, however often the provider refuses", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      await eraseAttendee(w.env, { uid: "sam" });
+      await eraseAttendeeByEmail(w.env, { email: "jo@example.com" }, w.plain);
+      const refused: CalendarWriteDeps = {
+        ...w.deps,
+        fetcher: async (url, init) =>
+          init?.method === "PATCH"
+            ? Response.json({ error: { errors: [{ reason: "forbidden" }] } }, { status: 400 })
+            : w.api.fetch(url, init),
+      };
+      const logged = spyOn(console, "error").mockImplementation(() => {});
+      for (let round = 0; round < 10; round++) {
+        await db
+          .update(schema.schedulingCalendarEvent)
+          .set({ nextAttemptAt: NOW, leaseUntil: null })
+          .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
+        await runDueCalendarWrites(refused, { scope: scope(w.env) });
+      }
+      logged.mockRestore();
+      const row = await w.ledger();
+      expect(row.appliedVersion).toBeLessThan(row.desiredVersion);
+      expect(row.detailsWritten).toBe(true);
+      expect(row.attempts).toBe(10);
+      await db
+        .update(schema.schedulingCalendarEvent)
+        .set({ nextAttemptAt: NOW })
+        .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
+      await w.write();
+      expect(w.event()?.description).toBe("");
+    });
+
+    test("disconnecting takes details off before access goes", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      const [connection] = await listConnections(w.env, w.host.id);
+      await disconnectCalendar(w.env, w.host.id, connection?.id as string, w.deps);
+      expect(w.event()?.title).toBe("Appointment");
+      expect(w.event()?.description).toBe("");
     });
 
     test("an erasure while a write is in flight still gets another write", async () => {

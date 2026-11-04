@@ -28,6 +28,7 @@ const {
   schedulingCalendarEvent,
   schedulingEventType,
   schedulingGroupSession,
+  organization,
 } = schema;
 
 /** Writing events can put an attendee's details on them, so the worker's data keys are needed. */
@@ -133,11 +134,15 @@ async function finish(
   return Boolean(updated);
 }
 
-/** The lost request may land after the newest write, so the row is written once more. */
-async function redrive(row: LedgerRow, now: Date): Promise<void> {
+/**
+ * The lost request may land after the newest write, so the row is written once more. If it carried
+ * details, the row is marked again, or a neutral rewrite would leave them in the description.
+ */
+async function redrive(row: LedgerRow, now: Date, carriedDetails: boolean): Promise<void> {
   await db
     .update(schedulingCalendarEvent)
     .set({
+      ...(carriedDetails ? { detailsWritten: true } : {}),
       desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
       nextAttemptAt: now,
       attempts: 0,
@@ -347,13 +352,13 @@ export async function announce(
   ]);
 }
 
-/** Whether this row's event may name people, and what it's called if so. Null: it stays neutral. */
-async function detailedEvent(
+/** The title this row's event would have with details on. Null: its event type wants it neutral. */
+async function detailedTitle(
   row: LedgerRow,
   booking: BookingRow | undefined,
   session: SessionRow | undefined,
   connection: typeof schedulingCalendarConnection.$inferSelect,
-): Promise<{ title: string } | null> {
+): Promise<string | null> {
   // A Zoom meeting's topic is shown to whoever joins it.
   if (connection.provider === "zoom") return null;
   const eventTypeId = session?.eventTypeId ?? booking?.eventTypeId;
@@ -371,35 +376,59 @@ async function detailedEvent(
       ),
     );
   if (eventType?.details !== "full") return null;
-  // Read at each write: turning the mode on stops details from going out, whatever's configured.
-  if (await hipaaModeApplies(row.environmentId)) return null;
-  return { title: booking?.title ?? eventType.title };
+  return booking?.title ?? eventType.title;
 }
 
 /**
- * Must run after the row is marked: an erasure commits either before this reads (nothing to write)
- * or after the mark (and asks for another write), so details can't outlive it unnoticed.
+ * What the event may say, decided against anything that could take details away while it's sent.
+ * The row is marked in the same transaction, and the row locks make both orders safe. An erasure
+ * holds its attendee rows while it asks for a rewrite of marked events, and enabling HIPAA mode
+ * holds the organization's row while it does the same. So they either commit first, and these
+ * locks wait and then read what they left, or wait for this to commit and see its mark. A plain
+ * read wouldn't wait: it would see the old details with an uncommitted erasure's rewrite missed.
  */
-async function textOfBooking(
-  booking: BookingRow,
+async function detailsToSend(
+  row: LedgerRow,
+  booking: BookingRow | undefined,
   title: string,
   deps: CalendarWriteDeps,
-): Promise<HostEventText> {
-  const attendees = await db
-    .select()
-    .from(schedulingAttendee)
-    .where(
-      and(
-        eq(schedulingAttendee.bookingId, booking.id),
-        eq(schedulingAttendee.organizationId, booking.organizationId),
-      ),
-    )
-    .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id));
-  const people = attendees.map((attendee) => ({
-    role: attendee.role,
-    ...decryptContact(attendee.encryptedContact, deps),
-  }));
-  return hostEventText(title, people);
+): Promise<HostEventText | null> {
+  return db.transaction(async (tx) => {
+    if (!row.detailsWritten) {
+      const [marked] = await tx
+        .update(schedulingCalendarEvent)
+        .set({ detailsWritten: true })
+        .where(stillHeld(row))
+        .returning({ id: schedulingCalendarEvent.id });
+      if (!marked) return null;
+    }
+    await tx
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.id, row.organizationId))
+      .for("share");
+    if (await hipaaModeApplies(row.environmentId, tx)) return NEUTRAL_EVENT;
+    // A group session's seats come and go without a write, so its event names nobody.
+    if (!booking) return { title, description: null };
+    const attendees = await tx
+      .select()
+      .from(schedulingAttendee)
+      .where(
+        and(
+          eq(schedulingAttendee.bookingId, booking.id),
+          eq(schedulingAttendee.organizationId, booking.organizationId),
+        ),
+      )
+      .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id))
+      .for("share");
+    return hostEventText(
+      title,
+      attendees.map((attendee) => ({
+        role: attendee.role,
+        ...decryptContact(attendee.encryptedContact, deps),
+      })),
+    );
+  });
 }
 
 async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<void> {
@@ -445,9 +474,12 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
     return;
   }
   let sent = false;
+  let carriedDetails = false;
+  // Taking details off an event isn't something to give up on: they'd stay on a provider for good.
+  let removingDetails = false;
   const settle = async (set: Parameters<typeof finish>[1]): Promise<boolean> => {
     const finished = await finish(row, set);
-    if (!finished && sent) await redrive(row, now);
+    if (!finished && sent) await redrive(row, now, carriedDetails);
     return finished;
   };
   try {
@@ -466,28 +498,18 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
       });
       return;
     }
-    const detailed = await detailedEvent(row, booking, session, connection);
-    let text: HostEventText = detailed
-      ? { title: detailed.title, description: null }
-      : NEUTRAL_EVENT;
-    if (detailed && booking) {
-      if (!row.detailsWritten) {
-        const [marked] = await db
-          .update(schedulingCalendarEvent)
-          .set({ detailsWritten: true })
-          .where(stillHeld(row))
-          .returning({ id: schedulingCalendarEvent.id });
-        if (!marked) return;
-        row.detailsWritten = true;
-      }
-      text = await textOfBooking(booking, detailed.title, deps);
-    }
+    const held = row.detailsWritten;
+    const title = await detailedTitle(row, booking, session, connection);
+    const text = title ? await detailsToSend(row, booking, title, deps) : NEUTRAL_EVENT;
+    if (!text) return;
+    carriedDetails = text !== NEUTRAL_EVENT;
+    removingDetails = held && !text.description && (!title || !session);
     sent = true;
     const event: CalendarEventWrite = {
       key: eventKey(row),
       title: text.title,
       // An event that never held details keeps whatever the host wrote on it.
-      ...(text.description || row.detailsWritten ? { description: text.description } : {}),
+      ...(text.description || held ? { description: text.description } : {}),
       startMs: row.desiredStart.getTime(),
       endMs: row.desiredEnd.getTime(),
       conference: conferenceOf(location),
@@ -499,7 +521,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
     const finished = await settle({
       appliedVersion: row.desiredVersion,
       providerEventId: written.providerEventId,
-      detailsWritten: Boolean(text.description),
+      detailsWritten: carriedDetails,
       attempts: 0,
       lastErrorCode: null,
       externalState: "in_sync",
@@ -526,6 +548,30 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
       return;
     }
     const attempts = row.attempts + 1;
+    if (removingDetails) {
+      if (error.status === 404 || error.status === 410) {
+        await settle({
+          appliedVersion: row.desiredVersion,
+          providerEventId: null,
+          detailsWritten: false,
+          attempts: 0,
+          lastErrorCode: null,
+        });
+        return;
+      }
+      if (attempts === MAX_ATTEMPTS) {
+        console.error(
+          `[scheduling] can't take details off calendar event ${row.id}, still trying:`,
+          error.code,
+        );
+      }
+      await settle({
+        attempts,
+        lastErrorCode: error.code,
+        nextAttemptAt: new Date(now.getTime() + backoffMs(attempts)),
+      });
+      return;
+    }
     const exhausted = error.kind === "permanent" || attempts >= MAX_ATTEMPTS;
     if (exhausted) {
       // Given up on this version: the booking stands, and the customer knows.
@@ -541,7 +587,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
           .where(stillHeld(row))
           .returning({ id: schedulingCalendarEvent.id });
         if (!updated) return false;
-        // Rewriting a past event, to take someone's details off it, is nobody's news if it fails.
+        // A past event that can't be rewritten is nobody's news.
         if (row.desiredEnd <= now) return true;
         for (const about of await bookingsOfRow(tx, row)) {
           await announce(
@@ -554,7 +600,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
         }
         return true;
       });
-      if (!gaveUp && sent) await redrive(row, now);
+      if (!gaveUp && sent) await redrive(row, now, carriedDetails);
       return;
     }
     await settle({

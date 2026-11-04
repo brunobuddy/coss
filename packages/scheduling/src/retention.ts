@@ -93,6 +93,10 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
       .for("update");
     if (locked.length === 0) return 0;
     const ids = locked.map((row) => row.id);
+    await tx
+      .update(schedulingAttendee)
+      .set({ ...REDACTED, redactedAt: now })
+      .where(inArray(schedulingAttendee.bookingId, ids));
     const organizationIds = [...new Set(locked.map((row) => row.organizationId))];
     for (const organizationId of organizationIds) {
       await rewriteDetailedEvents(
@@ -102,10 +106,6 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
         now,
       );
     }
-    await tx
-      .update(schedulingAttendee)
-      .set({ ...REDACTED, redactedAt: now })
-      .where(inArray(schedulingAttendee.bookingId, ids));
     await tx
       .update(schedulingBooking)
       .set({ metadata: {}, location: null, redactedAt: now })
@@ -213,7 +213,11 @@ export async function purgeSchedulingLeftovers(opts: PurgeOptions = {}): Promise
 
 type Scope = Pick<SchedulingEnvironment, "organizationId" | "environmentId">;
 
-async function eraseMatching(scope: Scope, matching: SQL, knownUid?: string): Promise<number> {
+async function eraseMatching(
+  scope: Scope,
+  matching: SQL,
+  fixedSessions: { uid?: string; emailHmac?: string },
+): Promise<number> {
   return db.transaction(async (tx) => {
     const now = new Date();
     const where = and(
@@ -234,21 +238,28 @@ async function eraseMatching(scope: Scope, matching: SQL, knownUid?: string): Pr
       .returning({ bookingId: schedulingAttendee.bookingId });
     await rewriteDetailedEvents(tx, scope, [...new Set(erased.map((row) => row.bookingId))], now);
     const uids = new Set(matched.flatMap((row) => (row.uid ? [row.uid] : [])));
-    if (knownUid) uids.add(knownUid);
-    if (uids.size > 0) {
+    if (fixedSessions.uid) uids.add(fixedSessions.uid);
+    const sessionMatches = [
+      ...(uids.size > 0 ? [inArray(schedulingSession.attendeeUid, [...uids])] : []),
+      ...(fixedSessions.emailHmac
+        ? [eq(schedulingSession.attendeeEmailHmac, fixedSessions.emailHmac)]
+        : []),
+    ];
+    if (sessionMatches.length > 0) {
       await tx
         .update(schedulingSession)
         .set({
           encryptedAttendee: null,
           encryptedAttributes: null,
           attendeeUid: null,
+          attendeeEmailHmac: null,
           revokedAt: sql`coalesce(${schedulingSession.revokedAt}, ${now.toISOString()}::timestamptz)`,
         })
         .where(
           and(
             eq(schedulingSession.organizationId, scope.organizationId),
             eq(schedulingSession.environmentId, scope.environmentId),
-            inArray(schedulingSession.attendeeUid, [...uids]),
+            or(...sessionMatches),
           ),
         );
     }
@@ -262,7 +273,7 @@ async function eraseMatching(scope: Scope, matching: SQL, knownUid?: string): Pr
  * its identity it would let the browser book as anyone.
  */
 export async function eraseAttendee(scope: Scope, input: { uid: string }): Promise<number> {
-  return eraseMatching(scope, eq(schedulingAttendee.uid, input.uid), input.uid);
+  return eraseMatching(scope, eq(schedulingAttendee.uid, input.uid), { uid: input.uid });
 }
 
 /** The same for someone known only by their address, which is all there is of a guest. */
@@ -271,5 +282,6 @@ export async function eraseAttendeeByEmail(
   input: { email: string },
   keys: Pick<SchedulingDeps, "lookupKey">,
 ): Promise<number> {
-  return eraseMatching(scope, eq(schedulingAttendee.emailHmac, emailLookup(input.email, keys)));
+  const emailHmac = emailLookup(input.email, keys);
+  return eraseMatching(scope, eq(schedulingAttendee.emailHmac, emailHmac), { emailHmac });
 }
