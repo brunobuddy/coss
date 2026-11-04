@@ -34,6 +34,7 @@ mock.module("@/lib/scheduling", () => ({
     lookupKey: Buffer.alloc(32),
     screenSetup: async () => {},
   }),
+  schedulingCalendarDeps: () => ({}),
   schedulingUrl: () => "https://cossbook.test",
 }));
 

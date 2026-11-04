@@ -86,6 +86,8 @@ export const SEARCH_KEYWORDS: Readonly<Record<string, string>> = {
   "/docs/sign/embedded-signing": "embed signing page iframe",
   "/docs/forms": "form endpoint form backend contact form spam",
   "/docs/scheduling": "booking appointment availability slots calendar",
+  "/docs/scheduling/calendars": "connect google calendar outlook microsoft apple icloud",
+  "/docs/scheduling/delegation": "domain-wide delegation service account organization-wide",
   "/docs/inboxes": "email address for an agent",
   "/docs/hooks": "send webhooks to customers users outbound webhooks as a service",
   "/docs/risk": "fraud abuse disposable email fake signups",
