@@ -371,6 +371,12 @@ export async function updateCalendarDelegation(
     if (result === "inconclusive") {
       throw new SchedulingError("calendar_unavailable", "The provider didn't answer. Try again.");
     }
+    if (result === "unreached") {
+      throw new SchedulingError(
+        "calendar_delegation_refused",
+        "None of this delegation's mailboxes could be reached to try these credentials on. Add a host with a real mailbox on the domain, or delete this delegation and add it again.",
+      );
+    }
   }
   const [row] = await db
     .update(schedulingCalendarDelegation)

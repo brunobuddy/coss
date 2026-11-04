@@ -1479,6 +1479,30 @@ describe("losing access", () => {
     expect(await listConnections(env, ben.id)).toMatchObject([{ status: "active" }]);
   });
 
+  test("with every mailbox gone, nothing vouches for credentials or ends an outage", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    await hostOn(env, "ana");
+    const delegation = await activeGoogle(env, deps);
+    await run(env, deps);
+    api.goneMailboxes.add(`boss@${DOMAIN}`);
+    api.goneMailboxes.add(`ana@${DOMAIN}`);
+    expect(
+      await code(
+        updateCalendarDelegation(env, delegation.id, { service_account_key: account.key }, deps),
+      ),
+    ).toBe("calendar_delegation_refused");
+    await markDelegationFailing(
+      { id: delegation.id, organizationId: env.organizationId },
+      "unauthorized_client",
+      { now: () => NOW },
+    );
+    await dueNow(delegation.id);
+    await run(env, deps);
+    expect((await getCalendarDelegation(env, delegation.id)).status).toBe("failing");
+  });
+
   test("a failure while it's already failing doesn't announce again", async () => {
     const { env, delegation } = await connected();
     const row = { id: delegation.id, organizationId: env.organizationId };

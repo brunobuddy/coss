@@ -27,7 +27,11 @@ const { schedulingCalendar, schedulingCalendarConnection, schedulingCalendarDele
 
 export type DelegationRow = typeof schedulingCalendarDelegation.$inferSelect;
 export type ProbeResult = {
-  result: "ok" | "refused" | "inconclusive";
+  /**
+   * `ok`: a mailbox was reached. `unreached`: every one asked is simply gone, which says nothing
+   * against the credentials, and nothing for them either.
+   */
+  result: "ok" | "unreached" | "refused" | "inconclusive";
   /** What the provider said, when it refused. */
   error?: CalendarError;
 };
@@ -248,7 +252,7 @@ export async function probeDelegation(
     }
   }
   if (inconclusive) return { result: "inconclusive" };
-  return refused ? { result: "refused", error: refused } : { result: "ok" };
+  return refused ? { result: "refused", error: refused } : { result: "unreached" };
 }
 
 /** Settles one refusal: `mailbox` is this mailbox's alone, `stop` means nothing more can be done now. */
@@ -277,7 +281,9 @@ export async function settleRefusal(
       });
       return { settled: "stop" };
     }
-    if (result !== "ok" || scope !== "ambiguous") return { settled: "stop" };
+    if ((result !== "ok" && result !== "unreached") || scope !== "ambiguous") {
+      return { settled: "stop" };
+    }
   }
   // Everyone else is fine, but the answer may be that same old one: ask about this mailbox too.
   try {
