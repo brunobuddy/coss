@@ -2152,6 +2152,26 @@ describe("a waiting reminder whose timing is edited", () => {
     expect((await outcome(s, booking.id))?.outcome).toBe("sent");
   });
 
+  test("is late from its new moment, if nothing ran in between", async () => {
+    const followUp = (after_minutes: number) =>
+      rule({ key: "welcome", anchor: "end", after_minutes, send: ["email_attendee"] });
+    const s = await setUp();
+    await updateSettings(s.env, { reminders: [followUp(1440)] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [followUp(4320)] });
+    // Two days past the moment it was queued for, and a minute past the one it has now.
+    await runAt(s, END + 4321 * MINUTE);
+    expect((await outcome(s, booking.id))?.outcome).toBe("sent");
+
+    const stopped = await setUp();
+    await updateSettings(stopped.env, { reminders: [followUp(1440)] });
+    const { booking: other } = await book(stopped);
+    await updateSettings(stopped.env, { reminders: [followUp(4320)] });
+    // A day and a bit past even that.
+    await runAt(stopped, END + 5800 * MINUTE);
+    expect((await outcome(stopped, other.id))?.outcome).toBe("too_late");
+  });
+
   test("a follow-up to a meeting that's over keeps going, at its new time", async () => {
     const s = await setUp();
     const followUp = (after_minutes: number) =>

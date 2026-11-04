@@ -496,12 +496,15 @@ export function ruleVerdict(
     (candidate) => candidate.key === row.reminderKey && candidate.anchor === row.reminderAnchor,
   );
   if (!rule) return { outcome: "stale" };
+  let dueSince = row.dueAt.getTime();
   if (offsetOf(rule) !== row.reminderOffsetMinutes) {
     // It takes the new timing itself, rather than count on a changed list's walk, which may not
     // have run or reach this booking: if it does run, it drops this row for one of its own. An edit
     // to sooner can only be seen once the row comes due: it goes then.
     const due = (row.anchorAt?.getTime() ?? now.getTime()) + offsetOf(rule) * MINUTE_MS;
     if (due > now.getTime()) return { moveTo: new Date(due), offsetMinutes: offsetOf(rule) };
+    // Made later and already past it, with no worker to move it in between: late from then.
+    dueSince = Math.max(dueSince, due);
   }
   const targeted = targetsOf(rule).some(
     (target) => target.channel === row.channel && target.recipient === row.recipient,
@@ -523,7 +526,7 @@ export function ruleVerdict(
     if (beforeStart && now.getTime() >= booking.startAt.getTime()) return { outcome: "too_late" };
     // From when it was due: `send_if_late` queues a reminder long after its moment, retries only
     // move this later, and by minutes.
-    if (now.getTime() - row.dueAt.getTime() > LATE_LIMIT_MS) return { outcome: "too_late" };
+    if (now.getTime() - dueSince > LATE_LIMIT_MS) return { outcome: "too_late" };
   }
   return { rule };
 }
