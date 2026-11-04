@@ -218,11 +218,13 @@ import type {
   BookingObject,
   CalendarAuthorization,
   CalendarConnectionObject,
+  CalendarDelegationObject,
   CancelledSeries,
   CancelSeriesRequest,
   ConfirmHoldRequest,
   CreateBookingRequest,
   CreateCalendarConnectionRequest,
+  CreateCalendarDelegationRequest,
   CreateEventTypeRequest,
   CreateHoldRequest,
   CreateHostRequest,
@@ -233,6 +235,7 @@ import type {
   RescheduleBookingRequest,
   ScheduleObject,
   SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
   SeriesPreview,
   SeriesResult,
@@ -241,11 +244,13 @@ import type {
   SlotList,
   SlotsQuery,
   UpdateBookingLocationRequest,
+  UpdateCalendarDelegationRequest,
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
   UpdateHostRequest,
   UpdateSettingsRequest,
   UpsertScheduleRequest,
+  VerifyCalendarDelegationRequest,
 } from "@coss/scheduling/schemas";
 import type { SignRequestWebhookEvent } from "@coss/sign/schemas";
 import type { ReceivedSmsWebhookEvent, SmsWebhookEvent } from "@coss/sms/schemas";
@@ -303,6 +308,7 @@ import type {
   CreateRiskRuleParams,
   CreateSchedulingBookingParams,
   CreateSchedulingCalendarConnectionParams,
+  CreateSchedulingCalendarDelegationParams,
   CreateSchedulingEventTypeParams,
   CreateSchedulingHoldParams,
   CreateSchedulingHostParams,
@@ -362,6 +368,7 @@ import type {
   SchedulingBooking,
   SchedulingCalendarAuthorization,
   SchedulingCalendarConnection,
+  SchedulingCalendarDelegation,
   SchedulingCancelledSeries,
   SchedulingEventType,
   SchedulingHost,
@@ -495,6 +502,7 @@ import type {
   UpdateRiskRuleParams,
   UpdateRiskSettingsParams,
   UpdateSchedulingBookingLocationParams,
+  UpdateSchedulingCalendarDelegationParams,
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
   UpdateSchedulingHostParams,
@@ -507,6 +515,7 @@ import type {
   UpdateWebhookEndpointParams,
   UpsertContactParams,
   UpsertSchedulingScheduleParams,
+  VerifySchedulingCalendarDelegationParams,
   WebhookEndpoint,
   WebhookEndpointRecovery,
   WebhookEvent,
@@ -757,7 +766,8 @@ export type Contract = [
       | z.output<typeof VerificationWebhookEvent>
       | z.output<typeof FormSubmissionWebhookEvent>
       | z.output<typeof SchedulingBookingWebhookEvent>
-      | z.output<typeof SchedulingCalendarWebhookEvent>,
+      | z.output<typeof SchedulingCalendarWebhookEvent>
+      | z.output<typeof SchedulingCalendarDelegationWebhookEvent>,
       WebhookEvent
     >
   >,
@@ -1124,6 +1134,27 @@ export type SubaccountContract = [
     MutuallyAssignable<z.output<typeof CalendarConnectionObject>, SchedulingCalendarConnection>
   >,
   Assert<MutuallyAssignable<z.input<typeof UpdateCalendarRequest>, UpdateSchedulingCalendarParams>>,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof CreateCalendarDelegationRequest>,
+      CreateSchedulingCalendarDelegationParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof UpdateCalendarDelegationRequest>,
+      UpdateSchedulingCalendarDelegationParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof VerifyCalendarDelegationRequest>,
+      VerifySchedulingCalendarDelegationParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<z.output<typeof CalendarDelegationObject>, SchedulingCalendarDelegation>
+  >,
   Assert<
     MutuallyAssignable<z.input<typeof SetSimulatedBusyRequest>, SetSchedulingSimulatedBusyParams>
   >,

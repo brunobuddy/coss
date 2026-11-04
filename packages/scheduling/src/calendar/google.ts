@@ -17,6 +17,14 @@ import {
 const API = "https://www.googleapis.com/calendar/v3";
 const FREEBUSY_MAX_DAYS = 88;
 const FREEBUSY_BATCH = 50;
+// With a delegation's token a 403 with these says the admin took something away, not that this one
+// request isn't allowed: a write would otherwise give up for good.
+const DELEGATION_LOST_REASONS = new Set([
+  "insufficientPermissions",
+  "accessNotConfigured",
+  "authError",
+]);
+const QUOTA_REASONS = new Set(["quotaExceeded", "dailyLimitExceeded"]);
 
 /** Google lets clients choose an event's id, which is what makes a create safe to retry. */
 export function googleEventId(key: string): string {
@@ -68,8 +76,9 @@ function written(event: GoogleEvent): CalendarEventWritten {
 export function googleCalendarClient(input: {
   accessToken: string;
   fetcher: HttpFetch;
+  delegated?: boolean;
 }): CalendarClient {
-  const { accessToken, fetcher } = input;
+  const { accessToken, fetcher, delegated } = input;
 
   const call = async <T>(
     path: string,
@@ -95,6 +104,14 @@ export function googleCalendarClient(input: {
       // Google reports both quota and "rate limited" as a 403 with a reason.
       if (reason === "rateLimitExceeded" || reason === "userRateLimitExceeded") {
         throw errorFromStatus(429, reason, res.headers.get("retry-after"));
+      }
+      if (delegated && reason) {
+        if (QUOTA_REASONS.has(reason)) {
+          throw errorFromStatus(429, reason, res.headers.get("retry-after"));
+        }
+        if (DELEGATION_LOST_REASONS.has(reason)) {
+          throw new CalendarError("auth", reason, "The calendar refused our access.");
+        }
       }
       throw errorFromStatus(res.status, reason ?? code, res.headers.get("retry-after"));
     }

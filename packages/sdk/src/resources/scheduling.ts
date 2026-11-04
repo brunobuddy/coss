@@ -8,12 +8,14 @@ import type {
   CreateSchedulingBookerSessionParams,
   CreateSchedulingBookingParams,
   CreateSchedulingCalendarConnectionParams,
+  CreateSchedulingCalendarDelegationParams,
   CreateSchedulingEventTypeParams,
   CreateSchedulingHoldParams,
   CreateSchedulingHostParams,
   CreateSchedulingHostSessionParams,
   CreateSchedulingSeriesParams,
   DeletedSchedulingCalendarConnection,
+  DeletedSchedulingCalendarDelegation,
   DeletedSchedulingHost,
   DeletedSchedulingSchedule,
   ListSchedulingBookingsParams,
@@ -24,6 +26,7 @@ import type {
   SchedulingBooking,
   SchedulingCalendarAuthorization,
   SchedulingCalendarConnection,
+  SchedulingCalendarDelegation,
   SchedulingCancelledSeries,
   SchedulingEventType,
   SchedulingHost,
@@ -37,11 +40,13 @@ import type {
   SearchSchedulingAvailabilityParams,
   SetSchedulingSimulatedBusyParams,
   UpdateSchedulingBookingLocationParams,
+  UpdateSchedulingCalendarDelegationParams,
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
   UpdateSchedulingHostParams,
   UpdateSchedulingSettingsParams,
   UpsertSchedulingScheduleParams,
+  VerifySchedulingCalendarDelegationParams,
 } from "../types/scheduling.ts";
 import { listQuery } from "./list-query.ts";
 
@@ -597,6 +602,90 @@ export class SchedulingCalendarsResource {
   }
 }
 
+/**
+ * `coss.scheduling.calendarDelegations`: an admin authorizes once, and every host on the domain gets
+ * their calendar with no consent screen.
+ */
+export class SchedulingCalendarDelegationsResource {
+  readonly #http: HttpClient;
+
+  /** @internal Use `new Coss().scheduling.calendarDelegations`. */
+  constructor(http: HttpClient) {
+    this.#http = http;
+  }
+
+  /** Adds one, `pending`: authorize what it returns, then verify it. Not retried. */
+  create(
+    params: CreateSchedulingCalendarDelegationParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingCalendarDelegation>> {
+    return this.#http.request<SchedulingCalendarDelegation>({
+      method: "POST",
+      path: "/v1/scheduling/calendar_delegations",
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
+  /** The environment's delegations, with how many hosts each has connected. */
+  list(options?: ReadOptions): Promise<CossResult<List<SchedulingCalendarDelegation>>> {
+    return this.#http.request<List<SchedulingCalendarDelegation>>({
+      method: "GET",
+      path: "/v1/scheduling/calendar_delegations",
+      signal: options?.signal,
+    });
+  }
+
+  get(id: string, options?: ReadOptions): Promise<CossResult<SchedulingCalendarDelegation>> {
+    return this.#http.request<SchedulingCalendarDelegation>({
+      method: "GET",
+      path: `/v1/scheduling/calendar_delegations/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** New credentials are tried on the verified mailbox before they replace the old ones. */
+  update(
+    id: string,
+    params: UpdateSchedulingCalendarDelegationParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingCalendarDelegation>> {
+    return this.#http.request<SchedulingCalendarDelegation>({
+      method: "PATCH",
+      path: `/v1/scheduling/calendar_delegations/${part(id)}`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Tries one real mailbox. Passing makes it `active`, and its hosts start connecting. */
+  verify(
+    id: string,
+    params: VerifySchedulingCalendarDelegationParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingCalendarDelegation>> {
+    return this.#http.request<SchedulingCalendarDelegation>({
+      method: "POST",
+      path: `/v1/scheduling/calendar_delegations/${part(id)}/verify`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Its hosts lose these calendars within minutes, and stay bookable with no conflict check. */
+  delete(
+    id: string,
+    options?: ReadOptions,
+  ): Promise<CossResult<DeletedSchedulingCalendarDelegation>> {
+    return this.#http.request<DeletedSchedulingCalendarDelegation>({
+      method: "DELETE",
+      path: `/v1/scheduling/calendar_delegations/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+}
+
 /** `coss.scheduling.sessions`: a browser's authority, without your API key. */
 export class SchedulingSessionsResource {
   readonly #http: HttpClient;
@@ -708,6 +797,7 @@ export class SchedulingResource {
   readonly holds: SchedulingHoldsResource;
   readonly series: SchedulingSeriesResource;
   readonly calendars: SchedulingCalendarsResource;
+  readonly calendarDelegations: SchedulingCalendarDelegationsResource;
   readonly sessions: SchedulingSessionsResource;
   readonly attendees: SchedulingAttendeesResource;
   readonly settings: SchedulingSettingsResource;
@@ -723,6 +813,7 @@ export class SchedulingResource {
     this.holds = new SchedulingHoldsResource(http);
     this.series = new SchedulingSeriesResource(http);
     this.calendars = new SchedulingCalendarsResource(http);
+    this.calendarDelegations = new SchedulingCalendarDelegationsResource(http);
     this.sessions = new SchedulingSessionsResource(http);
     this.attendees = new SchedulingAttendeesResource(http);
     this.settings = new SchedulingSettingsResource(http);

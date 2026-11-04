@@ -1,4 +1,5 @@
-import { listHosts } from "@coss/scheduling";
+import { failingCalendarDelegations, listHosts } from "@coss/scheduling";
+import { Alert, AlertDescription, AlertTitle } from "@coss/ui/components/alert";
 import {
   Table,
   TableBody,
@@ -9,6 +10,7 @@ import {
 } from "@coss/ui/components/table";
 import { UserRoundIcon } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CursorPager } from "@/components/cursor-pager";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
@@ -34,6 +36,7 @@ export default async function HostsPage({
   const search = await searchParams;
   const after = typeof search.after === "string" ? search.after : undefined;
   const page = await listHosts(scope, { limit: PAGE_SIZE, after });
+  const failing = await failingCalendarDelegations(scope);
   const last = page.data.at(-1);
   const hostsPath = `${schedulingPath}/hosts`;
   const canUpdate = can({ scheduling: ["update"] });
@@ -44,6 +47,17 @@ export default async function HostsPage({
         description="The people who can be booked. Each has their own page for hours and calendars."
         title="Hosts"
       />
+      {failing.length > 0 ? (
+        <Alert variant="error">
+          <AlertTitle>Hosts on {failing.join(", ")} aren't being offered</AlertTitle>
+          <AlertDescription>
+            Calendar access for this domain was refused.{" "}
+            <Link className="underline" href={`${schedulingPath}/calendar-delegation`}>
+              See what's wrong
+            </Link>
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <Panel
         footer={
           after || page.hasMore ? (

@@ -1,0 +1,265 @@
+/**
+ * What losing access means for a delegation's connection. Credentials the provider refuses take
+ * every host out together, in one update, and bring them back the same way, so nobody reconnects;
+ * one mailbox that's gone only takes out its host. A refusal that could be either is settled by
+ * asking about other mailboxes, so one person leaving can't hide everyone.
+ */
+import { db, schema } from "@coss/db";
+import { ID_PREFIXES, newId } from "@coss/db/id";
+import { appendLogEntries } from "@coss/logs";
+import { enqueueNotification } from "@coss/notifications";
+import { enqueueWebhookMessage } from "@coss/webhooks";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import type { SchedulingDelegationWebhookEventType } from "../webhook-types.ts";
+import { CalendarError } from "./client.ts";
+import {
+  type CalendarDeps,
+  type ConnectionRow,
+  delegatedClient,
+  delegationCredentials,
+  fetcherOf,
+  markNeedsReauth,
+  nowMs,
+} from "./connections.ts";
+import { delegationFailureScope, mintDelegatedToken } from "./delegation-tokens.ts";
+
+const { schedulingCalendar, schedulingCalendarConnection, schedulingCalendarDelegation } = schema;
+
+export type DelegationRow = typeof schedulingCalendarDelegation.$inferSelect;
+export type ProbeResult = "ok" | "refused" | "inconclusive";
+
+const PROBE_MAILBOXES = 3;
+
+const rowOf = (delegation: Pick<DelegationRow, "id" | "organizationId">) =>
+  and(
+    eq(schedulingCalendarDelegation.id, delegation.id),
+    eq(schedulingCalendarDelegation.organizationId, delegation.organizationId),
+  );
+
+async function announce(
+  tx: Parameters<typeof appendLogEntries>[0],
+  delegation: DelegationRow,
+  type: SchedulingDelegationWebhookEventType,
+  code: string | null,
+  now: Date,
+): Promise<void> {
+  const id = newId(ID_PREFIXES.webhookEvent);
+  await enqueueWebhookMessage(tx, {
+    id,
+    organizationId: delegation.organizationId,
+    environmentId: delegation.environmentId,
+    type,
+    payload: {
+      id,
+      object: "event",
+      type,
+      created_at: now.toISOString(),
+      data: {
+        delegation_id: delegation.id,
+        provider: delegation.provider,
+        domain: delegation.domain,
+        code,
+        occurred_at: now.toISOString(),
+      },
+    },
+  });
+  const failing = type === "scheduling.calendar_delegation.failing";
+  await appendLogEntries(tx, [
+    {
+      organizationId: delegation.organizationId,
+      projectId: delegation.projectId,
+      environmentId: delegation.environmentId,
+      occurredAt: now,
+      source: "scheduling",
+      level: failing ? "error" : "info",
+      type,
+      message: failing
+        ? `Calendar access for ${delegation.domain} was refused: its hosts aren't offered until it's back`
+        : `Calendar access for ${delegation.domain} is back`,
+      resourceType: "scheduling_calendar_delegation",
+      resourceId: delegation.id,
+      attributes: { provider: delegation.provider, ...(code ? { code } : {}) },
+    },
+  ]);
+}
+
+/** Once per outage (compare-and-set): one flip, one webhook, one log line, one email. */
+export async function markDelegationFailing(
+  delegation: Pick<DelegationRow, "id" | "organizationId">,
+  code: string,
+  deps: Pick<CalendarDeps, "now">,
+): Promise<void> {
+  const now = deps.now?.() ?? new Date();
+  await db.transaction(async (tx) => {
+    const [changed] = await tx
+      .update(schedulingCalendarDelegation)
+      .set({ status: "failing", failingSince: now, lastErrorCode: code })
+      .where(and(rowOf(delegation), eq(schedulingCalendarDelegation.status, "active")))
+      .returning();
+    if (!changed) return;
+    await tx
+      .update(schedulingCalendarConnection)
+      .set({ status: "delegation_failing", lastErrorCode: code, lastErrorAt: now })
+      .where(
+        and(
+          eq(schedulingCalendarConnection.delegationId, changed.id),
+          eq(schedulingCalendarConnection.organizationId, changed.organizationId),
+          eq(schedulingCalendarConnection.status, "active"),
+        ),
+      );
+    await announce(tx, changed, "scheduling.calendar_delegation.failing", code, now);
+    await enqueueNotification(tx, {
+      organizationId: changed.organizationId,
+      kind: "scheduling.delegation_failing",
+      dedupeKey: `${changed.id}:${now.toISOString()}`,
+      payload: { delegationId: changed.id },
+      now,
+    });
+  });
+}
+
+/** Everyone comes back and is read straight away; mailboxes that were gone before stay as they were. */
+export async function restoreDelegation(
+  delegation: Pick<DelegationRow, "id" | "organizationId">,
+  deps: Pick<CalendarDeps, "now">,
+): Promise<void> {
+  const now = deps.now?.() ?? new Date();
+  await db.transaction(async (tx) => {
+    const [changed] = await tx
+      .update(schedulingCalendarDelegation)
+      .set({ status: "active", failingSince: null, lastErrorCode: null, nextReconcileAt: now })
+      .where(and(rowOf(delegation), eq(schedulingCalendarDelegation.status, "failing")))
+      .returning();
+    if (!changed) return;
+    const connections = await tx
+      .update(schedulingCalendarConnection)
+      .set({ status: "active", lastErrorCode: null, lastErrorAt: null })
+      .where(
+        and(
+          eq(schedulingCalendarConnection.delegationId, changed.id),
+          eq(schedulingCalendarConnection.organizationId, changed.organizationId),
+          eq(schedulingCalendarConnection.status, "delegation_failing"),
+        ),
+      )
+      .returning({ id: schedulingCalendarConnection.id });
+    if (connections.length > 0) {
+      await tx
+        .update(schedulingCalendar)
+        .set({ nextSyncAt: now })
+        .where(
+          and(
+            eq(schedulingCalendar.organizationId, changed.organizationId),
+            inArray(
+              schedulingCalendar.connectionId,
+              connections.map((row) => row.id),
+            ),
+          ),
+        );
+    }
+    await announce(tx, changed, "scheduling.calendar_delegation.restored", null, now);
+  });
+}
+
+/** Whether this delegation's credentials reach this mailbox right now, skipping any cached token. */
+export async function checkMailbox(
+  delegation: Pick<DelegationRow, "provider" | "encryptedCredentials">,
+  mailbox: string,
+  deps: CalendarDeps,
+): Promise<void> {
+  const tokens = await mintDelegatedToken(
+    delegationCredentials(delegation.encryptedCredentials, deps.secretsKeys),
+    mailbox,
+    { fetcher: fetcherOf(deps), nowMs: nowMs(deps) },
+  );
+  await delegatedClient(delegation.provider, tokens.accessToken, mailbox, deps).listCalendars();
+}
+
+/**
+ * Asks about the mailbox known to work, then a couple of others, leaving out the one in question. A
+ * mailbox that's simply gone says nothing about the credentials, so that alone is never `refused`.
+ */
+export async function probeDelegation(
+  delegation: DelegationRow,
+  deps: CalendarDeps,
+  opts: { except?: string } = {},
+): Promise<ProbeResult> {
+  const others = await db
+    .select({ account: schedulingCalendarConnection.accountId })
+    .from(schedulingCalendarConnection)
+    .where(
+      and(
+        eq(schedulingCalendarConnection.delegationId, delegation.id),
+        eq(schedulingCalendarConnection.organizationId, delegation.organizationId),
+        ne(schedulingCalendarConnection.status, "needs_reauth"),
+        opts.except
+          ? sql`lower(${schedulingCalendarConnection.accountId}) <> lower(${opts.except})`
+          : undefined,
+      ),
+    )
+    .limit(PROBE_MAILBOXES);
+  const mailboxes = [
+    ...new Set([
+      ...(delegation.verifyAccount && delegation.verifyAccount !== opts.except
+        ? [delegation.verifyAccount]
+        : []),
+      ...others.map((row) => row.account),
+    ]),
+  ].slice(0, PROBE_MAILBOXES);
+  let refused = false;
+  let inconclusive = false;
+  for (const mailbox of mailboxes) {
+    try {
+      await checkMailbox(delegation, mailbox, deps);
+      return "ok";
+    } catch (error) {
+      if (!(error instanceof CalendarError)) throw error;
+      if (error.kind !== "auth") {
+        inconclusive = true;
+        continue;
+      }
+      const scope = delegationFailureScope(error);
+      if (scope === "credentials") return "refused";
+      if (scope === "ambiguous") refused = true;
+    }
+  }
+  if (inconclusive) return "inconclusive";
+  return refused ? "refused" : "ok";
+}
+
+/** Settles one refusal: `mailbox` is this mailbox's alone, `stop` means nothing more can be done now. */
+export async function settleRefusal(
+  delegation: DelegationRow,
+  mailbox: string,
+  error: CalendarError,
+  deps: CalendarDeps,
+): Promise<"mailbox" | "stop"> {
+  const scope = delegationFailureScope(error);
+  if (scope === "mailbox") return "mailbox";
+  if (scope === "credentials") {
+    await markDelegationFailing(delegation, error.code, deps);
+    return "stop";
+  }
+  const probe = await probeDelegation(delegation, deps, { except: mailbox });
+  if (probe === "ok") return "mailbox";
+  if (probe === "refused") await markDelegationFailing(delegation, error.code, deps);
+  return "stop";
+}
+
+/** Where every `auth` failure of a calendar goes, delegated or not. */
+export async function handleAccessLost(
+  connection: ConnectionRow,
+  error: CalendarError,
+  deps: CalendarDeps,
+): Promise<void> {
+  if (!connection.delegationId) {
+    await markNeedsReauth(connection, error.code, deps);
+    return;
+  }
+  const [delegation] = await db
+    .select()
+    .from(schedulingCalendarDelegation)
+    .where(rowOf({ id: connection.delegationId, organizationId: connection.organizationId }));
+  if (delegation?.status !== "active") return;
+  const settled = await settleRefusal(delegation, connection.accountId, error, deps);
+  if (settled === "mailbox") await markNeedsReauth(connection, error.code, deps);
+}

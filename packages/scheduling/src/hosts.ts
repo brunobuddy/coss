@@ -4,7 +4,9 @@
  */
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
-import { and, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import { mailboxDomain, normalizeMailbox } from "./calendar/delegation-tokens.ts";
+import { recordCalendarEvent } from "./calendar/events.ts";
 import { isValidTimeZone } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import type {
@@ -15,7 +17,14 @@ import type {
 import { refuseLinks, type SetupScreening, screenSetup } from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
-const { schedulingBooking, schedulingBookingHost, schedulingClaim, schedulingHost } = schema;
+const {
+  schedulingBooking,
+  schedulingBookingHost,
+  schedulingCalendarConnection,
+  schedulingCalendarDelegation,
+  schedulingClaim,
+  schedulingHost,
+} = schema;
 
 export type HostRow = typeof schedulingHost.$inferSelect;
 type Scope = Pick<SchedulingEnvironment, "organizationId" | "environmentId">;
@@ -35,6 +44,7 @@ export function toHostObject(row: HostRow): HostObjectOutput {
     uid: row.uid,
     name: row.name,
     email: row.email,
+    calendar_account: row.calendarAccount,
     time_zone: row.timeZone,
     attributes: row.attributes,
     metadata: row.metadata,
@@ -61,6 +71,37 @@ export async function resolveHost(executor: Executor, scope: Scope, ref: string)
   return row;
 }
 
+const invalidMailbox = () =>
+  new SchedulingError("invalid_calendar_delegation", "This isn't a mailbox's address.", {
+    param: "calendar_account",
+  });
+
+/** So a new or changed host connects within seconds, not at the next look. */
+async function nudgeDelegations(
+  executor: Executor,
+  scope: Scope,
+  addresses: readonly (string | null | undefined)[],
+): Promise<void> {
+  const domains = addresses.flatMap((address) => {
+    const mailbox = address ? normalizeMailbox(address) : null;
+    return mailbox ? [mailboxDomain(mailbox)] : [];
+  });
+  if (domains.length === 0) return;
+  await executor
+    .update(schedulingCalendarDelegation)
+    // The clock the worker compares it with: the database's microseconds sort after a `Date` taken
+    // right afterwards, which would put this off until the next look.
+    .set({ nextReconcileAt: new Date() })
+    .where(
+      and(
+        eq(schedulingCalendarDelegation.organizationId, scope.organizationId),
+        eq(schedulingCalendarDelegation.environmentId, scope.environmentId),
+        eq(schedulingCalendarDelegation.status, "active"),
+        inArray(schedulingCalendarDelegation.domain, domains),
+      ),
+    );
+}
+
 function isUniqueViolation(error: unknown): boolean {
   const code = (error as { code?: string; cause?: { code?: string } }).cause?.code;
   return code === "23505" || (error as { code?: string }).code === "23505";
@@ -79,6 +120,10 @@ export async function createHost(
   checkTimeZone(params.time_zone, "time_zone");
   refuseLinks(params.name, "name");
   await screenSetup(env, params.name, opts.screen, "name");
+  const calendarAccount = params.calendar_account
+    ? normalizeMailbox(params.calendar_account)
+    : null;
+  if (params.calendar_account && !calendarAccount) throw invalidMailbox();
   try {
     const [row] = await db
       .insert(schedulingHost)
@@ -89,11 +134,13 @@ export async function createHost(
         uid: params.uid ?? null,
         name: params.name,
         email: params.email ?? null,
+        calendarAccount,
         timeZone: params.time_zone,
         attributes: params.attributes ?? {},
         metadata: params.metadata ?? {},
       })
       .returning();
+    await nudgeDelegations(db, env, [calendarAccount, params.email]);
     return toHostObject(row as HostRow);
   } catch (error) {
     if (isUniqueViolation(error)) throw uidTaken(params.uid);
@@ -144,27 +191,129 @@ export async function updateHost(
     );
   }
   const host = await resolveHost(db, scope, ref);
+  const calendarAccount = params.calendar_account && normalizeMailbox(params.calendar_account);
+  if (params.calendar_account && !calendarAccount) throw invalidMailbox();
   try {
-    const [row] = await db
-      .update(schedulingHost)
-      .set({
-        ...(params.uid !== undefined ? { uid: params.uid } : {}),
-        ...(params.name !== undefined ? { name: params.name } : {}),
-        ...(params.email !== undefined ? { email: params.email } : {}),
-        ...(params.time_zone !== undefined ? { timeZone: params.time_zone } : {}),
-        ...(params.attributes !== undefined ? { attributes: params.attributes } : {}),
-        ...(params.metadata !== undefined ? { metadata: params.metadata } : {}),
-        ...(params.status !== undefined ? { status: params.status } : {}),
-      })
-      .where(
-        and(eq(schedulingHost.id, host.id), eq(schedulingHost.organizationId, host.organizationId)),
-      )
-      .returning();
+    const row = await db.transaction(async (tx) => {
+      if (params.calendar_account !== undefined) {
+        await releaseOldMailbox(tx, host, calendarAccount ?? null, params.email);
+      }
+      const [updated] = await tx
+        .update(schedulingHost)
+        .set({
+          ...(params.uid !== undefined ? { uid: params.uid } : {}),
+          ...(params.name !== undefined ? { name: params.name } : {}),
+          ...(params.email !== undefined ? { email: params.email } : {}),
+          ...(params.calendar_account !== undefined ? { calendarAccount } : {}),
+          ...(params.time_zone !== undefined ? { timeZone: params.time_zone } : {}),
+          ...(params.attributes !== undefined ? { attributes: params.attributes } : {}),
+          ...(params.metadata !== undefined ? { metadata: params.metadata } : {}),
+          ...(params.status !== undefined ? { status: params.status } : {}),
+        })
+        .where(
+          and(
+            eq(schedulingHost.id, host.id),
+            eq(schedulingHost.organizationId, host.organizationId),
+          ),
+        )
+        .returning();
+      await nudgeDelegations(tx, scope, [calendarAccount, params.email]);
+      return updated;
+    });
     return toHostObject(row as HostRow);
   } catch (error) {
     if (isUniqueViolation(error)) throw uidTaken(params.uid);
     throw error;
   }
+}
+
+/** Bookings still to come, and holds or approvals that could still become one. */
+async function hasLiveBookings(tx: Executor, host: HostRow): Promise<boolean> {
+  const [live] = await tx
+    .select({ id: schedulingClaim.id })
+    .from(schedulingClaim)
+    .where(
+      and(
+        eq(schedulingClaim.hostId, host.id),
+        eq(schedulingClaim.organizationId, host.organizationId),
+        sql`${schedulingClaim.occupiedEnd} > clock_timestamp()`,
+        or(
+          isNull(schedulingClaim.liveUntil),
+          sql`${schedulingClaim.liveUntil} > clock_timestamp()`,
+        ),
+      ),
+    )
+    .limit(1);
+  // An expired hold can still convert, and the cascade would leave nothing to say it lost a host.
+  const [unfinished] = await tx
+    .select({ id: schedulingBookingHost.bookingId })
+    .from(schedulingBookingHost)
+    .innerJoin(schedulingBooking, eq(schedulingBooking.id, schedulingBookingHost.bookingId))
+    .where(
+      and(
+        eq(schedulingBookingHost.hostId, host.id),
+        eq(schedulingBookingHost.organizationId, host.organizationId),
+        inArray(schedulingBooking.status, ["held", "pending_approval"]),
+      ),
+    )
+    .limit(1);
+  return Boolean(live || unfinished);
+}
+
+/**
+ * Changing `calendar_account` moves a delegated host to another mailbox, which ends the old
+ * connection. Its events would be left on the old calendar with nothing to move or cancel them, so
+ * that's refused while there are bookings. The old channel is left to run out: only the worker has
+ * the provider's credentials, and a push from it finds nothing.
+ */
+async function releaseOldMailbox(
+  tx: Executor,
+  host: HostRow,
+  calendarAccount: string | null,
+  email: string | null | undefined,
+): Promise<void> {
+  await tx
+    .select({ id: schedulingHost.id })
+    .from(schedulingHost)
+    .where(eq(schedulingHost.id, host.id))
+    .for("update");
+  const [delegated] = await tx
+    .select({
+      connection: schedulingCalendarConnection,
+      matchHostEmail: schedulingCalendarDelegation.matchHostEmail,
+    })
+    .from(schedulingCalendarConnection)
+    .innerJoin(
+      schedulingCalendarDelegation,
+      eq(schedulingCalendarDelegation.id, schedulingCalendarConnection.delegationId),
+    )
+    .where(
+      and(
+        eq(schedulingCalendarConnection.hostId, host.id),
+        eq(schedulingCalendarConnection.organizationId, host.organizationId),
+        isNotNull(schedulingCalendarConnection.delegationId),
+      ),
+    );
+  if (!delegated) return;
+  const fallback = delegated.matchHostEmail ? (email ?? host.email) : null;
+  const wanted = calendarAccount ?? (fallback ? normalizeMailbox(fallback) : null);
+  const { connection } = delegated;
+  if (wanted === connection.accountId.toLowerCase()) return;
+  if (await hasLiveBookings(tx, host)) {
+    throw new SchedulingError(
+      "host_has_live_bookings",
+      "This host has upcoming bookings or holds on their current calendar. Cancel or finish them before moving it.",
+    );
+  }
+  await recordCalendarEvent(tx, connection, "scheduling.calendar.disconnected", new Date());
+  await tx
+    .delete(schedulingCalendarConnection)
+    .where(
+      and(
+        eq(schedulingCalendarConnection.id, connection.id),
+        eq(schedulingCalendarConnection.organizationId, connection.organizationId),
+      ),
+    );
 }
 
 /** A host with bookings still to come can't go: disabling it keeps them and stops new ones. */
@@ -176,35 +325,7 @@ export async function deleteHost(scope: Scope, ref: string): Promise<{ id: strin
       .from(schedulingHost)
       .where(eq(schedulingHost.id, host.id))
       .for("update");
-    const [live] = await tx
-      .select({ id: schedulingClaim.id })
-      .from(schedulingClaim)
-      .where(
-        and(
-          eq(schedulingClaim.hostId, host.id),
-          eq(schedulingClaim.organizationId, host.organizationId),
-          sql`${schedulingClaim.occupiedEnd} > clock_timestamp()`,
-          or(
-            isNull(schedulingClaim.liveUntil),
-            sql`${schedulingClaim.liveUntil} > clock_timestamp()`,
-          ),
-        ),
-      )
-      .limit(1);
-    // An expired hold can still convert, and the cascade would leave nothing to say it lost a host.
-    const [unfinished] = await tx
-      .select({ id: schedulingBookingHost.bookingId })
-      .from(schedulingBookingHost)
-      .innerJoin(schedulingBooking, eq(schedulingBooking.id, schedulingBookingHost.bookingId))
-      .where(
-        and(
-          eq(schedulingBookingHost.hostId, host.id),
-          eq(schedulingBookingHost.organizationId, host.organizationId),
-          inArray(schedulingBooking.status, ["held", "pending_approval"]),
-        ),
-      )
-      .limit(1);
-    if (live || unfinished) {
+    if (await hasLiveBookings(tx, host)) {
       throw new SchedulingError(
         "host_has_live_bookings",
         "This host has upcoming bookings or holds. Cancel them, or set the host's status to disabled.",

@@ -105,6 +105,47 @@ embeds the booker. Local dates (overrides, limits) never pass through `Date`.
   idle ones alive. `notZoomMeeting()` keeps these rows out of what's subtracted from busy times. Losing Zoom never hides
   a host. The app's deauthorization event comes to `POST /scheduling/zoom/events`.
 
+### Delegation
+
+`calendar/delegation.ts`, `delegation-failures.ts`, `delegation-tokens.ts` (no database). An admin authorizes a domain
+once, and every host on it gets their calendar with no consent screen.
+
+- **Credentials are the customer's own**: a service account from their Cloud project, or a single-tenant Entra app. The
+  provider confines either to that Workspace or tenant, so there's no domain ownership check. That argument only holds
+  for customer-owned credentials: a coss.com-owned service account shared between customers would let any customer
+  claim another's domain, so that needs a client ID per delegation first. A pasted key's `token_uri` is ignored, since
+  it could send the signed assertion anywhere.
+- **A delegated connection is an ordinary connection** (`delegation_id` set), so sync, writes, channels and
+  availability don't branch: only `clientFor` does. `encrypted_credentials` caches its access token (`refreshToken:
+  null`), per mailbox. A delegation's credentials go only in `scheduling_calendar_delegation`, through `encryptSecret`.
+- **The mailbox is stamped when a host connects** (`accountId`), and `email` changing later moves nothing, since it's
+  "never an identity". Otherwise old events are orphaned, and a new connection has no write target. Only
+  `calendar_account` moves it (`releaseOldMailbox`, `hosts.ts`), refused while bookings are live. `match_host_email`
+  trusts `host.email`, which the docs warn about: a customer taking emails from end users must turn it off.
+- **`runDueCalendarDelegations`** connects a batch per run. `connectHost` fetches everything first (calendars, a
+  channel, the first read) and commits it all in one transaction, so a host goes from no calendar to a verified one,
+  never hidden or empty, and adds nothing to the shared read queue. A delegation with hosts left runs again at once;
+  `nudgeDelegations` asks for a run when a host is created or changed.
+- **Taking over an OAuth row** matches on a remote calendar's `externalId`, then the account, keeping calendars, write
+  target and ledger. Never revoke the old token: Google's revoke drops all of the project's tokens for that person,
+  which could be another host's. `saveConnection` leaves a delegated row alone, or a host's consent would replace the
+  delegation's token. `markNeedsReauth` re-reads the row, so a late failure of the old tokens does nothing.
+- **Losing access**: every `auth` failure goes through `handleAccessLost`. Refused credentials flip every connection
+  to `delegation_failing` in one update (compare-and-set on the delegation: one webhook, log line and owner email), so
+  every `status = 'active'` filter works with no join in the availability path, and one update brings them back. On
+  the wire that status is `needs_reauth`. One mailbox gone only marks that connection, with no email to the host, who
+  can't fix it. Graph's 403 can't say which, so `probeDelegation` asks about up to three mailboxes: a person leaving
+  must not hide everyone, including when they're the verified one. An inconclusive probe changes nothing and backs off.
+- **Tokens outlive a revocation** by up to an hour: Google's and Entra's tokens aren't recalled. A delegated client
+  raises `auth` for what a revocation looks like (Graph's inner `$batch` 401/403, Google's `insufficientPermissions`),
+  or it'd pass as a failed read or a permanent write failure.
+- **Deleting** is `deleting`, then the worker: each channel stopped, then the connection removed with the host locked
+  `FOR UPDATE`, or a booking reading its write target would hit a foreign key. Hosts stay bookable with no conflict
+  check (the dialog and docs say so), as with any disconnect.
+- Bookers' live check and sync need no changes. Provider behaviour the fakes can't prove (granular scopes under
+  domain-wide delegation, Graph ids matching between `/me` and `/users/{id}`, app-only subscriptions and Teams links)
+  needs checking against a real Workspace and tenant when any of this changes.
+
 A Meet or Teams link becomes a `link` location on the booking, stored with `conference` (stripped from the wire), so a
 new host gets a meeting of their own (`locationForNewHost`). A browser only chooses among an event type's `locations`
 (`locationFromBrowser`): it can't supply its own link or address.
@@ -157,7 +198,8 @@ aren't charged; reschedules are free; cancelled stays charged.
 
 `test/bookings.test.ts` races on real Postgres. `test/engine-differential.test.ts` compares `buildAvailability` with
 fixtures generated from Cal.com's `buildDateRanges`; the one intended difference is that Cal.com's overrides can spill
-outside the requested window. `FakeGoogleCalendarApi` (`./testing`) echoes writes back as busy, as the real one does.
+outside the requested window. `FakeGoogleCalendarApi` (`./testing`) echoes writes back as busy, as the real one does, and checks a service account's
+signature (`testServiceAccount`); `FakeGraphApi` only answers `/users/{mailbox}` paths, so a client left on `/me` shows.
 
 `bun run --cwd apps/worker scheduling:load` (`--hosts 500 --days 14 --concurrency 32 --bookings 500 --existing 20 --busy
 10 --searches 30 --races 20 --big-table-rows 5000`, `--sandbox`, `--capped`) measures search, slots and booking on the

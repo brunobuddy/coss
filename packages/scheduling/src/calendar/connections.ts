@@ -5,22 +5,22 @@
  */
 import { createHash, randomBytes } from "node:crypto";
 import { db, type Executor, schema } from "@coss/db";
-import { ID_PREFIXES, isId, newId } from "@coss/db/id";
+import { ID_PREFIXES, isId } from "@coss/db/id";
 import { withoutTrailingSlashes } from "@coss/db/url";
-import { appendLogEntries } from "@coss/logs";
-import {
-  decryptSecret,
-  encryptSecret,
-  enqueueWebhookMessage,
-  type SecretsKeyRing,
-} from "@coss/webhooks";
-import { and, asc, eq, inArray, lt, ne, sql } from "drizzle-orm";
+import { decryptSecret, encryptSecret, type SecretsKeyRing } from "@coss/webhooks";
+import { and, asc, eq, inArray, isNotNull, lt, ne, sql } from "drizzle-orm";
 import type { Interval } from "../engine/intervals.ts";
 import { SchedulingError } from "../errors.ts";
 import { resolveHost } from "../hosts.ts";
-import type { SchedulingCalendarWebhookEventType } from "../webhook-types.ts";
 import { caldavCalendarClient, type DavTransport, pinnedDavTransport } from "./caldav.ts";
-import { type CalendarClient, CalendarError, type HttpFetch } from "./client.ts";
+import {
+  type CalendarClient,
+  CalendarError,
+  type HttpFetch,
+  type RemoteCalendar,
+} from "./client.ts";
+import { type DelegationCredentials, mintDelegatedToken } from "./delegation-tokens.ts";
+import { recordCalendarEvent } from "./events.ts";
 import { googleCalendarClient } from "./google.ts";
 import { microsoftCalendarClient } from "./microsoft.ts";
 import {
@@ -36,11 +36,13 @@ import {
 import { simulatedCalendarClient } from "./simulated.ts";
 import { ZOOM_CALENDAR_ID, zoomCalendarClient, zoomUserId } from "./zoom.ts";
 
+export { recordCalendarEvent };
+
 const {
   schedulingBusyInterval,
   schedulingCalendar,
   schedulingCalendarConnection,
-  schedulingHost,
+  schedulingCalendarDelegation,
   schedulingOauthState,
   schedulingNotification,
 } = schema;
@@ -76,7 +78,7 @@ const REQUEST_TIMEOUT_MS = 30_000;
 // Past a year: a weekly series of 52 has to fit, or its last occurrences couldn't be verified.
 export const SYNC_HORIZON_DAYS = 400;
 
-const fetcherOf = (deps: CalendarDeps): HttpFetch => {
+export const fetcherOf = (deps: CalendarDeps): HttpFetch => {
   const fetcher = deps.fetcher ?? fetch;
   const timeoutMs = deps.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
   return async (url, init) => {
@@ -91,7 +93,7 @@ const fetcherOf = (deps: CalendarDeps): HttpFetch => {
     }
   };
 };
-const nowMs = (deps: CalendarDeps): number => (deps.now?.() ?? new Date()).getTime();
+export const nowMs = (deps: CalendarDeps): number => (deps.now?.() ?? new Date()).getTime();
 
 export const oauthRedirectUri = (deps: Pick<CalendarDeps, "publicUrl">, provider: OAuthProvider) =>
   `${withoutTrailingSlashes(deps.publicUrl)}/scheduling/oauth/${provider}/callback`;
@@ -144,69 +146,47 @@ export async function startCalendarAuthorization(
   };
 }
 
-function encryptCredentials(value: OAuthTokens | CaldavCredentials, keys: SecretsKeyRing): string {
+export function encryptCredentials(
+  value: OAuthTokens | CaldavCredentials | DelegationCredentials,
+  keys: SecretsKeyRing,
+): string {
   return encryptSecret(JSON.stringify(value), keys);
 }
 
-/** Records the news about a calendar: webhook, log line, and the host's email when it needs them. */
-export async function recordCalendarEvent(
+/** A connection's calendars, new ones only: the primary one is read and written by default. */
+export async function addRemoteCalendars(
   tx: Executor,
-  connection: Pick<
-    ConnectionRow,
-    "id" | "organizationId" | "environmentId" | "hostId" | "provider"
-  >,
-  type: SchedulingCalendarWebhookEventType,
+  connection: ConnectionRow,
+  remote: readonly RemoteCalendar[],
   now: Date,
 ): Promise<void> {
-  const [host] = await tx
-    .select({ projectId: schedulingHost.projectId })
-    .from(schedulingHost)
+  const [hasTarget] = await tx
+    .select({ id: schedulingCalendar.id })
+    .from(schedulingCalendar)
     .where(
       and(
-        eq(schedulingHost.id, connection.hostId),
-        eq(schedulingHost.organizationId, connection.organizationId),
+        eq(schedulingCalendar.hostId, connection.hostId),
+        eq(schedulingCalendar.organizationId, connection.organizationId),
+        eq(schedulingCalendar.writeTarget, true),
       ),
     );
-  const id = newId(ID_PREFIXES.webhookEvent);
-  await enqueueWebhookMessage(tx, {
-    id,
-    organizationId: connection.organizationId,
-    environmentId: connection.environmentId,
-    type,
-    payload: {
-      id,
-      object: "event",
-      type,
-      created_at: now.toISOString(),
-      data: {
-        host_id: connection.hostId,
-        connection_id: connection.id,
-        provider: connection.provider,
-        occurred_at: now.toISOString(),
-      },
-    },
-  });
-  if (host) {
-    await appendLogEntries(tx, [
-      {
+  let targetTaken = Boolean(hasTarget);
+  for (const calendar of remote) {
+    const writeTarget = calendar.primary && calendar.writable && !targetTaken;
+    if (writeTarget) targetTaken = true;
+    await tx
+      .insert(schedulingCalendar)
+      .values({
         organizationId: connection.organizationId,
-        projectId: host.projectId,
         environmentId: connection.environmentId,
-        occurredAt: now,
-        source: "scheduling",
-        level: type === "scheduling.calendar.needs_reauth" ? "warning" : "info",
-        type,
-        message:
-          type === "scheduling.calendar.needs_reauth"
-            ? "A host's calendar needs reconnecting: they aren't offered until it's back"
-            : type === "scheduling.calendar.connected"
-              ? "Calendar connected"
-              : "Calendar disconnected",
-        resourceType: "scheduling_host",
-        resourceId: connection.hostId,
-        attributes: { connection_id: connection.id, provider: connection.provider },
-      },
-    ]);
+        hostId: connection.hostId,
+        connectionId: connection.id,
+        externalId: calendar.externalId,
+        readBusy: calendar.primary,
+        writeTarget,
+        nextSyncAt: now,
+      })
+      .onConflictDoNothing();
   }
 }
 
@@ -224,6 +204,22 @@ async function saveConnection(
   const remote = await input.client.listCalendars();
   const now = deps.now?.() ?? new Date();
   return db.transaction(async (tx) => {
+    // The mailbox is already reached through a delegation: a consent adds nothing, and its tokens
+    // mustn't take the place of the delegation's.
+    const [delegated] = await tx
+      .select()
+      .from(schedulingCalendarConnection)
+      .where(
+        and(
+          eq(schedulingCalendarConnection.hostId, host.id),
+          eq(schedulingCalendarConnection.organizationId, host.organizationId),
+          eq(schedulingCalendarConnection.provider, input.provider),
+          sql`lower(${schedulingCalendarConnection.accountId}) = lower(${input.accountId})`,
+          isNotNull(schedulingCalendarConnection.delegationId),
+        ),
+      )
+      .for("update");
+    if (delegated) return delegated;
     const [connection] = await tx
       .insert(schedulingCalendarConnection)
       .values({
@@ -249,34 +245,7 @@ async function saveConnection(
       })
       .returning();
     const row = connection as ConnectionRow;
-    const [hasTarget] = await tx
-      .select({ id: schedulingCalendar.id })
-      .from(schedulingCalendar)
-      .where(
-        and(
-          eq(schedulingCalendar.hostId, host.id),
-          eq(schedulingCalendar.organizationId, host.organizationId),
-          eq(schedulingCalendar.writeTarget, true),
-        ),
-      );
-    let targetTaken = Boolean(hasTarget);
-    for (const calendar of remote) {
-      const writeTarget = calendar.primary && calendar.writable && !targetTaken;
-      if (writeTarget) targetTaken = true;
-      await tx
-        .insert(schedulingCalendar)
-        .values({
-          organizationId: host.organizationId,
-          environmentId: host.environmentId,
-          hostId: host.id,
-          connectionId: row.id,
-          externalId: calendar.externalId,
-          readBusy: calendar.primary,
-          writeTarget,
-          nextSyncAt: now,
-        })
-        .onConflictDoNothing();
-    }
+    await addRemoteCalendars(tx, row, remote, now);
     await recordCalendarEvent(tx, row, "scheduling.calendar.connected", now);
     return row;
   });
@@ -367,6 +336,68 @@ function oauthClient(
   return provider === "google"
     ? googleCalendarClient({ accessToken, fetcher })
     : microsoftCalendarClient({ accessToken, fetcher });
+}
+
+/** A client on a delegation's token for this mailbox. */
+export function delegatedClient(
+  provider: "google" | "microsoft",
+  accessToken: string,
+  mailbox: string,
+  deps: CalendarDeps,
+): CalendarClient {
+  const fetcher = fetcherOf(deps);
+  return provider === "google"
+    ? googleCalendarClient({ accessToken, fetcher, delegated: true })
+    : microsoftCalendarClient({ accessToken, fetcher, mailbox });
+}
+
+export const delegationCredentials = (
+  encrypted: string,
+  keys: SecretsKeyRing,
+): DelegationCredentials => JSON.parse(decryptSecret(encrypted, keys)) as DelegationCredentials;
+
+/** Mints when the cached token is close to expiring; two workers doing so at once is harmless. */
+async function delegatedClientFor(
+  connection: ConnectionRow,
+  deps: CalendarDeps,
+): Promise<CalendarClient> {
+  const provider = connection.provider;
+  if (provider !== "google" && provider !== "microsoft") {
+    throw new CalendarError("permanent", "not_delegable", "This provider has no delegation.");
+  }
+  let tokens = connection.encryptedCredentials
+    ? (JSON.parse(decryptSecret(connection.encryptedCredentials, deps.secretsKeys)) as OAuthTokens)
+    : null;
+  if (!tokens || tokens.expiresAtMs - REFRESH_MARGIN_MS <= nowMs(deps)) {
+    const [delegation] = await db
+      .select({ encryptedCredentials: schedulingCalendarDelegation.encryptedCredentials })
+      .from(schedulingCalendarDelegation)
+      .where(
+        and(
+          eq(schedulingCalendarDelegation.id, connection.delegationId as string),
+          eq(schedulingCalendarDelegation.organizationId, connection.organizationId),
+        ),
+      );
+    if (!delegation) {
+      throw new CalendarError("auth", "delegation_gone", "This delegation no longer exists.");
+    }
+    tokens = await mintDelegatedToken(
+      delegationCredentials(delegation.encryptedCredentials, deps.secretsKeys),
+      connection.accountId,
+      { fetcher: fetcherOf(deps), nowMs: nowMs(deps) },
+    );
+    await db
+      .update(schedulingCalendarConnection)
+      .set({ encryptedCredentials: encryptCredentials(tokens, deps.secretsKeys) })
+      .where(
+        and(
+          eq(schedulingCalendarConnection.id, connection.id),
+          eq(schedulingCalendarConnection.organizationId, connection.organizationId),
+          isNotNull(schedulingCalendarConnection.delegationId),
+        ),
+      );
+  }
+  return delegatedClient(provider, tokens.accessToken, connection.accountId, deps);
 }
 
 export async function connectCaldav(
@@ -517,6 +548,7 @@ export async function clientFor(
   deps: CalendarDeps,
 ): Promise<CalendarClient> {
   if (connection.provider === "simulated") return simulatedCalendarClient();
+  if (connection.delegationId) return delegatedClientFor(connection, deps);
   if (!connection.encryptedCredentials) {
     throw new CalendarError("auth", "no_credentials", "This connection has no credentials.");
   }
@@ -566,7 +598,8 @@ export async function clientFor(
 
 /**
  * A connection that lost access. Once only (compare-and-set on the status): the host stops being
- * offered at once, the customer hears by webhook, and the host by email.
+ * offered at once, the customer hears by webhook, and the host by email, unless it's a delegation's:
+ * they can't reconnect that, so it's only the customer's to hear about.
  */
 export async function markNeedsReauth(
   connection: ConnectionRow,
@@ -575,6 +608,19 @@ export async function markNeedsReauth(
 ): Promise<void> {
   const now = deps.now?.() ?? new Date();
   await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ delegationId: schedulingCalendarConnection.delegationId })
+      .from(schedulingCalendarConnection)
+      .where(
+        and(
+          eq(schedulingCalendarConnection.id, connection.id),
+          eq(schedulingCalendarConnection.organizationId, connection.organizationId),
+        ),
+      )
+      .for("update");
+    if (!current) return;
+    // The old OAuth tokens failing says nothing once a delegation has taken the row over.
+    if (current.delegationId && !connection.delegationId) return;
     const [changed] = await tx
       .update(schedulingCalendarConnection)
       .set({ status: "needs_reauth", lastErrorCode: code, lastErrorAt: now })
@@ -582,12 +628,13 @@ export async function markNeedsReauth(
         and(
           eq(schedulingCalendarConnection.id, connection.id),
           eq(schedulingCalendarConnection.organizationId, connection.organizationId),
-          ne(schedulingCalendarConnection.status, "needs_reauth"),
+          eq(schedulingCalendarConnection.status, "active"),
         ),
       )
       .returning({ id: schedulingCalendarConnection.id });
     if (!changed) return;
     await recordCalendarEvent(tx, connection, "scheduling.calendar.needs_reauth", now);
+    if (current.delegationId) return;
     await tx
       .insert(schedulingNotification)
       .values({
@@ -610,7 +657,9 @@ export type ConnectionObject = {
   host: string;
   provider: Provider;
   account: string;
-  status: ConnectionRow["status"];
+  status: "active" | "needs_reauth";
+  /** The delegation that manages it: the host can't disconnect or reconnect it. */
+  delegation: string | null;
   calendars: {
     id: string;
     external_id: string;
@@ -642,7 +691,9 @@ async function toConnectionObjects(
     host: row.hostId,
     provider: row.provider,
     account: row.accountId,
-    status: row.status,
+    // A customer's code only needs to know the host's out; `delegation` says whose problem it is.
+    status: row.status === "active" ? "active" : "needs_reauth",
+    delegation: row.delegationId,
     calendars: calendars
       .filter(
         (calendar) => calendar.connectionId === row.id && calendar.externalId !== ZOOM_CALENDAR_ID,
@@ -763,6 +814,12 @@ export async function disconnectCalendar(
 ): Promise<{ id: string }> {
   const host = await resolveHost(db, scope, hostRef);
   const connection = await findConnection(scope, host.id, connectionId);
+  if (connection.delegationId) {
+    throw new SchedulingError(
+      "calendar_managed",
+      "A calendar delegation manages this connection. Delete the delegation to end it.",
+    );
+  }
   await releaseConnection(connection, deps);
   await db.transaction(async (tx) => {
     await recordCalendarEvent(
@@ -853,7 +910,10 @@ export async function refreshIdleZoomConnections(
 }
 
 /** Best effort at the provider: leaving is never blocked by one being down. */
-async function releaseConnection(connection: ConnectionRow, deps: CalendarDeps): Promise<void> {
+export async function releaseConnection(
+  connection: ConnectionRow,
+  deps: CalendarDeps,
+): Promise<void> {
   if (connection.provider === "simulated" || connection.provider === "caldav") return;
   const calendars = await db
     .select()
