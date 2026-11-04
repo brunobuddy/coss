@@ -34,6 +34,28 @@ faq:
     answer: No. Authentication is refused before TLS, so use port 465 for implicit TLS or 587 with STARTTLS.
 ---
 
+<HeroSample>
+
+```ts
+import nodemailer from "nodemailer";
+
+const transport = nodemailer.createTransport({
+  host: "smtp.coss.com",
+  port: 465,
+  secure: true,
+  auth: { user: "coss", pass: process.env.COSS_API_KEY },
+});
+
+await transport.sendMail({
+  from: "Acme <hello@acme.com>",
+  to: "ada@example.com",
+  subject: "Welcome",
+  html: "<p>Thanks for signing up.</p>",
+});
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Point your app's mail settings at smtp.coss.com and log in with an API key. Each message becomes an API send.">
 
 | Setting  | Value                                                        |

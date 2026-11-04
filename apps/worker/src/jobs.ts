@@ -72,6 +72,7 @@ import {
   refreshIdleZoomConnections,
   releaseOrganizationCalendars,
   renewDueCalendarChannels,
+  runDueCalendarDelegations,
   runDueCalendarSyncs,
   runDueCalendarWrites,
   runDueSchedulingNotifications,
@@ -257,6 +258,7 @@ export const WORKER_LOOP_NAMES = [
   "scheduling-calendar-sync",
   "scheduling-calendar-writes",
   "scheduling-calendar-channels",
+  "scheduling-calendar-delegations",
   "scheduling-calendar-host-edits",
   "email-dispatch",
   "email-dispatch-marketing",
@@ -799,6 +801,12 @@ export function startJobs(deps: WorkerDeps): Loop[] {
           run: async () =>
             (await renewDueCalendarChannels(calendars, { limit: SCHEDULING_BATCH })) ===
             SCHEDULING_BATCH,
+        }),
+        start({
+          // A new host nudges its delegation, so this is how soon they're connected.
+          name: "scheduling-calendar-delegations",
+          intervalMs: 15_000,
+          run: async () => (await runDueCalendarDelegations(calendars, { limit: 5 })) === 5,
         }),
         start({
           name: "scheduling-calendar-host-edits",

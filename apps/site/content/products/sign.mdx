@@ -36,6 +36,32 @@ faq:
     answer: Use a sandbox key. Requests work end to end, with the real signing page and a sealed PDF, but emails go to the sandbox's fake provider, the signing page and the certificate say it is a test, and nothing is billed.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const pdfBase64: string;
+// ---cut---
+// [!code word:coss.sign.requests.create]
+const { data: request } = await coss.sign.requests.create({
+  title: "Services agreement",
+  documents: [{ filename: "agreement.pdf", content: pdfBase64 }],
+  signers: [
+    {
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      delivery: "embedded",
+      fields: [
+        { type: "signature", anchor: "{{signature:signer_1}}" },
+      ],
+    },
+  ],
+});
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Create a request on your server, open the signing page in your app, and download the sealed PDF when the last person signs.">
 
 ```ts twoslash

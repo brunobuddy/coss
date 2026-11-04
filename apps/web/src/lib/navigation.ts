@@ -183,6 +183,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   versions: "Versions",
   hooks: "Hooks",
   "event-types": "Event types",
+  "calendar-delegation": "Calendar delegation",
   endpoints: "Endpoints",
   received: "Received",
   inboxes: "Inboxes",

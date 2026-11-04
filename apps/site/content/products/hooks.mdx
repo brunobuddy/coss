@@ -35,6 +35,29 @@ faq:
     answer: No. The SDK sends an Idempotency-Key with every send and reuses it on retries, and you can pass your own key, so a retried send is delivered once. Receivers can still see a message more than once after delivery retries, and use webhook-id to skip duplicates.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+// [!code word:coss.hooks.messages.send]
+const { data: message } = await coss.hooks.messages.send(
+  {
+    application: "customer_8812",
+    event_type: "invoice.paid",
+    payload: {
+      invoice_id: "in_1042",
+      amount: 4200,
+      currency: "usd",
+    },
+  },
+  { idempotencyKey: "invoice-1042-paid" },
+);
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Register the event types you send, create an application for each customer, and send messages. coss.com fans each one out to the customer's endpoints.">
 
 ```ts twoslash

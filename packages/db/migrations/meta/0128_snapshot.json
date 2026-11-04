@@ -1,5 +1,5 @@
 {
-  "id": "aa3feb63-a50d-4ab1-9dc4-8cdc61f54fef",
+  "id": "426b5121-a6de-4126-8ab3-93fe7cae379d",
   "prevId": "d09f1f6e-9294-45c3-8700-b4db33285970",
   "version": "7",
   "dialect": "postgresql",
@@ -2724,12 +2724,6 @@
         },
         "spend_limit_cents": {
           "name": "spend_limit_cents",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "credit_limit_cents": {
-          "name": "credit_limit_cents",
           "type": "bigint",
           "primaryKey": false,
           "notNull": false
@@ -22070,6 +22064,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "delegation_id": {
+          "name": "delegation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reached_at": {
+          "name": "reached_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "status": {
           "name": "status",
           "type": "scheduling_connection_status",
@@ -22105,7 +22111,24 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "scheduling_calendar_connection_delegation_idx": {
+          "name": "scheduling_calendar_connection_delegation_idx",
+          "columns": [
+            {
+              "expression": "delegation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"scheduling_calendar_connection\".\"delegation_id\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "scheduling_calendar_connection_host_fk": {
           "name": "scheduling_calendar_connection_host_fk",
@@ -22113,6 +22136,21 @@
           "tableTo": "scheduling_host",
           "columnsFrom": [
             "host_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "scheduling_calendar_connection_delegation_fk": {
+          "name": "scheduling_calendar_connection_delegation_fk",
+          "tableFrom": "scheduling_calendar_connection",
+          "tableTo": "scheduling_calendar_delegation",
+          "columnsFrom": [
+            "delegation_id",
             "organization_id"
           ],
           "columnsTo": [
@@ -22140,6 +22178,195 @@
             "host_id",
             "provider",
             "account_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scheduling_calendar_delegation": {
+      "name": "scheduling_calendar_delegation",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "environment_id": {
+          "name": "environment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "scheduling_delegation_provider",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "domain": {
+          "name": "domain",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "match_host_email": {
+          "name": "match_host_email",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "status": {
+          "name": "status",
+          "type": "scheduling_delegation_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "encrypted_credentials": {
+          "name": "encrypted_credentials",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verify_account": {
+          "name": "verify_account",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error_code": {
+          "name": "last_error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "failing_since": {
+          "name": "failing_since",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "secret_expires_at": {
+          "name": "secret_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "next_reconcile_at": {
+          "name": "next_reconcile_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "reconcile_cursor": {
+          "name": "reconcile_cursor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lease_until": {
+          "name": "lease_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "scheduling_calendar_delegation_due_idx": {
+          "name": "scheduling_calendar_delegation_due_idx",
+          "columns": [
+            {
+              "expression": "next_reconcile_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scheduling_calendar_delegation_environment_fk": {
+          "name": "scheduling_calendar_delegation_environment_fk",
+          "tableFrom": "scheduling_calendar_delegation",
+          "tableTo": "environment",
+          "columnsFrom": [
+            "environment_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "scheduling_calendar_delegation_id_organization_unique": {
+          "name": "scheduling_calendar_delegation_id_organization_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organization_id"
+          ]
+        },
+        "scheduling_calendar_delegation_domain_unique": {
+          "name": "scheduling_calendar_delegation_domain_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "environment_id",
+            "domain"
           ]
         }
       },
@@ -23317,6 +23544,12 @@
         },
         "email": {
           "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "calendar_account": {
+          "name": "calendar_account",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -29944,8 +30177,7 @@
         "support",
         "promotion",
         "refund",
-        "sla",
-        "threshold"
+        "sla"
       ]
     },
     "public.billing_hold_reason": {
@@ -29954,7 +30186,6 @@
       "values": [
         "delinquent",
         "spend_limit",
-        "credit_limit",
         "admin"
       ]
     },
@@ -29965,8 +30196,7 @@
         "period",
         "plan_change",
         "one_off",
-        "final",
-        "threshold"
+        "final"
       ]
     },
     "public.billing_invoice_status": {
@@ -30823,7 +31053,26 @@
       "schema": "public",
       "values": [
         "active",
-        "needs_reauth"
+        "needs_reauth",
+        "delegation_failing"
+      ]
+    },
+    "public.scheduling_delegation_provider": {
+      "name": "scheduling_delegation_provider",
+      "schema": "public",
+      "values": [
+        "google",
+        "microsoft"
+      ]
+    },
+    "public.scheduling_delegation_status": {
+      "name": "scheduling_delegation_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "active",
+        "failing",
+        "deleting"
       ]
     },
     "public.scheduling_event_type_kind": {
