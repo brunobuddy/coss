@@ -34,6 +34,7 @@ import { MARKETING_LISTS_COMMANDS } from "./commands/marketing-lists.ts";
 import { openCommand } from "./commands/open.ts";
 import { profilesListCommand, useCommand } from "./commands/profiles.ts";
 import { RISK_COMMANDS } from "./commands/risk.ts";
+import { RISK_MANAGE_COMMANDS } from "./commands/risk-manage.ts";
 import { SCHEDULING_COMMANDS } from "./commands/scheduling.ts";
 import { SIGN_COMMANDS } from "./commands/sign.ts";
 import { SMS_COMMANDS } from "./commands/sms.ts";
@@ -97,6 +98,7 @@ export const COMMANDS: readonly Command[] = [
   webhooksRetryCommand,
   ...HOOKS_COMMANDS,
   ...RISK_COMMANDS,
+  ...RISK_MANAGE_COMMANDS,
   ...SIGN_COMMANDS,
   ...FORMS_COMMANDS,
   ...SCHEDULING_COMMANDS,
