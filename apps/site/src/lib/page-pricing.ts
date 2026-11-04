@@ -26,7 +26,8 @@ export function pagePricing(markdown: string): PagePricing | null {
   const tables = product
     ? all.filter((table) => METERS[table.meter].product === product)
     : named.flatMap((meter) => all.filter((table) => table.meter === meter));
-  const included = [...body.matchAll(/<Included meter="([^"]+)"/g)]
+  // Only Free's: the same tag with a `plan` names what a paid plan includes.
+  const included = [...body.matchAll(/<Included meter="([^"]+)" \/>/g)]
     .map((match) => includedUnitsText(match[1] as MeterKey))
     .filter(Boolean);
   return { lede: section[1] ?? null, tables, included };

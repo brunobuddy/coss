@@ -1617,6 +1617,8 @@
                       "sms.registrations",
                       "sign.completed_requests",
                       "risk.phone_checks",
+                      "risk.assessments",
+                      "risk.content_checks",
                       "verify.verifications",
                       "verify.sms",
                       "forms.submissions",
@@ -2281,6 +2283,8 @@
               "sms.registrations",
               "sign.completed_requests",
               "risk.phone_checks",
+              "risk.assessments",
+              "risk.content_checks",
               "verify.verifications",
               "verify.sms",
               "forms.submissions",
@@ -2312,6 +2316,8 @@
                 "sms.registrations",
                 "sign.completed_requests",
                 "risk.phone_checks",
+                "risk.assessments",
+                "risk.content_checks",
                 "verify.verifications",
                 "verify.sms",
                 "forms.submissions",
@@ -18919,6 +18925,13 @@
             "type": "number",
             "description": "How many people an attendee can add to a booking. Not on `group`."
           },
+          "max_active_bookings_per_attendee": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "How many upcoming bookings of this event type one person can have at a time. `null`: no limit."
+          },
           "host_calendar_details": {
             "type": "string",
             "enum": [
@@ -19036,6 +19049,7 @@
           "cancel_notice_minutes",
           "reschedule_notice_minutes",
           "max_guests",
+          "max_active_bookings_per_attendee",
           "host_calendar_details",
           "questions",
           "locations",
@@ -19069,6 +19083,7 @@
             "cancel_notice_minutes": 0,
             "reschedule_notice_minutes": 0,
             "max_guests": 0,
+            "max_active_bookings_per_attendee": null,
             "host_calendar_details": "neutral",
             "questions": [],
             "locations": [],
@@ -19502,6 +19517,15 @@
             "maximum": 10,
             "description": "How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`."
           },
+          "max_active_bookings_per_attendee": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does."
+          },
           "host_calendar_details": {
             "type": "string",
             "enum": [
@@ -19675,6 +19699,7 @@
                 "cancel_notice_minutes": 0,
                 "reschedule_notice_minutes": 0,
                 "max_guests": 0,
+                "max_active_bookings_per_attendee": null,
                 "host_calendar_details": "neutral",
                 "questions": [],
                 "locations": [],
@@ -19819,6 +19844,15 @@
             "minimum": 0,
             "maximum": 10,
             "description": "How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`."
+          },
+          "max_active_bookings_per_attendee": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does."
           },
           "host_calendar_details": {
             "type": "string",
@@ -27082,6 +27116,8 @@
                     "sms.registrations",
                     "sign.completed_requests",
                     "risk.phone_checks",
+                    "risk.assessments",
+                    "risk.content_checks",
                     "verify.verifications",
                     "verify.sms",
                     "forms.submissions",
@@ -27499,6 +27535,8 @@
               "sms.registrations",
               "sign.completed_requests",
               "risk.phone_checks",
+              "risk.assessments",
+              "risk.content_checks",
               "verify.verifications",
               "verify.sms",
               "forms.submissions",
@@ -27923,6 +27961,8 @@
               "sms.registrations",
               "sign.completed_requests",
               "risk.phone_checks",
+              "risk.assessments",
+              "risk.content_checks",
               "verify.verifications",
               "verify.sms",
               "forms.submissions",
@@ -32524,10 +32564,11 @@
                 "velocity",
                 "captcha",
                 "content",
-                "ip_privacy"
+                "ip_privacy",
+                "usage_limit"
               ]
             },
-            "description": "Signal groups that were unavailable for this assessment (it was made without them)."
+            "description": "Signal groups that were unavailable for this assessment (it was made without them). `usage_limit` means the plan's included assessments are used up, or a billing hold or budget applies: the assessment was free and made without velocity, memory of earlier events, content or address-level IP data."
           },
           "outcome": {
             "anyOf": [
@@ -93126,6 +93167,8 @@
                 "sms.registrations",
                 "sign.completed_requests",
                 "risk.phone_checks",
+                "risk.assessments",
+                "risk.content_checks",
                 "verify.verifications",
                 "verify.sms",
                 "forms.submissions",
@@ -107739,7 +107782,7 @@
           "Risk"
         ],
         "summary": "Assess an event",
-        "description": "Assesses a sign-up, login or other event in the API key's environment and returns a decision (`allow`, `review` or `block`) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in `degraded`. Call it from your server, never from the browser, and treat errors as `allow` (fail open) so an outage never locks your users out. `review` decisions also fire a `risk.assessment.review` webhook. Sandbox (`coss_test_…`) keys accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).",
+        "description": "Assesses a sign-up, login or other event in the API key's environment and returns a decision (`allow`, `review` or `block`) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in `degraded`. Call it from your server, never from the browser, and treat errors as `allow` (fail open) so an outage never locks your users out. `review` decisions also fire a `risk.assessment.review` webhook. Live assessments are billed (`risk.assessments`; plans include some every month) unless they end in `block`. Past Free's allowance, on a billing hold or over a budget, they are free and made without velocity, memory or content (`usage_limit` in `degraded`); they never fail over billing. Sandbox (`coss_test_…`) keys accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).",
         "security": [
           {
             "bearerAuth": []
@@ -112565,7 +112608,7 @@
           "Risk"
         ],
         "summary": "Classify content",
-        "description": "Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Limited per organization as well as per key. Sandbox keys use markers instead of a model: `[coss-test:phishing]` scores 0.99, `[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.",
+        "description": "Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Each live classification the model answered is billed (`risk.content_checks`; plans include some every month, and Free stops at its allowance). Limited per organization as well as per key. Sandbox keys use markers instead of a model: `[coss-test:phishing]` scores 0.99, `[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.",
         "security": [
           {
             "bearerAuth": []
@@ -112635,6 +112678,27 @@
           },
           "401": {
             "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "The plan's included content checks are used up (`usage_limit_exceeded`), or live checks are paused by an overdue invoice, a spend limit (`billing_hold`) or a budget (`budget_exceeded`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",

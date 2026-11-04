@@ -264,6 +264,12 @@ describe("pricing sections", () => {
 
   test("a page without a section has none", () => {
     expect(pagePricing('<Section title="Specifications">x</Section>')).toBeNull();
+    // A paid plan's allowance in the prose isn't Free's.
+    expect(
+      pagePricing(
+        '<Section title="Pricing"><Included meter="risk.assessments" /> and <Included meter="risk.assessments" plan="pro" /></Section>',
+      )?.included,
+    ).toEqual(["10,000 risk assessments a month"]);
   });
 });
 

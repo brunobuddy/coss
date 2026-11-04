@@ -30,6 +30,7 @@ export const RATE_LIMIT_KEYS = [
   "email.inbound.megabytes.day",
   "sms.segments.second",
   "sms.segments.day",
+  "risk.assess",
 ] as const;
 export type RateLimitKey = (typeof RATE_LIMIT_KEYS)[number];
 

@@ -320,9 +320,11 @@ async function renderBillingNotification(
       });
       blocks.push({
         paragraph:
-          payload.blocked === "true"
-            ? "Usage stops at the limit until the next billing period. Upgrade to keep sending."
-            : "Usage beyond your plan's credit is billed at your plan's rates.",
+          typeof payload.atLimit === "string"
+            ? payload.atLimit
+            : payload.blocked === "true"
+              ? "Usage stops at the limit until the next billing period. Upgrade to keep sending."
+              : "Usage beyond your plan's credit is billed at your plan's rates.",
       });
       break;
     }
