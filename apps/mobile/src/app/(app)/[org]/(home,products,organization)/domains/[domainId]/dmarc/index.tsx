@@ -1,6 +1,6 @@
 import type { DmarcOverviewResponse } from "@coss/companion";
 import { RETENTION_DAYS } from "@coss/retention";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { FileChartColumn } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
 import { Alert } from "../../../../../../../components/alert";

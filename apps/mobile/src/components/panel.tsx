@@ -99,6 +99,8 @@ export function ListRow(props: {
   href?: Href;
   onPress?: () => void;
   titleLines?: number;
+  /** It leaves the app: the trailing mark says so instead of a chevron. */
+  external?: boolean;
 }) {
   // With a subtitle and a detail, the detail sits beside the title and the trailing mark beside
   // the subtitle, so neither line gives up its width to both.
@@ -129,7 +131,7 @@ export function ListRow(props: {
       </View>
       {twoLines ? null : detail}
       {twoLines ? null : props.trailing}
-      {props.href || props.onPress ? (
+      {(props.href || props.onPress) && !props.external ? (
         <Icon color="mutedForeground" icon={ChevronRight} size={16} />
       ) : null}
     </View>

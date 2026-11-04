@@ -1,16 +1,9 @@
 import type { EnvironmentResponse } from "@coss/companion";
 import * as Haptics from "expo-haptics";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withDelay,
-  withTiming,
-} from "react-native-reanimated";
+import Animated, { cubicBezier, useReducedMotion } from "react-native-reanimated";
 import { formatCount, formatDay } from "../lib/format";
 import { type ColorToken, colors } from "../lib/theme";
 import { useArrival } from "./screen";
@@ -37,6 +30,17 @@ const SERIES: BarSeries<Day>[] = [
   },
   { key: "canceled", label: "Canceled", color: "chartCanceled", value: (day) => day.canceled },
 ];
+
+// Bars rise once when a chart replaces a skeleton; at rest nothing is left animated.
+const GROW = {
+  animationName: {
+    from: { transform: [{ scaleY: 0 }] },
+    to: { transform: [{ scaleY: 1 }] },
+  },
+  animationDuration: 460,
+  animationDelay: 60,
+  animationTimingFunction: cubicBezier(0.2, 0.8, 0.2, 1),
+} as const;
 
 const DASHES = Array.from({ length: 64 }, (_, n) => `dash-${n}`);
 
@@ -84,14 +88,7 @@ export function StackedBars<D extends { date: string }>({
 
   const arrived = useArrival();
   const reduced = useReducedMotion();
-  const grow = useSharedValue(arrived && !reduced ? 0 : 1);
-  useEffect(() => {
-    grow.value = withDelay(
-      60,
-      withTiming(1, { duration: 460, easing: Easing.bezier(0.2, 0.8, 0.2, 1) }),
-    );
-  }, [grow]);
-  const growStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: grow.value }] }));
+  const growStyle = arrived && !reduced ? GROW : null;
 
   const plotWidth = useRef(0);
   const scrubbing = useRef(false);

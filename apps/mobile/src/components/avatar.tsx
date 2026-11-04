@@ -48,4 +48,24 @@ const styles = StyleSheet.create({
     borderColor: colors.background,
   },
   initials: { fontFamily: fonts.medium, color: colors.primaryForeground },
+  person: {
+    backgroundColor: colors.muted,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  personInitials: { fontFamily: fonts.medium, color: colors.mutedForeground },
 });
+
+/** A person who isn't the signed-in user: initials on the muted tray. */
+export function Avatar(props: { name: string; size?: number }) {
+  const size = props.size ?? 32;
+  return (
+    <View style={[styles.person, { width: size, height: size, borderRadius: size / 2 }]}>
+      <Text style={[styles.personInitials, { fontSize: size * 0.38, lineHeight: size * 0.48 }]}>
+        {initials(props.name)}
+      </Text>
+    </View>
+  );
+}

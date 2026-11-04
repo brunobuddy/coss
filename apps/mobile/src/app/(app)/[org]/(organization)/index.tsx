@@ -13,21 +13,21 @@ import {
   Users,
   Wallet,
 } from "lucide-react-native";
-import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { Alert } from "../../../../components/alert";
+import { OrgAvatar } from "../../../../components/avatar";
 import { Badge, StatusDot } from "../../../../components/badge";
 import { EmptyState } from "../../../../components/empty";
 import { Icon } from "../../../../components/icon";
 import { ListRow, Panel, Ruled } from "../../../../components/panel";
-import { PageIntro, Screen } from "../../../../components/screen";
+import { ProductGlyph } from "../../../../components/product-glyph";
+import { RootToolbar } from "../../../../components/root-toolbar";
+import { Screen } from "../../../../components/screen";
 import { Text } from "../../../../components/text";
 import { useActiveEnvironment } from "../../../../lib/active-environment";
 import { formatCount, roleLabel } from "../../../../lib/format";
-import { rememberOrganization } from "../../../../lib/last-org";
 import { useOrganization } from "../../../../lib/queries";
 import { STANDING_LABELS, standingTone } from "../../../../lib/status";
-import { colors, radius } from "../../../../lib/theme";
 
 // apps/web/src/components/billing/billing-banner.tsx, without its calls to action: the app's billing
 // is read-only, with no way to pay or buy (App Store guideline 3.1.1).
@@ -135,147 +135,131 @@ function Alerts({ data }: { data: OrganizationResponse }) {
 }
 
 export default function OrganizationScreen() {
-  const { org } = useActiveEnvironment();
+  const { org, params: active, select } = useActiveEnvironment();
   const query = useOrganization(org);
-  useEffect(() => {
-    if (query.data) rememberOrganization(query.data.organization.slug);
-  }, [query.data]);
+  if (query.isPending) {
+    return (
+      <Screen loading="list" title="Organization">
+        <RootToolbar />
+      </Screen>
+    );
+  }
+  if (query.isError && !query.data) {
+    return <Screen error={query.error} onRetry={() => query.refetch()} title="Organization" />;
+  }
+  const data = query.data as OrganizationResponse;
+  const openEnvironment = (project: string, env: string) => {
+    select({ project, env });
+    router.navigate({ pathname: "/[org]/(home)", params: { org } });
+  };
   return (
-    <>
-      {query.isPending ? (
-        <Screen loading="list" />
-      ) : query.isError && !query.data ? (
-        <Screen error={query.error} onRetry={() => query.refetch()} />
-      ) : (
-        <Screen onRefresh={() => query.refetch()} title={query.data.organization.name}>
-          <PageIntro
-            title={query.data.organization.name}
-            description="Each project has a production (live) and a development (sandbox) environment, each with its own API keys, emails, logs and webhooks."
-            meta={
-              <>
-                <Badge variant="outline">{roleLabel(query.data.organization.role)}</Badge>
-                {query.data.organization.suspended ? (
-                  <Badge variant="error">Suspended</Badge>
-                ) : null}
-                <Text muted variant="mono">
-                  {query.data.organization.slug}
-                </Text>
-              </>
+    <Screen onRefresh={() => query.refetch()} title="Organization">
+      <RootToolbar />
+      <View style={styles.identity}>
+        <OrgAvatar name={data.organization.name} size={44} />
+        <View style={styles.identityText}>
+          <Text numberOfLines={1} variant="heading">
+            {data.organization.name}
+          </Text>
+          <View style={styles.identityMeta}>
+            <Badge variant="outline">{roleLabel(data.organization.role)}</Badge>
+            {data.organization.suspended ? <Badge variant="error">Suspended</Badge> : null}
+            <Text muted variant="mono">
+              {data.organization.slug}
+            </Text>
+          </View>
+        </View>
+      </View>
+      <Alerts data={data} />
+      {data.can.read_reputation ? (
+        <Panel>
+          <ListRow
+            href={{ pathname: "/[org]/reputation", params: { org } }}
+            leading={<ProductGlyph icon={Gauge} size={32} tone="neutral" />}
+            subtitle="Bounce and complaint rates"
+            title="Reputation"
+            trailing={
+              <Badge variant="outline">
+                <StatusDot
+                  label={STANDING_LABELS[data.standing.status]}
+                  tone={standingTone(data.standing.status)}
+                />
+              </Badge>
             }
           />
-          <Alerts data={query.data} />
-          {query.data.can.read_reputation ? (
-            <Panel>
-              <ListRow
-                href={{ pathname: "/[org]/reputation", params: { org } }}
-                leading={
-                  <View style={styles.tile}>
-                    <Icon icon={Gauge} />
-                  </View>
-                }
-                subtitle="Bounce and complaint rates"
-                title="Reputation"
-                trailing={
-                  <Badge variant="outline">
-                    <StatusDot
-                      label={STANDING_LABELS[query.data.standing.status]}
-                      tone={standingTone(query.data.standing.status)}
-                    />
-                  </Badge>
-                }
-              />
-            </Panel>
-          ) : null}
-          {query.data.projects.length === 0 ? (
-            <Panel>
-              <EmptyState
-                description="Projects you create on coss.com appear here."
-                icon={FolderPlus}
-                title="No projects yet"
-              />
-            </Panel>
-          ) : (
-            query.data.projects.map((project) => (
-              <Panel
-                description={project.slug}
-                descriptionMono
-                icon={Folder}
-                key={project.id}
-                title={project.name}
-              >
-                <Ruled>
-                  {project.environments.map((environment) => (
-                    <ListRow
-                      detail={environment.mode}
-                      href={{
-                        pathname: "/[org]/projects/[project]/[env]",
-                        params: { org, project: project.slug, env: environment.slug },
-                      }}
-                      key={environment.id}
-                      leading={
-                        <StatusDot tone={environment.mode === "live" ? "success" : "info"} />
-                      }
-                      title={environment.name}
-                    />
-                  ))}
-                </Ruled>
-              </Panel>
-            ))
-          )}
-          <Panel title="Organization">
+        </Panel>
+      ) : null}
+      {data.projects.length === 0 ? (
+        <Panel>
+          <EmptyState
+            description="Projects you create on coss.com appear here."
+            icon={FolderPlus}
+            title="No projects yet"
+          />
+        </Panel>
+      ) : (
+        data.projects.map((project) => (
+          <Panel
+            description="Each has its own API keys, emails, logs and webhooks."
+            icon={Folder}
+            key={project.id}
+            title={project.name}
+          >
             <Ruled>
-              {[
-                query.data.can.read_domain && { label: "Domains", path: "domains", icon: Globe },
-                query.data.can.read_domain && {
-                  label: "Dedicated IPs",
-                  path: "dedicated-ips",
-                  icon: Network,
-                },
-                query.data.can.read_sms_sender && {
-                  label: "SMS",
-                  path: "sms",
-                  icon: MessageSquare,
-                },
-                { label: "Members", path: "members", icon: Users },
-                { label: "Spend", path: "spend", icon: Wallet },
-                { label: "Settings", path: "settings", icon: Settings },
-                query.data.can.read_billing && {
-                  label: "Billing",
-                  path: "settings/billing",
-                  icon: CreditCard,
-                },
-                query.data.can.read_audit && {
-                  label: "Audit log",
-                  path: "settings/audit",
-                  icon: History,
-                },
-              ]
-                .filter((item) => item !== false)
-                .map((item) => (
-                  <ListRow
-                    href={`/${org}/${item.path}` as Href}
-                    key={item.path}
-                    leading={<Icon color="mutedForeground" icon={item.icon} size={18} />}
-                    title={item.label}
-                  />
-                ))}
+              {project.environments.map((environment) => (
+                <ListRow
+                  detail={
+                    active?.project === project.slug && active.env === environment.slug
+                      ? "open"
+                      : environment.mode
+                  }
+                  key={environment.id}
+                  leading={<StatusDot tone={environment.mode === "live" ? "success" : "info"} />}
+                  onPress={() => openEnvironment(project.slug, environment.slug)}
+                  title={environment.name}
+                />
+              ))}
             </Ruled>
           </Panel>
-        </Screen>
+        ))
       )}
-    </>
+      <Panel title="Organization">
+        <Ruled>
+          {[
+            data.can.read_domain && { label: "Domains", path: "domains", icon: Globe },
+            data.can.read_domain && {
+              label: "Dedicated IPs",
+              path: "dedicated-ips",
+              icon: Network,
+            },
+            data.can.read_sms_sender && { label: "SMS", path: "sms", icon: MessageSquare },
+            { label: "Members", path: "members", icon: Users },
+            { label: "Spend", path: "spend", icon: Wallet },
+            { label: "Settings", path: "settings", icon: Settings },
+            data.can.read_billing && {
+              label: "Billing",
+              path: "settings/billing",
+              icon: CreditCard,
+            },
+            data.can.read_audit && { label: "Audit log", path: "settings/audit", icon: History },
+          ]
+            .filter((item) => item !== false)
+            .map((item) => (
+              <ListRow
+                href={`/${org}/${item.path}` as Href}
+                key={item.path}
+                leading={<Icon color="mutedForeground" icon={item.icon} size={18} />}
+                title={item.label}
+              />
+            ))}
+        </Ruled>
+      </Panel>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  tile: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  identity: { flexDirection: "row", alignItems: "center", gap: 12 },
+  identityText: { flex: 1, gap: 4 },
+  identityMeta: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
 });

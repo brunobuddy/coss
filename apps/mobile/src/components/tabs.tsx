@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     top: 3,
     bottom: 3,
     borderRadius: radius.md,
-    backgroundColor: colors.card,
+    backgroundColor: colors.raised,
   },
   segment: {
     flex: 1,

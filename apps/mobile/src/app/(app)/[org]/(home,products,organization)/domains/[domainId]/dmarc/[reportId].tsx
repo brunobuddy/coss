@@ -1,5 +1,5 @@
 import type { MobileDmarcRecord } from "@coss/companion";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Badge, StatusDot } from "../../../../../../../components/badge";
 import { Panel, Ruled, SpecItem, SpecList } from "../../../../../../../components/panel";

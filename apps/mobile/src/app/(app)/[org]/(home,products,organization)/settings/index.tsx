@@ -1,6 +1,6 @@
 import type { OrganizationSettingsResponse } from "@coss/companion";
 import { formatRetentionPeriod, RETENTION_POLICY } from "@coss/retention";
-import { type Href, Stack, useLocalSearchParams } from "expo-router";
+import { type Href, useLocalSearchParams } from "expo-router";
 import {
   ChevronDown,
   ChevronUp,

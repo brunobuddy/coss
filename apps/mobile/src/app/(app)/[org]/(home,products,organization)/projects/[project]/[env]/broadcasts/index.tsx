@@ -1,5 +1,5 @@
 import type { MobileBroadcastSummary } from "@coss/companion";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { Send } from "lucide-react-native";
 import { StatusDot } from "../../../../../../../../components/badge";
 import { PagedPanel } from "../../../../../../../../components/paged";

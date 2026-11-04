@@ -6,8 +6,6 @@ import { type Href, Link, Stack, useLocalSearchParams } from "expo-router";
 import {
   Ban,
   CalendarClock,
-  Check,
-  Copy,
   ExternalLink,
   FileText,
   Paperclip,

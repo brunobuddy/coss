@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Network } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
 import { Alert } from "../../../../components/alert";

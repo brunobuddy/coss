@@ -1,4 +1,4 @@
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { ExternalLink, History } from "lucide-react-native";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";

@@ -1,5 +1,5 @@
 import type { MobileSegmentCondition } from "@coss/companion";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Panel, PanelBody, Ruled } from "../../../../../../../../components/panel";
 import { PageIntro, Screen } from "../../../../../../../../components/screen";

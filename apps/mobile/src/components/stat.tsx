@@ -37,7 +37,7 @@ export function Stat(props: { label: string; value: string; unit?: string; detai
       </Text>
       <View style={styles.value}>
         <CountUp
-          adjustsFontSizeToFit
+          adjustsFontSizeToFit={props.value.length > 8}
           minimumFontScale={0.6}
           numberOfLines={1}
           style={styles.number}

@@ -6,6 +6,8 @@ const light = {
   background: "#ffffff",
   foreground: "#262626",
   card: "#ffffff",
+  /** What sits raised in a well: a selected tab, a filter. */
+  raised: "#ffffff",
   /** The muted tray a panel's header and footer sit on (`bg-muted/72` over the card). */
   tray: "#f6f6f6",
   muted: "rgba(0,0,0,0.04)",
@@ -47,6 +49,7 @@ const dark: Palette = {
   background: "#161616",
   foreground: "#f5f5f5",
   card: "#1b1b1b",
+  raised: "#2e2e2e",
   tray: "#1f1f1f",
   muted: "rgba(255,255,255,0.04)",
   mutedForeground: "#818181",
@@ -140,6 +143,7 @@ export const space = { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, se
 export const motion = {
   spring: { damping: 26, stiffness: 320, mass: 0.8 },
   fast: 150,
+  slide: 240,
   arrive: 240,
   count: 700,
   draw: 600,

@@ -1,6 +1,6 @@
 import type { EmailStatus } from "@coss/companion";
 import { formatRetentionDays, RETENTION_DAYS } from "@coss/retention";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { Mail } from "lucide-react-native";
 import { useState } from "react";
 import { EmailRow } from "../../../../../../../../components/email-row";

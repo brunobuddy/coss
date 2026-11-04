@@ -1,5 +1,5 @@
 import type { SpendBudget } from "@coss/companion";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { KeyRound } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
 import { Badge } from "../../../../../components/badge";

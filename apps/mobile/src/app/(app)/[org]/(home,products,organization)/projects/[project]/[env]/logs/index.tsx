@@ -1,5 +1,5 @@
 import type { LogRange, LogSource } from "@coss/companion";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { ScrollText } from "lucide-react-native";
 import { useState } from "react";
 import { StatusDot } from "../../../../../../../../components/badge";

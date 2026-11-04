@@ -1,5 +1,5 @@
 import type { ScimSettingsResponse } from "@coss/companion";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Alert } from "../../../../../components/alert";
 import { Badge, StatusDot } from "../../../../../components/badge";

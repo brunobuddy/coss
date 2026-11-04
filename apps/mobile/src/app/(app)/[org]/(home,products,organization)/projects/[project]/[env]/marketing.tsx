@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { CodeBlock } from "../../../../../../../components/code-block";
 import { Panel, SpecItem, SpecList } from "../../../../../../../components/panel";
 import { PageIntro, Screen } from "../../../../../../../components/screen";

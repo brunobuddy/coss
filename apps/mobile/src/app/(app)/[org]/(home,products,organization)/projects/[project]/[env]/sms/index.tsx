@@ -1,6 +1,6 @@
 import type { SmsStatus } from "@coss/companion";
 import { formatRetentionDays, RETENTION_DAYS } from "@coss/retention";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { MessageSquare } from "lucide-react-native";
 import { useState } from "react";
 import { type Filter, FilterChips } from "../../../../../../../../components/filters";

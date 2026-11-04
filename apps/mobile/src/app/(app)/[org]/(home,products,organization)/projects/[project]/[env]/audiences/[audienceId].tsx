@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { UsersRound } from "lucide-react-native";
 import { Badge, StatusDot } from "../../../../../../../../components/badge";
 import { PagedPanel } from "../../../../../../../../components/paged";

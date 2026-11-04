@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { Braces } from "lucide-react-native";
 import { EmptyState } from "../../../../../../../../components/empty";
 import { ListRow, Panel, Ruled } from "../../../../../../../../components/panel";

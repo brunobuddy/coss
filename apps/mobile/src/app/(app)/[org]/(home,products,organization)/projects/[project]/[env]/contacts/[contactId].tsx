@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { Badge, StatusDot } from "../../../../../../../../components/badge";
 import {
   ListRow,

@@ -1,5 +1,5 @@
 import type { DnsRecord } from "@coss/companion";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Alert } from "../../../../../../components/alert";
 import { Badge, StatusDot } from "../../../../../../components/badge";

@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { Scale } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
 import { EmptyState } from "../../../../../../../../components/empty";

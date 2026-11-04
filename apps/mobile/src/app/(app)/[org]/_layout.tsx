@@ -8,7 +8,7 @@ export default function OrganizationTabs() {
   const palette = usePalette();
   return (
     <ActiveEnvironmentProvider org={org}>
-      <NativeTabs minimizeBehavior="onScrollDown" tintColor={palette.foreground}>
+      <NativeTabs tintColor={palette.foreground}>
         <NativeTabs.Trigger name="(home)">
           <NativeTabs.Trigger.Icon sf={{ default: "house", selected: "house.fill" }} />
           <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>

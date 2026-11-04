@@ -1,12 +1,14 @@
 "use server";
 
 import {
+  approveBooking,
   type BookingActor,
   cancelBooking,
   createEventType,
   createHost,
   createHostSession,
   createSchedule,
+  declineBooking,
   deleteHost,
   SchedulingError,
   updateHost,
@@ -200,6 +202,36 @@ export async function cancelBookingAction(_prev: ActionResult | null, formData: 
       cancelBooking(env, formString(formData, "bookingId"), configuredDeps(), actorOf(context)),
     );
     await audit(context, "scheduling_booking.cancelled", {
+      type: "scheduling_booking",
+      id: booking.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function approveBookingAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const booking = await friendly(() =>
+      approveBooking(env, formString(formData, "bookingId"), configuredDeps(), actorOf(context)),
+    );
+    await audit(context, "scheduling_booking.approved", {
+      type: "scheduling_booking",
+      id: booking.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function declineBookingAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const booking = await friendly(() =>
+      declineBooking(env, formString(formData, "bookingId"), configuredDeps(), actorOf(context)),
+    );
+    await audit(context, "scheduling_booking.declined", {
       type: "scheduling_booking",
       id: booking.id,
     });

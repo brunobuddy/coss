@@ -100,7 +100,7 @@
     "db:migrate": "bun run --cwd packages/db db:migrate",
     "db:migrate:test": "bun run --cwd packages/db db:migrate:test",
     "db:studio": "bun run --cwd packages/db db:studio",
-    "db:seed": "bun run --cwd packages/tenancy db:seed && bun run --cwd packages/billing db:seed",
+    "db:seed": "bun run --cwd packages/tenancy db:seed && bun run --cwd packages/billing db:seed && bun run --cwd packages/scheduling db:seed",
     "billing:close-period": "bun run --cwd packages/billing close-period --",
     "sms:update-prices": "bun run --cwd packages/billing sms:update-prices --",
     "admin:create": "bun run --cwd packages/tenancy admin:create",

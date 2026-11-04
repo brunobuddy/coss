@@ -1,5 +1,5 @@
 import type { MobileSmsCountry } from "@coss/companion";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { Check, Globe, MessageSquare, ShieldCheck } from "lucide-react-native";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";

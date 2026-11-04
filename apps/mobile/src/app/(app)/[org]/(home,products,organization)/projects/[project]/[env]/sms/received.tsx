@@ -1,5 +1,5 @@
 import { formatRetentionDays, RETENTION_DAYS } from "@coss/retention";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { MessageSquareReply } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
 import { Badge } from "../../../../../../../../components/badge";

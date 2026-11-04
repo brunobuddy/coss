@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Panel, SpecItem, SpecList } from "../../../../../../../../components/panel";
 import { PageIntro, Screen } from "../../../../../../../../components/screen";

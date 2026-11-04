@@ -4,8 +4,10 @@
 export type * from "./account.ts";
 export type * from "./broadcasts.ts";
 export type * from "./contacts.ts";
+export type * from "./home.ts";
 export type * from "./organization-settings.ts";
 export type * from "./risk-settings.ts";
+export type * from "./scheduling.ts";
 export type * from "./sms-senders.ts";
 export type * from "./spend.ts";
 export type * from "./templates.ts";
@@ -122,6 +124,8 @@ export type OrganizationResponse = {
     read_sms_sender: boolean;
     read_sso: boolean;
     read_scim: boolean;
+    read_scheduling: boolean;
+    update_scheduling: boolean;
   };
   projects: MobileProject[];
 };

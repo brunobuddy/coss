@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Badge } from "../../../../../../../../../../components/badge";
 import { PageIntro, Screen } from "../../../../../../../../../../components/screen";

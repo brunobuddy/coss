@@ -1,5 +1,5 @@
 import type { ContactStatus } from "@coss/companion";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Braces, ContactRound, SearchX } from "lucide-react-native";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";

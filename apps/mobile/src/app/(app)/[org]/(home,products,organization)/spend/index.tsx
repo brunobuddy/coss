@@ -5,7 +5,7 @@ import type {
   SpendGroup,
   SpendRow,
 } from "@coss/companion";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Wallet } from "lucide-react-native";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";

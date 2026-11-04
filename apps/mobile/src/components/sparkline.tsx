@@ -13,13 +13,44 @@ import { useArrival } from "./screen";
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
+/** The line draws itself once; afterwards it's a plain path, so nothing can be left half drawn. */
+function DrawnLine(props: { d: string; length: number; color: string }) {
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withTiming(1, {
+      duration: motion.draw,
+      easing: Easing.bezier(0.2, 0.8, 0.2, 1),
+    });
+  }, [progress]);
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: props.length * (1 - progress.value),
+  }));
+  return (
+    <AnimatedPath
+      animatedProps={animatedProps}
+      d={props.d}
+      fill="none"
+      stroke={props.color}
+      strokeDasharray={[props.length, props.length]}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.75}
+    />
+  );
+}
+
 /** The dashboard's `Sparkline`: recent values (oldest first) over a soft fill of its colour. */
 export function Sparkline(props: { id: string; values: number[]; color: string; height?: number }) {
   const height = props.height ?? 32;
   const [width, setWidth] = useState(0);
   const arrived = useArrival();
   const reduced = useReducedMotion();
-  const progress = useSharedValue(arrived && !reduced ? 0 : 1);
+  const [drawing, setDrawing] = useState(arrived && !reduced);
+  useEffect(() => {
+    if (!drawing || width === 0) return;
+    const timer = setTimeout(() => setDrawing(false), motion.draw + 100);
+    return () => clearTimeout(timer);
+  }, [drawing, width]);
 
   const max = Math.max(1, ...props.values);
   const step = props.values.length > 1 ? width / (props.values.length - 1) : width;
@@ -35,17 +66,6 @@ export function Sparkline(props: { id: string; values: number[]; color: string; 
     const [x1, y1] = points[i] ?? [0, 0];
     length += Math.hypot(x1 - x0, y1 - y0);
   }
-
-  useEffect(() => {
-    if (width === 0) return;
-    progress.value = withTiming(1, {
-      duration: motion.draw,
-      easing: Easing.bezier(0.2, 0.8, 0.2, 1),
-    });
-  }, [progress, width]);
-
-  const lineProps = useAnimatedProps(() => ({ strokeDashoffset: length * (1 - progress.value) }));
-  const areaProps = useAnimatedProps(() => ({ opacity: progress.value }));
   const gradient = `sparkline-${props.id}`;
 
   return (
@@ -62,21 +82,19 @@ export function Sparkline(props: { id: string; values: number[]; color: string; 
               <Stop offset="1" stopColor={props.color} stopOpacity={0} />
             </LinearGradient>
           </Defs>
-          <AnimatedPath
-            animatedProps={areaProps}
-            d={`${line} L${width},${height} L0,${height} Z`}
-            fill={`url(#${gradient})`}
-          />
-          <AnimatedPath
-            animatedProps={lineProps}
-            d={line}
-            fill="none"
-            stroke={props.color}
-            strokeDasharray={[length, length]}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.75}
-          />
+          <Path d={`${line} L${width},${height} L0,${height} Z`} fill={`url(#${gradient})`} />
+          {drawing ? (
+            <DrawnLine color={props.color} d={line} length={length} />
+          ) : (
+            <Path
+              d={line}
+              fill="none"
+              stroke={props.color}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.75}
+            />
+          )}
         </Svg>
       ) : null}
     </View>

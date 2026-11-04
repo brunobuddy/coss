@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { Filter } from "lucide-react-native";
 import { PagedPanel } from "../../../../../../../../components/paged";
 import { ListRow } from "../../../../../../../../components/panel";

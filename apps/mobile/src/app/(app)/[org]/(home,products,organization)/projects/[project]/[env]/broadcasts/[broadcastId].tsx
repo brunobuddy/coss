@@ -1,6 +1,6 @@
 import type { BroadcastResponse } from "@coss/companion";
 import * as Haptics from "expo-haptics";
-import { type Href, router, Stack, useLocalSearchParams } from "expo-router";
+import { type Href, router, useLocalSearchParams } from "expo-router";
 import { Ban, ExternalLink, FileText, Pause, Play } from "lucide-react-native";
 import { Alert as NativeAlert, Pressable, StyleSheet, View } from "react-native";
 import { Alert } from "../../../../../../../../components/alert";

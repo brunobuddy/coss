@@ -1,6 +1,6 @@
 import type { RiskAssessmentSummary, RiskOutcome } from "@coss/companion";
 import * as Haptics from "expo-haptics";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { ShieldAlert, ShieldCheck } from "lucide-react-native";
 import { useState } from "react";
 import { Alert as NativeAlert, StyleSheet, View } from "react-native";

@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { LayoutTemplate } from "lucide-react-native";
 import { StatusDot } from "../../../../../../../../components/badge";
 import { ModeBadge } from "../../../../../../../../components/mode-badge";

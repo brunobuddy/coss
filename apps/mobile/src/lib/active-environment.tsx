@@ -8,7 +8,12 @@ import {
   useMemo,
   useState,
 } from "react";
-import { type EnvironmentChoice, lastEnvironment, rememberEnvironment } from "./last-org";
+import {
+  type EnvironmentChoice,
+  lastEnvironment,
+  rememberEnvironment,
+  rememberOrganization,
+} from "./last-org";
 import { useOrganization } from "./queries";
 import type { EnvironmentParams } from "./web";
 
@@ -50,6 +55,11 @@ export function ActiveEnvironmentProvider(props: { org: string; children: ReactN
       current = false;
     };
   }, [org]);
+
+  const slug = organization.data?.organization.slug;
+  useEffect(() => {
+    if (slug) rememberOrganization(slug);
+  }, [slug]);
 
   const select = useCallback(
     (choice: EnvironmentChoice) => {
