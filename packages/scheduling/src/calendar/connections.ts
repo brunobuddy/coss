@@ -46,6 +46,7 @@ const {
   schedulingCalendarConnection,
   schedulingCalendarDelegation,
   schedulingCalendarEvent,
+  schedulingHost,
   schedulingOauthState,
   schedulingNotification,
 } = schema;
@@ -211,6 +212,15 @@ async function saveConnection(
   const remote = await input.client.listCalendars();
   const now = deps.now?.() ?? new Date();
   return db.transaction(async (tx) => {
+    // The host first, as connecting through a delegation does: this insert would otherwise reserve
+    // the connection's key and wait on the host's lock while that waits on the key, and deadlock.
+    await tx
+      .select({ id: schedulingHost.id })
+      .from(schedulingHost)
+      .where(
+        and(eq(schedulingHost.id, host.id), eq(schedulingHost.organizationId, host.organizationId)),
+      )
+      .for("update");
     // The mailbox is already reached through a delegation: a consent adds nothing, and its tokens
     // mustn't take the place of the delegation's.
     const [delegated] = await tx
