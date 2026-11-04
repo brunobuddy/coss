@@ -4,12 +4,13 @@ import type { SecretsKeyRing } from "@coss/webhooks";
 import { decryptSecret, encryptSecret, isEncryptedWithPrimary } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, or } from "drizzle-orm";
 
-const { schedulingAttendee, schedulingSession } = schema;
+const { schedulingAttendee, schedulingBooking, schedulingSession } = schema;
 
 /** A test compares this with the database's columns. */
 export const SCHEDULING_DATA_KEY_COLUMNS = [
   "scheduling_attendee.encrypted_contact",
   "scheduling_attendee.encrypted_answers",
+  "scheduling_booking.encrypted_attributes",
   "scheduling_session.encrypted_attendee",
   "scheduling_session.encrypted_attributes",
 ] as const;
@@ -161,6 +162,63 @@ async function reencryptAttendees(opts: Options, result: SchedulingReencryptResu
   }
 }
 
+async function reencryptBookings(opts: Options, result: SchedulingReencryptResult): Promise<void> {
+  const batchSize = opts.batchSize ?? 200;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingBooking.id,
+        organizationId: schedulingBooking.organizationId,
+        attributes: schedulingBooking.encryptedAttributes,
+      })
+      .from(schedulingBooking)
+      .where(
+        and(
+          gt(schedulingBooking.id, after),
+          isNotNull(schedulingBooking.encryptedAttributes),
+          opts.scope
+            ? inArray(schedulingBooking.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingBooking.id))
+      .limit(batchSize);
+    for (const row of rows) {
+      result.checked++;
+      const next = rewritten(
+        row,
+        [["scheduling_booking.encrypted_attributes", row.attributes]],
+        opts,
+        result,
+      );
+      if (!next) continue;
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      await opts.beforeWrite?.(row.id);
+      // The compare-and-set is what keeps a booking erased meanwhile erased.
+      const [updated] = await db
+        .update(schedulingBooking)
+        .set({ encryptedAttributes: next.get("scheduling_booking.encrypted_attributes") ?? null })
+        .where(
+          and(
+            eq(schedulingBooking.id, row.id),
+            eq(schedulingBooking.organizationId, row.organizationId),
+            eq(schedulingBooking.encryptedAttributes, row.attributes as string),
+          ),
+        )
+        .returning({ id: schedulingBooking.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < batchSize) break;
+    after = last.id;
+  }
+}
+
 // Expired sessions count too: they still hold someone's details.
 async function reencryptSessions(opts: Options, result: SchedulingReencryptResult): Promise<void> {
   const batchSize = opts.batchSize ?? 200;
@@ -243,6 +301,7 @@ export async function reencryptSchedulingData(opts: Options): Promise<Scheduling
     conflicts: 0,
   };
   await reencryptAttendees(opts, result);
+  await reencryptBookings(opts, result);
   await reencryptSessions(opts, result);
   return result;
 }

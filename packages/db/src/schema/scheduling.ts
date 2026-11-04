@@ -524,6 +524,9 @@ export const schedulingBooking = pgTable(
     // Bumped by every change; notifications and calendar writes compare against it.
     version: integer("version").notNull().default(1),
     metadata: jsonb("metadata").$type<Record<string, string>>().notNull().default({}),
+    // What it was routed with, for choosing another host. `{}` encrypted when nothing narrowed it;
+    // null when booked before this existed, or erased, so the routing can't be known.
+    encryptedAttributes: text("encrypted_attributes"),
     idempotencyKey: text("idempotency_key"),
     requestHash: text("request_hash"),
     usageRecordedAt: instant("usage_recorded_at"),

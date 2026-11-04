@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { db, schema } from "@coss/db";
 import { uniqueSuffix } from "@coss/db/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
-import { secretsKeyRing } from "@coss/webhooks";
+import { isEncryptedWithPrimary, secretsKeyRing } from "@coss/webhooks";
 import { and, eq } from "drizzle-orm";
 import {
   type CalendarDeps,
@@ -14,8 +14,12 @@ import {
   createEventType,
   createHost,
   createSchedule,
+  decryptRouting,
+  eraseAttendee,
   getBooking,
   listBookingSlots,
+  redactExpiredBookings,
+  reencryptSchedulingData,
   rescheduleBooking,
   runDueCalendarSyncs,
   runDueCalendarWrites,
@@ -503,5 +507,82 @@ describe("slots for moving a booking", () => {
     );
     await updateHost(env, host.id, { status: "disabled" });
     expect(await listBookingSlots(env, { bookingId: booking.id, ...window })).toEqual([]);
+  });
+});
+
+describe("what a booking was routed with", () => {
+  async function routed(attributes?: Record<string, string>) {
+    const env = await environment();
+    await hostWithHours(env, "Dermatologist", { attributes: { specialty: "dermatology" } });
+    const pool = await createEventType(env, {
+      title: "Filtered",
+      kind: "pool",
+      duration_minutes: 30,
+      hosts: [],
+      host_filter: { specialty: "dermatology" },
+    } as never);
+    const { booking } = await createBooking(
+      env,
+      { eventType: pool.id, startMs: at("09:00"), attendee, attributes },
+      plain,
+      actor,
+    );
+    return { env, booking };
+  }
+
+  const stored = async (id: string) => {
+    const [row] = await db
+      .select({ value: schema.schedulingBooking.encryptedAttributes })
+      .from(schema.schedulingBooking)
+      .where(eq(schema.schedulingBooking.id, id));
+    return row?.value ?? null;
+  };
+
+  test("is kept encrypted", async () => {
+    const { booking } = await routed({ specialty: "dermatology" });
+    const value = await stored(booking.id);
+    expect(value).not.toContain("dermatology");
+    expect(decryptRouting(value, plain)).toEqual({ specialty: "dermatology" });
+  });
+
+  test("says nothing narrowed it, which isn't the same as not knowing", async () => {
+    const { booking } = await routed();
+    expect(await stored(booking.id)).not.toBeNull();
+    expect(decryptRouting(await stored(booking.id), plain)).toEqual({});
+    expect(decryptRouting(null, plain)).toBeNull();
+  });
+
+  test("never appears on the booking's wire object", async () => {
+    const { env, booking } = await routed({ specialty: "dermatology" });
+    expect(JSON.stringify(await getBooking(env, booking.id, plain))).not.toContain("dermatology");
+  });
+
+  test("goes when the attendee is erased", async () => {
+    const { env, booking } = await routed({ specialty: "dermatology" });
+    expect(await stored(booking.id)).not.toBeNull();
+    await eraseAttendee(env, { uid: "p" });
+    expect(await stored(booking.id)).toBeNull();
+  });
+
+  test("goes when the booking is redacted", async () => {
+    const { env, booking } = await routed({ specialty: "dermatology" });
+    await redactExpiredBookings({
+      now: new Date(at("09:00") + 200 * 86_400_000),
+      scope: scope(env),
+    });
+    expect(await stored(booking.id)).toBeNull();
+  });
+
+  test("is re-encrypted when the key rotates", async () => {
+    const { env, booking } = await routed({ specialty: "dermatology" });
+    const next = secretsKeyRing([
+      createHash("sha256").update("next data key").digest(),
+      ...plain.dataKeys.keys.map((key) => key.key),
+    ]);
+    const result = await reencryptSchedulingData({ keys: next, scope: scope(env) });
+    expect(result.unreadableCount).toBe(0);
+    const value = (await stored(booking.id)) as string;
+    expect(isEncryptedWithPrimary(value, next)).toBe(true);
+    expect(decryptRouting(value, { dataKeys: next })).toEqual({ specialty: "dermatology" });
   });
 });

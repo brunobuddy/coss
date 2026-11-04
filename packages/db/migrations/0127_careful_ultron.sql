@@ -1,0 +1,1 @@
+ALTER TABLE "scheduling_booking" ADD COLUMN "encrypted_attributes" text;

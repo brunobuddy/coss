@@ -34,6 +34,7 @@ import {
   emailLookup,
   encryptAnswers,
   encryptContact,
+  encryptRouting,
 } from "./attendees.ts";
 import {
   type Candidates,
@@ -872,6 +873,7 @@ async function insertBookingRow(
       seriesId: values.seriesId ?? null,
       seriesIndex: values.seriesIndex ?? null,
       metadata: request.metadata ?? {},
+      encryptedAttributes: encryptRouting(request.attributes, context.deps),
       idempotencyKey: values.idempotencyKey,
       requestHash: values.hash,
     })

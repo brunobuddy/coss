@@ -11,6 +11,7 @@ export type AttendeeContact = {
 };
 
 export type BookingAnswers = Record<string, string | string[]>;
+export type RoutingAttributes = Record<string, string | string[]>;
 type Keys = Pick<SchedulingDeps, "dataKeys" | "lookupKey">;
 
 export function emailLookup(email: string, keys: Pick<Keys, "lookupKey">): string {
@@ -43,6 +44,23 @@ export function decryptContact(
 export function encryptAnswers(answers: BookingAnswers | undefined, keys: Keys): string | null {
   if (!answers || Object.keys(answers).length === 0) return null;
   return encryptSecret(JSON.stringify(answers), keys.dataKeys);
+}
+
+/** Always stored, even empty: null means the routing can't be known, which is a different answer. */
+export function encryptRouting(
+  attributes: RoutingAttributes | undefined,
+  keys: Pick<Keys, "dataKeys">,
+): string {
+  return encryptSecret(JSON.stringify(attributes ?? {}), keys.dataKeys);
+}
+
+/** Null when a booking can't say what it was routed with, so nobody may guess that it was nothing. */
+export function decryptRouting(
+  stored: string | null,
+  keys: Pick<Keys, "dataKeys">,
+): RoutingAttributes | null {
+  if (!stored) return null;
+  return JSON.parse(decryptSecret(stored, keys.dataKeys)) as RoutingAttributes;
 }
 
 export function decryptAnswers(

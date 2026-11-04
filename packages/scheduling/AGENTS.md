@@ -132,6 +132,9 @@ attendee sees times, never other hosts.
 - Attendee contact details and answers, and a booker session's fixed attendee, are encrypted with
   `SCHEDULING_DATA_KEYS`. Only `email_hmac` is searchable. A new column on this ring goes in
   `SCHEDULING_DATA_KEY_COLUMNS` and `reencryptSchedulingData` (a test compares the list with the database).
+- `scheduling_booking.encrypted_attributes` keeps what a booking was routed with, for choosing another host later. Null
+  means that can't be known (booked before it existed, or erased or redacted), never "nothing narrowed it", which is
+  an encrypted `{}`. It goes with the attendee's details: on redaction and on `eraseAttendee`.
 - Answers come back only from `getBooking`: never lists, webhooks, logs, emails or calendars. The dashboard's iOS
   routes map bookings to name or uid only (`scheduling/wire.ts` under `apps/web/src/app/api/mobile/v1`).
 - Webhooks and log lines carry ids, times and statuses. `request-log.ts` keeps no bodies of these routes.

@@ -97,7 +97,7 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
       .where(inArray(schedulingAttendee.bookingId, ids));
     await tx
       .update(schedulingBooking)
-      .set({ metadata: {}, location: null, redactedAt: now })
+      .set({ metadata: {}, location: null, encryptedAttributes: null, redactedAt: now })
       .where(inArray(schedulingBooking.id, ids));
     return ids.length;
   });
@@ -220,7 +220,23 @@ export async function eraseAttendee(
           eq(schedulingAttendee.uid, input.uid),
         ),
       )
-      .returning({ id: schedulingAttendee.id });
+      .returning({ id: schedulingAttendee.id, bookingId: schedulingAttendee.bookingId });
+    // What they were routed with can say what they needed, as their answers can.
+    if (erased.length > 0) {
+      await tx
+        .update(schedulingBooking)
+        .set({ encryptedAttributes: null })
+        .where(
+          and(
+            eq(schedulingBooking.organizationId, scope.organizationId),
+            eq(schedulingBooking.environmentId, scope.environmentId),
+            inArray(
+              schedulingBooking.id,
+              erased.map((row) => row.bookingId),
+            ),
+          ),
+        );
+    }
     await tx
       .update(schedulingSession)
       .set({
