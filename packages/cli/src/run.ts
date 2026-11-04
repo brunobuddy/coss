@@ -133,6 +133,18 @@ function groupOf(argv: string[]): { group: string; next: string | undefined } | 
   return null;
 }
 
+const API_HINT = "`coss api <path>` calls any endpoint without a command of its own.";
+
+function unknownSubcommand(found: { command: Command; length: number }, argv: string[]): boolean {
+  const next = argv[found.length];
+  return (
+    !found.command.positionals &&
+    next !== undefined &&
+    !next.startsWith("-") &&
+    COMMANDS.some((command) => command.name.startsWith(`${found.command.name} `))
+  );
+}
+
 function topHelp(): string {
   const column = Math.max(...COMMANDS.map((command) => command.name.length)) + 4;
   return `coss ${VERSION}: the coss.com command line
@@ -176,7 +188,9 @@ export async function run(argv: string[], io: CliIo): Promise<number> {
     for (const candidate of await complete(COMMANDS, rest, io)) out.line(candidate);
     return 0;
   }
-  const found = findCommand(COMMANDS, argv);
+  const matched = findCommand(COMMANDS, argv);
+  // `coss scheduling hosts delete`: a word after a command that also heads a group.
+  const found = matched && !unknownSubcommand(matched, argv) ? matched : null;
   if (!found) {
     const grouped = groupOf(argv);
     if (grouped) {
@@ -193,10 +207,10 @@ export async function run(argv: string[], io: CliIo): Promise<number> {
         ),
       );
       out.error(
-        `${next ? `Unknown command "${group} ${next}"` : `"${group}" needs a command`}: try ${[...entries].join(", ")}.`,
+        `${next ? `Unknown command "${group} ${next}"` : `"${group}" needs a command`}: try ${[...entries].join(", ")}. ${API_HINT}`,
       );
     } else {
-      out.error(`Unknown command "${name}". Run \`coss --help\` to see the commands.`);
+      out.error(`Unknown command "${name}". Run \`coss --help\` to see the commands. ${API_HINT}`);
     }
     return 2;
   }
