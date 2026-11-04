@@ -717,7 +717,12 @@ describe("a session's location", () => {
     const host = await hostWithHours(env);
     const eventType = await groupOf(env, host.id, { locations: [room] });
     const booker = { kind: "booker_session", id: "sess_1" } as const;
-    await createBooking(env, seat(eventType.id, "a", { location: elsewhere }), deps, booker);
+    await createBooking(
+      env,
+      seat(eventType.id, "a", { location: elsewhere, locationFromBrowser: true }),
+      deps,
+      booker,
+    );
     const { booking: b } = await createBooking(env, seat(eventType.id, "b"), deps, booker);
     expect(b.location).toEqual(room);
   });
