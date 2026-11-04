@@ -5,6 +5,7 @@
 import "./docs-on-disk";
 import { describe, expect, test } from "bun:test";
 import spec from "@coss/api/openapi.json";
+import { zoneForPath } from "@coss/auth/slugs";
 
 const { AGENT_BRIEF, apiIndex, llmsIndex, productIndex, productIndexSlugs } = await import(
   "../src/lib/llms"
@@ -63,6 +64,12 @@ describe("the API operation indexes", () => {
     expect(operations.length).toBe(paths.length);
     for (const page of operations) expect(all).toContain(linkTo(page.url));
     expect(all).toContain("POST /v1/emails");
+  });
+
+  test("are served by this app on coss.com without a load balancer rule of their own", () => {
+    for (const slug of ["api-reference", ...productIndexSlugs()]) {
+      expect(zoneForPath(`/docs/${slug}/llms.txt`)).toBe("site");
+    }
   });
 
   test("links name pages by their titles", () => {
