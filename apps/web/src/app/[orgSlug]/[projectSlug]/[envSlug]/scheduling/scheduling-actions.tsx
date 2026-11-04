@@ -1,6 +1,7 @@
 "use client";
 
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
+import type { HostLocationOutput } from "@coss/scheduling/schemas";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -36,7 +37,7 @@ import {
   SelectValue,
 } from "@coss/ui/components/select";
 import { Textarea } from "@coss/ui/components/textarea";
-import { CalendarClockIcon, CalendarPlusIcon, UserRoundIcon } from "lucide-react";
+import { CalendarClockIcon, CalendarPlusIcon, MapPinIcon, UserRoundIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
@@ -58,6 +59,7 @@ import {
   setEventTypeStatusAction,
   setHostStatusAction,
   updateHostAction,
+  updateHostLocationsAction,
 } from "./actions";
 
 export type EnvTarget = { orgSlug: string; projectSlug: string; envSlug: string };
@@ -404,6 +406,77 @@ export function HostForm(
   );
 }
 
+export function HostLocationsDialog(
+  props: EnvTarget & {
+    hostId: string;
+    name: string;
+    locations: readonly HostLocationOutput[];
+  },
+) {
+  const { name, locations, ...rest } = props;
+  const [state, formAction, pending] = useActionToast(updateHostLocationsAction, {
+    success: "Locations saved",
+  });
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
+  const address = locations.find((location) => location.type === "in_person");
+  const link = locations.find((location) => location.type === "link");
+  const phone = locations.find((location) => location.type === "phone");
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button size="sm" variant="ghost" />}>Locations</DialogTrigger>
+      <DialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...rest} />
+          <DialogHeader>
+            <DialogIcon icon={MapPinIcon} />
+            <DialogTitle>{name}'s locations</DialogTitle>
+            <DialogDescription>
+              Used by event types that leave the location blank. Existing bookings keep the location
+              they have.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogPanel className="flex flex-col gap-4">
+            <Field>
+              <FieldLabel>Office address</FieldLabel>
+              <Input defaultValue={address?.address} maxLength={500} name="address" />
+            </Field>
+            <Field>
+              <FieldLabel>Meeting link</FieldLabel>
+              <Input
+                defaultValue={link?.url}
+                maxLength={2000}
+                name="url"
+                placeholder="https://"
+                type="url"
+              />
+            </Field>
+            <Field>
+              <FieldLabel>Phone number</FieldLabel>
+              <Input
+                defaultValue={phone?.number}
+                maxLength={16}
+                name="number"
+                placeholder="+12125550100"
+                type="tel"
+              />
+            </Field>
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </DialogPanel>
+          <DialogFooter>
+            <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
+            <Button disabled={pending} type="submit">
+              Save locations
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
 export function HostStatusButton(props: EnvTarget & { hostId: string; status: string }) {
   const next = props.status === "active" ? "disabled" : "active";
   const [, formAction, pending] = useActionToast(setHostStatusAction, {
@@ -549,6 +622,23 @@ export function NewEventTypeDialog(props: EnvTarget & { hosts: { id: string; nam
                   </option>
                 ))}
               </select>
+            </Field>
+            <Field>
+              <FieldLabel>Where</FieldLabel>
+              <select
+                className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                defaultValue=""
+                name="where"
+              >
+                <option value="">Not set</option>
+                <option value="in_person">The host's office</option>
+                <option value="link">The host's meeting link</option>
+                <option value="phone">The host's phone</option>
+              </select>
+              <FieldDescription>
+                Each host sets their own under Locations. A host without one gets a booking with no
+                location.
+              </FieldDescription>
             </Field>
             {state && !state.ok ? <FormError message={state.error} /> : null}
           </DialogPanel>

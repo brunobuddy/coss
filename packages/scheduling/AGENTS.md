@@ -117,6 +117,13 @@ A Meet or Teams link becomes a `link` location on the booking, stored with `conf
 new host gets a meeting of their own (`locationForNewHost`). A browser only chooses among an event type's `locations`
 (`locationFromBrowser`): it can't supply its own link or address.
 
+A `link`, `phone` or `in_person` location left blank takes the value of the booked host's `locations`, once a host has
+won (`withHostLocation`), and stays blank if they have none: nobody loses availability over it. It's stored with
+`fromHost` (stripped from the wire, like `conference`), so a move to another host never keeps the old host's office. A
+booking is a snapshot: editing a host only reaches new bookings. Hosts set these themselves from their page, and they
+land in attendees' emails, so `hosts.ts` refuses links in addresses and screens new addresses and URLs; a phone number
+is E.164, with no room to say anything.
+
 ## Sessions and the client API
 
 `sessions.ts`: a token (`cossch_`) stored only as a sha256, in the URL's fragment then an `Authorization` header, never

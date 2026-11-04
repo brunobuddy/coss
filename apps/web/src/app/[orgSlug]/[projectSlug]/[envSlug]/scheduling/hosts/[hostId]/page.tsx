@@ -29,6 +29,7 @@ import { schedulingPageContext } from "../../page-context";
 import {
   DeleteHostButton,
   HostForm,
+  HostLocationsDialog,
   HostStatusButton,
   OpenPortalButton,
 } from "../../scheduling-actions";
@@ -83,6 +84,12 @@ export default async function HostPage({
           canEdit ? (
             <div className="flex gap-1">
               <OpenPortalButton {...target} hostId={host.id} />
+              <HostLocationsDialog
+                {...target}
+                hostId={host.id}
+                locations={host.locations}
+                name={host.name}
+              />
               <HostStatusButton {...target} hostId={host.id} status={host.status} />
               {can({ scheduling: ["delete"] }) ? (
                 <DeleteHostButton {...target} hostId={host.id} leavePage="on" name={host.name} />

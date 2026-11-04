@@ -39,6 +39,7 @@ import {
   startCalendarAuthorization,
   toConnectionObject,
   updateCalendar,
+  updateHost,
   updateSchedule,
 } from "@coss/scheduling";
 import {
@@ -47,6 +48,7 @@ import {
   CreateCalendarConnectionRequest,
   RescheduleBookingRequest,
   UpdateCalendarRequest,
+  UpdateHostLocationsRequest,
   UpsertScheduleRequest,
 } from "@coss/scheduling/schemas";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
@@ -478,6 +480,24 @@ export function createSchedulingClientRoutes(opts: {
       await parsed(c, UpdateCalendarRequest),
     );
     return c.json({ object: "list" as const, data, has_more: false });
+  });
+
+  router.get("/host/locations", async (c) => {
+    const host = await getHost(c.var.session.env, hostOf(c));
+    return c.json({ object: "list" as const, data: host.locations, has_more: false });
+  });
+
+  /** A host's own words for attendees' emails, so they're screened like anything else in them. */
+  router.put("/host/locations", async (c) => {
+    const hostId = writableHost(c);
+    const { locations } = await parsed(c, UpdateHostLocationsRequest);
+    const host = await updateHost(
+      c.var.session.env,
+      hostId,
+      { locations },
+      { screen: deps.screenSetup },
+    );
+    return c.json({ object: "list" as const, data: host.locations, has_more: false });
   });
 
   /**

@@ -1072,7 +1072,7 @@ export const createHostSessionRoute = createRoute({
   tags: [TAG_HOSTS],
   summary: "Create a host session",
   description:
-    "Lets one host manage their own hours and calendars, on coss.com's hosted page or your own UI. " +
+    "Lets one host manage their own hours, calendars and locations, on coss.com's hosted page or your own UI. " +
     "Send the `url` to their browser, or embed it with `coss/scheduling`.",
   security: [{ bearerAuth: [] }],
   middleware: writing("update", "POST /v1/scheduling/hosts/{host}/sessions"),

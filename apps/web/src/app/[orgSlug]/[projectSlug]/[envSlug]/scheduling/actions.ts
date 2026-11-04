@@ -23,6 +23,7 @@ import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import {
   EVENT_TYPE_KINDS,
   UpdateEventTypeRequest,
+  UpdateHostLocationsRequest,
   UpdateHostRequest,
 } from "@coss/scheduling/schemas";
 import { getEnvironment } from "@coss/tenancy";
@@ -170,6 +171,37 @@ export async function setHostStatusAction(_prev: ActionResult | null, formData: 
   });
 }
 
+export async function updateHostLocationsAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const address = formString(formData, "address").trim();
+    const url = formString(formData, "url").trim();
+    const number = formString(formData, "number").trim();
+    const parsed = UpdateHostLocationsRequest.safeParse({
+      locations: [
+        ...(address ? [{ type: "in_person", address }] : []),
+        ...(url ? [{ type: "link", url }] : []),
+        ...(number ? [{ type: "phone", number }] : []),
+      ],
+    });
+    if (!parsed.success) {
+      throw new ActionError(parsed.error.issues[0]?.message ?? "Check these locations.");
+    }
+    const host = await friendly(() =>
+      updateHost(env, formString(formData, "hostId"), parsed.data, {
+        screen: configuredDeps().screenSetup,
+      }),
+    );
+    await audit(context, "scheduling_host.updated", {
+      type: "scheduling_host",
+      id: host.id,
+      label: host.name,
+    });
+    refresh();
+    return null;
+  });
+}
+
 export async function deleteHostAction(_prev: ActionResult | null, formData: FormData) {
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "delete");
@@ -296,6 +328,7 @@ export async function createEventTypeAction(
     if (!Number.isInteger(duration) || duration < 5 || duration > 1440) {
       throw new ActionError("Enter a duration from 5 to 1440 minutes.");
     }
+    const where = formString(formData, "where");
     const capacity = kind === "group" ? Number(formString(formData, "capacity")) : null;
     if (capacity !== null && (!Number.isInteger(capacity) || capacity < 2 || capacity > 10000)) {
       throw new ActionError("Enter a capacity from 2 to 10000 attendees.");
@@ -318,6 +351,14 @@ export async function createEventTypeAction(
                 },
               ]
             : [],
+          // Left blank, so each booking takes its host's own.
+          ...(where === "in_person"
+            ? { locations: [{ type: "in_person" as const, address: null }] }
+            : where === "link"
+              ? { locations: [{ type: "link" as const, url: null }] }
+              : where === "phone"
+                ? { locations: [{ type: "phone" as const, number: null }] }
+                : {}),
         },
         { screen: configuredDeps().screenSetup },
       ),

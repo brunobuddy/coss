@@ -184,6 +184,61 @@ function checkAttendee(attendee: AttendeeInputOutput): void {
   }
 }
 
+/** The host a location came from, kept off the wire: it goes with them if they leave the booking. */
+const fromHostOf = (location: BookingRow["location"]): string | null =>
+  (location as { fromHost?: string } | null)?.fromHost ?? null;
+
+const isBlank = (location: Location): boolean =>
+  (location.type === "link" && !location.url) ||
+  (location.type === "phone" && !location.number) ||
+  (location.type === "in_person" && !location.address);
+
+/**
+ * A location that leaves its value open takes it from the first of these hosts who has one, by id,
+ * as with Zoom. Anything that names its own value keeps it, and with no host's value it stays blank.
+ */
+function withHostLocation(location: Location, hosts: readonly HostRow[]): Location {
+  if (!isBlank(location)) return location;
+  const sorted = [...hosts].sort((a, b) => (a.id < b.id ? -1 : 1));
+  for (const host of sorted) {
+    const own = host.locations.find((candidate) => candidate.type === location.type);
+    if (own) {
+      const filled = { ...own, fromHost: host.id };
+      return filled;
+    }
+  }
+  return location;
+}
+
+function blankOf(location: Location): Location {
+  if (location.type === "link") return { type: "link", url: null };
+  if (location.type === "phone") return { type: "phone", number: null };
+  if (location.type === "in_person") return { type: "in_person", address: null };
+  return location;
+}
+
+/**
+ * What a booking's location becomes when another host takes it, or `null` if it stays. A meeting
+ * made on the old host's account goes back to being made, and the old host's own office or link
+ * never stays: `leaving` had it, so the booking takes the hosts' it has now, or none.
+ */
+function locationForNewHost(
+  location: BookingRow["location"],
+  leaving: string | undefined,
+  hosts: readonly HostRow[],
+): BookingRow["location"] {
+  if (!location) return null;
+  if (location.type === "zoom") return { type: "zoom", url: null };
+  if (location.type === "link" && "conference" in location) {
+    return { type: location.conference as "google_meet" | "microsoft_teams" };
+  }
+  const fromHost = fromHostOf(location);
+  if (fromHost ? fromHost === leaving : isBlank(location)) {
+    return withHostLocation(blankOf(location), hosts);
+  }
+  return null;
+}
+
 /** Guests are emailed, so an event type has to allow them, and everyone is only told once. */
 function checkGuests(
   eventType: EventTypeRow,
@@ -214,19 +269,36 @@ function checkGuests(
   }
 }
 
-/** What a meeting created on a host's account reverts to when another host takes the booking. */
-function locationForNewHost(location: BookingRow["location"]): BookingRow["location"] {
-  if (location?.type === "zoom") return { type: "zoom", url: null };
-  if (location?.type !== "link" || !("conference" in location)) return null;
-  return { type: location.conference as "google_meet" | "microsoft_teams" };
+function wireLocation(location: BookingRow["location"]): BookingRow["location"] {
+  if (!location) return null;
+  if (!("conference" in location) && !fromHostOf(location)) return location;
+  const {
+    conference: _conference,
+    fromHost: _fromHost,
+    ...rest
+  } = location as typeof location & { conference?: string; fromHost?: string };
+  return rest as BookingRow["location"];
 }
 
-function wireLocation(location: BookingRow["location"]): BookingRow["location"] {
-  if (!location || !("conference" in location)) return location ?? null;
-  const { conference: _conference, ...rest } = location as typeof location & {
-    conference: string;
-  };
-  return rest as BookingRow["location"];
+/** Once hosts have won, a location left open takes the value of theirs. */
+async function settleHostLocation(
+  tx: Executor,
+  booking: BookingRow,
+  hosts: readonly HostRow[],
+): Promise<BookingRow> {
+  if (!booking.location) return booking;
+  const location = withHostLocation(booking.location, hosts);
+  if (location === booking.location) return booking;
+  await tx
+    .update(schedulingBooking)
+    .set({ location })
+    .where(
+      and(
+        eq(schedulingBooking.id, booking.id),
+        eq(schedulingBooking.organizationId, booking.organizationId),
+      ),
+    );
+  return { ...booking, location };
 }
 
 function chooseLocation(
@@ -1185,7 +1257,8 @@ async function createOne(
   if (eventType.kind === "group") {
     const entry = candidates.members[0] ?? candidates.required[0];
     if (!entry) throw slotLost("no_hosts");
-    const chosen = sharedLocation(eventType, chooseLocation(eventType, request.location), actor);
+    const shared = sharedLocation(eventType, chooseLocation(eventType, request.location), actor);
+    const chosen = shared && withHostLocation(shared, [entry.host]);
     try {
       const joined = await tx.transaction((savepoint) =>
         joinGroupSession(
@@ -1208,6 +1281,7 @@ async function createOne(
     }
   } else {
     won = await assignAndClaim(tx, plan, candidates, booking.id, booking.id);
+    current = await settleHostLocation(tx, current, won.hosts);
   }
   current = await finishBookingRow(tx, current, won.hosts, candidates, won.liveUntil);
   const memberIds = won.hosts
@@ -2102,12 +2176,16 @@ export async function rescheduleBooking(
         })
         .onConflictDoNothing();
     }
-    const newLocation = replacement ? locationForNewHost(booking.location) : null;
+    // Naming the host it already has changes nothing about where it happens.
+    const newLocation =
+      replacement && replacement.id !== member?.hostId
+        ? locationForNewHost(booking.location, member?.hostId, hosts)
+        : null;
     const updated = await bumped(tx, booking, {
       startAt: new Date(input.startMs),
       endAt: new Date(input.startMs + durationMinutes * MINUTE_MS),
       externalConflictAt: null,
-      // The old host's meeting goes with them, so the new host's gets a new link.
+      // The old host's meeting or office goes with them, so the new host's takes its place.
       ...(newLocation ? { location: newLocation } : {}),
     });
     const after = await participants(tx, updated);

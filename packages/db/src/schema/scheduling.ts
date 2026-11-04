@@ -65,6 +65,12 @@ export type SchedulingLocation =
   | { type: "microsoft_teams" }
   | { type: "zoom"; url: string | null };
 
+/** A host's own: a location of an event type that leaves this value blank uses it. */
+export type SchedulingHostLocation =
+  | { type: "link"; url: string }
+  | { type: "phone"; number: string }
+  | { type: "in_person"; address: string };
+
 /** `true`/`false` per recipient and channel; absent events use the default policy. */
 export type SchedulingNotificationPolicy = Record<
   string,
@@ -159,6 +165,8 @@ export const schedulingHost = pgTable(
       .notNull()
       .default({}),
     metadata: jsonb("metadata").$type<Record<string, string>>().notNull().default({}),
+    // At most one of each type. A booking copies what it uses, so changes reach only new bookings.
+    locations: jsonb("locations").$type<SchedulingHostLocation[]>().notNull().default([]),
     status: schedulingHostStatus("status").notNull().default("active"),
     screenedAt: instant("screened_at"),
     createdAt: createdAt(),

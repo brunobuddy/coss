@@ -529,6 +529,70 @@ describe("client API", () => {
     });
   });
 
+  test("a host sets their own locations, and a booker only sees them once booked", async () => {
+    const s = await setUp();
+    const hostSession = async (body: object) => {
+      const res = await call(s.app, s.key, "POST", `/hosts/${s.host}/sessions`, body);
+      expect(res.status).toBe(201);
+      return ((await res.json()) as { token: string }).token;
+    };
+    const token = await hostSession({});
+    const office = { type: "in_person", address: "12 Main St" };
+
+    const empty = await client(s.app, token, "GET", "/host/locations");
+    expect(((await empty.json()) as { data: unknown[] }).data).toEqual([]);
+    const saved = await client(s.app, token, "PUT", "/host/locations", { locations: [office] });
+    expect(saved.status).toBe(200);
+    expect(((await saved.json()) as { data: unknown[] }).data).toEqual([office]);
+
+    const http = await client(s.app, token, "PUT", "/host/locations", {
+      locations: [{ type: "link", url: "http://host.example/room" }],
+    });
+    expect(http.status).toBe(422);
+    const linkInAddress = await client(s.app, token, "PUT", "/host/locations", {
+      locations: [{ type: "in_person", address: "https://evil.example/login" }],
+    });
+    expect((await errorOf(linkInAddress)).code).toBe("content_refused");
+
+    const readOnly = await hostSession({ read_only: true });
+    const refused = await client(s.app, readOnly, "PUT", "/host/locations", { locations: [] });
+    expect(refused.status).toBe(403);
+    const read = await client(s.app, readOnly, "GET", "/host/locations");
+    expect(read.status).toBe(200);
+
+    const host = (await (await call(s.app, s.key, "GET", "/hosts/doctor_1")).json()) as {
+      locations: unknown[];
+    };
+    expect(host.locations).toEqual([office]);
+
+    const visit = (await (
+      await call(s.app, s.key, "POST", "/event_types", {
+        title: "Visit",
+        duration_minutes: 30,
+        hosts: [{ host: s.host }],
+        locations: [{ type: "in_person", address: null }],
+      })
+    ).json()) as { id: string };
+    const { token: booker } = await bookerSession({ ...s, eventType: visit.id });
+    const session = await (await client(s.app, booker, "GET", "/session")).text();
+    expect(session).not.toContain(office.address);
+    const booked = await client(s.app, booker, "POST", "/bookings", {
+      start: at("09:00"),
+      attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+    });
+    expect(booked.status).toBe(201);
+    const body = (await booked.json()) as { location: unknown };
+    expect(body.location).toEqual(office);
+  });
+
+  test("a booker can't read or change a host's locations", async () => {
+    const s = await setUp();
+    const { token } = await bookerSession(s);
+    expect((await client(s.app, token, "GET", "/host/locations")).status).toBe(404);
+    const put = await client(s.app, token, "PUT", "/host/locations", { locations: [] });
+    expect(put.status).toBe(404);
+  });
+
   test("a host's portal lists coming bookings soonest first, leaving out cancelled ones", async () => {
     const s = await setUp();
     const ids: string[] = [];

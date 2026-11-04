@@ -65,14 +65,18 @@ const LOCATION_VALUE: Partial<
   link: {
     label: "Link",
     placeholder: "https://meet.example.com/room",
-    hint: "Leave it empty if you pass a link with each booking through the API.",
+    hint: "Leave it empty to use the host's own link.",
   },
   phone: {
     label: "Number",
     placeholder: "+15551234567",
-    hint: "Leave it empty to ask the attendee for theirs.",
+    hint: "Leave it empty to use the host's own number, or ask the attendee for theirs.",
   },
-  in_person: { label: "Address", placeholder: "1 Main St, Springfield", hint: "" },
+  in_person: {
+    label: "Address",
+    placeholder: "1 Main St, Springfield",
+    hint: "Leave it empty to use the host's own address.",
+  },
 };
 
 const MAX_LIMITS = 4;
