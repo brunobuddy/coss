@@ -650,6 +650,55 @@ describe("changing a list", () => {
     expect(subjects(await runAt(s, START - 60 * MINUTE)).filter(isReminder)).toEqual([]);
   });
 
+  test("recipients changed after it was due, with the walk first", async () => {
+    const s = await setUp();
+    const to = (send: string[]) => rule({ key: "day", anchor: "start", before_minutes: 30, send });
+    await updateSettings(s.env, { reminders: [to(["email_attendee"])] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [to(["email_host"])] });
+    // A minute after it was due, and the worker hasn't got there.
+    const when = START - 29 * MINUTE;
+    await runDueReminderSyncs({ now: () => new Date(when) }, scope(s));
+    const n = await runAt(s, when + 1000);
+    expect(n.emails.filter((email) => isReminder(email.subject)).map((email) => email.to)).toEqual([
+      "reyes@example.com",
+    ]);
+    const day = (await rows(s, booking.id)).filter((row) => row.reminder_key === "day");
+    expect(day.map((row) => [row.recipient, row.outcome]).sort()).toEqual([
+      ["attendee", "superseded"],
+      ["host", "sent"],
+    ]);
+  });
+
+  test("a recipient added to a caught-up reminder gets it with the others", async () => {
+    const s = await setUp();
+    const to = (send: string[]) =>
+      rule({ key: "prep", anchor: "start", before_minutes: 2880, send, send_if_late: true });
+    await updateSettings(s.env, { reminders: [to(["email_attendee"])] });
+    const lateDeps = testSchedulingDeps({ now: () => new Date(START - 10 * MINUTE) });
+    const { booking } = await book(s, "09:00", {}, lateDeps);
+    await updateSettings(s.env, { reminders: [to(["email_attendee", "email_host"])] });
+    const n = await runAt(s, START - 9 * MINUTE);
+    expect(
+      n.emails
+        .filter((email) => isReminder(email.subject))
+        .map((email) => email.to)
+        .sort(),
+    ).toEqual(["reyes@example.com", "sam@example.com"]);
+    const prep = (await rows(s, booking.id)).filter((row) => row.reminder_key === "prep");
+    expect(prep.map((row) => row.outcome)).toEqual(["sent", "sent"]);
+  });
+
+  test("a rule that wasn't owed still doesn't start late", async () => {
+    const s = await setUp();
+    const { booking } = await book(s);
+    await updateSettings(s.env, {
+      reminders: [rule({ key: "new", anchor: "start", before_minutes: 60, send: ["email_host"] })],
+    });
+    await runDueReminderSyncs({ now: () => new Date(START - 30 * MINUTE) }, scope(s));
+    expect((await rows(s, booking.id)).some((row) => row.reminder_key === "new")).toBe(false);
+  });
+
   test("a recipient taken off and put back doesn't get it twice", async () => {
     const s = await setUp();
     const to = (send: string[]) => rule({ key: "day", anchor: "start", before_minutes: 120, send });

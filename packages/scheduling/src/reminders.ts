@@ -235,7 +235,11 @@ export async function addEditedTargets(
   );
   await insertReminderRows(
     executor,
-    missing.map((target) => ruleRow(rule, booking, target, anchorAt)),
+    missing.map((target) => {
+      const added = ruleRow(rule, booking, target, anchorAt);
+      // `send_if_late` owes it from long after its moment: they get it when the others do.
+      return row.dueAt > added.dueAt ? { ...added, dueAt: row.dueAt } : added;
+    }),
   );
 }
 
@@ -321,8 +325,9 @@ const isTimedRow = () =>
  * a new one to send.
  *
  * `newBooking`: the booking itself just changed, so a passed moment is recorded and `send_if_late`
- * catches up. A list that changed adds only moments still ahead: saving a list never sends anything
- * right away, to every upcoming booking at once. A row made sooner than now keeps its old moment.
+ * catches up. A list that changed adds only moments still ahead: saving a list never starts a
+ * reminder whose moment has gone, to every upcoming booking at once. A row made sooner than now keeps
+ * its old moment, and a recipient added to one already owed gets it when it goes out.
  */
 export async function reconcileReminders(
   tx: Executor,
@@ -346,6 +351,8 @@ export async function reconcileReminders(
     );
   const identity = (key: string, target: Target) => `${key}:${target.channel}:${target.recipient}`;
   const present = new Set<string>();
+  // Rules already owed at this moment, and from when: whoever they're for now is owed them too.
+  const owed = new Map<string, Date>();
   const dropped: string[] = [];
   for (const row of existing) {
     const waiting = row.finishedAt === null;
@@ -357,10 +364,10 @@ export async function reconcileReminders(
       (candidate) => candidate.key === row.reminderKey && candidate.anchor === row.reminderAnchor,
     );
     const moment = rule && anchorMoment(rule, booking, now);
+    const sameMoment = rule && moment && row.anchorAt?.getTime() === moment.getTime();
+    if (sameMoment && waiting) owed.set(rule.key, row.dueAt);
     const wanted =
-      rule &&
-      moment &&
-      row.anchorAt?.getTime() === moment.getTime() &&
+      sameMoment &&
       targetsOf(rule).some(
         (target) => target.channel === row.channel && target.recipient === row.recipient,
       );
@@ -387,9 +394,9 @@ export async function reconcileReminders(
       .set({ finishedAt: now, outcome: "superseded", leaseUntil: null })
       .where(inArray(schedulingNotification.id, dropped));
   }
-  const missing = timedRules
-    .flatMap((rule) =>
-      rowsOfRule(rule, booking, now).filter(
+  const missing = timedRules.flatMap((rule) =>
+    rowsOfRule(rule, booking, now)
+      .filter(
         (row) =>
           !present.has(
             identity(rule.key, {
@@ -397,9 +404,17 @@ export async function reconcileReminders(
               recipient: row.recipient as Target["recipient"],
             }),
           ),
-      ),
-    )
-    .filter((row) => opts.newBooking || row.dueAt.getTime() > now.getTime());
+      )
+      .flatMap((row) => {
+        if (opts.newBooking || row.dueAt.getTime() > now.getTime()) return [row];
+        // Past its moment, a list change adds it only if it was already owed. It's a new recipient
+        // of a reminder going out anyway, not a new reminder.
+        const since = owed.get(rule.key);
+        if (!since) return [];
+        const { finishedAt: _finishedAt, outcome: _outcome, ...waiting } = row;
+        return [{ ...waiting, dueAt: since }];
+      }),
+  );
   await insertReminderRows(tx, [...missing, ...moments]);
 }
 
