@@ -182,6 +182,13 @@ describe("Dockerfiles", () => {
     });
   }
 
+  test("the API image gets the built output its hosted MCP server runs from", () => {
+    // `.dockerignore` keeps `dist` out of the context, and `--production` drops what builds it.
+    const dockerfile = read("apps/api/Dockerfile");
+    expect(dockerfile).toContain("COPY --from=build-mcp /repo/packages/mcp/dist packages/mcp/dist");
+    expect(dockerfile).toContain("COPY --from=build-mcp /repo/packages/sdk/dist packages/sdk/dist");
+  });
+
   test("a Next app's image includes its public/ folder (the standalone output leaves it out)", () => {
     for (const app of ["web", "site"]) {
       if (!existsSync(path.join(ROOT, `apps/${app}/public`))) continue;

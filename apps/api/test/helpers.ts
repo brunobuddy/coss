@@ -72,6 +72,8 @@ export function createTestApp(
     shutdownSignal?: AbortSignal;
     /** Waiting listener polls check this often (default 20 ms, so tests don't wait). */
     listenerPollIntervalMs?: number;
+    /** The hosted MCP server (`createHostedMcp`); not served otherwise. */
+    mcp?: CreateAppOptions["mcp"];
   } = {},
 ) {
   const liveProvider = new FakeEmailProvider({ log: false });
@@ -131,6 +133,7 @@ export function createTestApp(
     versioning: opts.versioning,
     shutdownSignal: opts.shutdownSignal,
     listenerPollIntervalMs: opts.listenerPollIntervalMs ?? 20,
+    mcp: opts.mcp,
   });
   const dispatch = () => queue.drain(emailService);
   const dispatchSms = () => smsQueue.drain(smsService);

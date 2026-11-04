@@ -19,9 +19,10 @@ import { versioning as apiVersioning, type Versioning } from "@coss/versioning";
 import type { WebhookManagementDeps } from "@coss/webhooks";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { honoMiddleware } from "@sentry/bun";
+import type { HostedMcp } from "coss-mcp/http";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
-import { BODY_LIMIT_BYTES, hasOwnBodyLimit, limitBody } from "./body-limit.ts";
+import { BODY_LIMIT_BYTES, hasOwnBodyLimit, limitBody, MCP_PATH } from "./body-limit.ts";
 import { errorResponse, internalError, notFound, toApiError } from "./errors.ts";
 import { accessLog } from "./middleware/access-log.ts";
 import { apiVersion } from "./middleware/api-version.ts";
@@ -30,6 +31,7 @@ import { requestLog } from "./middleware/request-log.ts";
 import { traceContext } from "./middleware/trace-context.ts";
 import { withApiVersionDocs } from "./openapi-versions.ts";
 import { createFormEndpointRoutes, FORMS_PATH_PREFIX } from "./routes/forms-public.ts";
+import { createMcpRoutes } from "./routes/mcp.ts";
 import { createPreferenceRoutes } from "./routes/preferences.ts";
 import {
   createSchedulingCallbackRoutes,
@@ -150,6 +152,11 @@ export type CreateAppOptions = {
   shutdownSignal?: AbortSignal;
   /** How often a waiting listener poll checks for deliveries (tests shorten it). Default 1 s. */
   listenerPollIntervalMs?: number;
+  /**
+   * The hosted MCP server (`createHostedMcp` from `coss-mcp/http`, which is built output, so only
+   * `src/index.ts` and the tests that need it import it). Not given: `/mcp` isn't served.
+   */
+  mcp?: HostedMcp;
 };
 
 /** Request headers a browser may send, and response headers it may read, cross-origin. */
@@ -188,6 +195,9 @@ export function createApp(opts: CreateAppOptions) {
   const formsStore = opts.forms?.store === undefined ? new FakeFormFileStore() : opts.forms.store;
   // Sub-routers inherit this hook: every validation failure becomes the 422 envelope.
   const app = new OpenAPIHono<AppEnv>({ defaultHook: validationHook });
+  // The hosted MCP server's own API calls run here without a socket: whose address they are can't
+  // come from a header, and nothing from outside can reach this map.
+  const inProcessClientIps = new WeakMap<Request, { ip: string | null }>();
 
   // Sentry (when src/instrument.ts initialized it): names each request's transaction after its
   // route (`GET /v1/emails/:id`) and traces middleware. Unhandled errors are reported by the
@@ -199,7 +209,8 @@ export function createApp(opts: CreateAppOptions) {
   app.use(async (c, next) => {
     c.set("rateLimiter", rateLimiter);
     c.set("plans", opts.plans ?? null);
-    c.set("clientIp", clientIp(c.req.raw.headers));
+    const inProcess = inProcessClientIps.get(c.req.raw);
+    c.set("clientIp", inProcess ? inProcess.ip : clientIp(c.req.raw.headers));
     c.set("versioning", versioning);
     await next();
   });
@@ -307,6 +318,21 @@ export function createApp(opts: CreateAppOptions) {
         links: { publicUrl: formsUrl },
         hostOnly: opts.forms?.hostOnly ? new URL(formsUrl).host.toLowerCase() : null,
         billing: opts.billing,
+      }),
+    );
+  }
+
+  // Streamable HTTP, for MCP clients that can't start a local process. Not in the OpenAPI document.
+  if (opts.mcp) {
+    app.route(
+      MCP_PATH,
+      createMcpRoutes({
+        mcp: opts.mcp,
+        shutdownSignal: opts.shutdownSignal ?? new AbortController().signal,
+        apiFetch: (request, callerIp) => {
+          inProcessClientIps.set(request, { ip: callerIp });
+          return app.fetch(request);
+        },
       }),
     );
   }

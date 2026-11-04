@@ -20,6 +20,7 @@ import { ensureSmsDispatchQueue, pgBossSmsDispatchQueue } from "@coss/sms/dispat
 import { verifyCodeKey } from "@coss/verify";
 import { parseSecretsKeys } from "@coss/webhooks";
 import * as Sentry from "@sentry/bun";
+import { createHostedMcp } from "coss-mcp/http";
 import { createApp } from "./app.ts";
 import { env } from "./env.ts";
 import { createDefaultEmailRuntime } from "./runtime.ts";
@@ -152,6 +153,11 @@ const app = createApp({
   corsOrigins: env.API_CORS_ORIGINS,
   logWriter,
   shutdownSignal: shutdown.signal,
+  mcp: createHostedMcp({
+    apiBaseUrl: publicUrl,
+    // Its name only: what callers send is never logged, and a message can quote it.
+    onFailure: (name) => console.error(`[api] A hosted MCP request failed: ${name}`),
+  }),
 });
 
 /** The bare address of `Name <address>` or `address`. */
