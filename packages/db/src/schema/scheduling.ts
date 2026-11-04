@@ -287,6 +287,8 @@ export const schedulingEventType = pgTable(
     rescheduleNoticeMinutes: integer("reschedule_notice_minutes").notNull().default(0),
     // How many people an attendee can add to a booking; 0: none. Never on a group event type.
     maxGuests: integer("max_guests").notNull().default(0),
+    // Null: no limit. Upcoming bookings of this event type one person can have at a time.
+    maxActiveBookingsPerAttendee: integer("max_active_bookings_per_attendee"),
     // What hosts' calendars say about a booking. Read when an event is written.
     hostCalendarDetails: schedulingCalendarDetails("host_calendar_details")
       .notNull()

@@ -592,6 +592,10 @@ const eventTypeFields = {
     description:
       "How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`.",
   }),
+  max_active_bookings_per_attendee: z.number().int().min(1).max(1000).nullable().optional().meta({
+    description:
+      "How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does.",
+  }),
   host_calendar_details: z.enum(HOST_CALENDAR_DETAILS).optional().meta({
     description:
       "What hosts' calendars say about a booking. `neutral` (the default): a private event titled \"Appointment\". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode.",
@@ -688,6 +692,7 @@ const EVENT_TYPE_EXAMPLE = {
   cancel_notice_minutes: 0,
   reschedule_notice_minutes: 0,
   max_guests: 0,
+  max_active_bookings_per_attendee: null,
   host_calendar_details: "neutral" as const,
   questions: [],
   locations: [],
@@ -767,6 +772,10 @@ export const EventTypeObject = z
     }),
     max_guests: z.number().meta({
       description: "How many people an attendee can add to a booking. Not on `group`.",
+    }),
+    max_active_bookings_per_attendee: z.number().nullable().meta({
+      description:
+        "How many upcoming bookings of this event type one person can have at a time. `null`: no limit.",
     }),
     host_calendar_details: z.enum(HOST_CALENDAR_DETAILS).meta({
       description:

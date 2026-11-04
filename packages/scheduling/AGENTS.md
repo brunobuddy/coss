@@ -15,8 +15,8 @@ it questions it would refuse.
 - An expired hold's live range has ended, so it blocks nobody. **No correctness depends on a sweeper**.
   `expireDueBookings` only tidies up and tells customers.
 - Converting a hold sets `live_from` to now, or two dead holds on one slot would conflict.
-- **Lock order is fixed**: hosts and memberships (sorted), limit buckets (sorted), the group session, then claims by
-  host. Unsorted collective bookings deadlocked about half the time on real Postgres. Bookers take `key share` on
+- **Lock order is fixed**: an attendee's advisory locks (`checkAttendeeLimit`, sorted), hosts and memberships (sorted),
+  limit buckets (sorted), the group session, then claims by host. Unsorted collective bookings deadlocked about half the time on real Postgres. Bookers take `key share` on
   memberships, because the fairness counter's update would deadlock with `share`; a removal takes `update`.
 - Limits count live claims under a bucket's row lock, and capacity counts seats under the session's. No counters to
   drift. A hold is a `held` booking, so conversion is one compare-and-set on one row.
