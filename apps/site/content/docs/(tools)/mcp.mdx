@@ -224,9 +224,9 @@ secret, once), `update_log_drain`, `delete_log_drain` and `list_log_drain_batche
 one batch's attempts and what the receiver answered). See [Log drains](/docs/log-drains).
 
 **Anything else you need to read**: `api_get` GETs any `/v1/` path, for operations no other tool
-covers. It refuses anything else and never reads a signing secret; there is no write equivalent, so
-changes always go through tools that say what they change. Its answers are cut and labelled as
-untrusted.
+covers. It refuses anything else, signing secrets and files (CSV exports, attachments). There is no
+write equivalent, so changes always go through tools that say what they change. Its answers are cut
+and labelled as untrusted.
 
 **Account**: `get_account_status`: whether the key is live or sandbox, the
 [sending reputation](/docs/email/delivery) and its checks, billing status and holds, and tracking
@@ -245,7 +245,7 @@ before changing anything.
 
 | Resource | |
 | --- | --- |
-| `coss://docs/index` | Every docs page with a line about it. Needs no API key. |
+| `coss://docs/index` | The guides, and a link to each product's API operations. Needs no API key. |
 | `coss://setup` | `get_setup`'s answer for this project. |
 
 ## How it answers

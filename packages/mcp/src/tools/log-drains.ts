@@ -118,7 +118,8 @@ export function registerLogDrainTools(ctx: ToolContext): void {
           .describe("Default ndjson. `loki`, `datadog` and `otlp` suit those intake APIs."),
         auth_header: authHeader,
       }),
-      annotations: WRITE,
+      // It starts sending the environment's log to a URL outside coss.com.
+      annotations: { ...WRITE, openWorldHint: true },
     },
     (args) =>
       respond(coss.logDrains.create(given(args)), (drain) => ({
@@ -143,7 +144,7 @@ export function registerLogDrainTools(ctx: ToolContext): void {
         auth_header: authHeader,
         enabled: z.boolean().optional(),
       }),
-      annotations: WRITE,
+      annotations: DESTRUCTIVE,
     },
     ({ id: drainId, ...args }) =>
       respond(coss.logDrains.update(drainId, given(args)), drainSummary),

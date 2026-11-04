@@ -5,7 +5,7 @@
  * Deliberately loose. Every object is a `looseObject` (a plain `z.object` becomes
  * `additionalProperties: false`, and an additive SDK field would fail in clients), and verdicts and
  * statuses are strings, not enums: `coss` is a caret range, so a newer SDK can add a verdict under
- * an older `coss-mcp`. `test/output-schemas.test.ts` and `apps/api/test/mcp-contract.test.ts` run
+ * an older `coss-mcp`. `test/agent-surface.test.ts` and `apps/api/test/mcp-contract.test.ts` run
  * real results through a client, which validates them.
  */
 import { z } from "zod";

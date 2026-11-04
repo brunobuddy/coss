@@ -57,7 +57,7 @@ can ask before calling the ones that change something.
 | Sub-accounts | `list_subaccounts`, `get_subaccount`, `create_subaccount`, `update_subaccount`, `delete_subaccount`, `reinstate_subaccount`, `get_subaccount_stats` |
 | Log drains | `list_log_drains`, `get_log_drain`, `create_log_drain`, `update_log_drain`, `delete_log_drain`, `list_log_drain_batches` |
 | Account | `get_account_status` |
-| Everything else | `api_get`: GETs any `/v1/` path; refuses anything else and never reads a signing secret |
+| Everything else | `api_get`: GETs any `/v1/` path; refuses anything else, signing secrets and files |
 
 Prompts: `add_product`, `debug_delivery`, `prepare_go_live`. Resources: `coss://docs/index` (no key
 needed), `coss://setup`. `get_setup` and the `diagnose_*` tools declare an `outputSchema`.

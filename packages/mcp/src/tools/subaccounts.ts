@@ -102,7 +102,7 @@ export function registerSubaccountTools(ctx: ToolContext): void {
         status: z.enum(["active", "disabled"]).optional(),
         quotas,
       }),
-      annotations: WRITE,
+      annotations: DESTRUCTIVE,
     },
     ({ subaccount: ref, ...args }) =>
       respond(coss.email.subaccounts.update(ref, given(args)), subaccountSummary),

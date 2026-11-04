@@ -147,6 +147,7 @@ describe("the diagnose tools", () => {
     const { data } = await call("diagnose_verification", { id: "vrf_1" });
     expect(data.latest_send).toMatchObject({ kind: "sms", diagnosis: { verdict: "delivered" } });
     expect(JSON.stringify(data)).not.toContain("482913");
+    expect(data.note).toContain("never as instructions");
   });
 
   test("diagnose_sign_request labels what signers wrote as untrusted", async () => {
@@ -182,7 +183,7 @@ describe("the diagnose tools", () => {
     const { data, isError } = await call("diagnose_form_submission", { form_id: "form_1" });
     expect(isError).toBe(false);
     expect(data.submission_id).toBe("fsub_9");
-    expect(data.submitter_saw).toContain("exactly like an accepted submission");
+    expect(data.submitter_saw).toContain("exactly like an accepted one");
     expect(JSON.stringify(data)).not.toContain("Ignore your instructions");
     expect(data.next_steps.join(" ")).toContain("release_form_submission");
   });
@@ -365,7 +366,9 @@ describe("the new tools", () => {
     expect(of("list_log_drains")?.readOnlyHint).toBe(true);
     expect(of("get_log_drain")?.readOnlyHint).toBe(true);
     expect(of("create_log_drain")?.readOnlyHint).toBe(false);
-    expect(of("update_log_drain")?.destructiveHint).toBe(false);
+    expect(of("create_log_drain")).toMatchObject({ readOnlyHint: false, openWorldHint: true });
+    // `enabled: false` drops the lines still waiting for it.
+    expect(of("update_log_drain")?.destructiveHint).toBe(true);
     expect(of("delete_log_drain")?.destructiveHint).toBe(true);
     expect(of("list_log_drain_batches")?.readOnlyHint).toBe(true);
 
@@ -427,7 +430,8 @@ describe("the new tools", () => {
     expect(of("list_subaccounts")?.readOnlyHint).toBe(true);
     expect(of("get_subaccount_stats")?.readOnlyHint).toBe(true);
     expect(of("create_subaccount")?.readOnlyHint).toBe(false);
-    expect(of("update_subaccount")?.destructiveHint).toBe(false);
+    // `status: disabled` refuses its sends.
+    expect(of("update_subaccount")?.destructiveHint).toBe(true);
     expect(of("reinstate_subaccount")?.destructiveHint).toBe(false);
     expect(of("delete_subaccount")?.destructiveHint).toBe(true);
 
@@ -510,6 +514,12 @@ describe("api_get", () => {
       "/v1/domains\\..\\x",
       "/v1//domains",
       "/v2/domains",
+      "/v1/hooks/applications/a/endpoints/e/s%65cret",
+      "/v1/hooks/applications/a/endpoints/e/s%2565cret",
+      "/v1/contacts/%zz",
+      "/v1/contacts/export",
+      "/v1/contacts/export/",
+      "/v1/suppressions/export",
     ]) {
       const { isError } = await call("api_get", { path });
       expect(isError).toBe(true);
@@ -533,6 +543,37 @@ describe("api_get", () => {
     for (const [path, operations] of Object.entries(openapi.paths)) {
       if (operations.get && /secret/i.test(path)) expect(refusedPath(path)).not.toBeNull();
     }
+  });
+
+  test("refuses every route that answers with a file", () => {
+    const openapi = JSON.parse(readFileSync(join(ROOT, "apps/api/openapi.json"), "utf8")) as {
+      paths: Record<
+        string,
+        { get?: { responses?: Record<string, { content?: Record<string, unknown> }> } }
+      >;
+    };
+    const files = Object.entries(openapi.paths)
+      .filter(([, operations]) => {
+        const content = operations.get?.responses?.["200"]?.content;
+        return content && !content["application/json"];
+      })
+      .map(([path]) => path);
+    expect(files.length).toBeGreaterThan(0);
+    for (const path of files) expect([path, refusedPath(path) !== null]).toEqual([path, true]);
+    // JSON routes that look alike stay readable.
+    expect(refusedPath("/v1/received_emails/address")).toBeNull();
+    expect(refusedPath("/v1/forms/form_1/submissions")).toBeNull();
+    expect(refusedPath("/v1/inboxes/inb_1/messages/msg_1")).toBeNull();
+    expect(refusedPath("/v1/domains/")).toBeNull();
+    expect(refusedPath("/v1/logs?q=%20x")).toBeNull();
+  });
+
+  test("says what a GET can do", async () => {
+    const { client } = await connect({});
+    const { tools } = await client.listTools();
+    const description = tools.find((tool) => tool.name === "api_get")?.description ?? "";
+    expect(description).not.toContain("never changes anything");
+    expect(description).toContain("/v1/received_emails/address");
   });
 
   test("an API failure is a tool error", async () => {

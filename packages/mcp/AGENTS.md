@@ -29,10 +29,11 @@ directory unless they name a workspace.
   `projectDir` (through symlinks too). `COSS_MCP_TOOLSETS` (`TOOLSETS` in `src/server.ts`) offers fewer tools.
   Sub-accounts (`tools/subaccounts.ts`) and log drains (`tools/log-drains.ts`) are toolsets of their own.
   `api_get` (`tools/api.ts`, always there) GETs any `/v1/` path through `coss.request` and refuses everything else
-  (`refusedPath`: dot segments, encoded slashes, anything with `secret` in the path); it has no write equivalent, so
-  other operations can't bypass the write annotations. Its answers are cut and labelled untrusted.
+  (`refusedPath`: anything percent-encoded, dot segments, `secret` in the path, routes that answer with a file); it
+  has no write equivalent, so other operations can't bypass the write annotations. Its answers are cut and labelled
+  untrusted. The one GET with a side effect is `/v1/received_emails/address`, which creates the address on first read.
   Prompts (`src/prompts.ts`) only write instructions naming tools; resources (`src/resources.ts`) are the docs'
-  index (`/llms.txt`, no key needed) and the setup report. The capabilities in `src/server.ts` say so.
+  index (`/llms.txt`: the guides and links to each product's API operations; no key needed) and the setup report. The capabilities in `src/server.ts` say so.
   `create_webhook_endpoint` registers a URL once and writes `COSS_WEBHOOK_SECRET` into the project
   env file (the same file the CLI uses; a repeat for that URL does not create another endpoint).
   Third-party text (email content, received mail, bounce and

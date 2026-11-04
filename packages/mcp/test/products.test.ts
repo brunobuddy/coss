@@ -241,8 +241,8 @@ describe("Sign", () => {
           error: {
             type: "api_error",
             code: "sign_unavailable",
-            message: "Sign isn't available in this deployment yet.",
-            hint: "Ask coss.com when it's on.",
+            message: "Not right now.",
+            hint: "An API hint.",
             request_id: "req_test",
           },
         },
@@ -251,7 +251,7 @@ describe("Sign", () => {
     const { isError, data } = await call("list_sign_requests");
     expect(isError).toBe(true);
     expect(data.error.code).toBe("sign_unavailable");
-    expect(data.hint).toBe("Ask coss.com when it's on.");
+    expect(data.hint).toBe("An API hint.");
   });
 
   test("upload_sign_document reads PDFs in the project and nothing else", async () => {
