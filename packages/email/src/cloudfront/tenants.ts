@@ -22,6 +22,8 @@ export type CloudFrontTrackingConfig = {
 
 export type CloudFrontTenant = {
   id: string;
+  distributionId: string | null;
+  hostname: string | null;
   enabled: boolean;
   domainStatus: string | null;
   certificateArn: string | null;
@@ -42,7 +44,8 @@ export type CreateCloudFrontTenantInput = {
 
 export interface CloudFrontTenantsApi {
   create(input: CreateCloudFrontTenantInput): Promise<CloudFrontTenant>;
-  get(id: string): Promise<CloudFrontTenant | null>;
+  /** By id or name (CloudFront takes either). */
+  get(identifier: string): Promise<CloudFrontTenant | null>;
   certificate(id: string): Promise<CloudFrontCertificate | null>;
   attachCertificate(id: string, etag: string, certificateArn: string): Promise<void>;
   /** Returns the tenant's new ETag, which `remove` needs. */
@@ -62,6 +65,8 @@ function tenantOf(result: {
   if (!tenant?.Id || !result.ETag) throw new Error("CloudFront returned no distribution tenant.");
   return {
     id: tenant.Id,
+    distributionId: tenant.DistributionId ?? null,
+    hostname: tenant.Domains?.[0]?.Domain ?? null,
     enabled: tenant.Enabled !== false,
     domainStatus: tenant.Domains?.[0]?.Status ?? null,
     certificateArn: tenant.Customizations?.Certificate?.Arn ?? null,
@@ -90,9 +95,11 @@ export function createCloudFrontTenantsApi(): CloudFrontTenantsApi {
         ),
       );
     },
-    async get(id) {
+    async get(identifier) {
       try {
-        return tenantOf(await client.send(new GetDistributionTenantCommand({ Identifier: id })));
+        return tenantOf(
+          await client.send(new GetDistributionTenantCommand({ Identifier: identifier })),
+        );
       } catch (error) {
         if (errorName(error) === "EntityNotFound") return null;
         throw error;
@@ -133,8 +140,13 @@ export function createCloudFrontTenantsApi(): CloudFrontTenantsApi {
   };
 }
 
-export function tenantName(hostname: string): string {
-  return `trk-${createHash("sha256").update(hostname).digest("hex").slice(0, 32)}`;
+/**
+ * Names are unique in the account and bound to the claim, so a tenant found under this name can
+ * only be what this claim created: that's what lets a retry pick it up after a lost answer.
+ */
+export function tenantName(hostname: string, claim: string): string {
+  const hash = createHash("sha256").update(`${claim}\n${hostname}`).digest("hex");
+  return `trk-${hash.slice(0, 32)}`;
 }
 
 const FAILED_CERTIFICATES = new Map([
@@ -185,25 +197,43 @@ export class CloudFrontTrackingHostnameProvider implements TrackingHostnameProvi
     this.cnameTarget = config.cnameTarget;
   }
 
-  async create(hostname: string): Promise<{ id: string; state: TrackingHostnameState }> {
+  async create(
+    hostname: string,
+    claim: string,
+  ): Promise<{ id: string; state: TrackingHostnameState }> {
+    const answer = (tenant: CloudFrontTenant) => ({
+      id: tenant.id,
+      state: tenantState(tenant.domainStatus, "pending-validation", this.cnameTarget),
+    });
     try {
-      const tenant = await this.#api.create({
-        distributionId: this.#config.distributionId,
-        connectionGroupId: this.#config.connectionGroupId,
-        name: tenantName(hostname),
-        hostname,
-      });
-      return {
-        id: tenant.id,
-        state: tenantState(tenant.domainStatus, "pending-validation", this.cnameTarget),
-      };
+      return answer(
+        await this.#api.create({
+          distributionId: this.#config.distributionId,
+          connectionGroupId: this.#config.connectionGroupId,
+          name: tenantName(hostname, claim),
+          hostname,
+        }),
+      );
     } catch (error) {
       const name = errorName(error);
-      if (name === "CNAMEAlreadyExists" || name === "EntityAlreadyExists") {
-        throw new TrackingHostnameTakenError(hostname);
-      }
-      throw error;
+      if (name !== "CNAMEAlreadyExists" && name !== "EntityAlreadyExists") throw error;
+      const mine = await this.#claimed(hostname, claim);
+      if (!mine) throw new TrackingHostnameTakenError(hostname);
+      if (!mine.enabled) throw new Error(`Tenant ${mine.id} is still being removed.`);
+      return answer(mine);
     }
+  }
+
+  async #claimed(hostname: string, claim: string): Promise<CloudFrontTenant | null> {
+    const tenant = await this.#api.get(tenantName(hostname, claim));
+    return tenant?.distributionId === this.#config.distributionId && tenant.hostname === hostname
+      ? tenant
+      : null;
+  }
+
+  async release(hostname: string, claim: string): Promise<void> {
+    const tenant = await this.#claimed(hostname, claim);
+    if (tenant) await this.delete(tenant.id);
   }
 
   async get(id: string): Promise<TrackingHostnameState | null> {

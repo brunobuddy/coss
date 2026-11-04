@@ -1,17 +1,23 @@
 import { beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { db, schema } from "@coss/db";
+import { uniqueSuffix } from "@coss/db/testing";
 import {
   addMember,
   createTestTenant,
   createTestUser,
   type TestTenant,
 } from "@coss/tenancy/testing";
-import { eq } from "drizzle-orm";
-import { ingestSupportEmails, SUPPORT_FLOOD_LIMIT } from "../src/intake.ts";
+import { and, eq, sql } from "drizzle-orm";
+import { listFailedSupportIntakes, requeueSupportIntake } from "../src/admin.ts";
+import {
+  ingestSupportEmails,
+  SUPPORT_FLOOD_LIMIT,
+  SUPPORT_INTAKE_FAILED_KIND,
+} from "../src/intake.ts";
 import { fixedSupportPlans } from "../src/testing.ts";
 import { intakeDeps, messagesOf, receive, ticketFrom } from "./helpers.ts";
 
-const { domain, supportIntake, supportTicket, user } = schema;
+const { domain, notification, supportIntake, supportMessage, supportTicket, user } = schema;
 
 let desk: TestTenant;
 
@@ -449,5 +455,123 @@ describe("failures", () => {
     ]);
     const ticket = await ticketFrom(id);
     expect((await messagesOf(ticket.id)).filter((m) => m.kind === "customer")).toHaveLength(1);
+  });
+});
+
+describe("failing mail", () => {
+  const failing = (at: Date, deps = intakeDeps(desk.production.id)) => {
+    let fail = true;
+    const extractReplyText = deps.extractReplyText;
+    return {
+      deps: {
+        ...deps,
+        extractReplyText: (text: string) => {
+          if (fail) throw new Error("boom");
+          return extractReplyText(text);
+        },
+      },
+      heal: () => {
+        fail = false;
+      },
+      at,
+    };
+  };
+
+  async function intakeOf(id: string) {
+    const [row] = await db
+      .select()
+      .from(supportIntake)
+      .where(eq(supportIntake.receivedEmailId, id));
+    return row;
+  }
+
+  async function ticketsOf(id: string) {
+    return db
+      .selectDistinct({ ticketId: supportMessage.ticketId })
+      .from(supportMessage)
+      .where(eq(supportMessage.receivedEmailId, id));
+  }
+
+  test("a settle that fails rolls the filing back: one ticket and one acknowledgement", async () => {
+    const tenant = await createTestTenant();
+    const deps = intakeDeps(tenant.production.id);
+    const id = await receive(tenant, { from: tenant.owner.email });
+    const trigger = `support_intake_fail_${uniqueSuffix().replace(/\W/g, "_")}`;
+    await db.execute(
+      sql.raw(`
+      CREATE FUNCTION ${trigger}() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        IF NEW.received_email_id = '${id}' AND NEW.settled_at IS NOT NULL THEN
+          RAISE EXCEPTION 'settling failed';
+        END IF;
+        RETURN NEW;
+      END $$;
+      CREATE TRIGGER ${trigger} BEFORE UPDATE ON support_intake
+        FOR EACH ROW EXECUTE FUNCTION ${trigger}();
+    `),
+    );
+    const spy = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await ingestSupportEmails({}, deps);
+    } finally {
+      spy.mockRestore();
+      await db.execute(
+        sql.raw(`DROP TRIGGER ${trigger} ON support_intake; DROP FUNCTION ${trigger}();`),
+      );
+    }
+    expect(await ticketsOf(id)).toEqual([]);
+
+    const later = new Date(Date.now() + 60 * 60_000);
+    await ingestSupportEmails({ now: later }, deps);
+    expect(await ticketsOf(id)).toHaveLength(1);
+    expect((await intakeOf(id))?.outcome).toBe("created");
+    const ticket = await ticketFrom(id);
+    const acknowledgements = (await messagesOf(ticket.id)).filter(
+      (message) => message.event === "acknowledged",
+    );
+    expect(acknowledgements).toHaveLength(1);
+  });
+
+  test("giving up alerts reps once, and a rep can requeue it", async () => {
+    const tenant = await createTestTenant();
+    const { deps, heal } = failing(new Date(), intakeDeps(tenant.production.id));
+    const id = await receive(tenant, { subject: "Please help" });
+    const spy = spyOn(console, "error").mockImplementation(() => {});
+    let now = new Date();
+    try {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await ingestSupportEmails({ now }, deps);
+        now = new Date(now.getTime() + 2 * 60 * 60_000);
+      }
+    } finally {
+      spy.mockRestore();
+    }
+    expect(await intakeOf(id)).toMatchObject({ outcome: "failed", attempts: 5 });
+    const alerts = await db
+      .select()
+      .from(notification)
+      .where(
+        and(
+          eq(notification.organizationId, tenant.organization.id),
+          eq(notification.kind, SUPPORT_INTAKE_FAILED_KIND),
+        ),
+      );
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]?.payload).toEqual({ receivedEmailId: id });
+    const failed = await listFailedSupportIntakes();
+    const listed = failed.find((row) => row.receivedEmailId === id);
+    expect(listed?.subject).toBe("Please help");
+    expect(listed?.lastError).toBe("boom");
+
+    await ingestSupportEmails({ now }, deps);
+    expect(await ticketsOf(id)).toEqual([]);
+
+    heal();
+    await requeueSupportIntake(id);
+    expect(await intakeOf(id)).toMatchObject({ outcome: null, attempts: 0, settledAt: null });
+    await ingestSupportEmails({ now: new Date(Date.now() + 1000) }, deps);
+    expect(await ticketsOf(id)).toHaveLength(1);
+    expect((await intakeOf(id))?.outcome).toBe("created");
+    await expect(requeueSupportIntake(id)).rejects.toThrow("isn't waiting");
   });
 });

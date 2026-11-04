@@ -113,7 +113,10 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   certificate, through the injectable `CloudFrontTenantsApi`) or the fake. The provider alone decides `active`
   (tenant enabled, domain active, certificate issued); the CNAME check (`checkTrackingRecord`) is only shown to
   the customer. Never adopt a hostname already registered at CloudFront (`TrackingHostnameTakenError` →
-  `tracking_domain_taken`). An issued managed certificate serves nothing until it is attached to the tenant
+  `tracking_domain_taken`), except what the same claim created: tenant names are bound to the tracking domain's id
+  (`tenantName(hostname, claim)`), so after a lost answer or a crash the claim stays, and asking again or the worker
+  (`resumeProvisioning`, after 2 minutes) finds the tenant under that name. A claim still without an id after an hour
+  is released (its tenant removed, status `failed`, restartable). An issued managed certificate serves nothing until it is attached to the tenant
   (`Customizations.Certificate`), so the provider's `get` attaches it, and a stale ETag just waits for the next check.
   Removing a tenant takes two passes: CloudFront refuses to delete it until the disable
   has deployed (minutes), so the first `delete` disables it and throws; `checkTrackingDomain` retries in 10 minutes

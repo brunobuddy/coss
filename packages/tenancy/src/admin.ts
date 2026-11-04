@@ -116,6 +116,7 @@ export const ADMIN_ACTIONS = [
   "support.cc_added",
   "support.attachment_downloaded",
   "support.saved_reply_changed",
+  "support.intake_requeued",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
@@ -127,7 +128,8 @@ export type AdminTargetType =
   | "commit"
   | "form"
   | "risk_assessment"
-  | "support_ticket";
+  | "support_ticket"
+  | "received_email";
 
 export type AdminAuditEvent = {
   id: string;

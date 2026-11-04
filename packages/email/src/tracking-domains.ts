@@ -36,6 +36,10 @@ export type TrackingDomainRecord = TrackingDomainRow["record"];
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
+/** A claim without a provider id this young may still be provisioning. */
+const PROVISIONING_LEASE_MS = 2 * MINUTE;
+/** Retried until this old, then released: the customer can restart it. */
+const PROVISIONING_EXPIRY_MS = HOUR;
 
 /**
  * Lower-cased, trailing-dot-free tracking hostname for `parent`, or a `DomainError` explaining
@@ -193,7 +197,9 @@ async function takenError(organizationId: string, hostname: string): Promise<Dom
 
 /**
  * Registers a claimed (`pending`) row's hostname with the provider and checks it once. Releases
- * the claim when the provider refuses: a new row is removed, a restarted one fails again.
+ * the claim when the provider refuses: a new row is removed, a restarted one fails again. Any other
+ * error keeps it: the hostname may be registered with the answer lost, so a retry or the worker
+ * picks it up under the same claim (`resumeProvisioning`).
  */
 async function provision(
   row: TrackingDomainRow,
@@ -206,16 +212,16 @@ async function provision(
   );
   let created: { id: string; state: TrackingHostnameState };
   try {
-    created = await deps.tracking.create(row.hostname);
+    created = await deps.tracking.create(row.hostname, row.id);
   } catch (error) {
-    if (onFailure === "delete") await db.delete(trackingDomain).where(scope);
-    else {
-      await db
-        .update(trackingDomain)
-        .set({ status: "failed", failedAt: new Date(), nextCheckAt: null })
-        .where(scope);
-    }
     if (error instanceof TrackingHostnameTakenError) {
+      if (onFailure === "delete") await db.delete(trackingDomain).where(scope);
+      else {
+        await db
+          .update(trackingDomain)
+          .set({ status: "failed", failedAt: new Date(), nextCheckAt: null })
+          .where(scope);
+      }
       throw new DomainError(
         "tracking_domain_taken",
         `${row.hostname} is already in use by another account.`,
@@ -243,6 +249,55 @@ async function provision(
   });
 }
 
+/**
+ * A claim whose id was never stored: provisioning crashed or lost the provider's answer. While it's
+ * young provisioning may still be running, so it's left alone; then it's retried until it expires,
+ * when whatever it registered is removed and the hostname released.
+ */
+async function resumeProvisioning(
+  row: TrackingDomainRow,
+  now: Date,
+  deps: DomainDeps,
+): Promise<TrackingDomainRow> {
+  const age = now.getTime() - row.verificationStartedAt.getTime();
+  if (row.status !== "pending" || age < PROVISIONING_LEASE_MS) return row;
+  const scope = and(
+    eq(trackingDomain.id, row.id),
+    eq(trackingDomain.organizationId, row.organizationId),
+    isNull(trackingDomain.providerHostnameId),
+  );
+  if (age <= PROVISIONING_EXPIRY_MS) {
+    return provision(row, deps, "fail").catch(async (error) => {
+      if (!(error instanceof DomainError)) throw error;
+      return (await getTrackingDomain(row)) ?? row;
+    });
+  }
+  try {
+    await deps.tracking.release(row.hostname, row.id);
+  } catch (error) {
+    // Removing a tenant takes two passes: the worker comes back.
+    console.error(`[email:tracking-domains] releasing ${row.hostname} failed:`, error);
+    const [waiting] = await db
+      .update(trackingDomain)
+      .set({ nextCheckAt: new Date(now.getTime() + 10 * MINUTE), lastCheckedAt: now })
+      .where(scope)
+      .returning();
+    return waiting ?? row;
+  }
+  const [failed] = await db
+    .update(trackingDomain)
+    .set({
+      status: "failed",
+      providerMessage: "The tracking domain could not be set up. Restart its setup.",
+      failedAt: now,
+      nextCheckAt: null,
+      lastCheckedAt: now,
+    })
+    .where(scope)
+    .returning();
+  return failed ?? row;
+}
+
 /** Claims a hostname as the domain's tracking domain and registers it with the provider. */
 export async function createTrackingDomain(
   input: { organizationId: string; domainId: string; hostname: string },
@@ -263,7 +318,17 @@ export async function createTrackingDomain(
     );
   }
   const hostname = normalizeTrackingHostname(input.hostname, parent);
-  if (await getTrackingDomain(input)) {
+  const existing = await getTrackingDomain(input);
+  if (existing) {
+    // The same request again, after provisioning lost the provider's answer.
+    if (
+      existing.hostname === hostname &&
+      existing.status === "pending" &&
+      !existing.providerHostnameId &&
+      existing.provider === deps.tracking.name
+    ) {
+      return provision(existing, deps, "delete");
+    }
     throw new DomainError(
       "tracking_domain_exists",
       `${parent.name} already has a tracking domain. Remove it first to use another one.`,
@@ -390,9 +455,8 @@ export async function checkTrackingDomain(
       .returning();
     return updated ?? requireTrackingDomain(input);
   }
-  // Provisioning publishes the ID after the provider creates the hostname. A concurrent
-  // verification must leave that pending claim alone until the ID has been stored.
-  if (!row.providerHostnameId) return row;
+  // Provisioning publishes the ID after the provider creates the hostname.
+  if (!row.providerHostnameId) return resumeProvisioning(row, now, deps);
   const state = await deps.tracking.get(row.providerHostnameId);
   const record = await checkTrackingRecord(
     expectedRecord(row.hostname, deps.tracking.cnameTarget),
@@ -469,11 +533,13 @@ export async function deleteTrackingDomain(
     eq(trackingDomain.id, row.id),
     eq(trackingDomain.organizationId, row.organizationId),
   );
-  if (row.providerHostnameId && row.provider === deps.tracking.name) {
+  const unstored = !row.providerHostnameId && row.status === "pending";
+  if ((row.providerHostnameId || unstored) && row.provider === deps.tracking.name) {
     // Stops sends from using it before the hostname disappears.
     await db.update(trackingDomain).set({ status: "deleting", nextCheckAt: null }).where(scope);
     try {
-      await deps.tracking.delete(row.providerHostnameId);
+      if (row.providerHostnameId) await deps.tracking.delete(row.providerHostnameId);
+      else await deps.tracking.release(row.hostname, row.id);
     } catch (error) {
       // The provider may have stopped serving it already: sends must not use it until a check says so.
       await db

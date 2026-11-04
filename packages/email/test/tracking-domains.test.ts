@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { db, schema } from "@coss/db";
 import { uniqueSuffix } from "@coss/db/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
@@ -164,7 +164,7 @@ describe("lifecycle with the fake provider", () => {
     expect((await domainObject(domain)).tracking).toBeNull();
   });
 
-  test("a provider failure on create releases the claim", async () => {
+  test("a refused hostname releases the claim", async () => {
     const { organizationId, domain } = await setup();
     const tracking = new FakeTrackingHostnameProvider();
     tracking.create = async (hostname) => {
@@ -176,16 +176,6 @@ describe("lifecycle with the fake provider", () => {
         fakeDeps(tracking),
       ),
       "tracking_domain_taken",
-    );
-    tracking.create = async () => {
-      throw new Error("boom");
-    };
-    await expectDomainError(
-      createTrackingDomain(
-        { organizationId, domainId: domain.id, hostname: `links.${domain.name}` },
-        fakeDeps(tracking),
-      ),
-      "provider_error",
     );
     expect((await domainObject(domain)).tracking).toBeNull();
   });
@@ -247,7 +237,7 @@ describe("lifecycle with CloudFront", () => {
       input: {
         distributionId: "dist",
         connectionGroupId: "group",
-        name: tenantName(hostname),
+        name: tenantName(hostname, row.id),
         hostname,
       },
     });
@@ -393,20 +383,22 @@ describe("lifecycle with CloudFront", () => {
     expect(api.tenants.size).toBe(1);
   });
 
-  test("a tenant name already in use is never adopted", async () => {
+  test("a tenant another claim left behind is never adopted", async () => {
     const { organizationId, domain } = await setup();
     const hostname = `links.${domain.name}`;
     const { api, deps } = cloudFrontDeps();
     await api.create({
-      distributionId: "other",
-      connectionGroupId: "other",
-      name: tenantName(hostname),
-      hostname: "other.example.net",
+      distributionId: "dist",
+      connectionGroupId: "group",
+      name: tenantName(hostname, "tdom_someone_else"),
+      hostname,
     });
     await expectDomainError(
       createTrackingDomain({ organizationId, domainId: domain.id, hostname }, deps),
       "tracking_domain_taken",
     );
+    expect(await getTrackingDomain({ organizationId, domainId: domain.id })).toBeNull();
+    expect(api.tenants.size).toBe(1);
   });
 
   test("a CloudFront error on delete keeps the tracking domain", async () => {
@@ -568,11 +560,17 @@ describe("emailRuntimeConfig", () => {
 });
 
 describe("tenantName", () => {
+  test("is bound to the claim", () => {
+    expect(tenantName("links.acme.test", "tdom_1")).not.toBe(
+      tenantName("links.acme.test", "tdom_2"),
+    );
+  });
+
   test("stable, valid and short whatever the hostname", () => {
     const long = `${"a".repeat(63)}.${"b".repeat(63)}.${"c".repeat(63)}.example.com`;
-    expect(tenantName(long)).toBe(tenantName(long));
-    expect(tenantName(long)).toMatch(/^trk-[0-9a-f]{32}$/);
-    expect(tenantName("links.acme.com")).not.toBe(tenantName("links.acme.org"));
+    expect(tenantName(long, "tdom_1")).toBe(tenantName(long, "tdom_1"));
+    expect(tenantName(long, "tdom_1")).toMatch(/^trk-[0-9a-f]{32}$/);
+    expect(tenantName("links.acme.com", "tdom_1")).not.toBe(tenantName("links.acme.org", "tdom_1"));
   });
 });
 
@@ -689,6 +687,93 @@ describe("sending through a tracking domain", () => {
   });
 });
 
+describe("a lost answer from CloudFront", () => {
+  async function lostCreate() {
+    const { organizationId, domain } = await setup();
+    const { api, deps } = cloudFrontDeps();
+    const input = { organizationId, domainId: domain.id };
+    const hostname = `links.${domain.name}`;
+    api.loseNextCreateAnswer = true;
+    await expectDomainError(createTrackingDomain({ ...input, hostname }, deps), "provider_error");
+    const claim = await getTrackingDomain(input);
+    expect(claim).toMatchObject({ status: "pending", providerHostnameId: null });
+    expect(api.find(hostname)).toBeDefined();
+    return { api, deps, input, hostname, organizationId };
+  }
+
+  test("asking again picks up the tenant the claim created", async () => {
+    const { api, deps, input, hostname } = await lostCreate();
+    const row = await createTrackingDomain({ ...input, hostname }, deps);
+    expect(row.status).toBe("pending");
+    expect(row.providerHostnameId).toBe(api.find(hostname)?.id ?? "");
+    expect(api.tenants.size).toBe(1);
+  });
+
+  test("another hostname is still refused while the claim stands", async () => {
+    const { deps, input, hostname } = await lostCreate();
+    await expectDomainError(
+      createTrackingDomain(
+        { ...input, hostname: `other.${hostname.split(".").slice(1).join(".")}` },
+        deps,
+      ),
+      "tracking_domain_exists",
+    );
+  });
+
+  test("the worker picks it up too, after the lease", async () => {
+    const { api, deps, input, hostname, organizationId } = await lostCreate();
+    const scope = { organizationIds: [organizationId] };
+    const soon = new Date(Date.now() + 30_000);
+    expect(await checkTrackingDomain({ ...input, now: soon }, deps)).toMatchObject({
+      providerHostnameId: null,
+    });
+    expect(api.calls.filter((call) => call.operation === "create")).toHaveLength(1);
+    const now = new Date(Date.now() + 10 * 60_000);
+    expect(await recheckDueTrackingDomains({ scope, now }, deps)).toBe(1);
+    expect((await getTrackingDomain(input))?.providerHostnameId).toBe(api.find(hostname)?.id ?? "");
+  });
+
+  test("a claim that never gets an id expires, removing its tenant in two passes", async () => {
+    const { api, deps, input, hostname } = await lostCreate();
+    const later = new Date(Date.now() + 2 * HOUR);
+    const spy = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const waiting = await checkTrackingDomain({ ...input, now: later }, deps);
+      expect(waiting.status).toBe("pending");
+      expect(api.find(hostname)?.enabled).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
+    api.deployDisable(hostname);
+    const failed = await checkTrackingDomain({ ...input, now: later }, deps);
+    expect(failed).toMatchObject({ status: "failed", providerHostnameId: null, nextCheckAt: null });
+    expect(api.find(hostname)).toBeUndefined();
+    const restarted = await restartTrackingDomain(input, deps);
+    expect(restarted.status).toBe("pending");
+    expect(restarted.providerHostnameId).toBe(api.find(hostname)?.id ?? "");
+  });
+
+  test("deleting the claim removes the tenant it may have created", async () => {
+    const { api, deps, input, hostname } = await lostCreate();
+    api.deployDisable(hostname);
+    const tenant = api.find(hostname);
+    if (!tenant) throw new Error("no tenant");
+    tenant.enabled = false;
+    await deleteTrackingDomain(input, deps);
+    expect(await getTrackingDomain(input)).toBeNull();
+    expect(api.find(hostname)).toBeUndefined();
+  });
+
+  test("a disabled tenant isn't picked up: the claim waits", async () => {
+    const { api, deps, input, hostname } = await lostCreate();
+    const tenant = api.find(hostname);
+    if (!tenant) throw new Error("no tenant");
+    tenant.enabled = false;
+    await expectDomainError(createTrackingDomain({ ...input, hostname }, deps), "provider_error");
+    expect((await getTrackingDomain(input))?.providerHostnameId).toBeNull();
+  });
+});
+
 describe("tracking lifecycle recovery", () => {
   test.each(["expired", "failed"])(
     "retries cleanup after %s without losing the provider ID",
@@ -745,10 +830,10 @@ describe("tracking lifecycle recovery", () => {
     for (const restarting of [false, true]) {
       const entered = Promise.withResolvers<void>();
       const release = Promise.withResolvers<void>();
-      deps.tracking.create = async (hostname) => {
+      deps.tracking.create = async (hostname, claim) => {
         entered.resolve();
         await release.promise;
-        return create(hostname);
+        return create(hostname, claim);
       };
       const provisioning = restarting
         ? restartTrackingDomain(input, deps)

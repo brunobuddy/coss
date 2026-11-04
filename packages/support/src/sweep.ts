@@ -12,10 +12,12 @@ import {
 } from "@coss/notifications";
 import { RETENTION_DAYS } from "@coss/retention";
 import { and, asc, eq, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
+import { SUPPORT_INTAKE_FAILED_KIND } from "./intake.ts";
 import type { SupportFileStore } from "./store.ts";
 import { acknowledgement } from "./tickets.ts";
 
-const { supportAttachment, supportIntake, supportMessage, supportTicket, user } = schema;
+const { receivedEmail, supportAttachment, supportIntake, supportMessage, supportTicket, user } =
+  schema;
 
 const MINUTE = 60 * 1000;
 const DAY = 24 * 60 * MINUTE;
@@ -150,6 +152,7 @@ export const SUPPORT_ALERT_KINDS = {
   atRisk: "support.sla_at_risk",
   breached: "support.sla_breached",
   deliveryFailed: "support.delivery_failed",
+  intakeFailed: SUPPORT_INTAKE_FAILED_KIND,
 } as const;
 
 /**
@@ -348,6 +351,43 @@ export const SUPPORT_NOTIFICATION_KINDS: NotificationKinds = {
     title: () => "Reply not delivered",
     stale: () => false,
   }),
+  [SUPPORT_ALERT_KINDS.intakeFailed]: {
+    async render(context) {
+      const id = context.payload.receivedEmailId;
+      if (typeof id !== "string") return { skip: "No message." };
+      const [row] = await db
+        .select({
+          outcome: supportIntake.outcome,
+          from: receivedEmail.from,
+          subject: receivedEmail.subject,
+        })
+        .from(supportIntake)
+        .innerJoin(receivedEmail, eq(receivedEmail.id, supportIntake.receivedEmailId))
+        .where(eq(supportIntake.receivedEmailId, id));
+      if (!row) return { skip: "The message is gone." };
+      if (row.outcome !== "failed") return { skip: "The message was requeued." };
+      const subject = oneLine(row.subject ?? "(no subject)");
+      return {
+        subject: `Couldn't file an email: ${subject}`,
+        title: "Couldn't file an email",
+        blocks: [
+          {
+            paragraph:
+              "An email to support kept failing, so it was set aside and no ticket exists for it.",
+          },
+          {
+            details: [
+              { label: "From", value: oneLine(row.from ?? "Unknown") },
+              { label: "Subject", value: subject },
+            ],
+          },
+          { button: { label: "Review it", url: context.url("/admin/support/intake") } },
+        ],
+        reason: ALERT_REASON,
+      };
+    },
+    recipients: () => repRecipients(null),
+  },
 };
 
 /** Deleted tickets take their rows by cascade; their bytes go first, since a crash must not orphan them. */

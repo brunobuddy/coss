@@ -287,6 +287,56 @@ export function snapshot(segments: readonly Segment[]): Record<string, unknown> 
   );
 }
 
+/** Accounts with a contract around the month whose close hasn't happened. */
+function accountsDue(
+  period: Interval,
+  opts: { scope?: { organizationIds: string[] }; except: string[]; limit: number },
+) {
+  const next = nextPeriod(period);
+  return db
+    .select({
+      organizationId: billingAccount.organizationId,
+      provider: billingAccount.provider,
+    })
+    .from(billingAccount)
+    .where(
+      and(
+        opts.scope ? inArray(billingAccount.organizationId, opts.scope.organizationIds) : undefined,
+        opts.except.length ? notInArray(billingAccount.organizationId, opts.except) : undefined,
+        // A contract around the month (or starting the next one, for its advance charges).
+        exists(
+          db
+            .select({ id: billingContract.id })
+            .from(billingContract)
+            .where(
+              and(
+                sql`${billingContract.accountId} = ${billingAccount.id}`,
+                sql`${billingContract.status} = 'confirmed'`,
+                lt(billingContract.effectiveFrom, next.end),
+                or(
+                  isNull(billingContract.effectiveUntil),
+                  gt(billingContract.effectiveUntil, period.start),
+                ),
+              ),
+            ),
+        ),
+        notExists(
+          db
+            .select({ id: billingPeriod.id })
+            .from(billingPeriod)
+            .where(
+              and(
+                sql`${billingPeriod.accountId} = ${billingAccount.id}`,
+                sql`${billingPeriod.periodStart} = ${period.start}`,
+              ),
+            ),
+        ),
+      ),
+    )
+    .orderBy(asc(billingAccount.id))
+    .limit(opts.limit);
+}
+
 /**
  * Closes every ended month that is due (oldest first, up to `CATCH_UP_MONTHS` back) for accounts
  * with a contract around it. System-level: spans organizations. Returns how many were closed.
@@ -307,53 +357,13 @@ export async function runDueBillingPeriods(opts: {
   // order), and doesn't keep the others from closing.
   const failed: string[] = [];
   for (const period of periods) {
-    const next = nextPeriod(period);
     for (;;) {
       if (closed >= limit) return closed;
-      const due = await db
-        .select({
-          organizationId: billingAccount.organizationId,
-          provider: billingAccount.provider,
-        })
-        .from(billingAccount)
-        .where(
-          and(
-            opts.scope
-              ? inArray(billingAccount.organizationId, opts.scope.organizationIds)
-              : undefined,
-            failed.length ? notInArray(billingAccount.organizationId, failed) : undefined,
-            // A contract around the month (or starting the next one, for its advance charges).
-            exists(
-              db
-                .select({ id: billingContract.id })
-                .from(billingContract)
-                .where(
-                  and(
-                    sql`${billingContract.accountId} = ${billingAccount.id}`,
-                    sql`${billingContract.status} = 'confirmed'`,
-                    lt(billingContract.effectiveFrom, next.end),
-                    or(
-                      isNull(billingContract.effectiveUntil),
-                      gt(billingContract.effectiveUntil, period.start),
-                    ),
-                  ),
-                ),
-            ),
-            notExists(
-              db
-                .select({ id: billingPeriod.id })
-                .from(billingPeriod)
-                .where(
-                  and(
-                    sql`${billingPeriod.accountId} = ${billingAccount.id}`,
-                    sql`${billingPeriod.periodStart} = ${period.start}`,
-                  ),
-                ),
-            ),
-          ),
-        )
-        .orderBy(asc(billingAccount.id))
-        .limit(Math.min(limit - closed, 50));
+      const due = await accountsDue(period, {
+        scope: opts.scope,
+        except: failed,
+        limit: Math.min(limit - closed, 50),
+      });
       if (!due.length) break;
       let progressed = false;
       for (const account of due) {
@@ -381,6 +391,15 @@ export async function runDueBillingPeriods(opts: {
         }
       }
       if (!progressed && due.every((account) => failed.includes(account.organizationId))) continue;
+    }
+  }
+  // After `CATCH_UP_MONTHS` a month is skipped for good and its usage goes unbilled: say so first.
+  for (const period of periods.slice(0, -1)) {
+    const late = await accountsDue(period, { scope: opts.scope, except: [], limit: 20 });
+    if (late.length > 0) {
+      console.error(
+        `[billing] ${period.start.toISOString()} is still open for ${late.map((account) => account.organizationId).join(", ")}: after ${CATCH_UP_MONTHS} months it can't be closed.`,
+      );
     }
   }
   return closed;

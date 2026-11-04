@@ -16,8 +16,9 @@ from the admin console (`/admin/support`). Tables in `packages/db/src/schema/sup
   must never block password resets.
 - **Intake** (`intake.ts`, the worker's `support` loop). Reads `received_email` rows of that environment
   and records each in `support_intake`; it never hooks into `receiveEmail`, so nothing here can affect
-  another customer's mail. A message that keeps failing is retried `MAX_INTAKE_ATTEMPTS` times, reported
-  and set aside. A ticket keeps its own copy of the text and attachments: `received_email` is purged
+  another customer's mail. Filing and settling `support_intake` share a transaction, so a message is filed
+  once. A message that keeps failing is retried `MAX_INTAKE_ATTEMPTS` times, reported, set aside as `failed`
+  and reps are told (`support.intake_failed`); they requeue it at `/admin/support/intake`. A ticket keeps its own copy of the text and attachments: `received_email` is purged
   after 30 days, emails after 45, and `support_message` holds plain references to them, no FKs.
 - **Threading.** `reply_token` in the envelope recipient, then `In-Reply-To`/`References` against stored
   Message-IDs, else a new ticket. Never by subject, and never by the `[#1042]` in a subject: that is

@@ -860,9 +860,11 @@ async function releaseTrackingHostname(
       ),
     )
     .limit(1);
-  if (!tracked?.providerHostnameId || tracked.provider !== deps.tracking.name) return;
+  if (!tracked || tracked.provider !== deps.tracking.name) return;
+  if (!tracked.providerHostnameId && tracked.status !== "pending") return;
   try {
-    await deps.tracking.delete(tracked.providerHostnameId);
+    if (tracked.providerHostnameId) await deps.tracking.delete(tracked.providerHostnameId);
+    else await deps.tracking.release(tracked.hostname, tracked.id);
   } catch (error) {
     console.error(`[email:domains] releasing ${tracked.hostname} failed:`, error);
     throw new DomainError("provider_error", "The domain could not be removed. Try again shortly.");

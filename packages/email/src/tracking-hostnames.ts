@@ -17,7 +17,7 @@ export type TrackingHostnameState = {
   message: string | null;
 };
 
-/** The hostname is already registered with the provider, by someone else. Never adopted. */
+/** The hostname is already registered with the provider, not by this claim. Never adopted. */
 export class TrackingHostnameTakenError extends Error {
   constructor(hostname: string) {
     super(`${hostname} is already registered with the tracking provider.`);
@@ -29,10 +29,16 @@ export interface TrackingHostnameProvider {
   readonly name: TrackingHostnameProviderName;
   /** The host customers point their tracking CNAME at (in production, a connection group's routing endpoint). */
   readonly cnameTarget: string;
-  /** Registers the hostname; throws `TrackingHostnameTakenError` when it already exists. */
-  create(hostname: string): Promise<{ id: string; state: TrackingHostnameState }>;
+  /**
+   * Registers the hostname for a claim (the tracking domain's id). Safe to repeat after a lost
+   * answer: what this claim registered is found again, and anything else throws
+   * `TrackingHostnameTakenError`.
+   */
+  create(hostname: string, claim: string): Promise<{ id: string; state: TrackingHostnameState }>;
   /** The hostname's state, or `null` when the provider no longer knows it. */
   get(id: string): Promise<TrackingHostnameState | null>;
   /** Removes the hostname; removing an unknown one succeeds. */
   delete(id: string): Promise<void>;
+  /** Removes what this claim may have registered when its id was never stored. */
+  release(hostname: string, claim: string): Promise<void>;
 }

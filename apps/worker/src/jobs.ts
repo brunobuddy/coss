@@ -121,6 +121,7 @@ import {
   runDueWebhookDeliveries,
   type WebhookDeliveryDeps,
 } from "@coss/webhooks";
+import { reportDispatchBacklog } from "./backlog.ts";
 import { pollSesInbound, type SesInboundDeps } from "./inbound.ts";
 import type { Loop } from "./loop.ts";
 import { startLoop } from "./loop.ts";
@@ -280,6 +281,7 @@ export const WORKER_LOOP_NAMES = [
   "organization-logos",
   "subaccount-deletions",
   "unclaimed",
+  "dispatch-backlog",
   "retention",
   "partitions",
   "risk-datasets",
@@ -554,6 +556,11 @@ export function startJobs(deps: WorkerDeps): Loop[] {
       run: async () =>
         (await sweepUnclaimedEmails(deps.dispatchQueue, { limit: SWEEP_BATCH })).failed ===
         SWEEP_BATCH,
+    }),
+    start({
+      name: "dispatch-backlog",
+      intervalMs: 5 * 60_000,
+      run: () => reportDispatchBacklog(),
     }),
     start({
       // Deletes data past its published retention (`@coss/retention`); catches up in full batches.

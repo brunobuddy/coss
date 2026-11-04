@@ -672,10 +672,18 @@ Cloudflare DNS (coss.com zone, DNS only)
 
 - **Errors and uptime:** Sentry (organization `cosscom`). Every server and browser reports errors; the `web` project
   filters errors caused by browser extensions and web crawlers. Uptime monitors check `https://coss.com/api/health`
-  (`web`) and `https://api.coss.com/health` (`api`) every minute from several regions.
+  (`web`) and `https://api.coss.com/health` (`api`) every minute from several regions. They live in Sentry, not this
+  repository, and two more belong there: `https://api.coss.com/health/ready` (the database too; load balancers stay on
+  `/health`, so an outage of it doesn't take every task out of service) and `https://track.cosslinks.com/t/o/uptime`
+  (the tracking host: any token answers `200` with its pixel and records nothing). Sentry's uptime monitors are HTTP
+  only, so `smtp.coss.com` is covered by the healthy-host alarm below, not by a probe from outside.
+- **Worker loops:** each checks in with Sentry at most once a minute (cron monitors `worker-<loop>`, created on first
+  check-in; `loopMonitorConfig`, `apps/worker/src/loop.ts`), so a loop that hangs, keeps failing or stops opens an issue
+  after three misses. The `dispatch-backlog` loop reports emails and SMS waiting for dispatch for over 15 minutes.
 - **Alarms** (`infra/terraform/monitoring.tf`, notify the `coss-alerts` SNS topic → `alert_email`): per service,
   fewer running tasks than its minimum, memory above 85 %, CPU above 90 % (autoscaling saturated); load balancer
-  5xx, per-target 5xx and unhealthy targets; RDS CPU, CPU credits (t4g), free storage, free memory and connections
+  5xx, per-target 5xx and unhealthy targets; no healthy task behind the SMTP relay's network load balancer; the SES
+  account's bounce rate above 4 % and complaint rate above 0.08 % (AWS reviews it at 5 % and 0.1 %); RDS CPU, CPU credits (t4g), free storage, free memory and connections
   (> 300 of ~410); Valkey throttling (raise `--max-ecpu`); plus ses:bootstrap's SES event queue backlog and dead
   letters. Route 53 health checks and CloudFront metrics exist only in us-east-1, which the organization's SCP
   denies: uptime is Sentry's.

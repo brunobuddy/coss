@@ -9,8 +9,8 @@ import { asc, eq } from "drizzle-orm";
 import { cancelScheduledChange, scheduleDowngrade } from "../src/changes.ts";
 import { runDueBillingCollection } from "../src/collection.ts";
 import { createCreditGrant } from "../src/grants.ts";
-import { listInvoices } from "../src/invoices.ts";
-import { recordManualPayment } from "../src/payments.ts";
+import { listInvoices, lockInvoice } from "../src/invoices.ts";
+import { recordManualPayment, recordProviderPayment } from "../src/payments.ts";
 import { runDueBillingPeriods } from "../src/periods.ts";
 import { runDueBillingSync } from "../src/sync.ts";
 import { createTestContract, testBillingProviders } from "../src/testing.ts";
@@ -59,6 +59,46 @@ async function billingEvents(tenant: TestTenant) {
 }
 
 describe("billing.* webhook events", () => {
+  test("an invoice Stripe settled without new cash is announced once", async () => {
+    const tenant = await createTestTenant();
+    const org = tenant.organization.id;
+    await withEndpoints(tenant);
+    await createTestContract(
+      org,
+      { version: 1, plan: "pro" },
+      { effectiveFrom: at("2026-10-01T00:00:00Z") },
+    );
+    await runDueBillingPeriods({ now: at("2026-10-01T00:20:00Z"), scope: scopeOf(tenant) });
+    const [invoice] = await listInvoices(org, { limit: 1 });
+    if (!invoice) throw new Error("No invoice.");
+    const settle = () =>
+      db.transaction(async (tx) => {
+        const locked = await lockInvoice(tx, invoice.id);
+        if (!locked) throw new Error("No invoice.");
+        await recordProviderPayment(
+          tx,
+          locked,
+          {
+            amountCents: locked.amountPaidCents,
+            method: "stripe",
+            providerPaymentId: null,
+            receivedAt: at("2026-10-02T00:00:00Z"),
+          },
+          at("2026-10-02T00:00:00Z"),
+        );
+      });
+    await settle();
+    await settle();
+
+    const paid = (await billingEvents(tenant)).filter(
+      (event) => event.type === "billing.invoice_paid",
+    );
+    expect(paid).toHaveLength(1);
+    expect(paid[0]?.data).toMatchObject({
+      invoice: { id: invoice.id, status: "paid", amount_due: 0 },
+    });
+  });
+
   test("an invoice's life: finalized, payment failed, hold placed, paid, hold lifted", async () => {
     const tenant = await createTestTenant();
     const org = tenant.organization.id;

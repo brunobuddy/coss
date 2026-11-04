@@ -11,6 +11,7 @@ import {
   markSupportNotSpam,
   markSupportSpam,
   replyAsAgent,
+  requeueSupportIntake,
   revealSupportMessage,
   type SupportStatusChange,
   saveSavedReply,
@@ -268,6 +269,22 @@ export async function deleteSavedReplyAction(
       action: "support.saved_reply_changed",
       target: { type: "support_ticket", id: "saved-replies" },
       metadata: { deleted: id },
+    });
+  });
+}
+
+export async function requeueSupportIntakeAction(
+  _previous: ActionResult<null> | null,
+  formData: FormData,
+): Promise<ActionResult<null>> {
+  return ticketAction(async () => {
+    const { actor } = await rep();
+    const receivedEmailId = formString(formData, "receivedEmailId");
+    await requeueSupportIntake(receivedEmailId);
+    await recordAdminAction({
+      actor,
+      action: "support.intake_requeued",
+      target: { type: "received_email", id: receivedEmailId },
     });
   });
 }
