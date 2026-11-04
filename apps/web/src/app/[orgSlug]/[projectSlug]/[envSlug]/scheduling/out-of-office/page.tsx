@@ -16,11 +16,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
 import { schedulingPageContext } from "../page-context";
-import {
-  DeleteOutOfOfficeButton,
-  NewOutOfOfficeDialog,
-  ReassignManyDialog,
-} from "../scheduling-actions";
+import { DeleteOutOfOfficeButton, OpenTeamPageButton } from "../scheduling-actions";
 
 export const metadata: Metadata = { title: "Out of office" };
 
@@ -68,13 +64,11 @@ export default async function OutOfOfficePage({
   const nameOf = new Map(hosts.data.map((host) => [host.id, host.name]));
   const last = page.data.at(-1);
   const path = `${schedulingPath}/out-of-office`;
-  const canCreate = can({ scheduling: ["create"] });
   const canDelete = can({ scheduling: ["delete"] });
   const canMove = can({ scheduling: ["update"] });
-  const offered = hosts.data
-    .filter((host) => host.status === "active")
-    .map((host) => ({ id: host.id, name: host.name }));
-  const dialog = canCreate ? <NewOutOfOfficeDialog {...target} hosts={offered} /> : null;
+  const dialog = canMove ? (
+    <OpenTeamPageButton {...target} label="Add time off" tab="away" variant="default" />
+  ) : null;
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -137,12 +131,11 @@ export default async function OutOfOfficePage({
                     <TableCell>
                       <div className="flex justify-end gap-1">
                         {canMove && count > 0 ? (
-                          <ReassignManyDialog
+                          <OpenTeamPageButton
                             {...target}
-                            hosts={offered.filter((host) => host.id !== entry.host)}
                             label="Move bookings"
                             outOfOfficeId={entry.id}
-                            runsPath={`${schedulingPath}/reassignments`}
+                            variant="ghost"
                           />
                         ) : null}
                         {canDelete ? (

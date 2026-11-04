@@ -46,6 +46,8 @@ export function schedulingSessionUrl(
   return `${withoutTrailingSlashes(publicUrl)}/${PATH_OF[kind]}/${sessionId}#${token}`;
 }
 
+const HOUR_SECONDS = 3600;
+
 type Created = { id: string; token: string; url: string | null; expiresAt: Date };
 
 type MintInput = {
@@ -149,6 +151,28 @@ export async function createManagerSession(
     apiKeyId: input.apiKeyId ?? null,
     createdByUserId: input.createdByUserId ?? null,
     expiresAt: expiry(input.now ?? new Date(), input.expiresIn, HOST_DEFAULT_SECONDS),
+    publicUrl: input.publicUrl,
+  });
+}
+
+/**
+ * The team page, for a dashboard member, who can change any of this environment's hosts anyway. `{}`
+ * is every host, which is why nothing else can mint it, and it means nobody without a member behind
+ * it (`managedHosts`). What needs to know who's free runs in the API, which that page calls.
+ */
+export async function createDashboardSession(
+  env: SchedulingEnvironment,
+  input: { createdByUserId: string; publicUrl: string | null; now?: Date },
+): Promise<Created> {
+  return mint({
+    env,
+    kind: "manager",
+    managerHostIds: null,
+    managerHostFilter: {},
+    readOnly: false,
+    apiKeyId: null,
+    createdByUserId: input.createdByUserId,
+    expiresAt: expiry(input.now ?? new Date(), HOUR_SECONDS, HOUR_SECONDS),
     publicUrl: input.publicUrl,
   });
 }

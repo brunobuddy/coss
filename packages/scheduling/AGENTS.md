@@ -102,7 +102,8 @@ source only takes `key share`, with no status check, since leaving a disabled ho
 - `isBookable`'s `skip` is how a booking that exists doesn't answer the grid, notice and window again, and how overrides
   work. Nothing can skip `already_claimed`, and the exclusion constraint has the last word anyway.
 - A hold or request keeps what's left of its time (`claimRemainingSeconds`, from the same SQL clock, rounded down),
-  never more: under a second is `hold_expired`, not a claim whose range would raise `22000`.
+  never more: under a second is `hold_expired`, not a claim whose range would raise `22000`. It's read after the target's
+  locks, since waiting for them comes out of that time.
 - `auto` keeps to what the booking was routed with. A pool's booking that can't say (`encrypted_attributes` is null)
   refuses `auto`, rather than guessing nothing narrowed it; someone naming a host knows who they're choosing.
 - A group session has one host, so a seat's reassignment moves all of it. Seats lock before the session, since cancelling
@@ -112,8 +113,8 @@ source only takes `key share`, with no status check, since leaving a disabled ho
   bookings for this reason.
 - `reason_code` and `note` go nowhere but the booking's history. The note's encrypted (`encrypted_note`, not `details`,
   which outlives the attendee's data) and goes with their details.
-- Host emails address `hostId`, and only those joining and leaving hear: a co-host has nothing new to know. Later
-  changes supersede earlier ones, so going to someone and back says nothing stale.
+- Host emails address `hostId`, and only those joining and leaving hear: a co-host has nothing new to know. Each hears
+  what's changed since they last heard: going A to B to C tells A and C and not B, and going back to A tells nobody.
 
 ## Moving many
 
@@ -156,6 +157,10 @@ hosted page in a tab through a session with `createdByUserId` (`openBookerAction
 session acts as the member (`sessionActor`), past attendees' cutoffs. A manage session made this way lasts an hour.
 `listRescheduleSlots` answers where a booking can move the way `rescheduleBooking` checks it: its own hosts (none disabled
 or taken off the event type), length and buffers, with its own claims left out. Change them together.
+Reassigning, its candidates, a run's preview and out of office's dates all work out time too, so the dashboard opens the
+team page for them (`openTeamPageAction`), and a test refuses them in its code (`apps/web/test/scheduling-bun-only.test.ts`).
+Starting a run from there happens on that page as well; undoing or cancelling one, and deleting an entry, only write rows
+and the worker does the rest, so they stay in the dashboard.
 A new event type field goes in the dashboard's form too
 (`apps/web/src/lib/scheduling-edit.ts`, `event-type-form.tsx`), or typecheck fails on the test fixtures there.
 
@@ -228,7 +233,8 @@ so an event on a calendar that's stopped being one still goes. Slots for moving 
 
 `manager.ts`: a `manager` session reaches the hosts it names, or those matching `manager_host_filter` on every request
 (`managedHosts`). There's no team table: who manages whom is the customer's to say, when they mint one. An empty filter
-is refused at minting, since `{}` matches everyone.
+is refused at minting, since `{}` matches everyone. The exception is `createDashboardSession`: a dashboard member who opens
+this page reaches every host of the environment, for an hour, acting as themselves, and it's in the audit log.
 
 - It's checked before anything's read, and **again with the booking locked** (`fromHosts`, `toHosts` in `reassign.ts`):
   until then, a booking may have moved to someone out of reach. Someone else's looks like it doesn't exist.

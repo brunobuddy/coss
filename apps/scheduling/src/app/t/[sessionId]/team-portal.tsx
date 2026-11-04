@@ -1,5 +1,6 @@
 "use client";
 
+import { REASSIGNMENT_REASON_LABELS } from "@coss/scheduling/schemas";
 import { Badge } from "@coss/ui/components/badge";
 import { Button } from "@coss/ui/components/button";
 import { Checkbox } from "@coss/ui/components/checkbox";
@@ -15,6 +16,7 @@ import {
 import { Skeleton } from "@coss/ui/components/skeleton";
 import { Spinner } from "@coss/ui/components/spinner";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@coss/ui/components/tabs";
+import { Textarea } from "@coss/ui/components/textarea";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   BrandMark,
@@ -79,6 +81,38 @@ type Run = {
     failed: number;
   };
 };
+
+/** Where a link from the dashboard wants to start. */
+export type TeamFocus = { tab?: string; booking?: string; outOfOffice?: string };
+
+const REASSIGN_REASONS = Object.entries(REASSIGNMENT_REASON_LABELS).map(([key, label]) => ({
+  key,
+  label,
+}));
+
+function ReasonSelect(props: { value: string; onChange: (next: string) => void }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>Reason</Label>
+      <Select
+        items={REASSIGN_REASONS.map((entry) => ({ value: entry.key, label: entry.label }))}
+        onValueChange={(next) => props.onChange(String(next))}
+        value={props.value}
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectPopup>
+          {REASSIGN_REASONS.map((entry) => (
+            <SelectItem key={entry.key} value={entry.key}>
+              {entry.label}
+            </SelectItem>
+          ))}
+        </SelectPopup>
+      </Select>
+    </div>
+  );
+}
 
 const when = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
 const dayOnly = new Intl.DateTimeFormat(undefined, { timeZone: "UTC", dateStyle: "medium" });
@@ -153,7 +187,11 @@ function Away(props: {
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [reason, setReason] = useState("unspecified");
-  const [cover, setCover] = useState<string | null>(null);
+  const [covers, setCovers] = useState<string[]>([]);
+  const [wholeDays, setWholeDays] = useState(true);
+  const [message, setMessage] = useState("");
+  const [notes, setNotes] = useState("");
+  const [onCalendar, setOnCalendar] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
@@ -175,16 +213,23 @@ function Away(props: {
         method: "POST",
         body: {
           hosts: chosen,
-          start_date: first,
-          end_date: last || first,
+          // This browser's the only one that knows which zone a time was typed in.
+          ...(wholeDays
+            ? { start_date: first, end_date: last || first }
+            : { start: new Date(first).toISOString(), end: new Date(last).toISOString() }),
           reason,
-          ...(cover ? { delegates: [cover] } : {}),
+          ...(message.trim() ? { public_message: message.trim() } : {}),
+          ...(notes.trim() ? { notes: notes.trim() } : {}),
+          show_on_calendar: onCalendar,
+          delegates: covers.filter((id) => !chosen.includes(id)),
         },
       });
       setChosen([]);
       setFirst("");
       setLast("");
-      setCover(null);
+      setCovers([]);
+      setMessage("");
+      setNotes("");
       load();
     } catch (error) {
       setProblem((error as Error).message);
@@ -233,29 +278,41 @@ function Away(props: {
               ))}
             </div>
           </div>
+          <Label className="font-normal">
+            <Checkbox
+              checked={wholeDays}
+              onCheckedChange={(checked) => {
+                setWholeDays(Boolean(checked));
+                setFirst("");
+                setLast("");
+              }}
+            />
+            Whole days
+          </Label>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="team-first">First day</Label>
+              <Label htmlFor="team-first">{wholeDays ? "First day" : "From"}</Label>
               <Input
                 id="team-first"
                 onChange={(event) => setFirst(event.target.value)}
                 required
-                type="date"
+                type={wholeDays ? "date" : "datetime-local"}
                 value={first}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="team-last">Last day</Label>
+              <Label htmlFor="team-last">{wholeDays ? "Last day" : "Until"}</Label>
               <Input
                 id="team-last"
                 min={first || undefined}
                 onChange={(event) => setLast(event.target.value)}
-                type="date"
+                required={!wholeDays}
+                type={wholeDays ? "date" : "datetime-local"}
                 value={last}
               />
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Reason</Label>
               <Select
@@ -277,14 +334,55 @@ function Away(props: {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Who covers</Label>
-              <HostSelect
-                hosts={active}
-                label="Who covers"
-                onChange={setCover}
-                placeholder="Nobody"
-                value={cover}
+              <div className="flex max-h-32 flex-col gap-2 overflow-y-auto rounded-lg border p-3">
+                {active
+                  .filter((host) => !chosen.includes(host.id))
+                  .map((host) => (
+                    <Label className="font-normal" key={host.id}>
+                      <Checkbox
+                        checked={covers.includes(host.id)}
+                        onCheckedChange={(checked) =>
+                          setCovers((current) =>
+                            checked
+                              ? [...current, host.id]
+                              : current.filter((id) => id !== host.id),
+                          )
+                        }
+                      />
+                      {host.name}
+                    </Label>
+                  ))}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Optional. They can be booked in their place during this, if they fit the booking.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="team-message">Message for people booking</Label>
+              <Input
+                id="team-message"
+                maxLength={300}
+                onChange={(event) => setMessage(event.target.value)}
+                value={message}
+              />
+              <p className="text-muted-foreground text-xs">Optional. Can't contain a link.</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="team-notes">Private notes</Label>
+              <Textarea
+                id="team-notes"
+                maxLength={2000}
+                onChange={(event) => setNotes(event.target.value)}
+                value={notes}
               />
             </div>
+            <Label className="font-normal">
+              <Checkbox
+                checked={onCalendar}
+                onCheckedChange={(checked) => setOnCalendar(Boolean(checked))}
+              />
+              Show on their calendar
+            </Label>
           </div>
           <Button className="self-start" disabled={saving || chosen.length === 0} type="submit">
             {saving ? <Spinner /> : null}
@@ -333,12 +431,16 @@ function BookingRow(props: {
   nameOf: (id: string) => string;
   readOnly: boolean;
   onMoved: () => void;
+  /** Someone came here to move this one. */
+  opened?: boolean;
 }) {
-  const { call, booking, nameOf, readOnly, onMoved } = props;
+  const { call, booking, nameOf, readOnly, onMoved, opened } = props;
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [from, setFrom] = useState(booking.hosts[0] ?? "");
   const [to, setTo] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [reason, setReason] = useState(booking.host_away ? "out_of_office" : "other");
+  const [notify, setNotify] = useState(true);
   const [problem, setProblem] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
   const open = async () => {
@@ -352,6 +454,10 @@ function BookingRow(props: {
       setProblem((error as Error).message);
     }
   };
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only the once, on arriving.
+  useEffect(() => {
+    if (opened && !readOnly) void open();
+  }, []);
   const picked = candidates?.find((candidate) => candidate.host === to);
   const overrides = picked
     ? [
@@ -369,11 +475,15 @@ function BookingRow(props: {
         method: "POST",
         body: {
           changes: [{ from_host: from, to_host: to }],
-          reason_code: booking.host_away ? "out_of_office" : "other",
+          reason_code: reason,
           ...(note.trim() ? { note: note.trim() } : {}),
           ...(overrides.length > 0 ? { overrides } : {}),
+          notify: { attendee: notify },
         },
       });
+      setCandidates(null);
+      setTo(null);
+      setNote("");
       onMoved();
     } catch (error) {
       setProblem((error as Error).message);
@@ -441,17 +551,27 @@ function BookingRow(props: {
               </SelectPopup>
             </Select>
           )}
-          {overriding ? (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor={`note-${booking.id}`}>Why, since they aren't free</Label>
-              <Input
-                id={`note-${booking.id}`}
-                maxLength={500}
-                onChange={(event) => setNote(event.target.value)}
-                value={note}
-              />
-            </div>
-          ) : null}
+          <ReasonSelect onChange={setReason} value={reason} />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`note-${booking.id}`}>
+              {overriding ? "Why, since they aren't free" : "Note"}
+            </Label>
+            <Input
+              id={`note-${booking.id}`}
+              maxLength={500}
+              onChange={(event) => setNote(event.target.value)}
+              value={note}
+            />
+            {overriding ? null : (
+              <p className="text-muted-foreground text-xs">
+                Optional. Only shown in this booking's history.
+              </p>
+            )}
+          </div>
+          <Label className="font-normal">
+            <Checkbox checked={notify} onCheckedChange={(checked) => setNotify(Boolean(checked))} />
+            Tell the attendee
+          </Label>
           <div className="flex gap-2">
             <Button
               disabled={working || !to || (overriding && !note.trim())}
@@ -477,10 +597,17 @@ function MoveMany(props: {
   hosts: readonly Host[];
   nameOf: (id: string) => string;
   onStarted: () => void;
+  /** What's in one person's time away, rather than everything of someone's. */
+  outOfOffice?: string | undefined;
 }) {
-  const { call, hosts, nameOf, onStarted } = props;
+  const { call, hosts, nameOf, onStarted, outOfOffice } = props;
   const [from, setFrom] = useState<string | null>(null);
+  const [before, setBefore] = useState("");
   const [prefer, setPrefer] = useState<string | null>(null);
+  const [reason, setReason] = useState(outOfOffice ? "out_of_office" : "other");
+  const [note, setNote] = useState("");
+  const [notify, setNotify] = useState(true);
+  const [truncated, setTruncated] = useState(false);
   const [items, setItems] = useState<PreviewItem[] | null>(null);
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<string | null>(null);
@@ -493,21 +620,23 @@ function MoveMany(props: {
       ? [{ booking: item.booking, to_host: to, from_host: item.from_host }]
       : [];
   });
+  const selection = outOfOffice
+    ? { out_of_office: outOfOffice }
+    : { host: from, ...(before ? { start_before: new Date(before).toISOString() } : {}) };
   const preview = async () => {
     setWorking(true);
     setProblem(null);
     try {
-      const response = await call<{ items: PreviewItem[] }>("/manager/reassignments/preview", {
-        method: "POST",
-        body: {
-          selection: { host: from },
-          strategy: {
-            preferred_hosts: prefer ? [prefer] : others.map((host) => host.id),
-            otherwise: "leave",
-          },
+      const response = await call<{ items: PreviewItem[]; truncated?: boolean }>(
+        "/manager/reassignments/preview",
+        {
+          method: "POST",
+          // A preview only proposes people on this team, however it's asked.
+          body: { selection, strategy: prefer ? { preferred_hosts: [prefer] } : {} },
         },
-      });
+      );
       setItems(response.items);
+      setTruncated(response.truncated === true);
       setChoices({});
     } catch (error) {
       setProblem((error as Error).message);
@@ -522,9 +651,11 @@ function MoveMany(props: {
       const run = await call<{ id: string }>("/manager/reassignments", {
         method: "POST",
         body: {
-          selection: { host: from },
+          selection,
           strategy: { assignments },
-          reason_code: "other",
+          reason_code: reason,
+          ...(note.trim() ? { note: note.trim() } : {}),
+          notify: { attendees: notify },
         },
       });
       postToHost({ type: "reassignment_started", reassignment_id: run.id });
@@ -539,18 +670,37 @@ function MoveMany(props: {
   };
   return (
     <section className="flex flex-col gap-3 rounded-xl border p-4">
-      <h2 className="font-medium text-sm">Move someone's bookings</h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <HostSelect
-          hosts={hosts}
-          label="Whose bookings"
-          onChange={(next) => {
-            setFrom(next);
-            setItems(null);
-          }}
-          placeholder="Whose bookings"
-          value={from}
-        />
+      <h2 className="font-medium text-sm">
+        {outOfOffice ? "Move the bookings in this time off" : "Move someone's bookings"}
+      </h2>
+      <div className="grid items-start gap-3 sm:grid-cols-2">
+        {outOfOffice ? null : (
+          <>
+            <HostSelect
+              hosts={hosts}
+              label="Whose bookings"
+              onChange={(next) => {
+                setFrom(next);
+                setItems(null);
+              }}
+              placeholder="Whose bookings"
+              value={from}
+            />
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="team-before">Starting before</Label>
+              <Input
+                id="team-before"
+                onChange={(event) => {
+                  setBefore(event.target.value);
+                  setItems(null);
+                }}
+                type="datetime-local"
+                value={before}
+              />
+              <p className="text-muted-foreground text-xs">Leave empty for all of them.</p>
+            </div>
+          </>
+        )}
         <HostSelect
           hosts={others}
           label="Try first"
@@ -560,7 +710,12 @@ function MoveMany(props: {
         />
       </div>
       {items === null ? (
-        <Button className="self-start" disabled={working || !from} onClick={preview} size="sm">
+        <Button
+          className="self-start"
+          disabled={working || (!from && !outOfOffice)}
+          onClick={preview}
+          size="sm"
+        >
           See who they'd go to
         </Button>
       ) : items.length === 0 ? (
@@ -584,7 +739,7 @@ function MoveMany(props: {
                 </span>
                 <div className="w-48">
                   <HostSelect
-                    hosts={others}
+                    hosts={others.filter((host) => host.id !== item.from_host)}
                     label={`Who ${item.title} goes to`}
                     onChange={(next) =>
                       setChoices((current) => {
@@ -601,10 +756,32 @@ function MoveMany(props: {
               </li>
             ))}
           </ul>
+          {truncated ? (
+            <p className="text-muted-foreground text-xs">
+              That's the first 500. Move these, then do the rest.
+            </p>
+          ) : null}
           <p className="text-muted-foreground text-xs">
             Each host hears once. A booking nobody can take stays where it is, with{" "}
             {from ? nameOf(from) : "them"}.
           </p>
+          <ReasonSelect onChange={setReason} value={reason} />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="team-many-note">Note</Label>
+            <Textarea
+              id="team-many-note"
+              maxLength={500}
+              onChange={(event) => setNote(event.target.value)}
+              value={note}
+            />
+            <p className="text-muted-foreground text-xs">
+              Optional. Only shown in each booking's history.
+            </p>
+          </div>
+          <Label className="font-normal">
+            <Checkbox checked={notify} onCheckedChange={(checked) => setNotify(Boolean(checked))} />
+            Tell attendees
+          </Label>
           <Button
             className="self-start"
             disabled={working || assignments.length === 0}
@@ -627,22 +804,35 @@ function Cover(props: {
   nameOf: (id: string) => string;
   readOnly: boolean;
   onStarted: () => void;
+  focus: TeamFocus;
 }) {
-  const { call, hosts, nameOf, readOnly, onStarted } = props;
+  const { call, hosts, nameOf, readOnly, onStarted, focus } = props;
   const [bookings, setBookings] = useState<ManagedBooking[] | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [everything, setEverything] = useState(false);
+  const only = everything ? undefined : focus.booking;
   const load = useCallback(() => {
-    call<{ data: ManagedBooking[] }>(`/manager/bookings${everything ? "" : "?needs_cover=true"}`)
+    const query = only
+      ? `?booking=${encodeURIComponent(only)}`
+      : everything
+        ? ""
+        : "?needs_cover=true";
+    call<{ data: ManagedBooking[] }>(`/manager/bookings${query}`)
       .then((response) => setBookings(response.data))
       .catch((error: Error) => setProblem(error.message));
-  }, [call, everything]);
+  }, [call, everything, only]);
   useEffect(load, [load]);
   return (
     <div className="flex flex-col gap-4">
       <Problem message={problem} />
-      {readOnly ? null : (
-        <MoveMany call={call} hosts={hosts} nameOf={nameOf} onStarted={onStarted} />
+      {readOnly || only ? null : (
+        <MoveMany
+          call={call}
+          hosts={hosts}
+          nameOf={nameOf}
+          onStarted={onStarted}
+          outOfOffice={focus.outOfOffice}
+        />
       )}
       <Label className="font-normal">
         <Checkbox
@@ -666,6 +856,7 @@ function Cover(props: {
               key={booking.id}
               nameOf={nameOf}
               onMoved={load}
+              opened={booking.id === only}
               readOnly={readOnly}
             />
           ))}
@@ -749,7 +940,8 @@ function Moves(props: { call: ClientCall; readOnly: boolean; refreshKey: number 
   );
 }
 
-export function TeamPortal({ sessionId, apiUrl }: { sessionId: string; apiUrl: string }) {
+export function TeamPortal(props: { sessionId: string; apiUrl: string; focus: TeamFocus }) {
+  const { sessionId, apiUrl, focus } = props;
   const call = useClientApi(sessionId, apiUrl);
   const [session, setSession] = useState<TeamSession | null>(null);
   const [hosts, setHosts] = useState<Host[]>([]);
@@ -785,7 +977,7 @@ export function TeamPortal({ sessionId, apiUrl }: { sessionId: string; apiUrl: s
           <BrandMark branding={session} />
           <PageTitle>Team cover</PageTitle>
         </header>
-        <Tabs defaultValue="cover">
+        <Tabs defaultValue={focus.tab === "away" ? "away" : "cover"}>
           <div className="mt-3 overflow-x-auto border-b px-2 sm:px-4">
             <TabsList variant="underline">
               <TabsTab value="cover">Needs cover</TabsTab>
@@ -796,6 +988,7 @@ export function TeamPortal({ sessionId, apiUrl }: { sessionId: string; apiUrl: s
           <TabsPanel className="p-4 sm:p-6" value="cover">
             <Cover
               call={call}
+              focus={focus}
               hosts={hosts}
               nameOf={nameOf}
               onStarted={() => setRunsVersion((version) => version + 1)}

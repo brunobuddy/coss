@@ -6,6 +6,7 @@ import { memoryLogWriter } from "@coss/logs/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
 import {
   createBookerSession,
+  createDashboardSession,
   createEventType,
   createHostSession,
   createManageSession,
@@ -1506,6 +1507,112 @@ describe("out of office", () => {
     }
     const START = "2031-01-06T10:00:00.000Z";
     const WHEN = { start_date: "2031-01-20", end_date: "2031-01-20" };
+
+    test("the dashboard's team page reaches every host, as the member who opened it", async () => {
+      const { tenant, send, peer, outsider, bookFor, host } = await team();
+      const env = {
+        organizationId: tenant.organization.id,
+        projectId: tenant.project.id,
+        environmentId: tenant.development.id,
+        mode: "sandbox" as const,
+      };
+      const session = await createDashboardSession(env, {
+        createdByUserId: tenant.owner.id,
+        publicUrl: "https://book.example.com",
+      });
+      expect(session.url).toContain(`/t/${session.id}#`);
+      const { app } = createTestApp();
+      const asMember = (method: string, path: string, body?: unknown) =>
+        app.request(`/scheduling/client/manager${path}`, {
+          method,
+          headers: {
+            authorization: `Bearer ${session.token}`,
+            "content-type": "application/json",
+          },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        });
+      const hosts = (await (await asMember("GET", "/hosts")).json()) as { data: { id: string }[] };
+      expect(hosts.data.map((found) => found.id).sort()).toEqual(
+        [host.id, peer.id, outsider.id].sort(),
+      );
+
+      // A link to one booking finds it, whatever else is coming up.
+      const booked = await bookFor(host.id, START);
+      const later = await bookFor(host.id, "2031-01-07T10:00:00.000Z");
+      const one = (await (await asMember("GET", `/bookings?booking=${later.id}`)).json()) as {
+        data: { id: string }[];
+      };
+      expect(one.data.map((found) => found.id)).toEqual([later.id]);
+
+      // Who's free is worked out here, and whoever's chosen is whoever's asked for.
+      const candidates = (await (
+        await asMember("GET", `/bookings/${booked.id}/reassign_candidates`)
+      ).json()) as { data: { host: string; available: boolean }[] };
+      expect(candidates.data.map((found) => found.host).sort()).toEqual(
+        [peer.id, outsider.id].sort(),
+      );
+      const moved = await asMember("POST", `/bookings/${booked.id}/reassign`, {
+        changes: [{ to_host: outsider.id }],
+        reason_code: "other",
+        note: "They asked",
+        notify: { attendee: false },
+      });
+      expect(moved.status).toBe(200);
+      expect(((await moved.json()) as { hosts: string[] }).hosts).toEqual([outsider.id]);
+
+      // Time away, on the member's say-so, in whole days and in hours.
+      const during = await bookFor(host.id, "2031-01-20T10:00:00.000Z");
+      const days = await asMember("POST", "/out_of_office", {
+        hosts: [host.id],
+        ...WHEN,
+        reason: "vacation",
+        public_message: "Back soon",
+        notes: "Private",
+        show_on_calendar: false,
+        delegates: [peer.id],
+      });
+      expect(days.status).toBe(201);
+      const [entry] = ((await days.json()) as { data: { id: string; source: string }[] }).data;
+      expect(entry?.source).toBe("dashboard");
+      const hours = await asMember("POST", "/out_of_office", {
+        hosts: [peer.id],
+        start: "2031-02-03T09:00:00.000Z",
+        end: "2031-02-03T12:00:00.000Z",
+      });
+      expect(hours.status).toBe(201);
+
+      // Moving what's in someone's time away, as the page does.
+      const preview = await asMember("POST", "/reassignments/preview", {
+        selection: { out_of_office: entry?.id },
+        strategy: {},
+      });
+      expect(preview.status).toBe(200);
+      const items = (
+        (await preview.json()) as {
+          items: { booking: string; to_host: string | null; from_host: string | null }[];
+        }
+      ).items;
+      expect(items.map((item) => item.booking)).toEqual([during.id]);
+      expect(items[0]?.to_host).not.toBeNull();
+      const run = await asMember("POST", "/reassignments", {
+        selection: { out_of_office: entry?.id },
+        strategy: {
+          assignments: [
+            { booking: during.id, to_host: items[0]?.to_host, from_host: items[0]?.from_host },
+          ],
+        },
+        reason_code: "out_of_office",
+        notify: { attendees: false },
+      });
+      expect(run.status).toBe(202);
+      await runDueReassignments(testSchedulingDeps(), {
+        scope: { organizationIds: [tenant.organization.id] },
+      });
+      const after = await send(`/bookings/${during.id}`, "GET");
+      expect(((await after.json()) as { hosts: string[] }).hosts).toEqual([
+        items[0]?.to_host as string,
+      ]);
+    });
 
     test("an empty scope is refused, and so is giving both", async () => {
       const { send, host } = await booker();

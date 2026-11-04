@@ -25,7 +25,7 @@ function readToken(sessionId: string): string | null {
       return fromHash;
     }
     // Out of the address bar, history and anything that reads `location`.
-    window.history.replaceState(null, "", window.location.pathname);
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
     return fromHash;
   }
   try {

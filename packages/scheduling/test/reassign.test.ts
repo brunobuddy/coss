@@ -578,6 +578,8 @@ describe("a collective", () => {
   });
 });
 
+const ANY_HOST = { overrides: ["any_host" as const], note: "They said they'd take it" };
+
 describe("holds and requests", () => {
   // A hold's expiry comes from the database's clock, so these run on the real one.
   const real = testSchedulingDeps();
@@ -612,6 +614,43 @@ describe("holds and requests", () => {
     expect(confirmed.status).toBe("confirmed");
     expect(confirmed.hosts).toEqual([second.id]);
     await auditClaims(env);
+  });
+
+  test("waiting for the new host's lock comes out of a hold's time", async () => {
+    const { env, first, second, pool } = await pair();
+    const { booking: hold } = await createHold(
+      env,
+      { eventType: pool.id, startMs: at("12:00", dayOf), host: first.id, attendee },
+      real,
+      actor,
+    );
+    const [before] = await claimsOf(hold.id);
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked = () => {};
+    const holding = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const blocker = db.transaction(async (tx) => {
+      await tx
+        .select({ id: schema.schedulingHost.id })
+        .from(schema.schedulingHost)
+        .where(eq(schema.schedulingHost.id, second.id))
+        .for("update");
+      locked();
+      await gate;
+    });
+    await holding;
+    const moving = reassign(env, hold.id, change(second.id), real);
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    release();
+    await blocker;
+    await moving;
+    const [after] = await claimsOf(hold.id);
+    expect(after?.hostId).toBe(second.id);
+    expect(after?.liveUntil?.getTime()).toBeLessThanOrEqual(before?.liveUntil?.getTime() as number);
   });
 
   test("a hold that's run out can't move, rather than getting more time", async () => {
@@ -1239,10 +1278,35 @@ describe("who's told", () => {
     await reassign(env, booking.id, change(first.id));
     const { sent, deps } = sender();
     await runDueSchedulingNotifications(deps as never, { scope: scope(env) });
-    // Only the last change is news: the second host is told it's gone, and the first it's back.
-    expect(subjectsTo(sent, "first@example.com")).toEqual(["Assigned to you: Call"]);
-    expect(subjectsTo(sent, "second@example.com")).toEqual(["No longer yours: Call"]);
+    // Nobody had heard about the first change, and the second undid it.
+    expect(sent).toEqual([]);
+  });
+
+  test("going on to a third still tells the first, and not the one in between", async () => {
+    const { env, booking, second } = await pair();
+    const third = await host(env, "Dr. Third", { email: "third@example.com" });
+    await reassign(env, booking.id, change(second.id));
+    await reassign(env, booking.id, change(third.id, ANY_HOST));
+    const { sent, deps } = sender();
+    await runDueSchedulingNotifications(deps as never, { scope: scope(env) });
+    expect(subjectsTo(sent, "first@example.com")).toEqual(["No longer yours: Call"]);
+    expect(subjectsTo(sent, "second@example.com")).toEqual([]);
+    expect(subjectsTo(sent, "third@example.com")).toEqual(["Assigned to you: Call"]);
     expect(subjectsTo(sent, "sam@example.com").length).toBe(1);
+  });
+
+  test("someone who heard they had it hears they've lost it", async () => {
+    const { env, booking, second } = await pair();
+    const third = await host(env, "Dr. Third", { email: "third@example.com" });
+    await reassign(env, booking.id, change(second.id));
+    const { sent, deps } = sender();
+    await runDueSchedulingNotifications(deps as never, { scope: scope(env) });
+    await reassign(env, booking.id, change(third.id, ANY_HOST));
+    await runDueSchedulingNotifications(deps as never, { scope: scope(env) });
+    expect(subjectsTo(sent, "second@example.com")).toEqual([
+      "Assigned to you: Call",
+      "No longer yours: Call",
+    ]);
   });
 
   test("a reminder still goes, after the booking changes hands", async () => {

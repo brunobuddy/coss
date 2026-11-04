@@ -1,4 +1,4 @@
-import { listHosts, listReassignments } from "@coss/scheduling";
+import { listReassignments } from "@coss/scheduling";
 import { REASSIGNMENT_REASON_LABELS } from "@coss/scheduling/schemas";
 import { Badge } from "@coss/ui/components/badge";
 import {
@@ -17,13 +17,13 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
 import { schedulingPageContext } from "../page-context";
-import { ReassignManyDialog } from "../scheduling-actions";
+import { OpenTeamPageButton } from "../scheduling-actions";
 import { REASSIGNMENT_STATUS, runDate } from "./status";
 
 export const metadata: Metadata = { title: "Reassignments" };
 
 const PAGE_SIZE = 50;
-const HOSTS_TO_OFFER = 100;
+const _HOSTS_TO_OFFER = 100;
 
 export default async function ReassignmentsPage({
   params,
@@ -32,18 +32,11 @@ export default async function ReassignmentsPage({
   const { schedulingPath, scope, can, target } = await schedulingPageContext(await params);
   const search = await searchParams;
   const after = typeof search.after === "string" ? search.after : undefined;
-  const [page, hosts] = await Promise.all([
-    listReassignments(scope, { limit: PAGE_SIZE, after }),
-    listHosts(scope, { limit: HOSTS_TO_OFFER }),
-  ]);
+  const page = await listReassignments(scope, { limit: PAGE_SIZE, after });
   const path = `${schedulingPath}/reassignments`;
   const last = page.data.at(-1);
   const dialog = can({ scheduling: ["update"] }) ? (
-    <ReassignManyDialog
-      {...target}
-      hosts={hosts.data.map((host) => ({ id: host.id, name: host.name }))}
-      runsPath={path}
-    />
+    <OpenTeamPageButton {...target} label="Move bookings" tab="cover" variant="default" />
   ) : null;
   return (
     <div className="flex flex-col gap-6">

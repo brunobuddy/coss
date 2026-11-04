@@ -32,14 +32,35 @@ describe("managedHosts", () => {
   test("an empty filter reaches nobody, though it would match everyone", async () => {
     const env = await environment();
     await createHost(env, { name: "A", time_zone: "UTC" });
-    const hosts = await managedHosts(env, { managerHostIds: null, managerHostFilter: {} });
+    const hosts = await managedHosts(env, {
+      managerHostIds: null,
+      managerHostFilter: {},
+      createdByUserId: null,
+    });
     expect(hosts).toEqual([]);
+  });
+
+  test("an empty filter with a dashboard member behind it reaches this environment", async () => {
+    const env = await environment();
+    const other = await environment();
+    const mine = await createHost(env, { name: "Mine", time_zone: "UTC" });
+    await createHost(other, { name: "Theirs", time_zone: "UTC" });
+    const hosts = await managedHosts(env, {
+      managerHostIds: null,
+      managerHostFilter: {},
+      createdByUserId: "user_1",
+    });
+    expect(hosts.map((host) => host.id)).toEqual([mine.id]);
   });
 
   test("neither reaches nobody", async () => {
     const env = await environment();
     await createHost(env, { name: "A", time_zone: "UTC" });
-    const hosts = await managedHosts(env, { managerHostIds: null, managerHostFilter: null });
+    const hosts = await managedHosts(env, {
+      managerHostIds: null,
+      managerHostFilter: null,
+      createdByUserId: null,
+    });
     expect(hosts).toEqual([]);
   });
 
@@ -47,7 +68,11 @@ describe("managedHosts", () => {
     const env = await environment();
     const other = await environment();
     const theirs = await createHost(other, { name: "Theirs", time_zone: "UTC" });
-    const hosts = await managedHosts(env, { managerHostIds: [theirs.id], managerHostFilter: null });
+    const hosts = await managedHosts(env, {
+      managerHostIds: [theirs.id],
+      managerHostFilter: null,
+      createdByUserId: null,
+    });
     expect(hosts).toEqual([]);
   });
 
@@ -63,6 +88,7 @@ describe("managedHosts", () => {
     const hosts = await managedHosts(env, {
       managerHostIds: null,
       managerHostFilter: { team: "heart" },
+      createdByUserId: null,
     });
     expect(hosts.map((host) => host.id)).toEqual([mine.id]);
   });

@@ -20,7 +20,7 @@ const MANAGED_HOSTS_CAP = 1000;
 /** Every host this session can reach, whatever their status: leaving is why someone's managed. */
 export async function managedHosts(
   scope: Scope,
-  session: Pick<SessionRow, "managerHostIds" | "managerHostFilter">,
+  session: Pick<SessionRow, "managerHostIds" | "managerHostFilter" | "createdByUserId">,
 ): Promise<HostRow[]> {
   const { managerHostIds: named, managerHostFilter: filter } = session;
   if (named) {
@@ -37,8 +37,10 @@ export async function managedHosts(
       )
       .orderBy(asc(schedulingHost.name));
   }
-  // `{}` matches everyone, and minting refuses it: nothing here should mean the whole environment.
-  if (!filter || Object.keys(filter).length === 0) return [];
+  // `{}` matches everyone, and only `createDashboardSession` can mint it: nothing else should mean
+  // the whole environment, and neither does that once the member's gone.
+  const everyone = filter !== null && Object.keys(filter).length === 0;
+  if (!filter || (everyone && !session.createdByUserId)) return [];
   const rows = await db
     .select()
     .from(schedulingHost)
@@ -49,6 +51,7 @@ export async function managedHosts(
       ),
     )
     .orderBy(asc(schedulingHost.name));
+  if (everyone) return rows;
   return rows
     .filter((host) => attributesMatch(host.attributes, filter))
     .slice(0, MANAGED_HOSTS_CAP);
@@ -89,6 +92,8 @@ export async function listManagedBookings(
   hostIds: readonly string[],
   query: {
     hostId?: string | undefined;
+    /** One booking, whenever it is: someone came here to move it. */
+    bookingId?: string | undefined;
     needsCover?: boolean | undefined;
     now: Date;
     limit: number;
@@ -114,7 +119,9 @@ export async function listManagedBookings(
         eq(schedulingBooking.environmentId, scope.environmentId),
         inArray(schedulingBookingHost.hostId, wanted),
         inArray(schedulingBooking.status, ["confirmed", "pending_approval", "held"]),
-        gt(schedulingBooking.startAt, query.now),
+        query.bookingId
+          ? eq(schedulingBooking.id, query.bookingId)
+          : gt(schedulingBooking.startAt, query.now),
         or(isNull(schedulingBooking.holdExpiresAt), gt(schedulingBooking.holdExpiresAt, query.now)),
         or(
           isNull(schedulingBooking.approvalExpiresAt),

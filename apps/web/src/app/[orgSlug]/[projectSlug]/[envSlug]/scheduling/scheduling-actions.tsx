@@ -1,11 +1,7 @@
 "use client";
 
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
-import {
-  type HostLocationOutput,
-  OUT_OF_OFFICE_REASON_LABELS,
-  REASSIGNMENT_REASON_LABELS,
-} from "@coss/scheduling/schemas";
+import type { HostLocationOutput } from "@coss/scheduling/schemas";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -43,7 +39,6 @@ import {
 import { Switch } from "@coss/ui/components/switch";
 import { Textarea } from "@coss/ui/components/textarea";
 import {
-  ArrowRightLeftIcon,
   CalendarClockIcon,
   CalendarPlusIcon,
   MapPinIcon,
@@ -51,7 +46,7 @@ import {
   UserRoundIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import type { ActionResult } from "@/lib/action-result";
@@ -64,7 +59,6 @@ import {
   createEventTypeAction,
   createHolidayCalendarAction,
   createHostAction,
-  createOutOfOfficeAction,
   declineBookingAction,
   deleteHolidayCalendarAction,
   deleteHostAction,
@@ -72,12 +66,10 @@ import {
   openBookerAction,
   openBookingManagerAction,
   openHostPortalAction,
-  previewReassignmentAction,
-  reassignBookingAction,
+  openTeamPageAction,
   saveSettingsAction,
   setEventTypeStatusAction,
   setHostStatusAction,
-  startReassignmentAction,
   undoReassignmentAction,
   updateHostAction,
   updateHostLocationsAction,
@@ -270,6 +262,29 @@ export function NewBookingDialog(
         </form>
       </DialogPopup>
     </Dialog>
+  );
+}
+
+/** The team page, in a tab of its own, for marking time away and moving bookings. */
+export function OpenTeamPageButton(
+  props: EnvTarget & {
+    label: string;
+    tab?: "cover" | "away";
+    bookingId?: string;
+    outOfOfficeId?: string;
+    variant?: "default" | "outline" | "ghost";
+  },
+) {
+  const { label, variant = "outline", ...rest } = props;
+  const [state, formAction, pending] = useActionToast(openTeamPageAction, { errors: "toast" });
+  const openTab = useOpensHostedPage(state, pending);
+  return (
+    <form action={formAction} onSubmit={openTab}>
+      <Hidden {...rest} />
+      <Button disabled={pending} size="sm" type="submit" variant={variant}>
+        {label}
+      </Button>
+    </form>
   );
 }
 
@@ -546,577 +561,6 @@ export function DeleteHostButton(
         </form>
       </AlertDialogPopup>
     </AlertDialog>
-  );
-}
-
-type Candidate = {
-  host: string;
-  name: string;
-  member: boolean;
-  available: boolean;
-  reason: string | null;
-  load: number;
-  meeting_provider_missing: boolean;
-};
-
-const WHY_NOT: Record<string, string> = {
-  out_of_office: "Out of office",
-  outside_coverage: "Only covers for someone at other times",
-  outside_availability: "Outside their hours",
-  host_busy: "Busy on their calendar",
-  limit_reached: "At their booking limit",
-  calendar_unverified: "Their calendar can't be read",
-  already_claimed: "Already booked",
-  host_unavailable: "Not available",
-};
-
-const REASSIGN_REASON_ITEMS = Object.entries(REASSIGNMENT_REASON_LABELS).map(([value, label]) => ({
-  value,
-  label,
-}));
-
-export function ReassignBookingDialog(
-  props: EnvTarget & {
-    bookingId: string;
-    candidates: readonly Candidate[];
-    hosts: readonly { id: string; name: string }[];
-  },
-) {
-  const { candidates, hosts, bookingId, ...target } = props;
-  const [state, formAction, pending] = useActionToast(reassignBookingAction, {
-    success: "Booking reassigned",
-  });
-  const [open, setOpen] = useState(false);
-  const [toHost, setToHost] = useState("");
-  const [note, setNote] = useState("");
-  useEffect(() => {
-    if (state?.ok) setOpen(false);
-  }, [state]);
-  const chosen = candidates.find((candidate) => candidate.host === toHost);
-  // What choosing them means going past: spelled out here, so it's asked for and not assumed.
-  const overrides = chosen
-    ? [
-        ...(chosen.member ? [] : ["any_host"]),
-        ...(!chosen.available && chosen.reason ? [chosen.reason] : []),
-      ]
-    : [];
-  const overriding = Boolean(chosen && !chosen.available);
-  return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger render={<Button size="sm" variant="outline" />}>Reassign</DialogTrigger>
-      <DialogPopup>
-        <form action={formAction} className="contents">
-          <Hidden {...target} bookingId={bookingId} overrides={overrides.join(",")} />
-          <DialogHeader>
-            <DialogIcon icon={UserRoundIcon} />
-            <DialogTitle>Reassign this booking</DialogTitle>
-            <DialogDescription>
-              It keeps its time. Whoever's leaving and joining are told.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogPanel className="flex flex-col gap-4">
-            {hosts.length > 1 ? (
-              <Field>
-                <FieldLabel>Who's leaving</FieldLabel>
-                <Select
-                  defaultValue={hosts[0]?.id}
-                  items={hosts.map((host) => ({ value: host.id, label: host.name }))}
-                  name="fromHost"
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectPopup>
-                    {hosts.map((host) => (
-                      <SelectItem key={host.id} value={host.id}>
-                        {host.name}
-                      </SelectItem>
-                    ))}
-                  </SelectPopup>
-                </Select>
-              </Field>
-            ) : null}
-            <Field>
-              <FieldLabel>Who it goes to</FieldLabel>
-              <RadioGroup
-                className="max-h-56 w-full gap-1 overflow-y-auto rounded-lg border p-2"
-                name="toHost"
-                onValueChange={(next) => setToHost(String(next))}
-                value={toHost}
-              >
-                {candidates.map((candidate) => (
-                  <Label
-                    className="items-start rounded-md p-2 font-normal has-data-checked:bg-accent"
-                    key={candidate.host}
-                  >
-                    <Radio
-                      disabled={candidate.reason === "already_claimed"}
-                      value={candidate.host}
-                    />
-                    <span className="flex min-w-0 flex-col gap-0.5">
-                      <span>{candidate.name}</span>
-                      <span className="text-muted-foreground text-xs">
-                        {candidate.available
-                          ? `Free, ${candidate.load} ${candidate.load === 1 ? "booking" : "bookings"} that week`
-                          : (WHY_NOT[candidate.reason ?? ""] ?? "Not available")}
-                        {candidate.member ? "" : ", doesn't usually take this"}
-                        {candidate.meeting_provider_missing ? ", no meeting link" : ""}
-                      </span>
-                    </span>
-                  </Label>
-                ))}
-              </RadioGroup>
-              {candidates.length === 0 ? (
-                <FieldDescription>There's nobody else in this environment.</FieldDescription>
-              ) : null}
-            </Field>
-            <Field>
-              <FieldLabel>Reason</FieldLabel>
-              <Select defaultValue="other" items={REASSIGN_REASON_ITEMS} name="reasonCode">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectPopup>
-                  {REASSIGN_REASON_ITEMS.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectPopup>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel>Note</FieldLabel>
-              <Textarea
-                maxLength={500}
-                name="note"
-                onChange={(event) => setNote(event.target.value)}
-                required={overriding}
-                value={note}
-              />
-              <FieldDescription>
-                {overriding
-                  ? "They aren't free at this time, so say why this is going ahead."
-                  : "Optional. Only shown in this booking's history."}
-              </FieldDescription>
-            </Field>
-            <Label className="font-normal">
-              <Checkbox defaultChecked name="notifyAttendee" />
-              Tell the attendee
-            </Label>
-            {state && !state.ok ? <FormError message={state.error} /> : null}
-          </DialogPanel>
-          <DialogFooter>
-            <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
-            <Button disabled={pending || !toHost} type="submit">
-              Reassign
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogPopup>
-    </Dialog>
-  );
-}
-
-const REASON_ITEMS = Object.entries(OUT_OF_OFFICE_REASON_LABELS).map(([value, label]) => ({
-  value,
-  label,
-}));
-
-export function NewOutOfOfficeDialog(props: EnvTarget & { hosts: { id: string; name: string }[] }) {
-  const { hosts, ...target } = props;
-  const [state, formAction, pending] = useActionToast(createOutOfOfficeAction, {
-    success: "Time off added",
-  });
-  const [open, setOpen] = useState(false);
-  const [wholeDays, setWholeDays] = useState(true);
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
-  useEffect(() => {
-    if (state?.ok) setOpen(false);
-  }, [state]);
-  // Only this browser knows the zone these were typed in, so they're sent as instants.
-  const instant = (value: string) => (value ? new Date(value).toISOString() : "");
-  return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger render={<Button size="sm" />}>Add time off</DialogTrigger>
-      <DialogPopup>
-        <form action={formAction} className="contents">
-          <Hidden {...target} />
-          <DialogHeader>
-            <DialogIcon icon={PalmtreeIcon} />
-            <DialogTitle>Add time off</DialogTitle>
-            <DialogDescription>
-              They won't be offered during it. Bookings they already have stay, unless you move
-              them.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogPanel className="flex flex-col gap-4">
-            <Field>
-              <FieldLabel>Hosts</FieldLabel>
-              <div className="flex max-h-40 w-full flex-col gap-2 overflow-y-auto rounded-lg border p-3">
-                {hosts.map((host) => (
-                  <Label className="font-normal" key={host.id}>
-                    <Checkbox name="hostId" value={host.id} />
-                    {host.name}
-                  </Label>
-                ))}
-              </div>
-            </Field>
-            <Label className="font-normal">
-              <Switch checked={wholeDays} onCheckedChange={setWholeDays} />
-              Whole days
-            </Label>
-            {wholeDays ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel>First day</FieldLabel>
-                  <Input name="startDate" required type="date" />
-                </Field>
-                <Field>
-                  <FieldLabel>Last day</FieldLabel>
-                  <Input name="endDate" type="date" />
-                </Field>
-              </div>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel>From</FieldLabel>
-                  <Input
-                    onChange={(event) => setStart(event.target.value)}
-                    required
-                    type="datetime-local"
-                    value={start}
-                  />
-                  <input name="start" type="hidden" value={instant(start)} />
-                </Field>
-                <Field>
-                  <FieldLabel>Until</FieldLabel>
-                  <Input
-                    onChange={(event) => setEnd(event.target.value)}
-                    required
-                    type="datetime-local"
-                    value={end}
-                  />
-                  <input name="end" type="hidden" value={instant(end)} />
-                </Field>
-              </div>
-            )}
-            <Field>
-              <FieldLabel>Reason</FieldLabel>
-              <Select defaultValue="unspecified" items={REASON_ITEMS} name="reason">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectPopup>
-                  {REASON_ITEMS.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectPopup>
-              </Select>
-              <FieldDescription>Never shown to people booking, or in webhooks.</FieldDescription>
-            </Field>
-            <Field>
-              <FieldLabel>Message for people booking</FieldLabel>
-              <Input maxLength={300} name="publicMessage" />
-              <FieldDescription>Optional. Can't contain a link.</FieldDescription>
-            </Field>
-            <Field>
-              <FieldLabel>Private notes</FieldLabel>
-              <Textarea maxLength={2000} name="notes" />
-            </Field>
-            <Label className="font-normal">
-              <Checkbox defaultChecked name="showOnCalendar" />
-              Show on their calendar
-            </Label>
-            <Field>
-              <FieldLabel>Who covers for them</FieldLabel>
-              <div className="flex max-h-32 w-full flex-col gap-2 overflow-y-auto rounded-lg border p-3">
-                {hosts.map((host) => (
-                  <Label className="font-normal" key={host.id}>
-                    <Checkbox name="delegateId" value={host.id} />
-                    {host.name}
-                  </Label>
-                ))}
-              </div>
-              <FieldDescription>
-                Optional. They can be booked in their place during this, if they fit the booking.
-              </FieldDescription>
-            </Field>
-            <Label className="font-normal">
-              <Checkbox name="moveBookings" />
-              Move bookings already in this time to whoever's free
-            </Label>
-            {state && !state.ok ? <FormError message={state.error} /> : null}
-          </DialogPanel>
-          <DialogFooter>
-            <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
-            <Button disabled={pending} type="submit">
-              Add time off
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogPopup>
-    </Dialog>
-  );
-}
-
-const previewDay = new Intl.DateTimeFormat("en-US", {
-  timeZone: "UTC",
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
-const WHY_STAYS: Record<string, string> = {
-  ...WHY_NOT,
-  no_candidate: "Nobody's free",
-  routing_unknown: "Booked before coss.com kept its routing: choose someone",
-  reassignment_disabled: "This event type's bookings stay with their hosts",
-  several_hosts: "Has several hosts",
-  already_a_host: "Already a host of this booking",
-  not_a_member: "Doesn't take this event type",
-  host_unavailable: "Not available",
-};
-
-/**
- * Moving many: choose whose, see who each would go to, change any of it, then start. What's started
- * is what was seen, as `assignments`, with the run deciding again for each.
- */
-export function ReassignManyDialog(
-  props: EnvTarget & {
-    hosts: readonly { id: string; name: string }[];
-    runsPath: string;
-    outOfOfficeId?: string;
-    label?: string;
-  },
-) {
-  const { hosts, runsPath, outOfOfficeId, label, ...target } = props;
-  const router = useRouter();
-  const [preview, previewAction, previewing] = useActionState(previewReassignmentAction, null);
-  const [state, formAction, pending] = useActionToast(startReassignmentAction, {
-    success: "Moving bookings",
-  });
-  const [open, setOpen] = useState(false);
-  // Whether the answer's on screen: the action's last answer outlives closing and going back.
-  const [showing, setShowing] = useState(false);
-  const [choices, setChoices] = useState<Record<string, string>>({});
-  const [before, setBefore] = useState("");
-  const startOver = () => {
-    setShowing(false);
-    setChoices({});
-  };
-  useEffect(() => {
-    if (preview?.ok) setShowing(true);
-  }, [preview]);
-  useEffect(() => {
-    if (state?.ok) {
-      setOpen(false);
-      router.push(`${runsPath}/${state.data.id}`);
-    }
-  }, [state, router, runsPath]);
-  const items = showing && preview?.ok ? preview.data.items : null;
-  const targetOf = (item: { booking: string; to_host: string | null }) =>
-    choices[item.booking] ?? item.to_host ?? "";
-  const assignments = (items ?? []).flatMap((item) => {
-    const to = targetOf(item);
-    if (!to) return [];
-    return [
-      {
-        booking: item.booking,
-        to_host: to,
-        ...(item.from_host ? { from_host: item.from_host } : {}),
-      },
-    ];
-  });
-  const nameOf = new Map(hosts.map((host) => [host.id, host.name]));
-  const hostItems = hosts.map((host) => ({ value: host.id, label: host.name }));
-  return (
-    <Dialog
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) startOver();
-      }}
-      open={open}
-    >
-      <DialogTrigger render={<Button size="sm" variant={outOfOfficeId ? "ghost" : "default"} />}>
-        {label ?? "Move bookings"}
-      </DialogTrigger>
-      <DialogPopup className="max-w-2xl">
-        <DialogHeader>
-          <DialogIcon icon={ArrowRightLeftIcon} />
-          <DialogTitle>Move bookings</DialogTitle>
-          <DialogDescription>
-            Times stay the same. Each host hears once. A booking nobody can take stays where it is.
-          </DialogDescription>
-        </DialogHeader>
-        {items === null ? (
-          <form action={previewAction} className="contents">
-            <Hidden
-              {...target}
-              {...(outOfOfficeId ? { outOfOfficeId } : {})}
-              startBefore={before ? new Date(before).toISOString() : ""}
-            />
-            <DialogPanel className="flex flex-col gap-4">
-              {outOfOfficeId ? null : (
-                <>
-                  <Field>
-                    <FieldLabel>Whose bookings</FieldLabel>
-                    <Select items={hostItems} name="fromHost">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a host" />
-                      </SelectTrigger>
-                      <SelectPopup>
-                        {hosts.map((host) => (
-                          <SelectItem key={host.id} value={host.id}>
-                            {host.name}
-                          </SelectItem>
-                        ))}
-                      </SelectPopup>
-                    </Select>
-                  </Field>
-                  <Field>
-                    <FieldLabel>Starting before</FieldLabel>
-                    <Input
-                      onChange={(event) => setBefore(event.target.value)}
-                      type="datetime-local"
-                      value={before}
-                    />
-                    <FieldDescription>Leave empty for all of them.</FieldDescription>
-                  </Field>
-                </>
-              )}
-              <Field>
-                <FieldLabel>Try first</FieldLabel>
-                <Select items={hostItems} name="preferredHost">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Whoever's fairest" />
-                  </SelectTrigger>
-                  <SelectPopup>
-                    {hosts.map((host) => (
-                      <SelectItem key={host.id} value={host.id}>
-                        {host.name}
-                      </SelectItem>
-                    ))}
-                  </SelectPopup>
-                </Select>
-              </Field>
-              {preview && !preview.ok ? <FormError message={preview.error} /> : null}
-            </DialogPanel>
-            <DialogFooter>
-              <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
-              <Button disabled={previewing} type="submit">
-                See who they'd go to
-              </Button>
-            </DialogFooter>
-          </form>
-        ) : (
-          <form action={formAction} className="contents">
-            <Hidden {...target} assignments={JSON.stringify(assignments)} />
-            <DialogPanel className="flex flex-col gap-4">
-              {items.length === 0 ? (
-                <p className="text-muted-foreground text-sm">There's nothing to move.</p>
-              ) : (
-                <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto rounded-lg border p-2">
-                  {items.map((item) => (
-                    <li
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-md p-2"
-                      key={item.booking}
-                    >
-                      <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="text-sm">
-                          {previewDay.format(new Date(item.start))} UTC
-                        </span>
-                        <span className="text-muted-foreground text-xs">
-                          {item.title}
-                          {item.from_host
-                            ? `, from ${nameOf.get(item.from_host) ?? "another host"}`
-                            : ""}
-                          {item.reason && !choices[item.booking]
-                            ? `. ${WHY_STAYS[item.reason] ?? "Not available"}`
-                            : ""}
-                        </span>
-                      </span>
-                      <div className="w-48">
-                        <Select
-                          items={hostItems}
-                          onValueChange={(next) =>
-                            setChoices((current) => ({ ...current, [item.booking]: String(next) }))
-                          }
-                          value={targetOf(item) || null}
-                        >
-                          <SelectTrigger aria-label="Who it goes to">
-                            <SelectValue placeholder="Stays" />
-                          </SelectTrigger>
-                          <SelectPopup>
-                            {hosts.map((host) => (
-                              <SelectItem key={host.id} value={host.id}>
-                                {host.name}
-                              </SelectItem>
-                            ))}
-                          </SelectPopup>
-                        </Select>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {preview?.ok && preview.data.truncated ? (
-                <p className="text-muted-foreground text-xs">
-                  That's the first 500. Move these, then do the rest.
-                </p>
-              ) : null}
-              {items.length === 0 ? null : (
-                <>
-                  <Field>
-                    <FieldLabel>Reason</FieldLabel>
-                    <Select
-                      defaultValue={outOfOfficeId ? "out_of_office" : "other"}
-                      items={REASSIGN_REASON_ITEMS}
-                      name="reasonCode"
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectPopup>
-                        {REASSIGN_REASON_ITEMS.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectPopup>
-                    </Select>
-                  </Field>
-                  <Field>
-                    <FieldLabel>Note</FieldLabel>
-                    <Textarea maxLength={500} name="note" />
-                    <FieldDescription>
-                      Optional. Only shown in each booking's history.
-                    </FieldDescription>
-                  </Field>
-                  <Label className="font-normal">
-                    <Checkbox defaultChecked name="notifyAttendees" />
-                    Tell attendees
-                  </Label>
-                </>
-              )}
-              {state && !state.ok ? <FormError message={state.error} /> : null}
-            </DialogPanel>
-            <DialogFooter>
-              <Button onClick={startOver} type="button" variant="ghost">
-                Back
-              </Button>
-              {items.length === 0 ? null : (
-                <Button disabled={pending || assignments.length === 0} type="submit">
-                  Move {assignments.length} {assignments.length === 1 ? "booking" : "bookings"}
-                </Button>
-              )}
-            </DialogFooter>
-          </form>
-        )}
-      </DialogPopup>
-    </Dialog>
   );
 }
 

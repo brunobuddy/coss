@@ -6,13 +6,12 @@ import {
   cancelBooking,
   cancelReassignment,
   createBookerSession,
+  createDashboardSession,
   createEventType,
   createHolidayCalendar,
   createHost,
   createHostSession,
   createManageSession,
-  createOutOfOffice,
-  createReassignment,
   createSchedule,
   declineBooking,
   deleteHolidayCalendar,
@@ -20,8 +19,6 @@ import {
   deleteOutOfOffice,
   getEventType,
   getHost,
-  previewReassignment,
-  reassignBooking,
   SchedulingError,
   undoReassignment,
   updateEventType,
@@ -31,11 +28,8 @@ import {
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import {
   CreateHolidayCalendarRequest,
-  CreateReassignmentRequest,
   EVENT_TYPE_KINDS,
-  ReassignBookingRequest,
   type ReassignmentObjectOutput,
-  type ReassignmentPreviewOutput,
   UndoReassignmentRequest,
   UpdateEventTypeRequest,
   UpdateHostLocationsRequest,
@@ -167,139 +161,6 @@ export async function createHostAction(
     });
     refresh();
     return { id: host.id };
-  });
-}
-
-export async function reassignBookingAction(_prev: ActionResult | null, formData: FormData) {
-  return runAction(async () => {
-    const { context, env } = await contextFor(formData, "update");
-    const toHost = formString(formData, "toHost");
-    if (!toHost) throw new ActionError("Choose who it goes to.");
-    const fromHost = formString(formData, "fromHost");
-    const note = formString(formData, "note");
-    const parsed = ReassignBookingRequest.safeParse({
-      changes: [{ to_host: toHost, ...(fromHost ? { from_host: fromHost } : {}) }],
-      reason_code: formString(formData, "reasonCode"),
-      ...(note ? { note } : {}),
-      overrides: formString(formData, "overrides").split(",").filter(Boolean),
-      notify: { attendee: formData.get("notifyAttendee") === "on" },
-    });
-    if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
-    const booking = await friendly(() =>
-      reassignBooking(
-        env,
-        formString(formData, "bookingId"),
-        parsed.data,
-        configuredDeps(),
-        actorOf(context),
-      ),
-    );
-    await audit(context, "scheduling_booking.reassigned", {
-      type: "scheduling_booking",
-      id: booking.id,
-    });
-    refresh();
-    return null;
-  });
-}
-
-export async function createOutOfOfficeAction(_prev: ActionResult | null, formData: FormData) {
-  return runAction(async () => {
-    const { context, env } = await contextFor(formData, "create");
-    const hosts = formData.getAll("hostId").map(String);
-    if (hosts.length === 0) throw new ActionError("Choose at least one host.");
-    const optional = (name: string) => formString(formData, name) || undefined;
-    const startDate = optional("startDate");
-    const entries = await friendly(() =>
-      createOutOfOffice(
-        env,
-        {
-          hosts,
-          // A browser's times come as instants, since only it knows which zone they were typed in.
-          ...(startDate
-            ? { start_date: startDate, end_date: optional("endDate") ?? startDate }
-            : { start: formString(formData, "start"), end: formString(formData, "end") }),
-          reason: optional("reason"),
-          public_message: optional("publicMessage"),
-          notes: optional("notes"),
-          show_on_calendar: formData.get("showOnCalendar") === "on",
-          existing_bookings: formData.get("moveBookings") === "on" ? "reassign" : "leave",
-          delegates: formData.getAll("delegateId").map(String),
-        },
-        configuredDeps(),
-        actorOf(context),
-        "dashboard",
-      ),
-    );
-    for (const entry of entries) {
-      await audit(context, "scheduling_out_of_office.created", {
-        type: "scheduling_out_of_office",
-        id: entry.id,
-      });
-    }
-    refresh();
-    return null;
-  });
-}
-
-/** A read, so it's allowed to whoever can change what it shows, and it doesn't toast. */
-export async function previewReassignmentAction(
-  _prev: ActionResult<ReassignmentPreviewOutput> | null,
-  formData: FormData,
-) {
-  return runAction(async () => {
-    const { env } = await contextFor(formData, "update");
-    const entry = formString(formData, "outOfOfficeId");
-    const host = formString(formData, "fromHost");
-    if (!entry && !host) throw new ActionError("Choose whose bookings.");
-    const before = formString(formData, "startBefore");
-    const preferred = formString(formData, "preferredHost");
-    return friendly(() =>
-      previewReassignment(
-        env,
-        {
-          selection: {
-            ...(entry ? { out_of_office: entry } : { host }),
-            ...(before ? { start_before: before } : {}),
-          },
-          strategy: preferred ? { preferred_hosts: [preferred] } : {},
-        },
-        configuredDeps(),
-      ),
-    );
-  });
-}
-
-export async function startReassignmentAction(
-  _prev: ActionResult<ReassignmentObjectOutput> | null,
-  formData: FormData,
-) {
-  return runAction(async () => {
-    const { context, env } = await contextFor(formData, "update");
-    let assignments: unknown;
-    try {
-      assignments = JSON.parse(formString(formData, "assignments"));
-    } catch {
-      throw new ActionError("That doesn't look right. Please try again.");
-    }
-    const note = formString(formData, "note");
-    const parsed = CreateReassignmentRequest.safeParse({
-      selection: {},
-      strategy: { assignments },
-      reason_code: formString(formData, "reasonCode"),
-      ...(note ? { note } : {}),
-      notify: { attendees: formData.get("notifyAttendees") === "on" },
-    });
-    if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
-    const { reassignment } = await friendly(() =>
-      createReassignment(env, parsed.data, configuredDeps(), actorOf(context)),
-    );
-    await audit(context, "scheduling_reassignment.created", {
-      type: "scheduling_reassignment",
-      id: reassignment.id,
-    });
-    refresh();
-    return reassignment;
   });
 }
 
@@ -560,6 +421,39 @@ export async function openBookingManagerAction(
       }),
     );
     return { url: session.url as string };
+  });
+}
+
+/**
+ * Who's away and moving bookings, across this environment. That means knowing who's free and what
+ * time a date means, which only runs in the API (`packages/scheduling/AGENTS.md`, "Slots"), so the
+ * dashboard opens the page that calls it. Worth a line in the audit log, since it reaches every host.
+ */
+export async function openTeamPageAction(
+  _prev: ActionResult<{ url: string }> | null,
+  formData: FormData,
+) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const publicUrl = publicUrlOrThrow();
+    const session = await friendly(() =>
+      createDashboardSession(env, { createdByUserId: context.session.user.id, publicUrl }),
+    );
+    await audit(context, "scheduling_team_page.opened", {
+      type: "environment",
+      id: env.environmentId,
+    });
+    const focus = new URLSearchParams();
+    for (const [name, param] of [
+      ["tab", "tab"],
+      ["bookingId", "booking"],
+      ["outOfOfficeId", "out_of_office"],
+    ] as const) {
+      const value = formString(formData, name);
+      if (value) focus.set(param, value);
+    }
+    const [page, token] = (session.url as string).split("#");
+    return { url: `${page}${focus.size > 0 ? `?${focus}` : ""}#${token}` };
   });
 }
 

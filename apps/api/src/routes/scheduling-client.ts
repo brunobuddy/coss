@@ -783,7 +783,7 @@ export function createSchedulingClientRoutes(opts: {
       { ...body, hosts },
       deps,
       sessionActor(manager.session),
-      "manager",
+      manager.session.createdByUserId ? "dashboard" : "manager",
       { allowedDelegates: team.ids },
     );
     return c.json({ object: "list" as const, data, has_more: false }, 201);
@@ -825,6 +825,7 @@ export function createSchedulingClientRoutes(opts: {
     const team = await teamOf(manager);
     const page = await listManagedBookings(manager.env, team.ids, {
       hostId: c.req.query("host"),
+      bookingId: c.req.query("booking"),
       needsCover: c.req.query("needs_cover") === "true",
       now: deps.now?.() ?? new Date(),
       limit: 100,

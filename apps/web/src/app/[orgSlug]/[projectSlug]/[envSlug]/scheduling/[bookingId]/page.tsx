@@ -1,4 +1,4 @@
-import { getBookingOverview, listReassignCandidates, SchedulingError } from "@coss/scheduling";
+import { getBookingOverview, SchedulingError } from "@coss/scheduling";
 import { type BookingObjectOutput, REASSIGNMENT_REASON_LABELS } from "@coss/scheduling/schemas";
 import {
   Table,
@@ -19,7 +19,7 @@ import { formatDateTime } from "@/lib/format";
 import { schedulingPageContext } from "../page-context";
 import {
   CancelBookingButton,
-  ReassignBookingDialog,
+  OpenTeamPageButton,
   RescheduleBookingButton,
 } from "../scheduling-actions";
 
@@ -89,7 +89,6 @@ export default async function BookingPage({
     Date.parse(booking.end) > Date.now();
   const metadataEntries = Object.entries(booking.metadata);
   const canUpdate = !ended && can({ scheduling: ["update"] });
-  const candidates = canUpdate ? await listReassignCandidates(scope, booking.id, {}, deps) : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -98,14 +97,7 @@ export default async function BookingPage({
           canUpdate ? (
             <div className="flex gap-2">
               {canMove ? <RescheduleBookingButton {...target} bookingId={booking.id} /> : null}
-              {candidates ? (
-                <ReassignBookingDialog
-                  {...target}
-                  bookingId={booking.id}
-                  candidates={candidates.data}
-                  hosts={hosts}
-                />
-              ) : null}
+              <OpenTeamPageButton {...target} bookingId={booking.id} label="Reassign" />
               <CancelBookingButton {...target} bookingId={booking.id} />
             </div>
           ) : null

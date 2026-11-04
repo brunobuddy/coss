@@ -837,9 +837,9 @@ export async function updateOutOfOffice(
   refuseSelfCover(delegates, found.hostId);
   const row = await db.transaction(async (tx) => {
     await lockHosts(tx, env, [found.hostId]);
-    const changed = await applyChange(tx, env, found.id, params, deps, actor, now, strategy, only);
-    if (delegates) await setDelegates(tx, changed, delegates);
-    return changed;
+    // First: a run this change starts prefers whoever's covering, and reads them from here.
+    if (delegates) await setDelegates(tx, found, delegates);
+    return applyChange(tx, env, found.id, params, deps, actor, now, strategy, only);
   });
   return objectOf(db, row, deps);
 }

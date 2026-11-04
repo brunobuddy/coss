@@ -229,13 +229,15 @@ async function claimTarget(
   target: HostRow,
   schedules: ReadonlyMap<string, string | null>,
   owner: { bookingId: string } | { groupSessionId: string },
-  ttlSeconds: number | null,
+  ttlOf: (tx: Transaction) => Promise<number | null>,
 ): Promise<Date | null> {
   const { eventType, rule, startMs } = plan;
   await lockHostsAndMemberships(tx, eventType, [target.id]);
   await lockLimitBuckets(tx, eventType, rule, [target], startMs);
   const verdict = (await verdictsOf(tx, plan, [target], schedules)).get(target.id);
   if (!verdict?.ok) throw new LostSlot(verdict?.reason ?? "host_unavailable");
+  // After the locks: time spent waiting for them comes out of a hold, and it may have run out.
+  const ttlSeconds = await ttlOf(tx);
   const claim = await tryClaim(tx, {
     organizationId: eventType.organizationId,
     environmentId: eventType.environmentId,
@@ -414,7 +416,9 @@ async function reassignOne(
       rows,
       change.from_host ? await refId(tx, env, change.from_host) : undefined,
     );
-    const ttl = started ? null : await remainingTtl(tx, booking, from.hostId);
+    const ttlOf = (inner: Transaction) => remainingTtl(inner, booking, from.hostId);
+    // Worth saying before looking for anyone. `claimTarget` asks again, once it holds its locks.
+    if (!started) await ttlOf(tx);
     let choices: HostRow[];
     if (change.to_host) {
       const named = await hostRowOf(tx, env, change.to_host);
@@ -456,7 +460,7 @@ async function reassignOne(
         const claimed = started
           ? null
           : await inSavepoint(tx, (savepoint) =>
-              claimTarget(savepoint, plan, choice, schedules, { bookingId: booking.id }, ttl),
+              claimTarget(savepoint, plan, choice, schedules, { bookingId: booking.id }, ttlOf),
             );
         if (started) await lockHostsAndMemberships(tx, eventType, [choice.id]);
         if (claimed && (!liveUntil || claimed < liveUntil)) liveUntil = claimed;
@@ -665,13 +669,17 @@ async function reassignSession(
     if (choices.length === 0) throw new SchedulingError("no_reassign_candidate", NOBODY);
   }
   await holdSources(tx, env, [session.hostId]);
-  const remaining = await sessionClaimRemainingSeconds(tx, {
-    groupSessionId: session.id,
-    organizationId: session.organizationId,
-  });
-  if (remaining.found && remaining.seconds !== null && remaining.seconds < 1) {
-    throw new SchedulingError("hold_expired", "This session's hold has run out.");
-  }
+  const ttlOf = async (inner: Transaction) => {
+    const remaining = await sessionClaimRemainingSeconds(inner, {
+      groupSessionId: session.id,
+      organizationId: session.organizationId,
+    });
+    if (remaining.found && remaining.seconds !== null && remaining.seconds < 1) {
+      throw new SchedulingError("hold_expired", "This session's hold has run out.");
+    }
+    return remaining.seconds;
+  };
+  await ttlOf(tx);
   const durationMinutes = (session.endAt.getTime() - session.startAt.getTime()) / MINUTE_MS;
   const plan: ClaimPlan = {
     eventType,
@@ -702,7 +710,7 @@ async function reassignSession(
           choice,
           schedules,
           { groupSessionId: session.id },
-          remaining.found ? remaining.seconds : null,
+          ttlOf,
         );
       });
       target = choice;

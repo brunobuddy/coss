@@ -220,8 +220,10 @@ export async function enqueueBookingNotifications(
 
 /**
  * A booking has new hosts. Those joining and leaving are told apart, by `hostId`: the rest of the
- * booking's hosts have nothing new to hear. Only the latest change is news, so a booking that goes
- * to someone and straight back never tells them about one they lost.
+ * booking's hosts have nothing new to hear. What someone hears is what's changed since they last
+ * heard. Someone who hasn't yet been told about the last change has nothing to hear from this one
+ * either way (it's undone it), and someone it doesn't touch keeps what's coming to them: going
+ * A to B to C still tells A, and tells B nothing. Back to A tells nobody anything.
  */
 export async function enqueueReassignment(
   tx: Executor,
@@ -229,7 +231,8 @@ export async function enqueueReassignment(
   people: { added: readonly string[]; removed: readonly string[]; attendee: boolean },
   now: Date,
 ): Promise<void> {
-  await tx
+  const moved = [...people.added, ...people.removed];
+  const superseded = await tx
     .update(schedulingNotification)
     .set({ finishedAt: now, outcome: "superseded", leaseUntil: null })
     .where(
@@ -239,8 +242,13 @@ export async function enqueueReassignment(
         eq(schedulingNotification.kind, "reassigned"),
         isNull(schedulingNotification.finishedAt),
         lt(schedulingNotification.bookingVersion, booking.version),
+        or(isNull(schedulingNotification.hostId), inArray(schedulingNotification.hostId, moved)),
       ),
-    );
+    )
+    .returning({ hostId: schedulingNotification.hostId });
+  const untold = new Set(superseded.map((row) => row.hostId));
+  // Everyone it touches is back where they last heard, so the attendee's news is gone as well.
+  const undone = moved.length > 0 && untold.has(null) && moved.every((id) => untold.has(id));
   const policies = await policiesOf(tx, booking);
   const policy = resolvePolicy("reassigned", policies.environment, policies.eventType);
   const base = {
@@ -253,7 +261,8 @@ export async function enqueueReassignment(
   };
   const rows: (typeof schedulingNotification.$inferInsert)[] = [];
   if (policy.emailHost) {
-    for (const hostId of [...people.added, ...people.removed]) {
+    for (const hostId of moved) {
+      if (untold.has(hostId)) continue;
       rows.push({
         ...base,
         hostId,
@@ -263,7 +272,7 @@ export async function enqueueReassignment(
       });
     }
   }
-  if (people.attendee && policy.emailAttendee) {
+  if (people.attendee && !undone && policy.emailAttendee) {
     rows.push({
       ...base,
       channel: "email",
@@ -271,7 +280,7 @@ export async function enqueueReassignment(
       dedupeKey: `reassigned:email:attendee:${booking.id}:${booking.version}`,
     });
   }
-  if (people.attendee && policy.smsAttendee) {
+  if (people.attendee && !undone && policy.smsAttendee) {
     rows.push({
       ...base,
       channel: "sms",
