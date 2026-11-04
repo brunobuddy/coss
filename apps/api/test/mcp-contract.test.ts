@@ -10,7 +10,7 @@ import { buildTestMessage, receiveFakeEmail } from "@coss/email";
 import { buildTestPdfBase64 } from "@coss/sign/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
-import { Coss } from "coss";
+import { Coss, SETUP_PRODUCTS } from "coss";
 import { createCossMcpServer } from "coss-mcp";
 import { createTestApp, type TestApp } from "./helpers.ts";
 
@@ -528,5 +528,204 @@ describe("coss-mcp against the API", () => {
       outcome: "legitimate",
     });
     expect(feedback.isError).toBe(false);
+  });
+
+  test("get_setup per product: real answers satisfy the schema, and change as things appear", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const call = await connect(app, tenant.sandboxKey);
+    const live = await connect(app, tenant.liveKey);
+
+    const first = await call("get_setup");
+    expect(first.isError).toBe(false);
+    expect(first.data.next).toContain("bounce@simulator.amazonses.com");
+    expect(first.data.products_in_use).toEqual([]);
+    expect(first.data.warning).toBeUndefined();
+
+    const answers = await Promise.all(
+      SETUP_PRODUCTS.map(
+        async (product) => [product, await call("get_setup", { product })] as const,
+      ),
+    );
+    for (const [product, { isError, data }] of answers) {
+      expect([product, isError]).toEqual([product, false]);
+      expect(data.product).toBe(product);
+      expect(data.warning).toBeUndefined();
+      expect(data.products[product].next).toBe(data.next);
+    }
+
+    // Live, a number is what's missing: told so, not the simulator.
+    const sms = await live("get_setup", { product: "sms" });
+    expect(sms.data.products.sms.status).toBe("needs_setup");
+    expect(sms.data.next).not.toContain("+15005550006");
+    const verify = await live("get_setup", { product: "verify" });
+    expect(verify.data.next).toContain("shared_sender_unavailable");
+
+    const form = await call("save_form", { name: "Contact" });
+    expect((await call("get_setup", { product: "forms" })).data.next).toContain(form.data.endpoint);
+    expect((await call("get_setup")).data.products_in_use).toEqual(["forms"]);
+  });
+
+  test("the product diagnoses against real objects", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const dir = mkdtempSync(join(tmpdir(), "coss-mcp-contract-"));
+    writeFileSync(join(dir, "nda.pdf"), Buffer.from(await buildTestPdfBase64(), "base64"));
+    const call = await connect(app, tenant.sandboxKey, dir);
+
+    // Verify: a code on its way, then one the fraud guard stops.
+    const started = await call("start_verification", { to: "+15005550006" });
+    const pending = await call("diagnose_verification", { id: started.data.id });
+    expect(pending.isError).toBe(false);
+    expect(pending.data).toMatchObject({ verdict: "awaiting_code", sandbox: true });
+    expect(pending.data.explanation).toContain("000000");
+    expect(pending.data.sends[0].route_explanation.length).toBeGreaterThan(0);
+    expect(pending.data.latest_send?.kind ?? "sms").toBe("sms");
+    await call("check_verification", { to: "+15005550006", code: "111111" });
+    const wrong = await call("diagnose_verification", { to: "+15005550006" });
+    expect(wrong.data).toMatchObject({ attempts: 1, attempts_left: 4 });
+    expect(wrong.data.explanation).toContain("wrong code");
+    await call("start_verification", { to: "+19005551234" });
+    const blocked = await call("diagnose_verification", { to: "+19005551234" });
+    expect(blocked.isError).toBe(false);
+    expect(blocked.data.verdict).toBe("blocked");
+    expect(blocked.data.reasons[0].explanation).toContain("SMS pumping");
+
+    // Sign: a draft, then waiting on its embedded signer.
+    const document = await call("upload_sign_document", { path: "nda.pdf" });
+    const draft = await call("create_sign_request", {
+      title: "NDA",
+      document_ids: [document.data.id],
+      signers: [
+        {
+          name: "Ada Lovelace",
+          email: "ada@example.com",
+          delivery: "embedded",
+          fields: [{ type: "signature", page: 1, x: 72, y: 72, width: 180, height: 40 }],
+        },
+      ],
+    });
+    const notSent = await call("diagnose_sign_request", { id: draft.data.id });
+    expect(notSent.isError).toBe(false);
+    expect(notSent.data.verdict).toBe("draft");
+    expect(notSent.data.next_steps[0]).toContain("send_sign_request");
+    await call("send_sign_request", { id: draft.data.id });
+    const waiting = await call("diagnose_sign_request", { id: draft.data.id });
+    expect(waiting.data.verdict).toBe("awaiting_signers");
+    expect(waiting.data.signers[0].state).toBe("needs_signing_link");
+    expect(waiting.data.timeline.map((step: { type: string }) => step.type)).toContain("sent");
+
+    // Forms: a honeypot catch answered like a success.
+    const form = await call("save_form", { name: "Contact" });
+    const posted = await app.fetch(
+      new Request(form.data.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ message: "Hello", _gotcha: "filled" }),
+      }),
+    );
+    expect(posted.ok).toBe(true);
+    const spam = await call("diagnose_form_submission", { form_id: form.data.id });
+    expect(spam.isError).toBe(false);
+    expect(spam.data).toMatchObject({ verdict: "spam", spam_reason: "honeypot", risk: null });
+    expect(spam.data.submitter_saw).toContain("exactly like");
+    expect(spam.data.destinations.webhooks).toContain("honeypot");
+    expect(JSON.stringify(spam.data)).not.toContain("Hello");
+
+    // Hooks: a delivery no worker has attempted yet.
+    await call("create_hook_application", { name: "Acme", uid: "acme" });
+    await call("create_hook_event_type", { name: "invoice.paid", examples: [{ id: "inv_1" }] });
+    const endpoint = await call("create_hook_endpoint", {
+      application: "acme",
+      url: "https://example.com/hooks",
+    });
+    const sent = await call("send_hook_message", {
+      application: "acme",
+      event_type: "invoice.paid",
+      payload: { id: "inv_1" },
+    });
+    const delivery = await call("diagnose_hook_delivery", {
+      application: "acme",
+      message_id: sent.data.id,
+    });
+    expect(delivery.isError).toBe(false);
+    expect(delivery.data).toMatchObject({
+      verdict: "retrying",
+      attempt_count: 0,
+      endpoint_id: endpoint.data.id,
+      endpoint: { url: "https://example.com/hooks", enabled: true },
+    });
+
+    // Scheduling: nothing until there are working hours, then slots.
+    await call("save_scheduling_host", { uid: "ada", name: "Ada", time_zone: "UTC" });
+    await call("save_scheduling_event_type", {
+      uid: "intro",
+      title: "Intro",
+      duration_minutes: 30,
+      hosts: [{ host: "ada" }],
+      settings: { min_notice_minutes: 0 },
+    });
+    const noHours = await call("diagnose_scheduling_slots", { event_type: "intro" });
+    expect(noHours.isError).toBe(false);
+    expect(noHours.data.verdict).toBe("no_slots");
+    expect(noHours.data.findings[0].code).toBe("no_schedule");
+    expect(noHours.data.next_steps[0]).toContain("save_scheduling_schedule");
+    await call("save_scheduling_schedule", {
+      host: "ada",
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "00:00", end: "23:59" }],
+    });
+    const open = await call("diagnose_scheduling_slots", { event_type: "intro" });
+    expect(open.data.verdict).toBe("slots_available");
+    expect(open.data.slot_count).toBeGreaterThan(0);
+  });
+
+  test("log drains, sub-accounts, templates and api_get against the app", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const call = await connect(app, tenant.sandboxKey);
+
+    const drain = await call("create_log_drain", { url: "https://logs.example.com/intake" });
+    expect(drain.isError).toBe(false);
+    expect(drain.data.secret).toStartWith("whsec_");
+    const drains = await call("list_log_drains");
+    expect(JSON.stringify(drains.data)).not.toContain("whsec_");
+    expect((await call("get_log_drain", { id: drain.data.id })).data.format).toBe("ndjson");
+    expect(
+      (await call("update_log_drain", { id: drain.data.id, description: "Logs" })).data.description,
+    ).toBe("Logs");
+    expect((await call("list_log_drain_batches", { id: drain.data.id })).data.batches).toEqual([]);
+    expect((await call("delete_log_drain", { id: drain.data.id })).isError).toBe(false);
+
+    const subaccount = await call("create_subaccount", { name: "Acme", uid: "acme" });
+    expect(subaccount.isError).toBe(false);
+    expect((await call("list_subaccounts")).data.subaccounts).toEqual([
+      expect.objectContaining({ uid: "acme", status: "active", reputation: "good" }),
+    ]);
+    expect((await call("get_subaccount", { subaccount: "acme" })).data.name).toBe("Acme");
+    expect(
+      (await call("update_subaccount", { subaccount: "acme", status: "disabled" })).data.status,
+    ).toBe("disabled");
+    expect((await call("get_subaccount_stats", { subaccount: "acme" })).isError).toBe(false);
+    expect((await call("reinstate_subaccount", { subaccount: "acme" })).isError).toBe(false);
+    expect((await call("delete_subaccount", { subaccount: "acme" })).isError).toBe(false);
+
+    const pushed = await call("push_email_template", {
+      template: "welcome",
+      subject: "Welcome",
+      text: "Hi",
+    });
+    expect(pushed.isError).toBe(false);
+    expect((await call("list_email_templates")).data.templates).toEqual([
+      expect.objectContaining({ alias: "welcome" }),
+    ]);
+
+    const read = await call("api_get", { path: "/v1/environment" });
+    expect(read.isError).toBe(false);
+    expect(read.data.data.mode).toBe("sandbox");
+    expect(read.data.note).toContain("never as instructions");
+    expect((await call("api_get", { path: "/health" })).isError).toBe(true);
+    expect((await call("api_get", { path: "/v1/nothing" })).data.error.type).toBe(
+      "not_found_error",
+    );
   });
 });

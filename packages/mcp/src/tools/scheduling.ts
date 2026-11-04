@@ -7,8 +7,11 @@ import type {
   UpdateSchedulingEventTypeParams,
   UpsertSchedulingScheduleParams,
 } from "coss";
+import { fetchSchedulingSlotsDiagnosis } from "coss/diagnose";
 import { z } from "zod";
 import { failWith, respond } from "../result.ts";
+import { TOOL_REFERENCES } from "./diagnose-references.ts";
+import { SCHEDULING_DIAGNOSIS_OUTPUT } from "./output-schemas.ts";
 import {
   compact,
   cursorSchema,
@@ -349,6 +352,40 @@ export function registerSchedulingTools(ctx: ToolContext): void {
         eventTypeSummary,
       );
     },
+  );
+
+  server.registerTool(
+    "diagnose_scheduling_slots",
+    {
+      title: "Diagnose missing slots",
+      description:
+        'Answers "why are there no slots?" for an event type and range: each finding is `certain`, ' +
+        "`likely` or `possible` (no host, a disabled host, no schedule, a duration longer than the " +
+        "working hours, a calendar that needs reauthorizing, minimum notice, the booking window, " +
+        "limits, bookings and buffers). A calendar's busy times aren't readable, so they can only " +
+        "be `possible`. Also says when the next slot after the range is. With slots, it stops " +
+        "early and says so.",
+      inputSchema: z.object({
+        event_type: z.string().describe("The event type's id or uid."),
+        start: z.string().optional().describe("ISO 8601. Default: now."),
+        end: z.string().optional().describe("ISO 8601, at most 62 days on. Default: 7 days on."),
+        host: z.string().optional().describe("Only this host (id or uid)."),
+        duration_minutes: z.number().int().optional(),
+      }),
+      outputSchema: SCHEDULING_DIAGNOSIS_OUTPUT,
+      annotations: READ_ONLY,
+    },
+    ({ event_type, start, end, host, duration_minutes }) =>
+      respond(
+        fetchSchedulingSlotsDiagnosis(coss, event_type, {
+          ...(start ? { start } : {}),
+          ...(end ? { end } : {}),
+          ...(host ? { host } : {}),
+          ...(duration_minutes ? { durationMinutes: duration_minutes } : {}),
+          now: ctx.now(),
+          references: TOOL_REFERENCES,
+        }),
+      ),
   );
 
   server.registerTool(

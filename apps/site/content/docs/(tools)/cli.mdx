@@ -77,6 +77,9 @@ coss init
   you pass `--force`; it warns when git doesn't ignore the file.
 - It installs the `coss` package with the project's package manager (from its lockfile: bun,
   pnpm, yarn or npm); `--no-install` skips that.
+- `--product <product>` ends with that product's step instead of email's: what it still needs, or
+  with a development key how to try it (`email`, `sms`, `verify`, `sign`, `forms`, `scheduling`,
+  `inboxes`, `hooks`, `risk` or `marketing`).
 - It adds a short section on coss.com to the project's `AGENTS.md` (its `CLAUDE.md` when it has
   no `AGENTS.md`): where the docs are for agents, what the development key does, and how to test.
   `--agents` is the default. Running it again updates that section. `--no-agents` skips it. See
@@ -222,7 +225,8 @@ hard bounce and the server's reason, the suppression entry that skipped an addre
 failure and its cause), account problems that affect it (an unverified domain, reputation, a
 billing hold) and the next steps, as commands to run. `--to <address>` diagnoses the newest email
 to that address. It's the same diagnosis as the SDK's `coss/diagnose` and the MCP server's
-`diagnose_email`.
+`diagnose_email`, and each product has one (`coss sms diagnose`, `coss verify diagnose`,
+`coss sign diagnose`, `coss forms diagnose`, `coss hooks diagnose`, `coss scheduling diagnose`).
 
 ## Scheduled emails
 
@@ -300,6 +304,9 @@ from the coss.com CLI"), `--tag name=value` (repeatable) and `--json`.
 - `coss sms numbers` lists your numbers and whether each can send.
 - `coss sms suppressions list` (`--number`, `--limit`), `coss sms suppressions add <number>` and
   `coss sms suppressions remove <suppression>` manage the numbers that won't be texted.
+- `coss sms diagnose <message>` (or `--to <number>`, the newest to it) explains the outcome: a
+  verdict, what the failure code means, the carrier's error code, problems with the sender's
+  registration, suppressions, reputation or billing, and what to do next.
 
 `coss sms cancel <message>` cancels a scheduled message. `coss sms suppressions check <number>`
 says whether a send to a number would be skipped; it exits `0` either way.
@@ -320,6 +327,9 @@ coss verify check --to +15005550006 --code 000000
   `--to <destination>`. It exits 0 only when the code is right, and a wrong code spends an attempt.
 - `coss verify list` (`--to`, `--status`, `--limit`), `coss verify get <verification>` and
   `coss verify cancel <verification>`.
+- `coss verify diagnose <verification>` (or `--to <to>`) says why no code arrived or a check failed:
+  the fraud guard's reasons, expiry and attempts, each code's route and the latest message's outcome.
+  It never shows a code.
 - `coss verify settings get` shows the settings, and `coss verify settings set` changes them:
   `--app-name`, `--code-length`, `--ttl`, `--max-attempts`, `--sms-from`, `--email-from`,
   `--countries US,CA,GB`. The word `default` goes back to coss.com's sender or the project's name.
@@ -425,6 +435,8 @@ coss sign send sreq_01kd2m8n3p4q5r6s7t8v9w0x1y
 - `coss sign download <request>` saves the sealed PDF (`--out <file>`), and
   `coss sign audit <request>` prints the audit trail.
 - `coss sign templates` lists templates and their roles.
+- `coss sign diagnose <request>` says where a request stands: each signer's state and whose turn it
+  is, a draft never sent, declined, expired, or signed and still being sealed.
 
 `coss sign templates` (or `coss sign templates list`) lists templates.
 `coss sign templates create <name>` makes one: `--title`, `--message`,
@@ -503,6 +515,9 @@ coss hooks portal acme --open
   (`--endpoint`), or of one message (`--message`), by `--status` (pending, succeeded, failed);
   `coss hooks attempts <app> <delivery>` shows each HTTP request of one, and
   `coss hooks retry <app> <delivery>` queues a finished one for another attempt.
+- `coss hooks diagnose <app> <delivery>` (or `--message <message>`, its worst delivery, or
+  `--endpoint <endpoint>`, its latest failure) says what the endpoint answered on each attempt, when
+  the next retry is, whether it's disabled or failing, and what to do next.
 - `coss hooks portal <app>` prints a link that signs in to the application's
   [portal](/docs/hooks/portal) (`--open` opens it, `--read-only`, `--expires-in <seconds>`). Anyone
   with the link is signed in until it expires.
@@ -591,6 +606,9 @@ coss forms submissions form_01kd2m8n3p4q5r6s7t8v9w0x1y --status held
   submitter and field names; `--status accepted|held|spam|pending_confirmation` narrows them
   (`held` is Risk's review queue), `--limit` caps them. Values are what someone typed: read them
   with `--json` or `coss api forms/<form>/submissions/<id>`.
+- `coss forms diagnose <form> [submission]` says what happened to a submission (the form's newest
+  without an id): held, spam and why, waiting to be confirmed, or accepted and where it goes. Spam is
+  answered exactly like a success, so a submitter who saw a success proves nothing.
 
 ## Scheduling
 
@@ -611,6 +629,10 @@ coss scheduling bookings --host doctor_482 --status confirmed
   it and tells the attendee.
 - `coss scheduling calendars <host>` lists a host's calendar connections. `needs_reauth` means that
   calendar can't be read, so the host isn't offered.
+- `coss scheduling diagnose <event-type>` explains an empty list (`--start`, `--end`, `--host`), each
+  finding certain, likely or possible: no host or schedule, a calendar to reauthorize, minimum
+  notice, the booking window, limits, bookings and buffers. A calendar's busy times aren't readable
+  through the API, so they can only be possible.
 
 Set scheduling up and book from the command line:
 

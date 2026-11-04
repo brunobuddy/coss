@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { diagnoseSms, SMS_FAILURES } from "../src/diagnose-sms.ts";
-import { NOW, sms, smsEvent } from "./fixtures.ts";
+import { NOW, sms, smsEvent } from "./diagnose-fixtures.ts";
 
 const failure = (code: string) => ({ code, message: `${code} message` });
 

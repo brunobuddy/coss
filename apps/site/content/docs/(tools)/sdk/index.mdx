@@ -278,6 +278,12 @@ its cause), account problems that affect it and what to do next. `diagnose` read
 events and the account context it needs; `diagnoseEmail` is the pure part, for data you already
 have. The CLI's `coss emails diagnose` and the MCP server's `diagnose_email` use it too.
 
+The other products have the same: `fetchSmsDiagnosis`, `fetchVerificationDiagnosis`,
+`fetchSignRequestDiagnosis`, `fetchFormSubmissionDiagnosis`, `fetchHookDeliveryDiagnosis` and
+`fetchSchedulingSlotsDiagnosis` read what they need and answer with a verdict, a summary and next
+steps, and `diagnoseSms`, `diagnoseVerification`, `diagnoseSignRequest`, `diagnoseFormSubmission`,
+`diagnoseHookDelivery` and `diagnoseSchedulingSlots` are their pure parts.
+
 ```ts twoslash
 import { Coss } from "coss";
 const coss = new Coss();

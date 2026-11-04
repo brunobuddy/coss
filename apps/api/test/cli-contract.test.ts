@@ -17,7 +17,7 @@ import { buildTestPdfBase64 } from "@coss/sign/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { runDueWebhookDeliveries } from "@coss/webhooks";
 import { TEST_SECRETS_KEYS, webhookReceiver } from "@coss/webhooks/testing";
-import { Coss, verifyWebhook } from "coss";
+import { Coss, fetchSetupReport, verifyWebhook } from "coss";
 import { type CliIo, CURSOR_FIELDS, run } from "coss-cli";
 import { apiRequest, createTestApp, type TestApp, uniqueDomainName } from "./helpers.ts";
 
@@ -820,6 +820,88 @@ describe("coss-cli against the API", () => {
     expect(shown.cli.stdout()).toContain("confirmed");
     expect(await coss(["scheduling", "calendars", "ada"]).code).toBe(0);
     expect(await coss(["scheduling", "cancel", id]).code).toBe(0);
+  });
+
+  test("the diagnose commands against real objects, and init --product's setup", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const sdk = new Coss({
+      apiKey: tenant.sandboxKey,
+      baseUrl: "http://api.test",
+      fetch: (input, init) => Promise.resolve(app.fetch(toRequest(input, init))),
+    });
+    const coss = await signedIn(app, tenant.sandboxKey);
+
+    const sent = await sdk.sms.send({ from: "+15005550000", to: "+15005550006", body: "Hi" });
+    const sms = coss(["sms", "diagnose", String(sent.data?.id), "--json"]);
+    expect(await sms.code).toBe(0);
+    expect(lines(sms.cli.stdout())[0]).toMatchObject({ sms_id: sent.data?.id, sandbox: true });
+
+    await sdk.verify.start({ to: "+19005551234" });
+    const blocked = coss(["verify", "diagnose", "--to", "+19005551234"]);
+    expect(await blocked.code).toBe(0);
+    expect(blocked.cli.stdout()).toContain("phone.premium_rate");
+
+    const document = await sdk.sign.documents.upload({
+      filename: "nda.pdf",
+      content: await buildTestPdfBase64(),
+    });
+    const request = await sdk.sign.requests.create({
+      title: "NDA",
+      documents: [{ document_id: String(document.data?.id) }],
+      send: false,
+      signers: [
+        {
+          name: "Ada",
+          email: "ada@example.com",
+          fields: [{ type: "signature", page: 1, x: 72, y: 72, width: 180, height: 40 }],
+        },
+      ],
+    });
+    const draft = coss(["sign", "diagnose", String(request.data?.id)]);
+    expect(await draft.code).toBe(0);
+    expect(draft.cli.stdout()).toContain("draft");
+    expect(draft.cli.stdout()).toContain("`coss sign send <request>`");
+
+    const form = await sdk.forms.create({ name: "Contact" });
+    await app.fetch(
+      new Request(String(form.data?.endpoint), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ message: "Hello", _gotcha: "filled" }),
+      }),
+    );
+    const spam = coss(["forms", "diagnose", String(form.data?.id)]);
+    expect(await spam.code).toBe(0);
+    expect(spam.cli.stdout()).toContain("honeypot");
+    expect(spam.cli.stdout()).not.toContain("Hello");
+
+    await sdk.hooks.applications.create({ name: "Acme", uid: "acme" });
+    await sdk.hooks.eventTypes.create({ name: "invoice.paid" });
+    await sdk.hooks.endpoints.create("acme", { url: "https://example.com/hooks" });
+    const message = await sdk.hooks.messages.send({
+      application: "acme",
+      event_type: "invoice.paid",
+      payload: { id: "inv_1" },
+    });
+    const delivery = coss(["hooks", "diagnose", "acme", "--message", String(message.data?.id)]);
+    expect(await delivery.code).toBe(0);
+    expect(delivery.cli.stdout()).toContain("retrying");
+
+    await sdk.scheduling.hosts.create({ uid: "ada", name: "Ada", time_zone: "UTC" });
+    await sdk.scheduling.eventTypes.create({
+      uid: "intro",
+      title: "Intro",
+      duration_minutes: 30,
+      hosts: [{ host: "ada" }],
+    });
+    const slots = coss(["scheduling", "diagnose", "intro"]);
+    expect(await slots.code).toBe(0);
+    expect(slots.cli.stdout()).toContain("no_schedule");
+
+    const setup = await fetchSetupReport(sdk, { product: "forms" });
+    expect(setup.next).toContain(String(form.data?.endpoint));
+    expect(setup.warning).toBeUndefined();
   });
 
   /** Runs a command that must succeed, and returns what `--json` printed. */
