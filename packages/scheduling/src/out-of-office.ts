@@ -550,6 +550,7 @@ async function noteConflicts(
   actor: Actor,
   now: Date,
   before?: OutOfOfficeRow,
+  opts: { startsNoRun?: boolean | undefined } = {},
 ): Promise<void> {
   const [conflict] = await tx
     .select({ id: schedulingBooking.id })
@@ -574,7 +575,7 @@ async function noteConflicts(
     before.hostId !== row.hostId ||
     before.startAt.getTime() !== row.startAt.getTime() ||
     before.endAt.getTime() !== row.endAt.getTime();
-  if (reassigning && widened) {
+  if (reassigning && widened && !opts.startsNoRun) {
     await queueReassignment(tx, {
       organizationId: row.organizationId,
       projectId: env.projectId,
@@ -826,7 +827,14 @@ export async function updateOutOfOffice(
   deps: Keys & Pick<SchedulingDeps, "now" | "screenSetup">,
   actor: Actor,
   only: Only = {},
-  opts: { allowedDelegates?: readonly string[] | undefined } = {},
+  opts: {
+    allowedDelegates?: readonly string[] | undefined;
+    /**
+     * A session's edit: it can't reach whoever an entry's run would send bookings to, so what's now
+     * in the way is reported, and moving it is its own step.
+     */
+    startsNoRun?: boolean | undefined;
+  } = {},
 ): Promise<OutOfOfficeObjectOutput> {
   await checkReason(env, params.reason);
   await checkMessage(env, params.public_message, deps.screenSetup);
@@ -840,7 +848,7 @@ export async function updateOutOfOffice(
     await lockHosts(tx, env, [found.hostId]);
     // First: a run this change starts prefers whoever's covering, and reads them from here.
     if (delegates) await setDelegates(tx, found, delegates);
-    return applyChange(tx, env, found.id, params, deps, actor, now, strategy, only);
+    return applyChange(tx, env, found.id, params, deps, actor, now, strategy, only, opts);
   });
   return objectOf(db, row, deps);
 }
@@ -855,6 +863,7 @@ async function applyChange(
   now: Date,
   strategy: ReassignmentStrategy | null | undefined,
   only: Only = {},
+  opts: { startsNoRun?: boolean | undefined } = {},
 ): Promise<OutOfOfficeRow> {
   const current = await entryRow(tx, env, id, only);
   const [host] = await hostsByIds(tx, env, [current.hostId]);
@@ -872,7 +881,7 @@ async function applyChange(
   const updated = row as OutOfOfficeRow;
   await setOutOfOfficeCalendar(tx, updated, now);
   await recordEvent(tx, updated, "scheduling.out_of_office.updated", now);
-  await noteConflicts(tx, env, updated, actor, now, current);
+  await noteConflicts(tx, env, updated, actor, now, current, opts);
   return updated;
 }
 

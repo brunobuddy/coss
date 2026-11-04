@@ -590,7 +590,7 @@ export function createSchedulingClientRoutes(opts: {
       deps,
       sessionActor(c.var.session.session),
       { hostId },
-      { allowedDelegates: await delegatesFor(c.var.session.env, hostId) },
+      { allowedDelegates: await delegatesFor(c.var.session.env, hostId), startsNoRun: true },
     );
     return c.json(entry);
   });
@@ -799,7 +799,7 @@ export function createSchedulingClientRoutes(opts: {
       deps,
       sessionActor(manager.session),
       { hostId: entry.host },
-      { allowedDelegates: team.ids },
+      { allowedDelegates: team.ids, startsNoRun: true },
     );
     return c.json(updated);
   });

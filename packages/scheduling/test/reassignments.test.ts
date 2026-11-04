@@ -16,6 +16,7 @@ import {
   createOutOfOffice,
   createReassignment,
   createSchedule,
+  eraseAttendee,
   getReassignment,
   listReassignmentItems,
   listReassignments,
@@ -978,6 +979,71 @@ describe("running", () => {
     expect(items[0]).toMatchObject({ outcome: "reassigned", fromHostId: a.id, toHostId: b.id });
   });
 
+  test("a queued run's note isn't written about someone erased since", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const type = await pool(env, [a, b]);
+    const booking = await book(env, type.id, at("10:00"), a.id);
+    await start(
+      env,
+      request({ booking_ids: [booking.id] }, { to_host: b.id }, { note: "They have a condition" }),
+    );
+    await eraseAttendee(env, { uid: attendee.uid });
+    await drain(env);
+    expect(await hostsOf(booking.id)).toEqual([b.id]);
+    const events = await db
+      .select({ note: schema.schedulingBookingEvent.encryptedNote })
+      .from(schema.schedulingBookingEvent)
+      .where(eq(schema.schedulingBookingEvent.bookingId, booking.id));
+    expect(events.length).toBeGreaterThan(0);
+    expect(events.filter((event) => event.note !== null)).toEqual([]);
+  });
+
+  test("a booking moved out of what was selected stays where it is", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const type = await pool(env, [a, b]);
+    const first = await book(env, type.id, at("10:00"), a.id);
+    const second = await book(env, type.id, at("11:00"), a.id);
+    const created = await start(
+      env,
+      request({ host: a.id, start_before: iso("12:00") }, { to_host: b.id }),
+    );
+    // The worker waits on the first, having worked out both, while the second moves out of the window.
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked = () => {};
+    const holding = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const blocker = db.transaction(async (tx) => {
+      await tx
+        .select({ id: schema.schedulingHost.id })
+        .from(schema.schedulingHost)
+        .where(eq(schema.schedulingHost.id, b.id))
+        .for("update");
+      locked();
+      await gate;
+    });
+    await holding;
+    const running = runDueReassignments(plain, scopeOf(env));
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await rescheduleBooking(env, second.id, { startMs: at("14:00") }, plain, actor);
+    release();
+    await blocker;
+    await running;
+    await drain(env);
+    expect(await hostsOf(first.id)).toEqual([b.id]);
+    expect(await hostsOf(second.id)).toEqual([a.id]);
+    const items = await db
+      .select()
+      .from(schema.schedulingReassignmentItem)
+      .where(eq(schema.schedulingReassignmentItem.reassignmentId, created.reassignment.id));
+    expect(items.find((item) => item.bookingId === second.id)?.outcome).toBe("skipped_changed");
+  });
+
   test("a worker that lost its lease stops, and leaves the rest to whoever has it", async () => {
     const env = await environment();
     const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
@@ -1576,7 +1642,7 @@ describe("going out of office", () => {
         rescheduleBooking(
           env,
           booking.id,
-          { start: new Date(at("15:00") + index * 30 * 60_000).toISOString() } as never,
+          { startMs: at("15:00") + index * 30 * 60_000 },
           plain,
           actor,
         ),

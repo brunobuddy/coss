@@ -1791,6 +1791,27 @@ describe("out of office", () => {
       expect(asked.status).toBe(422);
     });
 
+    test("moving an entry that moves bookings doesn't start a run", async () => {
+      const { lead, send, host, outsider, bookFor } = await team();
+      const created = (await (
+        await send("/out_of_office", "POST", {
+          host: host.id,
+          start_date: "2031-03-03",
+          end_date: "2031-03-03",
+          existing_bookings: "reassign",
+          reassign: { to_host: outsider.id },
+        })
+      ).json()) as { data: { id: string }[] };
+      await bookFor(host.id, START);
+      const moved = await lead(`/manager/out_of_office/${created.data[0]?.id}`, "PATCH", {
+        start_date: "2031-01-06",
+        end_date: "2031-01-06",
+      });
+      expect(moved.status).toBe(200);
+      const runs = (await (await send("/reassignments", "GET")).json()) as { data: unknown[] };
+      expect(runs.data).toEqual([]);
+    });
+
     test("a run stays on the team, and says who each goes to", async () => {
       const { lead, host, peer, outsider, bookFor } = await team();
       const mine = await bookFor(host.id, START);
@@ -2103,6 +2124,31 @@ describe("out of office", () => {
       existing_bookings: "reassign",
     });
     expect(refused.status).toBe(422);
+  });
+
+  test("a host's session moving an entry that moves bookings doesn't start a run", async () => {
+    const { host, tokenFor, client, send, eventType } = await booker();
+    const mine = client(await tokenFor(`/hosts/${host.id}/sessions`, {}));
+    const created = (await (
+      await send("/out_of_office", "POST", {
+        host: host.id,
+        start_date: "2031-03-03",
+        end_date: "2031-03-03",
+        existing_bookings: "reassign",
+      })
+    ).json()) as { data: { id: string }[] };
+    await send("/bookings", "POST", {
+      event_type: eventType.id,
+      start: "2031-01-06T10:00:00.000Z",
+      attendee: { uid: "p", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" },
+    });
+    const moved = await mine(`/host/out_of_office/${created.data[0]?.id}`, "PATCH", {
+      start_date: "2031-01-06",
+      end_date: "2031-01-06",
+    });
+    expect(moved.status).toBe(200);
+    const runs = (await (await send("/reassignments", "GET")).json()) as { data: unknown[] };
+    expect(runs.data).toEqual([]);
   });
 
   test("a read-only host session can look but not change anything", async () => {

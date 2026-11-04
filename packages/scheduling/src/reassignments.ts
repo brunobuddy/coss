@@ -967,6 +967,20 @@ async function processItem(
         reassignmentId: run.id,
         quietHosts: run.notifyHosts !== "each",
         onlyPreferred: strategy.kind === "auto" && strategy.otherwise === "leave",
+        stillSelected: async (tx, booking) => {
+          const where = await selectionConditions(tx, env, run.selection, nowOf(deps));
+          if (!where) return false;
+          const [found] = await tx
+            .select({ id: schedulingBooking.id })
+            .from(schedulingBooking)
+            .leftJoin(
+              schedulingBookingHost,
+              eq(schedulingBookingHost.bookingId, schedulingBooking.id),
+            )
+            .where(and(where, eq(schedulingBooking.id, booking.id)))
+            .limit(1);
+          return found !== undefined;
+        },
         onMoved: async (tx, moves) => {
           const [move] = moves;
           if (!move) return;

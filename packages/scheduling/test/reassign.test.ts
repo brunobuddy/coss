@@ -1320,6 +1320,44 @@ describe("who's told", () => {
     expect(sent).toEqual([]);
   });
 
+  test("undoing part of a change still tells the attendee about the rest", async () => {
+    const env = await environment();
+    const [a, b, c, d] = await Promise.all([
+      host(env, "A", { email: "a@example.com" }),
+      host(env, "B", { email: "b@example.com" }),
+      host(env, "C", { email: "c@example.com" }),
+      host(env, "D", { email: "d@example.com" }),
+    ]);
+    const together = await eventTypeWith(env, "collective", [required(a), required(b)]);
+    const { booking } = await createBooking(
+      env,
+      { eventType: together.id, startMs: at("10:00"), attendee },
+      plain,
+      actor,
+    );
+    await runDueSchedulingNotifications(sender().deps as never, { scope: scope(env) });
+    await reassign(env, booking.id, {
+      changes: [
+        { from_host: a.id, to_host: c.id },
+        { from_host: b.id, to_host: d.id },
+      ],
+      reason_code: "other",
+      note: "They said they'd take it",
+      overrides: ["any_host"],
+    });
+    await reassign(env, booking.id, {
+      changes: [{ from_host: c.id, to_host: a.id }],
+      reason_code: "other",
+    });
+    const { sent, deps } = sender();
+    await runDueSchedulingNotifications(deps as never, { scope: scope(env) });
+    expect(subjectsTo(sent, "sam@example.com").length).toBe(1);
+    expect(subjectsTo(sent, "a@example.com")).toEqual([]);
+    expect(subjectsTo(sent, "c@example.com")).toEqual([]);
+    expect(subjectsTo(sent, "b@example.com")).toEqual(["No longer yours: Call"]);
+    expect(subjectsTo(sent, "d@example.com")).toEqual(["Assigned to you: Call"]);
+  });
+
   test("going on to a third still tells the first, and not the one in between", async () => {
     const { env, booking, second } = await pair();
     const third = await host(env, "Dr. Third", { email: "third@example.com" });

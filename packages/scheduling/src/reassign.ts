@@ -34,6 +34,7 @@ import type { BookingObjectOutput, ReassignBookingRequestOutput } from "./schema
 import { nowOf, type SchedulingDeps, type SchedulingEnvironment } from "./types.ts";
 
 const {
+  schedulingAttendee,
   schedulingBooking,
   schedulingBookingHost,
   schedulingCalendar,
@@ -62,6 +63,8 @@ type Options = {
   fromHosts?: ReadonlySet<string> | undefined;
   /** Who a session can give it to. */
   toHosts?: ReadonlySet<string> | undefined;
+  /** Asked with the booking locked: a run decides what's in it once, and it may have moved since. */
+  stillSelected?: ((tx: Transaction, booking: BookingRow) => Promise<boolean>) | undefined;
   /** In the same transaction, so a report can't disagree with what happened. */
   onMoved?:
     | ((tx: Transaction, moves: readonly { from: string; to: string }[]) => Promise<void>)
@@ -315,6 +318,36 @@ function encryptedNoteOf(note: string | undefined, deps: Pick<SchedulingDeps, "d
   return note?.trim() ? encryptSecret(note.trim(), deps.dataKeys) : null;
 }
 
+/**
+ * A note goes with the details of the person it's about, so nothing writes one about someone erased:
+ * a queued run holds its note until it reaches them, however long after that is. Read with a share
+ * lock before the booking's, the order erasing takes them in, so an erasure under way is waited for.
+ */
+async function bookingsWithErasedAttendees(
+  tx: Transaction,
+  env: SchedulingEnvironment,
+  where: { bookingId: string } | { groupSessionId: string },
+): Promise<ReadonlySet<string>> {
+  const attendees = await tx
+    .select({
+      bookingId: schedulingAttendee.bookingId,
+      redactedAt: schedulingAttendee.redactedAt,
+    })
+    .from(schedulingAttendee)
+    .innerJoin(schedulingBooking, eq(schedulingBooking.id, schedulingAttendee.bookingId))
+    .where(
+      and(
+        eq(schedulingAttendee.organizationId, env.organizationId),
+        "bookingId" in where
+          ? eq(schedulingBooking.id, where.bookingId)
+          : eq(schedulingBooking.groupSessionId, where.groupSessionId),
+      ),
+    )
+    .orderBy(asc(schedulingAttendee.id))
+    .for("share", { of: schedulingAttendee });
+  return new Set(attendees.flatMap((row) => (row.redactedAt ? [row.bookingId] : [])));
+}
+
 /** Hands a booking to another host. Its id, time and attendees stay. */
 export async function reassignBooking(
   env: SchedulingEnvironment,
@@ -337,14 +370,30 @@ export async function reassignBooking(
             eq(schedulingBooking.environmentId, env.environmentId),
           ),
         );
+      const erased = input.note?.trim()
+        ? await bookingsWithErasedAttendees(
+            tx,
+            env,
+            peek?.groupSessionId ? { groupSessionId: peek.groupSessionId } : { bookingId: id },
+          )
+        : new Set<string>();
       if (peek?.groupSessionId) {
-        return reassignSession(tx, env, peek.groupSessionId, id, input, deps, actor, opts);
+        return reassignSession(tx, env, peek.groupSessionId, id, input, deps, actor, opts, erased);
       }
       const booking = await lockBooking(tx, env, id);
-      return reassignOne(tx, env, booking, input, deps, actor, opts);
+      return reassignOne(tx, env, booking, input, deps, actor, opts, erased);
     }),
   );
   return toBookingObject(db, row, deps);
+}
+
+async function refuseIfNotSelected(tx: Transaction, booking: BookingRow, opts: Options) {
+  if (opts.stillSelected && !(await opts.stillSelected(tx, booking))) {
+    throw new SchedulingError(
+      "booking_not_changeable",
+      "This booking has changed since it was selected.",
+    );
+  }
 }
 
 async function reassignOne(
@@ -355,8 +404,10 @@ async function reassignOne(
   deps: Keys,
   actor: BookingActor,
   opts: Options,
+  erased: ReadonlySet<string>,
 ): Promise<BookingRow> {
   checkChangeable(booking);
+  await refuseIfNotSelected(tx, booking, opts);
   const now = nowOf(deps);
   const eventType = await resolveEventType(tx, env, booking.eventTypeId);
   if (!eventType.reassignmentEnabled) {
@@ -545,7 +596,7 @@ async function reassignOne(
       ...(input.overrides?.length ? { overrides: input.overrides } : {}),
       ...(opts.reassignmentId ? { reassignment_id: opts.reassignmentId } : {}),
     },
-    encryptedNote: encryptedNoteOf(input.note, deps),
+    encryptedNote: erased.has(booking.id) ? null : encryptedNoteOf(input.note, deps),
     previousHostIds,
     reassignmentId: opts.reassignmentId,
     message: "Booking reassigned",
@@ -595,6 +646,7 @@ async function reassignSession(
   deps: Keys,
   actor: BookingActor,
   opts: Options,
+  erased: ReadonlySet<string>,
 ): Promise<BookingRow> {
   const now = nowOf(deps);
   await tx
@@ -632,6 +684,7 @@ async function reassignSession(
   const asked = seats.find((seat) => seat.id === askedSeatId);
   if (!asked) throw new SchedulingError("not_found", `No booking "${askedSeatId}".`);
   checkChangeable(asked);
+  await refuseIfNotSelected(tx, asked, opts);
   if (opts.fromHosts && !opts.fromHosts.has(session.hostId)) {
     throw new SchedulingError("not_found", `No booking "${askedSeatId}".`);
   }
@@ -799,7 +852,7 @@ async function reassignSession(
         ...(input.overrides?.length ? { overrides: input.overrides } : {}),
         ...(opts.reassignmentId ? { reassignment_id: opts.reassignmentId } : {}),
       },
-      encryptedNote,
+      encryptedNote: erased.has(seat.id) ? null : encryptedNote,
       previousHostIds: [previousHostId],
       reassignmentId: opts.reassignmentId,
       message: "Booking reassigned",

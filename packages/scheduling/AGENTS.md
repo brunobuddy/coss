@@ -112,7 +112,8 @@ source only takes `key share`, with no status check, since leaving a disabled ho
 - One that's started changes for the record only: no claim, calendar, count or notice. `auditClaims` looks at future
   bookings for this reason.
 - `reason_code` and `note` go nowhere but the booking's history. The note's encrypted (`encrypted_note`, not `details`,
-  which outlives the attendee's data) and goes with their details.
+  which outlives the attendee's data) and goes with their details, and isn't written about someone already erased, as a
+  queued run's would be otherwise.
 - Host emails address `hostId`, and only those joining and leaving hear: a co-host has nothing new to know. Each hears
   what's changed since they last heard: going A to B to C tells A and C and not B, and going back to A tells nobody.
 
@@ -242,7 +243,8 @@ this page reaches every host of the environment, for an hour, acting as themselv
 - Bookings it reads are `ManagedBooking`: when, what and who's hosting. It never calls `toBookingObject` for a response,
   and `getBooking` only to check hosts, since a lead's job is cover and not the attendee.
 - A run from a team page says who each goes to (`checkManagedRun`), since `otherwise: auto` could reach another team, and
-  the worker has no session to ask. Its entries can't start a run either: moving bookings is its own step.
+  the worker has no session to ask. Its entries can't start a run either, by asking or by moving an entry that was made to
+  (`startsNoRun`, a host's page too): moving bookings is its own step.
 - A migration adding an enum value and using it in a check runs in one transaction, where a literal of the new value is
   refused (`55P04`): that's why `scheduling_session_scope` says `kind::text = 'manager'`.
 

@@ -247,8 +247,22 @@ export async function enqueueReassignment(
     )
     .returning({ hostId: schedulingNotification.hostId });
   const untold = new Set(superseded.map((row) => row.hostId));
-  // Everyone it touches is back where they last heard, so the attendee's news is gone as well.
-  const undone = moved.length > 0 && untold.has(null) && moved.every((id) => untold.has(id));
+  // Everyone it touches is back where they last heard, and nobody else is waiting to hear of a
+  // change this didn't touch: only then is the attendee's news gone as well.
+  const [elsewhere] = await tx
+    .select({ id: schedulingNotification.id })
+    .from(schedulingNotification)
+    .where(
+      and(
+        eq(schedulingNotification.bookingId, booking.id),
+        eq(schedulingNotification.organizationId, booking.organizationId),
+        eq(schedulingNotification.kind, "reassigned"),
+        isNull(schedulingNotification.finishedAt),
+      ),
+    )
+    .limit(1);
+  const undone =
+    moved.length > 0 && untold.has(null) && moved.every((id) => untold.has(id)) && !elsewhere;
   const policies = await policiesOf(tx, booking);
   const policy = resolvePolicy("reassigned", policies.environment, policies.eventType);
   const base = {
