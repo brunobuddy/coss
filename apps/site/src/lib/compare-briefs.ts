@@ -48,6 +48,17 @@ const BRIEFS: readonly (readonly [string, string | ((full: string) => string)])[
         : firstClause(full),
   ],
   ["SMS (US):", (full) => `${firstClause(full)}; other countries on coss.com/pricing`],
+  [
+    "Assessments $",
+    (full) => {
+      const from = /^Assessments (\$[\d.]+ per [\d,]+ assessments)/.exec(full)?.[1];
+      return `${from}, lower at volume; blocked decisions free; phone checks and classify on their own priced apart`;
+    },
+  ],
+  [
+    "10,000 risk assessments",
+    (full) => `${firstClause(full)}; past that, assessments go on without velocity or memory`,
+  ],
   ["Per inbox:", (full) => `${firstClause(full)}, lower beyond that`],
   [
     "Fraud guard before sending",
