@@ -6,7 +6,7 @@
  */
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, newId } from "@coss/db/id";
-import { requestHash as hashRequest, withIdempotencyKey } from "@coss/db/idempotency";
+import { requestHash as hashRequest, isReplayOf, withIdempotencyKey } from "@coss/db/idempotency";
 import { appendLogEntries } from "@coss/logs";
 import { decryptSecret, encryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
@@ -317,6 +317,29 @@ export async function createReassignment(
   } = {},
 ): Promise<{ reassignment: ReassignmentObjectOutput; replayed: boolean }> {
   const now = nowOf(deps);
+  const key = opts.idempotencyKey ?? null;
+  const existingRun = async () => {
+    const [existing] = await db
+      .select()
+      .from(schedulingReassignment)
+      .where(
+        and(
+          eq(schedulingReassignment.organizationId, env.organizationId),
+          eq(schedulingReassignment.environmentId, env.environmentId),
+          eq(schedulingReassignment.idempotencyKey, key as string),
+        ),
+      );
+    return existing;
+  };
+  // Before anything that can have changed since: an entry deleted, or more bookings than the cap,
+  // has nothing to say about a request that's already been answered.
+  const prior = key ? await existingRun() : undefined;
+  if (prior && isReplayOf(prior, hashRequest({ reassignment: params }))) {
+    if (opts.onlyHosts) {
+      checkManagedRun({ selection: prior.selection, strategy: prior.strategy }, opts.onlyHosts);
+    }
+    return { reassignment: toObject(prior, await countsOf(db, prior)), replayed: true };
+  }
   const strategy = await resolveStrategy(env, params.strategy);
   const selection = await resolveSelection(env, params.selection, strategy);
   checkOverrides(params);
@@ -341,7 +364,6 @@ export async function createReassignment(
     outOfOfficeId: selection.out_of_office_id ?? null,
     actor,
   };
-  const key = opts.idempotencyKey ?? null;
   if (!key) {
     const row = await queueReassignment(db, values);
     return { reassignment: toObject(row, await countsOf(db, row)), replayed: false };
@@ -362,19 +384,7 @@ export async function createReassignment(
         .returning();
       return inserted;
     },
-    existing: async () => {
-      const [existing] = await db
-        .select()
-        .from(schedulingReassignment)
-        .where(
-          and(
-            eq(schedulingReassignment.organizationId, env.organizationId),
-            eq(schedulingReassignment.environmentId, env.environmentId),
-            eq(schedulingReassignment.idempotencyKey, key),
-          ),
-        );
-      return existing;
-    },
+    existing: existingRun,
     release: (tx, existing) =>
       tx
         .update(schedulingReassignment)

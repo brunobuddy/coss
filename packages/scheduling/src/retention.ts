@@ -214,6 +214,12 @@ export async function purgeExpiredReassignments(opts: PurgeOptions = {}): Promis
       eq(schedulingReassignment.status, "completed"),
       eq(schedulingReassignment.status, "cancelled"),
     ),
+    // Its items go with their bookings, whose time runs from when they end, which can be a while.
+    sql`not exists (
+      select 1 from scheduling_reassignment_item item
+      where item.reassignment_id = ${schedulingReassignment.id}
+        and item.organization_id = ${schedulingReassignment.organizationId}
+    )`,
     scoped(schedulingReassignment.organizationId, opts),
   );
   const due = db

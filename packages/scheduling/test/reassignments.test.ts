@@ -1785,6 +1785,21 @@ describe("going out of office", () => {
     expect(await hostsOf(booking.id)).toEqual([a.id]);
   });
 
+  test("a retry replays, even if what it named has gone since", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const type = await pool(env, [a, b]);
+    await book(env, type.id, at("10:00"), a.id);
+    const [entry] = await away(env, a.id);
+    const body = request({ out_of_office: entry?.id as string }, { to_host: b.id });
+    const first = await createReassignment(env, body, plain, actor, { idempotencyKey: "retry" });
+    expect(first.replayed).toBe(false);
+    await deleteOutOfOffice(env, entry?.id as string, plain);
+    const again = await createReassignment(env, body, plain, actor, { idempotencyKey: "retry" });
+    expect(again.replayed).toBe(true);
+    expect(again.reassignment.id).toBe(first.reassignment.id);
+  });
+
   test("a new target needs no repeating that bookings move", async () => {
     const env = await environment();
     const [a, b, c] = await Promise.all([host(env, "A"), host(env, "B"), host(env, "C")]);
@@ -1920,6 +1935,24 @@ describe("going out of office", () => {
 });
 
 describe("keeping it tidy", () => {
+  test("a run's report stays for as long as a booking it moved does", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const type = await pool(env, [a, b]);
+    const booking = await book(env, type.id, at("10:00"), a.id);
+    const { reassignment } = await start(env, request({ host: a.id }, { to_host: b.id }));
+    await drain(env);
+    const later = {
+      now: new Date(Date.now() + 396 * 86_400_000),
+      limit: 10,
+      ...scopeOf(env),
+    };
+    expect(await purgeExpiredReassignments(later)).toBe(0);
+    await getReassignment(env, reassignment.id);
+    await db.delete(schema.schedulingBooking).where(eq(schema.schedulingBooking.id, booking.id));
+    expect(await purgeExpiredReassignments(later)).toBe(1);
+  });
+
   test("a run's note goes when it finishes, and its report with its bookings' rows", async () => {
     const env = await environment();
     const a = await host(env, "A");

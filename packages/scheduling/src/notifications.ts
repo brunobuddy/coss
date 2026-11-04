@@ -804,9 +804,11 @@ async function sendBookingEmail(
       text: message.text,
       html: message.html,
       cossHtml: message.cossHtml,
-      ics: withIcs
-        ? ics({ name: host.name, email: host.email }, gone ? "CANCEL" : icsMethod)
-        : null,
+      // Gone, and the booking's ended since: the cancellation only reaches who had it by then.
+      ics:
+        withIcs || (gone && booking.status !== "confirmed" && booking.status !== "pending_approval")
+          ? ics({ name: host.name, email: host.email }, gone ? "CANCEL" : icsMethod)
+          : null,
       logo: message.logo,
       idempotencyKey: `${key}:${host.id}`,
       ownSenderOnly: false,

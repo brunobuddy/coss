@@ -1449,6 +1449,8 @@ describe("who's told", () => {
     const { sent, deps } = sender();
     await runDueSchedulingNotifications(deps as never, { scope: scope(env) });
     expect(subjectsTo(sent, "first@example.com")).toEqual(["No longer yours: Call"]);
+    const toFirst = sent.find((message) => message.to === "first@example.com");
+    expect(toFirst?.ics?.method).toBe("CANCEL");
     const toSecond = subjectsTo(sent, "second@example.com");
     expect(toSecond.some((subject) => subject.startsWith("Assigned"))).toBe(false);
     expect(toSecond.length).toBe(1);
