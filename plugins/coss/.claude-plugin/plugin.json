@@ -30,6 +30,12 @@
       "description": "For the MCP server: a development key (coss_test_…), e.g. from `npx coss-cli init`. Leave empty to use only its docs tools.",
       "sensitive": true,
       "default": ""
+    },
+    "toolsets": {
+      "type": "string",
+      "title": "MCP toolsets",
+      "description": "Offer fewer MCP tools, which saves context: a comma-separated list of email, marketing, inboxes, sms, verify, sign, forms, scheduling, webhooks, hooks and risk. The docs, setup, logs and account tools are always there. Leave empty for every tool.",
+      "default": ""
     }
   }
 }
