@@ -16,6 +16,7 @@ import type { RiskDecision, RiskEvent, RiskOutcome, RiskReason } from "./risk.ts
 import type {
   SchedulingBookingWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOutOfOfficeWebhookEvent,
 } from "./scheduling.ts";
 import type { SignRequestWebhookEvent } from "./sign.ts";
 import type {
@@ -488,4 +489,5 @@ export type WebhookEvent =
   | VerificationWebhookEvent
   | FormSubmissionWebhookEvent
   | SchedulingBookingWebhookEvent
-  | SchedulingCalendarWebhookEvent;
+  | SchedulingCalendarWebhookEvent
+  | SchedulingOutOfOfficeWebhookEvent;

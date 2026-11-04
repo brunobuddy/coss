@@ -65,6 +65,7 @@ import {
 import { RETENTION_DAYS } from "@coss/retention";
 import { refreshDueDatasets } from "@coss/risk";
 import {
+  announceDueOutOfOffice,
   checkHostEditedEvents,
   expireDueBookings,
   type NotificationDeps,
@@ -257,6 +258,7 @@ export const WORKER_LOOP_NAMES = [
   "scheduling-calendar-writes",
   "scheduling-calendar-channels",
   "scheduling-calendar-host-edits",
+  "scheduling-out-of-office",
   "email-dispatch",
   "email-dispatch-marketing",
   "webhooks",
@@ -747,6 +749,14 @@ export function startJobs(deps: WorkerDeps): Loop[] {
         name: "scheduling-expiry",
         intervalMs: 30_000,
         run: async () => (await expireDueBookings(scheduling)) === SCHEDULING_BATCH,
+      }),
+      start({
+        // Only what customers are told: entries block bookings by their times, whether or not this ran.
+        name: "scheduling-out-of-office",
+        intervalMs: 30_000,
+        run: async () =>
+          (await announceDueOutOfOffice(scheduling, { limit: SCHEDULING_BATCH })) ===
+          SCHEDULING_BATCH,
       }),
     );
     const notifications = deps.schedulingNotifications;

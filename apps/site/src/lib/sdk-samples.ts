@@ -308,6 +308,34 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
   "GET /v1/sms/received": { method: "sms.received.list", args: (r) => [queryParams(r)] },
   "GET /v1/sms/received/{id}": { method: "sms.received.get", args: (r) => [pathId(r)] },
   "GET /v1/sms/numbers": { method: "sms.numbers.list", args: () => [] },
+  "POST /v1/scheduling/out_of_office": {
+    method: "scheduling.outOfOffice.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/out_of_office": {
+    method: "scheduling.outOfOffice.list",
+    args: (r) => [queryParams(r)],
+  },
+  "GET /v1/scheduling/out_of_office/{id}": {
+    method: "scheduling.outOfOffice.get",
+    args: (r) => [pathId(r)],
+  },
+  "PATCH /v1/scheduling/out_of_office/{id}": {
+    method: "scheduling.outOfOffice.update",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "PUT /v1/scheduling/out_of_office/by_external_id/{external_id}": {
+    method: "scheduling.outOfOffice.put",
+    args: (r) => [tsValue(r.path.external_id), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/out_of_office/{id}": {
+    method: "scheduling.outOfOffice.remove",
+    args: (r) => [pathId(r)],
+  },
+  "GET /v1/scheduling/out_of_office/{id}/conflicts": {
+    method: "scheduling.outOfOffice.conflicts",
+    args: (r) => [pathId(r), queryParams(r)],
+  },
   "POST /v1/scheduling/hosts": {
     method: "scheduling.hosts.create",
     args: (r) => [tsValue(r.body ?? {})],

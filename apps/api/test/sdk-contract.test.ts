@@ -1966,6 +1966,94 @@ describe("coss.risk checkouts, devices and calibration against the API", () => {
   });
 });
 
+describe("coss.scheduling.outOfOffice against the API", () => {
+  test("marks a host away, stops offering them, shows conflicts and takes it back", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const host = must(
+      (await scheduling.hosts.create({ uid: "doctor_1", name: "Dr. Reyes", time_zone: "UTC" }))
+        .data,
+    );
+    await scheduling.schedules.create("doctor_1", {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+    });
+    const eventType = must(
+      (
+        await scheduling.eventTypes.create({
+          title: "Consultation",
+          duration_minutes: 30,
+          hosts: [{ host: "doctor_1" }],
+        })
+      ).data,
+    );
+    const booking = must(
+      (
+        await scheduling.bookings.create({
+          event_type: eventType.id,
+          start: "2031-01-06T10:00:00.000Z",
+          attendee: { name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+        })
+      ).data,
+    );
+
+    const created = must(
+      (
+        await scheduling.outOfOffice.create({
+          host: "doctor_1",
+          start_date: "2031-01-06",
+          end_date: "2031-01-06",
+          reason: "vacation",
+          notes: "Lisbon",
+          public_message: "Back on Tuesday.",
+        })
+      ).data,
+    );
+    const entry = must(created.data[0]);
+    expect(entry).toMatchObject({
+      object: "scheduling.out_of_office",
+      host: host.id,
+      reason: "vacation",
+      notes: "Lisbon",
+      source: "api",
+      all_day: { start_date: "2031-01-06", end_date: "2031-01-06", time_zone: "UTC" },
+    });
+    expect((await scheduling.outOfOffice.get(entry.id)).data?.id).toBe(entry.id);
+    expect((await scheduling.outOfOffice.list({ host: "doctor_1" })).data?.data.length).toBe(1);
+    const slots = await scheduling.slots.list(eventType.id, {
+      start: "2031-01-06T00:00:00.000Z",
+      end: "2031-01-07T00:00:00.000Z",
+    });
+    expect(slots.data?.data).toEqual([]);
+    const conflicts = await scheduling.outOfOffice.conflicts(entry.id);
+    expect(conflicts.data?.data.map((conflict) => conflict.booking)).toEqual([booking.id]);
+    expect((await scheduling.bookings.get(booking.id)).data?.status).toBe("confirmed");
+
+    const moved = await scheduling.outOfOffice.update(entry.id, { end_date: "2031-01-07" });
+    expect(moved.data?.all_day?.end_date).toBe("2031-01-07");
+    const synced = await scheduling.outOfOffice.put("leave_1", {
+      host: "doctor_1",
+      start_date: "2031-02-03",
+      end_date: "2031-02-03",
+    });
+    expect(synced.data?.external_id).toBe("leave_1");
+    const again = await scheduling.outOfOffice.put("leave_1", {
+      host: "doctor_1",
+      start_date: "2031-02-04",
+      end_date: "2031-02-04",
+    });
+    expect(again.data?.id).toBe(must(synced.data).id);
+
+    const removed = await scheduling.outOfOffice.remove(entry.id);
+    expect(removed.data).toEqual({
+      object: "scheduling.out_of_office",
+      id: entry.id,
+      deleted: true,
+    });
+    expect((await scheduling.outOfOffice.get(entry.id)).error?.code).toBe("not_found");
+  });
+});
+
 describe("coss.scheduling against the API", () => {
   test("host, schedule, event type, slots, a booking's life, a hold, a session", async () => {
     const tenant = await createTestTenant();

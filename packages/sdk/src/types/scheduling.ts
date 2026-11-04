@@ -435,6 +435,8 @@ export interface SchedulingSettings {
   logo: SchedulingLogo | null;
   email_from: string | null;
   sms_from: string | null;
+  /** Reasons of your own for time away, on top of the preset ones. */
+  out_of_office_reasons: { key: string; label: string }[];
   calendar_failure_mode: "hide" | "last_known";
   notifications: Record<string, SchedulingNotificationSettings> | null;
 }
@@ -447,6 +449,7 @@ export interface UpdateSchedulingSettingsParams {
   logo?: { content: string } | null;
   email_from?: string | null;
   sms_from?: string | null;
+  out_of_office_reasons?: { key: string; label: string }[] | null;
   calendar_failure_mode?: "hide" | "last_known";
   notifications?: Record<string, SchedulingNotificationSettings> | null;
 }
@@ -544,9 +547,17 @@ export type SchedulingCalendarWebhookEventType =
   | "scheduling.calendar.needs_reauth"
   | "scheduling.calendar.disconnected";
 
+export type SchedulingOutOfOfficeWebhookEventType =
+  | "scheduling.out_of_office.created"
+  | "scheduling.out_of_office.updated"
+  | "scheduling.out_of_office.deleted"
+  | "scheduling.out_of_office.started"
+  | "scheduling.out_of_office.ended";
+
 export type SchedulingWebhookEventType =
   | SchedulingBookingWebhookEventType
-  | SchedulingCalendarWebhookEventType;
+  | SchedulingCalendarWebhookEventType
+  | SchedulingOutOfOfficeWebhookEventType;
 
 /** Ids, times and statuses only: a person's details and answers come from retrieving the booking. */
 export interface SchedulingBookingWebhookEventData {
@@ -578,4 +589,116 @@ export interface SchedulingCalendarWebhookEvent {
   api_version: string;
   created_at: string;
   data: { host_id: string; connection_id: string; provider: string; occurred_at: string };
+}
+
+/** Ids and times only: why someone's away is never in a webhook. */
+export interface SchedulingOutOfOfficeWebhookEvent {
+  id: string;
+  object: "event";
+  type: SchedulingOutOfOfficeWebhookEventType;
+  api_version: string;
+  created_at: string;
+  data: {
+    out_of_office_id: string;
+    host_id: string;
+    start: string;
+    end: string;
+    group: string | null;
+    occurred_at: string;
+  };
+}
+
+/** Either instants, for part of a day, or whole dates, ending with `end_date` itself. */
+interface SchedulingOutOfOfficeWhen {
+  start?: string;
+  end?: string;
+  start_date?: string;
+  end_date?: string;
+  /** What the dates mean in. Default: the host's zone when this is made. */
+  time_zone?: string;
+}
+
+interface SchedulingOutOfOfficeDetails {
+  /** A preset reason, or a key from the settings' `out_of_office_reasons`. Never shown to bookers. */
+  reason?: string;
+  /** For people who manage this host. Encrypted, and never shown to a booker. */
+  notes?: string;
+  /** Shown to bookers while this host is away. Can't contain a link. */
+  public_message?: string;
+  /** Put a private "Out of office" event on the host's calendar. Default: true. */
+  show_on_calendar?: boolean;
+}
+
+/** Give exactly one of `host`, `hosts` and `host_filter`. */
+export interface CreateSchedulingOutOfOfficeParams
+  extends SchedulingOutOfOfficeWhen,
+    SchedulingOutOfOfficeDetails {
+  host?: string;
+  hosts?: string[];
+  /** Every active host matching these attributes right now. */
+  host_filter?: Record<string, string | string[]>;
+  /** Your own id for this entry, unique in the environment. Needs one host. */
+  external_id?: string;
+}
+
+export interface PutSchedulingOutOfOfficeParams
+  extends SchedulingOutOfOfficeWhen,
+    SchedulingOutOfOfficeDetails {
+  host: string;
+}
+
+export interface UpdateSchedulingOutOfOfficeParams extends SchedulingOutOfOfficeWhen {
+  reason?: string;
+  notes?: string | null;
+  public_message?: string | null;
+  show_on_calendar?: boolean;
+}
+
+export interface ListSchedulingOutOfOfficeParams extends SchedulingPageParams {
+  host?: string;
+  /** Entries ending after this. */
+  start_after?: string;
+  /** Entries starting before this. */
+  start_before?: string;
+  /** The entries one request made. */
+  group?: string;
+}
+
+export interface SchedulingOutOfOffice {
+  object: "scheduling.out_of_office";
+  id: string;
+  host: string;
+  start: string;
+  end: string;
+  /** How it was given, when it was as whole dates. */
+  all_day: { start_date: string; end_date: string; time_zone: string } | null;
+  reason: string;
+  notes: string | null;
+  public_message: string | null;
+  show_on_calendar: boolean;
+  external_id: string | null;
+  /** Shared by the entries one request made for several hosts. */
+  group: string | null;
+  source: "api" | "host" | "manager" | "dashboard" | "holiday";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeletedSchedulingOutOfOffice {
+  object: "scheduling.out_of_office";
+  id: string;
+  deleted: true;
+}
+
+/** A live booking that falls in an entry, which never changed it. */
+export interface SchedulingOutOfOfficeConflict {
+  object: "scheduling.out_of_office_conflict";
+  booking: string;
+  event_type: string;
+  title: string;
+  status: SchedulingBookingStatus;
+  start: string;
+  end: string;
+  series: string | null;
+  group_session: string | null;
 }

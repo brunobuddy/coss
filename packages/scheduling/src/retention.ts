@@ -16,6 +16,7 @@ const {
   schedulingGroupSession,
   schedulingLimitBucket,
   schedulingOauthState,
+  schedulingOutOfOffice,
   schedulingSeries,
   schedulingSession,
 } = schema;
@@ -116,6 +117,61 @@ export async function purgeExpiredBookings(opts: PurgeOptions = {}): Promise<num
     .delete(schedulingBooking)
     .where(and(inArray(schedulingBooking.id, due), lt(schedulingBooking.endAt, cutoff)))
     .returning({ id: schedulingBooking.id });
+  return deleted.length;
+}
+
+/** What someone wrote about their time off goes well before the fact that they had it. */
+export async function redactExpiredOutOfOffice(opts: PurgeOptions = {}): Promise<number> {
+  const now = opts.now ?? new Date();
+  const cutoff = new Date(now.getTime() - RETENTION_DAYS.schedulingOutOfOfficeNotes * DAY_MS);
+  const where = and(
+    lt(schedulingOutOfOffice.endAt, cutoff),
+    or(
+      isNotNull(schedulingOutOfOffice.encryptedNotes),
+      isNotNull(schedulingOutOfOffice.publicMessage),
+    ),
+    scoped(schedulingOutOfOffice.organizationId, opts),
+  );
+  const due = db
+    .select({ id: schedulingOutOfOffice.id })
+    .from(schedulingOutOfOffice)
+    .where(where)
+    .limit(opts.limit ?? 1000);
+  const redacted = await db
+    .update(schedulingOutOfOffice)
+    .set({ encryptedNotes: null, publicMessage: null })
+    .where(and(inArray(schedulingOutOfOffice.id, due), where))
+    .returning({ id: schedulingOutOfOffice.id });
+  return redacted.length;
+}
+
+// Long enough for a deleted entry's calendar event to have gone, which its row's ledger row does.
+const DELETED_OUT_OF_OFFICE_DAYS = 30;
+
+/** Past the policy's whole period, or deleted a while ago. Holidays' stay as their tombstones. */
+export async function purgeExpiredOutOfOffice(opts: PurgeOptions = {}): Promise<number> {
+  const now = opts.now ?? new Date();
+  const cutoff = new Date(now.getTime() - RETENTION_DAYS.schedulingOutOfOffice * DAY_MS);
+  const deletedCutoff = new Date(now.getTime() - DELETED_OUT_OF_OFFICE_DAYS * DAY_MS);
+  const where = and(
+    or(
+      lt(schedulingOutOfOffice.endAt, cutoff),
+      and(
+        lt(schedulingOutOfOffice.deletedAt, deletedCutoff),
+        sql`${schedulingOutOfOffice.source} <> 'holiday'`,
+      ),
+    ),
+    scoped(schedulingOutOfOffice.organizationId, opts),
+  );
+  const due = db
+    .select({ id: schedulingOutOfOffice.id })
+    .from(schedulingOutOfOffice)
+    .where(where)
+    .limit(opts.limit ?? 1000);
+  const deleted = await db
+    .delete(schedulingOutOfOffice)
+    .where(and(inArray(schedulingOutOfOffice.id, due), where))
+    .returning({ id: schedulingOutOfOffice.id });
   return deleted.length;
 }
 

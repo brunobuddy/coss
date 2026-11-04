@@ -131,6 +131,13 @@ export const schedulingSessionKind = pgEnum("scheduling_session_kind", [
   "booker",
   "manage",
 ]);
+export const schedulingOutOfOfficeSource = pgEnum("scheduling_out_of_office_source", [
+  "api",
+  "host",
+  "manager",
+  "dashboard",
+  "holiday",
+]);
 export const schedulingCalendarFailureMode = pgEnum("scheduling_calendar_failure_mode", [
   "hide",
   "last_known",
@@ -171,6 +178,71 @@ export const schedulingHost = pgTable(
     unique("scheduling_host_id_organization_unique").on(t.id, t.organizationId),
     index("scheduling_host_environment_created_at_idx").on(t.environmentId, t.createdAt, t.id),
     index("scheduling_host_attributes_idx").using("gin", t.attributes.op("jsonb_path_ops")),
+  ],
+);
+
+/**
+ * Time a host is away: `HostInputs.away` keeps them from being offered, and existing bookings stay.
+ * A deleted row stays for a while, since the ledger row that removes its calendar event is its own.
+ */
+export const schedulingOutOfOffice = pgTable(
+  "scheduling_out_of_office",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.schedulingOutOfOffice)),
+    organizationId: text("organization_id").notNull(),
+    environmentId: text("environment_id").notNull(),
+    hostId: text("host_id").notNull(),
+    startAt: instant("start_at").notNull(),
+    endAt: instant("end_at").notNull(),
+    // Given as whole dates: these say how, for showing it back. The instants above are what count.
+    startDate: date("start_date"),
+    endDate: date("end_date"),
+    allDayZone: text("all_day_zone"),
+    // Can say someone's on medical leave: never in webhooks, logs, calendars or anything a booker sees.
+    reason: text("reason").notNull().default("unspecified"),
+    encryptedNotes: text("encrypted_notes"),
+    publicMessage: text("public_message"),
+    showOnCalendar: boolean("show_on_calendar").notNull().default(true),
+    source: schedulingOutOfOfficeSource("source").notNull(),
+    externalId: text("external_id"),
+    // One request across several hosts.
+    groupId: text("group_id"),
+    announcedStartAt: instant("announced_start_at"),
+    announcedEndAt: instant("announced_end_at"),
+    fairnessLeveledAt: instant("fairness_leveled_at"),
+    actor: jsonb("actor").$type<SchedulingActor>().notNull(),
+    deletedAt: instant("deleted_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    foreignKey({
+      name: "scheduling_out_of_office_host_fk",
+      columns: [t.hostId, t.organizationId],
+      foreignColumns: [schedulingHost.id, schedulingHost.organizationId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "scheduling_out_of_office_environment_fk",
+      columns: [t.environmentId, t.organizationId],
+      foreignColumns: [environment.id, environment.organizationId],
+    }).onDelete("cascade"),
+    unique("scheduling_out_of_office_id_organization_unique").on(t.id, t.organizationId),
+    uniqueIndex("scheduling_out_of_office_external_id_idx")
+      .on(t.environmentId, t.externalId)
+      .where(sql`${t.externalId} IS NOT NULL AND ${t.deletedAt} IS NULL`),
+    index("scheduling_out_of_office_host_idx")
+      .on(t.hostId, t.endAt, t.startAt)
+      .where(sql`${t.deletedAt} IS NULL`),
+    index("scheduling_out_of_office_environment_idx").on(t.environmentId, t.id),
+    index("scheduling_out_of_office_unannounced_start_idx")
+      .on(t.startAt)
+      .where(sql`${t.announcedStartAt} IS NULL AND ${t.deletedAt} IS NULL`),
+    index("scheduling_out_of_office_unannounced_end_idx")
+      .on(t.endAt)
+      .where(sql`${t.announcedEndAt} IS NULL AND ${t.deletedAt} IS NULL`),
+    check("scheduling_out_of_office_span", sql`${t.startAt} < ${t.endAt}`),
   ],
 );
 
@@ -761,6 +833,7 @@ export const schedulingCalendarEvent = pgTable(
     environmentId: text("environment_id").notNull(),
     bookingId: text("booking_id"),
     groupSessionId: text("group_session_id"),
+    outOfOfficeId: text("out_of_office_id"),
     hostId: text("host_id").notNull(),
     calendarId: text("calendar_id").notNull(),
     desiredStart: instant("desired_start").notNull(),
@@ -791,6 +864,11 @@ export const schedulingCalendarEvent = pgTable(
       foreignColumns: [schedulingGroupSession.id, schedulingGroupSession.organizationId],
     }).onDelete("cascade"),
     foreignKey({
+      name: "scheduling_calendar_event_out_of_office_fk",
+      columns: [t.outOfOfficeId, t.organizationId],
+      foreignColumns: [schedulingOutOfOffice.id, schedulingOutOfOffice.organizationId],
+    }).onDelete("cascade"),
+    foreignKey({
       name: "scheduling_calendar_event_calendar_fk",
       columns: [t.calendarId, t.organizationId],
       foreignColumns: [schedulingCalendar.id, schedulingCalendar.organizationId],
@@ -801,9 +879,14 @@ export const schedulingCalendarEvent = pgTable(
       t.hostId,
       t.calendarId,
     ),
+    unique("scheduling_calendar_event_out_of_office_target_unique").on(
+      t.outOfOfficeId,
+      t.hostId,
+      t.calendarId,
+    ),
     check(
       "scheduling_calendar_event_one_owner",
-      sql`(${t.bookingId} IS NULL) <> (${t.groupSessionId} IS NULL)`,
+      sql`num_nonnulls(${t.bookingId}, ${t.groupSessionId}, ${t.outOfOfficeId}) = 1`,
     ),
     index("scheduling_calendar_event_host_idx").on(t.hostId, t.desiredEnd, t.desiredStart),
     index("scheduling_calendar_event_due_idx")
@@ -960,6 +1043,7 @@ export const schedulingSettings = pgTable(
     emailFrom: text("email_from"),
     smsFrom: text("sms_from"),
     notifications: jsonb("notifications").$type<SchedulingNotificationPolicy | null>(),
+    outOfOfficeReasons: jsonb("out_of_office_reasons").$type<{ key: string; label: string }[]>(),
     calendarFailureMode: schedulingCalendarFailureMode("calendar_failure_mode")
       .notNull()
       .default("hide"),

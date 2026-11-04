@@ -6,6 +6,7 @@
   "pages": [
     "index",
     "hosts",
+    "out-of-office",
     "calendars",
     "zoom",
     "bookings",

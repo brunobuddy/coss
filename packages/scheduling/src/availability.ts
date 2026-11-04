@@ -31,6 +31,7 @@ const {
   schedulingClaim,
   schedulingGroupSession,
   schedulingHost,
+  schedulingOutOfOffice,
   schedulingSchedule,
   schedulingScheduleOverride,
   schedulingSettings,
@@ -217,6 +218,23 @@ export async function loadHostInputs(
         sql`${schedulingCalendarEvent.desiredStart} < ${toDate.toISOString()}::timestamptz + interval '1 day'`,
       ),
     );
+  const away = await executor
+    .select({
+      hostId: schedulingOutOfOffice.hostId,
+      startAt: schedulingOutOfOffice.startAt,
+      endAt: schedulingOutOfOffice.endAt,
+    })
+    .from(schedulingOutOfOffice)
+    .where(
+      and(
+        eq(schedulingOutOfOffice.organizationId, scope.organizationId),
+        inArray(schedulingOutOfOffice.hostId, hostIds),
+        isNull(schedulingOutOfOffice.deletedAt),
+        // A slot's end can fall past the window's, as with availability below.
+        sql`${schedulingOutOfOffice.endAt} > ${fromDate.toISOString()}::timestamptz - interval '1 day'`,
+        sql`${schedulingOutOfOffice.startAt} < ${toDate.toISOString()}::timestamptz + interval '2 days'`,
+      ),
+    );
   const calendars = await executor
     .select({
       hostId: schedulingCalendar.hostId,
@@ -250,6 +268,7 @@ export async function loadHostInputs(
   const busyByHost = groupedBy(busy, (row) => row.hostId);
   const sessionsByHost = groupedBy(sessions, (row) => row.hostId);
   const calendarsByHost = groupedBy(calendars, (row) => row.hostId);
+  const awayByHost = groupedBy(away, (row) => row.hostId);
 
   for (const [index, host] of hosts.entries()) {
     await takeTurn(index);
@@ -327,6 +346,12 @@ export async function loadHostInputs(
       availability,
       externalBusy,
       claims: normalizeIntervals(blocking),
+      away: normalizeIntervals(
+        (awayByHost.get(host.id) ?? []).map((entry) => ({
+          startMs: entry.startAt.getTime(),
+          endMs: entry.endAt.getTime(),
+        })),
+      ),
       sessions: hostSessions.flatMap((session) => {
         const claim = sessionClaims.get(session.id);
         return claim

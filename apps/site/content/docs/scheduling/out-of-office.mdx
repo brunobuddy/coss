@@ -1,0 +1,126 @@
+---
+title: Out of office
+description: Mark hosts as away for part of a day or whole dates, alone or together, and see which bookings it affects.
+---
+
+While a host is away they aren't offered for new bookings. Bookings they already have stay as they are: coss.com never
+cancels or moves one on its own, and tells you which ones fall in the time instead.
+
+## Mark a host as away
+
+Give whole dates, which end with `end_date` itself and mean those days in the host's time zone:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.outOfOffice.create({
+  host: "doctor_482",
+  start_date: "2027-08-02",
+  end_date: "2027-08-13",
+  reason: "vacation",
+  public_message: "Back on the 16th.",
+});
+```
+
+Or part of a day, as instants:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.outOfOffice.create({
+  host: "doctor_482",
+  start: "2027-08-02T13:00:00-04:00",
+  end: "2027-08-02T15:00:00-04:00",
+  reason: "training",
+});
+```
+
+Entries can overlap. A host is away for all of them, and removing one leaves the others.
+
+## Mark many hosts at once
+
+Use `hosts` for a list, or `host_filter` for everyone matching some [attributes](/docs/scheduling/routing) right now,
+such as an office closing for the day. Each host gets an entry of their own, sharing a `group`, so you can change or
+remove one person's without touching the others:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data } = await coss.scheduling.outOfOffice.create({
+  host_filter: { office: "berlin" },
+  start_date: "2027-10-03",
+  end_date: "2027-10-03",
+  reason: "public_holiday",
+});
+```
+
+A filter is read once, when you ask. A host who matches later isn't covered.
+
+## Sync from an HR tool
+
+`put` creates or replaces the entry with your own id, so a system of record can send what it knows as often as it
+likes, and there's one entry for it:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.outOfOffice.put("leave_4471", {
+  host: "doctor_482",
+  start_date: "2027-08-02",
+  end_date: "2027-08-13",
+  reason: "parental_leave",
+});
+```
+
+## See which bookings it affects
+
+Conflicts are the host's live bookings that fall in an entry, including holds and requests waiting for approval:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const entryId: string;
+// ---cut---
+const { data } = await coss.scheduling.outOfOffice.conflicts(entryId);
+```
+
+They carry ids, times and statuses, not the attendee's details. If you didn't mark them away from their own page, the
+host also gets an email saying how many there are.
+
+A hold that was already there can still be confirmed, and a request can still be approved, during an entry. Both show
+up as conflicts.
+
+## What people booking see
+
+When the only host someone could book is away, the hosted pages say when they're back and show your `public_message`.
+A pool just offers its other hosts, and a required host being away takes the time with them.
+
+`public_message` can't contain a link, and in a live environment it's screened like other text you set up.
+
+## Reasons
+
+`reason` is one of `unspecified`, `vacation`, `travel`, `sick`, `public_holiday`, `parental_leave`, `training` and
+`other`, or a key of your own from the settings' `out_of_office_reasons`.
+
+A reason can say someone's on medical leave, so only people who manage the host see it. It's never in webhooks, logs,
+calendars or anything shown to a person booking. Notes are encrypted, for the same reason. How long they're kept is on
+the [data retention](/docs/data-retention) page.
+
+## Calendars
+
+Each entry puts a private event called "Out of office" on the host's connected calendar, unless you pass
+`show_on_calendar: false`. It never says why.
+
+## Hosts' own time off
+
+The hosted host page has a **Time off** tab, where a host can add and remove their own. A session only ever reaches the
+host it's for. See [Embedding](/docs/scheduling/embedding).
+
+## Webhooks
+
+`scheduling.out_of_office.created`, `.updated` and `.deleted`, and `.started` and `.ended` when the time begins and
+ends. They carry ids and times. See [Webhooks](/docs/webhooks).

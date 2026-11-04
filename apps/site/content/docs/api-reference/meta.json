@@ -46,6 +46,7 @@
     "---Scheduling---",
     "scheduling-hosts",
     "scheduling-schedules",
+    "scheduling-out-of-office",
     "scheduling-calendars",
     "scheduling-event-types",
     "scheduling-availability",

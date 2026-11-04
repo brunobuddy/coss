@@ -94,10 +94,15 @@ export const RETENTION_DAYS = {
   schedulingPersonalData: 90,
   /** What's left of a booking once redacted (time, host, status), counted from when it ended. */
   schedulingBookings: 395,
+  schedulingOutOfOfficeNotes: 90,
+  schedulingOutOfOffice: 395,
 } as const satisfies Record<string, number>;
 
 export type RetentionPeriod =
-  | { days: number; after: "creation" | "expiry" | "booking_end" | "resolved" }
+  | {
+      days: number;
+      after: "creation" | "expiry" | "booking_end" | "out_of_office_end" | "resolved";
+    }
   | { until: "sent" | "deleted" | "closed" };
 
 export type RetentionRule = {
@@ -417,6 +422,19 @@ export const RETENTION_POLICY: readonly RetentionRule[] = [
     period: { days: RETENTION_DAYS.schedulingBookings, after: "booking_end" },
   },
   {
+    id: "scheduling_out_of_office_notes",
+    label: "Out of office notes",
+    description: "The notes and the message to bookers on a host's time away.",
+    period: { days: RETENTION_DAYS.schedulingOutOfOfficeNotes, after: "out_of_office_end" },
+  },
+  {
+    id: "scheduling_out_of_office",
+    label: "Out of office",
+    description:
+      "When a host was away and the reason given, without notes. An entry you delete goes within 30 days.",
+    period: { days: RETENTION_DAYS.schedulingOutOfOffice, after: "out_of_office_end" },
+  },
+  {
     id: "migrations",
     label: "Imports from other providers",
     description: `Reports of imports from Resend, SendGrid or Postmark: what was found, what was imported and what needs attention. The provider's API key is deleted as soon as an import finishes or is canceled, and an import that is never started is deleted after ${formatRetentionDays(RETENTION_DAYS.migrationDrafts)}. What it imported is kept like anything you create yourself.`,
@@ -451,6 +469,7 @@ export function formatRetentionPeriod(period: RetentionPeriod): string {
   }
   const duration = formatRetentionDays(period.days);
   if (period.after === "booking_end") return `${duration} after the booking ends`;
+  if (period.after === "out_of_office_end") return `${duration} after the time away ends`;
   if (period.after === "resolved") return `${duration} after it's resolved`;
   return period.after === "expiry" ? `${duration} after expiry` : duration;
 }

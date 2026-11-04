@@ -13,6 +13,7 @@ import { RiskWebhookEvent } from "@coss/risk/schemas";
 import {
   SchedulingBookingWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOutOfOfficeWebhookEvent,
 } from "@coss/scheduling/schemas";
 import { SignRequestWebhookEvent } from "@coss/sign/schemas";
 import { ReceivedSmsWebhookEvent, SmsWebhookEvent } from "@coss/sms/schemas";
@@ -41,6 +42,7 @@ const WEBHOOK_EVENTS = {
   FormSubmissionWebhookEvent,
   SchedulingBookingWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOutOfOfficeWebhookEvent,
 };
 
 export function registerWebhookEvents(app: OpenAPIHono<AppEnv>): void {

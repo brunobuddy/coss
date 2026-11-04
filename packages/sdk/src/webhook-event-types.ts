@@ -88,6 +88,11 @@ export const WEBHOOK_EVENT_TYPES: readonly WebhookEventType[] = [
   "scheduling.calendar.connected",
   "scheduling.calendar.needs_reauth",
   "scheduling.calendar.disconnected",
+  "scheduling.out_of_office.created",
+  "scheduling.out_of_office.updated",
+  "scheduling.out_of_office.deleted",
+  "scheduling.out_of_office.started",
+  "scheduling.out_of_office.ended",
 ];
 
 /** Types only live environments receive: `domain.*`, `account.*`, `subaccount.*` and `billing.*`. */

@@ -31,6 +31,8 @@ export type HostInputs = {
   limitUsage: Readonly<Record<string, number>>;
   /** False when the host's calendars can't be trusted right now, and the environment hides them. */
   calendarVerified: boolean;
+  /** Time off. Nothing can be booked in it, joining a session already running included. */
+  away?: readonly Interval[];
   /** Group event types: sessions already running, which people can join rather than start. */
   sessions?: readonly GroupSessionState[];
 };
@@ -41,6 +43,7 @@ export type NotBookableReason =
   | "not_on_grid"
   | "too_soon"
   | "outside_booking_window"
+  | "out_of_office"
   | "calendar_unverified"
   | "outside_availability"
   | "host_busy"
@@ -126,8 +129,12 @@ export function isBookable(
   ) {
     return { ok: false, reason: "outside_booking_window" };
   }
-  if (!host.calendarVerified) return { ok: false, reason: "calendar_unverified" };
   const endMs = startMs + rule.durationMinutes * MINUTE_MS;
+  // Before the calendar's verdict, so the reason's honest: reconnecting wouldn't make this bookable.
+  if (host.away && overlapsAny(host.away, startMs, endMs)) {
+    return { ok: false, reason: "out_of_office" };
+  }
+  if (!host.calendarVerified) return { ok: false, reason: "calendar_unverified" };
   if (!containedIn(host.availability, startMs, endMs)) {
     return { ok: false, reason: "outside_availability" };
   }

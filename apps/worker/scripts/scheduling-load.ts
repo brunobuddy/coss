@@ -38,6 +38,7 @@ const concurrency = option("concurrency", 32);
 const bookings = option("bookings", 500);
 const existingPerHost = option("existing", 20);
 const busyPerHost = option("busy", 10);
+const awayPerHost = option("away", 2);
 const searches = option("searches", 30);
 const races = option("races", 20);
 const bigTableRows = option("big-table-rows", 5000);
@@ -226,6 +227,22 @@ async function seedCalendars(): Promise<void> {
   for (const rows of chunks(intervals)) {
     await db.insert(schema.schedulingBusyInterval).values(rows);
   }
+  // Part of a day, so hosts stay bookable and every slot has to be checked against them.
+  const away = hostIds.flatMap((hostId, index) =>
+    Array.from({ length: awayPerHost }, (_, n) => {
+      const startMs = fromMs + ((index + n * 3) % days) * DAY_MS + 12 * 3_600_000;
+      return {
+        organizationId: env.organizationId,
+        environmentId: env.environmentId,
+        hostId,
+        startAt: new Date(startMs),
+        endAt: new Date(startMs + 3_600_000),
+        source: "api" as const,
+        actor: { kind: "system" as const },
+      };
+    }),
+  );
+  for (const rows of chunks(away)) await db.insert(schema.schedulingOutOfOffice).values(rows);
 }
 
 seeded = performance.now();

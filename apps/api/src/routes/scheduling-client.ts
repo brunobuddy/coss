@@ -10,12 +10,15 @@ import {
   approveBooking,
   attendeeEmailedOnConfirm,
   authenticateSchedulingSession,
+  awayNoticeOf,
   cancelBooking,
   connectCaldav,
   connectSimulated,
   createBooking,
+  createOutOfOffice,
   createSchedule,
   declineBooking,
+  deleteOutOfOffice,
   disconnectCalendar,
   fixedAttendee,
   getBooking,
@@ -26,6 +29,8 @@ import {
   listBookingSlots,
   listConnections,
   listEventTypeSlots,
+  listOutOfOffice,
+  listOutOfOfficeConflicts,
   listSchedules,
   listUpcomingHostBookings,
   logoDataUrl,
@@ -37,14 +42,19 @@ import {
   startCalendarAuthorization,
   toConnectionObject,
   updateCalendar,
+  updateOutOfOffice,
   updateSchedule,
 } from "@coss/scheduling";
 import {
   AuthorizeCalendarRequest,
   CreateBookingRequest,
   CreateCalendarConnectionRequest,
+  HostOutOfOfficeRequest,
+  OUT_OF_OFFICE_PRESET_REASONS,
+  OUT_OF_OFFICE_REASON_LABELS,
   RescheduleBookingRequest,
   UpdateCalendarRequest,
+  UpdateOutOfOfficeRequest,
   UpsertScheduleRequest,
 } from "@coss/scheduling/schemas";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
@@ -257,6 +267,20 @@ export function createSchedulingClientRoutes(opts: {
     return c.json(base);
   });
 
+  /** Only when one person can be booked here: "they're away" can't be said of a pool. */
+  const awayNoticeFor = async (
+    env: AuthenticatedSession["env"],
+    eventType: string,
+    pinnedHost: string | null,
+  ) => {
+    const now = deps.now?.() ?? new Date();
+    if (pinnedHost) return awayNoticeOf(env, pinnedHost, now);
+    const { hosts, kind } = await getEventType(env, eventType);
+    const [only] = hosts;
+    if (kind === "pool" || hosts.length !== 1 || !only) return null;
+    return awayNoticeOf(env, only.host, now);
+  };
+
   const slotQueryOf = (c: Context<ClientEnv>) => {
     const query = SlotQuery.safeParse({
       start: c.req.query("start"),
@@ -282,16 +306,18 @@ export function createSchedulingClientRoutes(opts: {
   router.get("/slots", async (c) => {
     // The session's kind first: the wrong one is a 404, whatever the query says.
     const eventTypeRef = eventTypeOf(c);
-    return c.json(
-      slotList(
-        await listEventTypeSlots(c.var.session.env, {
-          ...slotQueryOf(c),
-          eventTypeRef,
-          hostRefs: c.var.session.session.hostId ? [c.var.session.session.hostId] : undefined,
-          attributes: sessionAttributes(c.var.session.session, deps),
-        }),
-      ),
-    );
+    const { env, session } = c.var.session;
+    const hostRefs = session.hostId ? [session.hostId] : undefined;
+    const slots = await listEventTypeSlots(env, {
+      ...slotQueryOf(c),
+      eventTypeRef,
+      hostRefs,
+      attributes: sessionAttributes(session, deps),
+    });
+    return c.json({
+      ...slotList(slots),
+      away: await awayNoticeFor(env, eventTypeRef, session.hostId),
+    });
   });
 
   router.post("/bookings", async (c) => {
@@ -471,6 +497,73 @@ export function createSchedulingClientRoutes(opts: {
       await parsed(c, UpdateCalendarRequest),
     );
     return c.json({ object: "list" as const, data, has_more: false });
+  });
+
+  // A host's own time away. Whose it is comes from the session, so it never needs saying.
+  router.get("/host/out_of_office", async (c) => {
+    const hostId = hostOf(c);
+    const { env } = c.var.session;
+    const page = await listOutOfOffice(
+      env,
+      { hostIds: [hostId], fromMs: (deps.now?.() ?? new Date()).getTime(), limit: 100 },
+      deps,
+    );
+    const settings = await getSettingsRow(env);
+    return c.json({
+      object: "list" as const,
+      data: page.data,
+      has_more: page.hasMore,
+      reasons: [
+        ...OUT_OF_OFFICE_PRESET_REASONS.map((key) => ({
+          key,
+          label: OUT_OF_OFFICE_REASON_LABELS[key],
+        })),
+        ...(settings?.outOfOfficeReasons ?? []),
+      ],
+    });
+  });
+
+  router.post("/host/out_of_office", async (c) => {
+    const hostId = writableHost(c);
+    const [entry] = await createOutOfOffice(
+      c.var.session.env,
+      { ...(await parsed(c, HostOutOfOfficeRequest)), host: hostId },
+      deps,
+      sessionActor(c.var.session.session),
+      "host",
+    );
+    return c.json(entry, 201);
+  });
+
+  router.patch("/host/out_of_office/:id", async (c) => {
+    const hostId = writableHost(c);
+    const entry = await updateOutOfOffice(
+      c.var.session.env,
+      c.req.param("id"),
+      await parsed(c, UpdateOutOfOfficeRequest),
+      deps,
+      sessionActor(c.var.session.session),
+      { hostId },
+    );
+    return c.json(entry);
+  });
+
+  router.delete("/host/out_of_office/:id", async (c) => {
+    const hostId = writableHost(c);
+    await deleteOutOfOffice(c.var.session.env, c.req.param("id"), deps, { hostId });
+    return c.body(null, 204);
+  });
+
+  router.get("/host/out_of_office/:id/conflicts", async (c) => {
+    const hostId = hostOf(c);
+    const page = await listOutOfOfficeConflicts(
+      c.var.session.env,
+      c.req.param("id"),
+      { limit: 200 },
+      deps,
+      { hostId },
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore });
   });
 
   /** A host's own bookings, with attendee names but not their answers. */

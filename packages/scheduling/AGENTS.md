@@ -43,6 +43,28 @@ A pool's `required` hosts need a member: if narrowing leaves none, nobody's offe
 A booker session's `attributes` come from the customer's server and are encrypted, since with an attendee they can say
 what someone needs; the browser never sees them or sends its own.
 
+## Out of office
+
+`out-of-office.ts`: time a host is away, one row per host. `HostInputs.away` keeps them from being offered, and
+`isBookable` checks it before the calendar's verdict, so the reason's honest, and before the session branch, so a
+running session can't be joined; `joinGroupSession` checks it too, since a join with live seats never calls
+`isBookable`. **It never touches an existing booking**, which it only reports as a conflict (`listOutOfOfficeConflicts`,
+and a count-only email to the host unless they did it themselves). Accepted: confirming a hold or approving a request
+that was already there skips the check, and those bookings show up as conflicts.
+
+- A write takes `for no key update` on the host row, and bookers hold `share`, so a booking either commits first and
+  is a conflict, or sees the entry.
+- `reason` can say someone's on medical leave, so it stays out of webhooks, logs, calendars and anything a booker sees
+  (`slotLost` hides that a host is out of office, too). Notes are encrypted; `public_message` is what bookers read,
+  screened, with no links.
+- Deleting is soft: the ledger row that removes its calendar event belongs to the entry, and a hard delete would
+  cascade it away and orphan the event. Notes and the message go at once; the row goes within 30 days. A holiday's
+  deleted row stays as its tombstone.
+- Whole dates resolve to instants once, in the host's zone then: moving zones later doesn't move them, and the dates
+  are only kept for showing back. `all_day` says so on the wire.
+- The calendar block is a ledger row with a third kind of owner (`out_of_office_id`), titled "Out of office", which
+  `flagExternalConflicts` subtracts like any event of ours, and `checkHostEditedEvents` ignores.
+
 ## Slots
 
 `isBookable` is the one definition of "can this be booked": listing and booking both call it, so they can't disagree.
@@ -172,7 +194,7 @@ fixtures generated from Cal.com's `buildDateRanges`; the one intended difference
 outside the requested window. `FakeGoogleCalendarApi` (`./testing`) echoes writes back as busy, as the real one does.
 
 `bun run --cwd apps/worker scheduling:load` (`--hosts 500 --days 14 --concurrency 32 --bookings 500 --existing 20 --busy
-10 --searches 30 --races 20 --big-table-rows 5000`, `--sandbox`, `--capped`) measures search, slots and booking on the
+10 --away 2 --searches 30 --races 20 --big-table-rows 5000`, `--sandbox`, `--capped`) measures search, slots and booking on the
 test database: the package's own functions, in one process, with no API and no provider calls. By default a live
 environment on the Pro plan; `--capped` adds a usage cap, which makes every booking update one quota row. Pool size:
 `DATABASE_POOL_MAX`. It exits 1 if a race didn't have the winners it should or anything failed unexpectedly, and prints

@@ -12,12 +12,16 @@ import type {
   CreateSchedulingHoldParams,
   CreateSchedulingHostParams,
   CreateSchedulingHostSessionParams,
+  CreateSchedulingOutOfOfficeParams,
   CreateSchedulingSeriesParams,
   DeletedSchedulingCalendarConnection,
   DeletedSchedulingHost,
+  DeletedSchedulingOutOfOffice,
   DeletedSchedulingSchedule,
   ListSchedulingBookingsParams,
+  ListSchedulingOutOfOfficeParams,
   ListSchedulingSlotsParams,
+  PutSchedulingOutOfOfficeParams,
   RescheduleSchedulingBookingParams,
   SchedulingAttendeeErasure,
   SchedulingAvailabilitySearchResult,
@@ -27,6 +31,8 @@ import type {
   SchedulingCancelledSeries,
   SchedulingEventType,
   SchedulingHost,
+  SchedulingOutOfOffice,
+  SchedulingOutOfOfficeConflict,
   SchedulingPageParams,
   SchedulingSchedule,
   SchedulingSeries,
@@ -40,6 +46,7 @@ import type {
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
   UpdateSchedulingHostParams,
+  UpdateSchedulingOutOfOfficeParams,
   UpdateSchedulingSettingsParams,
   UpsertSchedulingScheduleParams,
 } from "../types/scheduling.ts";
@@ -665,6 +672,110 @@ export class SchedulingAttendeesResource {
   }
 }
 
+/** `coss.scheduling.outOfOffice`: time a host is away. */
+export class SchedulingOutOfOfficeResource {
+  readonly #http: HttpClient;
+
+  /** @internal Use `new Coss().scheduling.outOfOffice`. */
+  constructor(http: HttpClient) {
+    this.#http = http;
+  }
+
+  /**
+   * Marks one host, a list or everyone matching some attributes as away. An entry per host comes
+   * back. Existing bookings stay as they are. Not retried: pass `external_id` and use `put` to
+   * sync safely.
+   */
+  create(
+    params: CreateSchedulingOutOfOfficeParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingOutOfOffice>>> {
+    return this.#http.request<List<SchedulingOutOfOffice>>({
+      method: "POST",
+      path: "/v1/scheduling/out_of_office",
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
+  /** Lists entries, newest first. Pass the last `id` as `after` while `has_more` is true. */
+  list(
+    params: ListSchedulingOutOfOfficeParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingOutOfOffice>>> {
+    return this.#http.request<List<SchedulingOutOfOffice>>({
+      method: "GET",
+      path: "/v1/scheduling/out_of_office",
+      query: listQuery(params),
+      signal: options?.signal,
+    });
+  }
+
+  /** Retrieves an entry. */
+  get(id: string, options?: ReadOptions): Promise<CossResult<SchedulingOutOfOffice>> {
+    return this.#http.request<SchedulingOutOfOffice>({
+      method: "GET",
+      path: `/v1/scheduling/out_of_office/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Changes what's given. An entry stays with its host. */
+  update(
+    id: string,
+    params: UpdateSchedulingOutOfOfficeParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingOutOfOffice>> {
+    return this.#http.request<SchedulingOutOfOffice>({
+      method: "PATCH",
+      path: `/v1/scheduling/out_of_office/${part(id)}`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /**
+   * Creates or replaces the entry with your own id. For syncing from a system of record: send what
+   * it says, as often as you like, and there's one entry for it.
+   */
+  put(
+    externalId: string,
+    params: PutSchedulingOutOfOfficeParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingOutOfOffice>> {
+    return this.#http.request<SchedulingOutOfOffice>({
+      method: "PUT",
+      path: `/v1/scheduling/out_of_office/by_external_id/${part(externalId)}`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Deletes an entry: the host can be booked then again, and any calendar event for it goes. */
+  remove(id: string, options?: ReadOptions): Promise<CossResult<DeletedSchedulingOutOfOffice>> {
+    return this.#http.request<DeletedSchedulingOutOfOffice>({
+      method: "DELETE",
+      path: `/v1/scheduling/out_of_office/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Live bookings of the host that fall in the entry, soonest first. Entries never change them. */
+  conflicts(
+    id: string,
+    params: { limit?: number } = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingOutOfOfficeConflict>>> {
+    return this.#http.request<List<SchedulingOutOfOfficeConflict>>({
+      method: "GET",
+      path: `/v1/scheduling/out_of_office/${part(id)}/conflicts`,
+      query: listQuery(params),
+      signal: options?.signal,
+    });
+  }
+}
+
 /** `coss.scheduling.settings`. */
 export class SchedulingSettingsResource {
   readonly #http: HttpClient;
@@ -710,11 +821,13 @@ export class SchedulingResource {
   readonly calendars: SchedulingCalendarsResource;
   readonly sessions: SchedulingSessionsResource;
   readonly attendees: SchedulingAttendeesResource;
+  readonly outOfOffice: SchedulingOutOfOfficeResource;
   readonly settings: SchedulingSettingsResource;
 
   /** @internal Use `new Coss().scheduling`. */
   constructor(http: HttpClient) {
     this.hosts = new SchedulingHostsResource(http);
+    this.outOfOffice = new SchedulingOutOfOfficeResource(http);
     this.schedules = new SchedulingSchedulesResource(http);
     this.eventTypes = new SchedulingEventTypesResource(http);
     this.slots = new SchedulingSlotsResource(http);

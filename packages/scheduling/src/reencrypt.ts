@@ -4,13 +4,14 @@ import type { SecretsKeyRing } from "@coss/webhooks";
 import { decryptSecret, encryptSecret, isEncryptedWithPrimary } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, or } from "drizzle-orm";
 
-const { schedulingAttendee, schedulingBooking, schedulingSession } = schema;
+const { schedulingAttendee, schedulingBooking, schedulingOutOfOffice, schedulingSession } = schema;
 
 /** A test compares this with the database's columns. */
 export const SCHEDULING_DATA_KEY_COLUMNS = [
   "scheduling_attendee.encrypted_contact",
   "scheduling_attendee.encrypted_answers",
   "scheduling_booking.encrypted_attributes",
+  "scheduling_out_of_office.encrypted_notes",
   "scheduling_session.encrypted_attendee",
   "scheduling_session.encrypted_attributes",
 ] as const;
@@ -219,6 +220,65 @@ async function reencryptBookings(opts: Options, result: SchedulingReencryptResul
   }
 }
 
+async function reencryptOutOfOffice(
+  opts: Options,
+  result: SchedulingReencryptResult,
+): Promise<void> {
+  const batchSize = opts.batchSize ?? 200;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingOutOfOffice.id,
+        organizationId: schedulingOutOfOffice.organizationId,
+        notes: schedulingOutOfOffice.encryptedNotes,
+      })
+      .from(schedulingOutOfOffice)
+      .where(
+        and(
+          gt(schedulingOutOfOffice.id, after),
+          isNotNull(schedulingOutOfOffice.encryptedNotes),
+          opts.scope
+            ? inArray(schedulingOutOfOffice.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingOutOfOffice.id))
+      .limit(batchSize);
+    for (const row of rows) {
+      result.checked++;
+      const next = rewritten(
+        row,
+        [["scheduling_out_of_office.encrypted_notes", row.notes]],
+        opts,
+        result,
+      );
+      if (!next) continue;
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      await opts.beforeWrite?.(row.id);
+      const [updated] = await db
+        .update(schedulingOutOfOffice)
+        .set({ encryptedNotes: next.get("scheduling_out_of_office.encrypted_notes") ?? null })
+        .where(
+          and(
+            eq(schedulingOutOfOffice.id, row.id),
+            eq(schedulingOutOfOffice.organizationId, row.organizationId),
+            eq(schedulingOutOfOffice.encryptedNotes, row.notes as string),
+          ),
+        )
+        .returning({ id: schedulingOutOfOffice.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < batchSize) break;
+    after = last.id;
+  }
+}
+
 // Expired sessions count too: they still hold someone's details.
 async function reencryptSessions(opts: Options, result: SchedulingReencryptResult): Promise<void> {
   const batchSize = opts.batchSize ?? 200;
@@ -302,6 +362,7 @@ export async function reencryptSchedulingData(opts: Options): Promise<Scheduling
   };
   await reencryptAttendees(opts, result);
   await reencryptBookings(opts, result);
+  await reencryptOutOfOffice(opts, result);
   await reencryptSessions(opts, result);
   return result;
 }

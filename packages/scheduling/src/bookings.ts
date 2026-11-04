@@ -67,6 +67,7 @@ import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { confirmedSeats, withSessionLocation } from "./group-sessions.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
 import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
+import { hostsAwayDuring } from "./out-of-office.ts";
 import {
   type AttendeeInputOutput,
   type BookingObjectOutput,
@@ -270,10 +271,13 @@ function checkStart(startMs: number): void {
   }
 }
 
+// Whoever's booking doesn't get to read that someone's out of office, least of all an attendee.
 const slotLost = (reason?: string) =>
   new SchedulingError(
     "slot_unavailable",
-    reason ? `That time isn't available (${reason}).` : "That time isn't available.",
+    reason && reason !== "out_of_office"
+      ? `That time isn't available (${reason}).`
+      : "That time isn't available.",
     { param: "start" },
   );
 
@@ -985,6 +989,10 @@ async function joinGroupSession(
     );
   const liveSeats = await liveSeatCount(tx, session);
   if (liveSeats >= session.capacity) throw new LostSlot("session_full");
+  // A running session isn't re-checked below, and its host's still away if they went after it began.
+  const endMs = startMs + rule.durationMinutes * MINUTE_MS;
+  const away = await hostsAwayDuring(tx, eventType, [host.id], startMs, endMs);
+  if (away.has(host.id)) throw new LostSlot("out_of_office");
   await settleSessionLocation(tx, session, liveSeats, location);
   const ttlSeconds = plan.ttlSeconds;
   const sessionClaim = { organizationId: eventType.organizationId, groupSessionId: session.id };
@@ -1311,7 +1319,19 @@ async function withLiveCheck(
   deps: SchedulingDeps,
 ): Promise<Candidates> {
   if (!deps.calendars) return candidates;
-  const top = ranked(candidates, seed).slice(0, LIVE_CHECK_CANDIDATES);
+  // Only ones who could take it: this makes a few paid requests, so none go on someone who's away.
+  const away = await hostsAwayDuring(
+    db,
+    env,
+    candidates.members.map((entry) => entry.host.id),
+    plan.startMs,
+    plan.startMs + plan.rule.durationMinutes * MINUTE_MS,
+  );
+  const present = {
+    required: candidates.required,
+    members: candidates.members.filter((entry) => !away.has(entry.host.id)),
+  };
+  const top = ranked(present, seed).slice(0, LIVE_CHECK_CANDIDATES);
   const hostIds = [
     ...candidates.required.map((entry) => entry.host.id),
     ...top.map((host) => host.id),

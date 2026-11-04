@@ -2,6 +2,8 @@
  * Scheduling over the public API (`/v1/scheduling/*`): hosts, their schedules, event types, slots,
  * bookings, holds and series. Tenancy comes only from the API key.
  */
+
+import { db } from "@coss/db";
 import {
   approveBooking,
   type BookingActor,
@@ -18,17 +20,20 @@ import {
   createHost,
   createHostSession,
   createManageSession,
+  createOutOfOffice,
   createSchedule,
   createSeries,
   declineBooking,
   deleteHold,
   deleteHost,
+  deleteOutOfOffice,
   deleteSchedule,
   disconnectCalendar,
   eraseAttendee,
   getBooking,
   getEventType,
   getHost,
+  getOutOfOffice,
   getSchedule,
   getSettings,
   getSettingsRow,
@@ -37,10 +42,14 @@ import {
   listEventTypeSlots,
   listEventTypes,
   listHosts,
+  listOutOfOffice,
+  listOutOfOfficeConflicts,
   listSchedules,
   markNoShow,
   previewSeries,
+  putOutOfOffice,
   rescheduleBooking,
+  resolveHost,
   type SchedulingDeps,
   SchedulingError,
   searchAvailability,
@@ -51,6 +60,7 @@ import {
   updateCalendar,
   updateEventType,
   updateHost,
+  updateOutOfOffice,
   updateSchedule,
   updateSettings,
 } from "@coss/scheduling";
@@ -66,14 +76,17 @@ import {
   CancelledSeries,
   CancelSeriesRequest,
   ConfirmHoldRequest,
+  ConflictsQuery,
   CreateBookingRequest,
   CreateCalendarConnectionRequest,
   CreateEventTypeRequest,
   CreateHoldRequest,
   CreateHostRequest,
+  CreateOutOfOfficeRequest,
   CreateSeriesRequest,
   DeletedCalendarConnection,
   DeletedHost,
+  DeletedOutOfOffice,
   DeletedSchedule,
   ErasedAttendee,
   EventTypeList,
@@ -81,7 +94,12 @@ import {
   HostList,
   HostObject,
   ListBookingsQuery,
+  ListOutOfOfficeQuery,
+  OutOfOfficeConflictList,
+  OutOfOfficeList,
+  OutOfOfficeObject,
   PageQuery,
+  PutOutOfOfficeRequest,
   RescheduleBookingRequest,
   ScheduleList,
   ScheduleObject,
@@ -95,6 +113,7 @@ import {
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
   UpdateHostRequest,
+  UpdateOutOfOfficeRequest,
   UpdateSettingsRequest,
   UpsertScheduleRequest,
 } from "@coss/scheduling/schemas";
@@ -118,6 +137,7 @@ const TAG_BOOKINGS = "Scheduling bookings";
 const TAG_SERIES = "Scheduling series";
 const TAG_SETTINGS = "Scheduling settings";
 const TAG_CALENDARS = "Scheduling calendars";
+const TAG_OUT_OF_OFFICE = "Scheduling out of office";
 
 const read = () => [requireApiKey({ scheduling: ["read"] }), rateLimit("api.read")];
 const writing = (
@@ -157,6 +177,12 @@ const CalendarParams = HostParams.extend({
   calendar_id: param("The calendar's id.", "cal_01kd2m9a0b1c2d3e4f5g6h7j8m"),
 });
 const AttendeeParams = z.object({ uid: param("Your id for the attendee.", "patient_77") });
+const OutOfOfficeParams = z.object({
+  id: param("The entry's id.", "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m"),
+});
+const ExternalOutOfOfficeParams = z.object({
+  external_id: param("Your own id for the entry.", "hr_leave_4471"),
+});
 
 const bodyErrors = {
   400: errorDoc("The body is not valid JSON (`invalid_json`)."),
@@ -1068,6 +1094,140 @@ export const createManageSessionRoute = createRoute({
   },
 });
 
+export const createOutOfOfficeRoute = createRoute({
+  method: "post",
+  path: "/scheduling/out_of_office",
+  operationId: "createSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "Create out of office entries",
+  description:
+    "Marks one host, a list of hosts or everyone matching some attributes as away, for part of a " +
+    "day or for whole dates. They aren't offered during it. Existing bookings stay as they are: " +
+    "list them with the entry's conflicts.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("create", "POST /v1/scheduling/out_of_office"),
+  request: {
+    body: { required: true, content: { "application/json": { schema: CreateOutOfOfficeRequest } } },
+  },
+  responses: {
+    201: jsonDoc("An entry per host.", OutOfOfficeList),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const listOutOfOfficeRoute = createRoute({
+  method: "get",
+  path: "/scheduling/out_of_office",
+  operationId: "listSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "List out of office entries",
+  description: "The environment's entries, newest first.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { query: ListOutOfOfficeQuery },
+  responses: {
+    200: jsonDoc("A page of entries.", OutOfOfficeList),
+    ...commonErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const getOutOfOfficeRoute = createRoute({
+  method: "get",
+  path: "/scheduling/out_of_office/{id}",
+  operationId: "getSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "Retrieve an out of office entry",
+  description: "One entry.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: OutOfOfficeParams },
+  responses: { 200: jsonDoc("The entry.", OutOfOfficeObject), ...commonErrors, 404: notFound },
+});
+
+export const updateOutOfOfficeRoute = createRoute({
+  method: "patch",
+  path: "/scheduling/out_of_office/{id}",
+  operationId: "updateSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "Update an out of office entry",
+  description: "Changes what's given. An entry stays with its host.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "PATCH /v1/scheduling/out_of_office/{id}"),
+  request: {
+    params: OutOfOfficeParams,
+    body: { required: true, content: { "application/json": { schema: UpdateOutOfOfficeRequest } } },
+  },
+  responses: {
+    200: jsonDoc("The entry.", OutOfOfficeObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const putOutOfOfficeRoute = createRoute({
+  method: "put",
+  path: "/scheduling/out_of_office/by_external_id/{external_id}",
+  operationId: "putSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "Create or replace an entry by your own id",
+  description:
+    "For syncing from a system of record such as an HR tool: send what it says, as often as you " +
+    "like, and there's one entry for it. Give every field you want to keep.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "PUT /v1/scheduling/out_of_office/by_external_id/{external_id}"),
+  request: {
+    params: ExternalOutOfOfficeParams,
+    body: { required: true, content: { "application/json": { schema: PutOutOfOfficeRequest } } },
+  },
+  responses: {
+    200: jsonDoc("The entry, replaced.", OutOfOfficeObject),
+    201: jsonDoc("The entry, new.", OutOfOfficeObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const deleteOutOfOfficeRoute = createRoute({
+  method: "delete",
+  path: "/scheduling/out_of_office/{id}",
+  operationId: "deleteSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "Delete an out of office entry",
+  description: "The host can be booked in that time again, and any calendar event for it goes.",
+  security: [{ bearerAuth: [] }],
+  middleware: acting("delete"),
+  request: { params: OutOfOfficeParams },
+  responses: { 200: jsonDoc("Deleted.", DeletedOutOfOffice), ...commonErrors, 404: notFound },
+});
+
+export const listOutOfOfficeConflictsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/out_of_office/{id}/conflicts",
+  operationId: "listSchedulingOutOfOfficeConflicts",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "List an entry's conflicts",
+  description:
+    "Live bookings of the host that fall in the entry, soonest first. Entries never change them.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: OutOfOfficeParams, query: ConflictsQuery },
+  responses: {
+    200: jsonDoc("The bookings.", OutOfOfficeConflictList),
+    ...commonErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
 export const getSettingsRoute = createRoute({
   method: "get",
   path: "/scheduling/settings",
@@ -1203,6 +1363,94 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       target: { type: "scheduling_host", id },
     });
     return c.json({ object: "scheduling.host" as const, id, deleted: true as const }, 200);
+  });
+
+  router.openapi(createOutOfOfficeRoute, async (c) => {
+    const data = await createOutOfOffice(
+      c.var.auth,
+      c.req.valid("json"),
+      deps,
+      actorOf(c.var.auth),
+      "api",
+    );
+    for (const entry of data) {
+      await recordApiAudit(c, {
+        action: "scheduling_out_of_office.created",
+        target: { type: "scheduling_out_of_office", id: entry.id },
+      });
+    }
+    return c.json({ object: "list" as const, data, has_more: false }, 201);
+  });
+
+  router.openapi(listOutOfOfficeRoute, async (c) => {
+    const query = c.req.valid("query");
+    const host = query.host ? await resolveHost(db, c.var.auth, query.host) : null;
+    const page = await listOutOfOffice(
+      c.var.auth,
+      {
+        hostIds: host ? [host.id] : undefined,
+        fromMs: query.start_after ? instant(query.start_after, "start_after") : undefined,
+        toMs: query.start_before ? instant(query.start_before, "start_before") : undefined,
+        group: query.group,
+        limit: query.limit,
+        after: query.after,
+      },
+      deps,
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
+
+  router.openapi(getOutOfOfficeRoute, async (c) =>
+    c.json(await getOutOfOffice(c.var.auth, c.req.valid("param").id, deps), 200),
+  );
+
+  router.openapi(updateOutOfOfficeRoute, async (c) => {
+    const entry = await updateOutOfOffice(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      deps,
+      actorOf(c.var.auth),
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_out_of_office.updated",
+      target: { type: "scheduling_out_of_office", id: entry.id },
+    });
+    return c.json(entry, 200);
+  });
+
+  router.openapi(putOutOfOfficeRoute, async (c) => {
+    const { entry, created } = await putOutOfOffice(
+      c.var.auth,
+      c.req.valid("param").external_id,
+      c.req.valid("json"),
+      deps,
+      actorOf(c.var.auth),
+    );
+    await recordApiAudit(c, {
+      action: created ? "scheduling_out_of_office.created" : "scheduling_out_of_office.updated",
+      target: { type: "scheduling_out_of_office", id: entry.id },
+    });
+    return created ? c.json(entry, 201) : c.json(entry, 200);
+  });
+
+  router.openapi(deleteOutOfOfficeRoute, async (c) => {
+    const { id } = await deleteOutOfOffice(c.var.auth, c.req.valid("param").id, deps);
+    await recordApiAudit(c, {
+      action: "scheduling_out_of_office.deleted",
+      target: { type: "scheduling_out_of_office", id },
+    });
+    return c.json({ object: "scheduling.out_of_office" as const, id, deleted: true as const }, 200);
+  });
+
+  router.openapi(listOutOfOfficeConflictsRoute, async (c) => {
+    const page = await listOutOfOfficeConflicts(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("query"),
+      deps,
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
   });
 
   router.openapi(createScheduleRoute, async (c) =>

@@ -226,14 +226,20 @@ import type {
   CreateEventTypeRequest,
   CreateHoldRequest,
   CreateHostRequest,
+  CreateOutOfOfficeRequest,
   CreateSeriesRequest,
   ErasedAttendee,
   EventTypeObject,
   HostObject,
+  ListOutOfOfficeQuery,
+  OutOfOfficeConflict,
+  OutOfOfficeObject,
+  PutOutOfOfficeRequest,
   RescheduleBookingRequest,
   ScheduleObject,
   SchedulingBookingWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOutOfOfficeWebhookEvent,
   SeriesPreview,
   SeriesResult,
   SetSimulatedBusyRequest,
@@ -244,6 +250,7 @@ import type {
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
   UpdateHostRequest,
+  UpdateOutOfOfficeRequest,
   UpdateSettingsRequest,
   UpsertScheduleRequest,
 } from "@coss/scheduling/schemas";
@@ -306,6 +313,7 @@ import type {
   CreateSchedulingEventTypeParams,
   CreateSchedulingHoldParams,
   CreateSchedulingHostParams,
+  CreateSchedulingOutOfOfficeParams,
   CreateSchedulingSeriesParams,
   CreateSegmentParams,
   CreateSubaccountParams,
@@ -338,6 +346,7 @@ import type {
   ListReceivedEmailsParams,
   ListRiskAssessmentsParams,
   ListRiskListEntriesParams,
+  ListSchedulingOutOfOfficeParams,
   ListSchedulingSlotsParams,
   ListSubaccountsParams,
   ListSuppressionsParams,
@@ -351,6 +360,7 @@ import type {
   LogDrainSource,
   PollWebhookListenerParams,
   PublishEmailTemplateParams,
+  PutSchedulingOutOfOfficeParams,
   RecoverWebhookEndpointParams,
   RenderEmailTemplateParams,
   RescheduleEmailParams,
@@ -365,6 +375,8 @@ import type {
   SchedulingCancelledSeries,
   SchedulingEventType,
   SchedulingHost,
+  SchedulingOutOfOffice,
+  SchedulingOutOfOfficeConflict,
   SchedulingSchedule,
   SchedulingSeries,
   SchedulingSeriesPreview,
@@ -498,6 +510,7 @@ import type {
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
   UpdateSchedulingHostParams,
+  UpdateSchedulingOutOfOfficeParams,
   UpdateSchedulingSettingsParams,
   UpdateSegmentParams,
   UpdateStorageSettingsParams,
@@ -757,7 +770,8 @@ export type Contract = [
       | z.output<typeof VerificationWebhookEvent>
       | z.output<typeof FormSubmissionWebhookEvent>
       | z.output<typeof SchedulingBookingWebhookEvent>
-      | z.output<typeof SchedulingCalendarWebhookEvent>,
+      | z.output<typeof SchedulingCalendarWebhookEvent>
+      | z.output<typeof SchedulingOutOfOfficeWebhookEvent>,
       WebhookEvent
     >
   >,
@@ -1058,6 +1072,21 @@ export type SubaccountContract = [
   Assert<MutuallyAssignable<z.input<typeof CreateHostRequest>, CreateSchedulingHostParams>>,
   Assert<MutuallyAssignable<z.input<typeof UpdateHostRequest>, UpdateSchedulingHostParams>>,
   Assert<MutuallyAssignable<z.output<typeof HostObject>, SchedulingHost>>,
+  Assert<
+    MutuallyAssignable<z.input<typeof CreateOutOfOfficeRequest>, CreateSchedulingOutOfOfficeParams>
+  >,
+  Assert<MutuallyAssignable<z.input<typeof PutOutOfOfficeRequest>, PutSchedulingOutOfOfficeParams>>,
+  Assert<
+    MutuallyAssignable<z.input<typeof UpdateOutOfOfficeRequest>, UpdateSchedulingOutOfOfficeParams>
+  >,
+  Assert<MutuallyAssignable<z.output<typeof OutOfOfficeObject>, SchedulingOutOfOffice>>,
+  Assert<MutuallyAssignable<z.output<typeof OutOfOfficeConflict>, SchedulingOutOfOfficeConflict>>,
+  Assert<
+    MutuallyAssignable<
+      Omit<z.input<typeof ListOutOfOfficeQuery>, "limit">,
+      Omit<ListSchedulingOutOfOfficeParams, "limit">
+    >
+  >,
   Assert<MutuallyAssignable<z.input<typeof UpsertScheduleRequest>, UpsertSchedulingScheduleParams>>,
   Assert<MutuallyAssignable<z.output<typeof ScheduleObject>, SchedulingSchedule>>,
   Assert<

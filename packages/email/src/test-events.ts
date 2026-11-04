@@ -297,6 +297,14 @@ export function sampleWebhookEvent(type: TestWebhookEventType, now: Date): Store
       connection_id: newId(ID_PREFIXES.schedulingCalendarConnection),
       occurred_at: at,
     };
+  } else if (type.startsWith("scheduling.out_of_office.")) {
+    data = {
+      ...base,
+      out_of_office_id: newId(ID_PREFIXES.schedulingOutOfOffice),
+      host_id: newId(ID_PREFIXES.schedulingHost),
+      group: null,
+      occurred_at: at,
+    };
   } else if (type.startsWith("form.")) {
     const flagged = type === "form.submission.flagged";
     data = {

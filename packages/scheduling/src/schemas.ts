@@ -24,9 +24,18 @@ export const SCHEDULING_CALENDAR_EVENT_TYPES = [
   "scheduling.calendar.needs_reauth",
   "scheduling.calendar.disconnected",
 ] as const;
+export const SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES = [
+  "scheduling.out_of_office.created",
+  "scheduling.out_of_office.updated",
+  "scheduling.out_of_office.deleted",
+  "scheduling.out_of_office.started",
+  "scheduling.out_of_office.ended",
+] as const;
+export type OutOfOfficeWebhookEventType = (typeof SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES)[number];
 export const SCHEDULING_WEBHOOK_EVENT_TYPES = [
   ...SCHEDULING_BOOKING_EVENT_TYPES,
   ...SCHEDULING_CALENDAR_EVENT_TYPES,
+  ...SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES,
 ] as const;
 export type SchedulingWebhookEventType = (typeof SCHEDULING_WEBHOOK_EVENT_TYPES)[number];
 
@@ -169,6 +178,213 @@ export const DeletedHost = deleted(
 export const PageQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   after: z.string().optional().meta({ description: "The last id of the previous page." }),
+});
+
+export const MAX_OUT_OF_OFFICE_DAYS = 731;
+export const MAX_OUT_OF_OFFICE_HOSTS = 500;
+
+export const OUT_OF_OFFICE_PRESET_REASONS = [
+  "unspecified",
+  "vacation",
+  "travel",
+  "sick",
+  "public_holiday",
+  "parental_leave",
+  "training",
+  "other",
+] as const;
+
+export const OUT_OF_OFFICE_REASON_LABELS: Record<
+  (typeof OUT_OF_OFFICE_PRESET_REASONS)[number],
+  string
+> = {
+  unspecified: "No reason given",
+  vacation: "Vacation",
+  travel: "Travel",
+  sick: "Sick",
+  public_holiday: "Public holiday",
+  parental_leave: "Parental leave",
+  training: "Training",
+  other: "Other",
+};
+
+const OutOfOfficeReasonKey = z
+  .string()
+  .regex(/^[a-z][a-z0-9_]{0,63}$/, "Use lower case letters, digits and underscores.")
+  .meta({
+    description:
+      "One of `unspecified`, `vacation`, `travel`, `sick`, `public_holiday`, `parental_leave`, `training` and `other`, or a key from the settings' `out_of_office_reasons`. Only people who manage this host see it: never bookers, webhooks or calendars.",
+    examples: ["vacation"],
+  });
+
+/** Either instants, for part of a day, or whole dates, ending with `end_date` itself. */
+const outOfOfficeWhen = {
+  start: Instant.optional(),
+  end: Instant.optional(),
+  start_date: LocalDate.optional().meta({
+    description: "The first whole day away. Use instead of `start` and `end`.",
+    examples: ["2027-08-02"],
+  }),
+  end_date: LocalDate.optional().meta({
+    description: "The last whole day away, which is included.",
+    examples: ["2027-08-13"],
+  }),
+  time_zone: TimeZone.optional().meta({
+    description: "What the dates mean in. Default: the host's zone when this is made.",
+  }),
+};
+
+const outOfOfficeDetails = {
+  reason: OutOfOfficeReasonKey.optional(),
+  notes: z.string().max(2000).optional().meta({
+    description: "For people who manage this host. Encrypted, and never shown to a booker.",
+  }),
+  public_message: z
+    .string()
+    .max(300)
+    .optional()
+    .meta({
+      description: "Shown to bookers while this host is away. Can't contain a link.",
+      examples: ["Back on the 16th. Priya is seeing my patients until then."],
+    }),
+  show_on_calendar: z.boolean().optional().meta({
+    description: 'Put a private "Out of office" event on the host\'s calendar. Default: true.',
+  }),
+};
+
+export const CreateOutOfOfficeRequest = z
+  .strictObject({
+    host: z.string().optional().meta({ description: "One host, by id or uid." }),
+    hosts: z.array(z.string()).max(MAX_OUT_OF_OFFICE_HOSTS).optional().meta({
+      description: "Several hosts, by id or uid. Each gets an entry of their own.",
+    }),
+    host_filter: Attributes.optional().meta({
+      description:
+        "Every active host matching these attributes right now. A host added later isn't covered.",
+    }),
+    ...outOfOfficeWhen,
+    ...outOfOfficeDetails,
+    external_id: z.string().min(1).max(255).optional().meta({
+      description: "Your own id for this entry, unique in the environment. Needs one host.",
+    }),
+  })
+  .meta({
+    id: "CreateSchedulingOutOfOfficeRequest",
+    examples: [
+      {
+        host: "doctor_482",
+        start_date: "2027-08-02",
+        end_date: "2027-08-13",
+        reason: "vacation",
+        public_message: "Back on the 16th.",
+      },
+    ],
+  });
+export type CreateOutOfOfficeRequestOutput = z.output<typeof CreateOutOfOfficeRequest>;
+
+/** What a host says about their own time: whose it is comes from their session. */
+export const HostOutOfOfficeRequest = z
+  .strictObject({ ...outOfOfficeWhen, ...outOfOfficeDetails })
+  .meta({ id: "SchedulingHostOutOfOfficeRequest" });
+
+export const PutOutOfOfficeRequest = z
+  .strictObject({
+    host: z.string().meta({ description: "The host, by id or uid." }),
+    ...outOfOfficeWhen,
+    ...outOfOfficeDetails,
+  })
+  .meta({
+    id: "PutSchedulingOutOfOfficeRequest",
+    examples: [
+      {
+        host: "doctor_482",
+        start_date: "2027-08-02",
+        end_date: "2027-08-13",
+        reason: "vacation",
+      },
+    ],
+  });
+export type PutOutOfOfficeRequestOutput = z.output<typeof PutOutOfOfficeRequest>;
+
+export const UpdateOutOfOfficeRequest = z
+  .strictObject({
+    ...outOfOfficeWhen,
+    reason: OutOfOfficeReasonKey.optional(),
+    notes: z.string().max(2000).nullable().optional(),
+    public_message: z.string().max(300).nullable().optional(),
+    show_on_calendar: z.boolean().optional(),
+  })
+  .meta({
+    id: "UpdateSchedulingOutOfOfficeRequest",
+    examples: [{ end_date: "2027-08-20" }],
+  });
+export type UpdateOutOfOfficeRequestOutput = z.output<typeof UpdateOutOfOfficeRequest>;
+
+const OUT_OF_OFFICE_EXAMPLE = {
+  object: "scheduling.out_of_office" as const,
+  id: "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-08-02T04:00:00.000Z",
+  end: "2027-08-14T04:00:00.000Z",
+  all_day: { start_date: "2027-08-02", end_date: "2027-08-13", time_zone: "America/New_York" },
+  reason: "vacation",
+  notes: null,
+  public_message: "Back on the 16th.",
+  show_on_calendar: true,
+  external_id: null,
+  group: null,
+  source: "api" as const,
+  created_at: "2027-01-01T10:00:00.000Z",
+  updated_at: "2027-01-01T10:00:00.000Z",
+};
+
+export const OutOfOfficeObject = z
+  .object({
+    object: z.literal("scheduling.out_of_office"),
+    id: z.string(),
+    host: z.string(),
+    start: z.string(),
+    end: z.string(),
+    all_day: z
+      .object({ start_date: z.string(), end_date: z.string(), time_zone: z.string() })
+      .nullable()
+      .meta({ description: "How it was given, when it was as whole dates." }),
+    reason: z.string(),
+    notes: z.string().nullable(),
+    public_message: z.string().nullable(),
+    show_on_calendar: z.boolean(),
+    external_id: z.string().nullable(),
+    group: z.string().nullable().meta({
+      description: "Shared by the entries one request made for several hosts.",
+    }),
+    source: z.enum(["api", "host", "manager", "dashboard", "holiday"]),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .meta({ id: "SchedulingOutOfOffice", examples: [OUT_OF_OFFICE_EXAMPLE] });
+export type OutOfOfficeObjectOutput = z.output<typeof OutOfOfficeObject>;
+
+export const OutOfOfficeList = listOf(
+  OutOfOfficeObject,
+  "SchedulingOutOfOfficeList",
+  OUT_OF_OFFICE_EXAMPLE,
+);
+
+export const DeletedOutOfOffice = deleted(
+  "scheduling.out_of_office",
+  "DeletedSchedulingOutOfOffice",
+  "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m",
+);
+
+export const ListOutOfOfficeQuery = PageQuery.extend({
+  host: z.string().optional().meta({ description: "One host's entries, by id or uid." }),
+  start_after: Instant.optional().meta({ description: "Entries ending after this." }),
+  start_before: Instant.optional().meta({ description: "Entries starting before this." }),
+  group: z.string().optional().meta({ description: "The entries one request made." }),
+});
+
+export const ConflictsQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(100),
 });
 
 const WeeklyRule = z
@@ -745,6 +961,9 @@ export const SettingsObject = z
     sms_from: z.string().nullable().meta({
       description: "Your approved number for SMS reminders. Without one, no SMS is sent.",
     }),
+    out_of_office_reasons: z.array(z.object({ key: z.string(), label: z.string() })).meta({
+      description: "Reasons of your own for time away, on top of the preset ones.",
+    }),
     calendar_failure_mode: z.enum(["hide", "last_known"]).meta({
       description:
         "When a host's calendar can't be read: stop offering them, or keep offering their last known times and flag those bookings as unverified.",
@@ -772,6 +991,7 @@ export const SettingsObject = z
         logo: null,
         email_from: "appointments@example.com",
         sms_from: null,
+        out_of_office_reasons: [],
         calendar_failure_mode: "hide",
         notifications: { reminder: { sms_attendee: true } },
       },
@@ -804,6 +1024,19 @@ export const UpdateSettingsRequest = z
       .nullable()
       .optional(),
     calendar_failure_mode: z.enum(["hide", "last_known"]).optional(),
+    out_of_office_reasons: z
+      .array(
+        z.strictObject({
+          key: OutOfOfficeReasonKey,
+          label: z.string().min(1).max(60),
+        }),
+      )
+      .max(50)
+      .nullable()
+      .optional()
+      .meta({
+        description: "Reasons of your own, on top of the preset ones. Hosts and managers see them.",
+      }),
     notifications: z
       .record(
         z.string().max(64),
@@ -905,6 +1138,39 @@ export type BookingObjectOutput = z.output<typeof BookingObject>;
 
 export const BookingList = listOf(BookingObject, "SchedulingBookingList", BOOKING_EXAMPLE);
 
+const OUT_OF_OFFICE_CONFLICT_EXAMPLE = {
+  object: "scheduling.out_of_office_conflict" as const,
+  booking: "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  title: "Consultation",
+  status: "confirmed" as const,
+  start: "2027-08-03T15:00:00.000Z",
+  end: "2027-08-03T15:30:00.000Z",
+  series: null,
+  group_session: null,
+};
+
+export const OutOfOfficeConflict = z
+  .object({
+    object: z.literal("scheduling.out_of_office_conflict"),
+    booking: z.string(),
+    event_type: z.string(),
+    title: z.string(),
+    status: z.enum(BOOKING_STATUSES),
+    start: z.string(),
+    end: z.string(),
+    series: z.string().nullable(),
+    group_session: z.string().nullable(),
+  })
+  .meta({ id: "SchedulingOutOfOfficeConflict", examples: [OUT_OF_OFFICE_CONFLICT_EXAMPLE] });
+export type OutOfOfficeConflictOutput = z.output<typeof OutOfOfficeConflict>;
+
+export const OutOfOfficeConflictList = listOf(
+  OutOfOfficeConflict,
+  "SchedulingOutOfOfficeConflictList",
+  OUT_OF_OFFICE_CONFLICT_EXAMPLE,
+);
+
 export const ListBookingsQuery = PageQuery.extend({
   host: z.string().optional(),
   event_type: z.string().optional(),
@@ -974,6 +1240,40 @@ export type StoredSchedulingCalendarWebhookEvent = Omit<
   z.output<typeof SchedulingCalendarWebhookEvent>,
   "api_version"
 >;
+
+export const SchedulingOutOfOfficeWebhookEvent = z
+  .object({
+    ...webhookEnvelope,
+    type: z.enum(SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES),
+    data: z.object({
+      out_of_office_id: z.string(),
+      host_id: z.string(),
+      start: z.string(),
+      end: z.string(),
+      group: z.string().nullable(),
+      occurred_at: z.string(),
+    }),
+  })
+  .meta({
+    id: "SchedulingOutOfOfficeWebhookEvent",
+    examples: [
+      {
+        id: "evt_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        object: "event",
+        type: "scheduling.out_of_office.created",
+        api_version: LATEST_API_VERSION,
+        created_at: "2027-01-01T10:00:00.000Z",
+        data: {
+          out_of_office_id: "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m",
+          host_id: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+          start: "2027-08-02T04:00:00.000Z",
+          end: "2027-08-14T04:00:00.000Z",
+          group: null,
+          occurred_at: "2027-01-01T10:00:00.000Z",
+        },
+      },
+    ],
+  });
 
 export const SchedulingCalendarWebhookEvent = z
   .object({

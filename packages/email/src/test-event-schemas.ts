@@ -11,6 +11,7 @@ import {
   SCHEDULING_WEBHOOK_EVENT_TYPES,
   SchedulingBookingWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOutOfOfficeWebhookEvent,
 } from "@coss/scheduling/schemas";
 import { SIGN_WEBHOOK_EVENT_TYPES, SignRequestWebhookEvent } from "@coss/sign/schemas";
 import {
@@ -74,6 +75,7 @@ export function webhookEventSchema(type: TestWebhookEventType): z.ZodType {
   if ((SCHEDULING_BOOKING_EVENT_TYPES as readonly string[]).includes(type)) {
     return SchedulingBookingWebhookEvent;
   }
+  if (type.startsWith("scheduling.out_of_office.")) return SchedulingOutOfOfficeWebhookEvent;
   if (type.startsWith("scheduling.")) return SchedulingCalendarWebhookEvent;
   if (type.startsWith("email.")) return EmailWebhookEvent;
   if (type.startsWith("hook_endpoint.")) return HookEndpointWebhookEvent;
@@ -157,6 +159,7 @@ export const WebhookTestEventObject = z
         FormSubmissionWebhookEvent,
         SchedulingBookingWebhookEvent,
         SchedulingCalendarWebhookEvent,
+        SchedulingOutOfOfficeWebhookEvent,
       ])
       .meta({
         description:

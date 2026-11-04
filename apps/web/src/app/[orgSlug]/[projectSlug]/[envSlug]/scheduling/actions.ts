@@ -7,9 +7,11 @@ import {
   createEventType,
   createHost,
   createHostSession,
+  createOutOfOffice,
   createSchedule,
   declineBooking,
   deleteHost,
+  deleteOutOfOffice,
   SchedulingError,
   updateHost,
   updateSettings,
@@ -112,6 +114,58 @@ export async function createHostAction(
     });
     refresh();
     return { id: host.id };
+  });
+}
+
+export async function createOutOfOfficeAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "create");
+    const hosts = formData.getAll("hostId").map(String);
+    if (hosts.length === 0) throw new ActionError("Choose at least one host.");
+    const optional = (name: string) => formString(formData, name) || undefined;
+    const startDate = optional("startDate");
+    const entries = await friendly(() =>
+      createOutOfOffice(
+        env,
+        {
+          hosts,
+          // A browser's times come as instants, since only it knows which zone they were typed in.
+          ...(startDate
+            ? { start_date: startDate, end_date: optional("endDate") ?? startDate }
+            : { start: formString(formData, "start"), end: formString(formData, "end") }),
+          reason: optional("reason"),
+          public_message: optional("publicMessage"),
+          notes: optional("notes"),
+          show_on_calendar: formData.get("showOnCalendar") === "on",
+        },
+        configuredDeps(),
+        actorOf(context),
+        "dashboard",
+      ),
+    );
+    for (const entry of entries) {
+      await audit(context, "scheduling_out_of_office.created", {
+        type: "scheduling_out_of_office",
+        id: entry.id,
+      });
+    }
+    refresh();
+    return null;
+  });
+}
+
+export async function deleteOutOfOfficeAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "delete");
+    const { id } = await friendly(() =>
+      deleteOutOfOffice(env, formString(formData, "entryId"), configuredDeps()),
+    );
+    await audit(context, "scheduling_out_of_office.deleted", {
+      type: "scheduling_out_of_office",
+      id,
+    });
+    refresh();
+    return null;
   });
 }
 

@@ -16,6 +16,7 @@ import { accentColors } from "./branding.ts";
 import { buildIcs } from "./calendar/ical.ts";
 import { withSessionLocation } from "./group-sessions.ts";
 import { getLogoRow, LOGO_CONTENT_ID, type SchedulingLogoRow } from "./logo.ts";
+import { countHostConflicts } from "./out-of-office.ts";
 import { createHostInvitationSession, createManageSession } from "./sessions.ts";
 import type { SchedulingDeps } from "./types.ts";
 
@@ -605,6 +606,12 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
       and(eq(schedulingHost.id, row.hostId), eq(schedulingHost.organizationId, row.organizationId)),
     );
   if (!host?.email) return "no_address";
+  // Counted now: they may have been moved since this was decided, and then there's nothing to say.
+  const conflicts =
+    row.kind === "out_of_office_conflicts"
+      ? await countHostConflicts(row.organizationId, host.id, now)
+      : 0;
+  if (row.kind === "out_of_office_conflicts" && conflicts === 0) return "stale";
   const branding = await brandingOf(row);
   const { settings } = branding;
   const senderName = oneLine(settings?.brandName ?? "Your bookings");
@@ -612,24 +619,38 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
     ? await createHostInvitationSession(env, host.id, deps.publicUrl, now)
     : null;
   const zoom = row.kind === "zoom_needs_reauth";
+  const content = (() => {
+    if (row.kind === "out_of_office_conflicts") {
+      return {
+        subject: "You have bookings during your time off",
+        paragraph: `${conflicts === 1 ? "One booking falls" : `${conflicts} bookings fall`} in time you're out of office. New bookings are stopped, but existing ones stay as they are until someone moves them.`,
+        button: "See your bookings",
+        fallback: `Please see them through ${senderName}.`,
+      };
+    }
+    return zoom
+      ? {
+          subject: "Your Zoom account needs reconnecting",
+          paragraph:
+            "We can't reach your Zoom account any more, so new bookings won't get a Zoom link. You're still being offered, and existing links keep working.",
+          button: "Reconnect Zoom",
+          fallback: `Please reconnect it through ${senderName}.`,
+        }
+      : {
+          subject: "Your calendar needs reconnecting",
+          paragraph:
+            "We can't read your calendar any more, so you aren't being offered for new bookings. Existing bookings stay as they are.",
+          button: "Reconnect your calendar",
+          fallback: `Please reconnect it through ${senderName}.`,
+        };
+  })();
   const message = renderMessage(branding, senderName, {
-    subject: zoom ? "Your Zoom account needs reconnecting" : "Your calendar needs reconnecting",
+    subject: content.subject,
     blocks: [
-      {
-        paragraph: zoom
-          ? "We can't reach your Zoom account any more, so new bookings won't get a Zoom link. You're still being offered, and existing links keep working."
-          : "We can't read your calendar any more, so you aren't being offered for new bookings. Existing bookings stay as they are.",
-      },
-      ...(session?.url
-        ? [
-            {
-              button: {
-                label: zoom ? "Reconnect Zoom" : "Reconnect your calendar",
-                url: session.url,
-              },
-            } as EmailBlock,
-          ]
-        : [{ paragraph: `Please reconnect it through ${senderName}.` } as EmailBlock]),
+      { paragraph: content.paragraph },
+      session?.url
+        ? ({ button: { label: content.button, url: session.url } } as EmailBlock)
+        : ({ paragraph: content.fallback } as EmailBlock),
     ],
     reason: `You're receiving this as a host with ${senderName}.`,
   });

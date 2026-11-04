@@ -22,6 +22,7 @@ const {
   schedulingCalendarConnection,
   schedulingCalendarEvent,
   schedulingGroupSession,
+  schedulingOutOfOffice,
 } = schema;
 
 type LedgerRow = typeof schedulingCalendarEvent.$inferSelect;
@@ -34,6 +35,8 @@ const MAX_ATTEMPTS = 8;
 const MAX_BACKOFF_MS = 6 * 60 * 60_000;
 // What the host's calendar says, deliberately: their calendar may be seen by colleagues.
 const NEUTRAL_TITLE = "Appointment";
+// Colleagues may see this too, which is why it never says why.
+const OUT_OF_OFFICE_TITLE = "Out of office";
 
 type Scan = { limit?: number; scope?: { organizationIds: readonly string[] } };
 
@@ -103,7 +106,9 @@ async function renewLease(row: LedgerRow, now: Date): Promise<LedgerRow | null> 
 const eventKey = (row: LedgerRow) =>
   (row.groupSessionId
     ? row.id
-    : `${row.keyGeneration > 0 ? `g${row.keyGeneration}-` : ""}${row.bookingId}-${row.calendarId}`
+    : `${row.keyGeneration > 0 ? `g${row.keyGeneration}-` : ""}${
+        row.outOfOfficeId ?? row.bookingId
+      }-${row.calendarId}`
   ).replace(/[^a-z0-9_-]/gi, "");
 
 type Location = BookingRow["location"];
@@ -285,6 +290,7 @@ async function bookingsOfRow(tx: Executor, row: LedgerRow): Promise<BookingRow[]
   if (row.groupSessionId) {
     return confirmedSeats(tx, { id: row.groupSessionId, organizationId: row.organizationId });
   }
+  if (!row.bookingId) return [];
   return tx
     .select()
     .from(schedulingBooking)
@@ -386,7 +392,18 @@ async function writeOne(claimed: LedgerRow, deps: CalendarDeps): Promise<void> {
           ),
         )
     : [];
-  if (!target || !(booking || session)) return;
+  const [away] = row.outOfOfficeId
+    ? await db
+        .select({ id: schedulingOutOfOffice.id })
+        .from(schedulingOutOfOffice)
+        .where(
+          and(
+            eq(schedulingOutOfOffice.id, row.outOfOfficeId),
+            eq(schedulingOutOfOffice.organizationId, row.organizationId),
+          ),
+        )
+    : [];
+  if (!target || !(booking || session || away)) return;
   const location = session ? locationOfSession(session) : (booking?.location ?? null);
   const { calendar, connection } = target;
   // Waits for the host to reconnect, without using up attempts.
@@ -418,7 +435,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarDeps): Promise<void> {
     }
     const event: CalendarEventWrite = {
       key: eventKey(row),
-      title: NEUTRAL_TITLE,
+      title: away ? OUT_OF_OFFICE_TITLE : NEUTRAL_TITLE,
       startMs: row.desiredStart.getTime(),
       endMs: row.desiredEnd.getTime(),
       conference: conferenceOf(location),
@@ -526,6 +543,8 @@ export async function checkHostEditedEvents(deps: CalendarDeps, opts: Scan = {})
       and(
         eq(schedulingCalendarEvent.desiredState, "present"),
         eq(schedulingCalendarEvent.externalState, "in_sync"),
+        // Someone removing their own time off from their calendar isn't a conflict with anything.
+        isNull(schedulingCalendarEvent.outOfOfficeId),
         isNotNull(schedulingCalendarEvent.providerEventId),
         gt(schedulingCalendarEvent.desiredStart, now),
         eq(schedulingCalendarConnection.status, "active"),

@@ -732,3 +732,148 @@ describe("Zoom's events", () => {
     expect((await post(body, signature, timestamp)).status).toBe(200);
   });
 });
+
+describe("out of office", () => {
+  async function booker() {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const key = tenant.sandboxKey;
+    const send = (path: string, method: string, body?: unknown, auth = key) =>
+      app.request(`/v1/scheduling${path}`, {
+        method,
+        headers: { authorization: `Bearer ${auth}`, "content-type": "application/json" },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      });
+    const host = (await (
+      await send("/hosts", "POST", { name: "Dr. Reyes", time_zone: "UTC", uid: "doctor_1" })
+    ).json()) as { id: string };
+    await send("/hosts/doctor_1/schedules", "POST", {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+    });
+    const eventType = (await (
+      await send("/event_types", "POST", {
+        title: "Consultation",
+        duration_minutes: 30,
+        hosts: [{ host: "doctor_1" }],
+      })
+    ).json()) as { id: string };
+    const tokenFor = async (path: string, body: unknown) =>
+      ((await (await send(path, "POST", body)).json()) as { token: string }).token;
+    const client =
+      (token: string) =>
+      (path: string, method = "GET", body?: unknown) =>
+        app.request(`/scheduling/client${path}`, {
+          method,
+          headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        });
+    return { app, send, host, eventType, tokenFor, client };
+  }
+
+  const FAR = { start: "2031-01-06T00:00:00.000Z", end: "2031-01-07T00:00:00.000Z" };
+
+  test("needs the right permissions, and a bad window is a 422", async () => {
+    const { send } = await booker();
+    const refused = await send("/out_of_office", "POST", { host: "doctor_1" });
+    expect(refused.status).toBe(422);
+    expect((await errorOf(refused)).code).toBe("invalid_time");
+    const anonymous = await send("/out_of_office", "GET", undefined, "coss_test_nope");
+    expect(anonymous.status).toBe(401);
+  });
+
+  test("a host session manages only its own time, and can't name another host", async () => {
+    const { send, host, tokenFor, client } = await booker();
+    const other = (await (
+      await send("/hosts", "POST", { name: "Dr. Chen", time_zone: "UTC" })
+    ).json()) as { id: string };
+    const mine = client(await tokenFor(`/hosts/${host.id}/sessions`, {}));
+    const theirs = client(await tokenFor(`/hosts/${other.id}/sessions`, {}));
+
+    const created = await mine("/host/out_of_office", "POST", {
+      start_date: "2031-01-06",
+      end_date: "2031-01-06",
+      reason: "vacation",
+    });
+    expect(created.status).toBe(201);
+    const entry = (await created.json()) as { id: string; host: string; source: string };
+    expect(entry.host).toBe(host.id);
+    expect(entry.source).toBe("host");
+
+    const naming = await mine("/host/out_of_office", "POST", {
+      host: other.id,
+      start_date: "2031-01-06",
+      end_date: "2031-01-06",
+    });
+    expect(naming.status).toBe(422);
+
+    const list = (await (await mine("/host/out_of_office")).json()) as {
+      data: { id: string }[];
+      reasons: { key: string }[];
+    };
+    expect(list.data.map((row) => row.id)).toEqual([entry.id]);
+    expect(list.reasons.map((reason) => reason.key)).toContain("vacation");
+    expect(
+      ((await (await theirs("/host/out_of_office")).json()) as { data: unknown[] }).data,
+    ).toEqual([]);
+    expect((await theirs(`/host/out_of_office/${entry.id}`, "DELETE")).status).toBe(404);
+    expect((await theirs(`/host/out_of_office/${entry.id}`, "PATCH", { notes: "x" })).status).toBe(
+      404,
+    );
+    expect((await theirs(`/host/out_of_office/${entry.id}/conflicts`)).status).toBe(404);
+    expect((await mine(`/host/out_of_office/${entry.id}`, "DELETE")).status).toBe(204);
+  });
+
+  test("a read-only host session can look but not change anything", async () => {
+    const { host, tokenFor, client } = await booker();
+    const session = client(await tokenFor(`/hosts/${host.id}/sessions`, { read_only: true }));
+    expect((await session("/host/out_of_office")).status).toBe(200);
+    const refused = await session("/host/out_of_office", "POST", {
+      start_date: "2031-01-06",
+      end_date: "2031-01-06",
+    });
+    expect(refused.status).toBe(403);
+  });
+
+  test("other kinds of session can't reach a host's time", async () => {
+    const { eventType, tokenFor, client } = await booker();
+    const session = client(await tokenFor("/booker_sessions", { event_type: eventType.id }));
+    expect((await session("/host/out_of_office")).status).toBe(404);
+    expect(
+      (
+        await session("/host/out_of_office", "POST", {
+          start_date: "2031-01-06",
+          end_date: "2031-01-06",
+        })
+      ).status,
+    ).toBe(404);
+  });
+
+  test("a booker sees a message and a return date while the only host is away, never why", async () => {
+    const { send, eventType, tokenFor, client } = await booker();
+    const now = Date.now();
+    await send("/out_of_office", "POST", {
+      host: "doctor_1",
+      start: new Date(now - 3_600_000).toISOString(),
+      end: new Date(now + 3_600_000).toISOString(),
+      reason: "sick",
+      notes: "Recovering from surgery",
+      public_message: "Back this afternoon.",
+    });
+    const session = client(await tokenFor("/booker_sessions", { event_type: eventType.id }));
+    const query = new URLSearchParams(FAR).toString();
+    const response = await session(`/slots?${query}`);
+    const body = await response.text();
+    expect(response.status).toBe(200);
+    const parsed = JSON.parse(body) as { away: { until: string; message: string } | null };
+    expect(parsed.away?.message).toBe("Back this afternoon.");
+    expect(body).not.toContain("sick");
+    expect(body).not.toContain("surgery");
+  });
+
+  test("a booker gets no notice when nobody's away", async () => {
+    const { eventType, tokenFor, client } = await booker();
+    const session = client(await tokenFor("/booker_sessions", { event_type: eventType.id }));
+    const response = await session(`/slots?${new URLSearchParams(FAR).toString()}`);
+    expect(((await response.json()) as { away: unknown }).away).toBeNull();
+  });
+});

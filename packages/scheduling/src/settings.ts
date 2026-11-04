@@ -45,6 +45,7 @@ function toSettingsObject(
       : null,
     email_from: row?.emailFrom ?? null,
     sms_from: row?.smsFrom ?? null,
+    out_of_office_reasons: row?.outOfOfficeReasons ?? [],
     calendar_failure_mode: row?.calendarFailureMode ?? "hide",
     notifications: toWireNotifications(row),
   };
@@ -94,6 +95,10 @@ export async function updateSettings(
 ): Promise<SettingsObjectOutput> {
   refuseLinks(params.brand_name, "brand_name");
   if (params.brand_name) await screenSetup(env, params.brand_name, opts.screen, "brand_name");
+  for (const custom of params.out_of_office_reasons ?? []) {
+    refuseLinks(custom.label, "out_of_office_reasons");
+    await screenSetup(env, custom.label, opts.screen, "out_of_office_reasons");
+  }
   if (params.logo) await saveLogo(env, params.logo.content);
   else if (params.logo === null) await removeLogo(env);
   const values = {
@@ -106,6 +111,9 @@ export async function updateSettings(
     ...(params.sms_from !== undefined ? { smsFrom: params.sms_from } : {}),
     ...(params.calendar_failure_mode !== undefined
       ? { calendarFailureMode: params.calendar_failure_mode }
+      : {}),
+    ...(params.out_of_office_reasons !== undefined
+      ? { outOfOfficeReasons: params.out_of_office_reasons }
       : {}),
     ...(params.notifications !== undefined
       ? {

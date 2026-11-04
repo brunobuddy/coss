@@ -1,6 +1,7 @@
 "use client";
 
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
+import { OUT_OF_OFFICE_REASON_LABELS } from "@coss/scheduling/schemas";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -28,8 +29,16 @@ import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "@coss/ui/components/select";
+import { Switch } from "@coss/ui/components/switch";
 import { Textarea } from "@coss/ui/components/textarea";
-import { CalendarClockIcon, UserRoundIcon } from "lucide-react";
+import { CalendarClockIcon, PalmtreeIcon, UserRoundIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
@@ -39,8 +48,10 @@ import {
   cancelBookingAction,
   createEventTypeAction,
   createHostAction,
+  createOutOfOfficeAction,
   declineBookingAction,
   deleteHostAction,
+  deleteOutOfOfficeAction,
   openHostPortalAction,
   saveSettingsAction,
   setHostStatusAction,
@@ -169,6 +180,163 @@ export function DeleteHostButton(props: EnvTarget & { hostId: string; name: stri
             <AlertDialogClose render={<Button variant="ghost" />}>Keep</AlertDialogClose>
             <Button disabled={pending} type="submit" variant="destructive">
               Delete host
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </AlertDialogPopup>
+    </AlertDialog>
+  );
+}
+
+const REASON_ITEMS = Object.entries(OUT_OF_OFFICE_REASON_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
+
+export function NewOutOfOfficeDialog(props: EnvTarget & { hosts: { id: string; name: string }[] }) {
+  const { hosts, ...target } = props;
+  const [state, formAction, pending] = useActionToast(createOutOfOfficeAction, {
+    success: "Time off added",
+  });
+  const [open, setOpen] = useState(false);
+  const [wholeDays, setWholeDays] = useState(true);
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+  useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
+  // Only this browser knows the zone these were typed in, so they're sent as instants.
+  const instant = (value: string) => (value ? new Date(value).toISOString() : "");
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button size="sm" />}>Add time off</DialogTrigger>
+      <DialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...target} />
+          <DialogHeader>
+            <DialogIcon icon={PalmtreeIcon} />
+            <DialogTitle>Add time off</DialogTitle>
+            <DialogDescription>
+              They won't be offered during it. Bookings they already have stay as they are.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogPanel className="flex flex-col gap-4">
+            <Field>
+              <FieldLabel>Hosts</FieldLabel>
+              <div className="flex max-h-40 w-full flex-col gap-2 overflow-y-auto rounded-lg border p-3">
+                {hosts.map((host) => (
+                  <Label className="font-normal" key={host.id}>
+                    <Checkbox name="hostId" value={host.id} />
+                    {host.name}
+                  </Label>
+                ))}
+              </div>
+            </Field>
+            <Label className="font-normal">
+              <Switch checked={wholeDays} onCheckedChange={setWholeDays} />
+              Whole days
+            </Label>
+            {wholeDays ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel>First day</FieldLabel>
+                  <Input name="startDate" required type="date" />
+                </Field>
+                <Field>
+                  <FieldLabel>Last day</FieldLabel>
+                  <Input name="endDate" type="date" />
+                </Field>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel>From</FieldLabel>
+                  <Input
+                    onChange={(event) => setStart(event.target.value)}
+                    required
+                    type="datetime-local"
+                    value={start}
+                  />
+                  <input name="start" type="hidden" value={instant(start)} />
+                </Field>
+                <Field>
+                  <FieldLabel>Until</FieldLabel>
+                  <Input
+                    onChange={(event) => setEnd(event.target.value)}
+                    required
+                    type="datetime-local"
+                    value={end}
+                  />
+                  <input name="end" type="hidden" value={instant(end)} />
+                </Field>
+              </div>
+            )}
+            <Field>
+              <FieldLabel>Reason</FieldLabel>
+              <Select defaultValue="unspecified" items={REASON_ITEMS} name="reason">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectPopup>
+                  {REASON_ITEMS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectPopup>
+              </Select>
+              <FieldDescription>Never shown to people booking, or in webhooks.</FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel>Message for people booking</FieldLabel>
+              <Input maxLength={300} name="publicMessage" />
+              <FieldDescription>Optional. Can't contain a link.</FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel>Private notes</FieldLabel>
+              <Textarea maxLength={2000} name="notes" />
+            </Field>
+            <Label className="font-normal">
+              <Checkbox defaultChecked name="showOnCalendar" />
+              Show on their calendar
+            </Label>
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </DialogPanel>
+          <DialogFooter>
+            <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
+            <Button disabled={pending} type="submit">
+              Add time off
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+export function DeleteOutOfOfficeButton(props: EnvTarget & { entryId: string }) {
+  const [state, formAction, pending] = useActionToast(deleteOutOfOfficeAction, {
+    success: "Time off removed",
+  });
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button size="sm" variant="ghost" />}>Remove</AlertDialogTrigger>
+      <AlertDialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...props} />
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this time off?</AlertDialogTitle>
+            <AlertDialogDescription>
+              They can be booked during it again, and any event it put on their calendar goes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6">
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogClose render={<Button variant="ghost" />}>Keep it</AlertDialogClose>
+            <Button disabled={pending} type="submit" variant="destructive">
+              Remove
             </Button>
           </AlertDialogFooter>
         </form>
