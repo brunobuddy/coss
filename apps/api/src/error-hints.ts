@@ -132,6 +132,7 @@ export const ERROR_HINTS: Record<string, string> = {
   // Scheduling.
   scheduling_unavailable: RETRY_THEN_SUPPORT,
   slot_unavailable: `Read the slots again with \`GET /v1/scheduling/event_types/{event_type}/slots\`, and offer another one. ${DOCS.schedulingBookings}`,
+  attendee_limit_reached: `This person is at the event type's \`max_active_bookings_per_attendee\`. Cancel or reschedule one of their bookings, or raise the limit. ${DOCS.schedulingBookings}`,
   calendar_unavailable: `The message says what's refused. Google, Microsoft and Zoom connect by consent, CalDAV with a password. ${DOCS.schedulingCalendars}`,
   origin_not_allowed: `Add this site to \`allowed_origins\` with \`PATCH /v1/scheduling/settings\`. ${DOCS.schedulingEmbedding}`,
 

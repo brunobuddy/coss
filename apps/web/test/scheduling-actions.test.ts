@@ -61,6 +61,7 @@ const CURRENT: EventTypeObjectOutput = {
   cancel_notice_minutes: 0,
   reschedule_notice_minutes: 0,
   max_guests: 0,
+  max_active_bookings_per_attendee: null,
   host_calendar_details: "neutral",
   questions: [],
   locations: [],

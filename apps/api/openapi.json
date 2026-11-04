@@ -19009,6 +19009,13 @@
             "type": "number",
             "description": "How many people an attendee can add to a booking. Not on `group`."
           },
+          "max_active_bookings_per_attendee": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "How many upcoming bookings of this event type one person can have at a time. `null`: no limit."
+          },
           "host_calendar_details": {
             "type": "string",
             "enum": [
@@ -19157,6 +19164,7 @@
           "cancel_notice_minutes",
           "reschedule_notice_minutes",
           "max_guests",
+          "max_active_bookings_per_attendee",
           "host_calendar_details",
           "questions",
           "locations",
@@ -19192,6 +19200,7 @@
             "cancel_notice_minutes": 0,
             "reschedule_notice_minutes": 0,
             "max_guests": 0,
+            "max_active_bookings_per_attendee": null,
             "host_calendar_details": "neutral",
             "questions": [],
             "locations": [],
@@ -19788,6 +19797,15 @@
             "maximum": 10,
             "description": "How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`."
           },
+          "max_active_bookings_per_attendee": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does."
+          },
           "host_calendar_details": {
             "type": "string",
             "enum": [
@@ -20173,6 +20191,7 @@
                 "cancel_notice_minutes": 0,
                 "reschedule_notice_minutes": 0,
                 "max_guests": 0,
+                "max_active_bookings_per_attendee": null,
                 "host_calendar_details": "neutral",
                 "questions": [],
                 "locations": [],
@@ -20319,6 +20338,15 @@
             "minimum": 0,
             "maximum": 10,
             "description": "How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`."
+          },
+          "max_active_bookings_per_attendee": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does."
           },
           "host_calendar_details": {
             "type": "string",
