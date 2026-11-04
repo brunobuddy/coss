@@ -246,6 +246,7 @@ export {
 export { htmlToText } from "./html-text.ts";
 export {
   fakeVerdicts,
+  type InboundDataQuota,
   type InboundDeps,
   type InboundMessage,
   type InboundQuota,

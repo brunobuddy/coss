@@ -118,8 +118,9 @@ and `variables` instead of `subject`, `html` and `text`. Templates can't be comb
 
 ## Attachments
 
-Attach files as base64 in `attachments`: up to 20 per email, 25 MB combined (decoded). coss.com
-never fetches files from a URL, so read them yourself:
+Attach files as base64 in `attachments`: up to 20 per email, 25 MB combined (decoded). An email's
+first 1 MB of attachments is included in its price, and the rest is billed per recipient (see
+[billing](/docs/billing#usage)). coss.com never fetches files from a URL, so read them yourself:
 
 ```ts twoslash
 import { Coss } from "coss";

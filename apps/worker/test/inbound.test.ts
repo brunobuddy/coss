@@ -13,7 +13,12 @@ import { createVerifiedDomain, FakeS3Api, sesReceiptNotification } from "@coss/e
 import { memoryLimiter } from "@coss/ratelimit/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { eq } from "drizzle-orm";
-import { dmarcReportQuota, inboundQuota, pollSesInbound } from "../src/inbound.ts";
+import {
+  dmarcReportQuota,
+  inboundDataQuota,
+  inboundQuota,
+  pollSesInbound,
+} from "../src/inbound.ts";
 import type { QueueMessage, SqsApi } from "../src/sqs.ts";
 
 const MANAGED = "inbound.coss.test";
@@ -180,6 +185,21 @@ describe("inboundQuota", () => {
     expect(await quota.consume(tenant.organization.id, "message-1")).toBe(true);
     expect(await quota.consume(tenant.organization.id, "message-1")).toBe(true);
     expect(await quota.consume(tenant.organization.id, "message-2")).toBe(false);
+  });
+
+  test("inboundDataQuota charges a message's MB once, across retries", async () => {
+    const tenant = await createTestTenant();
+    const quota = inboundDataQuota(
+      memoryLimiter({
+        overrides: async () => ({
+          "email.inbound.megabytes.day": { limit: 10, periodMs: 24 * 60 * 60 * 1000 },
+        }),
+      }),
+    );
+    expect(await quota.consume(tenant.organization.id, "message-1", 7)).toBe(true);
+    expect(await quota.consume(tenant.organization.id, "message-1", 7)).toBe(true);
+    expect(await quota.consume(tenant.organization.id, "message-2", 4)).toBe(false);
+    expect(await quota.consume(tenant.organization.id, "message-3", 3)).toBe(true);
   });
 
   test("a DMARC report to a domain's report address becomes a report, not a received email", async () => {
