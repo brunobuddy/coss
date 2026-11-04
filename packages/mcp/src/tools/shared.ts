@@ -13,9 +13,10 @@ export interface ToolContext {
   now: () => Date;
   /**
    * Directory walked for the project env file (`create_webhook_endpoint` writes
-   * `COSS_WEBHOOK_SECRET` there). Default: the process working directory.
+   * `COSS_WEBHOOK_SECRET` there). Default: the process working directory. `null` on the hosted
+   * server, which serves callers from elsewhere: a tool must then not touch the disk at all.
    */
-  projectDir: string;
+  projectDir: string | null;
 }
 
 /** Looks things up; changes nothing. */

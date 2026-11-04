@@ -8,7 +8,7 @@ directory unless they name a workspace.
   undeliverable; `emailService` is required — `src/index.ts` builds it on the pg-boss queue; `domainDeps` defaults to
   the fake provider). Middleware order: request id → `secureHeaders` → `bodyLimit` (5 MB; `POST /v1/emails` uses its own 40 MB limit after authentication) → `logger` (off under test). Every
   response carries a server-generated `X-Request-Id: req_…` (client values are ignored).
-- The only unauthenticated routes are `/health`, `/health/ready` (for uptime monitors; load balancers stay on `/health`, which never touches the database), `/openapi.json` and the tracking endpoints `GET /t/o/:token`
+- The only unauthenticated routes (`/mcp` isn't one: it refuses before serving anything) are `/health`, `/health/ready` (for uptime monitors; load balancers stay on `/health`, which never touches the database), `/openapi.json` and the tracking endpoints `GET /t/o/:token`
   (open pixel, always a GIF) and `GET /t/c/:token/:position` (302 to the stored link, else a plain-text 404)
   (`src/routes/tracking.ts`). They are plain Hono routes outside `/v1` and the OpenAPI document, never return the
   error envelope, record nothing for HEAD, and get `Cross-Origin-Resource-Policy: cross-origin` (everything else keeps
@@ -50,6 +50,20 @@ directory unless they name a workspace.
   `SendSmsInput.traceparent`, never part of the request hash), which stores it on `email.traceparent` /
   `sms_message.traceparent`; event log lines and webhook payloads echo it (`data.traceparent`, only when set), and
   webhook delivery sends it as a `traceparent` header (`traceparentOf`).
+- **Hosted MCP server** (`POST /mcp`, `src/routes/mcp.ts`; the handler is `coss-mcp/http`, injected as
+  `CreateAppOptions.mcp` by `src/index.ts`, because it runs from built output and `createApp` must not need a build:
+  `openapi:generate` imports it). Authenticated like `/v1/*` (`requireApiKey({})`, so a bad key spends `api.auth_failure`, then
+  `rateLimit("api.mcp")`), a plain route outside `/v1` and the OpenAPI document. Being a protocol endpoint it answers
+  in JSON-RPC, never the envelope: `router.onError` turns `ApiError`s into `{ jsonrpc, id: null, error: { code,
+  message, data: { type, code, request_id } } }` with `/v1`'s statuses and headers. Before authentication `precheck`
+  refuses anything with an `Origin` (403: no browser origin is allowed and it has no CORS headers, `API_CORS_ORIGINS`
+  doesn't apply) and anything but POST (405). Limits: 1 MiB (`hasOwnBodyLimit`, then the handler), 50 s, 8 MiB per API
+  call's answer, JSON only, and `shutdownSignal` answers at once like long polls; `onDrained` then waits up to 10 s
+  for tools' API calls still running (`mcp.drain`) before closing the database. Each tool's API call runs in process through `app.fetch` (no
+  socket, no edge): it re-runs all of `/v1`'s middleware with the caller's key, is logged and limited like any
+  other call, and its client IP is the caller's, passed in `inProcessClientIps` (a `WeakMap`, so no header can claim
+  one). A tool call therefore spends one more `api.authentication.*` token than the API calls it makes; the
+  `/mcp` request itself isn't request-logged, and nothing reads its body before authentication.
 - CORS: only `/v1/*`, only `API_CORS_ORIGINS`, never `credentials` — the API authenticates with bearer keys and must
   never accept the dashboard's session cookie (that would need CSRF protection on every endpoint). The one exception
   is `/scheduling/client/*`, outside `/v1`: open preflights, since a session token is its only authority, with real

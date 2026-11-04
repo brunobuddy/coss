@@ -25,10 +25,13 @@ const SECRET_PATH_SEGMENTS: [RegExp, string][] = [
 ];
 
 /**
- * Other providers' API keys (imports, `@coss/migrate`): never logged on purpose, masked in case a
- * provider's error message quotes one. Postmark's tokens are bare UUIDs and travel only in headers.
+ * API keys: never logged on purpose, masked in case a message or URL quotes one. Other providers'
+ * come from imports (`@coss/migrate`); Postmark's tokens are bare UUIDs and travel only in headers.
  */
 const SECRET_VALUES: [RegExp, string][] = [
+  // Our own API keys. Only ever in an Authorization header, but people paste them into URLs (MCP
+  // clients' configuration especially).
+  [/\bcoss_(live|test)_[A-Za-z0-9_-]{8,}/g, "coss_$1_[key]"],
   // Resend.
   [/\bre_[A-Za-z0-9_]{20,}/g, "re_[key]"],
   // SendGrid.
