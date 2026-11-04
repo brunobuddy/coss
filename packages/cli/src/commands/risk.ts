@@ -22,8 +22,8 @@ import { jsonObject } from "../fields.ts";
 import type { Output, Style } from "../output.ts";
 import { table } from "../table.ts";
 
-const EVENTS: readonly RiskEvent[] = ["signup", "login", "message", "checkout", "custom"];
-const DECISIONS: readonly RiskDecision[] = ["allow", "review", "block"];
+export const EVENTS: readonly RiskEvent[] = ["signup", "login", "message", "checkout", "custom"];
+export const DECISIONS: readonly RiskDecision[] = ["allow", "review", "block"];
 const OUTCOMES: readonly RiskOutcome[] = ["legitimate", "fraud", "abuse"];
 const LISTS: readonly RiskList[] = ["allow", "block"];
 const ENTRY_TYPES: readonly RiskListEntryType[] = [

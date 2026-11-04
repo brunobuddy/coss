@@ -114,8 +114,10 @@ Scheduling, Hooks, Risk and webhooks, on one key).
   localhost:3000/<path>\` forwards webhook events to a local handler, \`npx coss-cli trigger
   <event type>\` sends a test event, and \`npx coss-cli logs tail\` follows the API requests and
   events. Send tests to \`bounce@simulator.amazonses.com\` and run \`npx coss-cli emails diagnose <id>\`.
-  \`npx coss-cli --help\` lists the commands for each product (\`verify\`, \`contacts\`, \`broadcasts\`,
-  \`sign\`, \`forms\`, \`scheduling\`, \`hooks\`, \`risk\`), and \`npx coss-cli api\` calls any endpoint.
+  \`npx coss-cli --help\` lists the commands for each product (\`suppressions\`, \`subaccounts\`,
+  \`contacts\`, \`audiences\`, \`segments\`, \`topics\`, \`broadcasts\`, \`sms\`, \`verify\`, \`sign\`,
+  \`forms\`, \`scheduling\`, \`hooks\`, \`risk\`, \`log-drains\`), and \`npx coss-cli api\` calls any
+  endpoint.
 ${NOTES_END}
 `;
 }
