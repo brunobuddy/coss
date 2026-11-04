@@ -18238,6 +18238,13 @@
             "type": "string",
             "description": "The host's IANA time zone. Their schedules default to it, and limits count days and weeks in it."
           },
+          "locale": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What this host's notifications are written in. `null`: English."
+          },
           "attributes": {
             "type": "object",
             "additionalProperties": {
@@ -18292,6 +18299,7 @@
           "email",
           "calendar_account",
           "time_zone",
+          "locale",
           "attributes",
           "locations",
           "metadata",
@@ -18308,6 +18316,7 @@
             "email": "ana@example.com",
             "calendar_account": null,
             "time_zone": "America/New_York",
+            "locale": null,
             "attributes": {
               "licensed_in": [
                 "NY",
@@ -18439,6 +18448,15 @@
               "America/New_York"
             ]
           },
+          "locale": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 2,
+            "maxLength": 35,
+            "description": "What this host's notifications are written in, such as `de`. Default: English. `null` removes it."
+          },
           "attributes": {
             "type": "object",
             "additionalProperties": {
@@ -18538,6 +18556,7 @@
                 "email": "ana@example.com",
                 "calendar_account": null,
                 "time_zone": "America/New_York",
+                "locale": null,
                 "attributes": {
                   "licensed_in": [
                     "NY",
@@ -18604,6 +18623,15 @@
             "examples": [
               "America/New_York"
             ]
+          },
+          "locale": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 2,
+            "maxLength": 35,
+            "description": "What this host's notifications are written in, such as `de`. Default: English. `null` removes it."
           },
           "attributes": {
             "type": "object",
@@ -23269,7 +23297,7 @@
             "type": "string",
             "minLength": 2,
             "maxLength": 35,
-            "description": "Their locale, such as `en-US`."
+            "description": "Their locale, such as `en-US`. Emails and texts about the booking are written in it when coss.com has it, otherwise in English, and guests get the same."
           }
         },
         "required": [
@@ -25355,7 +25383,7 @@
                 "type": "string",
                 "minLength": 2,
                 "maxLength": 35,
-                "description": "Their locale, such as `en-US`."
+                "description": "Their locale, such as `en-US`. Emails and texts about the booking are written in it when coss.com has it, otherwise in English, and guests get the same."
               }
             },
             "required": [

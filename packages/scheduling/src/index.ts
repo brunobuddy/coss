@@ -17,6 +17,7 @@ export * from "./event-types.ts";
 export * from "./holiday-countries.ts";
 export * from "./holidays.ts";
 export * from "./hosts.ts";
+export * from "./i18n.ts";
 export * from "./logo.ts";
 export * from "./manager.ts";
 export * from "./notifications.ts";

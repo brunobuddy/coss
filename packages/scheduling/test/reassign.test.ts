@@ -1454,6 +1454,40 @@ describe("who's told", () => {
     expect(toSecond.length).toBe(1);
   });
 
+  test("a session's hosts still hear if the seat telling them cancels", async () => {
+    const env = await environment();
+    const first = await host(env, "Dr. First", { email: "first@example.com" });
+    const second = await host(env, "Dr. Second", { email: "second@example.com" });
+    const group = await eventTypeWith(env, "group", [member(first)], { capacity: 5 });
+    const seat = async (uid: string) =>
+      (
+        await createBooking(
+          env,
+          { eventType: group.id, startMs: at("10:00"), attendee: { ...attendee, uid } },
+          plain,
+          actor,
+        )
+      ).booking;
+    const seats = [await seat("one"), await seat("two")];
+    await runDueSchedulingNotifications(sender().deps as never, { scope: scope(env) });
+    await reassign(env, seats[0]?.id as string, change(second.id, ANY_HOST));
+    const told = await db
+      .select({ bookingId: schema.schedulingNotification.bookingId })
+      .from(schema.schedulingNotification)
+      .where(
+        and(
+          eq(schema.schedulingNotification.kind, "reassigned"),
+          eq(schema.schedulingNotification.recipient, "host"),
+          eq(schema.schedulingNotification.hostId, second.id),
+        ),
+      );
+    await cancelBooking(env, told[0]?.bookingId as string, plain, actor);
+    const { sent, deps } = sender();
+    await runDueSchedulingNotifications(deps as never, { scope: scope(env) });
+    expect(subjectsTo(sent, "second@example.com")).toContain("Assigned to you: Call");
+    expect(subjectsTo(sent, "first@example.com")).toContain("No longer yours: Call");
+  });
+
   test("going on to a third still tells the first, and not the one in between", async () => {
     const { env, booking, second } = await pair();
     const third = await host(env, "Dr. Third", { email: "third@example.com" });

@@ -946,7 +946,7 @@ describe("the host's email about conflicts", () => {
     const { sent, deps } = sender();
     await runDueSchedulingNotifications(deps as never, { scope: scope(env) });
     const [message] = toHost(sent);
-    expect(message?.text).toContain("One booking falls");
+    expect(message?.text).toContain("Bookings in your time off: 1");
     for (const secret of ["sick", "surgery", "Sam Lee", "sam@example.com"]) {
       expect(message?.text).not.toContain(secret);
       expect(message?.html).not.toContain(secret);

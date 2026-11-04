@@ -350,6 +350,38 @@ describe("what a run covers", () => {
     expect(await hostsOf(noon.id)).toEqual([a.id]);
   });
 
+  test("a pool's counts go down for whoever a booking leaves, as they will", async () => {
+    const env = await environment();
+    const [a, b, c] = await Promise.all([host(env, "A"), host(env, "B"), host(env, "C")]);
+    const type = await pool(env, [a, b, c]);
+    const fromA = await book(env, type.id, at("10:00"), a.id);
+    const fromB = await book(env, type.id, at("11:00"), b.id);
+    const counts = [
+      [a.id, 3],
+      [b.id, 5],
+      [c.id, 1],
+    ] as const;
+    for (const [hostId, units] of counts) {
+      await db
+        .update(schema.schedulingEventTypeHost)
+        .set({ fairUnits: units })
+        .where(
+          and(
+            eq(schema.schedulingEventTypeHost.eventTypeId, type.id),
+            eq(schema.schedulingEventTypeHost.hostId, hostId),
+          ),
+        );
+    }
+    const selection = { booking_ids: [fromA.id, fromB.id] };
+    const { items } = await previewReassignment(env, request(selection), plain);
+    const proposed = Object.fromEntries(items.map((item) => [item.booking, item.to_host]));
+    expect(proposed[fromA.id]).toBe(c.id);
+    await start(env, request(selection));
+    await drain(env);
+    expect(await hostsOf(fromA.id)).toEqual([proposed[fromA.id] as string]);
+    expect(await hostsOf(fromB.id)).toEqual([proposed[fromB.id] as string]);
+  });
+
   test("a limit on an event type only counts what's proposed from it", async () => {
     const env = await environment();
     const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
@@ -1539,8 +1571,8 @@ describe("telling people", () => {
     expect(digests.map((email) => email.to).sort()).toEqual(["a@example.com", "b@example.com"]);
     const toB = digests.find((email) => email.to === "b@example.com");
     const toA = digests.find((email) => email.to === "a@example.com");
-    expect(toB?.text).toContain("2 bookings came to you");
-    expect(toA?.text).toContain("2 bookings went to someone else");
+    expect(toB?.text).toContain("Bookings that came to you: 2");
+    expect(toA?.text).toContain("Bookings that went to someone else: 2");
     expect(JSON.stringify(digests)).not.toContain("Sam Lee");
     expect(JSON.stringify(sent)).not.toContain("Secret reason");
   });

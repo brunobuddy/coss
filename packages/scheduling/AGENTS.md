@@ -3,6 +3,12 @@
 Hosts, availability, calendars and bookings. A native engine with no runtime dependency on Cal.com:
 pure logic (`engine/`) was ported from it with its test cases, and orchestration rewritten.
 
+## Languages
+
+What booking emails and texts say lives in `i18n.ts`, so adding a sentence means adding it to every catalog (the type
+fails otherwise). Only our words are translated, never a title or brand. Reply `STOP` stays in English in every
+language, since that's the keyword carriers act on. The hosted pages are still English only.
+
 ## The double-booking guarantee
 
 `scheduling_claim_no_overlap` (a custom migration: drizzle can't declare it) refuses two claims of a host that
@@ -312,7 +318,7 @@ this page reaches every host of the environment, for an hour, acting as themselv
   refused (`55P04`): that's why `scheduling_session_scope` says `kind::text = 'manager'`.
 
 `settings.host_reassignment` is `off` by default: with `eligible`, hosts can give their own bookings to someone free who
-takes that event type, seeing names only, with no overrides.
+takes that event type, seeing names only, with no overrides, and being told no more than that someone can't (`namesOnly`).
 
 A `link`, `phone` or `in_person` location left blank takes the value of the booked host's `locations`, once a host has
 won (`withHostLocation`), and stays blank if they have none: nobody loses availability over it. It's stored with

@@ -63,6 +63,8 @@ type Options = {
   fromHosts?: ReadonlySet<string> | undefined;
   /** Who a session can give it to. */
   toHosts?: ReadonlySet<string> | undefined;
+  /** A host's own page knows colleagues by name: why one can't take it isn't theirs to read. */
+  namesOnly?: boolean | undefined;
   /** Asked with the booking locked: a run decides what's in it once, and it may have moved since. */
   stillSelected?: ((tx: Transaction, booking: BookingRow) => Promise<boolean>) | undefined;
   /** In the same transaction, so a report can't disagree with what happened. */
@@ -107,12 +109,14 @@ const OVERRIDE_REASONS = {
   calendar_unverified: "calendar_unverified",
 } as const satisfies Record<string, NotBookableReason>;
 
-const refusedByHost = (reason: string) =>
+const refusedByHost = (reason: string, opts: { namesOnly?: boolean | undefined }) =>
   new SchedulingError(
     "reassign_target_unavailable",
-    reason === "already_claimed"
-      ? "That host already has something at this time."
-      : `That host isn't available at this time (${reason}). Pass it in \`overrides\` to go ahead.`,
+    opts.namesOnly
+      ? "That host can't take this at this time."
+      : reason === "already_claimed"
+        ? "That host already has something at this time."
+        : `That host isn't available at this time (${reason}). Pass it in \`overrides\` to go ahead.`,
     { param: "changes" },
   );
 
@@ -546,7 +550,7 @@ async function reassignOne(
     if (!won) {
       throw change.auto
         ? new SchedulingError("no_reassign_candidate", NOBODY)
-        : refusedByHost(lastReason);
+        : refusedByHost(lastReason, opts);
     }
     taken.add(won.id);
     swaps.push({ from, to: won });
@@ -803,7 +807,7 @@ async function reassignSession(
   if (!target) {
     throw change.auto
       ? new SchedulingError("no_reassign_candidate", NOBODY)
-      : refusedByHost(lastReason);
+      : refusedByHost(lastReason, opts);
   }
   const previousHostId = session.hostId;
   const sessionLocation = locationForNewHost(session.location, previousHostId, [target]);

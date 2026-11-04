@@ -704,6 +704,7 @@ export async function previewReassignment(
   // And what it's taken off them: someone moved away is free for the next one, as they'd be by then.
   const freed = new Map<string, { eventTypeId: string; startMs: number; occupied: Interval }[]>();
   const fairness = new Map<string, number>();
+  const lastAssigned = new Set<string>();
   const seriesHost = new Map<string, string>();
   const byEventType = new Map<string, BookingRow[]>();
   for (const booking of chosen) {
@@ -854,8 +855,13 @@ export async function previewReassignment(
           ...entry,
           membership: entry.membership && {
             ...entry.membership,
-            fairUnits:
+            fairUnits: Math.max(
               entry.membership.fairUnits + (fairness.get(`${eventTypeId}:${entry.host.id}`) ?? 0),
+              0,
+            ),
+            lastAssignedAt: lastAssigned.has(`${eventTypeId}:${entry.host.id}`)
+              ? now
+              : entry.membership.lastAssignedAt,
           },
         }));
         const ranking =
@@ -884,6 +890,19 @@ export async function previewReassignment(
         if (eventType.kind === "pool") {
           const key = `${eventTypeId}:${to}`;
           fairness.set(key, (fairness.get(key) ?? 0) + 1);
+          lastAssigned.add(key);
+          // What it gives back is what it added, at today's weight, as `moveFairness` does.
+          const leaving = members.find((row) => row.hostId === from);
+          if (from && leaving) {
+            const weight =
+              candidates.members.find((entry) => entry.host.id === from)?.membership?.weight ?? 100;
+            const fromKey = `${eventTypeId}:${from}`;
+            fairness.set(
+              fromKey,
+              (fairness.get(fromKey) ?? 0) -
+                (leaving.fairShare === null ? 1 : leaving.fairShare * weight),
+            );
+          }
         }
         if (booking.seriesId) seriesHost.set(booking.seriesId, to);
       }

@@ -61,6 +61,8 @@ export type EmailContent = {
   blocks: EmailBlock[];
   /** Why the recipient gets this email, under the content. */
   reason?: string;
+  /** The language of the words, for mail clients and screen readers. Default: `en`. */
+  lang?: string;
 };
 
 /** Customer-provided text on one line: no control or separator characters, single spaces. */
@@ -321,7 +323,7 @@ ${subtitle}
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px"><tr><td class="coss-footer" style="padding:20px 41px 0;font-family:${FONT}"><p style="margin:0;font-size:12px;line-height:18px;color:${MUTED}">${escapeHtml(content.reason)}</p></td></tr></table>`
     : "";
   return `<!doctype html>
-<html lang="en">
+<html lang="${escapeHtml(content.lang ?? "en")}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

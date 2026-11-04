@@ -833,3 +833,97 @@ describe("guests", () => {
     ]);
   });
 });
+
+describe("languages", () => {
+  const inGerman = { ...attendee, locale: "de-DE" };
+  const bookAs = (
+    s: Awaited<ReturnType<typeof setUp>>,
+    who: Record<string, unknown>,
+    extra: Record<string, unknown> = {},
+  ) =>
+    createBooking(
+      s.env,
+      { eventType: s.eventType.id, startMs: at("09:00"), attendee: who as never, ...extra },
+      deps,
+      actor,
+    );
+
+  test("an attendee's email is in their language, except what's the customer's", async () => {
+    const s = await setUp();
+    await bookAs(s, inGerman);
+    const { emails, notification } = notifier();
+    await run(s.env, notification);
+    const email = emails.find((message) => message.to === attendee.email) as SchedulingEmail;
+
+    expect(email.subject).toBe("Bestätigt: Consultation");
+    expect(email.text).toContain("Ihre Buchung ist bestätigt.");
+    expect(email.text).toContain("Verschieben oder stornieren");
+    expect(email.text).toContain("Montag");
+    expect(email.text).not.toContain("Your booking");
+    expect(email.html).toContain('<html lang="de">');
+  });
+
+  test("the host's email is in the host's language, not the attendee's", async () => {
+    const s = await setUp();
+    await updateHost(s.env, s.host.id, { locale: "fr" });
+    await bookAs(s, inGerman);
+    const { emails, notification } = notifier();
+    await run(s.env, notification);
+    const email = emails.find((message) => message.to === "reyes@example.com") as SchedulingEmail;
+
+    expect(email.subject).toBe("Confirmé : Consultation");
+    expect(email.text).toContain("Vous avez une nouvelle réservation.");
+    expect(email.text).toContain("lundi");
+  });
+
+  test("a guest gets the attendee's language, and still no manage link", async () => {
+    const s = await setUp({ max_guests: 1 });
+    await bookAs(s, inGerman, { guests: [{ email: "kim@example.com" }] });
+    const { emails, notification } = notifier();
+    await run(s.env, notification);
+    const email = emails.find((message) => message.to === "kim@example.com") as SchedulingEmail;
+
+    expect(email.subject).toBe("Bestätigt: Consultation");
+    expect(email.text).toContain("Sie wurden zu dieser Buchung hinzugefügt.");
+    expect(email.text).not.toContain("Verschieben oder stornieren");
+  });
+
+  test("a text is in their language, and STOP still works", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      sms_from: "+15550001111",
+      notifications: { confirmed: { sms_attendee: true } },
+    });
+    await bookAs(s, inGerman);
+    const { texts, notification } = notifier();
+    await run(s.env, notification);
+
+    expect(texts[0]?.body).toContain("Bestätigt: Consultation");
+    expect(texts[0]?.body).toContain("Montag");
+    expect(texts[0]?.body).toContain("Antworten Sie STOP zum Abbestellen.");
+  });
+
+  test("a language without a catalog is English throughout, date included", async () => {
+    const s = await setUp();
+    await bookAs(s, { ...attendee, locale: "ar-EG" });
+    const { emails, notification } = notifier();
+    await run(s.env, notification);
+    const email = emails.find((message) => message.to === attendee.email) as SchedulingEmail;
+
+    expect(email.subject).toBe("Confirmed: Consultation");
+    expect(email.text).toContain("Your booking is confirmed.");
+    expect(email.text).toContain("Monday");
+    expect(email.html).toContain('<html lang="en">');
+  });
+
+  test("no locale is what it always was", async () => {
+    const s = await setUp();
+    await bookAs(s, attendee);
+    const { emails, notification } = notifier();
+    await run(s.env, notification);
+    const email = emails.find((message) => message.to === attendee.email) as SchedulingEmail;
+
+    expect(email.subject).toBe("Confirmed: Consultation");
+    expect(email.text).toContain("Reschedule or cancel");
+  });
+});

@@ -22,6 +22,8 @@ export interface CreateSchedulingHostParams {
   /** Where this host's notifications go. Not an identity, and need not be unique. */
   email?: string;
   time_zone: string;
+  /** What this host's notifications are written in, such as `de`. Default: English. */
+  locale?: string | null;
   /** What pools filter hosts by, such as `{ licensed_in: ["CA", "NY"] }`. */
   attributes?: SchedulingAttributes;
   /**
@@ -39,6 +41,8 @@ export interface UpdateSchedulingHostParams {
   /** Moves a delegated calendar to this mailbox. Refused while bookings are still to come. */
   calendar_account?: string | null;
   time_zone?: string;
+  /** What this host's notifications are written in, such as `de`. Default: English. */
+  locale?: string | null;
   attributes?: SchedulingAttributes;
   /** Replaces this host's own locations. Existing bookings keep the location they have. */
   locations?: SchedulingHostLocation[];
@@ -55,6 +59,7 @@ export interface SchedulingHost {
   email: string | null;
   calendar_account: string | null;
   time_zone: string;
+  locale: string | null;
   attributes: SchedulingAttributes;
   locations: SchedulingHostLocation[];
   metadata: Record<string, string>;

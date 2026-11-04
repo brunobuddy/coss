@@ -735,7 +735,7 @@ export function createSchedulingClientRoutes(opts: {
       deps,
       sessionActor(session),
       // Checked with the booking locked: it may have stopped being theirs since the page loaded.
-      { fromHosts: new Set([hostId]) },
+      { fromHosts: new Set([hostId]), namesOnly: true },
     );
     return c.json({ id: booking.id, status: booking.status });
   });

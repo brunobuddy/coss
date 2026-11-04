@@ -2232,6 +2232,46 @@ describe("out of office", () => {
     expect(refused.status).toBe(422);
   });
 
+  test("a host's session isn't told why a colleague can't take a booking", async () => {
+    const { host, tokenFor, client, send } = await booker();
+    await send("/settings", "PATCH", { host_reassignment: "eligible" });
+    const peer = (await (
+      await send("/hosts", "POST", { name: "Dr. Peer", time_zone: "UTC" })
+    ).json()) as { id: string };
+    await send(`/hosts/${peer.id}/schedules`, "POST", {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+    });
+    const pool = (await (
+      await send("/event_types", "POST", {
+        title: "Shared",
+        kind: "pool",
+        duration_minutes: 30,
+        hosts: [{ host: host.id }, { host: peer.id }],
+      })
+    ).json()) as { id: string };
+    const booking = (await (
+      await send("/bookings", "POST", {
+        event_type: pool.id,
+        start: "2031-01-06T10:00:00.000Z",
+        host: host.id,
+        attendee: { uid: "p", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" },
+      })
+    ).json()) as { id: string };
+    await send("/out_of_office", "POST", {
+      host: peer.id,
+      start_date: "2031-01-06",
+      end_date: "2031-01-06",
+    });
+    const mine = client(await tokenFor(`/hosts/${host.id}/sessions`, {}));
+    const refused = await mine(`/host/bookings/${booking.id}/reassign`, "POST", {
+      to_host: peer.id,
+    });
+    expect(refused.status).toBe(422);
+    const body = JSON.stringify(await refused.json());
+    expect(body).toContain("reassign_target_unavailable");
+    expect(body).not.toContain("out_of_office");
+  });
+
   test("a host's session moving an entry that moves bookings doesn't start a run", async () => {
     const { host, tokenFor, client, send, eventType } = await booker();
     const mine = client(await tokenFor(`/hosts/${host.id}/sessions`, {}));
