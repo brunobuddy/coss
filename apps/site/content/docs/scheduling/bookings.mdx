@@ -136,6 +136,25 @@ const { data: series } = await coss.scheduling.series.create(params);
 
 With `on_conflict: "reject"`, the default, one taken occurrence books nothing.
 
+## Booking history
+
+`coss.scheduling.bookings.events` lists what's happened to a booking, oldest first, and who did it.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const bookingId = "booking_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+const { data } = await coss.scheduling.bookings.events(bookingId);
+for (const event of data?.data ?? []) {
+  console.log(event.occurred_at, event.type, event.actor.kind);
+}
+```
+
+A cancelled booking also has `cancelled_by`. Pass an optional `reason` when cancelling, as the hosted manage page
+lets attendees do, and retrieving that one booking returns it as `cancellation_reason`. It's encrypted, and never
+appears in the history, webhooks, logs or emails. It's erased with the attendee's details.
+
 ## Webhooks
 
 Bookings send `scheduling.booking.confirmed`, `.pending_approval`, `.rescheduled`, `.cancelled`,

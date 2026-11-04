@@ -168,6 +168,52 @@ describe("scheduling API", () => {
     expect(((await cancelled.json()) as { status: string }).status).toBe("cancelled");
   });
 
+  test("a booking's history, and why it was cancelled", async () => {
+    const { app, key, eventType } = await setUp();
+    const created = (await (
+      await call(app, key, "POST", "/bookings", {
+        event_type: eventType,
+        start: at("09:00"),
+        attendee: { uid: "patient_1", name: "Sam Lee", email: "sam@example.com", time_zone: "UTC" },
+      })
+    ).json()) as { id: string };
+
+    const refused = await call(app, key, "POST", `/bookings/${created.id}/cancel`, {
+      reason: "x".repeat(501),
+    });
+    expect(refused.status).toBe(422);
+
+    const cancelled = await call(app, key, "POST", `/bookings/${created.id}/cancel`, {
+      reason: "Feeling better",
+    });
+    const body = (await cancelled.json()) as Record<string, unknown>;
+    expect(body.cancelled_by).toBe("api_key");
+    expect(body).not.toHaveProperty("cancellation_reason");
+
+    const read = (await (await call(app, key, "GET", `/bookings/${created.id}`)).json()) as {
+      cancellation_reason: string | null;
+    };
+    expect(read.cancellation_reason).toBe("Feeling better");
+
+    const history = (await (
+      await call(app, key, "GET", `/bookings/${created.id}/events`)
+    ).json()) as {
+      object: string;
+      data: { type: string; actor: { kind: string } }[];
+      has_more: boolean;
+    };
+    expect(history.object).toBe("list");
+    expect(history.has_more).toBe(false);
+    expect(history.data.map((event) => event.type)).toEqual([
+      "scheduling.booking.confirmed",
+      "scheduling.booking.cancelled",
+    ]);
+    expect(JSON.stringify(history)).not.toContain("Feeling better");
+
+    const missing = await call(app, key, "GET", "/bookings/nope/events");
+    expect(missing.status).toBe(404);
+  });
+
   test("answers come back only when retrieving one booking", async () => {
     const { app, key, eventType } = await setUp();
     const created = (await (
@@ -1186,7 +1232,17 @@ describe("client API", () => {
       start: at("10:00"),
     });
     expect(((await moved.json()) as { start: string }).start).toBe(at("10:00"));
-    expect((await client(s.app, manage.token, "POST", "/booking/cancel")).status).toBe(200);
+    const unsaid = await client(s.app, manage.token, "POST", "/booking/cancel", {
+      reason: "x".repeat(501),
+    });
+    expect(unsaid.status).not.toBe(200);
+    const said = await client(s.app, manage.token, "POST", "/booking/cancel", {
+      reason: "Feeling better",
+    });
+    expect(said.status).toBe(200);
+    const shown = JSON.stringify(await said.json());
+    expect(shown).not.toContain("Feeling better");
+    expect(shown).not.toContain("cancelled_by");
     expect((await client(s.app, manage.token, "GET", "/booking")).status).toBe(404);
   });
 

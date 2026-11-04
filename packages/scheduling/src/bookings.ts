@@ -11,7 +11,7 @@ import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { requestHash as hashRequest, withIdempotencyKey } from "@coss/db/idempotency";
 import { appendLogEntries } from "@coss/logs";
-import { enqueueWebhookMessage } from "@coss/webhooks";
+import { decryptSecret, encryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
 import {
   and,
   asc,
@@ -77,6 +77,7 @@ import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts
 import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
 import {
   type AttendeeInputOutput,
+  type BookingEventObjectOutput,
   type BookingObjectOutput,
   type GuestInputOutput,
   MAX_SERIES_OCCURRENCES,
@@ -1518,6 +1519,14 @@ export async function toBookingObject(
     external_conflict_at: booking.externalConflictAt?.toISOString() ?? null,
     no_show_at: booking.noShowAt?.toISOString() ?? null,
     cancelled_at: booking.cancelledAt?.toISOString() ?? null,
+    cancelled_by: booking.cancelledBy,
+    ...(opts.includeAnswers
+      ? {
+          cancellation_reason: booking.encryptedCancellationReason
+            ? decryptSecret(booking.encryptedCancellationReason, deps.dataKeys)
+            : null,
+        }
+      : {}),
     metadata: booking.metadata,
     created_at: booking.createdAt.toISOString(),
     updated_at: booking.updatedAt.toISOString(),
@@ -1986,6 +1995,7 @@ async function endBooking(
   const updated = await bumped(tx, booking, {
     status,
     cancelledAt: now,
+    cancelledBy: status === "cancelled" ? actor.kind : null,
     holdExpiresAt: null,
     approvalExpiresAt: null,
   });
@@ -2067,7 +2077,7 @@ export async function cancelBooking(
   id: string,
   deps: SchedulingDeps,
   actor: BookingActor,
-  opts: { enforceCutoffs?: boolean } = {},
+  opts: { enforceCutoffs?: boolean; reason?: string | undefined } = {},
 ): Promise<BookingObjectOutput> {
   const row = await db.transaction(async (tx) => {
     const booking = await lockBooking(tx, env, id);
@@ -2075,7 +2085,7 @@ export async function cancelBooking(
     if (booking.status === "declined") throw notChangeable(booking);
     const eventType = await resolveEventType(tx, env, booking.eventTypeId);
     checkNotice(booking, eventType.cancelNoticeMinutes, nowOf(deps), opts);
-    return endBooking(
+    const ended = await endBooking(
       tx,
       booking,
       "cancelled",
@@ -2084,6 +2094,19 @@ export async function cancelBooking(
       "scheduling.booking.cancelled",
       "Booking cancelled",
     );
+    const reason = opts.reason?.trim();
+    if (reason) {
+      await tx
+        .update(schedulingBooking)
+        .set({ encryptedCancellationReason: encryptSecret(reason, deps.dataKeys) })
+        .where(
+          and(
+            eq(schedulingBooking.id, booking.id),
+            eq(schedulingBooking.organizationId, booking.organizationId),
+          ),
+        );
+    }
+    return ended;
   });
   return toBookingObject(db, row, deps);
 }
@@ -2482,6 +2505,43 @@ export async function getBooking(
   deps: Pick<SchedulingDeps, "dataKeys">,
 ): Promise<BookingObjectOutput> {
   return toBookingObject(db, await bookingRow(scope, id), deps, { includeAnswers: true });
+}
+
+/** What's happened to a booking, oldest first. No personal data lives here, or in `details`. */
+export async function listBookingEvents(
+  scope: Scope,
+  id: string,
+  query: { limit: number; after?: string | undefined },
+): Promise<{ data: BookingEventObjectOutput[]; hasMore: boolean }> {
+  const booking = await bookingRow(scope, id);
+  const inBooking = and(
+    eq(schedulingBookingEvent.bookingId, booking.id),
+    eq(schedulingBookingEvent.organizationId, booking.organizationId),
+  );
+  const previous = query.after
+    ? db
+        .select({ sequence: schedulingBookingEvent.sequence })
+        .from(schedulingBookingEvent)
+        .where(and(inBooking, eq(schedulingBookingEvent.id, query.after)))
+    : null;
+  const rows = await db
+    .select()
+    .from(schedulingBookingEvent)
+    .where(and(inBooking, previous ? gt(schedulingBookingEvent.sequence, previous) : undefined))
+    .orderBy(asc(schedulingBookingEvent.sequence))
+    .limit(query.limit + 1);
+  return {
+    data: rows.slice(0, query.limit).map((row) => ({
+      object: "scheduling.booking_event" as const,
+      id: row.id,
+      sequence: row.sequence,
+      type: row.type,
+      actor: { kind: row.actor.kind, id: "id" in row.actor ? row.actor.id : null },
+      details: row.details,
+      occurred_at: row.occurredAt.toISOString(),
+    })),
+    hasMore: rows.length > query.limit,
+  };
 }
 
 /** The dashboard's view of one booking: names and its history, never answers (only `getBooking`). */

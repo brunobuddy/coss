@@ -33,6 +33,7 @@ import {
   getSchedule,
   getSettings,
   getSettingsRow,
+  listBookingEvents,
   listBookings,
   listConnections,
   listEventTypeSlots,
@@ -59,11 +60,13 @@ import {
   AuthorizeCalendarRequest,
   AvailabilitySearchRequest,
   AvailabilitySearchResult,
+  BookingEventList,
   BookingList,
   BookingObject,
   CalendarAuthorization,
   CalendarConnectionList,
   CalendarConnectionObject,
+  CancelBookingRequest,
   CancelledSeries,
   CancelSeriesRequest,
   ConfirmHoldRequest,
@@ -83,6 +86,7 @@ import {
   EventTypeObject,
   HostList,
   HostObject,
+  ListBookingEventsQuery,
   ListBookingsQuery,
   PageQuery,
   RescheduleBookingRequest,
@@ -606,12 +610,36 @@ export const cancelBookingRoute = createRoute({
   description: "Frees the time and removes the calendar event. A cancelled booking stays charged.",
   security: [{ bearerAuth: [] }],
   middleware: acting("update"),
-  request: { params: BookingParams },
+  request: {
+    params: BookingParams,
+    body: {
+      content: { "application/json": { schema: CancelBookingRequest } },
+      required: false,
+    },
+  },
   responses: {
     200: jsonDoc("The booking.", BookingObject),
     ...commonErrors,
     404: notFound,
     422: refusedChange,
+  },
+});
+
+export const listBookingEventsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/bookings/{id}/events",
+  operationId: "listSchedulingBookingEvents",
+  tags: [TAG_BOOKINGS],
+  summary: "List a booking's history",
+  description:
+    "What's happened to a booking, oldest first, and who did it. There's no personal data in here.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: BookingParams, query: ListBookingEventsQuery },
+  responses: {
+    200: jsonDoc("The events.", BookingEventList),
+    ...commonErrors,
+    404: notFound,
   },
 });
 
@@ -1459,12 +1487,24 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     );
   });
 
-  router.openapi(cancelBookingRoute, async (c) =>
-    c.json(
-      await cancelBooking(c.var.auth, c.req.valid("param").id, deps, actorOf(c.var.auth)),
+  router.openapi(cancelBookingRoute, async (c) => {
+    const body = c.req.valid("json") as { reason?: string } | undefined;
+    return c.json(
+      await cancelBooking(c.var.auth, c.req.valid("param").id, deps, actorOf(c.var.auth), {
+        reason: body?.reason,
+      }),
       200,
-    ),
-  );
+    );
+  });
+
+  router.openapi(listBookingEventsRoute, async (c) => {
+    const { data, hasMore } = await listBookingEvents(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("query"),
+    );
+    return c.json({ object: "list" as const, data, has_more: hasMore }, 200);
+  });
 
   router.openapi(approveBookingRoute, async (c) =>
     c.json(

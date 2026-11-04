@@ -1322,6 +1322,15 @@ const BookingAttendee = z.object({
     .meta({ description: "Only when retrieving one booking." }),
 });
 
+const BOOKING_ACTOR_KINDS = [
+  "api_key",
+  "user",
+  "host_session",
+  "booker_session",
+  "manage_session",
+  "system",
+] as const;
+
 const BOOKING_EXAMPLE = {
   object: "scheduling.booking" as const,
   id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
@@ -1353,6 +1362,7 @@ const BOOKING_EXAMPLE = {
   external_conflict_at: null,
   no_show_at: null,
   cancelled_at: null,
+  cancelled_by: null,
   metadata: {},
   created_at: "2027-01-01T10:00:00.000Z",
   updated_at: "2027-01-01T10:00:00.000Z",
@@ -1412,6 +1422,14 @@ export const BookingObject = z
       .string()
       .nullable()
       .meta({ description: "When it was cancelled. `null`: not cancelled." }),
+    cancelled_by: z.enum(BOOKING_ACTOR_KINDS).nullable().meta({
+      description:
+        "Who cancelled it: `api_key`, `user` (the dashboard), `host_session`, `booker_session`, `manage_session` (the attendee's link) or `system`. `null`: not cancelled, or cancelled before this was recorded.",
+    }),
+    cancellation_reason: z.string().nullable().optional().meta({
+      description:
+        "Why, if they said. Only when retrieving one booking. It's erased with the attendee's details, and it's never in webhooks, logs or emails.",
+    }),
     metadata: z.record(z.string(), z.string()).meta({ description: "Your own key-value pairs." }),
     created_at: z.string(),
     updated_at: z.string(),
@@ -1420,6 +1438,52 @@ export const BookingObject = z
 export type BookingObjectOutput = z.output<typeof BookingObject>;
 
 export const BookingList = listOf(BookingObject, "SchedulingBookingList", BOOKING_EXAMPLE);
+
+export const CancelBookingRequest = z
+  .strictObject({
+    reason: z.string().trim().min(1).max(500).optional().meta({
+      description:
+        "Why it's being cancelled. Only retrieving this booking returns it: it's never in webhooks, logs or emails.",
+    }),
+  })
+  .meta({ id: "CancelSchedulingBookingRequest", examples: [{ reason: "Feeling better" }] });
+
+export const BookingEventObject = z
+  .object({
+    object: z.literal("scheduling.booking_event"),
+    id: z.string(),
+    sequence: z.number().meta({ description: "This booking's events count up from 1." }),
+    type: z.string().meta({
+      description:
+        "What happened, such as `scheduling.booking.confirmed`, `scheduling.booking.rescheduled` or `scheduling.booking.cancelled`.",
+    }),
+    actor: z
+      .object({
+        kind: z.enum(BOOKING_ACTOR_KINDS),
+        id: z.string().nullable().meta({
+          description: "The API key, user or session's id. `null` for `system`.",
+        }),
+      })
+      .meta({ description: "Who did it." }),
+    details: z.record(z.string(), z.unknown()).meta({
+      description: "More about it, such as `previous_start` on a reschedule. Never personal data.",
+    }),
+    occurred_at: z.string().meta({ description: "When it happened." }),
+  })
+  .meta({ id: "SchedulingBookingEvent" });
+export type BookingEventObjectOutput = z.output<typeof BookingEventObject>;
+
+export const BookingEventList = listOf(BookingEventObject, "SchedulingBookingEventList", {
+  object: "scheduling.booking_event",
+  id: "bevt_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  sequence: 1,
+  type: "scheduling.booking.confirmed",
+  actor: { kind: "api_key", id: "key_01kd2m9a0b1c2d3e4f5g6h7j8m" },
+  details: {},
+  occurred_at: "2027-01-02T09:00:00.000Z",
+});
+
+export const ListBookingEventsQuery = PageQuery;
 
 export const ListBookingsQuery = PageQuery.extend({
   host: z.string().optional(),

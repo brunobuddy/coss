@@ -108,7 +108,7 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
     }
     await tx
       .update(schedulingBooking)
-      .set({ metadata: {}, location: null, redactedAt: now })
+      .set({ metadata: {}, location: null, encryptedCancellationReason: null, redactedAt: now })
       .where(inArray(schedulingBooking.id, ids));
     return ids.length;
   });
@@ -236,7 +236,20 @@ async function eraseMatching(
       .set({ ...REDACTED, redactedAt: now })
       .where(where)
       .returning({ bookingId: schedulingAttendee.bookingId });
-    await rewriteDetailedEvents(tx, scope, [...new Set(erased.map((row) => row.bookingId))], now);
+    const bookingIds = [...new Set(erased.map((row) => row.bookingId))];
+    await rewriteDetailedEvents(tx, scope, bookingIds, now);
+    if (bookingIds.length > 0) {
+      // Whoever wrote it may have said anything about this person.
+      await tx
+        .update(schedulingBooking)
+        .set({ encryptedCancellationReason: null })
+        .where(
+          and(
+            inArray(schedulingBooking.id, bookingIds),
+            eq(schedulingBooking.organizationId, scope.organizationId),
+          ),
+        );
+    }
     const uids = new Set(matched.flatMap((row) => (row.uid ? [row.uid] : [])));
     if (fixedSessions.uid) uids.add(fixedSessions.uid);
     const sessionMatches = [

@@ -303,6 +303,44 @@ export interface SchedulingSlotList {
   has_more: false;
 }
 
+export type SchedulingBookingActorKind =
+  | "api_key"
+  | "user"
+  | "host_session"
+  | "booker_session"
+  | "manage_session"
+  | "system";
+
+export interface CancelSchedulingBookingParams {
+  /** Why it's being cancelled. Only retrieving this booking returns it. */
+  reason?: string;
+}
+
+export interface ListSchedulingBookingEventsParams {
+  limit?: number;
+  /** The last id of the previous page. */
+  after?: string;
+}
+
+export interface SchedulingBookingEvent {
+  object: "scheduling.booking_event";
+  id: string;
+  /** This booking's events count up from 1. */
+  sequence: number;
+  /** What happened, such as `scheduling.booking.rescheduled`. */
+  type: string;
+  actor: { kind: SchedulingBookingActorKind; id: string | null };
+  /** More about it, such as `previous_start` on a reschedule. Never personal data. */
+  details: Record<string, unknown>;
+  occurred_at: string;
+}
+
+export interface SchedulingBookingEventList {
+  object: "list";
+  data: SchedulingBookingEvent[];
+  has_more: boolean;
+}
+
 export interface SearchSchedulingAvailabilityParams {
   event_type: string;
   start: string;
@@ -395,6 +433,10 @@ export interface SchedulingBooking {
   external_conflict_at: string | null;
   no_show_at: string | null;
   cancelled_at: string | null;
+  /** Who cancelled it. `null`: not cancelled, or cancelled before this was recorded. */
+  cancelled_by: SchedulingBookingActorKind | null;
+  /** Why, if they said. Only when retrieving one booking. */
+  cancellation_reason?: string | null;
   metadata: Record<string, string>;
   created_at: string;
   updated_at: string;

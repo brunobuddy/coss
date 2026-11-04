@@ -556,6 +556,10 @@ export const schedulingBooking = pgTable(
     externalConflictAt: instant("external_conflict_at"),
     noShowAt: instant("no_show_at"),
     cancelledAt: instant("cancelled_at"),
+    // The kind of actor who cancelled it. Null: not cancelled.
+    cancelledBy: text("cancelled_by").$type<SchedulingActor["kind"]>(),
+    // Why, if they said. Free text, so only `getBooking` returns it: never events, webhooks or logs.
+    encryptedCancellationReason: text("encrypted_cancellation_reason"),
     redactedAt: instant("redacted_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

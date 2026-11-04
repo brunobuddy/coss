@@ -215,9 +215,11 @@ import type {
   AuthorizeCalendarRequest,
   AvailabilitySearchRequest,
   AvailabilitySearchResult,
+  BookingEventObject,
   BookingObject,
   CalendarAuthorization,
   CalendarConnectionObject,
+  CancelBookingRequest,
   CancelledSeries,
   CancelSeriesRequest,
   ConfirmHoldRequest,
@@ -287,6 +289,7 @@ import type {
   AssessRiskParams,
   AudienceParams,
   AuthorizeSchedulingCalendarParams,
+  CancelSchedulingBookingParams,
   CancelSchedulingSeriesParams,
   CheckRiskLimitParams,
   CheckSuppressionParams,
@@ -363,6 +366,7 @@ import type {
   SchedulingAttendeeErasure,
   SchedulingAvailabilitySearchResult,
   SchedulingBooking,
+  SchedulingBookingEvent,
   SchedulingCalendarAuthorization,
   SchedulingCalendarConnection,
   SchedulingCancelledSeries,
@@ -1078,6 +1082,8 @@ export type SubaccountContract = [
     >
   >,
   Assert<MutuallyAssignable<z.output<typeof SlotList>, SchedulingSlotList>>,
+  Assert<MutuallyAssignable<z.output<typeof CancelBookingRequest>, CancelSchedulingBookingParams>>,
+  Assert<MutuallyAssignable<z.output<typeof BookingEventObject>, SchedulingBookingEvent>>,
   Assert<
     MutuallyAssignable<
       z.input<typeof AvailabilitySearchRequest>,

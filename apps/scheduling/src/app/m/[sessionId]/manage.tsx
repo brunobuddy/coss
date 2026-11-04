@@ -2,7 +2,9 @@
 
 import { Badge } from "@coss/ui/components/badge";
 import { Button } from "@coss/ui/components/button";
+import { Field, FieldLabel } from "@coss/ui/components/field";
 import { Spinner } from "@coss/ui/components/spinner";
+import { Textarea } from "@coss/ui/components/textarea";
 import { CalendarIcon, GlobeIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -50,6 +52,7 @@ export function Manage({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
   const [moving, setMoving] = useState(false);
   const [moved, setMoved] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const [working, setWorking] = useState(false);
   const browserZone = useMemo(browserTimeZone, []);
   const timeZone = booking?.attendees[0]?.time_zone ?? browserZone;
@@ -160,12 +163,27 @@ export function Manage({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
             {confirmingCancel ? (
               <div className="flex w-full flex-col gap-3">
                 <p className="font-medium text-sm">Cancel this booking?</p>
+                <Field>
+                  <FieldLabel>Reason (optional)</FieldLabel>
+                  <Textarea
+                    maxLength={500}
+                    onChange={(event) => setCancelReason(event.target.value)}
+                    rows={2}
+                    value={cancelReason}
+                  />
+                </Field>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     disabled={working}
                     onClick={() =>
                       act(
-                        () => call<Booking>("/booking/cancel", { method: "POST" }),
+                        () =>
+                          call<Booking>("/booking/cancel", {
+                            method: "POST",
+                            body: JSON.stringify(
+                              cancelReason.trim() ? { reason: cancelReason.trim() } : {},
+                            ),
+                          }),
                         (value) => {
                           setConfirmingCancel(false);
                           setMoved(false);
