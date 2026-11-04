@@ -10,7 +10,7 @@
  * `degraded`) rather than fail. Billing never fails one either (`./billing.ts`).
  */
 import type { UsageGate } from "@coss/billing/gate";
-import { recordUsage } from "@coss/billing/metering";
+import type { recordUsage } from "@coss/billing/metering";
 import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, newId } from "@coss/db/id";
 import { IDEMPOTENCY_KEY_TTL_MS, isReplayOf, requestHash } from "@coss/db/idempotency";
@@ -24,10 +24,10 @@ import { isBlockedAddress, normalizeIp, subnetOf } from "@coss/signals/ip";
 import { enqueueWebhookMessage, type SecretsKeyRing } from "@coss/webhooks";
 import { and, eq, gte, isNotNull, lt, ne, or, type SQL, sql } from "drizzle-orm";
 import {
-  ASSESSMENT_METER,
   type AssessmentBilling,
   NOT_BILLED,
   openAssessmentBilling,
+  recordAssessmentUsage,
   releaseAssessmentUnit,
 } from "./billing.ts";
 import type { IpIntelligenceSource } from "./datasets.ts";
@@ -112,6 +112,8 @@ export type RiskDeps = {
    * there, assessments go on reduced (`./billing.ts`). Without it, nothing is capped.
    */
   usage?: UsageGate;
+  /** Defaults to `@coss/billing/metering`'s; tests fail it. */
+  recordUsage?: typeof recordUsage;
 };
 
 /** The authenticated environment (from the API key). */
@@ -145,7 +147,7 @@ type Collected = {
   ip: string | null;
   hashes: Hashes;
   /** Facts rules can test that aren't in `signals` (whether or not their reason is disabled). */
-  flags: { history: boolean; domainNew: boolean | null };
+  flags: { history: boolean | null; domainNew: boolean | null };
 };
 
 const IDEMPOTENCY_ERRORS = {
@@ -219,7 +221,7 @@ async function assessInTransaction(
       ? { privacy: null, degraded: Boolean(ip && deps.ipPrivacy) }
       : ipPrivacyFor(deps, ip, sandbox),
     reduced
-      ? { scores: null, degraded: Boolean(params.content?.text) }
+      ? reducedContent(input, idempotencyKey, hash)
       : // Only paid work needs a claim: assessments without content stay one transaction.
         idempotencyKey && params.content?.text
         ? prepareIdempotentContent(deps, input, idempotencyKey, hash as string)
@@ -253,7 +255,7 @@ async function assessInTransaction(
       privacy,
       content,
     });
-    const row = await insertAssessment(tx, input, collected, settings, rules, billing, {
+    const row = await insertAssessment(tx, deps, input, collected, settings, rules, billing, {
       idempotencyKey,
       requestHash: hash,
     });
@@ -316,6 +318,34 @@ async function prepareIdempotentContent(
     }
     await new Promise((resolve) => setTimeout(resolve, 25));
   } while (Date.now() < deadline);
+  throw IDEMPOTENCY_ERRORS.inProgress();
+}
+
+/**
+ * A reduced assessment asks no model, but a retry of a request whose classification is under way
+ * must not overtake it (the first to commit is what every retry replays): it waits its turn, and
+ * uses scores that were already paid for. A crashed preparer fails open after 30 seconds.
+ */
+async function reducedContent(
+  input: AssessRiskInput,
+  key: string | null,
+  hash: string | null,
+): Promise<{ scores: ContentScores | null; degraded: boolean }> {
+  if (!input.params.content?.text) return { scores: null, degraded: false };
+  const missing = { scores: null, degraded: true };
+  if (!key) return missing;
+  const table = schema.riskAssessmentPreparation;
+  const [prepared] = await db
+    .select()
+    .from(table)
+    .where(
+      and(eq(table.environmentId, input.environment.environmentId), eq(table.idempotencyKey, key)),
+    );
+  if (!prepared || Date.now() - prepared.createdAt.getTime() > IDEMPOTENCY_KEY_TTL_MS)
+    return missing;
+  if (prepared.requestHash !== hash) throw IDEMPOTENCY_ERRORS.reused();
+  if (prepared.content) return prepared.content;
+  if (Date.now() - prepared.createdAt.getTime() > 30_000) return missing;
   throw IDEMPOTENCY_ERRORS.inProgress();
 }
 
@@ -594,7 +624,8 @@ async function collectSignals(
     ip,
     hashes,
     flags: {
-      history: reports.size > 0,
+      // Not looked at is not "no": a rule testing it doesn't match.
+      history: reduced ? null : reports.size > 0,
       domainNew: age.days === null ? null : age.days < NEW_DOMAIN_DAYS,
     },
   };
@@ -720,6 +751,7 @@ async function reportedHashes(
 
 async function insertAssessment(
   tx: Transaction,
+  deps: RiskDeps,
   input: AssessRiskInput,
   collected: Collected,
   settings: ResolvedRiskSettings,
@@ -773,8 +805,9 @@ async function insertAssessment(
         params.event,
         ruleFacts(collected, {
           score,
-          duplicate: previousMailbox !== undefined,
-          duplicateDevice: previousDevice !== undefined,
+          // Not looked at is not "no": a rule testing them doesn't match.
+          duplicate: billing.reduced ? null : previousMailbox !== undefined,
+          duplicateDevice: billing.reduced ? null : previousDevice !== undefined,
         }),
       );
   if (rule) enabled.push({ code: "rule.matched", rule: rule.id, name: rule.name });
@@ -815,14 +848,12 @@ async function insertAssessment(
 
   // Blocked traffic is free: an attack mustn't use up an allowance or inflate a bill.
   if (billing.billable && decision !== "block") {
-    await recordUsage(tx, {
+    await recordAssessmentUsage(tx, deps, {
       organizationId: environment.organizationId,
       environmentId: environment.environmentId,
       projectId: environment.projectId,
       apiKeyId: input.apiKeyId ?? null,
       userId: input.userId ?? null,
-      meter: ASSESSMENT_METER,
-      quantity: 1,
     });
   }
 
@@ -975,7 +1006,7 @@ async function previousAccount(
 /** The values rules test (`RULE_FIELDS`), from the collected signals. */
 function ruleFacts(
   collected: Collected,
-  extra: { score: number; duplicate: boolean; duplicateDevice: boolean },
+  extra: { score: number; duplicate: boolean | null; duplicateDevice: boolean | null },
 ): RuleFacts {
   const { email, ip, velocity, captcha, login, content, checkout, device } = collected.signals;
   const v = (key: string) => velocity?.[key] ?? null;

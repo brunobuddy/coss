@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { createUsageGate } from "@coss/billing";
 import { db, schema } from "@coss/db";
+import { requestHash } from "@coss/db/idempotency";
 import { fakeClassifier } from "@coss/screening/testing";
 import { and, eq, sql } from "drizzle-orm";
 import { assessRisk, type RiskDeps } from "../src/assess.ts";
 import { addRiskListEntry } from "../src/lists.ts";
 import { classifyContentForCustomer } from "../src/lookups.ts";
-import { CreateRiskAssessmentRequest } from "../src/schemas.ts";
+import { createRiskRule } from "../src/rules.ts";
+import { CreateRiskAssessmentRequest, CreateRiskRuleRequest } from "../src/schemas.ts";
 import { type Setup, setup } from "./helpers.ts";
 
 const NOW = new Date();
@@ -106,6 +108,21 @@ describe("what is billed", () => {
     expect(await reserved(s.organizationId, NOW)).toBe(1);
   });
 
+  test("a failed counter write loses the unit, never the assessment", async () => {
+    const s = await setup({
+      ...gated(),
+      recordUsage: () => Promise.reject(new Error("Lock timeout.")),
+    });
+    const { assessment } = await assessMetered(s, signup);
+    expect(assessment.decision).toBe("allow");
+    const [row] = await db
+      .select({ id: schema.riskAssessment.id })
+      .from(schema.riskAssessment)
+      .where(eq(schema.riskAssessment.id, assessment.id));
+    expect(row?.id).toBe(assessment.id);
+    expect(await metered(s.organizationId)).toBe(0);
+  });
+
   test("internal callers and sandbox environments are never billed or reduced", async () => {
     const s = await setup(gated());
     await useUpAllowance(s.organizationId, NOW);
@@ -179,6 +196,66 @@ describe("past the allowance", () => {
     const invalid = await assessMetered(s, { event: "signup", user: { email: "not-an-address" } });
     expect(invalid.assessment.reasons.map((reason) => reason.code)).toContain("email.invalid");
     expect(invalid.assessment.degraded).toContain("usage_limit");
+  });
+
+  test("what wasn't looked at never matches a rule", async () => {
+    const s = await setup(gated());
+    await useUpAllowance(s.organizationId, NOW);
+    for (const [name, field] of [
+      ["no duplicate", "duplicate.canonical_mailbox"],
+      ["no history", "history.fraud"],
+    ] as const) {
+      await createRiskRule(
+        s.live,
+        CreateRiskRuleRequest.parse({
+          name,
+          action: "block",
+          conditions: [{ field, operator: "is", value: false }],
+        }),
+      );
+    }
+    const { assessment } = await assessMetered(s, signup);
+    expect(assessment.decision).toBe("allow");
+    expect(assessment.reasons.map((reason) => reason.code)).not.toContain("rule.matched");
+  });
+
+  describe("a retry of a request whose content is being classified", () => {
+    const withText = { ...signup, content: { text: "Hello" } };
+    const prepare = async (s: Setup, key: string, values: { content?: object; age?: number }) =>
+      db.insert(schema.riskAssessmentPreparation).values({
+        environmentId: s.live.environmentId,
+        idempotencyKey: key,
+        requestHash: requestHash(CreateRiskAssessmentRequest.parse(withText)),
+        content: (values.content ?? null) as never,
+        createdAt: new Date(Date.now() - (values.age ?? 0)),
+      });
+
+    test("waits instead of overtaking it", async () => {
+      const s = await setup(gated());
+      await useUpAllowance(s.organizationId, NOW);
+      await prepare(s, "busy", {});
+      await expect(assessMetered(s, withText, "busy")).rejects.toMatchObject({
+        code: "request_in_progress",
+      });
+    });
+
+    test("uses scores already paid for", async () => {
+      const s = await setup(gated());
+      await useUpAllowance(s.organizationId, NOW);
+      const scores = { spam: 0.5, phishing: 0.01, malware: 0.01, fraud: 0.01 };
+      await prepare(s, "done", { content: { scores, degraded: false } });
+      const { assessment } = await assessMetered(s, withText, "done");
+      expect(assessment.signals.content).toEqual(scores);
+      expect(assessment.degraded).not.toContain("content");
+    });
+
+    test("goes on without them once the preparer has crashed", async () => {
+      const s = await setup(gated());
+      await useUpAllowance(s.organizationId, NOW);
+      await prepare(s, "crashed", { age: 31_000 });
+      const { assessment } = await assessMetered(s, withText, "crashed");
+      expect(assessment.degraded).toContain("content");
+    });
   });
 
   test("a billing hold reduces a paid plan's assessments too", async () => {

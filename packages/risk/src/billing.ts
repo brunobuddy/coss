@@ -8,8 +8,13 @@
  * Only API calls are billed (`AssessRiskInput.metered`): Forms' submissions already pay for their
  * assessments.
  */
-import { budgetHoldFor, isOnBillingHold } from "@coss/billing/metering";
-import { db } from "@coss/db";
+import {
+  budgetHoldFor,
+  isOnBillingHold,
+  recordUsage,
+  type UsageInput,
+} from "@coss/billing/metering";
+import { db, type Transaction } from "@coss/db";
 import type { RiskDeps } from "./assess.ts";
 
 export const ASSESSMENT_METER = "risk.assessments";
@@ -67,6 +72,25 @@ export async function openAssessmentBilling(
     // Billing's trouble must not become the customer's: assess in full.
     console.error("[risk] Reading an assessment's billing state failed:", error);
     return { billable: true, reduced: false, reservedAt: null };
+  }
+}
+
+/**
+ * Records the unit in the assessment's transaction, behind a savepoint: a failed counter write
+ * loses that unit of usage, never the assessment.
+ */
+export async function recordAssessmentUsage(
+  tx: Transaction,
+  deps: RiskDeps,
+  usage: Omit<UsageInput, "meter" | "quantity">,
+): Promise<void> {
+  const record = deps.recordUsage ?? recordUsage;
+  try {
+    await tx.transaction((savepoint) =>
+      record(savepoint, { ...usage, meter: ASSESSMENT_METER, quantity: 1 }),
+    );
+  } catch (error) {
+    console.error("[risk] Recording an assessment's usage failed:", error);
   }
 }
 
