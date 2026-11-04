@@ -702,7 +702,7 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
     `@coss/support/admin`; threads never match on a subject.
   - **HIPAA mode** (`packages/compliance/AGENTS.md`): a new vendor or a new path that sends customer content
     outside AWS needs a gate and an entry in `HIPAA_VENDORS`; a new sender that can fall back to coss.com's
-    environment passes `screeningExempt` for organizations in the mode; it is never a billing entitlement.
+    environment passes `hipaaOrigin` for organizations in the mode; it is never a billing entitlement.
   - **Organization deletion** (`packages/tenancy/AGENTS.md`): a table with many rows per organization belongs in
     `deleteOrganizationData`, anything held outside Postgres in `releaseProviderResources`.
 
@@ -789,7 +789,7 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
 **Not built yet** (don't assume these exist; delete a line when it ships): the real landing page,
 these parts of Support: on-call paging (so 24x7 can't be sold yet), a holiday calendar, automatic SLA credits, a support role narrower than platform admin, satisfaction ratings, AI drafts, presence, iOS screens, a public API, MCP and CLI tools,
 these parts of Scheduling: public booking pages, built-in payments, customers' own OAuth apps, routing forms, a workflow builder, waitlists, travel schedules, iOS screens, imports from Cal.com Platform,
-the BAA itself (HIPAA mode is built, `packages/compliance/AGENTS.md` lists what going live still needs), customers granting staff temporary access in HIPAA mode,
+customers granting staff temporary access in HIPAA mode,
 Verify's voice and WhatsApp channels, locales other than English, custom message templates, a
 settings API, Verify in the MCP server, the CLI and the iOS app, Verify's shared numbers in
 production (they wait for coss.com's own one-time-code registration and `VERIFY_SMS_*`),
