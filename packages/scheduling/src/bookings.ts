@@ -1145,6 +1145,61 @@ const isLiveSeat = () =>
     ),
   );
 
+const attendeeLimitReached = () =>
+  new SchedulingError(
+    "attendee_limit_reached",
+    "This person already has as many upcoming bookings of this event type as it allows.",
+  );
+
+/**
+ * Refuses a booking that would take someone past the event type's limit. People are known by `uid`
+ * or email: someone with neither can't be counted. Advisory locks, because a row naming them would
+ * outlive erasing them, and they come before the hosts' so two tabs can't both take the last one.
+ */
+async function checkAttendeeLimit(
+  tx: Transaction,
+  eventType: EventTypeRow,
+  attendee: { uid: string | null; emailHmac: string | null },
+  ownBookingId: string,
+): Promise<void> {
+  const max = eventType.maxActiveBookingsPerAttendee;
+  if (max === null) return;
+  const { uid, emailHmac } = attendee;
+  const identities = [
+    ...(emailHmac ? [eq(schedulingAttendee.emailHmac, emailHmac)] : []),
+    ...(uid ? [eq(schedulingAttendee.uid, uid)] : []),
+  ];
+  if (identities.length === 0) return;
+  const lockKeys = [...(emailHmac ? [`email:${emailHmac}`] : []), ...(uid ? [`uid:${uid}`] : [])];
+  for (const key of lockKeys.sort()) {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`scheduling-attendee:${eventType.id}:${key}`}, 0))`,
+    );
+  }
+  const [row] = await tx
+    .select({ active: sql<number>`count(distinct ${schedulingBooking.id})::int` })
+    .from(schedulingBooking)
+    .innerJoin(
+      schedulingAttendee,
+      and(
+        eq(schedulingAttendee.bookingId, schedulingBooking.id),
+        eq(schedulingAttendee.organizationId, schedulingBooking.organizationId),
+      ),
+    )
+    .where(
+      and(
+        eq(schedulingBooking.eventTypeId, eventType.id),
+        eq(schedulingBooking.organizationId, eventType.organizationId),
+        ne(schedulingBooking.id, ownBookingId),
+        sql`${schedulingBooking.startAt} > clock_timestamp()`,
+        isLiveSeat(),
+        eq(schedulingAttendee.role, "attendee"),
+        or(...identities),
+      ),
+    );
+  if ((row?.active ?? 0) >= max) throw attendeeLimitReached();
+}
+
 async function liveSeatCount(
   tx: Executor,
   session: { id: string; organizationId: string },
@@ -1274,6 +1329,15 @@ async function createOne(
   plan: ClaimPlan,
 ): Promise<BookingRow> {
   const { env, eventType, deps, actor, now } = context;
+  await checkAttendeeLimit(
+    tx,
+    eventType,
+    {
+      uid: request.attendee.uid ?? null,
+      emailHmac: request.attendee.email ? emailLookup(request.attendee.email, deps) : null,
+    },
+    booking.id,
+  );
   await insertAttendeeRow(tx, booking, request, deps);
   let won: { hosts: HostRow[]; liveUntil: Date | null };
   let current = booking;
@@ -1715,6 +1779,17 @@ async function recheckExpiredHold(
   hosts: readonly HostRow[],
   nowMs: number,
 ): Promise<void> {
+  const [attendee] = await tx
+    .select({ uid: schedulingAttendee.uid, emailHmac: schedulingAttendee.emailHmac })
+    .from(schedulingAttendee)
+    .where(
+      and(
+        eq(schedulingAttendee.bookingId, booking.id),
+        eq(schedulingAttendee.organizationId, booking.organizationId),
+        eq(schedulingAttendee.role, "attendee"),
+      ),
+    );
+  if (attendee) await checkAttendeeLimit(tx, eventType, attendee, booking.id);
   // Notice was met when it was held: being late to confirm shouldn't count against it.
   const rule = {
     ...slotRuleOf(eventType, (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS),

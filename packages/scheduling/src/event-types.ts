@@ -55,6 +55,7 @@ export function toEventTypeObject(
     cancel_notice_minutes: row.cancelNoticeMinutes,
     reschedule_notice_minutes: row.rescheduleNoticeMinutes,
     max_guests: row.maxGuests,
+    max_active_bookings_per_attendee: row.maxActiveBookingsPerAttendee,
     host_calendar_details: row.hostCalendarDetails,
     questions: row.questions,
     locations: row.locations as EventTypeObjectOutput["locations"],
@@ -423,6 +424,7 @@ export async function createEventType(
           cancelNoticeMinutes: params.cancel_notice_minutes ?? 0,
           rescheduleNoticeMinutes: params.reschedule_notice_minutes ?? 0,
           maxGuests: params.max_guests ?? 0,
+          maxActiveBookingsPerAttendee: params.max_active_bookings_per_attendee ?? null,
           hostCalendarDetails: params.host_calendar_details ?? "neutral",
           questions: params.questions ?? [],
           locations: (params.locations ?? []) as EventTypeRow["locations"],
@@ -576,6 +578,9 @@ export async function updateEventType(
           ? { rescheduleNoticeMinutes: params.reschedule_notice_minutes }
           : {}),
         ...(params.max_guests !== undefined ? { maxGuests: params.max_guests } : {}),
+        ...(params.max_active_bookings_per_attendee !== undefined
+          ? { maxActiveBookingsPerAttendee: params.max_active_bookings_per_attendee }
+          : {}),
         ...(params.host_calendar_details !== undefined
           ? { hostCalendarDetails: params.host_calendar_details }
           : {}),

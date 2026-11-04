@@ -9,6 +9,7 @@ export type SchedulingErrorCode =
   | "invalid_logo"
   | "uid_taken"
   | "slot_unavailable"
+  | "attendee_limit_reached"
   | "booking_not_changeable"
   | "notice_too_short"
   | "hold_expired"
@@ -33,6 +34,7 @@ const STATUS_BY_CODE = {
   invalid_logo: 422,
   uid_taken: 422,
   slot_unavailable: 422,
+  attendee_limit_reached: 422,
   booking_not_changeable: 422,
   notice_too_short: 422,
   hold_expired: 422,
