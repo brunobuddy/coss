@@ -10,6 +10,7 @@ import {
   SCHEDULING_BOOKING_EVENT_TYPES,
   SCHEDULING_WEBHOOK_EVENT_TYPES,
   SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
 } from "@coss/scheduling/schemas";
 import { SIGN_WEBHOOK_EVENT_TYPES, SignRequestWebhookEvent } from "@coss/sign/schemas";
@@ -73,6 +74,9 @@ export function webhookEventSchema(type: TestWebhookEventType): z.ZodType {
   if (type === "email.received") return ReceivedEmailWebhookEvent;
   if ((SCHEDULING_BOOKING_EVENT_TYPES as readonly string[]).includes(type)) {
     return SchedulingBookingWebhookEvent;
+  }
+  if (type.startsWith("scheduling.calendar_delegation.")) {
+    return SchedulingCalendarDelegationWebhookEvent;
   }
   if (type.startsWith("scheduling.")) return SchedulingCalendarWebhookEvent;
   if (type.startsWith("email.")) return EmailWebhookEvent;
@@ -157,6 +161,8 @@ export const WebhookTestEventObject = z
         FormSubmissionWebhookEvent,
         SchedulingBookingWebhookEvent,
         SchedulingCalendarWebhookEvent,
+        SchedulingCalendarDelegationWebhookEvent,
+        SchedulingCalendarDelegationWebhookEvent,
       ])
       .meta({
         description:

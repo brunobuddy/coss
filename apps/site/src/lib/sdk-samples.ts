@@ -461,6 +461,30 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.calendars.setSimulatedBusy",
     args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
   },
+  "POST /v1/scheduling/calendar_delegations": {
+    method: "scheduling.calendarDelegations.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/calendar_delegations": {
+    method: "scheduling.calendarDelegations.list",
+    args: () => [],
+  },
+  "GET /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.get",
+    args: (r) => [pathId(r)],
+  },
+  "PATCH /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.update",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/calendar_delegations/{id}/verify": {
+    method: "scheduling.calendarDelegations.verify",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.delete",
+    args: (r) => [pathId(r)],
+  },
   "POST /v1/scheduling/hosts/{host}/sessions": {
     method: "scheduling.sessions.createForHost",
     args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],

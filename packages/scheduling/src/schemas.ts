@@ -24,9 +24,14 @@ export const SCHEDULING_CALENDAR_EVENT_TYPES = [
   "scheduling.calendar.needs_reauth",
   "scheduling.calendar.disconnected",
 ] as const;
+export const SCHEDULING_DELEGATION_EVENT_TYPES = [
+  "scheduling.calendar_delegation.failing",
+  "scheduling.calendar_delegation.restored",
+] as const;
 export const SCHEDULING_WEBHOOK_EVENT_TYPES = [
   ...SCHEDULING_BOOKING_EVENT_TYPES,
   ...SCHEDULING_CALENDAR_EVENT_TYPES,
+  ...SCHEDULING_DELEGATION_EVENT_TYPES,
 ] as const;
 export type SchedulingWebhookEventType = (typeof SCHEDULING_WEBHOOK_EVENT_TYPES)[number];
 
@@ -127,6 +132,10 @@ export const CreateHostRequest = z
     email: z.email().max(320).optional().meta({
       description: "Where this host's notifications go. Not an identity, and need not be unique.",
     }),
+    calendar_account: z.email().max(320).nullable().optional().meta({
+      description:
+        "The mailbox a calendar delegation connects for this host, when it isn't `email` or the delegation doesn't match on email. In Microsoft 365, their user principal name.",
+    }),
     time_zone: TimeZone,
     attributes: Attributes.optional(),
     locations: HostLocations.optional(),
@@ -157,6 +166,10 @@ export const UpdateHostRequest = z
       .nullable()
       .optional()
       .meta({ description: "Where this host's notifications go. `null` removes it." }),
+    calendar_account: z.email().max(320).nullable().optional().meta({
+      description:
+        "Moves the host's delegated calendar to this mailbox. Refused while they have upcoming bookings or holds.",
+    }),
     time_zone: TimeZone.optional(),
     attributes: Attributes.optional(),
     locations: HostLocations.optional().meta({
@@ -180,6 +193,7 @@ const HOST_EXAMPLE = {
   uid: "doctor_482",
   name: "Dr. Ana Reyes",
   email: "ana@example.com",
+  calendar_account: null,
   time_zone: "America/New_York",
   attributes: { licensed_in: ["NY", "NJ"] },
   locations: [{ type: "in_person" as const, address: "12 Main St, New York, NY" }],
@@ -201,6 +215,10 @@ export const HostObject = z
     email: z.string().nullable().meta({
       description:
         "Where this host's notifications go. `null` when none is set. Not an identity, and need not be unique.",
+    }),
+    calendar_account: z.string().nullable().meta({
+      description:
+        "The mailbox a calendar delegation connects for this host, when it isn't `email`. `null` when none is set.",
     }),
     time_zone: z.string().meta({
       description:
@@ -1525,6 +1543,38 @@ export const SchedulingCalendarWebhookEvent = z
     ],
   });
 
+export const SchedulingCalendarDelegationWebhookEvent = z
+  .object({
+    ...webhookEnvelope,
+    type: z.enum(SCHEDULING_DELEGATION_EVENT_TYPES),
+    data: z.object({
+      delegation_id: z.string(),
+      provider: z.string(),
+      domain: z.string(),
+      code: z.string().nullable().meta({ description: "What the provider said, when it refused." }),
+      occurred_at: z.string(),
+    }),
+  })
+  .meta({
+    id: "SchedulingCalendarDelegationWebhookEvent",
+    examples: [
+      {
+        id: "evt_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        object: "event",
+        type: "scheduling.calendar_delegation.failing",
+        api_version: LATEST_API_VERSION,
+        created_at: "2027-01-01T10:00:00.000Z",
+        data: {
+          delegation_id: "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+          provider: "google",
+          domain: "example.com",
+          code: "unauthorized_client",
+          occurred_at: "2027-01-01T10:00:00.000Z",
+        },
+      },
+    ],
+  });
+
 export const SeriesResult = z
   .object({
     object: z.literal("scheduling.series"),
@@ -1670,6 +1720,7 @@ const CONNECTION_EXAMPLE = {
   provider: "google" as const,
   account: "ana@example.com",
   status: "active" as const,
+  delegation: null,
   calendars: [
     {
       id: "cal_01kd2m9a0b1c2d3e4f5g6h7j8m",
@@ -1697,6 +1748,10 @@ export const CalendarConnectionObject = z
     status: z.enum(["active", "needs_reauth"]).meta({
       description: "`needs_reauth`: access was lost, and this host isn't offered until it's back.",
     }),
+    delegation: z.string().nullable().meta({
+      description:
+        "The calendar delegation that manages this connection. It can't be disconnected or reconnected by itself.",
+    }),
     calendars: z
       .array(
         z.object({
@@ -1714,6 +1769,156 @@ export const CalendarConnectionObject = z
     created_at: z.string(),
   })
   .meta({ id: "SchedulingCalendarConnection", examples: [CONNECTION_EXAMPLE] });
+
+const DelegationDomain = z
+  .string()
+  .max(253)
+  .regex(/^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/, "A domain, like example.com.")
+  .meta({
+    description:
+      "The Workspace or Microsoft 365 domain. Only addresses on exactly this domain connect, not its subdomains.",
+  });
+
+const MatchHostEmail = z.boolean().meta({
+  description:
+    "Whether a host's `email` picks their mailbox when `calendar_account` isn't set. Turn it off if end users can type their own email into your app: otherwise one could name a colleague's address and reach that calendar.",
+});
+
+const SecretExpiresAt = z.iso.datetime({ offset: true }).meta({
+  description: "When the Entra client secret expires. Owners and admins are warned 14 days before.",
+});
+
+export const CreateCalendarDelegationRequest = z
+  .discriminatedUnion("provider", [
+    z.strictObject({
+      provider: z.literal("google"),
+      domain: DelegationDomain,
+      match_host_email: MatchHostEmail.optional(),
+      service_account_key: z.string().max(10_000).meta({
+        description:
+          "The whole JSON key of a service account in your Google Cloud project. Never returned.",
+      }),
+    }),
+    z.strictObject({
+      provider: z.literal("microsoft"),
+      domain: DelegationDomain,
+      match_host_email: MatchHostEmail.optional(),
+      tenant_id: z.string().max(100).meta({ description: "The Directory (tenant) ID." }),
+      client_id: z.string().max(100).meta({ description: "The Application (client) ID." }),
+      client_secret: z.string().max(1000).meta({
+        description: "A client secret of that app. Never returned.",
+      }),
+      secret_expires_at: SecretExpiresAt.optional(),
+    }),
+  ])
+  .meta({
+    id: "CreateCalendarDelegationRequest",
+    examples: [
+      {
+        provider: "microsoft",
+        domain: "example.com",
+        tenant_id: "7d3f1c52-8e0b-4d6e-9a27-5c4b1e7d2f60",
+        client_id: "3f1c7a52-8e0b-4d6e-9a27-5c4b1e7d2f60",
+        client_secret: "abc~defghijklmnopqrstuvwxyz",
+      },
+    ],
+  });
+export type CreateCalendarDelegationRequestOutput = z.output<
+  typeof CreateCalendarDelegationRequest
+>;
+
+export const UpdateCalendarDelegationRequest = z
+  .strictObject({
+    match_host_email: MatchHostEmail.optional(),
+    service_account_key: z.string().max(10_000).optional().meta({
+      description: "A new key. It's tried on the verified mailbox before it replaces the old one.",
+    }),
+    client_secret: z.string().max(1000).optional().meta({
+      description:
+        "A new client secret. It's tried on the verified mailbox before it replaces the old one.",
+    }),
+    secret_expires_at: SecretExpiresAt.nullable().optional(),
+  })
+  .meta({ id: "UpdateCalendarDelegationRequest", examples: [{ match_host_email: false }] });
+export type UpdateCalendarDelegationRequestOutput = z.output<
+  typeof UpdateCalendarDelegationRequest
+>;
+
+export const VerifyCalendarDelegationRequest = z
+  .strictObject({
+    account: z.email().max(320).meta({
+      description: "A real mailbox on the domain to try. In Microsoft 365, a user principal name.",
+    }),
+  })
+  .meta({
+    id: "VerifyCalendarDelegationRequest",
+    examples: [{ account: "ana@example.com" }],
+  });
+
+const DELEGATION_EXAMPLE = {
+  object: "scheduling.calendar_delegation" as const,
+  id: "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  provider: "google" as const,
+  domain: "example.com",
+  status: "active" as const,
+  match_host_email: true,
+  client_id: "117063284751902345678",
+  tenant_id: null,
+  scopes: ["https://www.googleapis.com/auth/calendar.events.freebusy"],
+  verified_account: "ana@example.com",
+  last_error_code: null,
+  failing_since: null,
+  secret_expires_at: null,
+  hosts_connected: 240,
+  hosts_failed: 1,
+  created_at: "2027-01-01T10:00:00.000Z",
+  updated_at: "2027-01-01T10:00:00.000Z",
+};
+
+export const CalendarDelegationObject = z
+  .object({
+    object: z.literal("scheduling.calendar_delegation"),
+    id: z.string(),
+    provider: z.enum(["google", "microsoft"]),
+    domain: z.string(),
+    status: z.enum(["pending", "active", "failing", "deleting"]).meta({
+      description:
+        "`pending`: not verified yet. `failing`: the provider refused access, and its hosts aren't offered until it's back. `deleting`: its connections are being removed.",
+    }),
+    match_host_email: z.boolean(),
+    client_id: z.string().meta({
+      description: "Google: the numeric client ID your Workspace admin authorizes.",
+    }),
+    tenant_id: z.string().nullable(),
+    scopes: z.array(z.string()).meta({
+      description:
+        "What to authorize: OAuth scopes in Google's Admin console, the application permission in Entra.",
+    }),
+    verified_account: z.string().nullable(),
+    last_error_code: z.string().nullable(),
+    failing_since: z.string().nullable(),
+    secret_expires_at: z.string().nullable(),
+    hosts_connected: z.number().int(),
+    hosts_failed: z.number().int().meta({
+      description: "Hosts whose mailbox can't be reached, or who are out while this is `failing`.",
+    }),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .meta({ id: "SchedulingCalendarDelegation", examples: [DELEGATION_EXAMPLE] });
+export type CalendarDelegationObjectOutput = z.output<typeof CalendarDelegationObject>;
+
+export const CalendarDelegationList = listOf(
+  CalendarDelegationObject,
+  "SchedulingCalendarDelegationList",
+  DELEGATION_EXAMPLE,
+);
+
+export const DeletedCalendarDelegation = deleted(
+  "scheduling.calendar_delegation",
+  "DeletedSchedulingCalendarDelegation",
+  "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+);
 
 export const CalendarConnectionList = listOf(
   CalendarConnectionObject,
