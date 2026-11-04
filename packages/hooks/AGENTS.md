@@ -16,7 +16,12 @@ repository root.
   alone finds its partition: every lookup by id adds the partition column (`cursorOf`). Idempotency keys live in
   `hook_idempotency_key` (a partitioned table can't be unique on them). Sends are charged per fan-out
   (`hooks.messages.second`/`hooks.deliveries.day`, sandbox `hooks.sandbox_deliveries.day`, refunded on replays and
-  errors); live sends refuse reputation-suspended orgs (`account_suspended`), replays still return. Delivery
+  errors); live sends refuse reputation-suspended orgs (`account_suspended`) and billing holds (`billing_hold`, 402),
+  replays still return. **Billing**: a live, non-test message is one `hooks.messages` unit whatever its fan-out,
+  metered in the transaction that accepts it (`recordUsage`), after `budgetHoldFor` (`budget_exceeded`, 402) and with the
+  injected `UsageGate` as that transaction's last statement (Free's cap, `usage_limit_exceeded`, rolls the send and its
+  idempotency key back); retries, recoveries, test sends (`onlyEndpointId`), replays and sandbox are free, and `@coss/hooks` imports only
+  `@coss/billing/{metering,gate}`. Delivery
   (`runDueHookDeliveries`): claims at most `MAX_IN_FLIGHT_PER_ENDPOINT` per endpoint, skips held orgs
   (`parkHeldHookDeliveries` puts their due rows off an hour so they never block the queue's head), batch-loads
   messages and endpoints, charges `hookThrottle` (per endpoint, `org:host`, global per host; a denial reschedules

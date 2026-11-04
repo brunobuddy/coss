@@ -11,6 +11,7 @@ import { createTestContract, recordTestUsage } from "@coss/billing/testing";
 import { db, schema } from "@coss/db";
 import { uniqueSuffix } from "@coss/db/testing";
 import { createVerifiedDomain } from "@coss/email/testing";
+import { memoryLimiter } from "@coss/ratelimit/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { apiRequest, createTestApp, emailBody, errorOf, sendEmail } from "./helpers.ts";
 
@@ -72,6 +73,76 @@ describe("billing errors", () => {
 
     await placeHold(db, tenant.organization.id, "delinquent", null);
     const held = await sendEmail(app, tenant.liveKey, emailBody({ from }));
+    expect(held.status).toBe(402);
+    expect(await errorOf(held)).toMatchObject({ type: "billing_error", code: "billing_hold" });
+  });
+
+  test("Hooks: Free's messages cap live sends and refund the quota; holds refuse them", async () => {
+    const tenant = await createTestTenant();
+    const organizationId = tenant.organization.id;
+    const consumed: string[] = [];
+    const refunded: string[] = [];
+    const limiter = memoryLimiter();
+    const { app } = createTestApp({
+      billing: createUsageGate(),
+      rateLimiter: {
+        ...limiter,
+        consume: (request) => {
+          consumed.push(...request.buckets);
+          return limiter.consume(request);
+        },
+        refund: (request) => {
+          refunded.push(...request.buckets);
+          return limiter.refund(request);
+        },
+      },
+    });
+    const key = tenant.liveKey;
+    const created = await apiRequest(app, "POST", "/v1/hooks/applications", {
+      key,
+      body: { name: "Acme", uid: "customer_1" },
+    });
+    expect(created.status).toBe(200);
+    const send = () =>
+      apiRequest(app, "POST", "/v1/hooks/applications/customer_1/messages", {
+        key,
+        body: { event_type: "invoice.paid", payload: {} },
+      });
+
+    expect((await send()).status).toBe(202);
+    expect(refunded).toEqual([]);
+    await db
+      .insert(schema.billingQuota)
+      .values({
+        organizationId,
+        meter: "hooks.messages",
+        periodStart: periodOf(new Date()).start,
+        reserved: 50_000,
+      })
+      .onConflictDoUpdate({
+        target: [
+          schema.billingQuota.organizationId,
+          schema.billingQuota.meter,
+          schema.billingQuota.periodStart,
+        ],
+        set: { reserved: 50_000 },
+      });
+    const capped = await send();
+    expect(capped.status).toBe(402);
+    expect(await errorOf(capped)).toMatchObject({
+      type: "billing_error",
+      code: "usage_limit_exceeded",
+    });
+    expect(refunded.filter((bucket) => bucket === "hooks.deliveries.day")).toHaveLength(1);
+    expect(refunded.filter((bucket) => bucket === "hooks.messages.second")).toHaveLength(1);
+    expect(consumed).toContain("hooks.messages.second");
+    const listed = await apiRequest(app, "GET", "/v1/hooks/applications/customer_1/messages", {
+      key,
+    });
+    expect((await listed.json()).data).toHaveLength(1);
+
+    await placeHold(db, organizationId, "delinquent", null);
+    const held = await send();
     expect(held.status).toBe(402);
     expect(await errorOf(held)).toMatchObject({ type: "billing_error", code: "billing_hold" });
   });

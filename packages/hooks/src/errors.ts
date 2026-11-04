@@ -1,6 +1,8 @@
 export type HookErrorCode =
   | "account_suspended"
   | "application_not_found"
+  | "billing_hold"
+  | "budget_exceeded"
   | "endpoint_disabled"
   | "event_type_exists"
   | "idempotency_key_reused"
@@ -20,6 +22,8 @@ export type HookErrorCode =
 const STATUS: Record<HookErrorCode, number> = {
   account_suspended: 403,
   application_not_found: 404,
+  billing_hold: 402,
+  budget_exceeded: 402,
   endpoint_disabled: 422,
   event_type_exists: 422,
   idempotency_key_reused: 422,

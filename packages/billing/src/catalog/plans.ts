@@ -1,8 +1,9 @@
 /**
  * The plans. A plan's monthly fee is credit spendable on any product's usage, so a month costs
  * the larger of the fee and the usage (plus add-ons). Free has no credit but includes 3,000
- * emails, 1,000 form submissions and 1,000 MB of their uploads a month and blocks usage beyond
- * its allowance. Every plan includes 100 phone checks and 3 inboxes a month.
+ * emails, 1,000 form submissions, 1,000 MB of their uploads and 50,000 Hooks messages a month and
+ * blocks usage beyond its allowance. Every plan includes 100 phone checks, 3 inboxes and Hooks
+ * messages a month.
  */
 import { type Entitlements, perDay, perSecond } from "./entitlements.ts";
 import type { MeterKey } from "./meters.ts";
@@ -11,6 +12,13 @@ import type { MeterKey } from "./meters.ts";
 const PHONE_CHECKS_INCLUDED = 100;
 /** Inbox-days every plan includes each month: 3 inboxes for the longest month. */
 const INBOX_DAYS_INCLUDED = 3 * 31;
+/** Hooks messages each plan includes each month. */
+const HOOKS_MESSAGES_INCLUDED = {
+  free: 50_000,
+  pro: 500_000,
+  scale: 5_000_000,
+  enterprise: 50_000_000,
+} as const;
 
 export const PLAN_KEYS = ["free", "pro", "scale", "enterprise"] as const;
 export type PlanKey = (typeof PLAN_KEYS)[number];
@@ -52,6 +60,7 @@ export const PLANS = {
       "scheduling.bookings": 100,
       "email.inboxes": INBOX_DAYS_INCLUDED,
       "risk.phone_checks": PHONE_CHECKS_INCLUDED,
+      "hooks.messages": HOOKS_MESSAGES_INCLUDED.free,
     },
     overage: "blocked",
     termMonths: null,
@@ -94,6 +103,7 @@ export const PLANS = {
     includedUnits: {
       "email.inboxes": INBOX_DAYS_INCLUDED,
       "risk.phone_checks": PHONE_CHECKS_INCLUDED,
+      "hooks.messages": HOOKS_MESSAGES_INCLUDED.pro,
     },
     overage: "billed",
     termMonths: null,
@@ -143,6 +153,7 @@ export const PLANS = {
     includedUnits: {
       "email.inboxes": INBOX_DAYS_INCLUDED,
       "risk.phone_checks": PHONE_CHECKS_INCLUDED,
+      "hooks.messages": HOOKS_MESSAGES_INCLUDED.scale,
     },
     overage: "billed",
     termMonths: null,
@@ -191,6 +202,7 @@ export const PLANS = {
     includedUnits: {
       "email.inboxes": INBOX_DAYS_INCLUDED,
       "risk.phone_checks": PHONE_CHECKS_INCLUDED,
+      "hooks.messages": HOOKS_MESSAGES_INCLUDED.enterprise,
     },
     overage: "billed",
     termMonths: 12,

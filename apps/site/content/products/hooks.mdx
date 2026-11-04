@@ -127,6 +127,14 @@ Everything done in the portal goes through the same rules as the API: endpoint U
 <Spec label="Messages kept"><RetentionPeriod of="hook_messages" /></Spec>
 </Specs>
 
-Sandbox keys (`coss_test_…`) deliver to real URLs too, under lower limits: 2,000 deliveries a day per environment and 100 applications. See [pricing](/pricing) for the plans.
+Sandbox keys (`coss_test_…`) deliver to real URLs too, under lower limits: 2,000 deliveries a day per environment and 100 applications.
+
+</Section>
+
+<Section title="Pricing" lede="You pay per live message you send, once however many endpoints it goes to. Retries, recoveries, test sends and sandbox environments cost nothing.">
+
+<UsageRates meters="hooks.messages" />
+
+The Free plan includes <Included meter="hooks.messages" />. See [pricing](/pricing) for the plans.
 
 </Section>

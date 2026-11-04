@@ -129,6 +129,7 @@ describe("terms", () => {
       "forms.file_uploads": 1_000,
       "video.participant_minutes": 0,
       "scheduling.bookings": 100,
+      "hooks.messages": 50_000,
     });
     expect(free.fee).toBeNull();
   });

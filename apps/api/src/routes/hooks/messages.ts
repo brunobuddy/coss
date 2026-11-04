@@ -1,3 +1,4 @@
+import type { UsageGate } from "@coss/billing/gate";
 import {
   countHookFanout,
   createHookPortalSession,
@@ -83,8 +84,11 @@ export const sendHookMessageRoute = createRoute({
     "Queues a message to the application: coss.com delivers it to each of its enabled endpoints " +
     "subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries " +
     "failures with backoff for about a day. Each request's `webhook-id` header is the message's " +
-    "id. Counts against the send quota once per endpoint it goes to (at least once). Live sends " +
-    `are refused while the organization is suspended (\`account_suspended\`). ${SCOPE_NOTE}`,
+    "id. Counts against the send quota once per endpoint it goes to (at least once). A live " +
+    "message is billed once, whatever its fan-out; retries and sandbox are free. Live sends are " +
+    "refused while the organization is suspended (`account_suspended`), on a billing hold " +
+    "(`billing_hold`), over a budget (`budget_exceeded`) or past Free's monthly messages " +
+    `(\`usage_limit_exceeded\`). ${SCOPE_NOTE}`,
   security: [{ bearerAuth: [] }],
   middleware: [
     requireApiKey({ hook: ["send"] }),
@@ -109,6 +113,11 @@ export const sendHookMessageRoute = createRoute({
     },
     ...bodyErrors,
     ...commonErrors,
+    402: errorDoc(
+      "The plan or the account's billing stands in the way of this live send: Free's monthly " +
+        "messages are used up (`usage_limit_exceeded`), an invoice is overdue or the spend limit " +
+        "was reached (`billing_hold`), or a budget is spent (`budget_exceeded`).",
+    ),
     404: applicationNotFound,
     409: errorDoc(
       "A request with this Idempotency-Key is still in progress (`request_in_progress`); retry.",
@@ -268,7 +277,10 @@ function invalidIdempotencyKey(): ApiError {
   });
 }
 
-export function createHookMessageRoutes(opts: { portalUrl: string | null }): OpenAPIHono<AppEnv> {
+export function createHookMessageRoutes(opts: {
+  portalUrl: string | null;
+  billing?: UsageGate | undefined;
+}): OpenAPIHono<AppEnv> {
   const router = new OpenAPIHono<AppEnv>();
 
   router.openapi(
@@ -281,6 +293,9 @@ export function createHookMessageRoutes(opts: { portalUrl: string | null }): Ope
         eventType: body.event_type,
         payload: body.payload,
         idempotencyKey: c.req.valid("header")["Idempotency-Key"],
+        billing: opts.billing,
+        apiKeyId: c.var.auth.apiKeyId,
+        apiKeyOwnerId: c.var.auth.ownerUserId,
       };
       const fanout = await countHookFanout({
         organizationId: application.organizationId,
