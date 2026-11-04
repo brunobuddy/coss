@@ -192,6 +192,45 @@ describe("threshold charges", () => {
     expect((await estimatePeriod(f.organizationId, now)).totals.totalCents).toBe(15_000n);
   });
 
+  test("once a month's invoice took it off, a charge can't be voided, only credited", async () => {
+    const f = await fixture();
+    await f.useCents(15_000);
+    await f.check();
+    f.fake.willCollect({ state: "failed", error: "Declined" });
+    await f.collect();
+    await f.close();
+    const [charge] = await f.invoices("threshold");
+    const invoiceId = charge?.id ?? "";
+    const voiding = voidInvoice({
+      organizationId: f.organizationId,
+      invoiceId,
+      actor: null,
+      reason: "Test",
+      now,
+    });
+    expect(voiding).rejects.toThrow("credit note");
+    await voiding.catch(() => {});
+    expect((await getInvoice(f.organizationId, invoiceId))?.status).toBe("open");
+
+    // If the month's invoice is voided instead, the credit is given back and so is the choice.
+    const [closing] = await f.invoices("period");
+    await voidInvoice({
+      organizationId: f.organizationId,
+      invoiceId: closing?.id ?? "",
+      actor: null,
+      reason: "Test",
+      now,
+    });
+    await voidInvoice({
+      organizationId: f.organizationId,
+      invoiceId,
+      actor: null,
+      reason: "Test",
+      now,
+    });
+    expect((await getInvoice(f.organizationId, invoiceId))?.status).toBe("void");
+  });
+
   test("an email goes out with each charge", async () => {
     const f = await fixture();
     await f.useCents(15_000);

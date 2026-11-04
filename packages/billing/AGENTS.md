@@ -101,7 +101,7 @@ repository root.
     reaching the threshold is charged at once and what could still be lost is capped. A `threshold` invoice has one
     `adjustment` line (no contract, so commitments never count it) and funds a `threshold` credit grant
     (`applies_to: any`, no expiry), which the month's invoice draws down: **rating stays the engine's**, re-rating the
-    whole month, and a charge that fails is still owed exactly once. One open at a time. Threshold grants aren't credit:
+    whole month, and a charge that fails is still owed exactly once. One open at a time; once a month's invoice drew it down it can't be voided (that would lose the usage), only credited. Threshold grants aren't credit:
     `creditCents`/`creditUsedCents` leave them out (`alreadyChargedCents`), so they never loosen a spend limit. The
     limit is on `usedCents`: unbilled usage (months not closed yet too) + open invoices + threshold charges paid in the last `settleDays`, so
     a stolen card that pays every charge stays capped until its payments settle; only settled payments (net of
