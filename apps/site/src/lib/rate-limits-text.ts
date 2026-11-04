@@ -21,6 +21,12 @@ const API_BUCKETS: readonly { bucket: BucketName; per: string; covers: string }[
   },
   { bucket: "risk.limit", per: "API key", covers: "Risk rate limit checks (`coss.risk.limit()`)" },
   {
+    bucket: "api.mcp",
+    per: "API key",
+    covers:
+      "Requests to the hosted MCP server (`/mcp`). The API calls its tools make count toward the limits above too",
+  },
+  {
     bucket: "api.authentication.key",
     per: "API key",
     covers: "Authenticating a key, before any other limit (`too_many_authentications`)",
