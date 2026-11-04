@@ -20,11 +20,7 @@ export default function ReceivedSmsScreen() {
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <Screen onRefresh={() => query.refetch()} title="Received SMS">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/sms/received`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/sms/received`} />
       <PageIntro
         description={`Replies and other messages to your organization's numbers whose replies come to this environment (set on each number). STOP and START are applied to every live environment's suppression list whatever the number's setting. Received SMS are kept for ${formatRetentionDays(RETENTION_DAYS.receivedSms)}.`}
         meta={<ModeBadge params={params} />}
@@ -40,7 +36,6 @@ export default function ReceivedSmsScreen() {
               : "Replies to your numbers land here once a number sends its replies to this environment.",
         }}
         items={items}
-        olderLabel="Older messages"
         query={query}
         render={(message) => (
           <View key={message.id} style={styles.row}>

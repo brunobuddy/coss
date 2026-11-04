@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { Braces } from "lucide-react-native";
 import { EmptyState } from "../../../../../../../../components/empty";
 import { ListRow, Panel, Ruled } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatAgo } from "../../../../../../../../lib/format";
 import { useContactProperties } from "../../../../../../../../lib/queries-contacts";
@@ -14,19 +14,15 @@ export default function ContactPropertiesScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useContactProperties(params);
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const properties = query.data.data;
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/contacts/properties`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/contacts/properties`} />
       <Screen onRefresh={() => query.refetch()} title="Contact properties">
         <PageIntro
           description="Typed custom fields of this environment's contacts (at most 50), usable in segments and as {{{contact.key}}} in broadcasts."

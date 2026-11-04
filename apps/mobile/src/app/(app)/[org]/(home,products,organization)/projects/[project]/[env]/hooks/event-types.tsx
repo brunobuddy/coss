@@ -4,7 +4,7 @@ import { StatusDot } from "../../../../../../../../components/badge";
 import { EmptyState } from "../../../../../../../../components/empty";
 import { ModeBadge } from "../../../../../../../../components/mode-badge";
 import { ListRow, Panel, Ruled } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { useHookEventTypes } from "../../../../../../../../lib/queries";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../../lib/web";
@@ -12,17 +12,13 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function HookEventTypesScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useHookEventTypes(params);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   return (
     <Screen onRefresh={() => query.refetch()} title="Event types">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/hooks/event-types`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/hooks/event-types`} />
       <PageIntro
         description="The kinds of messages you send. Your applications' users pick the ones their endpoints receive."
         meta={<ModeBadge params={params} />}

@@ -1,12 +1,7 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Badge } from "../../../../../../../../../../components/badge";
-import {
-  ErrorState,
-  Loading,
-  PageIntro,
-  Screen,
-} from "../../../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../../../components/screen";
 import {
   initialLocale,
   LocaleTabs,
@@ -30,9 +25,9 @@ export default function TemplateVersionScreen() {
   const query = useTemplateVersion(params, templateId, versionParam);
   const [selected, setSelected] = useState<string | null>(null);
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { template, version } = query.data;
   const path = `${environmentPath(params)}/templates/${template.id}/versions/${version.version}`;
@@ -46,7 +41,7 @@ export default function TemplateVersionScreen() {
 
   return (
     <Screen onRefresh={() => query.refetch()} title={title}>
-      <Stack.Screen options={{ headerRight: () => <WebButton path={path} /> }} />
+      <WebButton path={path} />
       <PageIntro
         meta={
           <>

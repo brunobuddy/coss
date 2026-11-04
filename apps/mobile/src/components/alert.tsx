@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import {
   CircleAlert,
   CircleCheck,
@@ -52,7 +53,14 @@ export function Alert(props: {
           </Text>
         ) : null}
         {props.action ? (
-          <Pressable hitSlop={8} onPress={props.action.onPress} style={styles.action}>
+          <Pressable
+            hitSlop={8}
+            onPress={() => {
+              void Haptics.selectionAsync();
+              props.action?.onPress();
+            }}
+            style={styles.action}
+          >
             {({ pressed }) => (
               <Text style={[styles.actionText, pressed && styles.pressed]} variant="smallMedium">
                 {props.action?.label} →

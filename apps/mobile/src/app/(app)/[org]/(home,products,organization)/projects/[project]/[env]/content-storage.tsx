@@ -4,7 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { Icon } from "../../../../../../../components/icon";
 import { ModeBadge } from "../../../../../../../components/mode-badge";
 import { Panel, PanelBody, Ruled } from "../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../components/screen";
 import { Text } from "../../../../../../../components/text";
 import { WebButton } from "../../../../../../../components/web-button";
 import { formatDateTime } from "../../../../../../../lib/format";
@@ -26,18 +26,14 @@ const GOOD_TO_KNOW = [
 export default function ContentStorageScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useContentStorage(params);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const settings = query.data;
   return (
     <Screen onRefresh={() => query.refetch()} title="Content storage">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/content-storage`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/content-storage`} />
       <PageIntro
         description="Whether coss.com keeps a copy of the content of this environment's emails once it has sent them. Each email keeps the setting that applied when it was sent."
         meta={<ModeBadge params={params} />}

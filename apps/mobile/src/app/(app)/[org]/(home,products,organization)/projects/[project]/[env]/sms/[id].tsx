@@ -10,7 +10,7 @@ import {
   SpecItem,
   SpecList,
 } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatCount, formatDateTime } from "../../../../../../../../lib/format";
@@ -27,19 +27,15 @@ export default function SmsDetailScreen() {
   const { id, ...params } = useLocalSearchParams<EnvironmentParams & { id: string }>();
   const query = useSms(params, id);
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { sms, events } = query.data;
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/sms/${sms.id}`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/sms/${sms.id}`} />
       <Screen onRefresh={() => query.refetch()} title={sms.to}>
         <PageIntro
           description={`From ${sms.from}`}

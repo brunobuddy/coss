@@ -20,7 +20,7 @@ import { Badge, StatusDot } from "../../../../components/badge";
 import { EmptyState } from "../../../../components/empty";
 import { Icon } from "../../../../components/icon";
 import { ListRow, Panel, Ruled } from "../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../components/screen";
+import { PageIntro, Screen } from "../../../../components/screen";
 import { Text } from "../../../../components/text";
 import { useActiveEnvironment } from "../../../../lib/active-environment";
 import { formatCount, roleLabel } from "../../../../lib/format";
@@ -143,9 +143,9 @@ export default function OrganizationScreen() {
   return (
     <>
       {query.isPending ? (
-        <Loading />
+        <Screen loading="list" />
       ) : query.isError && !query.data ? (
-        <ErrorState error={query.error} onRetry={() => query.refetch()} />
+        <Screen error={query.error} onRetry={() => query.refetch()} />
       ) : (
         <Screen onRefresh={() => query.refetch()} title={query.data.organization.name}>
           <PageIntro

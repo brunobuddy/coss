@@ -16,7 +16,7 @@ import {
   SpecItem,
   SpecList,
 } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Stat, StatGrid } from "../../../../../../../../components/stat";
 import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
@@ -258,9 +258,9 @@ export default function BroadcastScreen() {
   >();
   const query = useBroadcast(params, broadcastId);
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { broadcast, recent_emails, can_send, can_read_email } = query.data;
   const base = environmentPath(params);
@@ -269,7 +269,7 @@ export default function BroadcastScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerRight: () => <WebButton path={webPath} /> }} />
+      <WebButton path={webPath} />
       <Screen onRefresh={() => query.refetch()} title={broadcast.name}>
         <PageIntro
           description={

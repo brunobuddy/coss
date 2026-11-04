@@ -4,7 +4,7 @@ import { Alert } from "../../../../../components/alert";
 import { StatusDot } from "../../../../../components/badge";
 import { EmptyState } from "../../../../../components/empty";
 import { ListRow, Panel, Ruled } from "../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../components/screen";
 import { WebButton } from "../../../../../components/web-button";
 import { formatAgo } from "../../../../../lib/format";
 import { useDomains } from "../../../../../lib/queries";
@@ -13,13 +13,13 @@ import { DOMAIN_STATUS } from "../../../../../lib/status";
 export default function DomainsScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useDomains(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   return (
     <Screen onRefresh={() => query.refetch()} title="Domains">
-      <Stack.Screen options={{ headerRight: () => <WebButton path={`/${org}/domains`} /> }} />
+      <WebButton path={`/${org}/domains`} />
       <PageIntro
         description="Live API keys can send from verified domains of this organization, in every project."
         title="Domains"

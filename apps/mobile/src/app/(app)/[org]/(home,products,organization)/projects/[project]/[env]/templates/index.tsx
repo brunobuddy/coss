@@ -21,7 +21,7 @@ export default function TemplatesScreen() {
   const path = `${environmentPath(params)}/templates`;
   return (
     <Screen onRefresh={() => query.refetch()} title="Templates">
-      <Stack.Screen options={{ headerRight: () => <WebButton path={path} /> }} />
+      <WebButton path={path} />
       <PageIntro
         description="Subjects and bodies with typed variables, in every language you send. Edit a draft, publish it, then send it by id or alias."
         meta={<ModeBadge params={params} />}
@@ -35,7 +35,6 @@ export default function TemplatesScreen() {
             "Keep your emails' copy out of your code: send `template_id` and `variables` instead of `subject` and `html`.",
         }}
         items={items}
-        olderLabel="Older templates"
         query={query}
         render={(template) => (
           <ListRow

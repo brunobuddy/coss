@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { ModeBadge } from "../../../../../../../../components/mode-badge";
 import { Panel, PanelBody, Ruled } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Code, Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { useRiskSettings } from "../../../../../../../../lib/queries-risk-settings";
@@ -16,18 +16,14 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function RiskSettingsScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useRiskSettings(params);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const settings = query.data;
   return (
     <Screen onRefresh={() => query.refetch()} title="Risk settings">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/risk/settings`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/risk/settings`} />
       <PageIntro
         description="How this environment's assessments decide: score thresholds, captcha verification, and reasons you don't want."
         meta={<ModeBadge params={params} />}

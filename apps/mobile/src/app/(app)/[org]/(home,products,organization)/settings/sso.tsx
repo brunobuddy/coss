@@ -7,7 +7,7 @@ import { Badge, StatusDot } from "../../../../../components/badge";
 import { Icon } from "../../../../../components/icon";
 import { SettingsRow, SettingsValue } from "../../../../../components/organization-settings";
 import { Panel, PanelBody, Ruled } from "../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../components/screen";
 import { Text } from "../../../../../components/text";
 import { WebButton } from "../../../../../components/web-button";
 import { useSsoSettings } from "../../../../../lib/queries-organization-settings";
@@ -209,19 +209,15 @@ function RequirePanel({ sso }: { sso: Sso }) {
 export default function SingleSignOnScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useSsoSettings(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const sso = query.data;
   return (
     <Screen onRefresh={() => query.refetch()} title="Single sign-on">
       {/* Without the plan, coss.com's page is an upgrade prompt: no purchase links here (3.1.1). */}
-      {sso.plan_allows || sso.provider ? (
-        <Stack.Screen
-          options={{ headerRight: () => <WebButton path={`/${org}/settings/sso`} /> }}
-        />
-      ) : null}
+      {sso.plan_allows || sso.provider ? <WebButton path={`/${org}/settings/sso`} /> : null}
       <PageIntro title="Single sign-on" />
       {sso.provider && !sso.provider.active ? (
         <Alert

@@ -35,11 +35,7 @@ export default function ContactsScreen() {
   const filtered = Boolean(email || status);
   return (
     <Screen onRefresh={() => query.refetch()} title="Contacts">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/contacts`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/contacts`} />
       <PageIntro
         description={`The people this environment's marketing email goes to, with their consent.${
           first ? ` ${formatCount(first.total)} ${first.total === 1 ? "contact" : "contacts"}.` : ""
@@ -82,7 +78,6 @@ export default function ContactsScreen() {
               }
         }
         items={items}
-        olderLabel="Older"
         query={query}
         render={(contact) => {
           const [tone, label] = CONTACT_STATUS[contact.status];

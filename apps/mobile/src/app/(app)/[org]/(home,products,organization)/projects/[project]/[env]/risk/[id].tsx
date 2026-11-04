@@ -15,7 +15,7 @@ import {
   SpecItem,
   SpecList,
 } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Stat, StatGrid } from "../../../../../../../../components/stat";
 import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
@@ -157,9 +157,9 @@ function Feedback(props: { params: EnvironmentParams; id: string; outcome: RiskO
 export default function RiskAssessmentScreen() {
   const { id, ...params } = useLocalSearchParams<EnvironmentParams & { id: string }>();
   const query = useRiskAssessment(params, id);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const assessment = query.data;
   const email = assessment.signals.email as EmailSignals;
@@ -175,14 +175,8 @@ export default function RiskAssessmentScreen() {
   const removed = (value: string | null, group: unknown) => value ?? (group ? "Removed" : "—");
   return (
     <Screen onRefresh={() => query.refetch()}>
-      <Stack.Screen
-        options={{
-          title: "Assessment",
-          headerRight: () => (
-            <WebButton path={`${environmentPath(params)}/risk/${assessment.id}`} />
-          ),
-        }}
-      />
+      <Stack.Screen options={{ title: "Assessment" }} />
+      <WebButton path={`${environmentPath(params)}/risk/${assessment.id}`} />
       <PageIntro
         description={formatDateTime(assessment.created_at)}
         meta={

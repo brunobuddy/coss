@@ -30,11 +30,7 @@ export default function RiskListsScreen() {
   const now = Date.now();
   return (
     <Screen onRefresh={() => query.refetch()} title="Allow & block lists">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/risk/lists`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/risk/lists`} />
       <PageIntro
         description="Email addresses, domains, IP ranges, networks, countries and users whose assessments in this environment are always allowed or always blocked."
         meta={<ModeBadge params={params} />}
@@ -49,7 +45,6 @@ export default function RiskListsScreen() {
             "Entries decide an assessment before its score: allow trusted users, block known abuse.",
         }}
         items={items}
-        olderLabel="Older entries"
         query={query}
         render={(entry) => (
           <View key={entry.id} style={styles.entry}>

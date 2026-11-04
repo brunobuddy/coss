@@ -20,11 +20,7 @@ export default function SmsSuppressionsScreen() {
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <Screen onRefresh={() => query.refetch()} title="SMS suppressions">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/sms/suppressions`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/sms/suppressions`} />
       <PageIntro
         description="Messages from this environment skip these numbers. People who reply STOP (in every live environment) and numbers that can't receive SMS are added automatically."
         meta={<ModeBadge params={params} />}

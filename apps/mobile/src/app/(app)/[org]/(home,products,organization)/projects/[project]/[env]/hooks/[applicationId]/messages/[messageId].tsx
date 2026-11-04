@@ -5,12 +5,7 @@ import { Badge, StatusDot } from "../../../../../../../../../../components/badge
 import { CodeBlock } from "../../../../../../../../../../components/code-block";
 import { EmptyState } from "../../../../../../../../../../components/empty";
 import { Panel, Ruled } from "../../../../../../../../../../components/panel";
-import {
-  ErrorState,
-  Loading,
-  PageIntro,
-  Screen,
-} from "../../../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../../../components/screen";
 import { Text } from "../../../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../../../components/web-button";
 import { formatDateTime } from "../../../../../../../../../../lib/format";
@@ -23,22 +18,16 @@ export default function HookMessageScreen() {
     EnvironmentParams & { applicationId: string; messageId: string }
   >();
   const query = useHookMessage(params, applicationId, messageId);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { application, message, deliveries } = query.data;
   return (
     <Screen onRefresh={() => query.refetch()}>
-      <Stack.Screen
-        options={{
-          title: "Message",
-          headerRight: () => (
-            <WebButton
-              path={`${environmentPath(params)}/hooks/${application.id}/messages/${message.id}`}
-            />
-          ),
-        }}
+      <Stack.Screen options={{ title: "Message" }} />
+      <WebButton
+        path={`${environmentPath(params)}/hooks/${application.id}/messages/${message.id}`}
       />
       <PageIntro
         description={`Sent to ${application.name} ${formatDateTime(message.created_at)}.`}

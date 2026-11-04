@@ -16,7 +16,7 @@ import {
   SpecItem,
   SpecList,
 } from "../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../components/screen";
 import { Stat, StatGrid } from "../../../../../../../components/stat";
 import { Text } from "../../../../../../../components/text";
 import { WebButton } from "../../../../../../../components/web-button";
@@ -189,9 +189,9 @@ export default function DmarcScreen() {
   const { org, domainId } = useLocalSearchParams<{ org: string; domainId: string }>();
   const query = useDmarc(org, domainId);
   const reports = useDmarcReports(org, domainId);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const dmarc = query.data;
   const { summary } = dmarc;
@@ -200,11 +200,7 @@ export default function DmarcScreen() {
     summary.messages - summary.passing - (summary.coss_messages - summary.coss_passing);
   return (
     <Screen onRefresh={() => Promise.all([query.refetch(), reports.refetch()])} title="DMARC">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`/${org}/domains/${dmarc.domain.id}/dmarc`} />,
-        }}
-      />
+      <WebButton path={`/${org}/domains/${dmarc.domain.id}/dmarc`} />
       <PageIntro
         description="Who sends as this domain, whether their mail authenticates, and the path from monitoring to rejecting spoofed mail."
         meta={

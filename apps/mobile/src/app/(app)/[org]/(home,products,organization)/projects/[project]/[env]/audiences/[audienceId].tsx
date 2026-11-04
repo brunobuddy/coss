@@ -3,7 +3,7 @@ import { UsersRound } from "lucide-react-native";
 import { Badge, StatusDot } from "../../../../../../../../components/badge";
 import { PagedPanel } from "../../../../../../../../components/paged";
 import { ListRow } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatCount } from "../../../../../../../../lib/format";
 import { useAudience } from "../../../../../../../../lib/queries-contacts";
@@ -17,24 +17,18 @@ export default function AudienceScreen() {
   >();
   const query = useAudience(params, audienceId);
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const first = query.data.pages[0];
-  if (!first) return <Loading />;
+  if (!first) return <Screen loading="detail" />;
   const { audience } = first;
   const members = query.data.pages.flatMap((page) => page.members.data);
 
   return (
     <Screen onRefresh={() => query.refetch()} title={audience.name}>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <WebButton path={`${environmentPath(params)}/audiences/${audience.id}`} />
-          ),
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/audiences/${audience.id}`} />
       <PageIntro
         description={`${formatCount(audience.contact_count)} ${audience.contact_count === 1 ? "contact" : "contacts"}.`}
         title={audience.name}

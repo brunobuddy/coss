@@ -6,7 +6,7 @@ import { StatusDot } from "../../../../../../../../components/badge";
 import { EmptyState } from "../../../../../../../../components/empty";
 import { ModeBadge } from "../../../../../../../../components/mode-badge";
 import { Panel, Ruled } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatCount } from "../../../../../../../../lib/format";
@@ -19,17 +19,13 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function RiskLimitsScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useRiskLimitBuckets(params);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   return (
     <Screen onRefresh={() => query.refetch()} title="Rate limits">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/risk/limits`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/risk/limits`} />
       <PageIntro
         description="Your own rate limits: coss.risk.limit({ bucket, key }) takes a token from that key's share of a bucket and says whether to let the request through."
         meta={<ModeBadge params={params} />}

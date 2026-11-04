@@ -5,7 +5,7 @@ import { Badge } from "../../../../../../../components/badge";
 import { EmptyState } from "../../../../../../../components/empty";
 import { ModeBadge } from "../../../../../../../components/mode-badge";
 import { Panel, Ruled, SpecItem, SpecList } from "../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../components/screen";
 import { Code, Text } from "../../../../../../../components/text";
 import { WebButton } from "../../../../../../../components/web-button";
 import { formatDateTime } from "../../../../../../../lib/format";
@@ -20,16 +20,14 @@ function TrackingBadge(props: { on: boolean }) {
 export default function TrackingScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useTracking(params);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const settings = query.data;
   return (
     <Screen onRefresh={() => query.refetch()} title="Open & click tracking">
-      <Stack.Screen
-        options={{ headerRight: () => <WebButton path={`${environmentPath(params)}/tracking`} /> }}
-      />
+      <WebButton path={`${environmentPath(params)}/tracking`} />
       <PageIntro
         description={
           <>

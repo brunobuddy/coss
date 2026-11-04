@@ -34,9 +34,7 @@ export default function EmailsScreen() {
     : "this environment's keys";
   return (
     <Screen onRefresh={() => emails.refetch()} title="Emails">
-      <Stack.Screen
-        options={{ headerRight: () => <WebButton path={`${environmentPath(params)}/emails`} /> }}
-      />
+      <WebButton path={`${environmentPath(params)}/emails`} />
       <PageIntro
         description={`Every email sent with ${keys}, newest first. Emails are kept for ${formatRetentionDays(RETENTION_DAYS.emails)}.`}
         meta={<ModeBadge params={params} />}
@@ -52,7 +50,6 @@ export default function EmailsScreen() {
             : "Emails sent with this environment's API keys show up here.",
         }}
         items={items}
-        olderLabel="Older emails"
         query={emails}
         render={(email) => <EmailRow email={email} key={email.id} params={params} />}
       />

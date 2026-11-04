@@ -5,7 +5,7 @@ import { UserAvatar } from "../../../../components/avatar";
 import { Badge } from "../../../../components/badge";
 import { EmptyState } from "../../../../components/empty";
 import { ListRow, Panel, Ruled } from "../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../components/screen";
+import { PageIntro, Screen } from "../../../../components/screen";
 import { Text } from "../../../../components/text";
 import { WebButton } from "../../../../components/web-button";
 import { formatDate, formatDateTime, roleLabel } from "../../../../lib/format";
@@ -14,14 +14,14 @@ import { useMembers } from "../../../../lib/queries";
 export default function MembersScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useMembers(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { members, invitations, require_two_factor } = query.data;
   return (
     <Screen onRefresh={() => query.refetch()} title="Members">
-      <Stack.Screen options={{ headerRight: () => <WebButton path={`/${org}/members`} /> }} />
+      <WebButton path={`/${org}/members`} />
       <PageIntro
         description="People with access to this organization. Admins manage projects, domains and API keys; members can read everything but secrets."
         meta={

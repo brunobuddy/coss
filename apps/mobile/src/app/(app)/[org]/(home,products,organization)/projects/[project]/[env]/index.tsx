@@ -40,7 +40,7 @@ import { EmailRow } from "../../../../../../../components/email-row";
 import { EmptyState } from "../../../../../../../components/empty";
 import { Icon } from "../../../../../../../components/icon";
 import { ListRow, Panel, PanelBody, Ruled } from "../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../components/screen";
 import { Stat, StatGrid } from "../../../../../../../components/stat";
 import { Segmented } from "../../../../../../../components/tabs";
 import { Text } from "../../../../../../../components/text";
@@ -136,9 +136,9 @@ export default function EnvironmentScreen() {
     organization.data?.projects.find((project) => project.slug === params.project)?.environments ??
     [];
 
-  if (environment.isPending) return <Loading />;
+  if (environment.isPending) return <Screen loading="detail" />;
   if (environment.isError && !environment.data) {
-    return <ErrorState error={environment.error} onRetry={() => environment.refetch()} />;
+    return <Screen error={environment.error} onRetry={() => environment.refetch()} />;
   }
 
   const { project, activity } = environment.data;

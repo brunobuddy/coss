@@ -36,9 +36,7 @@ export default function LogsScreen() {
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <Screen onRefresh={() => query.refetch()} title="Logs">
-      <Stack.Screen
-        options={{ headerRight: () => <WebButton path={`${environmentPath(params)}/logs`} /> }}
-      />
+      <WebButton path={`${environmentPath(params)}/logs`} />
       <PageIntro
         description="Every API request made with this environment's keys, every email event and every webhook delivery attempt. Kept for 30 days."
         meta={<ModeBadge params={params} />}
@@ -62,7 +60,6 @@ export default function LogsScreen() {
           description: "Try a longer range, or another filter.",
         }}
         items={items}
-        olderLabel="Older lines"
         query={query}
         render={(entry) => {
           const summary = logSummary(entry);

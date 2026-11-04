@@ -3,12 +3,7 @@ import { Send, Webhook } from "lucide-react-native";
 import { StatusDot } from "../../../../../../../../../components/badge";
 import { EmptyState } from "../../../../../../../../../components/empty";
 import { ListRow, Panel, Ruled } from "../../../../../../../../../components/panel";
-import {
-  ErrorState,
-  Loading,
-  PageIntro,
-  Screen,
-} from "../../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../../components/screen";
 import { Text } from "../../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../../components/web-button";
 import { formatAgo } from "../../../../../../../../../lib/format";
@@ -21,20 +16,14 @@ export default function HookApplicationScreen() {
     EnvironmentParams & { applicationId: string }
   >();
   const query = useHookApplication(params, applicationId);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { application, endpoints, messages } = query.data;
   return (
     <Screen onRefresh={() => query.refetch()} title={application.name}>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <WebButton path={`${environmentPath(params)}/hooks/${application.id}`} />
-          ),
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/hooks/${application.id}`} />
       <PageIntro
         meta={
           <Text muted selectable variant="mono">

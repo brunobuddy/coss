@@ -4,7 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { EmptyState } from "../../../../../../../../components/empty";
 import { ModeBadge } from "../../../../../../../../components/mode-badge";
 import { Panel, Ruled } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Stat, StatGrid } from "../../../../../../../../components/stat";
 import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
@@ -20,9 +20,9 @@ const weight = (value: number) => value.toFixed(2);
 export default function RiskCalibrationScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useRiskCalibration(params);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const calibration = query.data;
   const changed = calibration.reasons.filter(
@@ -30,11 +30,7 @@ export default function RiskCalibrationScreen() {
   ).length;
   return (
     <Screen onRefresh={() => query.refetch()} title="Calibration">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/risk/calibration`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/risk/calibration`} />
       <PageIntro
         description={`What your feedback says about each reason and rule over the last ${calibration.window_days} days. Weights only change when you apply them.`}
         meta={<ModeBadge params={params} />}

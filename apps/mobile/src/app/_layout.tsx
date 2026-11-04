@@ -2,11 +2,20 @@
 import "../lib/monitoring";
 import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
-import { type ErrorBoundaryProps, type Href, router, Stack } from "expo-router";
+import {
+  DarkTheme,
+  DefaultTheme,
+  type ErrorBoundaryProps,
+  type Href,
+  router,
+  Stack,
+  ThemeProvider,
+} from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { TriangleAlert } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { AppState, StyleSheet, View } from "react-native";
+import { AppState, StyleSheet, useColorScheme, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../components/button";
 import { EmptyState } from "../components/empty";
@@ -22,14 +31,22 @@ focusManager.setEventListener((onFocus) => {
 });
 
 function RootLayout() {
-  const [queryClient] = useState(() => new QueryClient());
+  // Going back or switching tabs shouldn't refetch what was just read.
+  const [queryClient] = useState(
+    () => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } }),
+  );
+  const scheme = useColorScheme();
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider queryClient={queryClient}>
-        <StatusBar style="auto" />
-        <RootStack />
-      </AuthProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <ThemeProvider value={scheme === "dark" ? DarkTheme : DefaultTheme}>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider queryClient={queryClient}>
+            <StatusBar style="auto" />
+            <RootStack />
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -83,5 +100,6 @@ function useNotificationTaps(signedIn: boolean) {
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   fallback: { flex: 1, justifyContent: "center", padding: 16, backgroundColor: colors.background },
 });

@@ -8,7 +8,7 @@ import {
   SpecItem,
   SpecList,
 } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatDateTime } from "../../../../../../../../lib/format";
@@ -26,9 +26,9 @@ export default function ContactScreen() {
   >();
   const query = useContact(params, contactId);
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { contact, properties, topics, audiences } = query.data;
   const [tone, label] = CONTACT_STATUS[contact.status];
@@ -36,11 +36,7 @@ export default function ContactScreen() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${base}/contacts/${contact.id}`} />,
-        }}
-      />
+      <WebButton path={`${base}/contacts/${contact.id}`} />
       <Screen onRefresh={() => query.refetch()} title={contact.email}>
         <PageIntro
           description={`Added ${formatDateTime(contact.created_at)} (${contact.source}).`}

@@ -15,11 +15,7 @@ export default function AudiencesScreen() {
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <Screen onRefresh={() => query.refetch()} title="Audiences">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/audiences`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/audiences`} />
       <PageIntro
         description="Static lists of contacts. A broadcast to an audience goes to its subscribed members."
         title="Audiences"

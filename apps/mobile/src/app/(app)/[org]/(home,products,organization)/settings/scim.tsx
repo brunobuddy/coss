@@ -5,7 +5,7 @@ import { Alert } from "../../../../../components/alert";
 import { Badge, StatusDot } from "../../../../../components/badge";
 import { SettingsRow, SettingsValue } from "../../../../../components/organization-settings";
 import { Panel, PanelBody, Ruled } from "../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../components/screen";
 import { Text } from "../../../../../components/text";
 import { WebButton } from "../../../../../components/web-button";
 import { formatDate, formatDateTime, plural, roleLabel } from "../../../../../lib/format";
@@ -98,9 +98,9 @@ function DirectoryPanel({ scim, org }: { scim: Scim; org: string }) {
 export default function DirectorySyncScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useScimSettings(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const scim = query.data;
   const { directory } = scim;
@@ -108,11 +108,7 @@ export default function DirectorySyncScreen() {
   return (
     <Screen onRefresh={() => query.refetch()} title="Directory sync">
       {/* Without the plan, coss.com's page is an upgrade prompt: no purchase links here (3.1.1). */}
-      {directory || scim.plan_allows ? (
-        <Stack.Screen
-          options={{ headerRight: () => <WebButton path={`/${org}/settings/scim`} /> }}
-        />
-      ) : null}
+      {directory || scim.plan_allows ? <WebButton path={`/${org}/settings/scim`} /> : null}
       <PageIntro title="Directory sync" />
       {directory?.status === "decommissioning" ? (
         <Alert

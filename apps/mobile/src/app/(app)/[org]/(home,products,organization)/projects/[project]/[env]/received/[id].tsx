@@ -16,7 +16,7 @@ import {
   SpecItem,
   SpecList,
 } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Tabs } from "../../../../../../../../components/tabs";
 import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
@@ -50,15 +50,16 @@ export default function ReceivedEmailScreen() {
   const { id, ...params } = useLocalSearchParams<EnvironmentParams & { id: string }>();
   const query = useReceivedEmail(params, id);
   const [tab, setTab] = useState<Tab>("overview");
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const email = query.data;
   const path = `${environmentPath(params)}/received/${email.id}`;
   return (
     <Screen onRefresh={() => query.refetch()}>
-      <Stack.Screen options={{ title: "Received", headerRight: () => <WebButton path={path} /> }} />
+      <Stack.Screen options={{ title: "Received" }} />
+      <WebButton path={path} />
       <PageIntro
         meta={
           <>

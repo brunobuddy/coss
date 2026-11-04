@@ -15,11 +15,7 @@ export default function SegmentsScreen() {
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <Screen onRefresh={() => query.refetch()} title="Segments">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/segments`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/segments`} />
       <PageIntro
         description="Filters over this environment's contacts, evaluated whenever they're used, so they're always current."
         title="Segments"

@@ -5,7 +5,7 @@ import { Alert } from "../../../../../../../../components/alert";
 import { Badge, StatusDot } from "../../../../../../../../components/badge";
 import { PagedPanel } from "../../../../../../../../components/paged";
 import { ListRow, Panel, SpecItem, SpecList } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatAgo, formatBytes, formatDateTime } from "../../../../../../../../lib/format";
 import { useLogDrain } from "../../../../../../../../lib/queries";
@@ -33,25 +33,19 @@ function lastResult(batch: {
 export default function LogDrainScreen() {
   const { drainId, ...params } = useLocalSearchParams<EnvironmentParams & { drainId: string }>();
   const query = useLogDrain(params, drainId);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const first = query.data.pages[0];
-  if (!first) return <Loading />;
+  if (!first) return <Screen loading="detail" />;
   const { drain, queued_lines } = first;
   const batches = query.data.pages.flatMap((page) => page.batches.data);
   const [tone, label] = drainStatus(drain);
   return (
     <Screen onRefresh={() => query.refetch()}>
-      <Stack.Screen
-        options={{
-          title: "Log drain",
-          headerRight: () => (
-            <WebButton path={`${environmentPath(params)}/log-drains/${drain.id}`} />
-          ),
-        }}
-      />
+      <Stack.Screen options={{ title: "Log drain" }} />
+      <WebButton path={`${environmentPath(params)}/log-drains/${drain.id}`} />
       <PageIntro
         description={drain.description || undefined}
         meta={
@@ -92,7 +86,6 @@ export default function LogDrainScreen() {
           description: "Batches appear here as lines are written and sent.",
         }}
         items={batches}
-        olderLabel="Older batches"
         query={query}
         render={(batch) => {
           const [batchTone, batchLabel] = BATCH_STATUS[batch.status] ?? ["neutral", batch.status];

@@ -9,7 +9,7 @@ import { Button } from "../../../../components/button";
 import { EmptyState } from "../../../../components/empty";
 import { Icon } from "../../../../components/icon";
 import { ListRow, Panel, Ruled } from "../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../components/screen";
+import { PageIntro, Screen } from "../../../../components/screen";
 import { SearchField } from "../../../../components/search-field";
 import { Segmented } from "../../../../components/tabs";
 import { Code, Text } from "../../../../components/text";
@@ -84,16 +84,16 @@ function Countries(props: { countries: MobileSmsCountry[] }) {
 export default function OrganizationSmsScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useSmsSenders(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { notice, can_create, numbers, registrations, countries } = query.data;
   const path = `/${org}/sms`;
 
   return (
     <Screen onRefresh={() => query.refetch()} title="SMS">
-      <Stack.Screen options={{ headerRight: () => <WebButton path={path} /> }} />
+      <WebButton path={path} />
       <PageIntro
         description="Your organization's phone numbers, their carrier registrations and the countries live messages may go to. Sandbox environments need none of this: their messages are simulated."
         title="SMS"

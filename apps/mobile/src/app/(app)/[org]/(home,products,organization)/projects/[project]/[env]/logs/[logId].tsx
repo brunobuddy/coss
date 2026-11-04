@@ -11,7 +11,7 @@ import {
   SpecItem,
   SpecList,
 } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Text } from "../../../../../../../../components/text";
 import { formatDateTime, formatTime } from "../../../../../../../../lib/format";
 import { logSummary } from "../../../../../../../../lib/logs";
@@ -26,9 +26,9 @@ function sameDay(a: string, b: string): boolean {
 export default function LogEntryScreen() {
   const { logId, ...params } = useLocalSearchParams<EnvironmentParams & { logId: string }>();
   const query = useLogEntry(params, logId);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { entry, related } = query.data;
   const summary = logSummary(entry);

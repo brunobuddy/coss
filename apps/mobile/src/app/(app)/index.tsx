@@ -5,7 +5,7 @@ import { Pressable } from "react-native";
 import { OrgAvatar, UserAvatar } from "../../components/avatar";
 import { EmptyState } from "../../components/empty";
 import { ListRow, Panel, Ruled } from "../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../components/screen";
+import { PageIntro, Screen } from "../../components/screen";
 import { Text } from "../../components/text";
 import { roleLabel } from "../../lib/format";
 import { lastOrganization } from "../../lib/last-org";
@@ -45,9 +45,9 @@ export default function OrganizationsScreen() {
         }}
       />
       {me.isPending ? (
-        <Loading />
+        <Screen loading="list" />
       ) : me.isError && !me.data ? (
-        <ErrorState error={me.error} onRetry={() => me.refetch()} />
+        <Screen error={me.error} onRetry={() => me.refetch()} />
       ) : (
         <Screen onRefresh={() => me.refetch()} title="Organizations">
           <PageIntro

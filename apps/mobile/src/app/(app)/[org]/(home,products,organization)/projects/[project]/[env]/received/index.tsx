@@ -17,9 +17,7 @@ export default function ReceivedScreen() {
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <Screen onRefresh={() => query.refetch()} title="Received">
-      <Stack.Screen
-        options={{ headerRight: () => <WebButton path={`${environmentPath(params)}/received`} /> }}
-      />
+      <WebButton path={`${environmentPath(params)}/received`} />
       <PageIntro
         description={`Emails sent to this environment's addresses. Each one also triggers an email.received webhook. Received emails are kept for ${formatRetentionDays(RETENTION_DAYS.receivedEmails)}.`}
         meta={<ModeBadge params={params} />}
@@ -32,7 +30,6 @@ export default function ReceivedScreen() {
           description: "Emails sent to this environment's addresses show up here.",
         }}
         items={items}
-        olderLabel="Older emails"
         query={query}
         render={(email) => (
           <ListRow

@@ -51,11 +51,7 @@ export default function BroadcastsScreen() {
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <Screen onRefresh={() => query.refetch()} title="Broadcasts">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/broadcasts`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/broadcasts`} />
       <PageIntro
         description="One marketing email to an audience or a segment, sent at your plan's pace, with its own stats."
         title="Broadcasts"

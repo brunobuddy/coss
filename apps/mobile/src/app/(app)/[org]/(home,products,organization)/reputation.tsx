@@ -6,7 +6,7 @@ import { Alert } from "../../../../components/alert";
 import { Badge, StatusDot } from "../../../../components/badge";
 import { EmptyState } from "../../../../components/empty";
 import { ListRow, Panel, Ruled } from "../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../components/screen";
+import { PageIntro, Screen } from "../../../../components/screen";
 import { Text } from "../../../../components/text";
 import { formatCount, formatDateTime, formatRate } from "../../../../lib/format";
 import { useReputation } from "../../../../lib/queries";
@@ -85,9 +85,9 @@ function Check({ check }: { check: ReputationCheck }) {
 export default function ReputationScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useReputation(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { standing, sending_paused, events } = query.data;
 

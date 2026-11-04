@@ -17,7 +17,7 @@ import { Button } from "../../../../../components/button";
 import { Icon } from "../../../../../components/icon";
 import { SettingsRow } from "../../../../../components/organization-settings";
 import { ListRow, Panel, Ruled } from "../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../components/screen";
 import { Text } from "../../../../../components/text";
 import { WebButton } from "../../../../../components/web-button";
 import { useOrganizationSettings } from "../../../../../lib/queries-organization-settings";
@@ -106,9 +106,9 @@ function RetentionPanel() {
 export default function OrganizationSettingsScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useOrganizationSettings(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const settings = query.data;
   const { organization, api_version: apiVersion } = settings;
@@ -116,7 +116,7 @@ export default function OrganizationSettingsScreen() {
   const otherTabs = tabs(settings);
   return (
     <Screen onRefresh={() => query.refetch()} title="Settings">
-      <Stack.Screen options={{ headerRight: () => <WebButton path={`/${org}/settings`} /> }} />
+      <WebButton path={`/${org}/settings`} />
       <PageIntro title="Settings" />
       {otherTabs.length > 0 ? (
         <Panel>

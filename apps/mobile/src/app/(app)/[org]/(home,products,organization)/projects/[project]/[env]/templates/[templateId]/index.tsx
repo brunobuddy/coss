@@ -13,12 +13,7 @@ import {
   SpecItem,
   SpecList,
 } from "../../../../../../../../../components/panel";
-import {
-  ErrorState,
-  Loading,
-  PageIntro,
-  Screen,
-} from "../../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../../components/screen";
 import {
   initialLocale,
   LocaleTabs,
@@ -46,9 +41,9 @@ export default function TemplateScreen() {
   const query = useTemplate(params, templateId);
   const [selected, setSelected] = useState<string | null>(null);
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { template, draft } = query.data;
   const path = `${environmentPath(params)}/templates/${template.id}`;
@@ -61,7 +56,7 @@ export default function TemplateScreen() {
 
   return (
     <Screen onRefresh={() => query.refetch()} title={template.name}>
-      <Stack.Screen options={{ headerRight: () => <WebButton path={path} /> }} />
+      <WebButton path={path} />
       <PageIntro
         description={template.description ?? undefined}
         meta={

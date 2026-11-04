@@ -5,7 +5,7 @@ import { Alert } from "../../../../components/alert";
 import { Badge, StatusDot } from "../../../../components/badge";
 import { EmptyState } from "../../../../components/empty";
 import { Panel, Ruled } from "../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../components/screen";
+import { PageIntro, Screen } from "../../../../components/screen";
 import { Stat, StatGrid } from "../../../../components/stat";
 import { Text } from "../../../../components/text";
 import { WebButton } from "../../../../components/web-button";
@@ -24,9 +24,9 @@ export default function DedicatedIpsScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const router = useRouter();
   const query = useDedicatedIps(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const pool = query.data;
   const status = DEDICATED_IP_STATUS[pool.status];
@@ -34,11 +34,7 @@ export default function DedicatedIpsScreen() {
   return (
     <Screen onRefresh={() => query.refetch()} title="Dedicated IPs">
       {/* Without the add-on, coss.com's page offers to buy it: no purchase links here (3.1.1). */}
-      {pool.status === "not_enabled" ? null : (
-        <Stack.Screen
-          options={{ headerRight: () => <WebButton path={`/${org}/dedicated-ips`} /> }}
-        />
-      )}
+      {pool.status === "not_enabled" ? null : <WebButton path={`/${org}/dedicated-ips`} />}
       <PageIntro
         description="Your own sending IPs, so no other sender's reputation affects yours. SES leases, scales and warms them up automatically."
         meta={

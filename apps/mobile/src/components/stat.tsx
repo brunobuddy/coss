@@ -1,6 +1,7 @@
 import { Children, isValidElement, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { colors, radius } from "../lib/theme";
+import { colors, radius, useFinish } from "../lib/theme";
+import { CountUp } from "./count-up";
 import { Text } from "./text";
 
 /** The dashboard's `StatRow`: measured values ruled into cells, two to a row. */
@@ -9,10 +10,11 @@ export function StatGrid(props: { children: ReactNode }) {
     key: isValidElement(cell) ? String(cell.key) : String(cell),
     cell,
   }));
+  const finish = useFinish();
   const rows: (typeof cells)[] = [];
   for (let i = 0; i < cells.length; i += 2) rows.push(cells.slice(i, i + 2));
   return (
-    <View style={styles.grid}>
+    <View style={[styles.grid, { boxShadow: finish.panel }]}>
       {rows.map((row) => (
         <View key={row[0]?.key} style={[styles.row, row !== rows[0] && styles.rowRule]}>
           {row.map(({ key, cell }) => (
@@ -34,15 +36,14 @@ export function Stat(props: { label: string; value: string; unit?: string; detai
         {props.label}
       </Text>
       <View style={styles.value}>
-        <Text
+        <CountUp
           adjustsFontSizeToFit
           minimumFontScale={0.6}
           numberOfLines={1}
           style={styles.number}
+          value={props.value}
           variant="value"
-        >
-          {props.value}
-        </Text>
+        />
         {props.unit ? (
           <Text muted style={styles.unit} variant="body">
             {props.unit}

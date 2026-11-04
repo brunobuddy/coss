@@ -9,7 +9,7 @@ import { Button } from "../../components/button";
 import { Icon } from "../../components/icon";
 import { ListRow, Panel, SpecItem, SpecList } from "../../components/panel";
 import { PushSettingsPanel } from "../../components/push-settings";
-import { ErrorState, Loading, Screen } from "../../components/screen";
+import { Screen } from "../../components/screen";
 import { Text } from "../../components/text";
 import { useAuth } from "../../lib/auth";
 import { DASHBOARD_URL } from "../../lib/config";
@@ -19,8 +19,8 @@ export default function SettingsScreen() {
   const me = useMe();
   const { signOut } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
-  if (me.isPending) return <Loading />;
-  if (me.isError && !me.data) return <ErrorState error={me.error} onRetry={() => me.refetch()} />;
+  if (me.isPending) return <Screen loading="list" />;
+  if (me.isError && !me.data) return <Screen error={me.error} onRetry={() => me.refetch()} />;
   const { user } = me.data;
 
   const confirmSignOut = () =>

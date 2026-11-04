@@ -5,7 +5,7 @@ import { StatusDot } from "../../../../../../../../components/badge";
 import { EmptyState } from "../../../../../../../../components/empty";
 import { ModeBadge } from "../../../../../../../../components/mode-badge";
 import { ListRow, Panel, Ruled } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { useLogDrains } from "../../../../../../../../lib/queries";
 import { drainStatus, sourcesSummary } from "../../../../../../../../lib/status";
@@ -14,20 +14,16 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function LogDrainsScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useLogDrains(params);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { plan_allows, data } = query.data;
   return (
     <Screen onRefresh={() => query.refetch()} title="Log drains">
       {/* Without the plan, coss.com's page is an upgrade prompt: no purchase links here (3.1.1). */}
       {plan_allows || data.length > 0 ? (
-        <Stack.Screen
-          options={{
-            headerRight: () => <WebButton path={`${environmentPath(params)}/log-drains`} />,
-          }}
-        />
+        <WebButton path={`${environmentPath(params)}/log-drains`} />
       ) : null}
       <PageIntro
         description="Stream this environment's API requests, email events, webhook attempts and audit events to your own logging stack."

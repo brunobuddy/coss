@@ -7,7 +7,7 @@ import { EmptyState } from "../../../../../../../components/empty";
 import { Icon } from "../../../../../../../components/icon";
 import { ModeBadge } from "../../../../../../../components/mode-badge";
 import { Panel, PanelBody, Ruled } from "../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../components/screen";
 import { Text } from "../../../../../../../components/text";
 import { WebButton } from "../../../../../../../components/web-button";
 import { formatAgo, formatDate } from "../../../../../../../lib/format";
@@ -34,18 +34,16 @@ export default function ApiKeysScreen() {
   const environment = useEnvironment(params).data;
   const userId = useMe().data?.user.id;
   const live = environment?.environment.mode === "live";
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const where = environment
     ? `${environment.project.name} · ${environment.environment.name}`
     : "this environment";
   return (
     <Screen onRefresh={() => query.refetch()} title="API keys">
-      <Stack.Screen
-        options={{ headerRight: () => <WebButton path={`${environmentPath(params)}/api-keys`} /> }}
-      />
+      <WebButton path={`${environmentPath(params)}/api-keys`} />
       <PageIntro
         description={`Keys authenticate requests to the API and SDK, and are the password for SMTP. They start with ${query.data.prefix} and only work in ${where}. Create and revoke keys on coss.com.`}
         meta={<ModeBadge params={params} />}

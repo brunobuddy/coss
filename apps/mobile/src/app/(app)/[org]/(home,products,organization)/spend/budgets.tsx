@@ -6,7 +6,7 @@ import { Badge } from "../../../../../components/badge";
 import { BudgetMeter } from "../../../../../components/budget";
 import { EmptyState } from "../../../../../components/empty";
 import { Panel, Ruled } from "../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../components/screen";
 import { SpendTabs } from "../../../../../components/spend-tabs";
 import { Text } from "../../../../../components/text";
 import { WebButton } from "../../../../../components/web-button";
@@ -19,13 +19,13 @@ import { useBudgets } from "../../../../../lib/queries-spend";
 export default function BudgetsScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useBudgets(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data)
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   const budgets = query.data;
   return (
     <Screen onRefresh={() => query.refetch()} title="Spend">
-      <Stack.Screen options={{ headerRight: () => <WebButton path={`/${org}/spend/budgets`} /> }} />
+      <WebButton path={`/${org}/spend/budgets`} />
       <PageIntro
         description="Monthly budgets for what members' personal API keys, projects and single API keys spend. Over a budget, its live sending pauses until next month or until the budget is raised; the billing contacts (and the member it concerns) are emailed at its alert thresholds."
         title="Spend"

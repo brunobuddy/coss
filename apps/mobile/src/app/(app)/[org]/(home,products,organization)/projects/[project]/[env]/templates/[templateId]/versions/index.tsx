@@ -3,7 +3,7 @@ import { History } from "lucide-react-native";
 import { Badge } from "../../../../../../../../../../components/badge";
 import { PagedPanel } from "../../../../../../../../../../components/paged";
 import { ListRow } from "../../../../../../../../../../components/panel";
-import { ErrorState, PageIntro, Screen } from "../../../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../../../components/screen";
 import { WebButton } from "../../../../../../../../../../components/web-button";
 import { formatDateTime } from "../../../../../../../../../../lib/format";
 import { useTemplateVersions } from "../../../../../../../../../../lib/queries-templates";
@@ -17,20 +17,14 @@ export default function TemplateVersionsScreen() {
   >();
   const query = useTemplateVersions(params, templateId);
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const template = query.data?.pages[0]?.template;
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   const title = template ? `${template.name}: versions` : "Versions";
   return (
     <Screen onRefresh={() => query.refetch()} title={title}>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <WebButton path={`${environmentPath(params)}/templates/${templateId}/versions`} />
-          ),
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/templates/${templateId}/versions`} />
       <PageIntro
         description="Every published version, which never changes. Restore one into the draft to publish it again."
         title={title}
@@ -42,7 +36,6 @@ export default function TemplateVersionsScreen() {
           description: "Publish the draft to create version 1.",
         }}
         items={items}
-        olderLabel="Older versions"
         query={query}
         render={(version) => (
           <ListRow

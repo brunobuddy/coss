@@ -34,9 +34,7 @@ export default function SmsScreen() {
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <Screen onRefresh={() => query.refetch()} title="SMS">
-      <Stack.Screen
-        options={{ headerRight: () => <WebButton path={`${environmentPath(params)}/sms`} /> }}
-      />
+      <WebButton path={`${environmentPath(params)}/sms`} />
       <PageIntro
         description={`${
           mode === "sandbox"
@@ -56,7 +54,6 @@ export default function SmsScreen() {
             : "Send one with `coss.sms.send()` or `POST /v1/sms`.",
         }}
         items={items}
-        olderLabel="Older messages"
         query={query}
         render={(sms) => <SmsRow key={sms.id} params={params} sms={sms} />}
       />

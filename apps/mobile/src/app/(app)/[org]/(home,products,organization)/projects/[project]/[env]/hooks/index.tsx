@@ -18,9 +18,7 @@ export default function HookApplicationsScreen() {
   const items = query.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <Screen onRefresh={() => query.refetch()} title="Hooks">
-      <Stack.Screen
-        options={{ headerRight: () => <WebButton path={`${environmentPath(params)}/hooks`} /> }}
-      />
+      <WebButton path={`${environmentPath(params)}/hooks`} />
       <PageIntro
         description="Send a message to one of your applications once: coss.com delivers it, signed and retried, to every endpoint its users registered."
         meta={<ModeBadge params={params} />}
@@ -39,7 +37,6 @@ export default function HookApplicationsScreen() {
               }
         }
         items={items}
-        olderLabel="Older applications"
         query={query}
         render={(application) => (
           <ListRow

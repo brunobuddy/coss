@@ -4,7 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { Badge } from "../../../../../../../components/badge";
 import { EmptyState } from "../../../../../../../components/empty";
 import { Panel, Ruled } from "../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../components/screen";
 import { Text } from "../../../../../../../components/text";
 import { WebButton } from "../../../../../../../components/web-button";
 import { useTopics } from "../../../../../../../lib/queries-contacts";
@@ -15,19 +15,15 @@ export default function TopicsScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useTopics(params);
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const topics = query.data.data;
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/topics`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/topics`} />
       <Screen onRefresh={() => query.refetch()} title="Topics">
         <PageIntro
           description="What contacts subscribe to. A topic's key is the category of the emails about it; public topics show in the preference center."

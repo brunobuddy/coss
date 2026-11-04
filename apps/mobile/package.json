@@ -10,6 +10,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@coss/dashboard-routes": "workspace:*",
     "@coss/observability": "workspace:*",
     "@coss/retention": "workspace:*",
     "@expo/log-box": "~57.0.4",

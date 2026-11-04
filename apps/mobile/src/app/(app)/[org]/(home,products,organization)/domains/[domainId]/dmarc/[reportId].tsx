@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Badge, StatusDot } from "../../../../../../../components/badge";
 import { Panel, Ruled, SpecItem, SpecList } from "../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../components/screen";
 import { Text } from "../../../../../../../components/text";
 import { WebButton } from "../../../../../../../components/web-button";
 import { formatCount, formatDateTime } from "../../../../../../../lib/format";
@@ -62,19 +62,15 @@ export default function DmarcReportScreen() {
     reportId: string;
   }>();
   const query = useDmarcReport(org, domainId, reportId);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { domain, report } = query.data;
   const title = `Report from ${report.reporter}`;
   return (
     <Screen onRefresh={() => query.refetch()} title={title}>
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`/${org}/domains/${domain.id}/dmarc/${report.id}`} />,
-        }}
-      />
+      <WebButton path={`/${org}/domains/${domain.id}/dmarc/${report.id}`} />
       <PageIntro
         description={`What ${report.reporter} saw of mail claiming to be from ${domain.name} between ${formatDateTime(report.period_start)} and ${formatDateTime(report.period_end)}.`}
         meta={report.truncated ? <Badge variant="warning">Truncated to 10,000 rows</Badge> : null}

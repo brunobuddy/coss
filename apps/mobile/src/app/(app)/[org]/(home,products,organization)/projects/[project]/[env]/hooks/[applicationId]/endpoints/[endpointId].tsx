@@ -5,12 +5,7 @@ import { Alert } from "../../../../../../../../../../components/alert";
 import { Badge, StatusDot } from "../../../../../../../../../../components/badge";
 import { PagedPanel } from "../../../../../../../../../../components/paged";
 import { ListRow, Panel, SpecItem, SpecList } from "../../../../../../../../../../components/panel";
-import {
-  ErrorState,
-  Loading,
-  PageIntro,
-  Screen,
-} from "../../../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../../../components/screen";
 import { WebButton } from "../../../../../../../../../../components/web-button";
 import { formatAgo, formatDateTime, plural } from "../../../../../../../../../../lib/format";
 import { useHookEndpoint } from "../../../../../../../../../../lib/queries";
@@ -25,26 +20,20 @@ export default function HookEndpointScreen() {
     EnvironmentParams & { applicationId: string; endpointId: string }
   >();
   const query = useHookEndpoint(params, applicationId, endpointId);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const first = query.data.pages[0];
-  if (!first) return <Loading />;
+  if (!first) return <Screen loading="detail" />;
   const { application, endpoint, last_recovery } = first;
   const deliveries = query.data.pages.flatMap((page) => page.deliveries.data);
   const [tone, label] = endpointStatus(endpoint);
   return (
     <Screen onRefresh={() => query.refetch()}>
-      <Stack.Screen
-        options={{
-          title: "Endpoint",
-          headerRight: () => (
-            <WebButton
-              path={`${environmentPath(params)}/hooks/${application.id}/endpoints/${endpoint.id}`}
-            />
-          ),
-        }}
+      <Stack.Screen options={{ title: "Endpoint" }} />
+      <WebButton
+        path={`${environmentPath(params)}/hooks/${application.id}/endpoints/${endpoint.id}`}
       />
       <PageIntro
         description={endpoint.description ?? undefined}
@@ -97,7 +86,6 @@ export default function HookEndpointScreen() {
           description: "Messages sent to this endpoint's application show up here.",
         }}
         items={deliveries}
-        olderLabel="Older deliveries"
         query={query}
         render={(delivery) => {
           const [deliveryTone, deliveryLabel] = HOOK_DELIVERY_STATUS[delivery.status] ?? [

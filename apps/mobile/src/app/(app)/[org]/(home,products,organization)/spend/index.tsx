@@ -16,7 +16,7 @@ import { BudgetMeter } from "../../../../../components/budget";
 import { EmptyState } from "../../../../../components/empty";
 import { type Filter, FilterChips } from "../../../../../components/filters";
 import { Panel, PanelBody, Ruled } from "../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../components/screen";
 import { SpendTabs } from "../../../../../components/spend-tabs";
 import { Stat, StatGrid } from "../../../../../components/stat";
 import { Text } from "../../../../../components/text";
@@ -50,16 +50,16 @@ const MEMBER_SERIES: BarSeries<SpendDay>[] = [
 export default function SpendScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useSpend(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data)
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   const spend = query.data;
   return (
     <Screen
       onRefresh={() => query.refetch()}
       title={spend.view === "member" ? "Your spend" : "Spend"}
     >
-      <Stack.Screen options={{ headerRight: () => <WebButton path={`/${org}/spend`} /> }} />
+      <WebButton path={`/${org}/spend`} />
       {spend.view === "member" ? (
         <MemberSpend spend={spend} />
       ) : (

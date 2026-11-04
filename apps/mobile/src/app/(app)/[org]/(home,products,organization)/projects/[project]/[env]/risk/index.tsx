@@ -44,9 +44,7 @@ export default function RiskScreen() {
   const resolving = view === "review" && (query.data?.pages[0]?.can_review ?? false);
   return (
     <Screen onRefresh={() => query.refetch()} title="Risk">
-      <Stack.Screen
-        options={{ headerRight: () => <WebButton path={`${environmentPath(params)}/risk`} /> }}
-      />
+      <WebButton path={`${environmentPath(params)}/risk`} />
       <PageIntro
         description="Every assessment of sign-ups, logins and other events made with this environment's API keys: the decision, its score and the reasons behind it. Reviews stay open until you report an outcome."
         meta={<ModeBadge params={params} />}
@@ -63,7 +61,6 @@ export default function RiskScreen() {
               : "Call coss.risk.assess() from your sign-up or login flow.",
         }}
         items={items}
-        olderLabel="Older assessments"
         query={query}
         render={(assessment) => {
           const row = (

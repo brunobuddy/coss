@@ -5,7 +5,7 @@ import { Alert } from "../../../../../../components/alert";
 import { Badge, StatusDot } from "../../../../../../components/badge";
 import { EmptyState } from "../../../../../../components/empty";
 import { ListRow, Panel, Ruled, SpecItem, SpecList } from "../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../components/screen";
 import { Stat, StatGrid } from "../../../../../../components/stat";
 import { Text } from "../../../../../../components/text";
 import { formatCount, formatMoney, formatPeriod, plural } from "../../../../../../lib/format";
@@ -28,9 +28,9 @@ function daysLeft(end: string): number {
 export default function BillingScreen() {
   const { org } = useLocalSearchParams<{ org: string }>();
   const query = useBilling(org);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const billing = query.data;
   const held =

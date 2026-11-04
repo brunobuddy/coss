@@ -2,7 +2,7 @@ import type { MobileSegmentCondition } from "@coss/companion";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Panel, PanelBody, Ruled } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Code, Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatCount, formatDateTime } from "../../../../../../../../lib/format";
@@ -34,21 +34,15 @@ export default function SegmentScreen() {
   >();
   const query = useSegment(params, segmentId);
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { segment, count, sample } = query.data;
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <WebButton path={`${environmentPath(params)}/segments/${segment.id}`} />
-          ),
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/segments/${segment.id}`} />
       <Screen onRefresh={() => query.refetch()} title={segment.name}>
         <PageIntro
           description={`Updated ${formatDateTime(segment.updated_at)}.`}

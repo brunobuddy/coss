@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { CodeBlock } from "../../../../../../../components/code-block";
 import { Panel, SpecItem, SpecList } from "../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../components/screen";
 import { WebButton } from "../../../../../../../components/web-button";
 import { useMarketingSettings } from "../../../../../../../lib/queries-broadcasts";
 import { type EnvironmentParams, environmentPath } from "../../../../../../../lib/web";
@@ -11,17 +11,11 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../li
 export default function MarketingSettingsScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useMarketingSettings(params);
-  const header = (
-    <Stack.Screen
-      options={{
-        headerRight: () => <WebButton path={`${environmentPath(params)}/marketing`} />,
-      }}
-    />
-  );
+  const header = <WebButton path={`${environmentPath(params)}/marketing`} />;
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { settings } = query.data;
 

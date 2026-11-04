@@ -5,7 +5,7 @@ import { Badge, StatusDot } from "../../../../../../../../components/badge";
 import { EmptyState } from "../../../../../../../../components/empty";
 import { ModeBadge } from "../../../../../../../../components/mode-badge";
 import { Panel, Ruled } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { useRiskRules } from "../../../../../../../../lib/queries";
@@ -15,17 +15,13 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function RiskRulesScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useRiskRules(params);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   return (
     <Screen onRefresh={() => query.refetch()} title="Rules">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/risk/rules`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/risk/rules`} />
       <PageIntro
         description="Checked after the allow and block lists, in position order: the first enabled rule whose conditions match an event decides it."
         meta={<ModeBadge params={params} />}

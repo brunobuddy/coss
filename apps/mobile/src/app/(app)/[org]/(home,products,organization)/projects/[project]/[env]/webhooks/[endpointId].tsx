@@ -10,7 +10,7 @@ import { Button } from "../../../../../../../../components/button";
 import { type Filter, FilterChips } from "../../../../../../../../components/filters";
 import { PagedPanel } from "../../../../../../../../components/paged";
 import { Panel, SpecItem, SpecList } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Text } from "../../../../../../../../components/text";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { formatAgo, formatDateTime } from "../../../../../../../../lib/format";
@@ -226,25 +226,19 @@ export default function WebhookEndpointScreen() {
   const [status, setStatus] = useState<Status | null>(null);
   const query = useWebhookEndpoint(params, endpointId, status);
   const retry = useRetryDelivery(params, endpointId);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const first = query.data.pages[0];
-  if (!first) return <Loading />;
+  if (!first) return <Screen loading="detail" />;
   const { endpoint, can_update } = first;
   const deliveries = query.data.pages.flatMap((page) => page.deliveries.data);
   const [tone, label] = endpointStatus(endpoint);
   return (
     <Screen onRefresh={() => query.refetch()}>
-      <Stack.Screen
-        options={{
-          title: "Endpoint",
-          headerRight: () => (
-            <WebButton path={`${environmentPath(params)}/webhooks/${endpoint.id}`} />
-          ),
-        }}
-      />
+      <Stack.Screen options={{ title: "Endpoint" }} />
+      <WebButton path={`${environmentPath(params)}/webhooks/${endpoint.id}`} />
       <PageIntro
         description={endpoint.description ?? undefined}
         meta={
@@ -311,7 +305,6 @@ export default function WebhookEndpointScreen() {
               }
         }
         items={deliveries}
-        olderLabel="Older deliveries"
         // While another filter loads, the previous one's rows stay in `data`: show the spinner.
         query={query.isPlaceholderData ? { ...query, isPending: true } : query}
         render={(delivery) => (

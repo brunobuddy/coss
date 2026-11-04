@@ -5,7 +5,7 @@ import { Alert } from "../../../../../../components/alert";
 import { Badge, StatusDot } from "../../../../../../components/badge";
 import { DomainTabs } from "../../../../../../components/domain-tabs";
 import { Panel, Ruled, SpecItem, SpecList } from "../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../components/screen";
 import { Text } from "../../../../../../components/text";
 import { WebButton } from "../../../../../../components/web-button";
 import { formatDateTime } from "../../../../../../lib/format";
@@ -91,17 +91,15 @@ function Record({ record }: { record: DnsRecord }) {
 export default function DomainScreen() {
   const { org, domainId } = useLocalSearchParams<{ org: string; domainId: string }>();
   const query = useDomain(org, domainId);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const domain = query.data;
   const [tone, label] = DOMAIN_STATUS[domain.status] ?? ["neutral", domain.status];
   return (
     <Screen onRefresh={() => query.refetch()} title={domain.name}>
-      <Stack.Screen
-        options={{ headerRight: () => <WebButton path={`/${org}/domains/${domain.id}`} /> }}
-      />
+      <WebButton path={`/${org}/domains/${domain.id}`} />
       <PageIntro
         description={STATUS_HELP[domain.status]}
         meta={

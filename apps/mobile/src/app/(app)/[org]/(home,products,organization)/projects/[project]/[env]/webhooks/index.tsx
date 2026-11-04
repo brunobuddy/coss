@@ -4,7 +4,7 @@ import { StatusDot } from "../../../../../../../../components/badge";
 import { EmptyState } from "../../../../../../../../components/empty";
 import { ModeBadge } from "../../../../../../../../components/mode-badge";
 import { ListRow, Panel, Ruled } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { WebButton } from "../../../../../../../../components/web-button";
 import { plural } from "../../../../../../../../lib/format";
 import { useWebhookEndpoints } from "../../../../../../../../lib/queries";
@@ -14,15 +14,13 @@ import { type EnvironmentParams, environmentPath } from "../../../../../../../..
 export default function WebhooksScreen() {
   const params = useLocalSearchParams<EnvironmentParams>();
   const query = useWebhookEndpoints(params);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="list" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   return (
     <Screen onRefresh={() => query.refetch()} title="Webhooks">
-      <Stack.Screen
-        options={{ headerRight: () => <WebButton path={`${environmentPath(params)}/webhooks`} /> }}
-      />
+      <WebButton path={`${environmentPath(params)}/webhooks`} />
       <PageIntro
         description="Signed notifications of email delivery events and reputation changes in this environment."
         meta={<ModeBadge params={params} />}

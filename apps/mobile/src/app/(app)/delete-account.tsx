@@ -7,7 +7,7 @@ import { Alert as NativeAlert, Pressable, StyleSheet, TextInput } from "react-na
 import { Alert } from "../../components/alert";
 import { Button } from "../../components/button";
 import { ListRow, Panel, PanelBody, Ruled } from "../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../components/screen";
+import { PageIntro, Screen } from "../../components/screen";
 import { Code, Text } from "../../components/text";
 import { useAuth } from "../../lib/auth";
 import { ApiRequestError, useAccountDeletion, useDeleteAccount, useMe } from "../../lib/queries";
@@ -36,11 +36,11 @@ export default function DeleteAccountScreen() {
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  if (plan.isPending || me.isPending) return <Loading />;
+  if (plan.isPending || me.isPending) return <Screen loading="list" />;
   if (plan.isError && !plan.data) {
-    return <ErrorState error={plan.error} onRetry={() => plan.refetch()} />;
+    return <Screen error={plan.error} onRetry={() => plan.refetch()} />;
   }
-  if (me.isError && !me.data) return <ErrorState error={me.error} onRetry={() => me.refetch()} />;
+  if (me.isError && !me.data) return <Screen error={me.error} onRetry={() => me.refetch()} />;
   const { email } = me.data.user;
   const blocked = plan.data.blockers.length > 0;
   const confirmed = confirmation.trim().toLowerCase() === email.toLowerCase();

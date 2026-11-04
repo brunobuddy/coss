@@ -28,7 +28,7 @@ import {
   SpecItem,
   SpecList,
 } from "../../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../../components/screen";
 import { Tabs } from "../../../../../../../../components/tabs";
 import { Text } from "../../../../../../../../components/text";
 import { formatBytes, formatCount, formatDateTime } from "../../../../../../../../lib/format";
@@ -56,18 +56,18 @@ function list(values: string[]): string {
 function CopyId({ id }: { id: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <Pressable
-      accessibilityLabel="Copy email ID"
-      hitSlop={10}
-      onPress={async () => {
-        await Clipboard.setStringAsync(id);
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }}
-    >
-      <Icon icon={copied ? Check : Copy} size={18} />
-    </Pressable>
+    <Stack.Toolbar placement="right">
+      <Stack.Toolbar.Button
+        accessibilityLabel="Copy email ID"
+        icon={copied ? "checkmark" : "doc.on.doc"}
+        onPress={async () => {
+          await Clipboard.setStringAsync(id);
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        }}
+      />
+    </Stack.Toolbar>
   );
 }
 
@@ -284,9 +284,9 @@ export default function EmailScreen() {
   const query = useEmail(params, id);
   const [tab, setTab] = useState<Tab>("overview");
 
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const { email, events, has_more_events, can_send } = query.data;
   const openEmailOnWeb = () =>
@@ -294,7 +294,7 @@ export default function EmailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerRight: () => <CopyId id={email.id} /> }} />
+      <CopyId id={email.id} />
       <Screen onRefresh={() => query.refetch()}>
         <PageIntro
           meta={

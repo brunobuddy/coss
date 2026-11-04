@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Badge, StatusDot } from "../../../../../../../components/badge";
 import { Panel, Ruled, SpecItem, SpecList } from "../../../../../../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../../../../../../components/screen";
+import { PageIntro, Screen } from "../../../../../../../components/screen";
 import { Text } from "../../../../../../../components/text";
 import {
   formatCount,
@@ -16,9 +16,9 @@ import { invoiceStatus } from "../../../../../../../lib/status";
 export default function InvoiceScreen() {
   const { org, invoiceId } = useLocalSearchParams<{ org: string; invoiceId: string }>();
   const query = useInvoice(org, invoiceId);
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Screen loading="detail" />;
   if (query.isError && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />;
+    return <Screen error={query.error} onRetry={() => query.refetch()} />;
   }
   const invoice = query.data;
   const [tone, label] = invoiceStatus(invoice);

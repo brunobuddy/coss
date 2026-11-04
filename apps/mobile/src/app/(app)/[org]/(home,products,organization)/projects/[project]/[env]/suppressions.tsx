@@ -34,11 +34,7 @@ export default function SuppressionsScreen() {
     query.error.error.code === "invalid_request";
   return (
     <Screen onRefresh={() => query.refetch()} title="Suppressions">
-      <Stack.Screen
-        options={{
-          headerRight: () => <WebButton path={`${environmentPath(params)}/suppressions`} />,
-        }}
-      />
+      <WebButton path={`${environmentPath(params)}/suppressions`} />
       <PageIntro
         description="Emails from this environment skip these addresses. Permanent bounces and complaints are added automatically; entries for a category only apply to emails sent with that category."
         meta={<ModeBadge params={params} />}
