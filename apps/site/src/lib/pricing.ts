@@ -4,6 +4,7 @@
  */
 import {
   ADD_ONS,
+  EMAIL_DATA_INCLUDED_MB,
   formatDimension,
   METER_KEYS,
   METERS,
@@ -172,7 +173,9 @@ function bandsOf(rate: Rate, per: number): RateTable["bands"] {
 
 /** What a meter's rate card doesn't say on its own. */
 export const METER_NOTES: Partial<Record<MeterKey, string>> = {
+  "email.attachment_data": `Attachments past each email's first ${EMAIL_DATA_INCLUDED_MB} MB, per recipient; rounded up to the MB per email`,
   "email.received": "Mail flagged as spam or carrying a virus is free",
+  "email.received_data": `Received messages past their first ${EMAIL_DATA_INCLUDED_MB} MB, with the same mail free; rounded up to the MB per email`,
   "email.inboxes":
     "30 inbox-days are an inbox for a month, charged by the day; every plan includes 3 inboxes",
   "hooks.messages":
