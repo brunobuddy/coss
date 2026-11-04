@@ -15,7 +15,13 @@ import type {
   HostObjectOutput,
   UpdateHostRequestOutput,
 } from "./schemas.ts";
-import { refuseLinks, type SetupScreening, screenSetup } from "./screening.ts";
+import {
+  locationText,
+  refuseLinks,
+  refuseLinksInAddresses,
+  type SetupScreening,
+  screenSetup,
+} from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
 const {
@@ -56,19 +62,6 @@ export function toHostObject(row: HostRow): HostObjectOutput {
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
   };
-}
-
-/** What a location adds to attendees' emails. A phone number has no room to say anything. */
-function locationText(location: HostLocationOutput): string | null {
-  if (location.type === "in_person") return location.address;
-  return location.type === "link" ? location.url : null;
-}
-
-/** An address can't hold a link. A meeting link is one, so only screening judges it. */
-function refuseLinksInLocations(locations: readonly HostLocationOutput[] | undefined): void {
-  for (const location of locations ?? []) {
-    if (location.type === "in_person") refuseLinks(location.address, "locations");
-  }
 }
 
 /** A value already on the host passed when it was set: saving the same list again costs nothing. */
@@ -151,7 +144,7 @@ export async function createHost(
 ): Promise<HostObjectOutput> {
   checkTimeZone(params.time_zone, "time_zone");
   refuseLinks(params.name, "name");
-  refuseLinksInLocations(params.locations);
+  refuseLinksInAddresses(params.locations);
   await screenSetup(env, params.name, opts.screen, "name");
   await screenLocations(env, params.locations, opts.screen);
   const calendarAccount = params.calendar_account
@@ -217,7 +210,7 @@ export async function updateHost(
 ): Promise<HostObjectOutput> {
   if (params.time_zone) checkTimeZone(params.time_zone, "time_zone");
   refuseLinks(params.name, "name");
-  refuseLinksInLocations(params.locations);
+  refuseLinksInAddresses(params.locations);
   if (scope.mode && params.name) {
     await screenSetup(
       { organizationId: scope.organizationId, mode: scope.mode },
