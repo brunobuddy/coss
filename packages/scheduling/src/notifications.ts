@@ -10,7 +10,7 @@
 import { HipaaModeError } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { type EmailBlock, type EmailContent, oneLine, renderEmail } from "@coss/email-layout";
-import { and, asc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, like, lt, lte, ne, or, sql } from "drizzle-orm";
 import { decryptContact } from "./attendees.ts";
 import { accentColors } from "./branding.ts";
 import { buildIcs } from "./calendar/ical.ts";
@@ -350,6 +350,33 @@ async function guestsAreTold(booking: BookingRow, event: NotificationEvent): Pro
 
 type Claimed = NotificationRow;
 
+/**
+ * Deploys roll every service together, so for a few minutes a worker runs beside an API newer than
+ * itself. This code sends whatever isn't email as SMS and whatever isn't to an attendee to the hosts,
+ * so a row of a shape it doesn't know could reach the wrong person. It claims only what it writes
+ * itself: anything else waits a few minutes for a worker that does know it.
+ */
+const understoodRow = () =>
+  and(
+    inArray(schedulingNotification.channel, ["email", "sms"]),
+    inArray(schedulingNotification.recipient, ["attendee", "host"]),
+    inArray(schedulingNotification.kind, [
+      "confirmed",
+      "pending_approval",
+      "rescheduled",
+      "cancelled",
+      "declined",
+      "reminder",
+      "zoom_needs_reauth",
+      "calendar_needs_reauth",
+    ]),
+    or(
+      ne(schedulingNotification.kind, "reminder"),
+      like(schedulingNotification.dedupeKey, "reminder:email:attendee:%"),
+      like(schedulingNotification.dedupeKey, "reminder:sms:attendee:%"),
+    ),
+  );
+
 async function claimDue(now: Date, opts: Scan): Promise<Claimed[]> {
   return db.transaction(async (tx) => {
     const due = await tx
@@ -360,6 +387,7 @@ async function claimDue(now: Date, opts: Scan): Promise<Claimed[]> {
           isNull(schedulingNotification.finishedAt),
           lte(schedulingNotification.dueAt, now),
           or(isNull(schedulingNotification.leaseUntil), lt(schedulingNotification.leaseUntil, now)),
+          understoodRow(),
           opts.scope
             ? inArray(schedulingNotification.organizationId, [...opts.scope.organizationIds])
             : undefined,

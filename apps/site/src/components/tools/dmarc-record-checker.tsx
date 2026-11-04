@@ -2,6 +2,7 @@
 
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
+import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
 import { Switch } from "@coss/ui/components/switch";
 import { Textarea } from "@coss/ui/components/textarea";
 import { useId, useState } from "react";
@@ -20,19 +21,19 @@ function PolicyPicker({
   return (
     <fieldset className="flex flex-col gap-2">
       <legend className="mb-2 font-medium text-sm">{legend}</legend>
-      <div className="flex flex-wrap gap-4 text-sm">
+      <RadioGroup
+        className="flex-row flex-wrap gap-4 text-sm"
+        name={name}
+        onValueChange={(next) => onChange(next as DmarcPolicy)}
+        value={value}
+      >
         {DMARC_POLICIES.map((policy) => (
-          <label className="flex items-center gap-2" key={policy}>
-            <input
-              checked={value === policy}
-              name={name}
-              onChange={() => onChange(policy)}
-              type="radio"
-            />
+          <Label className="font-normal" key={policy}>
+            <Radio value={policy} />
             {policy}
-          </label>
+          </Label>
         ))}
-      </div>
+      </RadioGroup>
     </fieldset>
   );
 }
@@ -49,12 +50,12 @@ export function DmarcRecordChecker() {
   const record = buildDmarcRecord({ policy, subdomainPolicy, rua, strictAlignment });
   const reading = pasted.trim() ? readDmarcRecord(pasted) : null;
   return (
-    <div className="grid border-t lg:grid-cols-2">
+    <div className="grid lg:grid-cols-2">
       <section
         aria-labelledby="dmarc-build"
-        className="flex flex-col gap-6 border-b px-4 py-8 sm:px-8 lg:border-r lg:border-b-0"
+        className="flex min-w-0 flex-col gap-6 border-b p-4 sm:p-5 lg:border-r lg:border-b-0"
       >
-        <h2 className="font-semibold text-2xl tracking-[-0.02em]" id="dmarc-build">
+        <h2 className="font-heading font-semibold text-xl tracking-[-0.01em]" id="dmarc-build">
           Generate a record
         </h2>
         <PolicyPicker legend="Policy" onChange={setPolicy} value={policy} />
@@ -81,13 +82,13 @@ export function DmarcRecordChecker() {
           <p className="text-muted-foreground text-sm">
             Publish this as a TXT record at <code className="font-mono">_dmarc.yourdomain.com</code>
           </p>
-          <code className="break-all rounded-lg border bg-background p-4 font-mono text-sm">
+          <code className="break-all rounded-lg border bg-muted/48 p-4 font-mono text-sm">
             {record}
           </code>
         </div>
       </section>
-      <section aria-labelledby="dmarc-read" className="flex flex-col gap-6 px-4 py-8 sm:px-8">
-        <h2 className="font-semibold text-2xl tracking-[-0.02em]" id="dmarc-read">
+      <section aria-labelledby="dmarc-read" className="flex min-w-0 flex-col gap-6 p-4 sm:p-5">
+        <h2 className="font-heading font-semibold text-xl tracking-[-0.01em]" id="dmarc-read">
           Check a record
         </h2>
         <div className="flex flex-col gap-2">
