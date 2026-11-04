@@ -18372,6 +18372,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'member'"
+        },
+        "fair_share": {
+          "name": "fair_share",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
