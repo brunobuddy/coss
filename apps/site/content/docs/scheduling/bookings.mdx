@@ -117,6 +117,19 @@ Guests didn't ask to hear from anyone, so in live environments they're emailed o
 [`email_from`](/docs/scheduling/notifications), never coss.com's address. Without a verified one they're still on the
 booking and its calendar event, and telling them is up to you.
 
+## Limiting bookings per person
+
+Set `max_active_bookings_per_attendee` on an event type to cap how many upcoming bookings of it one person can have
+at a time. Booking past it answers `attendee_limit_reached`, without saying what they've booked.
+
+People are known by `uid` or email, and bookings matching either count. Someone booking with neither isn't limited.
+Holds, bookings awaiting approval and every occurrence of a series count, and a series that wouldn't fit is refused
+whole. Guests don't count, and rescheduling an upcoming booking doesn't use up another. Confirming a hold or approving
+a request that's expired, or moving a past booking into the future, has to fit like a new booking.
+
+On a booking page where people type their own details, that answer tells whoever's typing that the address is at the
+limit for this event type. If that matters, fill in the attendee when you create the session.
+
 ## Rescheduling and cancelling
 
 `reschedule` keeps the booking's id, and its old time stays booked unless the new one's free. Your API

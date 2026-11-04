@@ -1,0 +1,1 @@
+ALTER TABLE "scheduling_event_type" ADD COLUMN "max_active_bookings_per_attendee" integer;

@@ -872,6 +872,21 @@ export function EventTypeForm(
               </Field>
             )}
             <Field>
+              <FieldLabel>Upcoming bookings per person</FieldLabel>
+              <Input
+                max={1000}
+                min={1}
+                onChange={(event) => set({ maxActivePerAttendee: event.target.value })}
+                placeholder="No limit"
+                type="number"
+                value={form.maxActivePerAttendee}
+              />
+              <FieldDescription>
+                How many of these one person can have booked at a time, known by their email or your
+                id for them. Guests don't count.
+              </FieldDescription>
+            </Field>
+            <Field>
               <FieldLabel>What hosts' calendars show</FieldLabel>
               <Choice
                 disabled={!canEdit || calendarDetailsLocked}
