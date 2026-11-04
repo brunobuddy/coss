@@ -16,6 +16,7 @@ export * from "./hosts.ts";
 export * from "./logo.ts";
 export * from "./notifications.ts";
 export * from "./out-of-office.ts";
+export * from "./reassign.ts";
 export * from "./reencrypt.ts";
 export * from "./retention.ts";
 export * from "./schedules.ts";

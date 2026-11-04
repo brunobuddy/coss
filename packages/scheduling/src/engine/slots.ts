@@ -114,16 +114,24 @@ function withinBookingWindow(
  */
 export function isBookable(
   startMs: number,
-  input: { nowMs: number; rule: SlotRule; host: HostInputs },
+  input: {
+    nowMs: number;
+    rule: SlotRule;
+    host: HostInputs;
+    /** What doesn't apply: a booking that exists already answered the grid, notice and window. */
+    skip?: readonly NotBookableReason[] | undefined;
+  },
 ): { ok: true } | { ok: false; reason: NotBookableReason } {
   const { nowMs, rule, host } = input;
-  if (!isOnGrid(startMs, rule.stepMinutes, gridZone(rule, host))) {
+  const checks = (reason: NotBookableReason) => !input.skip?.includes(reason);
+  if (checks("not_on_grid") && !isOnGrid(startMs, rule.stepMinutes, gridZone(rule, host))) {
     return { ok: false, reason: "not_on_grid" };
   }
-  if (startMs < nowMs + rule.minNoticeMinutes * MINUTE_MS) {
+  if (checks("too_soon") && startMs < nowMs + rule.minNoticeMinutes * MINUTE_MS) {
     return { ok: false, reason: "too_soon" };
   }
   if (
+    checks("outside_booking_window") &&
     rule.bookingWindow &&
     !withinBookingWindow(startMs, nowMs, rule.bookingWindow, host.timeZone)
   ) {
@@ -131,11 +139,13 @@ export function isBookable(
   }
   const endMs = startMs + rule.durationMinutes * MINUTE_MS;
   // Before the calendar's verdict, so the reason's honest: reconnecting wouldn't make this bookable.
-  if (host.away && overlapsAny(host.away, startMs, endMs)) {
+  if (checks("out_of_office") && host.away && overlapsAny(host.away, startMs, endMs)) {
     return { ok: false, reason: "out_of_office" };
   }
-  if (!host.calendarVerified) return { ok: false, reason: "calendar_unverified" };
-  if (!containedIn(host.availability, startMs, endMs)) {
+  if (checks("calendar_unverified") && !host.calendarVerified) {
+    return { ok: false, reason: "calendar_unverified" };
+  }
+  if (checks("outside_availability") && !containedIn(host.availability, startMs, endMs)) {
     return { ok: false, reason: "outside_availability" };
   }
   const occupied = occupiedRange(startMs, rule);
@@ -144,7 +154,7 @@ export function isBookable(
     // Joining: the host is already committed to this time, so nothing new can conflict with it.
     return session.seatsLeft > 0 ? { ok: true } : { ok: false, reason: "session_full" };
   }
-  if (overlapsAny(host.externalBusy, occupied.startMs, occupied.endMs)) {
+  if (checks("host_busy") && overlapsAny(host.externalBusy, occupied.startMs, occupied.endMs)) {
     return { ok: false, reason: "host_busy" };
   }
   if (overlapsAny(host.claims, occupied.startMs, occupied.endMs)) {
@@ -155,7 +165,7 @@ export function isBookable(
       return { ok: false, reason: "already_claimed" };
     }
   }
-  for (const limit of rule.limits) {
+  for (const limit of checks("limit_reached") ? rule.limits : []) {
     if ((host.limitUsage[limitUsageKey(limit, host.timeZone, startMs)] ?? 0) >= limit.max) {
       return { ok: false, reason: "limit_reached" };
     }

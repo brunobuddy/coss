@@ -255,7 +255,12 @@ async function setMeetingLink(
 }
 
 /** Every confirmed seat gets the session's link, unless they've all left since the write. */
-async function setSessionMeetingLink(session: SessionRow, url: string, now: Date): Promise<void> {
+async function setSessionMeetingLink(
+  session: SessionRow,
+  hostId: string,
+  url: string,
+  now: Date,
+): Promise<void> {
   await db.transaction(async (tx) => {
     const [locked] = await tx
       .select()
@@ -268,6 +273,8 @@ async function setSessionMeetingLink(session: SessionRow, url: string, now: Date
       )
       .for("update");
     if (!locked || locked.meetingUrl === url || locked.location?.type === "link") return;
+    // A slow answer for a host who's since been replaced: their meeting isn't this session's.
+    if (locked.hostId !== hostId) return;
     const seats = await confirmedSeats(tx, locked);
     if (seats.length === 0) return;
     await tx
@@ -456,7 +463,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarDeps): Promise<void> {
       return;
     }
     if (written.meetingUrl) {
-      if (session) await setSessionMeetingLink(session, written.meetingUrl, now);
+      if (session) await setSessionMeetingLink(session, row.hostId, written.meetingUrl, now);
       else if (booking) await setMeetingLink(booking, row.hostId, written.meetingUrl, now);
     }
   } catch (error) {

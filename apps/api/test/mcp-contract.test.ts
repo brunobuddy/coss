@@ -458,6 +458,47 @@ describe("coss-mcp against the API", () => {
       false,
     );
     expect((await call("create_scheduling_session", { event_type: "intro" })).isError).toBe(false);
+
+    await call("save_scheduling_host", { uid: "grace", name: "Grace", time_zone: "UTC" });
+    await call("save_scheduling_schedule", {
+      host: "grace",
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "00:00", end: "24:00" }],
+    });
+    const candidates = await call("list_scheduling_reassign_candidates", {
+      booking_id: booked.data.id,
+    });
+    expect(candidates.data.candidates[0]).toMatchObject({ uid: "grace", member: false });
+    const refused = await call("reassign_scheduling_booking", {
+      booking_id: booked.data.id,
+      to_host: "grace",
+      reason_code: "other",
+    });
+    expect(refused.isError).toBe(true);
+    const reassigned = await call("reassign_scheduling_booking", {
+      booking_id: booked.data.id,
+      to_host: "grace",
+      reason_code: "out_of_office",
+      overrides: ["any_host"],
+    });
+    expect(reassigned.isError).toBe(false);
+
+    const away = await call("create_scheduling_out_of_office", {
+      host: "grace",
+      start: slot.start,
+      end: new Date(Date.parse(later.end) + 3_600_000).toISOString(),
+      reason: "vacation",
+    });
+    expect(away.isError).toBe(false);
+    const [entry] = away.data.entries;
+    expect(entry).toMatchObject({ reason: "vacation" });
+    expect(
+      (await call("list_scheduling_out_of_office", { host: "grace" })).data.entries,
+    ).toHaveLength(1);
+    const conflicts = await call("list_scheduling_out_of_office_conflicts", { id: entry.id });
+    expect(conflicts.data.bookings.map((row: { booking: string }) => row.booking)).toEqual([
+      booked.data.id,
+    ]);
+    expect((await call("delete_scheduling_out_of_office", { id: entry.id })).isError).toBe(false);
   });
 
   test("Hooks and Risk: an endpoint tested, a portal link, lists and checks", async () => {

@@ -1,0 +1,109 @@
+---
+title: Reassigning
+description: Give a booking to another host, keeping its id and time. Any kind of booking, by name or letting coss.com pick.
+---
+
+A booking can go to another host at any point before it starts, and keeps its id, its time and its attendee. The old
+host's calendar event goes, the new host's comes, and whoever's leaving and joining are told.
+
+## See who could take it
+
+Candidates are the environment's other active hosts, event type members first, in the order a pool would pick them:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const bookingId: string;
+// ---cut---
+const { data } = await coss.scheduling.bookings.reassignCandidates(bookingId);
+```
+
+Each says whether they're `available`, and if not, the `reason`. `load` is their bookings in the week from this one, and
+`meeting_provider_missing` warns that they haven't connected what this booking's meeting needs.
+
+## Give it to someone
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const bookingId: string;
+// ---cut---
+await coss.scheduling.bookings.reassign(bookingId, {
+  changes: [{ to_host: "doctor_518" }],
+  reason_code: "out_of_office",
+});
+```
+
+Or let coss.com pick, as a pool does: the fairest who's free. `auto` keeps to what the booking was
+[routed with](/docs/scheduling/routing), so a dermatology patient doesn't end up with a cardiologist. `preferred_hosts`
+are tried first:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const bookingId: string;
+// ---cut---
+await coss.scheduling.bookings.reassign(bookingId, {
+  changes: [{ auto: true, preferred_hosts: ["doctor_518"] }],
+  reason_code: "workload",
+});
+```
+
+A booking made before routing was remembered can't say what it was routed with, so a pool's refuses `auto`: name a host.
+
+## What moves
+
+| Booking | What happens |
+| --- | --- |
+| One-on-one or pool | The host changes. A pool's fairness count follows the booking. |
+| Collective | Each required host can be replaced. A booking with several hosts needs `from_host`, and `changes` can replace several at once, all or none. |
+| Group session | The whole session moves, from any of its seats. |
+| Hold or request | It keeps what's left of its time, never more. The new host is who approves a request. |
+| Already started | It changes for the record: no calendars, no claim, and nobody's told. |
+
+A booking whose event type has `reassignment_enabled: false` stays with its host. A series is booked one occurrence at a
+time, so each moves on its own.
+
+## When someone isn't free
+
+Reassigning checks their hours, calendar, limits and time off, and says why not. You can go ahead anyway, with a
+`note` saying why:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const bookingId: string;
+// ---cut---
+await coss.scheduling.bookings.reassign(bookingId, {
+  changes: [{ to_host: "doctor_518" }],
+  reason_code: "host_unavailable",
+  overrides: ["outside_availability"],
+  note: "Dr. Raman offered to come in early.",
+});
+```
+
+`any_host` allows someone who doesn't take this event type, and needs no note. Someone who already has something at
+this time can never be overridden: nothing here can double-book a host.
+
+## Who's told
+
+The host joining gets the invitation, the host leaving gets a cancellation, and the attendee gets an update with the same
+calendar invitation. A co-host who isn't changing hears nothing.
+
+Pass `notify: { attendee: false }` for one booking, or turn `reassigned` off in the
+[notification settings](/docs/scheduling/notifications). Attendee emails don't name the new host unless you set
+`name_host_in_attendee_emails`.
+
+## Meetings
+
+A Google Meet, Teams or Zoom link belongs to the host whose account made it. If they leave, someone still on the booking
+gets a new one, and the attendee hears when it's ready. If they stay, the link does too.
+
+## Reasons
+
+`reason_code` and `note` stay in the booking's history. They're never in webhooks, logs or emails, and the note is
+encrypted and goes when the attendee's details do.
+
+## Webhooks
+
+`scheduling.booking.reassigned` carries `host_ids` and `previous_host_ids`. See [Webhooks](/docs/webhooks).

@@ -3665,7 +3665,8 @@
               "scheduling.booking.no_show",
               "scheduling.booking.external_conflict",
               "scheduling.booking.calendar_write_failed",
-              "scheduling.booking.location_ready"
+              "scheduling.booking.location_ready",
+              "scheduling.booking.reassigned"
             ]
           },
           "data": {
@@ -3750,6 +3751,17 @@
           },
           "previous_start": {
             "type": "string"
+          },
+          "previous_host_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "On `scheduling.booking.reassigned`: who had it before."
+          },
+          "reassignment_id": {
+            "type": "string",
+            "description": "On `scheduling.booking.reassigned`: the bulk reassignment it was part of."
           },
           "occurred_at": {
             "type": "string"
@@ -9291,6 +9303,7 @@
                 "scheduling.booking.external_conflict",
                 "scheduling.booking.calendar_write_failed",
                 "scheduling.booking.location_ready",
+                "scheduling.booking.reassigned",
                 "scheduling.calendar.connected",
                 "scheduling.calendar.needs_reauth",
                 "scheduling.calendar.disconnected",
@@ -9301,7 +9314,7 @@
                 "scheduling.out_of_office.ended"
               ]
             },
-            "maxItems": 91,
+            "maxItems": 92,
             "description": "Event types delivered to this endpoint. An empty array means every event type, including ones added later. Defaults to every event type."
           },
           "api_version": {
@@ -9611,6 +9624,7 @@
                 "scheduling.booking.external_conflict",
                 "scheduling.booking.calendar_write_failed",
                 "scheduling.booking.location_ready",
+                "scheduling.booking.reassigned",
                 "scheduling.calendar.connected",
                 "scheduling.calendar.needs_reauth",
                 "scheduling.calendar.disconnected",
@@ -9621,7 +9635,7 @@
                 "scheduling.out_of_office.ended"
               ]
             },
-            "maxItems": 91,
+            "maxItems": 92,
             "description": "Event types delivered to this endpoint. An empty array means every event type, including ones added later."
           },
           "api_version": {
@@ -10180,6 +10194,7 @@
                 "scheduling.booking.external_conflict",
                 "scheduling.booking.calendar_write_failed",
                 "scheduling.booking.location_ready",
+                "scheduling.booking.reassigned",
                 "scheduling.calendar.connected",
                 "scheduling.calendar.needs_reauth",
                 "scheduling.calendar.disconnected",
@@ -10190,7 +10205,7 @@
                 "scheduling.out_of_office.ended"
               ]
             },
-            "maxItems": 91,
+            "maxItems": 92,
             "description": "Event types to receive. Defaults to every event type."
           },
           "api_version": {
@@ -10964,6 +10979,7 @@
               "scheduling.booking.external_conflict",
               "scheduling.booking.calendar_write_failed",
               "scheduling.booking.location_ready",
+              "scheduling.booking.reassigned",
               "scheduling.calendar.connected",
               "scheduling.calendar.needs_reauth",
               "scheduling.calendar.disconnected",
@@ -17588,6 +17604,595 @@
           }
         ]
       },
+      "SchedulingBooking": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "scheduling.booking"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "held",
+              "pending_approval",
+              "confirmed",
+              "cancelled",
+              "declined"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attendees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "uid": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "email": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "phone": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "time_zone": {
+                  "type": "string"
+                },
+                "locale": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "answers": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  },
+                  "description": "Only when retrieving one booking."
+                }
+              },
+              "required": [
+                "id",
+                "uid",
+                "name",
+                "email",
+                "phone",
+                "time_zone",
+                "locale"
+              ]
+            }
+          },
+          "location": {
+            "$ref": "#/components/schemas/SchedulingLocation"
+          },
+          "hold_expires_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "approval_expires_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "series": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "series_index": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "group_session": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "calendar_unverified": {
+            "type": "boolean"
+          },
+          "external_conflict_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "no_show_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cancelled_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "event_type",
+          "status",
+          "title",
+          "start",
+          "end",
+          "hosts",
+          "attendees",
+          "location",
+          "hold_expires_at",
+          "approval_expires_at",
+          "series",
+          "series_index",
+          "group_session",
+          "calendar_unverified",
+          "external_conflict_at",
+          "no_show_at",
+          "cancelled_at",
+          "metadata",
+          "created_at",
+          "updated_at"
+        ],
+        "examples": [
+          {
+            "object": "scheduling.booking",
+            "id": "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            "event_type": "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            "status": "confirmed",
+            "title": "Initial consultation",
+            "start": "2027-01-04T15:00:00.000Z",
+            "end": "2027-01-04T15:30:00.000Z",
+            "hosts": [
+              "host_01kd2m9a0b1c2d3e4f5g6h7j8m"
+            ],
+            "attendees": [
+              {
+                "id": "attn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                "uid": "patient_77",
+                "name": "Sam Lee",
+                "email": "sam@example.com",
+                "phone": null,
+                "time_zone": "UTC",
+                "locale": null
+              }
+            ],
+            "location": null,
+            "hold_expires_at": null,
+            "approval_expires_at": null,
+            "series": null,
+            "series_index": null,
+            "group_session": null,
+            "calendar_unverified": false,
+            "external_conflict_at": null,
+            "no_show_at": null,
+            "cancelled_at": null,
+            "metadata": {},
+            "created_at": "2027-01-01T10:00:00.000Z",
+            "updated_at": "2027-01-01T10:00:00.000Z"
+          }
+        ]
+      },
+      "SchedulingLocation": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "link"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 2000,
+                "format": "uri",
+                "default": null
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "phone"
+                ]
+              },
+              "number": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 32,
+                "default": null
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "in_person"
+                ]
+              },
+              "address": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 500,
+                "default": null
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "google_meet"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "microsoft_teams"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "zoom"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 2000,
+                "format": "uri",
+                "default": null,
+                "description": "The meeting's link, once it's created on the host's Zoom account."
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "ReassignSchedulingBookingRequest": {
+        "type": "object",
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from_host": {
+                  "type": "string",
+                  "description": "The host leaving, by id or uid. Needed when it could be several."
+                },
+                "to_host": {
+                  "type": "string",
+                  "description": "The host taking over, by id or uid. Or set `auto`."
+                },
+                "auto": {
+                  "type": "boolean",
+                  "description": "Let coss.com pick, as a pool would: the fairest who's free and fits what the booking was routed with."
+                },
+                "preferred_hosts": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "description": "With `auto`: try these first, in order."
+                }
+              },
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 10,
+            "description": "A session or a one-on-one has one. A collective can change several."
+          },
+          "reason_code": {
+            "type": "string",
+            "enum": [
+              "host_unavailable",
+              "out_of_office",
+              "workload",
+              "customer_request",
+              "offboarding",
+              "other"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Why, in your words: required with an override of someone's availability. Encrypted, and only in the booking's history."
+          },
+          "overrides": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "any_host",
+                "out_of_office",
+                "outside_availability",
+                "host_busy",
+                "limit_reached",
+                "calendar_unverified"
+              ]
+            },
+            "maxItems": 6,
+            "description": "Go ahead anyway: `any_host` for someone who doesn't take this event type, and the rest for what a candidate's `reason` said. A host who already has something at this time can never be overridden."
+          },
+          "notify": {
+            "type": "object",
+            "properties": {
+              "attendee": {
+                "type": "boolean",
+                "description": "Tell the attendee. Default: true."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "changes",
+          "reason_code"
+        ],
+        "additionalProperties": false,
+        "examples": [
+          {
+            "changes": [
+              {
+                "to_host": "doctor_518"
+              }
+            ],
+            "reason_code": "out_of_office"
+          }
+        ]
+      },
+      "SchedulingReassignCandidateList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "list"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingReassignCandidate"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "object",
+          "data",
+          "has_more"
+        ],
+        "examples": [
+          {
+            "object": "list",
+            "data": [
+              {
+                "object": "scheduling.reassign_candidate",
+                "host": "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                "uid": "doctor_518",
+                "name": "Dr. Priya Raman",
+                "member": true,
+                "available": true,
+                "reason": null,
+                "load": 4,
+                "rank": 1,
+                "meeting_provider_missing": false
+              }
+            ],
+            "has_more": false
+          }
+        ]
+      },
+      "SchedulingReassignCandidate": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "scheduling.reassign_candidate"
+            ]
+          },
+          "host": {
+            "type": "string"
+          },
+          "uid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "member": {
+            "type": "boolean",
+            "description": "Takes this event type, and fits what the booking was routed with. Otherwise it needs `any_host`."
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why they aren't available. `already_claimed` can't be overridden."
+          },
+          "load": {
+            "type": "number",
+            "description": "Their live bookings in the week from this one."
+          },
+          "rank": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Their place in who a pool would pick next, from 1. Null for a non-member."
+          },
+          "meeting_provider_missing": {
+            "type": "boolean",
+            "description": "They haven't connected what this booking's meeting needs, so it'd have none."
+          }
+        },
+        "required": [
+          "object",
+          "host",
+          "uid",
+          "name",
+          "member",
+          "available",
+          "reason",
+          "load",
+          "rank",
+          "meeting_provider_missing"
+        ],
+        "examples": [
+          {
+            "object": "scheduling.reassign_candidate",
+            "host": "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            "uid": "doctor_518",
+            "name": "Dr. Priya Raman",
+            "member": true,
+            "available": true,
+            "reason": null,
+            "load": 4,
+            "rank": 1,
+            "meeting_provider_missing": false
+          }
+        ]
+      },
       "SchedulingOutOfOfficeList": {
         "type": "object",
         "properties": {
@@ -18649,6 +19254,9 @@
           "requires_approval": {
             "type": "boolean"
           },
+          "reassignment_enabled": {
+            "type": "boolean"
+          },
           "approval_ttl_minutes": {
             "type": "number"
           },
@@ -18756,6 +19364,7 @@
           "limits",
           "capacity",
           "requires_approval",
+          "reassignment_enabled",
           "approval_ttl_minutes",
           "hold_ttl_seconds",
           "cancel_notice_minutes",
@@ -18787,6 +19396,7 @@
             "limits": [],
             "capacity": null,
             "requires_approval": false,
+            "reassignment_enabled": true,
             "approval_ttl_minutes": 1440,
             "hold_ttl_seconds": 600,
             "cancel_notice_minutes": 0,
@@ -18948,135 +19558,6 @@
         ],
         "additionalProperties": false
       },
-      "SchedulingLocation": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "link"
-                ]
-              },
-              "url": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "maxLength": 2000,
-                "format": "uri",
-                "default": null
-              }
-            },
-            "required": [
-              "type"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "phone"
-                ]
-              },
-              "number": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "maxLength": 32,
-                "default": null
-              }
-            },
-            "required": [
-              "type"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "in_person"
-                ]
-              },
-              "address": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "maxLength": 500,
-                "default": null
-              }
-            },
-            "required": [
-              "type"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "google_meet"
-                ]
-              }
-            },
-            "required": [
-              "type"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "microsoft_teams"
-                ]
-              }
-            },
-            "required": [
-              "type"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "zoom"
-                ]
-              },
-              "url": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "maxLength": 2000,
-                "format": "uri",
-                "default": null,
-                "description": "The meeting's link, once it's created on the host's Zoom account."
-              }
-            },
-            "required": [
-              "type"
-            ],
-            "additionalProperties": false
-          }
-        ]
-      },
       "CreateEventTypeRequest": {
         "type": "object",
         "properties": {
@@ -19169,6 +19650,10 @@
           },
           "requires_approval": {
             "type": "boolean"
+          },
+          "reassignment_enabled": {
+            "type": "boolean",
+            "description": "Whether bookings of this event type can go to another host. Default: true."
           },
           "approval_ttl_minutes": {
             "type": "integer",
@@ -19348,6 +19833,7 @@
                 "limits": [],
                 "capacity": null,
                 "requires_approval": false,
+                "reassignment_enabled": true,
                 "approval_ttl_minutes": 1440,
                 "hold_ttl_seconds": 600,
                 "cancel_notice_minutes": 0,
@@ -19457,6 +19943,10 @@
           },
           "requires_approval": {
             "type": "boolean"
+          },
+          "reassignment_enabled": {
+            "type": "boolean",
+            "description": "Whether bookings of this event type can go to another host. Default: true."
           },
           "approval_ttl_minutes": {
             "type": "integer",
@@ -19766,246 +20256,6 @@
             "attributes": {
               "licensed_in": "CA"
             }
-          }
-        ]
-      },
-      "SchedulingBooking": {
-        "type": "object",
-        "properties": {
-          "object": {
-            "type": "string",
-            "enum": [
-              "scheduling.booking"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "event_type": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "held",
-              "pending_approval",
-              "confirmed",
-              "cancelled",
-              "declined"
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "start": {
-            "type": "string"
-          },
-          "end": {
-            "type": "string"
-          },
-          "hosts": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "attendees": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "uid": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "name": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "email": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "phone": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "time_zone": {
-                  "type": "string"
-                },
-                "locale": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "answers": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      }
-                    ]
-                  },
-                  "description": "Only when retrieving one booking."
-                }
-              },
-              "required": [
-                "id",
-                "uid",
-                "name",
-                "email",
-                "phone",
-                "time_zone",
-                "locale"
-              ]
-            }
-          },
-          "location": {
-            "$ref": "#/components/schemas/SchedulingLocation"
-          },
-          "hold_expires_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "approval_expires_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "series": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "series_index": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "group_session": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "calendar_unverified": {
-            "type": "boolean"
-          },
-          "external_conflict_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "no_show_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "cancelled_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "metadata": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "object",
-          "id",
-          "event_type",
-          "status",
-          "title",
-          "start",
-          "end",
-          "hosts",
-          "attendees",
-          "location",
-          "hold_expires_at",
-          "approval_expires_at",
-          "series",
-          "series_index",
-          "group_session",
-          "calendar_unverified",
-          "external_conflict_at",
-          "no_show_at",
-          "cancelled_at",
-          "metadata",
-          "created_at",
-          "updated_at"
-        ],
-        "examples": [
-          {
-            "object": "scheduling.booking",
-            "id": "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
-            "event_type": "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
-            "status": "confirmed",
-            "title": "Initial consultation",
-            "start": "2027-01-04T15:00:00.000Z",
-            "end": "2027-01-04T15:30:00.000Z",
-            "hosts": [
-              "host_01kd2m9a0b1c2d3e4f5g6h7j8m"
-            ],
-            "attendees": [
-              {
-                "id": "attn_01kd2m9a0b1c2d3e4f5g6h7j8m",
-                "uid": "patient_77",
-                "name": "Sam Lee",
-                "email": "sam@example.com",
-                "phone": null,
-                "time_zone": "UTC",
-                "locale": null
-              }
-            ],
-            "location": null,
-            "hold_expires_at": null,
-            "approval_expires_at": null,
-            "series": null,
-            "series_index": null,
-            "group_session": null,
-            "calendar_unverified": false,
-            "external_conflict_at": null,
-            "no_show_at": null,
-            "cancelled_at": null,
-            "metadata": {},
-            "created_at": "2027-01-01T10:00:00.000Z",
-            "updated_at": "2027-01-01T10:00:00.000Z"
           }
         ]
       },
@@ -21778,6 +22028,10 @@
             ],
             "description": "Your approved number for SMS reminders. Without one, no SMS is sent."
           },
+          "name_host_in_attendee_emails": {
+            "type": "boolean",
+            "description": "Name the new host when telling an attendee their booking has one."
+          },
           "out_of_office_reasons": {
             "type": "array",
             "items": {
@@ -21835,6 +22089,7 @@
           "logo",
           "email_from",
           "sms_from",
+          "name_host_in_attendee_emails",
           "out_of_office_reasons",
           "calendar_failure_mode",
           "notifications"
@@ -21850,6 +22105,7 @@
             "logo": null,
             "email_from": "appointments@example.com",
             "sms_from": null,
+            "name_host_in_attendee_emails": false,
             "out_of_office_reasons": [],
             "calendar_failure_mode": "hide",
             "notifications": {
@@ -21924,6 +22180,9 @@
               "hide",
               "last_known"
             ]
+          },
+          "name_host_in_attendee_emails": {
+            "type": "boolean"
           },
           "out_of_office_reasons": {
             "type": [
@@ -64736,6 +64995,525 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DeletedSchedulingHost"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation (`validation_error`, see `issues`), or can't be done: see `code`.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scheduling/bookings/{id}/reassign": {
+      "post": {
+        "operationId": "reassignSchedulingBooking",
+        "tags": [
+          "Scheduling bookings"
+        ],
+        "summary": "Reassign a booking",
+        "description": "Gives a booking to another host, keeping its id and time. Works for every kind: a group session moves as a whole, from any of its seats, and one that's already started changes for the record, with nobody told. Whoever leaves and joins is told, and the attendee unless you say not to.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The booking's id.",
+              "examples": [
+                "book_01kd2m9a0b1c2d3e4f5g6h7j8m"
+              ]
+            },
+            "required": true,
+            "description": "The booking's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReassignSchedulingBookingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The booking.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingBooking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not valid JSON (`invalid_json`). Also when the `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body is not sent as `application/json` (`unsupported_media_type`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't make sense (`invalid_reassignment`), that host can't take it (`reassign_target_unavailable`), nobody can (`no_reassign_candidate`), or the booking can't change (`booking_not_changeable`, `hold_expired`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scheduling/bookings/{id}/reassign_candidates": {
+      "get": {
+        "operationId": "listSchedulingReassignCandidates",
+        "tags": [
+          "Scheduling bookings"
+        ],
+        "summary": "List who a booking could go to",
+        "description": "The environment's other active hosts: members of the event type first, in the order a pool would pick them, each saying whether they're free and why not. Things can change before you ask: reassigning decides again.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The booking's id.",
+              "examples": [
+                "book_01kd2m9a0b1c2d3e4f5g6h7j8m"
+              ]
+            },
+            "required": true,
+            "description": "The booking's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "The host who'd leave, when it could be several."
+            },
+            "required": false,
+            "description": "The host who'd leave, when it could be several.",
+            "name": "from_host",
+            "in": "query"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The candidates.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingReassignCandidateList"
                 }
               }
             }

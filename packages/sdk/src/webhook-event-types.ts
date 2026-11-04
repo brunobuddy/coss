@@ -85,6 +85,7 @@ export const WEBHOOK_EVENT_TYPES: readonly WebhookEventType[] = [
   "scheduling.booking.external_conflict",
   "scheduling.booking.calendar_write_failed",
   "scheduling.booking.location_ready",
+  "scheduling.booking.reassigned",
   "scheduling.calendar.connected",
   "scheduling.calendar.needs_reauth",
   "scheduling.calendar.disconnected",

@@ -12,6 +12,7 @@ import type { SchedulingEnvironment } from "./types.ts";
 const {
   schedulingAttendee,
   schedulingBooking,
+  schedulingBookingEvent,
   schedulingClaim,
   schedulingGroupSession,
   schedulingLimitBucket,
@@ -100,6 +101,15 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
       .update(schedulingBooking)
       .set({ metadata: {}, location: null, encryptedAttributes: null, redactedAt: now })
       .where(inArray(schedulingBooking.id, ids));
+    await tx
+      .update(schedulingBookingEvent)
+      .set({ encryptedNote: null })
+      .where(
+        and(
+          inArray(schedulingBookingEvent.bookingId, ids),
+          isNotNull(schedulingBookingEvent.encryptedNote),
+        ),
+      );
     return ids.length;
   });
 }
@@ -290,6 +300,20 @@ export async function eraseAttendee(
               schedulingBooking.id,
               erased.map((row) => row.bookingId),
             ),
+          ),
+        );
+      // Written about them, whoever wrote it.
+      await tx
+        .update(schedulingBookingEvent)
+        .set({ encryptedNote: null })
+        .where(
+          and(
+            eq(schedulingBookingEvent.organizationId, scope.organizationId),
+            inArray(
+              schedulingBookingEvent.bookingId,
+              erased.map((row) => row.bookingId),
+            ),
+            isNotNull(schedulingBookingEvent.encryptedNote),
           ),
         );
     }

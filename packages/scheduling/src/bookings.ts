@@ -11,7 +11,7 @@ import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { requestHash as hashRequest, withIdempotencyKey } from "@coss/db/idempotency";
 import { appendLogEntries } from "@coss/logs";
-import { enqueueWebhookMessage } from "@coss/webhooks";
+import { decryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
 import {
   and,
   asc,
@@ -60,13 +60,23 @@ import {
 } from "./claims.ts";
 import { type PoolMember, rankCandidates } from "./engine/rank.ts";
 import { expandRecurrence } from "./engine/recurrence.ts";
-import { isBookable, limitUsageKey, occupiedRange, type SlotRule } from "./engine/slots.ts";
+import {
+  isBookable,
+  limitUsageKey,
+  type NotBookableReason,
+  occupiedRange,
+  type SlotRule,
+} from "./engine/slots.ts";
 import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { confirmedSeats, withSessionLocation } from "./group-sessions.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
-import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
+import {
+  carryReminders,
+  enqueueBookingNotifications,
+  enqueueReassignment,
+} from "./notifications.ts";
 import { hostsAwayDuring } from "./out-of-office.ts";
 import {
   type AttendeeInputOutput,
@@ -364,7 +374,7 @@ async function lockLimitBuckets(
   }
 }
 
-type ClaimPlan = {
+export type ClaimPlan = {
   eventType: EventTypeRow;
   rule: SlotRule;
   scope: Scope;
@@ -372,6 +382,8 @@ type ClaimPlan = {
   nowMs: number;
   failureMode: "hide" | "last_known";
   ttlSeconds: number | null;
+  /** Reassigning: what a booking that exists doesn't have to answer again, and any overrides. */
+  skip?: readonly NotBookableReason[] | undefined;
 };
 
 /** What's committed now says about each host. Null: not found. */
@@ -398,7 +410,10 @@ async function verdictsOf(
   return new Map(
     hosts.map((host) => {
       const inputs = loaded.get(host.id);
-      return [host.id, inputs ? isBookable(startMs, { nowMs, rule, host: inputs }) : null];
+      return [
+        host.id,
+        inputs ? isBookable(startMs, { nowMs, rule, host: inputs, skip: plan.skip }) : null,
+      ];
     }),
   );
 }
@@ -512,7 +527,11 @@ function toWebhookData(
   hostIds: readonly string[],
   attendeeUids: readonly string[],
   occurredAt: Date,
-  extra: { previousStart?: Date } = {},
+  extra: {
+    previousStart?: Date | undefined;
+    previousHostIds?: readonly string[] | undefined;
+    reassignmentId?: string | undefined;
+  } = {},
 ) {
   return {
     booking_id: booking.id,
@@ -524,6 +543,8 @@ function toWebhookData(
     attendee_uids: [...attendeeUids],
     series_id: booking.seriesId,
     ...(extra.previousStart ? { previous_start: extra.previousStart.toISOString() } : {}),
+    ...(extra.previousHostIds ? { previous_host_ids: [...extra.previousHostIds] } : {}),
+    ...(extra.reassignmentId ? { reassignment_id: extra.reassignmentId } : {}),
     occurred_at: occurredAt.toISOString(),
   };
 }
@@ -569,6 +590,10 @@ async function recordChange(
     occurredAt: Date;
     details?: Record<string, unknown>;
     previousStart?: Date;
+    previousHostIds?: readonly string[] | undefined;
+    reassignmentId?: string | undefined;
+    /** Why it was done, in someone's own words: on this row only, encrypted, gone with the details. */
+    encryptedNote?: string | null;
     message: string;
     level?: "info" | "warning";
   },
@@ -591,6 +616,7 @@ async function recordChange(
     type: input.type,
     actor: input.actor,
     details: input.details ?? {},
+    encryptedNote: input.encryptedNote ?? null,
     occurredAt: input.occurredAt,
   });
   const { hostIds, attendees } = await participants(tx, booking);
@@ -611,7 +637,11 @@ async function recordChange(
           hostIds,
           attendees.flatMap((attendee) => (attendee.uid ? [attendee.uid] : [])),
           input.occurredAt,
-          input.previousStart ? { previousStart: input.previousStart } : {},
+          {
+            previousStart: input.previousStart,
+            previousHostIds: input.previousHostIds,
+            reassignmentId: input.reassignmentId,
+          },
         ),
       },
     });
@@ -1930,6 +1960,25 @@ export async function approveBooking(
   return toBookingObject(db, row, deps);
 }
 
+/** What `reassign.ts` builds on. Not part of the package's interface. */
+export const bookingInternals = {
+  LostSlot,
+  assignFairly,
+  bumped,
+  locationWithoutHost,
+  lockBooking,
+  lockHostsAndMemberships,
+  lockLimitBuckets,
+  notChangeable,
+  participants,
+  ranked,
+  recordChange,
+  retryingDeadlocks,
+  schedulesOf,
+  setCalendarState,
+  verdictsOf,
+};
+
 /** Moves a booking, keeping its id. The old time stays claimed until the new one is won. */
 export async function rescheduleBooking(
   env: SchedulingEnvironment,
@@ -1968,6 +2017,8 @@ export async function rescheduleBooking(
         ),
       );
     const member = rows.find((row) => row.role === "member");
+    // Asking for the host it has is just moving the booking.
+    const replacing = replacement && replacement.id !== member?.hostId ? replacement : null;
     if (replacement && !member) {
       throw new SchedulingError("invalid_event_type", "This booking's hosts can't be changed.", {
         param: "host",
@@ -1981,8 +2032,8 @@ export async function rescheduleBooking(
         });
       }
     }
-    const hosts = replacement
-      ? [...current.filter((host) => host.id !== member?.hostId), replacement]
+    const hosts = replacing
+      ? [...current.filter((host) => host.id !== member?.hostId), replacing]
       : current;
     const ttlSeconds =
       booking.status === "held"
@@ -2026,7 +2077,7 @@ export async function rescheduleBooking(
       if (error instanceof LostSlot) throw slotLost(error.reason);
       throw error;
     }
-    if (replacement && member) {
+    if (replacing && member) {
       await tx
         .delete(schedulingBookingHost)
         .where(
@@ -2040,7 +2091,7 @@ export async function rescheduleBooking(
         .insert(schedulingBookingHost)
         .values({
           bookingId: booking.id,
-          hostId: replacement.id,
+          hostId: replacing.id,
           organizationId: booking.organizationId,
           role: "member",
         })
@@ -2048,7 +2099,7 @@ export async function rescheduleBooking(
     }
     // The old host's meeting goes with them, so someone else's gets a new link.
     const newLocation =
-      replacement && member ? await locationWithoutHost(tx, booking, member.hostId) : null;
+      replacing && member ? await locationWithoutHost(tx, booking, member.hostId) : null;
     const updated = await bumped(tx, booking, {
       startAt: new Date(input.startMs),
       endAt: new Date(input.startMs + durationMinutes * MINUTE_MS),
@@ -2057,7 +2108,7 @@ export async function rescheduleBooking(
     });
     const after = await participants(tx, updated);
     if (updated.status === "confirmed") {
-      if (replacement && member) await setCalendarState(tx, updated, [member.hostId], "absent");
+      if (replacing && member) await setCalendarState(tx, updated, [member.hostId], "absent");
       await setCalendarState(tx, updated, after.hostIds, "present");
     }
     await recordChange(tx, updated, {
@@ -2069,8 +2120,36 @@ export async function rescheduleBooking(
       details: { previous_start: booking.startAt.toISOString() },
       message: "Booking rescheduled",
     });
+    if (replacing && member) {
+      if (eventType.kind === "pool" && booking.startAt > now) {
+        for (const move of [
+          { hostId: member.hostId, delta: -1 as const },
+          { hostId: replacing.id, delta: 1 as const },
+        ].sort((a, b) => (a.hostId < b.hostId ? -1 : 1))) {
+          await assignFairly(tx, booking, [move.hostId], move.delta);
+        }
+      }
+      await recordChange(tx, updated, {
+        type: "scheduling.booking.reassigned",
+        webhook: "scheduling.booking.reassigned",
+        actor,
+        occurredAt: now,
+        previousHostIds: hostIds,
+        details: { previous_host_ids: hostIds },
+        message: "Booking reassigned",
+      });
+    }
     if (updated.status !== "held") {
       await enqueueBookingNotifications(tx, updated, "rescheduled", now);
+      // They'd hear nothing otherwise: `rescheduled` goes to the hosts it has now.
+      if (replacing && member) {
+        await enqueueReassignment(
+          tx,
+          updated,
+          { added: [], removed: [member.hostId], attendee: false },
+          now,
+        );
+      }
     }
     return updated;
   });
@@ -2187,7 +2266,15 @@ export async function getBookingOverview(
   booking: BookingObjectOutput;
   eventTypeTitle: string | null;
   hosts: { id: string; name: string }[];
-  events: { id: string; type: string; actor: BookingActor["kind"]; occurredAt: Date }[];
+  events: {
+    id: string;
+    type: string;
+    actor: BookingActor["kind"];
+    occurredAt: Date;
+    /** Why it was reassigned, when someone said: only here, never lists, webhooks or logs. */
+    reasonCode: string | null;
+    note: string | null;
+  }[];
 }> {
   const row = await bookingRow(scope, id);
   const booking = await toBookingObject(db, row, deps);
@@ -2220,6 +2307,8 @@ export async function getBookingOverview(
         type: schedulingBookingEvent.type,
         actor: schedulingBookingEvent.actor,
         occurredAt: schedulingBookingEvent.occurredAt,
+        details: schedulingBookingEvent.details,
+        encryptedNote: schedulingBookingEvent.encryptedNote,
       })
       .from(schedulingBookingEvent)
       .where(
@@ -2235,7 +2324,14 @@ export async function getBookingOverview(
     booking,
     eventTypeTitle: eventType?.title ?? null,
     hosts,
-    events: events.map((event) => ({ ...event, actor: event.actor.kind })),
+    events: events.map((event) => ({
+      id: event.id,
+      type: event.type,
+      occurredAt: event.occurredAt,
+      actor: event.actor.kind,
+      reasonCode: typeof event.details.reason_code === "string" ? event.details.reason_code : null,
+      note: event.encryptedNote ? decryptSecret(event.encryptedNote, deps.dataKeys) : null,
+    })),
   };
 }
 

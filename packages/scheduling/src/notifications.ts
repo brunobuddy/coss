@@ -41,7 +41,8 @@ export type NotificationEvent =
   | "rescheduled"
   | "cancelled"
   | "declined"
-  | "reminder";
+  | "reminder"
+  | "reassigned";
 
 const DEFAULT_POLICY: Record<NotificationEvent, Policy[string]> = {
   confirmed: { emailAttendee: true, emailHost: true },
@@ -50,6 +51,7 @@ const DEFAULT_POLICY: Record<NotificationEvent, Policy[string]> = {
   cancelled: { emailAttendee: true, emailHost: true },
   declined: { emailAttendee: true },
   reminder: { emailAttendee: true },
+  reassigned: { emailAttendee: true, emailHost: true },
 };
 
 const REMINDER_BEFORE_MS = 24 * 60 * 60_000;
@@ -214,6 +216,70 @@ export async function enqueueBookingNotifications(
   if (rows.length > 0) await tx.insert(schedulingNotification).values(rows).onConflictDoNothing();
 }
 
+/**
+ * A booking has new hosts. Those joining and leaving are told apart, by `hostId`: the rest of the
+ * booking's hosts have nothing new to hear. Only the latest change is news, so a booking that goes
+ * to someone and straight back never tells them about one they lost.
+ */
+export async function enqueueReassignment(
+  tx: Executor,
+  booking: BookingRow,
+  people: { added: readonly string[]; removed: readonly string[]; attendee: boolean },
+  now: Date,
+): Promise<void> {
+  await tx
+    .update(schedulingNotification)
+    .set({ finishedAt: now, outcome: "superseded", leaseUntil: null })
+    .where(
+      and(
+        eq(schedulingNotification.bookingId, booking.id),
+        eq(schedulingNotification.organizationId, booking.organizationId),
+        eq(schedulingNotification.kind, "reassigned"),
+        isNull(schedulingNotification.finishedAt),
+        lt(schedulingNotification.bookingVersion, booking.version),
+      ),
+    );
+  const policies = await policiesOf(tx, booking);
+  const policy = resolvePolicy("reassigned", policies.environment, policies.eventType);
+  const base = {
+    organizationId: booking.organizationId,
+    environmentId: booking.environmentId,
+    bookingId: booking.id,
+    kind: "reassigned",
+    bookingVersion: booking.version,
+    dueAt: now,
+  };
+  const rows: (typeof schedulingNotification.$inferInsert)[] = [];
+  if (policy.emailHost) {
+    for (const hostId of [...people.added, ...people.removed]) {
+      rows.push({
+        ...base,
+        hostId,
+        channel: "email",
+        recipient: "host",
+        dedupeKey: `reassigned:email:host:${hostId}:${booking.id}:${booking.version}`,
+      });
+    }
+  }
+  if (people.attendee && policy.emailAttendee) {
+    rows.push({
+      ...base,
+      channel: "email",
+      recipient: "attendee",
+      dedupeKey: `reassigned:email:attendee:${booking.id}:${booking.version}`,
+    });
+  }
+  if (people.attendee && policy.smsAttendee) {
+    rows.push({
+      ...base,
+      channel: "sms",
+      recipient: "attendee",
+      dedupeKey: `reassigned:sms:attendee:${booking.id}:${booking.version}`,
+    });
+  }
+  if (rows.length > 0) await tx.insert(schedulingNotification).values(rows).onConflictDoNothing();
+}
+
 export type SchedulingEmail = {
   environment: {
     organizationId: string;
@@ -292,6 +358,7 @@ const SUBJECTS: Record<NotificationEvent, (title: string) => string> = {
   cancelled: (title) => `Cancelled: ${title}`,
   declined: (title) => `Not confirmed: ${title}`,
   reminder: (title) => `Reminder: ${title}`,
+  reassigned: (title) => `New host: ${title}`,
 };
 
 const LEADS: Record<NotificationEvent, { attendee: string; host: string }> = {
@@ -304,6 +371,10 @@ const LEADS: Record<NotificationEvent, { attendee: string; host: string }> = {
   cancelled: { attendee: "Your booking is cancelled.", host: "A booking was cancelled." },
   declined: { attendee: "Your request couldn't be confirmed.", host: "A request was declined." },
   reminder: { attendee: "This is coming up.", host: "This is coming up." },
+  reassigned: {
+    attendee: "Your booking has a new host. Its time hasn't changed.",
+    host: "A booking was assigned to you.",
+  },
 };
 
 type Claimed = NotificationRow;
@@ -418,9 +489,12 @@ async function sendBookingEmail(
   const uid = `${booking.id}@coss.com`;
   const icsMethod =
     event === "cancelled" || event === "declined" ? ("CANCEL" as const) : ("REQUEST" as const);
-  const ics = (to: { name: string | null; email: string }) => ({
+  const ics = (
+    to: { name: string | null; email: string },
+    method: "REQUEST" | "CANCEL" = icsMethod,
+  ) => ({
     filename: "booking.ics",
-    method: icsMethod,
+    method,
     content: buildIcs({
       uid,
       title: titleOf(booking),
@@ -428,7 +502,7 @@ async function sendBookingEmail(
       endMs: booking.endAt.getTime(),
       stampMs: now.getTime(),
       sequence: booking.version,
-      method: icsMethod,
+      method,
       location: locationLine(booking),
       attendee: to,
     }),
@@ -437,7 +511,8 @@ async function sendBookingEmail(
   const withIcs =
     event === "cancelled" ||
     event === "declined" ||
-    ((event === "confirmed" || event === "rescheduled") && booking.status === "confirmed");
+    ((event === "confirmed" || event === "rescheduled" || event === "reassigned") &&
+      booking.status === "confirmed");
   const key = `scheduling:${row.id}`;
 
   if (row.recipient === "attendee") {
@@ -450,6 +525,10 @@ async function sendBookingEmail(
           eq(schedulingAttendee.organizationId, booking.organizationId),
         ),
       );
+    const attendeeLead =
+      event === "reassigned" && settings?.nameHostInAttendeeEmails
+        ? await namedHostLead(booking)
+        : LEADS[event].attendee;
     let sent = false;
     for (const attendee of attendees) {
       const contact = decryptContact(attendee.encryptedContact, deps);
@@ -464,7 +543,7 @@ async function sendBookingEmail(
             })
           : null;
       const blocks: EmailBlock[] = [
-        { paragraph: LEADS[event].attendee },
+        { paragraph: attendeeLead },
         {
           details: [
             { label: "What", value: titleOf(booking) },
@@ -501,7 +580,7 @@ async function sendBookingEmail(
     return sent ? "sent" : "no_address";
   }
 
-  const hosts = await db
+  const current = await db
     .select({
       email: schedulingHost.email,
       name: schedulingHost.name,
@@ -516,11 +595,34 @@ async function sendBookingEmail(
         eq(schedulingBookingHost.organizationId, booking.organizationId),
       ),
     );
+  // A reassignment says who it's for, and one of them isn't on the booking any more.
+  const named = row.hostId
+    ? await db
+        .select({
+          email: schedulingHost.email,
+          name: schedulingHost.name,
+          timeZone: schedulingHost.timeZone,
+          id: schedulingHost.id,
+        })
+        .from(schedulingHost)
+        .where(
+          and(
+            eq(schedulingHost.id, row.hostId),
+            eq(schedulingHost.organizationId, row.organizationId),
+          ),
+        )
+    : null;
+  const hosts = named ?? current;
   let sent = false;
   for (const host of hosts) {
     if (!host.email) continue;
+    const gone = event === "reassigned" && !current.some((other) => other.id === host.id);
     const blocks: EmailBlock[] = [
-      { paragraph: LEADS[event].host },
+      {
+        paragraph: gone
+          ? "A booking you were hosting has gone to someone else. You don't need to do anything."
+          : LEADS[event].host,
+      },
       {
         details: [
           { label: "What", value: titleOf(booking) },
@@ -532,7 +634,10 @@ async function sendBookingEmail(
       },
     ];
     const message = renderMessage(branding, senderName, {
-      subject: SUBJECTS[event](titleOf(booking)),
+      subject:
+        event === "reassigned"
+          ? `${gone ? "No longer yours" : "Assigned to you"}: ${titleOf(booking)}`
+          : SUBJECTS[event](titleOf(booking)),
       blocks,
       reason: `You're receiving this as a host with ${senderName}.`,
     });
@@ -545,7 +650,9 @@ async function sendBookingEmail(
       text: message.text,
       html: message.html,
       cossHtml: message.cossHtml,
-      ics: withIcs ? ics({ name: host.name, email: host.email }) : null,
+      ics: withIcs
+        ? ics({ name: host.name, email: host.email }, gone ? "CANCEL" : icsMethod)
+        : null,
       logo: message.logo,
       idempotencyKey: `${key}:${host.id}`,
     });
@@ -594,6 +701,22 @@ async function sendBookingSms(
     sent = true;
   }
   return sent ? "sent" : "no_address";
+}
+
+/** Names come through setup screening and can't hold a link, so they're safe in here. */
+async function namedHostLead(booking: BookingRow): Promise<string> {
+  const hosts = await db
+    .select({ name: schedulingHost.name })
+    .from(schedulingBookingHost)
+    .innerJoin(schedulingHost, eq(schedulingHost.id, schedulingBookingHost.hostId))
+    .where(
+      and(
+        eq(schedulingBookingHost.bookingId, booking.id),
+        eq(schedulingBookingHost.organizationId, booking.organizationId),
+      ),
+    );
+  const names = hosts.map((host) => oneLine(host.name)).join(", ");
+  return `Your booking is now with ${names}. Its time hasn't changed.`;
 }
 
 async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Promise<string> {

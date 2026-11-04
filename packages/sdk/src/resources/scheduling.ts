@@ -22,6 +22,7 @@ import type {
   ListSchedulingOutOfOfficeParams,
   ListSchedulingSlotsParams,
   PutSchedulingOutOfOfficeParams,
+  ReassignSchedulingBookingParams,
   RescheduleSchedulingBookingParams,
   SchedulingAttendeeErasure,
   SchedulingAvailabilitySearchResult,
@@ -34,6 +35,7 @@ import type {
   SchedulingOutOfOffice,
   SchedulingOutOfOfficeConflict,
   SchedulingPageParams,
+  SchedulingReassignCandidate,
   SchedulingSchedule,
   SchedulingSeries,
   SchedulingSeriesPreview,
@@ -359,6 +361,38 @@ export class SchedulingBookingsResource {
       method: "POST",
       path: `/v1/scheduling/bookings/${part(id)}/reschedule`,
       body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /**
+   * Gives a booking to another host, keeping its id and time. Not retried: done twice it'd be
+   * refused, or give it back.
+   */
+  reassign(
+    id: string,
+    params: ReassignSchedulingBookingParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingBooking>> {
+    return this.#http.request<SchedulingBooking>({
+      method: "POST",
+      path: `/v1/scheduling/bookings/${part(id)}/reassign`,
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
+  /** Who a booking could go to, members first, each saying whether they're free and why not. */
+  reassignCandidates(
+    id: string,
+    params: { from_host?: string } = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingReassignCandidate>>> {
+    return this.#http.request<List<SchedulingReassignCandidate>>({
+      method: "GET",
+      path: `/v1/scheduling/bookings/${part(id)}/reassign_candidates`,
+      query: listQuery(params),
       signal: options?.signal,
     });
   }

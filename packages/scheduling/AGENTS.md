@@ -65,6 +65,28 @@ that was already there skips the check, and those bookings show up as conflicts.
 - The calendar block is a ledger row with a third kind of owner (`out_of_office_id`), titled "Out of office", which
   `flagExternalConflicts` subtracts like any event of ours, and `checkHostEditedEvents` ignores.
 
+## Reassigning
+
+`reassign.ts`: a booking goes to another host, keeping its id and time, for every kind. The target is claimed **before**
+the source lets go (`releaseHostClaim`), under `retryingDeadlocks`, so a lost race leaves the booking as it was. The
+source only takes `key share`, with no status check, since leaving a disabled host is how someone gets offboarded.
+
+- `isBookable`'s `skip` is how a booking that exists doesn't answer the grid, notice and window again, and how overrides
+  work. Nothing can skip `already_claimed`, and the exclusion constraint has the last word anyway.
+- A hold or request keeps what's left of its time (`claimRemainingSeconds`, from the same SQL clock, rounded down),
+  never more: under a second is `hold_expired`, not a claim whose range would raise `22000`.
+- `auto` keeps to what the booking was routed with. A pool's booking that can't say (`encrypted_attributes` is null)
+  refuses `auto`, rather than guessing nothing narrowed it; someone naming a host knows who they're choosing.
+- A group session has one host, so a seat's reassignment moves all of it. Seats lock before the session, since cancelling
+  takes them in that order, and they're read again once locked. A target's old session row with no live claim is in the
+  way only of `scheduling_group_session_slot_unique`, and is cleared; one with a claim is a real conflict.
+- One that's started changes for the record only: no claim, calendar, count or notice. `auditClaims` looks at future
+  bookings for this reason.
+- `reason_code` and `note` go nowhere but the booking's history. The note's encrypted (`encrypted_note`, not `details`,
+  which outlives the attendee's data) and goes with their details.
+- Host emails address `hostId`, and only those joining and leaving hear: a co-host has nothing new to know. Later
+  changes supersede earlier ones, so going to someone and back says nothing stale.
+
 ## Slots
 
 `isBookable` is the one definition of "can this be booked": listing and booking both call it, so they can't disagree.

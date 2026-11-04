@@ -40,6 +40,7 @@ export function toEventTypeObject(
     limits: row.limits,
     capacity: row.capacity,
     requires_approval: row.requiresApproval,
+    reassignment_enabled: row.reassignmentEnabled,
     approval_ttl_minutes: row.approvalTtlMinutes,
     hold_ttl_seconds: row.holdTtlSeconds,
     cancel_notice_minutes: row.cancelNoticeMinutes,
@@ -303,6 +304,7 @@ export async function createEventType(
           limits: params.limits ?? [],
           capacity: params.capacity ?? null,
           requiresApproval: params.requires_approval ?? false,
+          reassignmentEnabled: params.reassignment_enabled ?? true,
           ...(params.approval_ttl_minutes !== undefined
             ? { approvalTtlMinutes: params.approval_ttl_minutes }
             : {}),
@@ -417,6 +419,9 @@ export async function updateEventType(
         ...(params.booking_window !== undefined ? { bookingWindow: params.booking_window } : {}),
         ...(params.limits !== undefined ? { limits: params.limits } : {}),
         ...(params.capacity !== undefined ? { capacity: params.capacity } : {}),
+        ...(params.reassignment_enabled !== undefined
+          ? { reassignmentEnabled: params.reassignment_enabled }
+          : {}),
         ...(params.requires_approval !== undefined
           ? { requiresApproval: params.requires_approval }
           : {}),

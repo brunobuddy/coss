@@ -1,5 +1,5 @@
-import { getBookingOverview, SchedulingError } from "@coss/scheduling";
-import type { BookingObjectOutput } from "@coss/scheduling/schemas";
+import { getBookingOverview, listReassignCandidates, SchedulingError } from "@coss/scheduling";
+import { type BookingObjectOutput, REASSIGNMENT_REASON_LABELS } from "@coss/scheduling/schemas";
 import {
   Table,
   TableBody,
@@ -17,7 +17,7 @@ import { BookingStatusDot } from "@/components/scheduling-badges";
 import { SpecItem, SpecList } from "@/components/spec-list";
 import { formatDateTime } from "@/lib/format";
 import { schedulingPageContext } from "../page-context";
-import { CancelBookingButton } from "../scheduling-actions";
+import { CancelBookingButton, ReassignBookingDialog } from "../scheduling-actions";
 
 export const metadata: Metadata = { title: "Booking" };
 
@@ -33,6 +33,7 @@ const EVENT_LABEL: Record<string, string> = {
   "scheduling.booking.external_conflict": "Conflict found on a calendar",
   "scheduling.booking.calendar_write_failed": "Couldn't update a calendar",
   "scheduling.booking.location_ready": "Location set",
+  "scheduling.booking.reassigned": "Given to another host",
 };
 
 const ACTOR_LABEL = {
@@ -77,13 +78,23 @@ export default async function BookingPage({
   });
   const ended = booking.status === "cancelled" || booking.status === "declined";
   const metadataEntries = Object.entries(booking.metadata);
+  const canUpdate = !ended && can({ scheduling: ["update"] });
+  const candidates = canUpdate ? await listReassignCandidates(scope, booking.id, {}, deps) : null;
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         actions={
-          !ended && can({ scheduling: ["update"] }) ? (
-            <CancelBookingButton {...target} bookingId={booking.id} />
+          canUpdate && candidates ? (
+            <>
+              <ReassignBookingDialog
+                {...target}
+                bookingId={booking.id}
+                candidates={candidates.data}
+                hosts={hosts}
+              />
+              <CancelBookingButton {...target} bookingId={booking.id} />
+            </>
           ) : null
         }
         description="Answers to booking questions are only available through the API."
@@ -199,7 +210,16 @@ export default async function BookingPage({
             {events.map((event) => (
               <TableRow key={event.id}>
                 <TableCell>{formatDateTime(event.occurredAt)}</TableCell>
-                <TableCell>{EVENT_LABEL[event.type] ?? event.type}</TableCell>
+                <TableCell>
+                  {EVENT_LABEL[event.type] ?? event.type}
+                  {event.reasonCode ? (
+                    <div className="text-muted-foreground text-xs">
+                      {(REASSIGNMENT_REASON_LABELS as Record<string, string>)[event.reasonCode] ??
+                        event.reasonCode}
+                      {event.note ? `: ${event.note}` : ""}
+                    </div>
+                  ) : null}
+                </TableCell>
                 <TableCell>{ACTOR_LABEL[event.actor]}</TableCell>
               </TableRow>
             ))}

@@ -235,6 +235,8 @@ import type {
   OutOfOfficeConflict,
   OutOfOfficeObject,
   PutOutOfOfficeRequest,
+  ReassignBookingRequest,
+  ReassignCandidate,
   RescheduleBookingRequest,
   ScheduleObject,
   SchedulingBookingWebhookEvent,
@@ -361,6 +363,7 @@ import type {
   PollWebhookListenerParams,
   PublishEmailTemplateParams,
   PutSchedulingOutOfOfficeParams,
+  ReassignSchedulingBookingParams,
   RecoverWebhookEndpointParams,
   RenderEmailTemplateParams,
   RescheduleEmailParams,
@@ -377,6 +380,7 @@ import type {
   SchedulingHost,
   SchedulingOutOfOffice,
   SchedulingOutOfOfficeConflict,
+  SchedulingReassignCandidate,
   SchedulingSchedule,
   SchedulingSeries,
   SchedulingSeriesPreview,
@@ -1080,6 +1084,10 @@ export type SubaccountContract = [
     MutuallyAssignable<z.input<typeof UpdateOutOfOfficeRequest>, UpdateSchedulingOutOfOfficeParams>
   >,
   Assert<MutuallyAssignable<z.output<typeof OutOfOfficeObject>, SchedulingOutOfOffice>>,
+  Assert<
+    MutuallyAssignable<z.input<typeof ReassignBookingRequest>, ReassignSchedulingBookingParams>
+  >,
+  Assert<MutuallyAssignable<z.output<typeof ReassignCandidate>, SchedulingReassignCandidate>>,
   Assert<MutuallyAssignable<z.output<typeof OutOfOfficeConflict>, SchedulingOutOfOfficeConflict>>,
   Assert<
     MutuallyAssignable<

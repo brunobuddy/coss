@@ -1966,6 +1966,68 @@ describe("coss.risk checkouts, devices and calibration against the API", () => {
   });
 });
 
+describe("coss.scheduling.bookings.reassign against the API", () => {
+  test("lists who could take it, gives it to them, and refuses what it should", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const rules = [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }];
+    const first = must(
+      (await scheduling.hosts.create({ uid: "first", name: "First", time_zone: "UTC" })).data,
+    );
+    const second = must(
+      (await scheduling.hosts.create({ uid: "second", name: "Second", time_zone: "UTC" })).data,
+    );
+    await scheduling.schedules.create("first", { rules });
+    await scheduling.schedules.create("second", { rules });
+    const pool = must(
+      (
+        await scheduling.eventTypes.create({
+          title: "Consultation",
+          kind: "pool",
+          duration_minutes: 30,
+          hosts: [{ host: "first" }, { host: "second" }],
+        })
+      ).data,
+    );
+    expect(pool.reassignment_enabled).toBe(true);
+    const booking = must(
+      (
+        await scheduling.bookings.create({
+          event_type: pool.id,
+          host: "first",
+          start: "2031-01-06T10:00:00.000Z",
+          attendee: { name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+        })
+      ).data,
+    );
+    const candidates = await scheduling.bookings.reassignCandidates(booking.id);
+    expect(candidates.data?.data[0]).toMatchObject({
+      object: "scheduling.reassign_candidate",
+      host: second.id,
+      member: true,
+      available: true,
+      reason: null,
+    });
+    const moved = await scheduling.bookings.reassign(booking.id, {
+      changes: [{ to_host: "second" }],
+      reason_code: "out_of_office",
+    });
+    expect(moved.data?.hosts).toEqual([second.id]);
+    expect(moved.data?.id).toBe(booking.id);
+    const again = await scheduling.bookings.reassign(booking.id, {
+      changes: [{ to_host: "second" }],
+      reason_code: "other",
+    });
+    expect(again.error?.code).toBe("invalid_reassignment");
+    const back = await scheduling.bookings.reassign(booking.id, {
+      changes: [{ auto: true }],
+      reason_code: "workload",
+    });
+    expect(back.data?.hosts).toEqual([first.id]);
+  });
+});
+
 describe("coss.scheduling.outOfOffice against the API", () => {
   test("marks a host away, stops offering them, shows conflicts and takes it back", async () => {
     const tenant = await createTestTenant();

@@ -12,11 +12,13 @@ import {
   declineBooking,
   deleteHost,
   deleteOutOfOffice,
+  reassignBooking,
   SchedulingError,
   updateHost,
   updateSettings,
 } from "@coss/scheduling";
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
+import { ReassignBookingRequest } from "@coss/scheduling/schemas";
 import { getEnvironment } from "@coss/tenancy";
 import { refresh } from "next/cache";
 import type { ActionResult } from "@/lib/action-result";
@@ -114,6 +116,39 @@ export async function createHostAction(
     });
     refresh();
     return { id: host.id };
+  });
+}
+
+export async function reassignBookingAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const toHost = formString(formData, "toHost");
+    if (!toHost) throw new ActionError("Choose who it goes to.");
+    const fromHost = formString(formData, "fromHost");
+    const note = formString(formData, "note");
+    const parsed = ReassignBookingRequest.safeParse({
+      changes: [{ to_host: toHost, ...(fromHost ? { from_host: fromHost } : {}) }],
+      reason_code: formString(formData, "reasonCode"),
+      ...(note ? { note } : {}),
+      overrides: formString(formData, "overrides").split(",").filter(Boolean),
+      notify: { attendee: formData.get("notifyAttendee") === "on" },
+    });
+    if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
+    const booking = await friendly(() =>
+      reassignBooking(
+        env,
+        formString(formData, "bookingId"),
+        parsed.data,
+        configuredDeps(),
+        actorOf(context),
+      ),
+    );
+    await audit(context, "scheduling_booking.reassigned", {
+      type: "scheduling_booking",
+      id: booking.id,
+    });
+    refresh();
+    return null;
   });
 }
 

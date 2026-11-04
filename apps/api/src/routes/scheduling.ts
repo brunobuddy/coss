@@ -44,10 +44,12 @@ import {
   listHosts,
   listOutOfOffice,
   listOutOfOfficeConflicts,
+  listReassignCandidates,
   listSchedules,
   markNoShow,
   previewSeries,
   putOutOfOffice,
+  reassignBooking,
   rescheduleBooking,
   resolveHost,
   type SchedulingDeps,
@@ -100,6 +102,9 @@ import {
   OutOfOfficeObject,
   PageQuery,
   PutOutOfOfficeRequest,
+  ReassignBookingRequest,
+  ReassignCandidateList,
+  ReassignCandidatesQuery,
   RescheduleBookingRequest,
   ScheduleList,
   ScheduleObject,
@@ -1094,6 +1099,51 @@ export const createManageSessionRoute = createRoute({
   },
 });
 
+export const reassignBookingRoute = createRoute({
+  method: "post",
+  path: "/scheduling/bookings/{id}/reassign",
+  operationId: "reassignSchedulingBooking",
+  tags: [TAG_BOOKINGS],
+  summary: "Reassign a booking",
+  description:
+    "Gives a booking to another host, keeping its id and time. Works for every kind: a group session moves as a whole, from any of its seats, and one that's already started changes for the record, with nobody told. Whoever leaves and joins is told, and the attendee unless you say not to.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/bookings/{id}/reassign"),
+  request: {
+    params: BookingParams,
+    body: { required: true, content: { "application/json": { schema: ReassignBookingRequest } } },
+  },
+  responses: {
+    200: jsonDoc("The booking.", BookingObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: errorDoc(
+      "The request doesn't make sense (`invalid_reassignment`), that host can't take it " +
+        "(`reassign_target_unavailable`), nobody can (`no_reassign_candidate`), or the booking can't change (`booking_not_changeable`, `hold_expired`).",
+    ),
+  },
+});
+
+export const listReassignCandidatesRoute = createRoute({
+  method: "get",
+  path: "/scheduling/bookings/{id}/reassign_candidates",
+  operationId: "listSchedulingReassignCandidates",
+  tags: [TAG_BOOKINGS],
+  summary: "List who a booking could go to",
+  description:
+    "The environment's other active hosts: members of the event type first, in the order a pool would pick them, each saying whether they're free and why not. Things can change before you ask: reassigning decides again.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: BookingParams, query: ReassignCandidatesQuery },
+  responses: {
+    200: jsonDoc("The candidates.", ReassignCandidateList),
+    ...commonErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
 export const createOutOfOfficeRoute = createRoute({
   method: "post",
   path: "/scheduling/out_of_office",
@@ -1363,6 +1413,35 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       target: { type: "scheduling_host", id },
     });
     return c.json({ object: "scheduling.host" as const, id, deleted: true as const }, 200);
+  });
+
+  router.openapi(reassignBookingRoute, async (c) => {
+    const booking = await reassignBooking(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      deps,
+      actorOf(c.var.auth),
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_booking.reassigned",
+      target: { type: "scheduling_booking", id: booking.id },
+    });
+    return c.json(booking, 200);
+  });
+
+  router.openapi(listReassignCandidatesRoute, async (c) => {
+    const query = c.req.valid("query");
+    const fromHost = query.from_host
+      ? (await resolveHost(db, c.var.auth, query.from_host)).id
+      : undefined;
+    const page = await listReassignCandidates(
+      c.var.auth,
+      c.req.valid("param").id,
+      { fromHost },
+      deps,
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
   });
 
   router.openapi(createOutOfOfficeRoute, async (c) => {

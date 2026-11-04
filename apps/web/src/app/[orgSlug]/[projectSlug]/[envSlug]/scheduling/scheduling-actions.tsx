@@ -1,7 +1,7 @@
 "use client";
 
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
-import { OUT_OF_OFFICE_REASON_LABELS } from "@coss/scheduling/schemas";
+import { OUT_OF_OFFICE_REASON_LABELS, REASSIGNMENT_REASON_LABELS } from "@coss/scheduling/schemas";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -53,6 +53,7 @@ import {
   deleteHostAction,
   deleteOutOfOfficeAction,
   openHostPortalAction,
+  reassignBookingAction,
   saveSettingsAction,
   setHostStatusAction,
 } from "./actions";
@@ -185,6 +186,174 @@ export function DeleteHostButton(props: EnvTarget & { hostId: string; name: stri
         </form>
       </AlertDialogPopup>
     </AlertDialog>
+  );
+}
+
+type Candidate = {
+  host: string;
+  name: string;
+  member: boolean;
+  available: boolean;
+  reason: string | null;
+  load: number;
+  meeting_provider_missing: boolean;
+};
+
+const WHY_NOT: Record<string, string> = {
+  out_of_office: "Out of office",
+  outside_availability: "Outside their hours",
+  host_busy: "Busy on their calendar",
+  limit_reached: "At their booking limit",
+  calendar_unverified: "Their calendar can't be read",
+  already_claimed: "Already booked",
+  host_unavailable: "Not available",
+};
+
+const REASSIGN_REASON_ITEMS = Object.entries(REASSIGNMENT_REASON_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
+
+export function ReassignBookingDialog(
+  props: EnvTarget & {
+    bookingId: string;
+    candidates: readonly Candidate[];
+    hosts: readonly { id: string; name: string }[];
+  },
+) {
+  const { candidates, hosts, bookingId, ...target } = props;
+  const [state, formAction, pending] = useActionToast(reassignBookingAction, {
+    success: "Booking reassigned",
+  });
+  const [open, setOpen] = useState(false);
+  const [toHost, setToHost] = useState("");
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
+  const chosen = candidates.find((candidate) => candidate.host === toHost);
+  // What choosing them means going past: spelled out here, so it's asked for and not assumed.
+  const overrides = chosen
+    ? [
+        ...(chosen.member ? [] : ["any_host"]),
+        ...(!chosen.available && chosen.reason ? [chosen.reason] : []),
+      ]
+    : [];
+  const overriding = Boolean(chosen && !chosen.available);
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button size="sm" variant="outline" />}>Reassign</DialogTrigger>
+      <DialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...target} bookingId={bookingId} overrides={overrides.join(",")} />
+          <DialogHeader>
+            <DialogIcon icon={UserRoundIcon} />
+            <DialogTitle>Reassign this booking</DialogTitle>
+            <DialogDescription>
+              It keeps its time. Whoever's leaving and joining are told.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogPanel className="flex flex-col gap-4">
+            {hosts.length > 1 ? (
+              <Field>
+                <FieldLabel>Who's leaving</FieldLabel>
+                <Select
+                  defaultValue={hosts[0]?.id}
+                  items={hosts.map((host) => ({ value: host.id, label: host.name }))}
+                  name="fromHost"
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectPopup>
+                    {hosts.map((host) => (
+                      <SelectItem key={host.id} value={host.id}>
+                        {host.name}
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </Select>
+              </Field>
+            ) : null}
+            <Field>
+              <FieldLabel>Who it goes to</FieldLabel>
+              <RadioGroup
+                className="max-h-56 w-full gap-1 overflow-y-auto rounded-lg border p-2"
+                name="toHost"
+                onValueChange={(next) => setToHost(String(next))}
+                value={toHost}
+              >
+                {candidates.map((candidate) => (
+                  <Label
+                    className="items-start rounded-md p-2 font-normal has-data-checked:bg-accent"
+                    key={candidate.host}
+                  >
+                    <Radio
+                      disabled={candidate.reason === "already_claimed"}
+                      value={candidate.host}
+                    />
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span>{candidate.name}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {candidate.available
+                          ? `Free, ${candidate.load} ${candidate.load === 1 ? "booking" : "bookings"} that week`
+                          : (WHY_NOT[candidate.reason ?? ""] ?? "Not available")}
+                        {candidate.member ? "" : ", doesn't usually take this"}
+                        {candidate.meeting_provider_missing ? ", no meeting link" : ""}
+                      </span>
+                    </span>
+                  </Label>
+                ))}
+              </RadioGroup>
+              {candidates.length === 0 ? (
+                <FieldDescription>There's nobody else in this environment.</FieldDescription>
+              ) : null}
+            </Field>
+            <Field>
+              <FieldLabel>Reason</FieldLabel>
+              <Select defaultValue="other" items={REASSIGN_REASON_ITEMS} name="reasonCode">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectPopup>
+                  {REASSIGN_REASON_ITEMS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectPopup>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel>Note</FieldLabel>
+              <Textarea
+                maxLength={500}
+                name="note"
+                onChange={(event) => setNote(event.target.value)}
+                required={overriding}
+                value={note}
+              />
+              <FieldDescription>
+                {overriding
+                  ? "They aren't free at this time, so say why this is going ahead."
+                  : "Optional. Only shown in this booking's history."}
+              </FieldDescription>
+            </Field>
+            <Label className="font-normal">
+              <Checkbox defaultChecked name="notifyAttendee" />
+              Tell the attendee
+            </Label>
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </DialogPanel>
+          <DialogFooter>
+            <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
+            <Button disabled={pending || !toHost} type="submit">
+              Reassign
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogPopup>
+    </Dialog>
   );
 }
 

@@ -94,6 +94,72 @@ export async function releaseBookingClaims(
     );
 }
 
+/** One host's part of a booking or session, leaving the rest of its claims alone. */
+export async function releaseHostClaim(
+  tx: Executor,
+  where: { organizationId: string; hostId: string } & (
+    | { bookingId: string }
+    | { groupSessionId: string }
+  ),
+): Promise<void> {
+  await tx
+    .delete(schedulingClaim)
+    .where(
+      and(
+        eq(schedulingClaim.organizationId, where.organizationId),
+        eq(schedulingClaim.hostId, where.hostId),
+        "bookingId" in where
+          ? eq(schedulingClaim.bookingId, where.bookingId)
+          : eq(schedulingClaim.groupSessionId, where.groupSessionId),
+      ),
+    );
+}
+
+/**
+ * Whole seconds left on a host's claim, from the same clock that made it, rounded down so a new
+ * claim never outlasts the old. Null: no such claim. A firm claim has none to speak of: 0 means
+ * nothing's left, which a firm booking never asks.
+ */
+export async function claimRemainingSeconds(
+  tx: Executor,
+  where: { organizationId: string; bookingId: string; hostId: string },
+): Promise<number | null> {
+  const [row] = await tx
+    .select({
+      seconds: sql<number>`floor(extract(epoch from ${schedulingClaim.liveUntil} - clock_timestamp()))::int`,
+    })
+    .from(schedulingClaim)
+    .where(
+      and(
+        eq(schedulingClaim.organizationId, where.organizationId),
+        eq(schedulingClaim.bookingId, where.bookingId),
+        eq(schedulingClaim.hostId, where.hostId),
+      ),
+    );
+  return row ? (row.seconds ?? null) : null;
+}
+
+/** As `claimRemainingSeconds` for a session's one claim, which can also be firm: `seconds` null. */
+export async function sessionClaimRemainingSeconds(
+  tx: Executor,
+  where: { organizationId: string; groupSessionId: string },
+): Promise<{ found: boolean; seconds: number | null }> {
+  const [row] = await tx
+    .select({
+      seconds: sql<
+        number | null
+      >`floor(extract(epoch from ${schedulingClaim.liveUntil} - clock_timestamp()))::int`,
+    })
+    .from(schedulingClaim)
+    .where(
+      and(
+        eq(schedulingClaim.organizationId, where.organizationId),
+        eq(schedulingClaim.groupSessionId, where.groupSessionId),
+      ),
+    );
+  return row ? { found: true, seconds: row.seconds } : { found: false, seconds: null };
+}
+
 type SessionClaim = { organizationId: string; groupSessionId: string };
 
 const ofSession = (where: SessionClaim) =>

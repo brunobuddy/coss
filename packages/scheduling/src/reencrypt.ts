@@ -4,13 +4,20 @@ import type { SecretsKeyRing } from "@coss/webhooks";
 import { decryptSecret, encryptSecret, isEncryptedWithPrimary } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, or } from "drizzle-orm";
 
-const { schedulingAttendee, schedulingBooking, schedulingOutOfOffice, schedulingSession } = schema;
+const {
+  schedulingAttendee,
+  schedulingBooking,
+  schedulingBookingEvent,
+  schedulingOutOfOffice,
+  schedulingSession,
+} = schema;
 
 /** A test compares this with the database's columns. */
 export const SCHEDULING_DATA_KEY_COLUMNS = [
   "scheduling_attendee.encrypted_contact",
   "scheduling_attendee.encrypted_answers",
   "scheduling_booking.encrypted_attributes",
+  "scheduling_booking_event.encrypted_note",
   "scheduling_out_of_office.encrypted_notes",
   "scheduling_session.encrypted_attendee",
   "scheduling_session.encrypted_attributes",
@@ -220,6 +227,65 @@ async function reencryptBookings(opts: Options, result: SchedulingReencryptResul
   }
 }
 
+async function reencryptBookingEvents(
+  opts: Options,
+  result: SchedulingReencryptResult,
+): Promise<void> {
+  const batchSize = opts.batchSize ?? 200;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingBookingEvent.id,
+        organizationId: schedulingBookingEvent.organizationId,
+        note: schedulingBookingEvent.encryptedNote,
+      })
+      .from(schedulingBookingEvent)
+      .where(
+        and(
+          gt(schedulingBookingEvent.id, after),
+          isNotNull(schedulingBookingEvent.encryptedNote),
+          opts.scope
+            ? inArray(schedulingBookingEvent.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingBookingEvent.id))
+      .limit(batchSize);
+    for (const row of rows) {
+      result.checked++;
+      const next = rewritten(
+        row,
+        [["scheduling_booking_event.encrypted_note", row.note]],
+        opts,
+        result,
+      );
+      if (!next) continue;
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      await opts.beforeWrite?.(row.id);
+      const [updated] = await db
+        .update(schedulingBookingEvent)
+        .set({ encryptedNote: next.get("scheduling_booking_event.encrypted_note") ?? null })
+        .where(
+          and(
+            eq(schedulingBookingEvent.id, row.id),
+            eq(schedulingBookingEvent.organizationId, row.organizationId),
+            eq(schedulingBookingEvent.encryptedNote, row.note as string),
+          ),
+        )
+        .returning({ id: schedulingBookingEvent.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < batchSize) break;
+    after = last.id;
+  }
+}
+
 async function reencryptOutOfOffice(
   opts: Options,
   result: SchedulingReencryptResult,
@@ -362,6 +428,7 @@ export async function reencryptSchedulingData(opts: Options): Promise<Scheduling
   };
   await reencryptAttendees(opts, result);
   await reencryptBookings(opts, result);
+  await reencryptBookingEvents(opts, result);
   await reencryptOutOfOffice(opts, result);
   await reencryptSessions(opts, result);
   return result;

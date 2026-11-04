@@ -181,6 +181,8 @@ interface SchedulingEventTypeFields {
   limits?: SchedulingLimitInput[];
   capacity?: number | null;
   requires_approval?: boolean;
+  /** Whether bookings of this event type can go to another host. Default: true. */
+  reassignment_enabled?: boolean;
   approval_ttl_minutes?: number;
   hold_ttl_seconds?: number;
   cancel_notice_minutes?: number;
@@ -226,6 +228,7 @@ export interface SchedulingEventType {
   limits: SchedulingLimit[];
   capacity: number | null;
   requires_approval: boolean;
+  reassignment_enabled: boolean;
   approval_ttl_minutes: number;
   hold_ttl_seconds: number;
   cancel_notice_minutes: number;
@@ -436,6 +439,8 @@ export interface SchedulingSettings {
   email_from: string | null;
   sms_from: string | null;
   /** Reasons of your own for time away, on top of the preset ones. */
+  /** Name the new host when telling an attendee their booking has one. */
+  name_host_in_attendee_emails: boolean;
   out_of_office_reasons: { key: string; label: string }[];
   calendar_failure_mode: "hide" | "last_known";
   notifications: Record<string, SchedulingNotificationSettings> | null;
@@ -449,6 +454,7 @@ export interface UpdateSchedulingSettingsParams {
   logo?: { content: string } | null;
   email_from?: string | null;
   sms_from?: string | null;
+  name_host_in_attendee_emails?: boolean;
   out_of_office_reasons?: { key: string; label: string }[] | null;
   calendar_failure_mode?: "hide" | "last_known";
   notifications?: Record<string, SchedulingNotificationSettings> | null;
@@ -540,7 +546,8 @@ export type SchedulingBookingWebhookEventType =
   | "scheduling.booking.no_show"
   | "scheduling.booking.external_conflict"
   | "scheduling.booking.calendar_write_failed"
-  | "scheduling.booking.location_ready";
+  | "scheduling.booking.location_ready"
+  | "scheduling.booking.reassigned";
 
 export type SchedulingCalendarWebhookEventType =
   | "scheduling.calendar.connected"
@@ -570,6 +577,10 @@ export interface SchedulingBookingWebhookEventData {
   attendee_uids: string[];
   series_id: string | null;
   previous_start?: string;
+  /** On `scheduling.booking.reassigned`: who had it before. */
+  previous_host_ids?: string[];
+  /** On `scheduling.booking.reassigned`: the bulk reassignment it was part of. */
+  reassignment_id?: string;
   occurred_at: string;
 }
 
@@ -701,4 +712,58 @@ export interface SchedulingOutOfOfficeConflict {
   end: string;
   series: string | null;
   group_session: string | null;
+}
+
+export type SchedulingReassignmentReason =
+  | "host_unavailable"
+  | "out_of_office"
+  | "workload"
+  | "customer_request"
+  | "offboarding"
+  | "other";
+
+export type SchedulingReassignmentOverride =
+  | "any_host"
+  | "out_of_office"
+  | "outside_availability"
+  | "host_busy"
+  | "limit_reached"
+  | "calendar_unverified";
+
+export interface ReassignSchedulingBookingParams {
+  /** A session or a one-on-one has one. A collective can change several. */
+  changes: {
+    /** The host leaving, by id or uid. Needed when it could be several. */
+    from_host?: string;
+    /** The host taking over, by id or uid. Or set `auto`. */
+    to_host?: string;
+    /** Let coss.com pick, as a pool would: the fairest who's free and fits the booking's routing. */
+    auto?: boolean;
+    /** With `auto`: try these first, in order. */
+    preferred_hosts?: string[];
+  }[];
+  reason_code: SchedulingReassignmentReason;
+  /** Why, in your words: required with an override of someone's availability. Encrypted. */
+  note?: string;
+  /** Go ahead anyway. A host who already has something at this time can never be overridden. */
+  overrides?: SchedulingReassignmentOverride[];
+  notify?: { attendee?: boolean };
+}
+
+export interface SchedulingReassignCandidate {
+  object: "scheduling.reassign_candidate";
+  host: string;
+  uid: string | null;
+  name: string;
+  /** Takes this event type and fits the booking's routing. Otherwise it needs `any_host`. */
+  member: boolean;
+  available: boolean;
+  /** Why they aren't available. `already_claimed` can't be overridden. */
+  reason: string | null;
+  /** Their live bookings in the week from this one. */
+  load: number;
+  /** Their place in who a pool would pick next, from 1. Null for a non-member. */
+  rank: number | null;
+  /** They haven't connected what this booking's meeting needs, so it'd have none. */
+  meeting_provider_missing: boolean;
 }

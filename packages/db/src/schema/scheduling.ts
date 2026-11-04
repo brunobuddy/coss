@@ -321,6 +321,7 @@ export const schedulingEventType = pgTable(
     limits: jsonb("limits").$type<SchedulingLimit[]>().notNull().default([]),
     capacity: integer("capacity"),
     requiresApproval: boolean("requires_approval").notNull().default(false),
+    reassignmentEnabled: boolean("reassignment_enabled").notNull().default(true),
     approvalTtlMinutes: integer("approval_ttl_minutes").notNull().default(1440),
     holdTtlSeconds: integer("hold_ttl_seconds").notNull().default(600),
     cancelNoticeMinutes: integer("cancel_notice_minutes").notNull().default(0),
@@ -806,6 +807,8 @@ export const schedulingBookingEvent = pgTable(
     type: text("type").notNull(),
     actor: jsonb("actor").$type<SchedulingActor>().notNull(),
     details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
+    // Why someone reassigned it, in their words. Not in `details`, which outlives attendees' data.
+    encryptedNote: text("encrypted_note"),
     occurredAt: instant("occurred_at").notNull().defaultNow(),
   },
   (t) => [
@@ -1044,6 +1047,8 @@ export const schedulingSettings = pgTable(
     smsFrom: text("sms_from"),
     notifications: jsonb("notifications").$type<SchedulingNotificationPolicy | null>(),
     outOfOfficeReasons: jsonb("out_of_office_reasons").$type<{ key: string; label: string }[]>(),
+    // Emails name no host unless asked to: an attendee may have no idea who else works there.
+    nameHostInAttendeeEmails: boolean("name_host_in_attendee_emails").notNull().default(false),
     calendarFailureMode: schedulingCalendarFailureMode("calendar_failure_mode")
       .notNull()
       .default("hide"),

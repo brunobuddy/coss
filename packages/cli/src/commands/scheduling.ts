@@ -1,5 +1,11 @@
 /** `coss scheduling …`: the environment's hosts and bookings, on the public API. */
-import type { Coss, SchedulingBooking, SchedulingBookingStatus } from "coss";
+import type {
+  Coss,
+  SchedulingBooking,
+  SchedulingBookingStatus,
+  SchedulingReassignmentOverride,
+  SchedulingReassignmentReason,
+} from "coss";
 import { type Flags, requireArgs } from "../args.ts";
 import { type Command, type CommandInput, defineCommand } from "../command.ts";
 import { type Context, clientFor, resolveCredentials } from "../context.ts";
@@ -13,6 +19,15 @@ const STATUSES: readonly SchedulingBookingStatus[] = [
   "confirmed",
   "cancelled",
   "declined",
+];
+
+const REASSIGN_REASONS: readonly SchedulingReassignmentReason[] = [
+  "host_unavailable",
+  "out_of_office",
+  "workload",
+  "customer_request",
+  "offboarding",
+  "other",
 ];
 
 const LIMIT = {
@@ -267,6 +282,149 @@ const cancel: Command = defineCommand({
   },
 });
 
+const REASSIGN_FLAGS = {
+  to: { type: "string", value: "<host>", description: "The new host's id or uid" },
+  auto: { type: "boolean", description: "Let coss.com pick the fairest who's free" },
+  from: { type: "string", value: "<host>", description: "Who's leaving, if it has several hosts" },
+  reason: {
+    type: "string",
+    value: "<code>",
+    description: `Why: ${REASSIGN_REASONS.join(", ")} (default other)`,
+  },
+  note: { type: "string", value: "<text>", description: "Why, in your words" },
+  "any-host": { type: "boolean", description: "Allow a host who doesn't take this event type" },
+  override: {
+    type: "string",
+    value: "<reason>",
+    description: "Go past this reason they can't, such as outside_availability. Needs --note",
+  },
+  "no-notify": { type: "boolean", description: "Don't tell the attendee" },
+  json: BOOKING_FLAGS.json,
+} as const satisfies Flags;
+
+const reassign: Command = defineCommand({
+  name: "scheduling reassign",
+  summary: "Give a booking to another host",
+  usage: "<booking> (--to <host> | --auto)",
+  description:
+    "Keeps the booking's id and time. Whoever's leaving and joining are told, and the attendee unless --no-notify. A group session moves as a whole.",
+  flags: REASSIGN_FLAGS,
+  positionals: true,
+  run: async ({ positionals, values, context }: CommandInput<typeof REASSIGN_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling reassign <booking>") as [string];
+    if (Boolean(values.to) === Boolean(values.auto)) {
+      throw new UsageError("Pass one of --to <host> and --auto.");
+    }
+    const reason = (values.reason ?? "other") as SchedulingReassignmentReason;
+    if (!REASSIGN_REASONS.includes(reason)) {
+      throw new UsageError(`--reason takes one of ${REASSIGN_REASONS.join(", ")}.`);
+    }
+    const overrides = [
+      ...(values["any-host"] ? ["any_host"] : []),
+      ...(values.override ? [values.override] : []),
+    ] as SchedulingReassignmentOverride[];
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.bookings.reassign(id, {
+      changes: [
+        {
+          ...(values.to ? { to_host: values.to } : { auto: true }),
+          ...(values.from ? { from_host: values.from } : {}),
+        },
+      ],
+      reason_code: reason,
+      ...(values.note ? { note: values.note } : {}),
+      ...(overrides.length > 0 ? { overrides } : {}),
+      ...(values["no-notify"] ? { notify: { attendee: false } } : {}),
+    });
+    if (error) throw apiError("Couldn't reassign the booking", error);
+    printBooking(context, data);
+    return 0;
+  },
+});
+
+const CANDIDATES_FLAGS = {
+  json: { type: "boolean", description: "One candidate per line, as JSON" },
+} as const satisfies Flags;
+
+const candidates: Command = defineCommand({
+  name: "scheduling candidates",
+  summary: "List who a booking could go to",
+  usage: "<booking>",
+  description: "Members of the event type first, each saying whether they're free and why not.",
+  flags: CANDIDATES_FLAGS,
+  positionals: true,
+  run: async ({ positionals, context }: CommandInput<typeof CANDIDATES_FLAGS>) => {
+    const [id] = requireArgs(positionals, 1, "scheduling candidates <booking>") as [string];
+    const coss = await client(context);
+    const { data, error } = await coss.scheduling.bookings.reassignCandidates(id);
+    if (error) throw apiError("Couldn't list the candidates", error);
+    const { out } = context;
+    if (out.json) {
+      for (const item of data.data) out.data(item);
+      return 0;
+    }
+    if (data.data.length === 0) {
+      out.info("Nobody else in this environment.");
+      return 0;
+    }
+    const lines = table([
+      ["HOST", "NAME", "FREE", "WHY NOT", "MEMBER"],
+      ...data.data.map((row) => [
+        row.uid ? printable(row.uid) : row.host,
+        printable(row.name),
+        row.available ? "yes" : "no",
+        row.reason ?? "",
+        row.member ? "yes" : "no",
+      ]),
+    ]);
+    for (const line of lines) out.line(line);
+    return 0;
+  },
+});
+
+const OOO_FLAGS = {
+  host: { type: "string", value: "<host>", description: "One host's entries, by id or uid" },
+  limit: LIMIT,
+  json: { type: "boolean", description: "One entry per line, as JSON" },
+} as const satisfies Flags;
+
+const outOfOffice: Command = defineCommand({
+  name: "scheduling ooo",
+  summary: "List time hosts are away",
+  description: "The environment's out of office entries, newest first.",
+  flags: OOO_FLAGS,
+  run: async ({ values, context }: CommandInput<typeof OOO_FLAGS>) => {
+    const coss = await client(context);
+    const limit = limitOf(values.limit);
+    const { data, error } = await coss.scheduling.outOfOffice.list({
+      ...(limit ? { limit } : {}),
+      ...(values.host ? { host: values.host } : {}),
+    });
+    if (error) throw apiError("Couldn't list out of office entries", error);
+    const { out } = context;
+    if (out.json) {
+      for (const item of data.data) out.data(item);
+      return 0;
+    }
+    if (data.data.length === 0) {
+      out.info("Nobody's away.");
+      return 0;
+    }
+    const lines = table([
+      ["ID", "HOST", "START", "END", "REASON"],
+      ...data.data.map((row) => [
+        row.id,
+        row.host,
+        when(row.start),
+        when(row.end),
+        printable(row.reason),
+      ]),
+    ]);
+    for (const line of lines) out.line(line);
+    return 0;
+  },
+});
+
 const CALENDARS_FLAGS = {
   json: { type: "boolean", description: "One connection per line, as JSON" },
 } as const satisfies Flags;
@@ -316,5 +474,8 @@ export const SCHEDULING_COMMANDS: readonly Command[] = [
   bookings,
   booking,
   cancel,
+  reassign,
+  candidates,
+  outOfOffice,
   calendars,
 ];

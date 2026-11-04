@@ -1,6 +1,7 @@
 import type {
   CreateSchedulingBookingParams,
   CreateSchedulingEventTypeParams,
+  CreateSchedulingOutOfOfficeParams,
   SchedulingBooking,
   SchedulingEventType,
   SchedulingHost,
@@ -415,6 +416,146 @@ export function registerSchedulingTools(ctx: ToolContext): void {
         coss.scheduling.bookings.reschedule(booking_id, given({ start, host: hostRef })),
         bookingSummary,
       ),
+  );
+
+  server.registerTool(
+    "list_scheduling_reassign_candidates",
+    {
+      title: "List who a booking could go to",
+      description:
+        "The environment's other hosts, event type members first, each saying whether they're free at the booking's time and why not. Call this before reassign_scheduling_booking.",
+      inputSchema: z.object({ booking_id: bookingId }),
+      annotations: READ_ONLY,
+    },
+    ({ booking_id }) =>
+      respond(coss.scheduling.bookings.reassignCandidates(booking_id), (page) => ({
+        candidates: page.data,
+      })),
+  );
+
+  server.registerTool(
+    "reassign_scheduling_booking",
+    {
+      title: "Reassign a booking",
+      description:
+        "Gives a booking to another host, keeping its id and time. Both hosts and the attendee are told unless notify_attendee is false. Name to_host, or set auto to let coss.com pick the fairest who's free. A group session moves as a whole. overrides go past what a candidate's `reason` said (and any_host past not taking the event type): only use one when the user asks, and say why in note.",
+      inputSchema: z.object({
+        booking_id: bookingId,
+        to_host: z.string().optional().describe("The new host's id or uid."),
+        auto: z.boolean().optional().describe("Let coss.com pick."),
+        from_host: z
+          .string()
+          .optional()
+          .describe("Who's leaving, when the booking has several hosts."),
+        reason_code: z.enum([
+          "host_unavailable",
+          "out_of_office",
+          "workload",
+          "customer_request",
+          "offboarding",
+          "other",
+        ]),
+        note: z.string().optional().describe("Why. Required with an availability override."),
+        overrides: z
+          .array(
+            z.enum([
+              "any_host",
+              "out_of_office",
+              "outside_availability",
+              "host_busy",
+              "limit_reached",
+              "calendar_unverified",
+            ]),
+          )
+          .optional(),
+        notify_attendee: z.boolean().optional().describe("Default: true."),
+      }),
+      annotations: SENDS,
+    },
+    ({ booking_id, to_host, auto, from_host, reason_code, note, overrides, notify_attendee }) =>
+      respond(
+        coss.scheduling.bookings.reassign(booking_id, {
+          changes: [given({ to_host, auto, from_host })],
+          reason_code,
+          ...given({ note, overrides }),
+          ...(notify_attendee === undefined ? {} : { notify: { attendee: notify_attendee } }),
+        }),
+        bookingSummary,
+      ),
+  );
+
+  server.registerTool(
+    "list_scheduling_out_of_office",
+    {
+      title: "List out of office entries",
+      description: "Time hosts are away, newest first. Pass a host for one person's.",
+      inputSchema: z.object({
+        host: z.string().optional().describe("The host's id or uid."),
+        limit: limitSchema(20),
+        cursor: cursorSchema,
+      }),
+      annotations: READ_ONLY,
+    },
+    ({ host: hostRef, limit, cursor }) =>
+      respond(
+        coss.scheduling.outOfOffice.list({
+          limit,
+          ...(hostRef ? { host: hostRef } : {}),
+          ...(cursor ? { after: cursor } : {}),
+        }),
+        (page) => ({ entries: page.data, next_cursor: nextCursor(page) }),
+      ),
+  );
+
+  server.registerTool(
+    "create_scheduling_out_of_office",
+    {
+      title: "Mark hosts as away",
+      description:
+        "Stops hosts being offered during some time: start_date and end_date for whole days (the last one included), or start and end instants for part of a day. Give one of host, hosts and host_filter. Existing bookings stay: see list_scheduling_out_of_office_conflicts. public_message is shown to people booking, and can't hold a link.",
+      inputSchema: z.object({
+        host: z.string().optional(),
+        hosts: z.array(z.string()).optional(),
+        host_filter: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
+        start: z.string().optional().describe("An ISO 8601 instant."),
+        end: z.string().optional().describe("An ISO 8601 instant."),
+        start_date: z.string().optional().describe("YYYY-MM-DD."),
+        end_date: z.string().optional().describe("YYYY-MM-DD, included."),
+        reason: z.string().optional(),
+        public_message: z.string().optional(),
+        notes: z.string().optional(),
+      }),
+      annotations: WRITE,
+    },
+    (args) =>
+      respond(
+        coss.scheduling.outOfOffice.create(given(args) as CreateSchedulingOutOfOfficeParams),
+        (page) => ({ entries: page.data }),
+      ),
+  );
+
+  server.registerTool(
+    "delete_scheduling_out_of_office",
+    {
+      title: "Remove an out of office entry",
+      description: "The host can be booked in that time again.",
+      inputSchema: z.object({ id: z.string().describe("The entry's id.") }),
+      annotations: DESTRUCTIVE,
+    },
+    ({ id }) => respond(coss.scheduling.outOfOffice.remove(id), (result) => result),
+  );
+
+  server.registerTool(
+    "list_scheduling_out_of_office_conflicts",
+    {
+      title: "List bookings in an out of office entry",
+      description:
+        "Live bookings of the host that fall in the entry, soonest first. Entries never change them: reassign_scheduling_booking does.",
+      inputSchema: z.object({ id: z.string().describe("The entry's id.") }),
+      annotations: READ_ONLY,
+    },
+    ({ id }) =>
+      respond(coss.scheduling.outOfOffice.conflicts(id), (page) => ({ bookings: page.data })),
   );
 
   server.registerTool(
