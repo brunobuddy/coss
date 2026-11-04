@@ -113,7 +113,8 @@ export default async function BookingPage({
     if (error instanceof SchedulingError && error.code === "not_found") notFound();
     throw error;
   });
-  const notifications = await listBookingNotifications(scope, booking.id);
+  const page = await listBookingNotifications(scope, booking.id, { limit: 100 });
+  const notifications = [...page.data].sort((a, b) => a.due_at.localeCompare(b.due_at));
   const ended = booking.status === "cancelled" || booking.status === "declined";
   const started = booking.status === "confirmed" && new Date(booking.start) <= new Date();
   // A group seat is moved by cancelling it and booking another session.
@@ -256,7 +257,11 @@ export default async function BookingPage({
 
       {notifications.length > 0 ? (
         <Panel
-          description="What's queued for this booking and what became of it."
+          description={
+            page.hasMore
+              ? "The latest 100 queued for this booking, and what became of them."
+              : "What's queued for this booking and what became of it."
+          }
           title="Reminders and notices"
         >
           <Table variant="card">

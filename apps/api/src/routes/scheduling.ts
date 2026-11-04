@@ -678,10 +678,10 @@ export const listBookingNotificationsRoute = createRoute({
   tags: [TAG_BOOKINGS],
   summary: "List a booking's notifications",
   description:
-    "What's been queued for this booking and what became of it, including why something wasn't sent. It never says who it went to.",
+    "What's been queued for this booking and what became of it, newest first, including why something wasn't sent. It never says who it went to.",
   security: [{ bearerAuth: [] }],
   middleware: read(),
-  request: { params: BookingParams },
+  request: { params: BookingParams, query: PageQuery },
   responses: {
     200: jsonDoc("The notifications.", BookingNotificationList),
     ...commonErrors,
@@ -1501,16 +1501,14 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     ),
   );
 
-  router.openapi(listBookingNotificationsRoute, async (c) =>
-    c.json(
-      {
-        object: "list" as const,
-        data: await listBookingNotifications(c.var.auth, c.req.valid("param").id),
-        has_more: false,
-      },
-      200,
-    ),
-  );
+  router.openapi(listBookingNotificationsRoute, async (c) => {
+    const page = await listBookingNotifications(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("query"),
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
 
   router.openapi(noShowBookingRoute, async (c) =>
     c.json(await markNoShow(c.var.auth, c.req.valid("param").id, deps, actorOf(c.var.auth)), 200),

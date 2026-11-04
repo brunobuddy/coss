@@ -385,14 +385,16 @@ export class SchedulingBookingsResource {
     });
   }
 
-  /** What's been queued for this booking and what became of it, including why something wasn't sent. */
+  /** What's been queued for this booking and what became of it, newest first, including why something wasn't sent. */
   notifications(
     id: string,
+    params: SchedulingPageParams = {},
     options?: ReadOptions,
   ): Promise<CossResult<List<SchedulingBookingNotification>>> {
     return this.#http.request<List<SchedulingBookingNotification>>({
       method: "GET",
       path: `/v1/scheduling/bookings/${part(id)}/notifications`,
+      query: listQuery(params),
       signal: options?.signal,
     });
   }

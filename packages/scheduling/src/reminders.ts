@@ -171,7 +171,7 @@ function rowsOfRule(rule: ReminderRule, booking: BookingRow, now: Date): Notific
     reminderAnchor: rule.anchor,
     reminderOffsetMinutes: offset,
     anchorAt,
-    dedupeKey: `reminder:${rule.key}:${offset}:${target.channel}:${target.recipient}:${booking.id}:${anchorAt.getTime()}`,
+    dedupeKey: `reminder:${rule.key}:${rule.anchor}:${offset}:${target.channel}:${target.recipient}:${booking.id}:${anchorAt.getTime()}`,
     dueAt: catchesUp ? now : new Date(scheduled),
     ...(finished ? { finishedAt: now, outcome: "too_late" } : {}),
   }));

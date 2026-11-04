@@ -13,7 +13,7 @@ import { createHash } from "node:crypto";
 import { HipaaModeError } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { type EmailBlock, type EmailContent, oneLine, renderEmail } from "@coss/email-layout";
-import { and, asc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { decryptContact } from "./attendees.ts";
 import { recordChange } from "./booking-record.ts";
 import { accentColors } from "./branding.ts";
@@ -869,7 +869,8 @@ export async function sendTimedWebhook(
 export async function listBookingNotifications(
   env: Pick<SchedulingEnvironment, "organizationId" | "environmentId">,
   bookingId: string,
-): Promise<BookingNotificationObjectOutput[]> {
+  query: { limit: number; after?: string | undefined },
+): Promise<{ data: BookingNotificationObjectOutput[]; hasMore: boolean }> {
   const [booking] = await db
     .select({ id: schedulingBooking.id })
     .from(schedulingBooking)
@@ -889,12 +890,13 @@ export async function listBookingNotifications(
       and(
         eq(schedulingNotification.bookingId, bookingId),
         eq(schedulingNotification.organizationId, env.organizationId),
+        query.after ? lt(schedulingNotification.id, query.after) : undefined,
       ),
     )
-    .orderBy(asc(schedulingNotification.dueAt), asc(schedulingNotification.id))
-    .limit(500);
-  return rows.map((row) => ({
-    object: "scheduling.booking_notification",
+    .orderBy(desc(schedulingNotification.id))
+    .limit(query.limit + 1);
+  const data = rows.slice(0, query.limit).map((row) => ({
+    object: "scheduling.booking_notification" as const,
     id: row.id,
     kind: row.kind,
     reminder_key: row.reminderKey,
@@ -904,6 +906,7 @@ export async function listBookingNotifications(
     finished_at: row.finishedAt?.toISOString() ?? null,
     outcome: row.outcome,
   }));
+  return { data, hasMore: rows.length > query.limit };
 }
 
 async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Promise<string> {

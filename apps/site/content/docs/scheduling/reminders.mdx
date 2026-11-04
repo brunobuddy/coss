@@ -279,7 +279,7 @@ const { data } = await coss.scheduling.bookings.notifications(bookingId);
 // data?.data[0]: { kind, reminder_key, channel, recipient, due_at, finished_at, outcome }
 ```
 
-It never says who a notification went to.
+It lists the newest first, a page at a time, and never says who a notification went to.
 
 | `outcome` | What happened |
 | --- | --- |

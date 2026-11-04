@@ -71066,7 +71066,7 @@
           "Scheduling bookings"
         ],
         "summary": "List a booking's notifications",
-        "description": "What's been queued for this booking and what became of it, including why something wasn't sent. It never says who it went to.",
+        "description": "What's been queued for this booking and what became of it, newest first, including why something wasn't sent. It never says who it went to.",
         "security": [
           {
             "bearerAuth": []
@@ -71085,6 +71085,27 @@
             "description": "The booking's id.",
             "name": "id",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "The last id of the previous page."
+            },
+            "required": false,
+            "description": "The last id of the previous page.",
+            "name": "after",
+            "in": "query"
           },
           {
             "$ref": "#/components/parameters/CossVersion"

@@ -166,6 +166,12 @@ export function renderReminderCopy(text: string, values: ReminderValues): string
 }
 
 /**
+ * Stricter than `URL_LIKE`, which knows a few endings: `attacker.dev` is a link to anyone who'd click
+ * it. A name that merely looks like one ("St.John") loses out too, and it's only a greeting.
+ */
+const ADDRESS_LIKE = /[\p{L}\p{N}-]+\.\p{L}{2,}/u;
+
+/**
  * A booker types their own name, and could aim the email at anyone: a name with a link in it renders
  * as nothing, or it's phishing from the customer's own domain.
  */
@@ -174,7 +180,7 @@ export function safeName(name: string | null | undefined): string {
     .replace(/[\r\n\t]+/g, " ")
     .trim()
     .slice(0, 100);
-  return URL_LIKE.test(line) ? "" : line;
+  return URL_LIKE.test(line) || ADDRESS_LIKE.test(line) ? "" : line;
 }
 
 export const firstNameOf = (name: string): string => name.split(/\s+/)[0] ?? "";

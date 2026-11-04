@@ -8,7 +8,7 @@ SET
   "reminder_anchor" = 'start',
   "reminder_offset_minutes" = -1440,
   "anchor_at" = b."start_at",
-  "dedupe_key" = 'reminder:reminder:-1440:' || n."channel" || ':' || n."recipient" || ':' || b."id" || ':'
+  "dedupe_key" = 'reminder:reminder:start:-1440:' || n."channel" || ':' || n."recipient" || ':' || b."id" || ':'
     || floor(extract(epoch FROM b."start_at") * 1000)::bigint
 FROM "scheduling_booking" AS b
 WHERE n."booking_id" = b."id"

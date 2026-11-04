@@ -466,24 +466,32 @@ export function registerSchedulingTools(ctx: ToolContext): void {
       description:
         "What's been queued for a booking and what became of it. Use it to answer why someone " +
         "did or didn't get a reminder: `outcome` is null while waiting, `sent`, or the reason not. " +
-        "It never says who a notification went to.",
-      inputSchema: z.object({ booking_id: bookingId }),
+        "Newest first. It never says who a notification went to.",
+      inputSchema: z.object({
+        booking_id: bookingId,
+        limit: limitSchema(50),
+        cursor: cursorSchema,
+      }),
       annotations: READ_ONLY,
     },
-    ({ booking_id }) =>
-      respond(coss.scheduling.bookings.notifications(booking_id), (page) => ({
-        notifications: page.data.map((row) =>
-          compact({
-            kind: row.kind,
-            reminder_key: row.reminder_key,
-            channel: row.channel,
-            recipient: row.recipient,
-            due_at: row.due_at,
-            finished_at: row.finished_at,
-            outcome: row.outcome,
-          }),
-        ),
-      })),
+    ({ booking_id, limit, cursor }) =>
+      respond(
+        coss.scheduling.bookings.notifications(booking_id, given({ limit, after: cursor })),
+        (page) => ({
+          next_cursor: nextCursor(page),
+          notifications: page.data.map((row) =>
+            compact({
+              kind: row.kind,
+              reminder_key: row.reminder_key,
+              channel: row.channel,
+              recipient: row.recipient,
+              due_at: row.due_at,
+              finished_at: row.finished_at,
+              outcome: row.outcome,
+            }),
+          ),
+        }),
+      ),
   );
 
   server.registerTool(

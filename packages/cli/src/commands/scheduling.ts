@@ -319,6 +319,7 @@ const noShow: Command = defineCommand({
 });
 
 const NOTIFICATIONS_FLAGS = {
+  limit: LIMIT,
   json: { type: "boolean", description: "One notification per line, as JSON" },
 } as const satisfies Flags;
 
@@ -330,10 +331,12 @@ const notifications: Command = defineCommand({
     "What's been queued for a booking and what became of it, including why a reminder wasn't sent.",
   flags: NOTIFICATIONS_FLAGS,
   positionals: true,
-  run: async ({ positionals, context }: CommandInput<typeof NOTIFICATIONS_FLAGS>) => {
+  run: async ({ positionals, values, context }: CommandInput<typeof NOTIFICATIONS_FLAGS>) => {
     const [id] = requireArgs(positionals, 1, "scheduling notifications <booking>") as [string];
     const coss = await client(context);
-    const { data, error } = await coss.scheduling.bookings.notifications(id);
+    const { data, error } = await coss.scheduling.bookings.notifications(id, {
+      ...(values.limit !== undefined && { limit: limitOf(values.limit) }),
+    });
     if (error) throw apiError("Couldn't list the notifications", error);
     const { out } = context;
     if (out.json) {

@@ -124,7 +124,7 @@ async function runAt(s: Setup, when: number) {
 const subjects = (n: ReturnType<typeof notifier>) => n.emails.map((email) => email.subject);
 
 async function rows(s: Setup, bookingId: string) {
-  return listBookingNotifications(s.env, bookingId);
+  return (await listBookingNotifications(s.env, bookingId, { limit: 100 })).data;
 }
 
 const rule = (input: Record<string, unknown>) => input as never;
@@ -876,6 +876,12 @@ describe("the customer's own words", () => {
   test("a link in an attendee's name renders as nothing", async () => {
     expect(safeName("Click http://evil.example")).toBe("");
     expect(safeName("evil.com")).toBe("");
+    // Whatever it ends in: there's no list of endings to get past.
+    expect(safeName("Confirm at attacker.dev")).toBe("");
+    expect(safeName("пример.рф")).toBe("");
+    // Ordinary names aren't touched by what's around them.
+    expect(safeName("Dr. Reyes")).toBe("Dr. Reyes");
+    expect(safeName("J. R. Smith")).toBe("J. R. Smith");
     expect(safeName("Sam Lee")).toBe("Sam Lee");
 
     const s = await setUp();
@@ -1178,9 +1184,9 @@ describe("what's accepted", () => {
 describe("errors", () => {
   test("a booking that isn't here has no notifications to list", async () => {
     const s = await setUp();
-    await expect(listBookingNotifications(s.env, "book_missing")).rejects.toBeInstanceOf(
-      SchedulingError,
-    );
+    await expect(
+      listBookingNotifications(s.env, "book_missing", { limit: 10 }),
+    ).rejects.toBeInstanceOf(SchedulingError);
   });
 });
 
@@ -1676,5 +1682,54 @@ describe("retrying fixed addresses", () => {
     const keyOf = (to: string) => asked.find(([address]) => address === to)?.[1] as string;
     expect(delivered.get(keyOf("a@example.com"))).toBe("a@example.com");
     expect(delivered.has(keyOf("b@example.com"))).toBe(false);
+  });
+});
+
+describe("a rule edited onto another moment", () => {
+  test("a reminder that lands where an old one was still goes out", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      reminders: [
+        rule({ key: "nudge", anchor: "start", before_minutes: 10, send: ["email_attendee"] }),
+      ],
+    });
+    const { booking } = await book(s, "10:00");
+    await updateSettings(s.env, {
+      reminders: [
+        rule({ key: "nudge", anchor: "end", before_minutes: 10, send: ["email_attendee"] }),
+      ],
+    });
+    // Its end is now the moment its old reminder was timed from.
+    await rescheduleBooking(s.env, booking.id, { startMs: at("09:30") }, deps, actor);
+    const n = await runAt(s, at("10:00") - 10 * MINUTE);
+    expect(subjects(n)).toContain("Happening now: Consultation");
+    const row = (await rows(s, booking.id)).find(
+      (found) => found.reminder_key === "nudge" && found.outcome === "sent",
+    );
+    expect(row).toBeDefined();
+  });
+});
+
+describe("reading what's queued", () => {
+  test("goes a page at a time, and says when there's more", async () => {
+    const s = await setUp();
+    const { booking } = await book(s);
+    const first = await listBookingNotifications(s.env, booking.id, { limit: 2 });
+    expect(first.data.length).toBe(2);
+    expect(first.hasMore).toBe(true);
+    const seen = new Set(first.data.map((row) => row.id));
+    let after = first.data.at(-1)?.id;
+    for (let hasMore = true; hasMore; ) {
+      const next = await listBookingNotifications(s.env, booking.id, { limit: 2, after });
+      for (const row of next.data) {
+        expect(seen.has(row.id)).toBe(false);
+        seen.add(row.id);
+      }
+      after = next.data.at(-1)?.id;
+      hasMore = next.hasMore;
+    }
+    const all = await listBookingNotifications(s.env, booking.id, { limit: 100 });
+    expect(seen.size).toBe(all.data.length);
+    expect(all.hasMore).toBe(false);
   });
 });
