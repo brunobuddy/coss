@@ -18572,7 +18572,7 @@
           },
           "title": {
             "type": "string",
-            "description": "Shown to attendees and in emails. Host calendars always show a neutral title."
+            "description": "Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`."
           },
           "kind": {
             "type": "string",
@@ -18664,14 +18664,16 @@
             "description": "Attendees can't reschedule closer to the start than this. API keys can."
           },
           "max_guests": {
-            "type": "number"
+            "type": "number",
+            "description": "How many people an attendee can add to a booking. Not on `group`."
           },
           "host_calendar_details": {
             "type": "string",
             "enum": [
               "neutral",
               "full"
-            ]
+            ],
+            "description": "What hosts' calendars say about a booking. `neutral`: a private event titled \"Appointment\". `full`: a private event with this title and the attendee's and guests' details."
           },
           "questions": {
             "type": "array",
@@ -19140,7 +19142,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 120,
-            "description": "Shown to attendees and in emails. Host calendars always show a neutral title."
+            "description": "Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`."
           },
           "duration_minutes": {
             "type": "integer",
@@ -19458,7 +19460,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 120,
-            "description": "Shown to attendees and in emails. Host calendars always show a neutral title."
+            "description": "Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`."
           },
           "duration_minutes": {
             "type": "integer",
@@ -20008,7 +20010,7 @@
                 "locale"
               ]
             },
-            "description": "Who's booked. A group session's seat is its own booking, with its own attendee."
+            "description": "Who's booked: the attendee first, then any guests they added. A group session's seat is its own booking."
           },
           "location": {
             "$ref": "#/components/schemas/SchedulingLocation"
@@ -20441,12 +20443,14 @@
           "email": {
             "type": "string",
             "maxLength": 320,
-            "format": "email"
+            "format": "email",
+            "description": "Where they're emailed about the booking."
           },
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Their name, if you have it."
           }
         },
         "required": [
@@ -21401,7 +21405,8 @@
             ]
           },
           "erased": {
-            "type": "number"
+            "type": "number",
+            "description": "How many attendee and guest records were erased."
           }
         },
         "required": [
@@ -21421,7 +21426,8 @@
           "email": {
             "type": "string",
             "maxLength": 320,
-            "format": "email"
+            "format": "email",
+            "description": "The address to forget, an attendee's or a guest's."
           }
         },
         "required": [
