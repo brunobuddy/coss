@@ -24,6 +24,7 @@ export function schedulingDeps(): SchedulingDeps | null {
     // The dashboard never looks attendees up by email; the key only has to exist.
     lookupKey: createHash("sha256").update("scheduling dashboard").digest(),
     publicUrl: schedulingUrl(),
-    screenSetup: hostedPageScreening(riskDeps()),
+    // Built when something is screened: most of these deps only read.
+    screenSetup: (input) => hostedPageScreening(riskDeps())(input),
   };
 }

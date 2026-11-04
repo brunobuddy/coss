@@ -69,6 +69,10 @@ A session's `token` also works directly from a browser, against the client API a
 nothing they do is out of your reach. Calls are only accepted from your `allowed_origins`, and a session
 reaches only its own scope: an attendee sees times, never who else could take them.
 
+A booking made this way says whether the attendee will be emailed about it (`attendee_emailed`), so your page
+only promises a confirmation when one is coming. It can choose among the event type's `locations` by `type`, but
+not supply its own link or address, only a phone number where the event type leaves that open.
+
 Booker sessions have `GET /session`, `GET /slots` and `POST /bookings`. Manage sessions have
 `GET /booking`, `GET /booking/slots`, `POST /booking/reschedule` and `POST /booking/cancel`. Host sessions
 have `/host/schedules`, `/host/calendar_connections`, `/host/calendars/{id}` and `/host/bookings`.

@@ -63,7 +63,8 @@ consent is yours to do, and a STOP is always honored.
 
 An event type's `locations` say where it happens. `google_meet` and `microsoft_teams` create a link with the
 calendar event, so they need a connected calendar from that provider: the confirmation waits briefly for it,
-and it then appears on the booking with `scheduling.booking.location_ready`.
+and it then appears on the booking with `scheduling.booking.location_ready`. Moving a booking to another host
+drops the old host's link, and the new host's meeting gets a new one.
 
 `zoom` creates a meeting on the host's own Zoom account, once they've [connected it](/docs/scheduling/zoom).
 

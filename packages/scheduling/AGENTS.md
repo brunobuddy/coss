@@ -32,6 +32,7 @@ An audit in `test/bookings.test.ts` checks every live booking holds exactly one 
 a booking: named hosts, plus a pool's `host_filter` matches right now, narrowed by `attributes`, and it never falls back
 to someone who doesn't match. A row in `scheduling_event_type_host` with `assigned = false` only counts bookings for a
 host a filter found, and never makes them a member. A host taken off `hosts` by name stays out whatever the filter says.
+A pool's `required` hosts need a member: if narrowing leaves none, nobody's offered, rather than the required host alone.
 A booker session's `attributes` come from the customer's server and are encrypted, since with an attendee they can say
 what someone needs; the browser never sees them or sends its own.
 
@@ -72,6 +73,10 @@ embeds the booker. Local dates (overrides, limits) never pass through `Date`.
   idle ones alive. `notZoomMeeting()` keeps these rows out of what's subtracted from busy times. Losing Zoom never hides
   a host. The app's deauthorization event comes to `POST /scheduling/zoom/events`.
 
+A Meet or Teams link becomes a `link` location on the booking, stored with `conference` (stripped from the wire), so a
+new host gets a meeting of their own (`locationForNewHost`). A browser only chooses among an event type's `locations`
+(`locationFromBrowser`): it can't supply its own link or address.
+
 ## Sessions and the client API
 
 `sessions.ts`: a token (`cossch_`) stored only as a sha256, in the URL's fragment then an `Authorization` header, never
@@ -96,7 +101,8 @@ attendee sees times, never other hosts.
 ## Notifications
 
 `notifications.ts` resolves policy once, into outbox rows in the deciding transaction: core code never branches on it.
-Rows hold no content; a row's rendered at send time and dropped if stale. Booking emails use `@coss/email-layout` with
+Rows hold no content; a row's rendered at send time and dropped if stale. A change that keeps a booking's time but
+bumps its version (a location, a meeting link) calls `carryReminders`, or its reminder would look stale. Booking emails use `@coss/email-layout` with
 no customer HTML and no links but the manage link, and pass `screeningExempt`: per-email screening would send patients'
 names to the AI Gateway. In exchange, text a customer controls is screened at setup (`screening.ts`) and can't hold a
 link. Never add a free-form field to these emails without screening it. SMS goes through `@coss/sms`, so it's sampled
