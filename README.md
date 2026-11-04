@@ -959,7 +959,8 @@ webhooks:reencrypt` does step 3 against `DATABASE_URL`.
 
 The variable is a comma-separated list of keys, newest first: the first encrypts, every one decrypts. It protects
 attendees' contact details and answers and the identity a booker session is fixed to
-(`scheduling_attendee.encrypted_contact`, `.encrypted_answers`, `scheduling_session.encrypted_attendee`). Calendar
+(`scheduling_attendee.encrypted_contact`, `.encrypted_answers`, `scheduling_session.encrypted_attendee`) and
+cancellation reasons (`scheduling_booking.encrypted_cancellation_reason`). Calendar
 credentials aren't in it: they use `WEBHOOK_SECRETS_KEY`, [rotated on their own](#rotating-webhook_secrets_key).
 Customers notice nothing. The web, api and worker services all read it.
 

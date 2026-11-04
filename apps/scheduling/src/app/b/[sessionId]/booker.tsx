@@ -25,6 +25,7 @@ import {
   VideoIcon,
 } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { EventTypeDescription } from "@/components/event-type-description";
 import {
   BrandMark,
   BrokenLink,
@@ -56,6 +57,7 @@ type Session = Branding & {
   attendee_fixed: boolean;
   event_type: {
     title: string;
+    description: string | null;
     duration_minutes: number;
     duration_options: number[];
     questions: Question[];
@@ -338,6 +340,9 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
         <aside className="flex flex-col gap-5 border-b p-4 sm:p-6 md:border-e md:border-b-0">
           <BrandMark branding={session} />
           <PageTitle>{session.event_type.title}</PageTitle>
+          {session.event_type.description ? (
+            <EventTypeDescription text={session.event_type.description} />
+          ) : null}
           <DetailList>
             {slot ? (
               <Detail icon={CalendarIcon} label="When">

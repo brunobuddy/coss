@@ -29,6 +29,8 @@ import type {
   UpdateEventTypeRequestOutput,
 } from "./schemas.ts";
 import {
+  isWithinDomains,
+  linkedHosts,
   locationText,
   refuseLinks,
   refuseLinksInAddresses,
@@ -59,6 +61,7 @@ export function toEventTypeObject(
     id: row.id,
     uid: row.uid,
     title: row.title,
+    description: row.description,
     kind: row.kind,
     status: row.status,
     duration_minutes: row.durationMinutes,
@@ -332,6 +335,44 @@ const uidTaken = (uid: string | null | undefined) =>
     param: "uid",
   });
 
+/** A description is shown on hosted pages, so its links can only go somewhere the customer owns. */
+async function checkDescription(
+  organizationId: string,
+  description: string | null | undefined,
+): Promise<void> {
+  if (!description) return;
+  const hosts = linkedHosts(description);
+  if (!hosts) {
+    throw new SchedulingError(
+      "content_refused",
+      "Links in a description must use https and a plain address, with no `user@`.",
+      {
+        param: "description",
+      },
+    );
+  }
+  if (hosts.length === 0) return;
+  const verified = await db
+    .select({ name: schema.domain.name })
+    .from(schema.domain)
+    .where(
+      and(
+        eq(schema.domain.organizationId, organizationId),
+        eq(schema.domain.status, "verified"),
+        isNull(schema.domain.subaccountId),
+      ),
+    );
+  const domains = verified.map((row) => row.name);
+  const outside = hosts.find((host) => !isWithinDomains(host, domains));
+  if (outside) {
+    throw new SchedulingError(
+      "content_refused",
+      `A description can only link to your organization's verified domains, and ${outside} isn't one.`,
+      { param: "description" },
+    );
+  }
+}
+
 /** Addresses and links land in attendees' emails, where nothing screens them per email. */
 function locationsText(locations: readonly Parameters<typeof locationText>[0][] | undefined) {
   return (locations ?? []).map(locationText).filter(Boolean).join("\n");
@@ -339,10 +380,12 @@ function locationsText(locations: readonly Parameters<typeof locationText>[0][] 
 
 function setupText(values: {
   title?: string | undefined;
+  description?: string | null | undefined;
   questions?: readonly { label: string; options: readonly string[] }[] | undefined;
 }): string {
   return [
     values.title ?? "",
+    ...(values.description ? [values.description] : []),
     ...(values.questions ?? []).flatMap((question) => [question.label, ...question.options]),
   ].join("\n");
 }
@@ -451,6 +494,7 @@ export async function createEventType(
     await requireLiveFeatureToCreate(env, opts.plans, "schedulingRouting");
   await checkGroupSeats(env, opts.plans, params.capacity);
   refuseLinks(params.title, "title");
+  await checkDescription(env.organizationId, params.description);
   refuseLinksInAddresses(params.locations);
   await screenSetup(env, setupText(params), opts.screen, "title");
   await screenSetup(env, locationsText(params.locations), opts.screen, "locations");
@@ -479,6 +523,7 @@ export async function createEventType(
           environmentId: env.environmentId,
           uid: params.uid ?? null,
           title: params.title,
+          description: params.description ?? null,
           kind: params.kind,
           durationMinutes: params.duration_minutes,
           durationOptions: params.duration_options ?? [],
@@ -602,9 +647,15 @@ export async function updateEventType(
   opts: { screen?: SetupScreening | undefined; plans?: PlanGate | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
+  await checkDescription(scope.organizationId, params.description);
   refuseLinksInAddresses(params.locations);
   await checkHostCalendarDetails(scope.environmentId, params.host_calendar_details);
-  if (scope.mode && (params.title !== undefined || params.questions !== undefined)) {
+  if (
+    scope.mode &&
+    (params.title !== undefined ||
+      params.description !== undefined ||
+      params.questions !== undefined)
+  ) {
     await screenSetup(
       { organizationId: scope.organizationId, mode: scope.mode },
       setupText(params),
@@ -639,6 +690,7 @@ export async function updateEventType(
       const set = {
         ...(params.uid !== undefined ? { uid: params.uid } : {}),
         ...(params.title !== undefined ? { title: params.title } : {}),
+        ...(params.description !== undefined ? { description: params.description } : {}),
         ...(params.status !== undefined ? { status: params.status } : {}),
         ...(params.duration_minutes !== undefined
           ? { durationMinutes: params.duration_minutes }

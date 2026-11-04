@@ -111,6 +111,7 @@ const BOOKING = {
   external_conflict_at: null,
   no_show_at: null,
   cancelled_at: null,
+  cancelled_by: null,
   metadata: { internal_ref: "metadata-secret" },
   created_at: "2030-01-01T00:00:00.000Z",
   updated_at: "2030-01-01T00:00:00.000Z",
