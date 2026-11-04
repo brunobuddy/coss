@@ -1558,6 +1558,35 @@ describe("losing access", () => {
     expect(await slotStarts(env, eventType.id)).toContain("09:00");
   });
 
+  test("hosts with OAuth connections don't hold up an outage's stand-ins", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const delegation = await activeGoogle(env, deps);
+    for (let index = 0; index < 20; index++) {
+      const own = await hostOn(env, `own${index}`);
+      await db.insert(schema.schedulingCalendarConnection).values({
+        organizationId: env.organizationId,
+        environmentId: env.environmentId,
+        hostId: own.id,
+        provider: "google",
+        accountId: `own${index}@${DOMAIN}`,
+      });
+    }
+    // Ids are ordered by time, so this one sorts past all of them.
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const late = await hostOn(env, "late");
+    const eventType = await eventTypeFor(env, [late.id]);
+    api.delegationRefused = { error: "unauthorized_client" };
+    await markDelegationFailing(
+      { id: delegation.id, organizationId: env.organizationId },
+      "unauthorized_client",
+      { now: () => NOW },
+    );
+    await run(env, deps);
+    expect(await slotStarts(env, eventType.id)).toEqual([]);
+  });
+
   test("a failure while it's already failing doesn't announce again", async () => {
     const { env, delegation } = await connected();
     const row = { id: delegation.id, organizationId: env.organizationId };

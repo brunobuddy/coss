@@ -983,13 +983,18 @@ async function hideUnconnectedHosts(delegation: DelegationRow, deps: CalendarDep
   const now = new Date(nowMs(deps));
   const code = delegation.lastErrorCode ?? "delegation_failing";
   const deadline = Date.now() + RUN_BUDGET_MS;
+  // Its own walk, all the way through: an OAuth connection to the mailbox gets no stand-in and stays
+  // in the list, and enough of them would otherwise hide everyone behind them.
+  let reconcileCursor: string | null = null;
   for (;;) {
-    const hosts = await hostsToConnect({ ...delegation, reconcileCursor: null }, now);
+    const hosts: Host[] = await hostsToConnect({ ...delegation, reconcileCursor }, now);
     const fresh = hosts.filter((host) => !host.existing);
     for (const host of fresh) {
       await recordMailboxFailure(delegation, host, code, now, undefined, { duringOutage: true });
     }
-    if (fresh.length < HOSTS_PER_RUN || Date.now() > deadline) return;
+    const last = fresh.at(-1);
+    if (!last || fresh.length < HOSTS_PER_RUN || Date.now() > deadline) return;
+    reconcileCursor = last.id;
   }
 }
 
