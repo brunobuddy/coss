@@ -1,6 +1,6 @@
 import { BUCKETS } from "@coss/ratelimit/buckets";
 import { formatRetentionDays, RETENTION_DAYS } from "@coss/retention";
-import { includedUnitsText, planPriceText, rateText } from "../billing-text";
+import { includedUnitsText, limitText, planPriceText, rateText } from "../billing-text";
 import type { Competitor } from "../compare";
 import { formatRule } from "../rate-limits-text";
 
@@ -20,18 +20,18 @@ const NYLAS_SCHEDULER: Competitor = {
   products: ["scheduling"],
   query: "Nylas Scheduler alternative",
   verdict:
-    "Nylas Scheduler has public booking links, Stripe payments and a BAA. coss.com Scheduling bills per booking, on the key you use for email and SMS.",
-  lede: "Both give your product hosts, availability, calendar connections, one-on-one, collective, round-robin and group meetings, and a page or component to book on. Nylas Scheduler sits on Nylas's email and calendar APIs, is priced per connected account, and adds public links, native Stripe payments and a BAA. coss.com Scheduling is priced per booking, keeps only busy times from calendars, and shares its API key, webhooks and logs with the rest of coss.com.",
+    "Nylas Scheduler has public booking links and Stripe payments. coss.com Scheduling bills per booking, on the key you use for email and SMS.",
+  lede: "Both give your product hosts, availability, calendar connections, one-on-one, collective, round-robin and group meetings, and a page or component to book on. Nylas Scheduler sits on Nylas's email and calendar APIs, is priced per connected account, and adds public links and native Stripe payments. coss.com Scheduling is priced per booking, with a monthly charge for hosts beyond your plan's, keeps only busy times from calendars, and shares its API key, webhooks and logs with the rest of coss.com.",
   checked: CHECKED,
   rows: [
     {
       label: "Price",
-      coss: `${rateText("scheduling.bookings")}, charged when confirmed; nothing per host or calendar`,
+      coss: `${rateText("scheduling.bookings")}, charged when confirmed. Scale includes ${includedUnitsText("scheduling.hosts", "scale")}, then ${rateText("scheduling.hosts")}`,
       them: "No per-booking price. Per connected account: Essentials $15 a month with 10 calendar-only accounts, then $1.70 each; Pro $49 a month with 35, then $1.50 each",
     },
     {
       label: "Free",
-      coss: includedUnitsText("scheduling.bookings"),
+      coss: `${includedUnitsText("scheduling.bookings")} and ${limitText("schedulingHosts", "free")} hosts`,
       them: "5 email and calendar accounts; calendar-only accounts aren't included",
     },
     {
@@ -46,8 +46,13 @@ const NYLAS_SCHEDULER: Competitor = {
     },
     {
       label: "Calendar consent",
-      coss: "Hosts consent to coss.com's Google and Microsoft apps. Using your own apps isn't offered",
+      coss: "Hosts consent to coss.com's Google and Microsoft apps today. Your own apps are coming soon to Enterprise",
       them: "Your own Google and Microsoft apps, or Nylas's shared Google app with the Accelerator add-on ($2,400 a year, on Pro Annual)",
+    },
+    {
+      label: "Booking domain",
+      coss: "Hosted pages are on coss.com's booking domain today. Your own domain is coming soon to Enterprise",
+      them: "Public pages at book.nylas.com, or its components on your own site",
     },
     {
       label: "Meeting kinds",
@@ -83,7 +88,7 @@ const NYLAS_SCHEDULER: Competitor = {
     },
     {
       label: "Finding a host",
-      coss: "Host attributes narrow a pool per booking; availability.search covers up to 500 hosts",
+      coss: "On Scale and Enterprise, host attributes narrow a pool per booking and availability.search covers up to 500 hosts",
       them: "—",
       note: "Not compared: see Nylas's docs",
     },
@@ -109,7 +114,7 @@ const NYLAS_SCHEDULER: Competitor = {
     },
     {
       label: "HIPAA",
-      coss: "No BAA yet; the Terms don't allow protected health information without a written agreement",
+      coss: "A signed BAA and HIPAA mode, by Enterprise contract",
       them: "Pre-signed BAA on every paid plan",
     },
     {
@@ -134,8 +139,8 @@ const NYLAS_SCHEDULER: Competitor = {
       body: "Nylas has native Stripe payments, with the booking finalized once payment succeeds. coss.com has no built-in payments: you hold the slot and charge through your own provider.",
     },
     {
-      title: "You handle patient data",
-      body: "Nylas offers a pre-signed BAA on every paid plan. coss.com doesn't offer one yet, and its Terms don't allow protected health information without a written agreement.",
+      title: "You need a BAA without a contract",
+      body: "Nylas offers a pre-signed BAA on every paid plan. coss.com signs a BAA and turns on HIPAA mode on an Enterprise contract, and its Terms don't allow protected health information without one.",
     },
     {
       title: "You need more of the calendar than free and busy",
@@ -202,7 +207,7 @@ const NYLAS_SCHEDULER: Competitor = {
     },
     {
       question: "What does coss.com Scheduling cost next to Nylas?",
-      answer: `coss.com charges ${rateText("scheduling.bookings")} once it's confirmed, with ${includedUnitsText("scheduling.bookings")} on Free. Beyond that you need a paid plan, such as Pro at ${planPriceText("pro")}, whose fee counts toward usage. Nylas charges per connected account and lists no per-booking price, so which costs less depends on how many bookings each host takes.`,
+      answer: `coss.com charges ${rateText("scheduling.bookings")} once it's confirmed, with ${includedUnitsText("scheduling.bookings")} on Free. Beyond that you need a paid plan, such as Pro at ${planPriceText("pro")}, whose fee counts toward usage. Scale includes ${includedUnitsText("scheduling.hosts", "scale")}, then ${rateText("scheduling.hosts")}. Nylas charges per connected account and lists no per-booking price, so which costs less depends on how many bookings each host takes.`,
     },
     {
       question: "Can coss.com take payment for a booking?",
@@ -212,7 +217,7 @@ const NYLAS_SCHEDULER: Competitor = {
     {
       question: "Will coss.com sign a BAA for Scheduling?",
       answer:
-        "Not yet, and its Terms don't allow protected health information without a written agreement. Nylas offers a pre-signed BAA on every paid plan.",
+        "Yes, on an Enterprise contract, which also turns on HIPAA mode. Its Terms don't allow protected health information without a signed agreement. Nylas offers a pre-signed BAA on every paid plan.",
     },
     {
       question: "Do hosts have to reconnect their calendars?",

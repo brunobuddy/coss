@@ -4,6 +4,7 @@ import { riskHashKeyFromEnv } from "@coss/risk/runtime";
 import type { SchedulingDeps } from "@coss/scheduling";
 import { schedulingDataKeysFromEnv } from "@coss/scheduling/runtime";
 import { env } from "@/env";
+import { planGate } from "@/lib/billing";
 import { riskDeps } from "@/lib/risk";
 
 /** Origin of the hosted pages sessions link to. */
@@ -24,6 +25,7 @@ export function schedulingDeps(): SchedulingDeps | null {
     // The API's key: bookings' `email_hmac` is written with it, and the list searches by it.
     lookupKey: Buffer.from(riskHashKeyFromEnv(env)),
     publicUrl: schedulingUrl(),
+    plans: planGate(),
     // Built when something is screened: most of these deps only read.
     screenSetup: (input) => hostedPageScreening(riskDeps())(input),
   };

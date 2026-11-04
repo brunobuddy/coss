@@ -1,4 +1,6 @@
-import { listHosts } from "@coss/scheduling";
+import { entitlementsFor, PLANS } from "@coss/billing";
+import { countLiveHosts, listHosts } from "@coss/scheduling";
+import { Alert, AlertDescription, AlertTitle } from "@coss/ui/components/alert";
 import {
   Table,
   TableBody,
@@ -28,17 +30,29 @@ export const metadata: Metadata = { title: "Hosts" };
 
 const PAGE_SIZE = 50;
 
+/** From this share of the plan's live hosts, the page says so before a create is refused. */
+const HOST_LIMIT_WARNING = 0.8;
+
 export default async function HostsPage({
   params,
   searchParams,
 }: PageProps<"/[orgSlug]/[projectSlug]/[envSlug]/scheduling/hosts">) {
-  const { schedulingPath, scope, can, target } = await schedulingPageContext(await params);
+  const { schedulingPath, scope, can, target, environment } = await schedulingPageContext(
+    await params,
+  );
   const search = await searchParams;
   const after = typeof search.after === "string" ? search.after : undefined;
   const page = await listHosts(scope, { limit: PAGE_SIZE, after });
   const last = page.data.at(-1);
   const hostsPath = `${schedulingPath}/hosts`;
   const canUpdate = can({ scheduling: ["update"] });
+  const [hostLimit, liveHosts] =
+    environment.mode === "live"
+      ? await Promise.all([
+          entitlementsFor(scope.organizationId).then((plan) => plan.limits.schedulingHosts),
+          countLiveHosts(scope.organizationId),
+        ])
+      : [null, 0];
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -46,6 +60,26 @@ export default async function HostsPage({
         description="The people who can be booked. Each has their own page for hours and calendars."
         title="Hosts"
       />
+      {hostLimit !== null && liveHosts >= hostLimit * HOST_LIMIT_WARNING ? (
+        <Alert variant="warning">
+          <AlertTitle>
+            {liveHosts.toLocaleString("en-US")} of {hostLimit.toLocaleString("en-US")} live hosts
+          </AlertTitle>
+          <AlertDescription>
+            <p>
+              Your plan's limit counts every live environment. Hosts you have keep working; to add
+              more,{" "}
+              <Link
+                className="underline underline-offset-4"
+                href={`/${target.orgSlug}/settings/billing/plans`}
+              >
+                move to {PLANS.scale.name}
+              </Link>
+              .
+            </p>
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <Panel
         footer={
           after || page.hasMore ? (

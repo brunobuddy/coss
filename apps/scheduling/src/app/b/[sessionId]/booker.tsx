@@ -28,6 +28,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   BrandMark,
   BrokenLink,
+  CossAttribution,
   Detail,
   DetailList,
   LoadingPanel,
@@ -220,6 +221,7 @@ function Confirmed(props: { session: Session; done: Done; when: string; timeZone
           <Where location={done.location} />
         </DetailList>
       </Panel>
+      <CossAttribution branding={session} />
     </main>
   );
 }
@@ -508,6 +510,7 @@ export function Booker({ sessionId, apiUrl }: { sessionId: string; apiUrl: strin
           )}
         </section>
       </Panel>
+      <CossAttribution branding={session} />
     </main>
   );
 }

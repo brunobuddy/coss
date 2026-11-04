@@ -1,7 +1,6 @@
 # AGENTS.md — coss.com monorepo
 
-coss.com is a unified developer platform: one API key + one SDK (`coss.email.send()`, `coss.sms.send()`, later
-video, scheduling…). This repo holds the dashboard, the public API, shared packages and the public SDK.
+coss.com is a unified developer platform: one API key + one SDK (`coss.email.send()`, `coss.sms.send()`, `coss.scheduling`…). This repo holds the dashboard, the public API, shared packages and the public SDK.
 Email delivery goes through the provider interface in `packages/email/src/provider.ts` (Amazon SES v2 with one SES
 tenant per organization, or the fake provider); sandbox environments always use the fake provider. Delivery events
 drive per-recipient status and signed customer webhooks. Environments also receive email (an SES receipt rule → S3 +
@@ -92,7 +91,7 @@ billing enqueues `billing.*` events through it — and email imports only `./met
 `dashboard-routes` (no deps) ← `web`, `tenancy`, `email`, `sms`, `reputation`, `billing`, `forms`, `mobile` (paths of dashboard pages);
 `retention` (no deps) ← `tenancy`, `webhooks`, `reputation`, `screening`, `email`, `hooks`, `billing`, `push`, `notifications`, `sign`, `verify`, `forms`, `worker`, `web`, `site`, `mobile`;
 `db ← logs ← webhooks ← verify` (`verify` also `→ sms, risk, reputation, ratelimit, signals, retention, versioning` and only `@coss/billing/{metering,gate,catalog}`; `email` imports only `@coss/verify/schemas`, for `WEBHOOK_EVENT_TYPES`);
-`db ← logs ← webhooks ← sign` (`sign` also `→ versioning, retention` and only `@coss/billing/metering`; `email` imports only `@coss/sign/schemas`, for `WEBHOOK_EVENT_TYPES`); `db ← logs ← webhooks ← scheduling` (`scheduling` also `→ email-layout, versioning, retention` and only `@coss/billing/{metering,gate}`; never `@coss/email` or `@coss/sms`: sending is injected; `email` imports only `@coss/scheduling/schemas`, for `WEBHOOK_EVENT_TYPES`); `db ← notifications ← support` (`support` also `→ signals, email-layout, retention` and only `@coss/billing/catalog`; never `@coss/email`: mail, reply text and the plan lookup are injected); `db ← logs ← webhooks ← risk ← forms` (`forms` also `→ versioning, retention` and only `@coss/billing/metering`; never `@coss/email`: mail and contacts are injected; `email` imports only `@coss/forms/schemas`, for `WEBHOOK_EVENT_TYPES`); `api → tenancy, email, sms, sign, verify, forms, hooks, reputation, webhooks, ratelimit, versioning, logs, billing, risk, screening (`./env` only), db`;
+`db ← logs ← webhooks ← sign` (`sign` also `→ versioning, retention` and only `@coss/billing/metering`; `email` imports only `@coss/sign/schemas`, for `WEBHOOK_EVENT_TYPES`); `db ← logs ← webhooks ← scheduling` (`scheduling` also `→ email-layout, versioning, retention` and only `@coss/billing/{metering,gate,catalog}`; never `@coss/email` or `@coss/sms`: sending is injected; `email` imports only `@coss/scheduling/schemas`, for `WEBHOOK_EVENT_TYPES`); `db ← notifications ← support` (`support` also `→ signals, email-layout, retention` and only `@coss/billing/catalog`; never `@coss/email`: mail, reply text and the plan lookup are injected); `db ← logs ← webhooks ← risk ← forms` (`forms` also `→ versioning, retention` and only `@coss/billing/metering`; never `@coss/email`: mail and contacts are injected; `email` imports only `@coss/forms/schemas`, for `WEBHOOK_EVENT_TYPES`); `api → tenancy, email, sms, sign, verify, forms, hooks, reputation, webhooks, ratelimit, versioning, logs, billing, risk, screening (`./env` only), db`;
 `smtp → tenancy, email, ratelimit, logs, billing, observability, db`;
 `web → auth, tenancy, email, sms, sign, forms, support, hooks, reputation, screening, webhooks, ratelimit, versioning, retention, logs, billing, risk, push, migrate, companion, db, ui`; `mobile → companion` (types only; a dev dependency), `retention`, `observability`, `dashboard-routes` (bundled by Metro: keep them dependency-free); `portal → hooks, webhooks, ratelimit, logs, observability, db, ui`; `sign-app → sign, ratelimit, observability, db, ui`; `site → ui, auth, versioning, retention, billing, risk, reputation, ratelimit, sms, sdkgen` (only the client-safe `@coss/auth/{slugs,constants,api-key-permissions}`, the changelog, the retention policy, `@coss/billing/{catalog,money,engine}`, `@coss/risk/schemas`, `@coss/reputation/schemas` (the default policy), `@coss/ratelimit/buckets` (the bucket catalog, no imports), `@coss/sms/segments` (the segment calculator) and `@coss/sdkgen`'s `snippets.json` + `./methods`) +
 `@coss/api/openapi.json` (data only, never api code); `sdkgen → @coss/api/openapi.json` (data only); `infra → auth, email, sms, sign, hooks, ratelimit, screening, billing` (`slugs`, `env` only);
@@ -412,7 +411,7 @@ parent(id, organization_id)` and the `createdAt()`/`updatedAt()` helpers (histor
 Auth hard-deletes keys); `bun run db:generate`, review and commit the SQL + `migrations/meta/`, `bun run db:migrate`.
 Never edit an applied migration; do renames as a separate step (drizzle-kit prompts interactively).
 
-**Add a product** (e.g. `video`; `packages/scheduling` is the most recent one built this way):
+**Add a product** (`packages/scheduling` is the most recent one built this way):
 1. Tables + ID prefix (above).
 2. `packages/<product>`: `src/schemas.ts` (zod `strictObject`, snake_case, `.meta({ id })`, no DB imports, exported as
    `./schemas`), provider interface + fake provider, a service taking the authenticated environment, an error class with
@@ -440,8 +439,7 @@ Never edit an applied migration; do renames as a separate step (drizzle-kit prom
    (only for rows actually inserted, so deduplicated events aren't logged twice), and add a `LogSource` value
    (enum migration + `LOG_SOURCES` + SDK `LogSource`). Mutations of the product's settings record
    `recordAudit` (dashboard) / `recordApiAudit` (API) audit events.
-10. Billing: its meter is in `METERS` and priced in `RATE_CARDS` (`@coss/billing/catalog`; video and scheduling
-   already are). Call `recordUsage(tx, …)` from `@coss/billing/metering` once per billable event, in the transaction
+10. Billing: its meter goes in `METERS` and is priced in `RATE_CARDS` (`@coss/billing/catalog`). Call `recordUsage(tx, …)` from `@coss/billing/metering` once per billable event, in the transaction
    that makes it billable (guard it with a compare-and-set, like `email.usage_recorded_at`), and reserve capped usage
    at acceptance through an injected `UsageGate` (as `EmailServiceOptions.billing` does). Plan-gated creation takes an
    injected `PlanGate`.
@@ -531,7 +529,7 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
   `recordOpen`/`recordClick` (from the email's tracking token), `trackingBaseUrlFor` (dispatch; reads domain names
   across orgs like `authorizeLiveSender`), `receiveEmail`/`routeRecipients` (receiving; from the envelope recipients), `recordSmsEvent`/`ingestSmsEvents` (from the `sms_id` of the callback URL), `receiveSms` (from the receiving number), `handleStatusCallback`/`handleInboundCallback` (from the callback's subaccount), `authorizeLiveSmsSender`, `ingestDmarcReports` (from the report address's token), `reencryptWebhookSecrets`, `reencryptSchedulingData` (operator scripts), `authenticateHookPortalSession` (from the session), `ingestSupportEmails` (one environment, across senders) and the rest of `@coss/support`'s worker functions, `submitForm`/`getHostedForm` (from the form id of `/f/:id`), `confirmFormSubmission`/`findConfirmation` (from the verification token), and the worker scans `runDueWebhookDeliveries`, `runDueLogDrainDeliveries`, `runDueHookDeliveries`, `parkHeldHookDeliveries`, `runDueHookRecoveries`, the Hooks purges, `recheckDueDomains`,
   `recheckDueTrackingDomains`, `recheckDueReceivingDomains`, `reconcileDedicatedIpPools`, `sweepStaleClaims`, `sweepUnclaimedEmails`, `runDueReputationEvaluations`, `runDueSubaccountEvaluations`, `runDueOrganizationDeletions`, `runDueOrganizationLogos`, `runDueSubaccountDeletions`, `runDueDmarcNotifications`, `runDueMigrations`, `EmailService.dispatchDue`,
-  `unclaimedEmailBacklog`, `unclaimedSmsBacklog` (the `dispatch-backlog` loop: counts only), `SmsService.dispatchDue`, `sweepStaleSmsClaims`, `sweepUnclaimedSms`, `advanceDueSmsRegistrations`, `chargeDueSmsFees`, `chargeDueInboxFees`, `recordDueVerifySmsUsage` (bills each organization for its codes from coss.com's shared numbers, reading coss.com's messages),
+  `unclaimedEmailBacklog`, `unclaimedSmsBacklog` (the `dispatch-backlog` loop: counts only), `SmsService.dispatchDue`, `sweepStaleSmsClaims`, `sweepUnclaimedSms`, `advanceDueSmsRegistrations`, `chargeDueSmsFees`, `chargeDueInboxFees`, `chargeDueHostFees`, `recordDueVerifySmsUsage` (bills each organization for its codes from coss.com's shared numbers, reading coss.com's messages),
   `authenticateSchedulingSession` (from the token), `handleCalendarPush`, `completeCalendarAuthorization` (from the push's channel and the consent's state), `handleZoomDeauthorization` (from Zoom's signed event), `refreshIdleZoomConnections`, `runDueCalendarSyncs`, `runDueCalendarWrites`, `renewDueCalendarChannels`, `checkHostEditedEvents`, `runDueSchedulingNotifications`, `expireDueBookings`,
   `runDueFormDeliveries`, `runDueFormStoreCleanup`
   (and the dispatch jobs, from the job's `organizationId`); `@coss/sms/admin` is platform-level like `@coss/email/admin`. Server actions take only slugs +
@@ -701,14 +699,16 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
     published; `/f/*` is served only on `FORMS_PUBLIC_URL`'s host in production, never coss.com's.
   - **Scheduling** (`packages/scheduling/AGENTS.md`): only `claims.ts` writes claims, in the fixed lock order;
     slots are computed only in Bun, through `isBookable`; calendars contribute busy intervals and nothing else, and an
-    unreadable one never reads as free; answers never leave `getBooking`; coss.com never auto-cancels a booking.
+    unreadable one never reads as free; answers never leave `getBooking`; coss.com never auto-cancels a booking;
+    plan gates and billing holds apply to live environments only, and refuse new setup and new bookings, never what
+    already exists.
   - **Support** (`packages/support/AGENTS.md`): `From` proves nothing, so a match never grants access by
     itself: customers see only a confirmed organization's tickets, an unverified message stays rep-only, we
     always reply to `From` and never copy inbound Cc from unauthenticated mail; notes never leave
     `@coss/support/admin`; threads never match on a subject.
   - **HIPAA mode** (`packages/compliance/AGENTS.md`): a new vendor or a new path that sends customer content
     outside AWS needs a gate and an entry in `HIPAA_VENDORS`; a new sender that can fall back to coss.com's
-    environment passes `hipaaOrigin` for organizations in the mode; it is never a billing entitlement.
+    environment passes `hipaaOrigin` for organizations in the mode; it is contract-only (a sales contract to turn it on) but never a billing entitlement (billing never turns it off).
   - **Organization deletion** (`packages/tenancy/AGENTS.md`): a table with many rows per organization belongs in
     `deleteOrganizationData`, anything held outside Postgres in `releaseProviderResources`.
 
@@ -819,8 +819,7 @@ editing an API key's permissions (create a new key), API keys restricted to send
 uploading an organization logo (logos are only found automatically), uploading a profile picture, email change,
 email/SMS two-factor codes (through Verify), sign-in providers other than Google and GitHub, "trust this device" for 2FA, renaming passkeys, webhooks and notification emails for dedicated IP status changes, standard (manually
 warmed) dedicated IPs or more than one pool per organization, an automatic direct-debit policy (only per-account
-required payment methods), multi-currency, metering for video (its meter
-and rate exist; the product doesn't), SMS alphanumeric sender IDs, short codes, MMS, batch SMS, SMS templates,
+required payment methods), multi-currency, SMS alphanumeric sender IDs, short codes, MMS, batch SMS, SMS templates,
 sole-proprietor 10DLC brands, `sms.registration.*` webhooks and push notifications, Twilio usage reconciliation, and
 these Hooks features: channels, payload transformations, custom endpoint headers, sending one message to several
 applications, strict ordering, portal custom domains, per-destination rate-limit overrides, Hooks attempts in

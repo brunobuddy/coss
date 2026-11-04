@@ -1619,8 +1619,8 @@
                       "verify.sms",
                       "forms.submissions",
                       "forms.file_uploads",
-                      "video.participant_minutes",
                       "scheduling.bookings",
+                      "scheduling.hosts",
                       "hooks.messages",
                       null
                     ],
@@ -2279,8 +2279,8 @@
               "verify.sms",
               "forms.submissions",
               "forms.file_uploads",
-              "video.participant_minutes",
               "scheduling.bookings",
+              "scheduling.hosts",
               "hooks.messages",
               null
             ],
@@ -2308,8 +2308,8 @@
                 "verify.sms",
                 "forms.submissions",
                 "forms.file_uploads",
-                "video.participant_minutes",
                 "scheduling.bookings",
+                "scheduling.hosts",
                 "hooks.messages"
               ],
               "description": "What is counted, e.g. `email.recipients`."
@@ -26459,8 +26459,8 @@
                     "verify.sms",
                     "forms.submissions",
                     "forms.file_uploads",
-                    "video.participant_minutes",
                     "scheduling.bookings",
+                    "scheduling.hosts",
                     "hooks.messages"
                   ],
                   "description": "What is counted, e.g. `email.recipients`."
@@ -26839,8 +26839,8 @@
               "verify.sms",
               "forms.submissions",
               "forms.file_uploads",
-              "video.participant_minutes",
               "scheduling.bookings",
+              "scheduling.hosts",
               "hooks.messages"
             ],
             "description": "What is counted, e.g. `email.recipients`."
@@ -27260,8 +27260,8 @@
               "verify.sms",
               "forms.submissions",
               "forms.file_uploads",
-              "video.participant_minutes",
               "scheduling.bookings",
+              "scheduling.hosts",
               "hooks.messages",
               null
             ],
@@ -56162,6 +56162,27 @@
               }
             }
           },
+          "402": {
+            "description": "In live environments: an overdue invoice or spend limit (`billing_hold`), or the project's budget (`budget_exceeded`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
             "headers": {
@@ -57115,6 +57136,27 @@
           },
           "401": {
             "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "In live environments: an overdue invoice or spend limit (`billing_hold`), or the project's budget (`budget_exceeded`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",
@@ -64714,6 +64756,27 @@
               }
             }
           },
+          "402": {
+            "description": "In live environments: the plan doesn't include this (`plan_feature_unavailable`), or it's past the plan's limit (`plan_limit_reached`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
             "headers": {
@@ -67145,6 +67208,27 @@
               }
             }
           },
+          "402": {
+            "description": "In live environments: the plan doesn't include this (`plan_feature_unavailable`), or it's past the plan's limit (`plan_limit_reached`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
             "headers": {
@@ -67860,6 +67944,27 @@
               }
             }
           },
+          "402": {
+            "description": "In live environments: the plan doesn't include this (`plan_feature_unavailable`), or it's past the plan's limit (`plan_limit_reached`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
             "headers": {
@@ -68176,6 +68281,27 @@
               }
             }
           },
+          "402": {
+            "description": "In live environments: the plan doesn't include this (`plan_feature_unavailable`), or it's past the plan's limit (`plan_limit_reached`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
             "headers": {
@@ -68388,6 +68514,27 @@
           },
           "401": {
             "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "In live environments: the plan doesn't include this (`plan_feature_unavailable`), or it's past the plan's limit (`plan_limit_reached`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",
@@ -68674,6 +68821,27 @@
           },
           "401": {
             "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "In live environments: an overdue invoice or spend limit (`billing_hold`), the project's budget (`budget_exceeded`), the plan's allowance (`usage_limit_exceeded`) or what it includes (`plan_feature_unavailable`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",
@@ -70998,6 +71166,27 @@
               }
             }
           },
+          "402": {
+            "description": "In live environments: an overdue invoice or spend limit (`billing_hold`), the project's budget (`budget_exceeded`), the plan's allowance (`usage_limit_exceeded`) or what it includes (`plan_feature_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
             "headers": {
@@ -71809,6 +71998,27 @@
               }
             }
           },
+          "402": {
+            "description": "In live environments: an overdue invoice or spend limit (`billing_hold`), the project's budget (`budget_exceeded`), the plan's allowance (`usage_limit_exceeded`) or what it includes (`plan_feature_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
             "headers": {
@@ -72063,6 +72273,27 @@
           },
           "401": {
             "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "In live environments: the plan doesn't include this (`plan_feature_unavailable`), or it's past the plan's limit (`plan_limit_reached`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",
@@ -74530,6 +74761,27 @@
               }
             }
           },
+          "402": {
+            "description": "In live environments: the plan doesn't include this (`plan_feature_unavailable`), or it's past the plan's limit (`plan_limit_reached`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
             "headers": {
@@ -74763,6 +75015,27 @@
           },
           "401": {
             "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "In live environments: the plan doesn't include this (`plan_feature_unavailable`), or it's past the plan's limit (`plan_limit_reached`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",
@@ -90768,8 +91041,8 @@
                 "verify.sms",
                 "forms.submissions",
                 "forms.file_uploads",
-                "video.participant_minutes",
                 "scheduling.bookings",
+                "scheduling.hosts",
                 "hooks.messages"
               ],
               "description": "Only this meter."

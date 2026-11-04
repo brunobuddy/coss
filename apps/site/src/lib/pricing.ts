@@ -19,9 +19,6 @@ import { RETENTION_DAYS } from "@coss/retention";
 
 const EMAIL: MeterKey = "email.recipients";
 
-/** Priced in the catalog, but the product hasn't shipped: public rate tables leave them out. */
-export const UNRELEASED_METERS: ReadonlySet<MeterKey> = new Set(["video.participant_minutes"]);
-
 /** The plans the estimator compares (Enterprise is priced per contract). */
 export const ESTIMATED_PLANS = ["free", "pro", "scale"] as const satisfies readonly PlanKey[];
 export type EstimatedPlan = (typeof ESTIMATED_PLANS)[number];
@@ -171,6 +168,8 @@ export const METER_NOTES: Partial<Record<MeterKey, string>> = {
     "30 inbox-days are an inbox for a month, charged by the day; every plan includes 3 inboxes",
   "hooks.messages":
     "One per message whatever its fan-out; retries, recoveries and test sends are free",
+  "scheduling.hosts":
+    "30 host-days are a host for a month, charged by the day from January 2027, beyond what your plan includes",
   "forms.file_uploads": `The files of accepted submissions, kept ${RETENTION_DAYS.formSubmissions} days; rounded up to the MB per submission`,
 };
 
@@ -179,7 +178,6 @@ export function rateTables(): RateTable[] {
   const card = RATE_CARDS.at(-1);
   if (!card) return [];
   return METER_KEYS.flatMap((meter): RateTable[] => {
-    if (UNRELEASED_METERS.has(meter)) return [];
     const definition = METERS[meter];
     const rates = card.rates[meter];
     if (!rates) return [];

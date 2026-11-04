@@ -96,8 +96,6 @@ const LAUNCH: RateCard = {
     // meters were added; no organization had used them).
     "forms.submissions": { default: flatRate(1_000_000n) },
     "forms.file_uploads": { default: flatRate(250_000n) },
-    // $1.50 per 1,000 participant-minutes.
-    "video.participant_minutes": { default: flatRate(1_500_000n) },
     // $0.10 per booking.
     "scheduling.bookings": { default: flatRate(100_000_000n) },
   },
@@ -138,7 +136,8 @@ const NOVEMBER_2026: RateCard = {
 };
 
 const JANUARY_2027: RateCard = {
-  // Twilio's price changes: SMS to Canada and SMS received in the US.
+  // Twilio's price changes: SMS to Canada and SMS received in the US. Also the first prices of SMS
+  // received on Canadian numbers and of Scheduling hosts (the Terms' 30 days' notice).
   effectiveFrom: new Date("2027-01-01T00:00:00Z"),
   rates: {
     ...NOVEMBER_2026.rates,
@@ -147,6 +146,8 @@ const JANUARY_2027: RateCard = {
       byDimension: flatRates("country", SMS_PRICES_2027_01_01.inbound),
     },
     "verify.sms": { byDimension: flatRates("country", SMS_PRICES_2027_01_01.outbound) },
+    // A host for 30 days: $0.99 beyond what the plan includes. Per day: $0.033.
+    "scheduling.hosts": { default: flatRate(33_000_000n) },
   },
 };
 
@@ -159,6 +160,14 @@ export function rateCardAt(at: Date, cards: readonly RateCard[] = RATE_CARDS): R
   if (!current) throw new Error("No rate card is defined.");
   for (const card of cards) if (card.effectiveFrom <= at) current = card;
   return current;
+}
+
+/** When list prices first price `meter`: until then its usage must not be recorded as charged. */
+export function meterPricedFrom(
+  meter: MeterKey,
+  cards: readonly RateCard[] = RATE_CARDS,
+): Date | null {
+  return cards.find((card) => card.rates[meter])?.effectiveFrom ?? null;
 }
 
 /** The rate for one dimension value: its own, else the meter's default. */

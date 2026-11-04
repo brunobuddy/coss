@@ -7,7 +7,6 @@ export const PRODUCTS = [
   "risk",
   "verify",
   "forms",
-  "video",
   "scheduling",
   "hooks",
 ] as const;
@@ -179,21 +178,23 @@ export const METERS = {
     requires: "plan",
     measure: true,
   },
-  "video.participant_minutes": {
-    product: "video",
-    label: "Video",
-    unit: "participant-minute",
-    units: "participant-minutes",
-    displayPer: 1000,
-    dimensions: [],
-    requires: "plan",
-  },
   "scheduling.bookings": {
     product: "scheduling",
     label: "Scheduling",
     unit: "booking",
     units: "bookings",
     displayPer: 1,
+    dimensions: [],
+    requires: "plan",
+  },
+  // Live hosts, per day each one exists (a day is charged when it starts: on creation, then daily).
+  // Priced per 30 host-days, a host for a month.
+  "scheduling.hosts": {
+    product: "scheduling",
+    label: "Scheduling hosts",
+    unit: "host-day",
+    units: "host-days",
+    displayPer: 30,
     dimensions: [],
     requires: "plan",
   },

@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PLAN_KEYS } from "@coss/billing/catalog";
-import { renderBillingComponents } from "../src/lib/billing-text";
+import {
+  includedUnitsText,
+  planRows,
+  rateRows,
+  renderBillingComponents,
+} from "../src/lib/billing-text";
 
 describe("renderBillingComponents", () => {
   test("renders the plans and the usage rates from the catalog", () => {
@@ -82,5 +87,27 @@ describe("renderBillingComponents", () => {
       ),
     );
     expect(typed).toEqual([]);
+  });
+});
+
+describe("what the plans say about Scheduling and HIPAA", () => {
+  const row = (label: string) => planRows().find((candidate) => candidate.label === label)?.values;
+
+  test("host limits and what Scale includes", () => {
+    expect(row("Scheduling hosts")).toEqual(["3", "25", "Unlimited", "Custom"]);
+    expect(includedUnitsText("scheduling.hosts", "scale")).toBe("100 Scheduling hosts");
+    expect(rateRows(["scheduling.hosts"])[0]?.rate).toBe("$0.99 per 30 host-days");
+  });
+
+  test("HIPAA mode is by contract, on Enterprise only", () => {
+    expect(row("HIPAA mode with a BAA")).toEqual(["—", "—", "—", "By contract"]);
+  });
+
+  test("nothing about video", () => {
+    expect(
+      rateRows()
+        .map((candidate) => candidate.product)
+        .join(),
+    ).not.toMatch(/video/i);
   });
 });

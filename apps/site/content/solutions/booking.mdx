@@ -191,8 +191,8 @@ Bookings and calendars send [webhooks](/docs/webhooks) with ids, times and statu
 
 <Section title="Pricing" lede="You pay per confirmed booking. Holds and pending approvals cost nothing until they're confirmed.">
 
-<UsageRates meters="scheduling.bookings,email.recipients,sms.segments" />
+<UsageRates meters="scheduling.bookings,scheduling.hosts,email.recipients,sms.segments" />
 
-The Free plan includes <Included meter="scheduling.bookings" />. Booking emails sent from your own domain are billed like any email and SMS reminders like any text message, and live SMS needs a paid plan. Sandbox environments are free. See [pricing](/pricing) for the plans.
+The Free plan includes <Included meter="scheduling.bookings" /> and <Limit of="schedulingHosts" plan="free" /> hosts, and Scale includes <Included meter="scheduling.hosts" plan="scale" />. A marketplace's search, attribute routing and embedded host portal need <PlansWith feature="schedulingRouting" />. Booking emails sent from your own domain are billed like any email and SMS reminders like any text message, and live SMS needs a paid plan. Sandbox environments are free. See [pricing](/pricing) for the plans.
 
 </Section>

@@ -92,6 +92,10 @@ const documentNotFound = errorDoc(
 const requestNotFound = errorDoc(
   "No signature request with this id exists in the API key's environment (`not_found`).",
 );
+const heldBilling = errorDoc(
+  "In live environments: an overdue invoice or spend limit (`billing_hold`), or the project's budget " +
+    "(`budget_exceeded`).",
+);
 const unavailable = errorDoc("Sign is temporarily unavailable (`sign_unavailable`).");
 
 export const uploadSignDocumentRoute = createRoute({
@@ -213,6 +217,7 @@ export const createSignRequestRoute = createRoute({
     },
   },
   responses: {
+    402: heldBilling,
     201: {
       description:
         "The signature request (`sent`, or `draft`). A replay returns the original request in its current state.",
@@ -287,6 +292,7 @@ export const sendSignRequestRoute = createRoute({
   middleware: [requireApiKey({ sign: ["send"] }), rateLimit("api.write")],
   request: { params: RequestIdParams },
   responses: {
+    402: heldBilling,
     200: jsonDoc("The sent request.", SignRequestObject),
     ...commonErrors,
     404: requestNotFound,

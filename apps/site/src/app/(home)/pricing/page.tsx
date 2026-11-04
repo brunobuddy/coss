@@ -115,7 +115,8 @@ export default function PricingPage() {
             <h2 className="font-semibold text-xl tracking-tight">{PLANS.enterprise.name}</h2>
             <p className="text-pretty text-muted-foreground">
               Annual contracts from {formatPrice(PLANS.enterprise.feeCents)} a month: volume rates
-              and committed spend, directory sync, invoicing with payment terms and direct debit.
+              and committed spend, directory sync, HIPAA mode with a signed BAA, invoicing with
+              payment terms and direct debit.
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-3">

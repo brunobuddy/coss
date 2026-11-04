@@ -23,7 +23,7 @@ book twice. A refused request keeps no key.
 
 ## Taking payment first
 
-Hold the slot, charge the customer, then confirm. A hold isn't charged and tells nobody. Its slot stays
+Hold the slot, charge the customer, then confirm. Live holds need <PlansWith feature="schedulingHolds" />. A hold isn't charged and tells nobody. Its slot stays
 yours until it expires, though a plan's usage limit can still refuse the confirmation.
 
 ```ts twoslash

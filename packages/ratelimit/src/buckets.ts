@@ -479,6 +479,16 @@ export const BUCKETS = {
   // Twilio's status and inbound callbacks (`/sms/twilio/*`): signatures are checked before
   // anything is stored, so this only bounds the work forged requests cause. A store outage allows
   // rather than drops delivery reports and replies.
+  // Live slot lists and availability searches, per organization: the plan sets the rate
+  // (`scheduling.slots.second` in `@coss/billing/catalog`); this is Free's.
+  "scheduling.slots.second": {
+    scope: "org",
+    limit: 5,
+    periodMs: SECOND,
+    burst: 20,
+    overridable: true,
+    failureMode: "allow",
+  },
   // A browser session's calls, per session, and per address before the token is even looked up.
   "scheduling.session": {
     scope: "key",

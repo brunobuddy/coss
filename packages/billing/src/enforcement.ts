@@ -30,6 +30,16 @@ export function planWith(predicate: (entitlements: Entitlements) => boolean): Pl
   return PLAN_KEYS.find((key) => predicate(PLANS[key].entitlements)) ?? "enterprise";
 }
 
+/** Features whose label reads as a plural, for "are available" in refusals. */
+const PLURAL_FEATURES: ReadonlySet<FeatureKey> = new Set([
+  "trackingDomains",
+  "logDrains",
+  "dedicatedIps",
+  "subaccounts",
+  "schedulingHolds",
+  "schedulingWhiteLabel",
+]);
+
 export function featureUnavailable(feature: FeatureKey): BillingError {
   const addOn = addOnGranting(feature);
   if (addOn) {
@@ -40,9 +50,10 @@ export function featureUnavailable(feature: FeatureKey): BillingError {
     );
   }
   const plan = PLANS[planWith((e) => e.features[feature])].name;
+  const plural = PLURAL_FEATURES.has(feature);
   return new BillingError(
     "plan_feature_unavailable",
-    `${FEATURE_LABELS[feature]} ${feature === "auditLog" ? "is" : "are"} available on the ${plan} plan and above.`,
+    `${FEATURE_LABELS[feature]} ${plural ? "are" : "is"} available on the ${plan} plan and above.`,
   );
 }
 
@@ -69,6 +80,10 @@ export function createPlanGate(opts: { systemOrganizationId?: string | null } = 
       if (exempt(organizationId)) return;
       const entitlements = await entitlementsFor(organizationId);
       if (!entitlements.features[feature]) throw featureUnavailable(feature);
+    },
+    async hasFeature(organizationId, feature) {
+      if (exempt(organizationId)) return true;
+      return (await entitlementsFor(organizationId)).features[feature];
     },
     async requireCapacity(organizationId, limit, current, count = 1) {
       if (exempt(organizationId)) return;

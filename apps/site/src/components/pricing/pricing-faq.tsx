@@ -62,6 +62,21 @@ function questions(): { question: string; answer: ReactNode; text?: string }[] {
         "Yes. Owners can set a spend limit: when usage beyond your credit reaches it, live sending pauses until the next month or until the limit is raised. Usage alerts go out at 80% and 100% of your credit, and owners can change those thresholds.",
     },
     {
+      question: "Do you sign a BAA?",
+      answer: (
+        <>
+          Yes, on an {PLANS.enterprise.name} contract: coss.com signs a Business Associate Agreement
+          and turns on{" "}
+          <Link className="text-foreground underline underline-offset-4" href="/docs/hipaa">
+            HIPAA mode
+          </Link>
+          , which narrows where protected health information can go and who at coss.com can reach
+          it. It isn't available on self-serve plans.
+        </>
+      ),
+      text: `Yes, on an ${PLANS.enterprise.name} contract: coss.com signs a Business Associate Agreement and turns on HIPAA mode, which narrows where protected health information can go and who at coss.com can reach it. It isn't available on self-serve plans.`,
+    },
+    {
       question: "Can I send SMS?",
       answer: (
         <>

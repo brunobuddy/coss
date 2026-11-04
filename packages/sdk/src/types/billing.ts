@@ -20,8 +20,8 @@ export type Meter =
   | "verify.sms"
   | "forms.submissions"
   | "forms.file_uploads"
-  | "video.participant_minutes"
   | "scheduling.bookings"
+  | "scheduling.hosts"
   | "hooks.messages";
 
 export type BillingHoldReason = "delinquent" | "spend_limit" | "admin";

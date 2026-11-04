@@ -8,6 +8,10 @@ export const FEATURE_KEYS = [
   "scim",
   "dedicatedIps",
   "subaccounts",
+  "schedulingHolds",
+  "schedulingHostPortal",
+  "schedulingRouting",
+  "schedulingWhiteLabel",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 
@@ -19,6 +23,9 @@ export const LIMIT_KEYS = [
   "smsNumbers",
   "inboxes",
   "subaccounts",
+  "schedulingHosts",
+  "schedulingSearchHosts",
+  "schedulingGroupSeats",
 ] as const;
 export type LimitKey = (typeof LIMIT_KEYS)[number];
 
@@ -29,6 +36,7 @@ export const RATE_LIMIT_KEYS = [
   "email.marketing.recipients.second",
   "sms.segments.second",
   "sms.segments.day",
+  "scheduling.slots.second",
 ] as const;
 export type RateLimitKey = (typeof RATE_LIMIT_KEYS)[number];
 
@@ -56,6 +64,10 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   scim: "Directory sync (SCIM)",
   dedicatedIps: "Dedicated IPs",
   subaccounts: "Email for platforms (sub-accounts)",
+  schedulingHolds: "Scheduling holds",
+  schedulingHostPortal: "Scheduling host portal",
+  schedulingRouting: "Scheduling attribute routing",
+  schedulingWhiteLabel: "Scheduling pages without coss.com's name",
 };
 
 export const LIMIT_LABELS: Record<LimitKey, string> = {
@@ -66,6 +78,9 @@ export const LIMIT_LABELS: Record<LimitKey, string> = {
   smsNumbers: "SMS phone numbers",
   inboxes: "Inboxes",
   subaccounts: "Email sub-accounts",
+  schedulingHosts: "Scheduling hosts",
+  schedulingSearchHosts: "Hosts per availability search",
+  schedulingGroupSeats: "Seats per group session",
 };
 
 const SECOND = 1000;

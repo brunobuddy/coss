@@ -44,6 +44,9 @@ See [Routing](/docs/scheduling/routing) for sending each person to the right kin
 ## Who's free?
 
 For a marketplace's search page: each matching host's soonest slots, soonest first, across up to 500 hosts.
+In live environments your plan sets how many hosts one search covers
+(<Limit of="schedulingSearchHosts" plan="free" /> on Free, <Limit of="schedulingSearchHosts" plan="pro" /> on Pro,
+<Limit of="schedulingSearchHosts" plan="scale" /> on Scale). `has_more` is `true` when there were more than it looked at.
 
 ```ts twoslash
 import { Coss } from "coss";
@@ -68,7 +71,9 @@ interpreter. Add at most one `member`, and one of a pool is chosen alongside the
 
 With `kind: "group"` and a `capacity`, each attendee books a seat in the same session, with a booking and
 manage link of their own. The host's time is taken once, by the first seat, and given back with the last.
-A full session answers `slot_unavailable`. A seat moves by cancelling it and booking another session.
+A full session answers `slot_unavailable`. A seat moves by cancelling it and booking another session. In
+live environments your plan sets the largest `capacity`: <Limit of="schedulingGroupSeats" plan="free" /> on
+Free, <Limit of="schedulingGroupSeats" plan="pro" /> on Pro and <Limit of="schedulingGroupSeats" plan="scale" /> on Scale.
 
 A session is one meeting. The first seat's `location` is everyone's, so don't pass one attendee's own details in
 it: a `phone` location only ever shows the number on the event type, and a booking page's seat can't fill one in.

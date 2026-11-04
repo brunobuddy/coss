@@ -3,6 +3,7 @@
  * with their signers and fields, in one transaction with the first events of their audit trail.
  * Reads return the latest shape (`SignRequestObject`).
  */
+import { BUDGET_EXCEEDED_MESSAGES, budgetHoldFor, isOnBillingHold } from "@coss/billing/metering";
 import { db, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import {
@@ -395,10 +396,36 @@ async function transition(
   return getSignRequest(input);
 }
 
+/** A live request is usage once sealed, and its emails cost before that. */
+async function refuseWhileHeld(source: {
+  organizationId: string;
+  projectId: string;
+}): Promise<void> {
+  if (await isOnBillingHold(source.organizationId)) {
+    throw new SignError(
+      "billing_hold",
+      "New live signature requests are paused: your organization has an overdue invoice or " +
+        "reached its spend limit. Sandbox keys still work.",
+    );
+  }
+  const held = await budgetHoldFor(source);
+  if (held) throw new SignError("budget_exceeded", BUDGET_EXCEEDED_MESSAGES[held]);
+}
+
 export async function sendSignRequest(
   input: { organizationId: string; environmentId: string; requestId: string; actor: SignActor },
   now: Date = new Date(),
 ): Promise<SignRequestObjectOutput> {
+  if (!(await environmentIsSandbox(input))) {
+    const [draft] = await db
+      .select({ projectId: signRequest.projectId })
+      .from(signRequest)
+      .where(requestScope(input))
+      .limit(1);
+    if (draft) {
+      await refuseWhileHeld({ organizationId: input.organizationId, projectId: draft.projectId });
+    }
+  }
   return transition(
     input,
     {
@@ -480,6 +507,9 @@ export function createSignService(opts: SignServiceOptions): SignService {
   ): Promise<{ request: SignRequestObjectOutput; replayed: boolean }> {
     const { environment: env, params } = input;
     const now = clock();
+    if (env.mode === "live") {
+      await refuseWhileHeld({ organizationId: env.organizationId, projectId: env.projectId });
+    }
     // `expires_at` is checked against the clock only for a new request (inside `insert`): a replay
     // of the same key and body returns the original even once that time has passed.
     const expiresAt = params.expires_at ? new Date(params.expires_at) : null;

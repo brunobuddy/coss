@@ -14,7 +14,8 @@ would make it same-site with the dashboard). Product rules are in `packages/sche
   `packages/sdk/src/scheduling.ts`.
 - Times are UTC instants from the API, shown in the browser's zone. This app never works out what's available.
 - A page is the customer's: their logo or name (`BrandMark`) and accent (`useAccentColor`, which also picks the text
-  color), and nothing of coss.com's. The logo arrives as a data URL in `/session`, so the CSP stays free of other hosts.
+  color), and nothing of coss.com's but `CossAttribution` ("Scheduling by coss.com", a plain link below the page, on
+  plans without `schedulingWhiteLabel`: never an image or anything else that loads). The logo arrives as a data URL in `/session`, so the CSP stays free of other hosts.
 - The Google button (`continue-with-google.tsx`) follows Google's branding rules, and its OAuth app passed verification:
   keep the white fill, the `#747775` border, the `#1F1F1F` Google Sans Medium 14/20 text, the padding and the logo. Its
   height and corners match the buttons beside it, which the rules leave open.

@@ -414,6 +414,9 @@ describe("runDueMigrations", () => {
     const env = envOf(tenant);
     const plans: PlanGate = {
       async requireFeature() {},
+      async hasFeature() {
+        return true;
+      },
       async limit() {
         return 1;
       },

@@ -75,6 +75,7 @@ import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { confirmedSeats, withSessionLocation } from "./group-sessions.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
 import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
+import { refuseNewBookingWhileHeld, requireLiveFeature } from "./plan.ts";
 import {
   type AttendeeInputOutput,
   type BookingObjectOutput,
@@ -1425,6 +1426,7 @@ async function book(
   actor: BookingActor,
   wantHold: boolean,
 ): Promise<{ booking: BookingObjectOutput; replayed: boolean }> {
+  await refuseNewBookingWhileHeld(env);
   checkStart(request.startMs);
   checkAttendee(request.attendee);
   const eventType = await resolveEventType(db, env, request.eventType);
@@ -1524,7 +1526,10 @@ export const createHold = (
   request: BookingRequest,
   deps: SchedulingDeps,
   actor: BookingActor,
-) => book(env, request, deps, actor, true);
+) =>
+  requireLiveFeature(env, deps.plans, "schedulingHolds").then(() =>
+    book(env, request, deps, actor, true),
+  );
 
 async function lockBooking(tx: Executor, scope: Scope, id: string): Promise<BookingRow> {
   if (!isId(ID_PREFIXES.schedulingBooking, id)) {
@@ -2706,6 +2711,7 @@ export async function createSeries(
   deps: SchedulingDeps,
   actor: BookingActor,
 ): Promise<{ result: SeriesResult; replayed: boolean }> {
+  await refuseNewBookingWhileHeld(env);
   checkStart(request.startMs);
   checkAttendee(request.attendee);
   const eventType = await resolveEventType(db, env, request.eventType);

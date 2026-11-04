@@ -20,6 +20,9 @@ const DASHBOARD = "https://coss.test";
 
 const anyPlan: PlanGate = {
   async requireFeature() {},
+  async hasFeature() {
+    return true;
+  },
   async limit() {
     return null;
   },

@@ -1,11 +1,26 @@
 /** What can be booked. Bookings snapshot what they occupy, so edits never move an existing one. */
+import type { PlanGate } from "@coss/billing/gate";
 import { HipaaModeError, hipaaModeApplies } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
-import { and, asc, desc, eq, gt, inArray, isNull, lt, notInArray, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import { notZoomMeeting } from "./calendar/zoom.ts";
 import { SchedulingError } from "./errors.ts";
 import { checkTimeZone, type HostRow, resolveHost } from "./hosts.ts";
+import { requireRouting } from "./plan.ts";
 import type {
   CreateEventTypeRequestOutput,
   EventTypeObjectOutput,
@@ -347,11 +362,47 @@ async function rewriteUpcomingEvents(tx: Executor, row: EventTypeRow): Promise<v
     );
 }
 
+/** Whether a live event type finds its hosts by attributes (what a downgrade would leave behind). */
+export async function hasLiveHostFilters(organizationId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: schedulingEventType.id })
+    .from(schedulingEventType)
+    .innerJoin(
+      schema.environment,
+      and(
+        eq(schema.environment.id, schedulingEventType.environmentId),
+        eq(schema.environment.organizationId, schedulingEventType.organizationId),
+      ),
+    )
+    .where(
+      and(
+        eq(schedulingEventType.organizationId, organizationId),
+        eq(schema.environment.mode, "live"),
+        isNotNull(schedulingEventType.hostFilter),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
+/** A live group session's seats, within the plan's limit (one that shrinks is never refused). */
+async function checkGroupSeats(
+  env: { organizationId: string; mode?: "live" | "sandbox" },
+  plans: PlanGate | undefined,
+  capacity: number | null | undefined,
+  existing = 0,
+): Promise<void> {
+  if (env.mode !== "live" || !capacity || capacity <= existing) return;
+  await plans?.requireCapacity(env.organizationId, "schedulingGroupSeats", 0, capacity);
+}
+
 export async function createEventType(
   env: SchedulingEnvironment,
   params: CreateEventTypeRequestOutput,
-  opts: { screen?: SetupScreening | undefined } = {},
+  opts: { screen?: SetupScreening | undefined; plans?: PlanGate | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
+  await requireRouting(env, opts.plans, params.host_filter);
+  await checkGroupSeats(env, opts.plans, params.capacity);
   refuseLinks(params.title, "title");
   refuseLinksInAddresses(params.locations);
   await screenSetup(env, setupText(params), opts.screen, "title");
@@ -500,7 +551,7 @@ export async function updateEventType(
   scope: Scope & { mode?: "live" | "sandbox" },
   ref: string,
   params: UpdateEventTypeRequestOutput,
-  opts: { screen?: SetupScreening | undefined } = {},
+  opts: { screen?: SetupScreening | undefined; plans?: PlanGate | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
   refuseLinksInAddresses(params.locations);
@@ -524,6 +575,13 @@ export async function updateEventType(
   try {
     return await db.transaction(async (tx) => {
       const existing = await resolveEventType(tx, scope, ref);
+      // What it already has keeps working: only a change meets the plan.
+      if (JSON.stringify(params.host_filter ?? null) !== JSON.stringify(existing.hostFilter)) {
+        if (params.host_filter !== undefined) {
+          await requireRouting(scope, opts.plans, params.host_filter);
+        }
+      }
+      await checkGroupSeats(scope, opts.plans, params.capacity, existing.capacity ?? 0);
       const set = {
         ...(params.uid !== undefined ? { uid: params.uid } : {}),
         ...(params.title !== undefined ? { title: params.title } : {}),
