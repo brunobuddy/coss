@@ -2051,3 +2051,108 @@ describe("ics", () => {
 test("iCalendar text escapes what RFC 5545 reserves", () => {
   expect(escapeIcsText("a;b,c\\d\ne")).toBe("a\\;b\\,c\\\\d\\ne");
 });
+
+test("one calendar's time zone data can't change how another calendar reads", () => {
+  const zone = (hours: string) =>
+    [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "BEGIN:VTIMEZONE",
+      "TZID:Shared/Zone",
+      "BEGIN:STANDARD",
+      "DTSTART:19700101T000000",
+      `TZOFFSETFROM:${hours}`,
+      `TZOFFSETTO:${hours}`,
+      "END:STANDARD",
+      "END:VTIMEZONE",
+      "BEGIN:VEVENT",
+      "UID:a@example.test",
+      "DTSTAMP:20310101T000000Z",
+      "DTSTART;TZID=Shared/Zone:20310106T120000",
+      "DTEND;TZID=Shared/Zone:20310106T130000",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+  const from = Date.parse("2031-01-06T00:00:00Z");
+  const to = Date.parse("2031-01-07T00:00:00Z");
+  const first = busyFromIcs(zone("+0500"), from, to);
+  const second = busyFromIcs(zone("-0500"), from, to);
+  expect(first[0]?.startMs).toBe(Date.parse("2031-01-06T07:00:00Z"));
+  expect(second[0]?.startMs).toBe(Date.parse("2031-01-06T17:00:00Z"));
+
+  const namesOnly = (tzid: string) =>
+    [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "BEGIN:VEVENT",
+      "UID:b@example.test",
+      "DTSTAMP:20310101T000000Z",
+      `DTSTART;TZID=${tzid}:20310106T120000`,
+      `DTEND;TZID=${tzid}:20310106T130000`,
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+  expect(busyFromIcs(namesOnly("Shared/Zone"), from, to)[0]?.startMs).toBe(
+    busyFromIcs(namesOnly("Never/Defined"), from, to)[0]?.startMs as number,
+  );
+});
+
+test("a recurring event keeps its wall clock across daylight saving, from the file's own zone", () => {
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "BEGIN:VTIMEZONE",
+    "TZID:America/New_York",
+    "BEGIN:DAYLIGHT",
+    "DTSTART:20070311T020000",
+    "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU",
+    "TZOFFSETFROM:-0500",
+    "TZOFFSETTO:-0400",
+    "END:DAYLIGHT",
+    "BEGIN:STANDARD",
+    "DTSTART:20071104T020000",
+    "RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU",
+    "TZOFFSETFROM:-0400",
+    "TZOFFSETTO:-0500",
+    "END:STANDARD",
+    "END:VTIMEZONE",
+    "BEGIN:VEVENT",
+    "UID:c@example.test",
+    "DTSTAMP:20310101T000000Z",
+    "DTSTART;TZID=America/New_York:20310303T090000",
+    "DTEND;TZID=America/New_York:20310303T100000",
+    "RRULE:FREQ=WEEKLY;COUNT=3",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+  const busy = busyFromIcs(
+    ics,
+    Date.parse("2031-03-01T00:00:00Z"),
+    Date.parse("2031-03-31T00:00:00Z"),
+  );
+  expect(busy.map((span) => new Date(span.startMs).toISOString())).toEqual([
+    "2031-03-03T14:00:00.000Z",
+    "2031-03-10T13:00:00.000Z",
+    "2031-03-17T13:00:00.000Z",
+  ]);
+});
+
+test("a CalDAV server that refuses to connect is a clear answer, not a server error", async () => {
+  const setup = await setUp();
+  const deps: CalendarDeps = {
+    ...calendarDeps(new FakeGoogleCalendarApi()),
+    davTransport: async () => ({ status: 401, headers: {}, body: "" }),
+  };
+  await expect(
+    connectCaldav(
+      setup.env,
+      setup.host.id,
+      { url: "https://dav.example.test/", username: "me", password: "wrong" },
+      deps,
+    ),
+  ).rejects.toMatchObject({
+    name: "SchedulingError",
+    code: "calendar_unavailable",
+    message: "The server refused these credentials.",
+  });
+});

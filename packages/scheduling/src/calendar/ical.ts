@@ -35,13 +35,6 @@ function countsAsBusy(event: ICAL.Component): boolean {
   return transparency !== "TRANSPARENT" && status !== "CANCELLED";
 }
 
-function register(root: ICAL.Component): void {
-  for (const vtimezone of root.getAllSubcomponents("vtimezone")) {
-    const timezone = new ICAL.Timezone(vtimezone);
-    if (!ICAL.TimezoneService.has(timezone.tzid)) ICAL.TimezoneService.register(timezone);
-  }
-}
-
 function instantOf(time: ICAL.Time): number {
   const ms = time.toJSDate().getTime();
   if (Number.isNaN(ms)) throw new UnreadableCalendarData();
@@ -139,7 +132,6 @@ export function busyFromIcs(
   try {
     const root = new ICAL.Component(ICAL.parse(ics));
     if (root.name !== "vcalendar") throw new UnreadableCalendarData();
-    register(root);
     const slots: Interval[] = [];
     const add = (span: Interval) => {
       if (span.startMs < toMs && span.endMs > fromMs) slots.push(span);
