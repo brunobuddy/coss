@@ -1,5 +1,12 @@
 import { hipaaModeApplies } from "@coss/compliance";
-import { getEventType, listHosts, listScheduleNames, SchedulingError } from "@coss/scheduling";
+import { db } from "@coss/db";
+import {
+  getEventType,
+  hostsByIds,
+  listHosts,
+  listScheduleNames,
+  SchedulingError,
+} from "@coss/scheduling";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CopyValue } from "@/components/copy-value";
@@ -11,20 +18,32 @@ import { BookEventTypeButton, EventTypeStatusButton } from "../../scheduling-act
 
 export const metadata: Metadata = { title: "Event type" };
 
-/** Enough for any environment's host picker: a pool holds at most 500 by name. */
+// A dropdown can't hold every host of an environment with one for each of its users. Past this,
+// the form adds them by id or uid, and those already assigned are always listed.
 const MAX_HOST_PAGES = 10;
 const HOST_PAGE_SIZE = 100;
 
-async function allHosts(scope: { organizationId: string; environmentId: string }) {
+async function pickableHosts(
+  scope: { organizationId: string; environmentId: string },
+  assigned: readonly string[],
+) {
   const hosts: { id: string; name: string }[] = [];
   let after: string | undefined;
+  let more = false;
   for (let page = 0; page < MAX_HOST_PAGES; page += 1) {
     const result = await listHosts(scope, { limit: HOST_PAGE_SIZE, after });
     hosts.push(...result.data.map((host) => ({ id: host.id, name: host.name })));
     after = result.data.at(-1)?.id;
-    if (!result.hasMore || !after) break;
+    more = result.hasMore;
+    if (!more || !after) break;
   }
-  return hosts;
+  const listed = new Set(hosts.map((host) => host.id));
+  const missing = assigned.filter((id) => !listed.has(id));
+  const others = missing.length > 0 ? await hostsByIds(db, scope, missing) : [];
+  return {
+    more,
+    hosts: [...hosts, ...others.map((host) => ({ id: host.id, name: host.name }))],
+  };
 }
 
 export default async function EventTypePage({
@@ -36,7 +55,10 @@ export default async function EventTypePage({
     if (error instanceof SchedulingError && error.code === "not_found") notFound();
     throw error;
   });
-  const hostOptions = await allHosts(scope);
+  const { hosts: hostOptions, more: moreHosts } = await pickableHosts(
+    scope,
+    eventType.hosts.map((host) => host.host),
+  );
   const scheduleOptions = await listScheduleNames(
     scope,
     hostOptions.map((host) => host.id),
@@ -77,6 +99,7 @@ export default async function EventTypePage({
         eventType={eventType}
         hostOptions={hostOptions}
         key={eventType.updated_at}
+        moreHosts={moreHosts}
         scheduleOptions={scheduleOptions}
       />
     </div>

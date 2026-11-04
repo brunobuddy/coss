@@ -117,6 +117,22 @@ describe("the event type form", () => {
     expect(reweighted.hosts?.map((host) => host.weight)).toEqual([100, 75]);
   });
 
+  test("a host added by their uid is sent as typed, for the service to resolve", () => {
+    const changes = eventTypeChanges(
+      EVENT_TYPE,
+      submitted(EVENT_TYPE, (state) => {
+        state.hosts.push({
+          id: "new-1",
+          host: "doctor_482",
+          role: "member",
+          weight: "100",
+          schedule: null,
+        });
+      }),
+    );
+    expect(changes.hosts?.map((host) => host.host)).toEqual(["host_a", "host_b", "doctor_482"]);
+  });
+
   test("a question's order is a change, since attendees see that order", () => {
     const changes = eventTypeChanges(
       EVENT_TYPE,

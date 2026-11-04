@@ -191,6 +191,8 @@ export function EventTypeForm(
     calendarDetailsLocked: boolean;
     eventType: EventTypeObjectOutput;
     hostOptions: HostOption[];
+    /** There are more hosts than `hostOptions`, so others can be added by id or uid. */
+    moreHosts: boolean;
     scheduleOptions: ScheduleOption[];
   },
 ) {
@@ -199,6 +201,7 @@ export function EventTypeForm(
     calendarDetailsLocked,
     eventType,
     hostOptions,
+    moreHosts,
     scheduleOptions,
     orgSlug,
     projectSlug,
@@ -242,6 +245,20 @@ export function EventTypeForm(
       schedule: null,
     };
     set({ hosts: [...form.hosts, row] });
+  };
+  const [hostRef, setHostRef] = useState("");
+  const addHostByRef = () => {
+    const host = hostRef.trim();
+    if (!host || form.hosts.some((row) => row.host === host)) return;
+    const row: HostRow = {
+      id: rowId(),
+      host,
+      role: kind === "collective" ? "required" : "member",
+      weight: "100",
+      schedule: null,
+    };
+    set({ hosts: [...form.hosts, row] });
+    setHostRef("");
   };
   const addQuestion = () => {
     const row: QuestionRow = {
@@ -446,19 +463,49 @@ export function EventTypeForm(
               );
             })}
             {severalHosts || form.hosts.length === 0 ? (
-              <div>
-                <Button
-                  disabled={
-                    !hostOptions.some((host) => !form.hosts.some((r) => r.host === host.id))
-                  }
-                  onClick={addHost}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <PlusIcon aria-hidden="true" />
-                  Add a host
-                </Button>
+              <div className="flex flex-col gap-3">
+                <div>
+                  <Button
+                    disabled={
+                      !hostOptions.some((host) => !form.hosts.some((r) => r.host === host.id))
+                    }
+                    onClick={addHost}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    <PlusIcon aria-hidden="true" />
+                    Add a host
+                  </Button>
+                </div>
+                {moreHosts ? (
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="min-w-56 flex-1">
+                      <Field>
+                        <FieldLabel>Add a host who isn't listed</FieldLabel>
+                        <Input
+                          className="font-mono"
+                          onChange={(event) => setHostRef(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key !== "Enter") return;
+                            event.preventDefault();
+                            addHostByRef();
+                          }}
+                          placeholder="host_… or your id"
+                          value={hostRef}
+                        />
+                        <FieldDescription>
+                          This environment has too many hosts to list. Saving checks the id.
+                        </FieldDescription>
+                      </Field>
+                    </div>
+                    <div className="pb-6">
+                      <Button onClick={addHostByRef} size="sm" type="button" variant="outline">
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             {kind === "pool" ? (

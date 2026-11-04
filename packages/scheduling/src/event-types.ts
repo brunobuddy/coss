@@ -466,6 +466,23 @@ export async function listEventTypes(
   };
 }
 
+/** Every active event type by name, for choosing one to book: no hosts, and no page to fall off. */
+export async function listBookableEventTypes(
+  scope: Scope,
+): Promise<{ id: string; title: string }[]> {
+  return db
+    .select({ id: schedulingEventType.id, title: schedulingEventType.title })
+    .from(schedulingEventType)
+    .where(
+      and(
+        eq(schedulingEventType.organizationId, scope.organizationId),
+        eq(schedulingEventType.environmentId, scope.environmentId),
+        eq(schedulingEventType.status, "active"),
+      ),
+    )
+    .orderBy(asc(schedulingEventType.title), asc(schedulingEventType.id));
+}
+
 export async function updateEventType(
   scope: Scope & { mode?: "live" | "sandbox" },
   ref: string,

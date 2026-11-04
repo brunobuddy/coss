@@ -4,7 +4,14 @@ import { pool } from "@coss/db";
 import type { LogWriter } from "@coss/logs";
 import { memoryLogWriter } from "@coss/logs/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
-import { createHostSession, createManageSession, getBookingOverview } from "@coss/scheduling";
+import {
+  createEventType,
+  createHostSession,
+  createManageSession,
+  getBookingOverview,
+  listBookableEventTypes,
+  listEventTypes,
+} from "@coss/scheduling";
 import { testPng, testSchedulingDeps } from "@coss/scheduling/testing";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
 import { Hono } from "hono";
@@ -284,6 +291,38 @@ test("without its key, Scheduling answers 503 and everything else works", async 
     headers: { Authorization: `Bearer ${tenant.sandboxKey}` },
   });
   expect(environment.status).toBe(200);
+});
+
+describe("reads for the dashboard", () => {
+  test("every active event type can be chosen, archived ones can't, and a host's are theirs", async () => {
+    const s = await setUp();
+    const scope = {
+      organizationId: s.tenant.organization.id,
+      environmentId: s.tenant.development.id,
+    };
+    // Directly, since this many through the API would hit its rate limit.
+    const env = { ...scope, projectId: s.tenant.project.id, mode: "sandbox" as const };
+    const made: string[] = [];
+    for (let index = 0; index < 105; index += 1) {
+      const eventType = await createEventType(env, {
+        title: `Type ${index}`,
+        kind: "one_on_one",
+        duration_minutes: 30,
+        hosts: [],
+      });
+      made.push(eventType.id);
+    }
+    await call(s.app, s.key, "PATCH", `/event_types/${made[0]}`, { status: "archived" });
+    const bookable = (await listBookableEventTypes(scope)).map((row) => row.id);
+    expect(bookable).toHaveLength(105);
+    expect(bookable).toContain(s.eventType);
+    expect(bookable).not.toContain(made[0] as string);
+
+    const assigned = await listEventTypes(scope, { limit: 100, hostId: s.host });
+    expect(assigned.data.map((row) => row.id)).toEqual([s.eventType]);
+    await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, { hosts: [] });
+    expect((await listEventTypes(scope, { limit: 100, hostId: s.host })).data).toEqual([]);
+  });
 });
 
 describe("client API", () => {

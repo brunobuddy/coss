@@ -1,5 +1,5 @@
 import { isId } from "@coss/db/id";
-import { listBookings, listEventTypes } from "@coss/scheduling";
+import { listBookableEventTypes, listBookings } from "@coss/scheduling";
 import { BOOKING_STATUSES } from "@coss/scheduling/schemas";
 import { Button } from "@coss/ui/components/button";
 import {
@@ -70,11 +70,7 @@ export default async function BookingsPage({
   };
   const last = page.data.at(-1);
   const narrowed = Boolean(status || q);
-  const bookable = can({ scheduling: ["create"] })
-    ? (await listEventTypes(scope, { limit: 100 })).data
-        .filter((eventType) => eventType.status === "active")
-        .map((eventType) => ({ id: eventType.id, title: eventType.title }))
-    : [];
+  const bookable = can({ scheduling: ["create"] }) ? await listBookableEventTypes(scope) : [];
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
