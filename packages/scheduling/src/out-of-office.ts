@@ -1053,22 +1053,29 @@ export async function putOutOfOffice(
   refuseSelfCover(delegates, host.id);
   const attempt = () =>
     db.transaction(async (tx) => {
-      const [existing] = await tx
-        .select()
-        .from(schedulingOutOfOffice)
-        .where(
-          and(
-            eq(schedulingOutOfOffice.organizationId, env.organizationId),
-            eq(schedulingOutOfOffice.environmentId, env.environmentId),
-            eq(schedulingOutOfOffice.externalId, externalId),
-            isNull(schedulingOutOfOffice.deletedAt),
-          ),
-        );
+      const current = () =>
+        tx
+          .select()
+          .from(schedulingOutOfOffice)
+          .where(
+            and(
+              eq(schedulingOutOfOffice.organizationId, env.organizationId),
+              eq(schedulingOutOfOffice.environmentId, env.environmentId),
+              eq(schedulingOutOfOffice.externalId, externalId),
+              isNull(schedulingOutOfOffice.deletedAt),
+            ),
+          );
+      const [seen] = await current();
       await lockHosts(tx, env, [
         host.id,
-        ...(existing ? [existing.hostId, ...(await coveringOf(tx, existing))] : []),
+        ...(seen ? [seen.hostId, ...(await coveringOf(tx, seen))] : []),
         ...(delegates ?? []),
       ]);
+      // It may have been deleted or moved while this waited: what's there now is what's replaced.
+      const [existing] = await current();
+      if (existing && existing.id === seen?.id && existing.hostId !== seen.hostId) {
+        await lockHosts(tx, env, [existing.hostId]);
+      }
       if (existing) {
         const [row] = await tx
           .update(schedulingOutOfOffice)

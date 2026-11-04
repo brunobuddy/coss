@@ -56,6 +56,12 @@ type ItemRow = typeof schedulingReassignmentItem.$inferSelect;
 const { coverageWindows, ranked } = bookingInternals;
 
 export const MAX_REASSIGNMENT_BOOKINGS = 5000;
+/**
+ * The cap above is on what's asked for, which can be asked for in steps. One that time away starts
+ * has nobody to ask, so it takes all of it: leaving some out would report the rest as all there was.
+ * Only a limit on memory, since one person's bookings in some time away don't come near it.
+ */
+const MAX_EXPANDED_BOOKINGS = 200_000;
 export const MAX_PREVIEW_BOOKINGS = 500;
 const LEASE_MS = 2 * 60_000;
 const ITEMS_PER_RUN = 50;
@@ -986,7 +992,7 @@ export async function expand(run: ReassignmentRow, now: Date): Promise<void> {
       .where(stillHeld(run))
       .for("update");
     if (!held) return;
-    const bookings = await selectBookings(tx, scope, run.selection, now, MAX_REASSIGNMENT_BOOKINGS);
+    const bookings = await selectBookings(tx, scope, run.selection, now, MAX_EXPANDED_BOOKINGS);
     const strategy = run.strategy;
     const wanted =
       strategy.kind === "assignments"

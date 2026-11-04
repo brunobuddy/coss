@@ -334,7 +334,7 @@ function encryptedNoteOf(note: string | undefined, deps: Pick<SchedulingDeps, "d
 /**
  * A note goes with the details of the person it's about, so nothing writes one about someone erased:
  * a queued run holds its note until it reaches them, however long after that is. Read with a share
- * lock before the booking's, the order erasing takes them in, so an erasure under way is waited for.
+ * lock after the booking's, the order erasing takes them in, so an erasure under way is waited for.
  */
 async function bookingsWithErasedAttendees(
   tx: Transaction,
@@ -383,18 +383,11 @@ export async function reassignBooking(
             eq(schedulingBooking.environmentId, env.environmentId),
           ),
         );
-      const erased = input.note?.trim()
-        ? await bookingsWithErasedAttendees(
-            tx,
-            env,
-            peek?.groupSessionId ? { groupSessionId: peek.groupSessionId } : { bookingId: id },
-          )
-        : new Set<string>();
       if (peek?.groupSessionId) {
-        return reassignSession(tx, env, peek.groupSessionId, id, input, deps, actor, opts, erased);
+        return reassignSession(tx, env, peek.groupSessionId, id, input, deps, actor, opts);
       }
       const booking = await lockBooking(tx, env, id);
-      return reassignOne(tx, env, booking, input, deps, actor, opts, erased);
+      return reassignOne(tx, env, booking, input, deps, actor, opts);
     }),
   );
   return toBookingObject(db, row, deps);
@@ -417,9 +410,11 @@ async function reassignOne(
   deps: Keys,
   actor: BookingActor,
   opts: Options,
-  erased: ReadonlySet<string>,
 ): Promise<BookingRow> {
   checkChangeable(booking);
+  const erased = input.note?.trim()
+    ? await bookingsWithErasedAttendees(tx, env, { bookingId: booking.id })
+    : new Set<string>();
   await refuseIfNotSelected(tx, booking, opts);
   const now = nowOf(deps);
   const eventType = await resolveEventType(tx, env, booking.eventTypeId);
@@ -662,7 +657,6 @@ async function reassignSession(
   deps: Keys,
   actor: BookingActor,
   opts: Options,
-  erased: ReadonlySet<string>,
 ): Promise<BookingRow> {
   const now = nowOf(deps);
   await tx
@@ -676,6 +670,9 @@ async function reassignSession(
     )
     .orderBy(asc(schedulingBooking.id))
     .for("update");
+  const erased = input.note?.trim()
+    ? await bookingsWithErasedAttendees(tx, env, { groupSessionId: sessionId })
+    : new Set<string>();
   const [session] = await tx
     .select()
     .from(schedulingGroupSession)

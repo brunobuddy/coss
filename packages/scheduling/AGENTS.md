@@ -144,7 +144,7 @@ says `no_candidate`.
   bookings can't be promised one free hour. It uses `isBookable` and `candidatesOf` per booking's routing, like the run,
   and promises nothing: the run decides again.
 - A session counts once, as `min(id)` of its seats: never page bookings and dedupe afterwards, or a big session eats the
-  limit. The 5,000 cap counts the same way.
+  limit. The 5,000 cap counts the same way, and it's on what's asked for: a run an entry starts takes everything in it.
 - Hosts get one `reassignment_summary` email per run, with counts read at send time, and `quietHosts` keeps per-booking
   ones away. Attendees still hear per booking. Each booking's history gets its own copy of the note; the run's is
   cleared when it finishes, and only exists for that long.

@@ -25,6 +25,7 @@ import {
   previewReassignment,
   purgeExpiredReassignments,
   putOutOfOffice,
+  reassignBooking,
   reencryptSchedulingData,
   rescheduleBooking,
   runDueCalendarSyncs,
@@ -1156,6 +1157,35 @@ describe("running", () => {
     expect(items.length).toBe(1);
     expect(items[0]).toMatchObject({ outcome: "reassigned", fromHostId: a.id, toHostId: b.id });
   });
+
+  test("erasing someone while their booking moves with a note doesn't deadlock", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const type = await pool(env, [a, b]);
+    const bookings = [];
+    for (const time of ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00"]) {
+      bookings.push(await book(env, type.id, at(time), a.id));
+    }
+    const results = await Promise.allSettled(
+      bookings.flatMap((booking) => [
+        reassignBooking(
+          env,
+          booking.id,
+          { changes: [{ to_host: b.id }], reason_code: "other", note: "Moving it" },
+          plain,
+          actor,
+        ),
+        eraseAttendee(env, { uid: attendee.uid }),
+      ]),
+    );
+    for (const result of results) {
+      if (result.status === "rejected") {
+        expect(
+          JSON.stringify(result.reason?.cause?.code ?? result.reason?.code ?? ""),
+        ).not.toContain("40P01");
+      }
+    }
+  }, 30_000);
 
   test("a queued run's note isn't written about someone erased since", async () => {
     const env = await environment();

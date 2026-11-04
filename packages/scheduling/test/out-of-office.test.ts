@@ -505,6 +505,42 @@ describe("deleting an entry that's moving", () => {
 });
 
 describe("syncing from a system of record", () => {
+  test("an entry deleted while the same id is being sent is made again", async () => {
+    const env = await environment();
+    const doctor = await host(env);
+    const params = { host: doctor.id, start_date: "2031-01-06", end_date: "2031-01-07" };
+    const first = await putOutOfOffice(env, "leave_gone", params, plain, actor);
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked = () => {};
+    const holding = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const removal = db.transaction(async (tx) => {
+      await tx
+        .select({ id: schema.schedulingHost.id })
+        .from(schema.schedulingHost)
+        .where(eq(schema.schedulingHost.id, doctor.id))
+        .for("update");
+      locked();
+      await gate;
+      await tx
+        .update(schema.schedulingOutOfOffice)
+        .set({ deletedAt: NOW })
+        .where(eq(schema.schedulingOutOfOffice.id, first.entry.id));
+    });
+    await holding;
+    const again = putOutOfOffice(env, "leave_gone", params, plain, actor);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    release();
+    await removal;
+    const answer = await again;
+    expect(answer.created).toBe(true);
+    expect(answer.entry.id).not.toBe(first.entry.id);
+  });
+
   test("the same id sent twice at once leaves one entry, and neither fails", async () => {
     const env = await environment();
     const doctor = await host(env);
