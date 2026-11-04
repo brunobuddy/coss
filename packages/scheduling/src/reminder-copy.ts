@@ -3,16 +3,19 @@
  * email templates without their loops and conditions. A name outside the catalog is refused when
  * it's saved, so it can never reach someone's inbox as literal text.
  *
- * Client-safe (no imports), so the dashboard's preview runs the same code as the worker. Not
- * `@coss/email/templates`: `email` imports `@coss/scheduling/schemas`, so that'd be a package cycle.
+ * Client-safe (only the catalogs, which import nothing), so the dashboard's preview runs the same
+ * code as the worker. Not `@coss/email/templates`: `email` imports `@coss/scheduling/schemas`, so
+ * that'd be a package cycle.
  */
+
+import { dateLocale, type MessageKey, translator } from "./i18n.ts";
 
 export const REMINDER_VARIABLES = {
   event_title: "The event type's title",
   brand: "Your brand name",
   booking_id: "The booking's id",
   location: "Where it happens, such as the meeting link",
-  time_until: 'How long until it starts, such as "in 1 hour"',
+  time_until: 'How long until it starts, such as "in 1 hour", in the recipient\'s language',
   date: "The date, in the recipient's time zone and language",
   time: "The start time, the same way",
   end_time: "The end time, the same way",
@@ -47,67 +50,75 @@ export type CopyKind =
   | "finished"
   | "no_show";
 
-export const STANDARD_SUBJECTS: Record<CopyKind, (title: string) => string> = {
-  confirmed: (title) => `Confirmed: ${title}`,
-  pending_approval: (title) => `Requested: ${title}`,
-  rescheduled: (title) => `Rescheduled: ${title}`,
-  cancelled: (title) => `Cancelled: ${title}`,
-  declined: (title) => `Not confirmed: ${title}`,
-  reminder: (title) => `Reminder: ${title}`,
-  happening: (title) => `Happening now: ${title}`,
-  finished: (title) => `Follow-up: ${title}`,
-  no_show: (title) => `We missed you: ${title}`,
+const SUBJECT_KEYS: Record<CopyKind, MessageKey> = {
+  confirmed: "subject_confirmed",
+  pending_approval: "subject_pending_approval",
+  rescheduled: "subject_rescheduled",
+  cancelled: "subject_cancelled",
+  declined: "subject_declined",
+  reminder: "subject_reminder",
+  happening: "subject_happening",
+  finished: "subject_finished",
+  no_show: "subject_no_show",
 };
 
-export const STANDARD_LEADS: Record<CopyKind, { attendee: string; host: string; guest: string }> = {
-  // Guests hear nothing until there's something to come to, and a no-show isn't about them, so they
-  // have no line for these.
+// Guests hear nothing until there's something to come to, and a no-show isn't about them, so they
+// have no line for these.
+const LEAD_KEYS: Record<
+  CopyKind,
+  { attendee: MessageKey; host: MessageKey; guest: MessageKey | null }
+> = {
   confirmed: {
-    attendee: "Your booking is confirmed.",
-    host: "You have a new booking.",
-    guest: "You've been added to this booking.",
+    attendee: "lead_confirmed_attendee",
+    host: "lead_confirmed_host",
+    guest: "lead_confirmed_guest",
   },
   pending_approval: {
-    attendee: "Your request has been received. You'll hear back once it's approved.",
-    host: "A new booking is waiting for approval.",
-    guest: "",
+    attendee: "lead_pending_approval_attendee",
+    host: "lead_pending_approval_host",
+    guest: null,
   },
   rescheduled: {
-    attendee: "Your booking has moved.",
-    host: "A booking has moved.",
-    guest: "A booking you're a guest of has moved.",
+    attendee: "lead_rescheduled_attendee",
+    host: "lead_rescheduled_host",
+    guest: "lead_rescheduled_guest",
   },
   cancelled: {
-    attendee: "Your booking is cancelled.",
-    host: "A booking was cancelled.",
-    guest: "A booking you're a guest of was cancelled.",
+    attendee: "lead_cancelled_attendee",
+    host: "lead_cancelled_host",
+    guest: "lead_cancelled_guest",
   },
-  declined: {
-    attendee: "Your request couldn't be confirmed.",
-    host: "A request was declined.",
-    guest: "",
-  },
-  reminder: {
-    attendee: "This is coming up.",
-    host: "This is coming up.",
-    guest: "This is coming up.",
-  },
-  happening: {
-    attendee: "This is happening now.",
-    host: "This is happening now.",
-    guest: "This is happening now.",
-  },
+  declined: { attendee: "lead_declined_attendee", host: "lead_declined_host", guest: null },
+  reminder: { attendee: "lead_reminder", host: "lead_reminder", guest: "lead_reminder" },
+  happening: { attendee: "lead_happening", host: "lead_happening", guest: "lead_happening" },
   finished: {
-    attendee: "Thanks for your time.",
-    host: "This has finished.",
-    guest: "Thanks for your time.",
+    attendee: "lead_finished_attendee",
+    host: "lead_finished_host",
+    guest: "lead_finished_attendee",
   },
-  no_show: {
-    attendee: "We missed you.",
-    host: "The attendee was marked as a no-show.",
-    guest: "",
-  },
+  no_show: { attendee: "lead_no_show_attendee", host: "lead_no_show_host", guest: null },
 };
+
+export type CopyAudience = "attendee" | "host" | "guest";
+
+/** The standard subject of an email or text, in the recipient's language. */
+export function standardSubject(
+  kind: CopyKind,
+  title: string,
+  locale: string | null | undefined = null,
+): string {
+  return translator(locale)(SUBJECT_KEYS[kind], { title });
+}
+
+/** The standard first line of an email, in the recipient's language. */
+export function standardLead(
+  kind: CopyKind,
+  audience: CopyAudience,
+  locale: string | null | undefined = null,
+): string {
+  const key = LEAD_KEYS[kind][audience];
+  return key ? translator(locale)(key) : "";
+}
 
 /** "This is coming up." would be wrong after a meeting: the standard words follow the timing. */
 export function reminderCopyKind(rule: {
@@ -173,6 +184,16 @@ export function renderReminderCopy(text: string, values: ReminderValues): string
 const ADDRESS_LIKE = /[\p{L}\p{N}-]+\.\p{L}{2,}/u;
 
 /**
+ * `attacker。dev` is `attacker.dev` to a browser, and invisible characters don't break up a host. Only
+ * for checking, like `linkedHosts`: the marks it drops are part of plenty of people's names.
+ */
+const asBrowsersReadIt = (text: string): string =>
+  text
+    .normalize("NFKC")
+    .replace(/[\p{Cf}\p{Mn}\p{Me}]/gu, "")
+    .replace(/[\u3002\uff0e\uff61]/g, ".");
+
+/**
  * A booker types their own name, and could aim the email at anyone: a name with a link in it renders
  * as nothing, or it's phishing from the customer's own domain.
  */
@@ -181,7 +202,8 @@ export function safeName(name: string | null | undefined): string {
     .replace(/[\r\n\t]+/g, " ")
     .trim()
     .slice(0, 100);
-  return URL_LIKE.test(line) || ADDRESS_LIKE.test(line) ? "" : line;
+  const seen = asBrowsersReadIt(line);
+  return URL_LIKE.test(seen) || ADDRESS_LIKE.test(seen) ? "" : line;
 }
 
 export const firstNameOf = (name: string): string => name.split(/\s+/)[0] ?? "";
@@ -202,12 +224,19 @@ export const REMINDER_SAMPLE_VALUES: ReminderValues = {
   host_name: "Dr. Ana Reyes",
 };
 
-export function timeUntil(startMs: number, nowMs: number): string {
+export function timeUntil(
+  startMs: number,
+  nowMs: number,
+  locale: string | null | undefined = null,
+): string {
+  const language = dateLocale(locale);
   const minutes = Math.round((startMs - nowMs) / 60_000);
-  if (minutes <= 0) return "now";
-  if (minutes < 60) return `in ${minutes} minute${minutes === 1 ? "" : "s"}`;
+  if (minutes <= 0) {
+    return new Intl.RelativeTimeFormat(language, { numeric: "auto" }).format(0, "second");
+  }
+  const relative = new Intl.RelativeTimeFormat(language, { numeric: "always" });
+  if (minutes < 60) return relative.format(minutes, "minute");
   const hours = Math.round(minutes / 60);
-  if (hours < 48) return `in ${hours} hour${hours === 1 ? "" : "s"}`;
-  const days = Math.round(hours / 24);
-  return `in ${days} days`;
+  if (hours < 48) return relative.format(hours, "hour");
+  return relative.format(Math.round(hours / 24), "day");
 }

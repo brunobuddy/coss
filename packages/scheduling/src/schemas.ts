@@ -153,6 +153,10 @@ export const CreateHostRequest = z
         "The mailbox a calendar delegation connects for this host, when it isn't `email` or the delegation doesn't match on email. In Microsoft 365, their user principal name.",
     }),
     time_zone: TimeZone,
+    locale: z.string().min(2).max(35).nullable().optional().meta({
+      description:
+        "What this host's notifications are written in, such as `de`. Default: English. `null` removes it.",
+    }),
     attributes: Attributes.optional(),
     locations: HostLocations.optional(),
     metadata: Metadata.optional(),
@@ -190,6 +194,10 @@ export const UpdateHostRequest = z
         "Moves the host's delegated calendar to this mailbox. Refused while they have upcoming bookings or holds.",
     }),
     time_zone: TimeZone.optional(),
+    locale: z.string().min(2).max(35).nullable().optional().meta({
+      description:
+        "What this host's notifications are written in, such as `de`. Default: English. `null` removes it.",
+    }),
     attributes: Attributes.optional(),
     locations: HostLocations.optional().meta({
       description:
@@ -215,6 +223,7 @@ const HOST_EXAMPLE = {
   phone: null,
   calendar_account: null,
   time_zone: "America/New_York",
+  locale: null,
   attributes: { licensed_in: ["NY", "NJ"] },
   locations: [{ type: "in_person" as const, address: "12 Main St, New York, NY" }],
   metadata: {},
@@ -246,6 +255,9 @@ export const HostObject = z
     time_zone: z.string().meta({
       description:
         "The host's IANA time zone. Their schedules default to it, and limits count days and weeks in it.",
+    }),
+    locale: z.string().nullable().meta({
+      description: "What this host's notifications are written in. `null`: English.",
     }),
     attributes: z
       .record(z.string(), z.union([z.string(), z.array(z.string())]))
@@ -1373,12 +1385,10 @@ const AttendeeInput = z
     time_zone: TimeZone.meta({
       description: "Their IANA time zone. A series keeps their local time across clock changes.",
     }),
-    locale: z
-      .string()
-      .min(2)
-      .max(35)
-      .optional()
-      .meta({ description: "Their locale, such as `en-US`." }),
+    locale: z.string().min(2).max(35).optional().meta({
+      description:
+        "Their locale, such as `en-US`. Emails and texts about the booking are written in it when coss.com has it, otherwise in English, and guests get the same.",
+    }),
   })
   .meta({
     id: "SchedulingAttendeeInput",

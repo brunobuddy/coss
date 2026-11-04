@@ -20,17 +20,19 @@ import { accentColors } from "./branding.ts";
 import { buildIcs } from "./calendar/ical.ts";
 import { SchedulingError } from "./errors.ts";
 import { chosenLocation, withSessionLocation } from "./group-sessions.ts";
+import { dateLocale, messageLanguage, type Translate, translator } from "./i18n.ts";
 import { getLogoRow, LOGO_CONTENT_ID, type SchedulingLogoRow } from "./logo.ts";
 import { type NotificationEvent, policiesOf, resolvePolicy } from "./notification-policy.ts";
 import {
+  type CopyAudience,
   type CopyKind,
   firstNameOf,
-  STANDARD_LEADS as LEADS,
   type ReminderValues,
   reminderCopyKind,
   renderReminderCopy,
-  STANDARD_SUBJECTS as SUBJECTS,
   safeName,
+  standardLead,
+  standardSubject,
   timeUntil,
 } from "./reminder-copy.ts";
 import {
@@ -273,7 +275,7 @@ const MEETING_LINK_RETRY_MS = 15_000;
 
 const formatWhen = (at: Date, timeZone: string, locale: string | null): string => {
   try {
-    return new Intl.DateTimeFormat(locale ?? "en-US", {
+    return new Intl.DateTimeFormat(dateLocale(locale), {
       timeZone,
       dateStyle: "full",
       timeStyle: "short",
@@ -303,7 +305,7 @@ const isEnded = (booking: Pick<BookingRow, "status">) =>
 
 const formatDate = (at: Date, timeZone: string, locale: string | null): string => {
   try {
-    return new Intl.DateTimeFormat(locale ?? "en-US", { timeZone, dateStyle: "full" }).format(at);
+    return new Intl.DateTimeFormat(dateLocale(locale), { timeZone, dateStyle: "full" }).format(at);
   } catch {
     return at.toISOString().slice(0, 10);
   }
@@ -311,7 +313,7 @@ const formatDate = (at: Date, timeZone: string, locale: string | null): string =
 
 const formatTime = (at: Date, timeZone: string, locale: string | null): string => {
   try {
-    return new Intl.DateTimeFormat(locale ?? "en-US", { timeZone, timeStyle: "short" }).format(at);
+    return new Intl.DateTimeFormat(dateLocale(locale), { timeZone, timeStyle: "short" }).format(at);
   } catch {
     return `${at.toISOString().slice(11, 16)} UTC`;
   }
@@ -329,19 +331,20 @@ function reminderValues(input: {
 }): ReminderValues {
   const { booking, timeZone, locale } = input;
   const attendeeName = safeName(input.attendeeName);
+  const t = translator(locale);
   return {
     event_title: titleOf(booking),
     brand: input.brand,
     booking_id: booking.id,
     location: locationLine(booking) ?? "",
-    time_until: timeUntil(booking.startAt.getTime(), input.now.getTime()),
+    time_until: timeUntil(booking.startAt.getTime(), input.now.getTime(), locale),
     date: formatDate(booking.startAt, timeZone, locale),
     time: formatTime(booking.startAt, timeZone, locale),
     end_time: formatTime(booking.endAt, timeZone, locale),
     time_zone: timeZone,
-    attendee_name: attendeeName || "there",
-    attendee_first_name: firstNameOf(attendeeName) || "there",
-    host_name: oneLine(input.hostName ?? "") || "your host",
+    attendee_name: attendeeName || t("name_attendee"),
+    attendee_first_name: firstNameOf(attendeeName) || t("name_attendee"),
+    host_name: oneLine(input.hostName ?? "") || t("name_host"),
   };
 }
 
@@ -473,6 +476,7 @@ async function bookingHosts(booking: BookingRow) {
       phone: schedulingHost.phone,
       name: schedulingHost.name,
       timeZone: schedulingHost.timeZone,
+      locale: schedulingHost.locale,
       id: schedulingHost.id,
     })
     .from(schedulingBookingHost)
@@ -542,30 +546,35 @@ async function sendBookingEmail(
   const custom = rule && hasCustomEmail(rule) && settings?.emailFrom ? rule : null;
   const replyTo = settings?.emailFrom ? (settings.emailReplyTo ?? null) : null;
   const where = locationLine(booking);
-  const details = (whenText: string): EmailBlock => ({
+  const details = (t: Translate, whenText: string): EmailBlock => ({
     details: [
-      { label: "What", value: titleOf(booking) },
-      { label: "When", value: whenText },
-      ...(where ? [{ label: "Where", value: where }] : []),
+      { label: t("label_what"), value: titleOf(booking) },
+      { label: t("label_when"), value: whenText },
+      ...(where ? [{ label: t("label_where"), value: where }] : []),
     ],
   });
 
   /** The customer's words if they wrote any, and the standard ones for coss.com's address. */
   const content = (input: {
-    audience: "attendee" | "host" | "guest";
+    audience: CopyAudience;
+    locale: string | null;
     values: ReminderValues;
     whenText: string;
     manageUrl: string | null;
     reason: string;
   }): { content: EmailContent; fixed: EmailContent } => {
+    const t = translator(input.locale);
+    const lang = messageLanguage(input.locale);
+    const manageLabel = t("button_manage");
     const manageButton: EmailBlock[] = input.manageUrl
-      ? [{ button: { label: "Reschedule or cancel", url: input.manageUrl } }]
+      ? [{ button: { label: manageLabel, url: input.manageUrl } }]
       : [];
-    const standard = LEADS[copyKind][input.audience];
-    const subject = SUBJECTS[copyKind](titleOf(booking));
+    const standard = standardLead(copyKind, input.audience, input.locale);
+    const subject = standardSubject(copyKind, titleOf(booking), input.locale);
     const fixed: EmailContent = {
+      lang,
       subject,
-      blocks: [{ paragraph: standard }, details(input.whenText), ...manageButton],
+      blocks: [{ paragraph: standard }, details(t, input.whenText), ...manageButton],
       reason: input.reason,
     };
     if (!custom) return { content: fixed, fixed };
@@ -573,10 +582,11 @@ async function sendBookingEmail(
     return {
       fixed,
       content: {
+        lang,
         subject: custom.subject ? render(custom.subject) : subject,
         blocks: [
           ...(custom.message ? paragraphsOf(render(custom.message)) : [{ paragraph: standard }]),
-          details(input.whenText),
+          details(t, input.whenText),
           ...(custom.button
             ? [
                 {
@@ -589,7 +599,7 @@ async function sendBookingEmail(
                 ...(input.manageUrl
                   ? [
                       {
-                        link: { label: "Reschedule or cancel", url: input.manageUrl },
+                        link: { label: manageLabel, url: input.manageUrl },
                       } as EmailBlock,
                     ]
                   : []),
@@ -628,11 +638,12 @@ async function sendBookingEmail(
           : null;
       const message = content({
         audience: guest ? "guest" : "attendee",
+        locale: attendee.locale,
         whenText: formatWhen(booking.startAt, attendee.timeZone, attendee.locale),
         manageUrl: manage?.url ?? null,
-        reason: guest
-          ? `You're receiving this because you were added as a guest to a booking with ${senderName}.`
-          : `You're receiving this because of your booking with ${senderName}.`,
+        reason: translator(attendee.locale)(guest ? "reason_guest" : "reason_attendee", {
+          sender: senderName,
+        }),
         values: reminderValues({
           booking,
           brand: senderName,
@@ -668,7 +679,8 @@ async function sendBookingEmail(
     return sent ? "sent" : refused ? "no_sender" : "no_address";
   }
 
-  // Hosts and fixed addresses read about the booking's first attendee, in the host's time zone.
+  // Hosts and fixed addresses read about the booking's first attendee. A fixed address has no zone or
+  // language of its own, so it gets the first host's.
   const attendees = custom ? await bookingAttendees(booking) : [];
   const firstAttendee = attendees[0];
   const attendeeName = firstAttendee
@@ -678,7 +690,15 @@ async function sendBookingEmail(
     row.recipient === "host"
       ? hosts.flatMap((host) =>
           host.email
-            ? [{ id: host.id, email: host.email, name: host.name, timeZone: host.timeZone }]
+            ? [
+                {
+                  id: host.id,
+                  email: host.email,
+                  name: host.name,
+                  timeZone: host.timeZone,
+                  locale: host.locale,
+                },
+              ]
             : [],
         )
       : (rule?.email_to ?? []).map((email) => ({
@@ -687,23 +707,25 @@ async function sendBookingEmail(
           email,
           name: null,
           timeZone: hosts[0]?.timeZone ?? "UTC",
+          locale: hosts[0]?.locale ?? null,
         }));
   let sent = false;
   let refused = false;
   for (const recipient of staffRecipients) {
     const message = content({
       audience: "host",
-      whenText: formatWhen(booking.startAt, recipient.timeZone, null),
+      locale: recipient.locale,
+      whenText: formatWhen(booking.startAt, recipient.timeZone, recipient.locale),
       manageUrl: null,
-      reason:
-        row.recipient === "host"
-          ? `You're receiving this as a host with ${senderName}.`
-          : `You're receiving this about a booking with ${senderName}.`,
+      reason: translator(recipient.locale)(
+        row.recipient === "host" ? "reason_host" : "reason_address",
+        { sender: senderName },
+      ),
       values: reminderValues({
         booking,
         brand: senderName,
         timeZone: recipient.timeZone,
-        locale: null,
+        locale: recipient.locale,
         attendeeName,
         hostName: recipient.name ?? hostNamesOf(hosts),
         now,
@@ -746,13 +768,12 @@ async function sendBookingSms(
   if (!settings?.smsFrom || !deps.notifier.sms) return "no_sender";
   const send = deps.notifier.sms;
   const smsFrom = settings.smsFrom;
-  const brand = oneLine(settings.brandName ?? "Your booking");
   const copyKind = copyKindOf(row, rule);
   const recipients =
     row.recipient === "host"
       ? (await bookingHosts(booking)).flatMap((host) =>
           host.phone
-            ? [{ id: host.id, phone: host.phone, timeZone: host.timeZone, locale: null }]
+            ? [{ id: host.id, phone: host.phone, timeZone: host.timeZone, locale: host.locale }]
             : [],
         )
       : (await bookingAttendees(booking)).flatMap((attendee) => {
@@ -763,6 +784,8 @@ async function sendBookingSms(
         });
   let sent = false;
   for (const recipient of recipients) {
+    const t = translator(recipient.locale);
+    const brand = oneLine(settings.brandName ?? t("sms_brand_fallback"));
     // `sms_message` can't name anyone: refused when it's saved, and empty here.
     const words = rule?.sms_message
       ? renderReminderCopy(
@@ -777,13 +800,13 @@ async function sendBookingSms(
             now,
           }),
         )
-      : `${SUBJECTS[copyKind](titleOf(booking))}, ${formatWhen(booking.startAt, recipient.timeZone, recipient.locale)}.`;
+      : `${standardSubject(copyKind, titleOf(booking), recipient.locale)}, ${formatWhen(booking.startAt, recipient.timeZone, recipient.locale)}.`;
     try {
       await send({
         environment: env,
         from: smsFrom,
         to: recipient.phone,
-        body: `${brand}: ${oneLine(words)} Reply STOP to opt out.`,
+        body: `${brand}: ${oneLine(words)} ${t("sms_opt_out")}`,
         idempotencyKey: `scheduling:${row.id}:${recipient.id}`,
       });
     } catch (error) {
@@ -942,31 +965,29 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
   if (!host?.email) return "no_address";
   const branding = await brandingOf(row);
   const { settings } = branding;
-  const senderName = oneLine(settings?.brandName ?? "Your bookings");
+  const t = translator(host.locale);
+  const senderName = oneLine(settings?.brandName ?? t("sender_fallback"));
   const session = deps.publicUrl
     ? await createHostInvitationSession(env, host.id, deps.publicUrl, now)
     : null;
   const zoom = row.kind === "zoom_needs_reauth";
   const message = renderMessage(branding, senderName, {
-    subject: zoom ? "Your Zoom account needs reconnecting" : "Your calendar needs reconnecting",
+    lang: messageLanguage(host.locale),
+    subject: t(zoom ? "zoom_subject" : "calendar_subject"),
     blocks: [
-      {
-        paragraph: zoom
-          ? "We can't reach your Zoom account any more, so new bookings won't get a Zoom link. You're still being offered, and existing links keep working."
-          : "We can't read your calendar any more, so you aren't being offered for new bookings. Existing bookings stay as they are.",
-      },
+      { paragraph: t(zoom ? "zoom_body" : "calendar_body") },
       ...(session?.url
         ? [
             {
               button: {
-                label: zoom ? "Reconnect Zoom" : "Reconnect your calendar",
+                label: t(zoom ? "zoom_button" : "calendar_button"),
                 url: session.url,
               },
             } as EmailBlock,
           ]
-        : [{ paragraph: `Please reconnect it through ${senderName}.` } as EmailBlock]),
+        : [{ paragraph: t("reconnect_through", { sender: senderName }) } as EmailBlock]),
     ],
-    reason: `You're receiving this as a host with ${senderName}.`,
+    reason: t("reason_host", { sender: senderName }),
   });
   await deps.notifier.email({
     environment: env,

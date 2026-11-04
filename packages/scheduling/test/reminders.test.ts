@@ -1046,6 +1046,16 @@ describe("the customer's own words", () => {
     // Whatever it ends in: there's no list of endings to get past.
     expect(safeName("Confirm at attacker.dev")).toBe("");
     expect(safeName("пример.рф")).toBe("");
+    // What a browser reads as a dot, and what it doesn't see at all.
+    expect(safeName("attacker。dev")).toBe("");
+    expect(safeName("attacker．dev")).toBe("");
+    expect(safeName("attacker｡dev")).toBe("");
+    expect(safeName("attacker.\u200bdev")).toBe("");
+    expect(safeName("evil\u200d.com")).toBe("");
+    // None of which are in anyone's name, and the marks that are stay as they were typed.
+    expect(safeName("José Núñez")).toBe("José Núñez");
+    expect(safeName("山田 太郎")).toBe("山田 太郎");
+    expect(safeName("Nguyễn Thị")).toBe("Nguyễn Thị");
     // Ordinary names aren't touched by what's around them.
     expect(safeName("Dr. Reyes")).toBe("Dr. Reyes");
     expect(safeName("J. R. Smith")).toBe("J. R. Smith");
@@ -1727,9 +1737,126 @@ describe("clearing a policy", () => {
   });
 });
 
+describe("languages", () => {
+  const german = { ...attendee, locale: "de-DE" };
+  const follow = { key: "follow", anchor: "end", after_minutes: 60, send: ["email_attendee"] };
+
+  test("the standard words follow the recipient, whatever the reminder's timing", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      reminders: [
+        rule(follow),
+        rule({ key: "now", anchor: "start", after_minutes: 0, send: ["email_attendee"] }),
+      ],
+    });
+    await book(s, "09:00", { attendee: german });
+    const started = await runAt(s, START);
+    const happening = started.emails.find((email) => email.subject.includes("jetzt"));
+    expect(happening?.subject).toBe("Findet jetzt statt: Consultation");
+    expect(happening?.text).toContain("Dieser Termin findet jetzt statt.");
+    expect(happening?.text).toContain("Wann");
+    // Fixed copy too: what coss.com's address sends is no less theirs to read.
+    expect(happening?.cossSubject).toBe("Findet jetzt statt: Consultation");
+    expect(happening?.cossHtml).toContain('lang="de"');
+
+    const finished = await runAt(s, END + 60 * MINUTE);
+    const after = finished.emails.find((email) => email.subject.startsWith("Nachbereitung"));
+    expect(after?.text).toContain("Danke für Ihre Zeit.");
+  });
+
+  test("a customer's words stay as written, with ours around them translated", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      email_from: "appointments@example.com",
+      reminders: [
+        rule({
+          ...follow,
+          subject: "How did it go?",
+          message: "Due {{date}}, {{time_until}}. Thanks, {{attendee_first_name}}.",
+        }),
+      ],
+    });
+    await book(s, "09:00", { attendee: { ...german, name: "attacker。dev" } });
+    const n = await runAt(s, END + 60 * MINUTE);
+    const email = n.emails.find((message) => message.subject === "How did it go?");
+    expect(email?.text).toContain("Thanks, zusammen.");
+    expect(email?.text).toContain("Wann");
+    expect(email?.html).toContain('lang="de"');
+    expect(email?.cossSubject).toStartWith("Nachbereitung");
+  });
+
+  test("a host reads theirs, and a fixed address the first host's", async () => {
+    const s = await setUp();
+    await updateHost(s.env, s.host.id, { locale: "fr-FR" } as never);
+    await updateSettings(s.env, {
+      email_from: "appointments@example.com",
+      reminders: [
+        rule({
+          key: "desk",
+          anchor: "start",
+          before_minutes: 60,
+          send: ["email_host"],
+          email_to: ["desk@example.com"],
+        }),
+      ],
+    });
+    await book(s);
+    const n = await runAt(s, START - 60 * MINUTE);
+    const host = n.emails.find(
+      (email) => email.to === "reyes@example.com" && email.subject.startsWith("Rappel"),
+    );
+    const desk = n.emails.find((email) => email.to === "desk@example.com");
+    expect(host?.text).toContain("en tant qu'hôte");
+    expect(desk?.subject).toStartWith("Rappel");
+    expect(desk?.text).toContain("au sujet d'une réservation");
+  });
+
+  test("a guest reads their own, the attendee's locale", async () => {
+    const s = await setUp({ max_guests: 2 });
+    await updateSettings(s.env, {
+      email_from: "appointments@example.com",
+      reminders: [rule(follow)],
+    });
+    await book(s, "09:00", {
+      attendee: german,
+      guests: [{ email: "guest@example.com" }],
+    });
+    const n = await runAt(s, END + 60 * MINUTE);
+    const guest = n.emails.find(
+      (email) => email.to === "guest@example.com" && email.subject.startsWith("Nachbereitung"),
+    );
+    expect(guest?.text).toContain("als Gast");
+  });
+
+  test("a text is written in its recipient's language, with STOP as the keyword", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      sms_from: "+15005550006",
+      reminders: [
+        rule({ key: "text", anchor: "start", before_minutes: 60, send: ["sms_attendee"] }),
+      ],
+    } as never);
+    await book(s, "09:00", { attendee: { ...german, phone: "+15005550007" } });
+    const n = await runAt(s, START - 60 * MINUTE);
+    const body = n.texts[0]?.body ?? "";
+    expect(body).toContain("Erinnerung: Consultation");
+    expect(body).toContain("STOP");
+    expect(body).not.toContain("Reply STOP");
+  });
+
+  test("a date and a time until it follow the words around them", async () => {
+    const t = 1_800_000_000_000;
+    expect(timeUntil(t + 60 * MINUTE, t, "de-DE")).toBe("in 1 Stunde");
+    expect(timeUntil(t + 72 * 60 * MINUTE, t, "de-DE")).toBe("in 3 Tagen");
+    expect(timeUntil(t - MINUTE, t, "de-DE")).toBe("jetzt");
+    // A language with no catalog gets English, so a message isn't half of each.
+    expect(timeUntil(t + 60 * MINUTE, t, "ar-EG")).toBe("in 1 hour");
+  });
+});
+
 describe("the migration, for bookings from before this", () => {
   const statements = readFileSync(
-    new URL("../../db/migrations/0135_scheduling_reminder_backfill.sql", import.meta.url),
+    new URL("../../db/migrations/0136_scheduling_reminder_backfill.sql", import.meta.url),
     "utf8",
   )
     .split("--> statement-breakpoint")

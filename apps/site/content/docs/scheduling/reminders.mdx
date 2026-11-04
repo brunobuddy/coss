@@ -137,15 +137,20 @@ await coss.scheduling.settings.update({
 | `{{brand}}` | Your brand name |
 | `{{booking_id}}` | The booking's id |
 | `{{location}}` | Where it happens, such as the meeting link |
-| `{{time_until}}` | How long until it starts, such as "in 1 hour" |
+| `{{time_until}}` | How long until it starts, such as "in 1 hour", in the recipient's language |
 | `{{date}}`, `{{time}}`, `{{end_time}}` | When, in the recipient's time zone and language |
 | `{{time_zone}}` | The recipient's time zone |
-| `{{attendee_name}}`, `{{attendee_first_name}}` | The attendee's name, or "there" |
-| `{{host_name}}` | The host's name, or "your host" |
+| `{{attendee_name}}`, `{{attendee_first_name}}` | The attendee's name, or a stand-in such as "there" |
+| `{{host_name}}` | The host's name, or a stand-in such as "your host" |
 
 A name outside this list is refused when you save, so a typo never reaches anyone's inbox. A name with a link
 in it, which a booker could type themselves, renders as if there were none. Answers to booking questions
 aren't available here: they never appear in emails.
+
+The standard wording, the labels around your text and these values follow [the recipient's
+language](/docs/scheduling/notifications#languages). A fixed address in `email_to` gets the first host's. Your own
+`subject`, `message`, `sms_message` and `button` go out as you wrote them, in every language: there's one version of
+each.
 
 What you write is plain text and can't contain links, and in live environments it's checked for abuse
 when you save it, rather than each email being screened. So:

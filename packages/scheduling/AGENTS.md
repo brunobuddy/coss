@@ -3,6 +3,12 @@
 Hosts, availability, calendars and bookings. A native engine with no runtime dependency on Cal.com:
 pure logic (`engine/`) was ported from it with its test cases, and orchestration rewritten.
 
+## Languages
+
+What booking emails and texts say lives in `i18n.ts`, so adding a sentence means adding it to every catalog (the type
+fails otherwise). Only our words are translated, never a title or brand. Reply `STOP` stays in English in every
+language, since that's the keyword carriers act on. The hosted pages are still English only.
+
 ## The double-booking guarantee
 
 `scheduling_claim_no_overlap` (a custom migration: drizzle can't declare it) refuses two claims of a host that
@@ -264,6 +270,9 @@ environment; `null` everywhere is the old one reminder a day before, on `notific
 - `attendee_name` is what a booker typed, aimed at an address they chose: `safeName` renders one with a link in it as
   nothing. Answers are never variables. `sms_message` can't use names. `reminder-copy.ts` is client-safe, so the
   dashboard's preview runs the same code as the worker.
+- A reminder's standard words, labels and values follow the recipient's language like any other message's
+  (`standardSubject`, `standardLead`, `timeUntil`), and a fixed address takes the first host's. What a customer wrote
+  has one version, in whatever language they wrote it.
 - A `button` or `email_to` is checked against the injected `verifiedAddress` in live environments, and refused without
   one. A button's URL takes only `{{booking_id}}`, so what's sent is what was checked.
 - A webhook row reports and finishes in one transaction, booking locked first like every other writer of these rows, so

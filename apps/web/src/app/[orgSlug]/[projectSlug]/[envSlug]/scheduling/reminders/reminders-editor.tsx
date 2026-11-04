@@ -10,8 +10,8 @@ import {
   reminderCopyKind,
   reminderKeyOf,
   renderReminderCopy,
-  STANDARD_LEADS,
-  STANDARD_SUBJECTS,
+  standardLead,
+  standardSubject,
 } from "@coss/scheduling/reminder-copy";
 import { countSegments } from "@coss/sms/segments";
 import { Badge } from "@coss/ui/components/badge";
@@ -172,9 +172,9 @@ function EmailPreview(props: { rule: ReminderRule; hasEmailFrom: boolean }) {
     const kind = reminderCopyKind(rule);
     const title = REMINDER_SAMPLE_VALUES.event_title;
     const own = hasEmailFrom;
-    const lead = own && rule.message ? render(rule.message) : STANDARD_LEADS[kind].attendee;
+    const lead = own && rule.message ? render(rule.message) : standardLead(kind, "attendee");
     return renderEmail({
-      subject: own && rule.subject ? render(rule.subject) : STANDARD_SUBJECTS[kind](title),
+      subject: own && rule.subject ? render(rule.subject) : standardSubject(kind, title),
       blocks: [
         ...lead
           .split(/\n\s*\n/)
@@ -401,7 +401,8 @@ function ReminderDialog(
                       <Input
                         maxLength={200}
                         onChange={(event) => change({ subject: event.target.value })}
-                        placeholder={STANDARD_SUBJECTS[reminderCopyKind(rule)](
+                        placeholder={standardSubject(
+                          reminderCopyKind(rule),
                           REMINDER_SAMPLE_VALUES.event_title,
                         )}
                         value={draft.subject}
@@ -412,7 +413,7 @@ function ReminderDialog(
                       <Textarea
                         maxLength={2000}
                         onChange={(event) => change({ message: event.target.value })}
-                        placeholder={STANDARD_LEADS[reminderCopyKind(rule)].attendee}
+                        placeholder={standardLead(reminderCopyKind(rule), "attendee")}
                         value={draft.message}
                       />
                       <FieldDescription>
