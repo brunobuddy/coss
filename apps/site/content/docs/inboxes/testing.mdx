@@ -1,0 +1,79 @@
+---
+title: Testing
+description: "Test an agent's inbox with a sandbox key: simulate received mail, follow threads and reply from any inbox, with nothing delivered."
+---
+
+Inboxes made with a sandbox (`coss_test_…`) key work end to end, with threads, webhooks and replies.
+What's different:
+
+- **Every inbox can send**, including one at coss.com's inbound domain (`can_send: true`), which only
+  receives in live environments.
+- **Nothing you send is delivered.** Sends and replies are ordinary
+  [sandbox emails](/docs/environments#sandbox-behaviour): they join the thread and get simulated
+  events, so `bounce@simulator.amazonses.com` tests a bounce.
+- **Inboxes are free.** They aren't charged per day, but they do count towards your plan's limit on
+  inboxes.
+- **Sends count towards the sandbox's limit** of 500 recipients a day per environment.
+
+## The whole loop
+
+Create an inbox and forward its webhooks to your handler:
+
+```sh
+coss inboxes create --username support-agent
+coss listen --forward-to localhost:3000/webhooks
+```
+
+Then give it mail, in either of two ways:
+
+| How                                                                 | Webhooks | Billed                                                      |
+| ------------------------------------------------------------------- | -------- | ----------------------------------------------------------- |
+| **Send a test email** on the dashboard's **Received emails** page, to the inbox's address | Yes      | No                                                          |
+| Real mail from your own mail client, to the inbox's address          | Yes      | As any [received email](/docs/email/receiving#limits-and-retention) |
+
+Either one files the message into a thread and sends `inbox.message.received`, with `sandbox: true`.
+Then read the conversation and reply, from your handler or the terminal:
+
+```sh
+coss inboxes threads <inbox>
+coss inboxes thread <inbox> <thread>
+coss inboxes reply <inbox> <message> --text "On it."
+```
+
+The reply joins the thread with its own status, though it never reaches your mail client. A second
+test email with the same subject and sender joins the thread too, as an answer would
+([threading](/docs/inboxes/threads#how-messages-are-threaded)).
+
+```ts twoslash
+import { Coss } from "coss";
+// A sandbox key: coss_test_…
+const coss = new Coss();
+declare const inboxId: string;
+declare const threadId: string;
+// ---cut---
+const { data: thread } = await coss.inboxes.threads.get(inboxId, threadId);
+for (const message of thread?.messages ?? []) {
+  console.log(message.direction, message.status, message.extracted_text);
+}
+```
+
+## Verdicts
+
+Put a marker in a test email's subject to try what your agent does with suspicious mail:
+
+| Subject contains       | Result                                                                    |
+| ---------------------- | ------------------------------------------------------------------------- |
+| `[coss-test:spam]`     | Filed with `spam: true`, in the message and its webhook                   |
+| `[coss-test:virus]`    | Blocked: it never reaches the inbox, and no `inbox.message.received` is sent |
+
+`[coss-test:spf-fail]`, `[coss-test:dkim-fail]` and `[coss-test:dmarc-fail]` set the
+[authentication verdicts](/docs/email/receiving) of the received email.
+
+## Just the webhook
+
+`coss trigger` sends a sample event, for working on a handler without any mail. Its ids are made up,
+so pass real ones if your handler reads the thread:
+
+```sh
+coss trigger inbox.message.received -F inbox_id=<inbox> -F thread_id=<thread> -F message_id=<message>
+```

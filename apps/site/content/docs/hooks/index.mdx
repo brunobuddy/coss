@@ -91,3 +91,8 @@ A payload is any JSON object up to 256 KB. coss.com parses it and serializes it 
 their order but whitespace doesn't, and numbers beyond 2^53 lose precision: send large integers
 (and amounts you can't round) as strings. Messages, deliveries and attempts are kept for
 <RetentionPeriod of="hook_messages" />.
+
+## Testing
+
+Sandbox keys deliver to real URLs, so you can run the whole loop before going live. See
+[testing Hooks](/docs/hooks/testing).
