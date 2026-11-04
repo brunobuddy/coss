@@ -190,28 +190,22 @@ function rowsOfRule(rule: ReminderRule, booking: BookingRow, now: Date): Notific
 }
 
 /**
- * A changed list's walk makes rows for a start or end of a booking that hasn't ended. Nothing walks
- * anything else, so what's waiting there has to take its rule's changes itself.
- */
-const walkedByListChange = (rule: ReminderRule, booking: Pick<BookingRow, "endAt">, now: Date) =>
-  (rule.anchor === "start" || rule.anchor === "end") && booking.endAt.getTime() > now.getTime();
-
-/**
  * Recipients added to a rule after its row was queued get theirs when it comes due: a row can only
- * speak for its own, and the one whose recipient was taken off would otherwise end the reminder.
+ * speak for its own, and the one whose recipient was taken off would otherwise end the reminder. This
+ * can't rely on a changed list's walk: it only reaches some bookings, it only adds what's still ahead,
+ * and it may not have run yet. Its rows have these same keys, so the two can't both make one.
  */
 export async function addEditedTargets(
   executor: Executor,
   row: NotificationRow,
   booking: BookingRow,
   rules: readonly ReminderRule[],
-  now: Date,
 ): Promise<void> {
   const rule = rules.find(
     (candidate) => candidate.key === row.reminderKey && candidate.anchor === row.reminderAnchor,
   );
   const anchorAt = row.anchorAt;
-  if (!rule || !anchorAt || walkedByListChange(rule, booking, now)) return;
+  if (!rule || !anchorAt) return;
   const siblings = await executor
     .select({
       channel: schedulingNotification.channel,
@@ -428,7 +422,7 @@ function locationKind(location: BookingRow["location"]): string {
 /** What a due row's rule says now, or the outcome that finishes the row instead of sending it. */
 export function ruleVerdict(
   row: NotificationRow,
-  booking: Pick<BookingRow, "metadata" | "noShowAt" | "location" | "startAt" | "endAt">,
+  booking: Pick<BookingRow, "metadata" | "noShowAt" | "location" | "startAt">,
   rules: readonly ReminderRule[],
   now: Date,
 ):
@@ -440,10 +434,9 @@ export function ruleVerdict(
   );
   if (!rule) return { outcome: "stale" };
   if (offsetOf(rule) !== row.reminderOffsetMinutes) {
-    // Where the walk made a row for the new moment, this one's done. Elsewhere it takes the new
-    // timing itself, or the edit would lose it. An edit to sooner can only be seen once the row
-    // comes due: it goes then.
-    if (walkedByListChange(rule, booking, now)) return { outcome: "stale" };
+    // It takes the new timing itself, rather than count on a changed list's walk, which may not
+    // have run or reach this booking: if it does run, it drops this row for one of its own. An edit
+    // to sooner can only be seen once the row comes due: it goes then.
     const due = (row.anchorAt?.getTime() ?? now.getTime()) + offsetOf(rule) * MINUTE_MS;
     if (due > now.getTime()) return { moveTo: new Date(due), offsetMinutes: offsetOf(rule) };
   }

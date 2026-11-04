@@ -559,6 +559,56 @@ describe("changing a list", () => {
     expect(n.emails.some((email) => email.text.includes("New words."))).toBe(true);
   });
 
+  test("recipients changed just before it's due, with the walk still to come", async () => {
+    const s = await setUp();
+    const to = (send: string[]) =>
+      rule({ key: "day", anchor: "start", before_minutes: 1440, send });
+    await updateSettings(s.env, { reminders: [to(["email_attendee"])] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [to(["email_host"])] });
+    const when = START - 1440 * MINUTE;
+    // The worker gets there first.
+    const n = await runAt(s, when);
+    expect(n.emails.filter((email) => isReminder(email.subject)).map((email) => email.to)).toEqual([
+      "reyes@example.com",
+    ]);
+    // Then the walk: it changes nothing, and nothing goes twice.
+    await runDueReminderSyncs({ now: () => new Date(when + MINUTE) }, scope(s));
+    const again = await runAt(s, when + 2 * MINUTE);
+    expect(subjects(again).filter(isReminder)).toEqual([]);
+    const day = (await rows(s, booking.id)).filter((row) => row.reminder_key === "day");
+    expect(day.map((row) => [row.recipient, row.outcome]).sort()).toEqual([
+      ["attendee", "stale"],
+      ["host", "sent"],
+    ]);
+  });
+
+  test("timing changed to sooner, with the walk still to come", async () => {
+    const s = await setUp();
+    const at = (before_minutes: number) =>
+      rule({ key: "day", anchor: "start", before_minutes, send: ["email_attendee"] });
+    await updateSettings(s.env, { reminders: [at(60)] });
+    await book(s);
+    await updateSettings(s.env, { reminders: [at(120)] });
+    // Its new moment has passed by the time anyone looks: it goes, late, rather than never.
+    const n = await runAt(s, START - 60 * MINUTE);
+    expect(subjects(n).filter(isReminder).length).toBe(1);
+  });
+
+  test("timing changed to later: one reminder, whichever gets there first", async () => {
+    const s = await setUp();
+    const at = (before_minutes: number) =>
+      rule({ key: "day", anchor: "start", before_minutes, send: ["email_attendee"] });
+    await updateSettings(s.env, { reminders: [at(120)] });
+    await book(s);
+    await updateSettings(s.env, { reminders: [at(60)] });
+    // The worker moves its row, then the walk replaces it.
+    await runAt(s, START - 120 * MINUTE);
+    await runDueReminderSyncs({ now: () => new Date(START - 119 * MINUTE) }, scope(s));
+    const n = await runAt(s, START - 60 * MINUTE);
+    expect(subjects(n).filter(isReminder).length).toBe(1);
+  });
+
   test("a deleted reminder doesn't go, even before the walk", async () => {
     const s = await setUp();
     await updateSettings(s.env, { reminders: [day] });

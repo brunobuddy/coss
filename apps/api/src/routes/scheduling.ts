@@ -29,6 +29,7 @@ import {
   disconnectCalendar,
   eraseAttendee,
   eraseAttendeeByEmail,
+  explainSlot,
   getBooking,
   getCalendarDelegation,
   getEventType,
@@ -93,6 +94,7 @@ import {
   ErasedAttendeeByEmail,
   EventTypeList,
   EventTypeObject,
+  ExplainSlotQuery,
   HostList,
   HostObject,
   ListBookingsQuery,
@@ -104,6 +106,7 @@ import {
   SeriesResult,
   SetSimulatedBusyRequest,
   SettingsObject,
+  SlotExplanation,
   SlotList,
   SlotsQuery,
   UpdateBookingLocationRequest,
@@ -505,6 +508,26 @@ export const listSlotsRoute = createRoute({
   request: { params: EventTypeParams, query: SlotsQuery },
   responses: {
     200: jsonDoc("The slots.", SlotList),
+    ...commonErrors,
+    404: notFound,
+    422: invalidWindow,
+  },
+});
+
+export const explainSlotRoute = createRoute({
+  method: "get",
+  path: "/scheduling/event_types/{event_type}/slots/explain",
+  operationId: "explainSchedulingSlot",
+  tags: [TAG_AVAILABILITY],
+  summary: "Explain a slot",
+  description:
+    "Why one start can or can't be booked right now, host by host, decided the same way a booking is. " +
+    "For support and debugging: it says when a host is busy, so don't show it to attendees.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: EventTypeParams, query: ExplainSlotQuery },
+  responses: {
+    200: jsonDoc("Whether it can be booked, and why.", SlotExplanation),
     ...commonErrors,
     404: notFound,
     422: invalidWindow,
@@ -1525,8 +1548,38 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
           start: iso(slot.startMs),
           end: iso(slot.endMs),
           hosts: slot.hostIds,
+          seats_left: slot.seatsLeft,
         })),
         has_more: false as const,
+      },
+      200,
+    );
+  });
+
+  router.openapi(explainSlotRoute, async (c) => {
+    const query = c.req.valid("query");
+    const explained = await explainSlot(c.var.auth, {
+      eventTypeRef: c.req.valid("param").event_type,
+      startMs: instant(query.start, "start"),
+      nowMs: (deps.now?.() ?? new Date()).getTime(),
+      hostRef: query.host,
+      attributes: attributesParam(query.attributes),
+      durationMinutes: query.duration_minutes,
+    });
+    return c.json(
+      {
+        object: "scheduling.slot_explanation" as const,
+        start: iso(explained.startMs),
+        end: iso(explained.endMs),
+        available: explained.available,
+        reason: explained.reason,
+        hosts: explained.hosts.map((host) => ({
+          host: host.hostId,
+          role: host.required ? ("required" as const) : ("member" as const),
+          available: host.available,
+          reason: host.reason,
+          calendar_reason: host.calendarReason,
+        })),
       },
       200,
     );

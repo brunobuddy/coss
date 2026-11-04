@@ -860,7 +860,7 @@ export async function sendTimedWebhook(
     }
     const location = await chosenLocation(tx, booking);
     const rules = effectiveRules(await policiesOf(tx, booking));
-    await addEditedTargets(tx, current, booking, rules, now);
+    await addEditedTargets(tx, current, booking, rules);
     const verdict = ruleVerdict(current, { ...booking, location }, rules, now);
     if ("moveTo" in verdict) return moveRow(tx, current, verdict);
     if ("outcome" in verdict) return finish(verdict.outcome);
@@ -1033,7 +1033,7 @@ export async function runDueSchedulingNotifications(
       let ownSenderOnly = false;
       if (row.kind === "reminder" && row.reminderKey) {
         const rules = effectiveRules(await policiesOf(db, found));
-        await addEditedTargets(db, row, found, rules, now);
+        await addEditedTargets(db, row, found, rules);
         const location = await chosenLocation(db, found);
         const verdict = ruleVerdict(row, { ...found, location }, rules, now);
         if ("moveTo" in verdict) {

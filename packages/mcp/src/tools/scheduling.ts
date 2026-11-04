@@ -119,6 +119,30 @@ export function registerSchedulingTools(ctx: ToolContext): void {
   );
 
   server.registerTool(
+    "explain_scheduling_slot",
+    {
+      title: "Explain a slot",
+      description:
+        "Why one start of an event type can or can't be booked right now, host by host, decided the same way a booking is: such as host_busy, already_claimed, too_soon or limit_reached. Unlike diagnose_scheduling_slots, it knows about calendars.",
+      inputSchema: z.object({
+        event_type: z.string().describe("The event type's id or uid."),
+        start: z.string().describe("An ISO 8601 instant."),
+        host: z.string().optional().describe("Only this host (id or uid)."),
+        duration_minutes: z.number().int().optional(),
+      }),
+      annotations: READ_ONLY,
+    },
+    ({ event_type, start, host, duration_minutes }) =>
+      respond(
+        coss.scheduling.slots.explain(event_type, {
+          start,
+          ...(host ? { host } : {}),
+          ...(duration_minutes ? { duration_minutes } : {}),
+        }),
+      ),
+  );
+
+  server.registerTool(
     "list_scheduling_bookings",
     {
       title: "List bookings",

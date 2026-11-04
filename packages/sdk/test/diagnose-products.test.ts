@@ -707,7 +707,14 @@ describe("diagnoseSchedulingSlots", () => {
     const diagnosis = diagnoseSchedulingSlots({
       eventType: schedulingEventType(),
       range,
-      slots: [{ start: "2026-10-16T09:00:00.000Z", end: "2026-10-16T09:30:00.000Z", hosts: [] }],
+      slots: [
+        {
+          start: "2026-10-16T09:00:00.000Z",
+          end: "2026-10-16T09:30:00.000Z",
+          hosts: [],
+          seats_left: null,
+        },
+      ],
       now: NOW,
     });
     expect(diagnosis.verdict).toBe("slots_available");

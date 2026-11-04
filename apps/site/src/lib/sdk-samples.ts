@@ -365,6 +365,10 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.slots.list",
     args: (r) => [tsValue(r.path.event_type), queryParams(r)],
   },
+  "GET /v1/scheduling/event_types/{event_type}/slots/explain": {
+    method: "scheduling.slots.explain",
+    args: (r) => [tsValue(r.path.event_type), queryParams(r)],
+  },
   "POST /v1/scheduling/availability/search": {
     method: "scheduling.availability.search",
     args: (r) => [tsValue(r.body ?? {})],

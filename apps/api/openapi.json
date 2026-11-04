@@ -20456,7 +20456,8 @@
                 "end": "2027-01-04T15:30:00.000Z",
                 "hosts": [
                   "host_01kd2m9a0b1c2d3e4f5g6h7j8m"
-                ]
+                ],
+                "seats_left": null
               }
             ],
             "has_more": false
@@ -20480,12 +20481,122 @@
               "type": "string"
             },
             "description": "Who could take it."
+          },
+          "seats_left": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Free seats at this start, for a `group` event type. `null` for the others."
           }
         },
         "required": [
           "start",
           "end",
+          "hosts",
+          "seats_left"
+        ]
+      },
+      "SchedulingSlotExplanation": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "scheduling.slot_explanation"
+            ]
+          },
+          "start": {
+            "type": "string",
+            "description": "The start asked about."
+          },
+          "end": {
+            "type": "string",
+            "description": "When it would end."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Whether it can be booked right now."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why it can't: `not_on_grid`, `too_soon`, `outside_booking_window`, `calendar_unverified`, `outside_availability`, `host_busy`, `already_claimed`, `limit_reached` or `session_full`, or `event_type_inactive` or `no_hosts`. `null` when it can. With several hosts refused, the first one's reason: see `hosts`."
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "host": {
+                  "type": "string",
+                  "description": "The host's id."
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "required",
+                    "member"
+                  ],
+                  "description": "`required` hosts must all be free. Only one `member` needs to be."
+                },
+                "available": {
+                  "type": "boolean",
+                  "description": "Whether this host could take it."
+                },
+                "reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why not: `not_on_grid`, `too_soon`, `outside_booking_window`, `calendar_unverified`, `outside_availability`, `host_busy`, `already_claimed`, `limit_reached` or `session_full`. `null` when they could."
+                },
+                "calendar_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "With `calendar_unverified`: `calendar_needs_reauth`, `calendar_stale` or `calendar_not_covered`."
+                }
+              },
+              "required": [
+                "host",
+                "role",
+                "available",
+                "reason",
+                "calendar_reason"
+              ]
+            },
+            "description": "Everyone who could take this event type, narrowed by the query."
+          }
+        },
+        "required": [
+          "object",
+          "start",
+          "end",
+          "available",
+          "reason",
           "hosts"
+        ],
+        "examples": [
+          {
+            "object": "scheduling.slot_explanation",
+            "start": "2027-01-04T15:00:00.000Z",
+            "end": "2027-01-04T15:30:00.000Z",
+            "available": false,
+            "reason": "host_busy",
+            "hosts": [
+              {
+                "host": "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                "role": "member",
+                "available": false,
+                "reason": "host_busy",
+                "calendar_reason": null
+              }
+            ]
+          }
         ]
       },
       "SchedulingAvailabilitySearchResult": {
@@ -69329,6 +69440,288 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SchedulingSlotList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation (`validation_error`, see `issues`), or `start`, `end` or `duration_minutes` is invalid: `end` isn't after `start`, the window is longer than 62 days, or the duration isn't one of the event type's (`invalid_time`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scheduling/event_types/{event_type}/slots/explain": {
+      "get": {
+        "operationId": "explainSchedulingSlot",
+        "tags": [
+          "Scheduling availability"
+        ],
+        "summary": "Explain a slot",
+        "description": "Why one start can or can't be booked right now, host by host, decided the same way a booking is. For support and debugging: it says when a host is busy, so don't show it to attendees.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The event type's id or uid.",
+              "examples": [
+                "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m"
+              ]
+            },
+            "required": true,
+            "description": "The event type's id or uid.",
+            "name": "event_type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "An ISO 8601 instant with an offset.",
+              "examples": [
+                "2027-01-04T15:00:00.000Z"
+              ]
+            },
+            "required": true,
+            "description": "An ISO 8601 instant with an offset.",
+            "name": "start",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Only this host (id or uid)."
+            },
+            "required": false,
+            "description": "Only this host (id or uid).",
+            "name": "host",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 1440
+            },
+            "required": false,
+            "name": "duration_minutes",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "A JSON object narrowing a pool, such as `{\"licensed_in\":\"CA\"}`."
+            },
+            "required": false,
+            "description": "A JSON object narrowing a pool, such as `{\"licensed_in\":\"CA\"}`.",
+            "name": "attributes",
+            "in": "query"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether it can be booked, and why.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingSlotExplanation"
                 }
               }
             }

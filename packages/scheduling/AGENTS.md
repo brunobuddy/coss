@@ -254,8 +254,10 @@ environment; `null` everywhere is the old one reminder a day before, on `notific
 - The dedupe key names the rule, timing and moment, so planning is safe to repeat (`reconcileReminders`, also run by
   the `scheduling-reminder-sync` loop when a list changes). A conflict revives a row only if it was `superseded` or
   `stale`: a booking moved away and back gets its reminder back, and nothing `sent` goes twice.
-- **A rule is read again when its row is due** (`ruleVerdict`), so an edit or a removal needs no rebuild. Only a new rule
-  needs rows made for existing bookings, and only for ones that haven't ended.
+- **A rule is read again when its row is due** (`ruleVerdict`, `addEditedTargets`), so a row takes its rule's current
+  words, timing and recipients and a removal needs no rebuild. Only a new rule needs rows made for existing bookings,
+  and only for ones that haven't ended. A row never assumes the walk has run: it may not have, and it reaches only some
+  bookings. The keys make the two safe together.
 - **Customer words never leave under coss.com's address.** `subject`, `message` and `button` need `email_from`, and
   `coss*` on `SchedulingEmail` are always fixed copy, which is what the fallback sends. That also caps what coss.com
   pays for: without `email_from`, at most two rules send email (`withinCossAllowance`, checked at save and when due).

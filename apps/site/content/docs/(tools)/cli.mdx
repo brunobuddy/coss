@@ -625,6 +625,7 @@ coss scheduling bookings --host doctor_482 --status confirmed
   `--json` prints attendees' details, which `coss scheduling bookings` otherwise leaves out.
 - `coss scheduling event-types` lists what can be booked (`--limit`).
 - `coss scheduling slots <event-type> --start <time> --end <time>` lists bookable starts (`--host`).
+- `coss scheduling slots explain <event-type> --start <time>` says whether one start can be booked and, host by host, why not (`--host`).
 - `coss scheduling booking <booking>` shows a booking, and `coss scheduling cancel <booking>` cancels
   it and tells the attendee.
 - `coss scheduling no-show <booking>` marks a booking as a no-show, once it has started.
