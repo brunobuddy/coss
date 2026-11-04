@@ -317,8 +317,9 @@ async function releaseOldMailbox(
   calendarAccount: string | null,
   email: string | null | undefined,
 ): Promise<void> {
-  await tx
-    .select({ id: schedulingHost.id })
+  // Read under the lock: another update may have changed the email since this began.
+  const [locked] = await tx
+    .select({ email: schedulingHost.email })
     .from(schedulingHost)
     .where(eq(schedulingHost.id, host.id))
     .for("update");
@@ -341,7 +342,11 @@ async function releaseOldMailbox(
     );
   if (!delegated) return;
   // `null` clears it: only a patch that doesn't mention it keeps the one there is.
-  const fallback = delegated.matchHostEmail ? (email === undefined ? host.email : email) : null;
+  const fallback = delegated.matchHostEmail
+    ? email === undefined
+      ? (locked?.email ?? null)
+      : email
+    : null;
   const wanted = calendarAccount ?? (fallback ? normalizeMailbox(fallback) : null);
   const { connection } = delegated;
   if (wanted === connection.accountId.toLowerCase()) return;

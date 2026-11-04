@@ -866,6 +866,24 @@ describe("diagnoseSchedulingSlots", () => {
     });
     expect(hidden.explanation).toContain("never reads as free");
     expect(hidden.next_steps[0]).toContain(PRODUCT_SDK_REFERENCES.authorize_scheduling_calendar);
+    const managed = diagnoseSchedulingSlots({
+      eventType: schedulingEventType(),
+      range,
+      slots: [],
+      hosts: [
+        {
+          host: schedulingHost(),
+          schedules: [schedulingSchedule()],
+          calendars: calendars.map((row) => ({ ...row, delegation: "caldlg_1" })),
+        },
+      ],
+      now: NOW,
+    });
+    expect(managed.findings[0]).toMatchObject({ code: "calendar_needs_reauth" });
+    expect(managed.next_steps.join(" ")).toContain("delegation");
+    expect(managed.next_steps.join(" ")).not.toContain(
+      PRODUCT_SDK_REFERENCES.authorize_scheduling_calendar,
+    );
     const lastKnown = diagnoseSchedulingSlots({
       eventType: schedulingEventType(),
       range,

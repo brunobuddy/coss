@@ -648,6 +648,40 @@ describe("a host's email and mailbox", () => {
     expect(await listConnections(env, ana.id)).toEqual([]);
   });
 
+  test("clearing calendar_account uses the email as it is once the host is locked", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    await updateHost(env, ana.id, { calendar_account: `ana@${DOMAIN}` });
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    // Another update has the host, uncommitted, with a new email.
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked = () => {};
+    const lockTaken = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const other = db.transaction(async (tx) => {
+      await tx
+        .update(schema.schedulingHost)
+        .set({ email: `new@${DOMAIN}` })
+        .where(eq(schema.schedulingHost.id, ana.id));
+      locked();
+      await gate;
+    });
+    await lockTaken;
+    const clearing = updateHost(env, ana.id, { calendar_account: null });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    release();
+    await Promise.all([other, clearing]);
+    await run(env, deps);
+    expect(await listConnections(env, ana.id)).toMatchObject([{ account: `new@${DOMAIN}` }]);
+  });
+
   test("clearing calendar_account falls back on the email, straight away", async () => {
     const env = await environment();
     const api = new FakeGoogleCalendarApi();
