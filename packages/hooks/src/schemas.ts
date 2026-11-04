@@ -94,8 +94,8 @@ export const HookApplicationObject = z
           "Your own id for it (e.g. your customer's id), unique in the environment. Every path that " +
           "takes an application accepts its `id` or its `uid`.",
       }),
-    name: z.string(),
-    metadata: z.record(z.string(), z.string()),
+    name: z.string().meta({ description: "Shown to the application's users in the portal." }),
+    metadata: z.record(z.string(), z.string()).meta({ description: "Your own key-value pairs." }),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
   })
@@ -127,7 +127,13 @@ export type CreateHookApplicationRequestOutput = z.output<typeof CreateHookAppli
 
 export const UpdateHookApplicationRequest = z
   .strictObject({
-    name: z.string().trim().min(1).max(NAME_MAX_LENGTH).optional(),
+    name: z
+      .string()
+      .trim()
+      .min(1)
+      .max(NAME_MAX_LENGTH)
+      .optional()
+      .meta({ description: "Shown to the application's users in the portal." }),
     uid: ApplicationUid.nullable().optional().meta({ description: "`null` removes it." }),
     metadata: Metadata.optional().meta({ description: "Replaces the metadata." }),
   })
@@ -191,10 +197,21 @@ const Examples = z
 export const HookEventTypeObject = z
   .object({
     object: z.literal("hook_event_type"),
-    name: z.string().meta({ examples: ["invoice.paid"] }),
-    description: z.string().nullable(),
-    schema: z.record(z.string(), z.unknown()).nullable(),
-    examples: z.array(z.record(z.string(), z.unknown())),
+    name: z.string().meta({
+      description: "The type's name, which messages send as `event_type`.",
+      examples: ["invoice.paid"],
+    }),
+    description: z
+      .string()
+      .nullable()
+      .meta({ description: "What this event means, shown to your users. `null`: none." }),
+    schema: z.record(z.string(), z.unknown()).nullable().meta({
+      description:
+        "A JSON Schema of the payload, shown to your users (not enforced). `null`: none.",
+    }),
+    examples: z
+      .array(z.record(z.string(), z.unknown()))
+      .meta({ description: "Sample payloads, shown to your users. Test sends use the first." }),
     archived: z.boolean().meta({
       description:
         "Archived types are hidden from the portal and can't be subscribed to; messages of the " +
@@ -208,8 +225,17 @@ export type HookEventTypeObjectOutput = z.output<typeof HookEventTypeObject>;
 
 export const CreateHookEventTypeRequest = z
   .strictObject({
-    name: EventTypeName.meta({ examples: ["invoice.paid"] }),
-    description: z.string().trim().max(DESCRIPTION_MAX_LENGTH).optional(),
+    name: EventTypeName.meta({
+      description:
+        "The type's name, which messages send as `event_type`. Letters, digits and `. _ -`.",
+      examples: ["invoice.paid"],
+    }),
+    description: z
+      .string()
+      .trim()
+      .max(DESCRIPTION_MAX_LENGTH)
+      .optional()
+      .meta({ description: "What this event means, shown to your users." }),
     schema: JsonSchema.optional(),
     examples: Examples.optional(),
   })
@@ -227,7 +253,13 @@ export type CreateHookEventTypeRequestOutput = z.output<typeof CreateHookEventTy
 
 export const UpdateHookEventTypeRequest = z
   .strictObject({
-    description: z.string().trim().max(DESCRIPTION_MAX_LENGTH).nullable().optional(),
+    description: z
+      .string()
+      .trim()
+      .max(DESCRIPTION_MAX_LENGTH)
+      .nullable()
+      .optional()
+      .meta({ description: "What this event means, shown to your users. `null` removes it." }),
     schema: JsonSchema.nullable().optional(),
     examples: Examples.optional(),
     archived: z.boolean().optional().meta({ description: "`false` restores an archived type." }),
@@ -296,12 +328,17 @@ export const HookEndpointObject = z
   .object({
     object: z.literal("hook_endpoint"),
     id: z.string().meta({ examples: [ENDPOINT_ID] }),
-    application_id: z.string(),
-    url: z.string(),
-    description: z.string().nullable(),
-    filter_types: z.array(z.string()),
-    rate_limit_per_second: z.number().int().nullable(),
-    enabled: z.boolean(),
+    application_id: z.string().meta({ description: "The id of the application it belongs to." }),
+    url: z.string().meta({ description: "Where deliveries are sent." }),
+    description: z.string().nullable().meta({ description: "Your note about it. `null`: none." }),
+    filter_types: z
+      .array(z.string())
+      .meta({ description: "Only these event types are delivered. Empty: every type." }),
+    rate_limit_per_second: z.number().int().nullable().meta({
+      description:
+        "At most this many requests per second to this endpoint. `null`: no limit of its own.",
+    }),
+    enabled: z.boolean().meta({ description: "Whether new messages are delivered to it." }),
     disabled_reason: z
       .enum(HOOK_ENDPOINT_DISABLED_REASONS)
       .nullable()
@@ -310,7 +347,10 @@ export const HookEndpointObject = z
           "`manual`: disabled by you or its user. `failing`: its deliveries failed every attempt for " +
           "five days, so coss.com disabled it. `null` while enabled.",
       }),
-    disabled_at: z.iso.datetime().nullable(),
+    disabled_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was disabled. `null`: it's enabled." }),
     failing_since: z.iso
       .datetime()
       .nullable()
@@ -323,7 +363,7 @@ export const HookEndpointObject = z
       description:
         "After a secret roll, requests are also signed with the previous secret until then.",
     }),
-    metadata: z.record(z.string(), z.string()),
+    metadata: z.record(z.string(), z.string()).meta({ description: "Your own key-value pairs." }),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
   })
@@ -347,7 +387,12 @@ export const CreateHookEndpointRequest = z
       .string()
       .max(URL_MAX_LENGTH)
       .meta({ examples: ["https://example.com/webhooks"] }),
-    description: z.string().trim().max(DESCRIPTION_MAX_LENGTH).optional(),
+    description: z
+      .string()
+      .trim()
+      .max(DESCRIPTION_MAX_LENGTH)
+      .optional()
+      .meta({ description: "Your note about it." }),
     filter_types: FilterTypes.optional(),
     secret: z
       .string()
@@ -359,7 +404,9 @@ export const CreateHookEndpointRequest = z
       }),
     rate_limit_per_second: RateLimit.optional(),
     metadata: Metadata.optional(),
-    enabled: z.boolean().optional(),
+    enabled: z.boolean().optional().meta({
+      description: "Default `true`. `false` creates it disabled, with `disabled_reason: manual`.",
+    }),
   })
   .meta({
     id: "CreateHookEndpointRequest",
@@ -369,12 +416,25 @@ export type CreateHookEndpointRequestOutput = z.output<typeof CreateHookEndpoint
 
 export const UpdateHookEndpointRequest = z
   .strictObject({
-    url: z.string().max(URL_MAX_LENGTH).optional(),
-    description: z.string().trim().max(DESCRIPTION_MAX_LENGTH).nullable().optional(),
+    url: z
+      .string()
+      .max(URL_MAX_LENGTH)
+      .optional()
+      .meta({ description: "Where deliveries are sent." }),
+    description: z
+      .string()
+      .trim()
+      .max(DESCRIPTION_MAX_LENGTH)
+      .nullable()
+      .optional()
+      .meta({ description: "Your note about it. `null` removes it." }),
     filter_types: FilterTypes.optional(),
     rate_limit_per_second: RateLimit.nullable().optional(),
     metadata: Metadata.optional(),
-    enabled: z.boolean().optional(),
+    enabled: z.boolean().optional().meta({
+      description:
+        "`false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.",
+    }),
   })
   .refine((value) => Object.keys(value).length > 0, { message: "Nothing to update." })
   .meta({ id: "UpdateHookEndpointRequest", examples: [{ enabled: false }] });
@@ -392,7 +452,12 @@ export const DeletedHookEndpoint = z
 export type DeletedHookEndpointOutput = z.output<typeof DeletedHookEndpoint>;
 
 export const HookEndpointSecret = z
-  .object({ object: z.literal("hook_endpoint_secret"), secret: z.string() })
+  .object({
+    object: z.literal("hook_endpoint_secret"),
+    secret: z
+      .string()
+      .meta({ description: "The endpoint's `whsec_…` signing secret (Standard Webhooks)." }),
+  })
   .meta({
     id: "HookEndpointSecret",
     examples: [{ object: "hook_endpoint_secret", secret: "whsec_6Jk…" }],
@@ -443,15 +508,22 @@ export const HookEndpointRecoveryObject = z
   .object({
     object: z.literal("hook_endpoint_recovery"),
     id: z.string().meta({ examples: [RECOVERY_ID] }),
-    endpoint_id: z.string(),
-    since: z.iso.datetime(),
-    until: z.iso.datetime(),
+    endpoint_id: z.string().meta({ description: "The id of the endpoint being recovered." }),
+    since: z.iso
+      .datetime()
+      .meta({ description: "Deliveries of messages sent from this time on are requeued." }),
+    until: z.iso
+      .datetime()
+      .meta({ description: "Up to this time: when the recovery was asked for." }),
     status: z.enum(["pending", "completed"]).meta({
       description: "`pending` while coss.com is still requeueing deliveries (in the background).",
     }),
     requeued: z.number().int().meta({ description: "Deliveries requeued so far." }),
     created_at: z.iso.datetime(),
-    completed_at: z.iso.datetime().nullable(),
+    completed_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When requeueing finished. `null`: still `pending`." }),
   })
   .meta({ id: "HookEndpointRecovery", examples: [RECOVERY_EXAMPLE] });
 export type HookEndpointRecoveryObjectOutput = z.output<typeof HookEndpointRecoveryObject>;
@@ -484,8 +556,8 @@ export const HookMessageObject = z
       description: "Also the `webhook-id` header of every request delivering it.",
       examples: [MESSAGE_ID],
     }),
-    application_id: z.string(),
-    event_type: z.string(),
+    application_id: z.string().meta({ description: "The id of the application it was sent to." }),
+    event_type: z.string().meta({ description: "The event type it was sent as." }),
     payload: z.record(z.string(), z.unknown()).meta({
       description: "The JSON body delivered to each endpoint.",
     }),
@@ -547,20 +619,30 @@ export const HookDeliveryObject = z
   .object({
     object: z.literal("hook_delivery"),
     id: z.string().meta({ examples: [DELIVERY_ID] }),
-    application_id: z.string(),
-    message_id: z.string(),
-    endpoint_id: z.string(),
+    application_id: z.string().meta({ description: "The id of the application." }),
+    message_id: z.string().meta({ description: "The id of the message being delivered." }),
+    endpoint_id: z.string().meta({ description: "The id of the endpoint it's delivered to." }),
     status: z.enum(HOOK_DELIVERY_STATUSES).meta({
       description:
         "`pending`: waiting for its next attempt. `succeeded`: the endpoint answered 2xx. `failed`: " +
         "every attempt failed, or the endpoint was disabled or deleted.",
     }),
-    attempt_count: z.number().int(),
-    next_attempt_at: z.iso.datetime().nullable(),
-    last_status_code: z.number().int().nullable(),
-    last_error: z.string().nullable(),
+    attempt_count: z.number().int().meta({ description: "How many attempts were made so far." }),
+    next_attempt_at: z.iso.datetime().nullable().meta({
+      description: "When the next attempt runs. `null`: none is due, because it finished.",
+    }),
+    last_status_code: z.number().int().nullable().meta({
+      description:
+        "The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.",
+    }),
+    last_error: z.string().nullable().meta({
+      description: "Why the latest attempt failed. `null`: it didn't, or no attempt yet.",
+    }),
     created_at: z.iso.datetime(),
-    finished_at: z.iso.datetime().nullable(),
+    finished_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it `succeeded` or `failed`. `null`: still `pending`." }),
   })
   .meta({ id: "HookDelivery", examples: [DELIVERY_EXAMPLE] });
 export type HookDeliveryObjectOutput = z.output<typeof HookDeliveryObject>;
@@ -597,14 +679,16 @@ export const HookAttemptObject = z
   .object({
     object: z.literal("hook_attempt"),
     id: z.string().meta({ examples: [ATTEMPT_ID] }),
-    delivery_id: z.string(),
-    endpoint_id: z.string(),
-    attempted_at: z.iso.datetime(),
+    delivery_id: z
+      .string()
+      .meta({ description: "The id of the delivery this attempt belongs to." }),
+    endpoint_id: z.string().meta({ description: "The id of the endpoint it was sent to." }),
+    attempted_at: z.iso.datetime().meta({ description: "When the attempt ran." }),
     status_code: z.number().int().nullable().meta({
       description: "The endpoint's HTTP status; `null` when no response arrived.",
     }),
-    duration_ms: z.number().int(),
-    error: z.string().nullable(),
+    duration_ms: z.number().int().meta({ description: "How long it took, in milliseconds." }),
+    error: z.string().nullable().meta({ description: "Why it failed. `null`: it didn't." }),
     response_excerpt: z.string().nullable().meta({
       description: "At most 1 KB of the response body, as text.",
     }),
@@ -650,15 +734,17 @@ export const HookPortalSessionObject = z
   .object({
     object: z.literal("hook_portal_session"),
     id: z.string().meta({ examples: [SESSION_ID] }),
-    application_id: z.string(),
+    application_id: z
+      .string()
+      .meta({ description: "The id of the application this session manages." }),
     url: z.string().meta({
       description:
         "Open it or embed it in an iframe (from an allowed origin). The token is in the URL " +
         "fragment, so it never reaches a server log: hand the URL only to that application's user.",
     }),
     token: z.string().meta({ description: "The secret part of `url`, shown only here." }),
-    read_only: z.boolean(),
-    expires_at: z.iso.datetime(),
+    read_only: z.boolean().meta({ description: "Whether the user can only look." }),
+    expires_at: z.iso.datetime().meta({ description: "When the session stops working." }),
   })
   .meta({ id: "HookPortalSession", examples: [SESSION_EXAMPLE] });
 export type HookPortalSessionObjectOutput = z.output<typeof HookPortalSessionObject>;
