@@ -1,7 +1,7 @@
 {
   "name": "coss",
   "displayName": "coss.com",
-  "description": "Build with coss.com (email, SMS, webhooks, Hooks, Risk): a skill for adding it to a project, and the MCP server that searches the docs and explains deliveries",
+  "description": "Build with coss.com (email, marketing, inboxes, SMS, Verify, Sign, Forms, Scheduling, Hooks, Risk): a skill for adding it to a project, and the MCP server that searches the docs and explains deliveries",
   "author": {
     "name": "coss.com",
     "url": "https://coss.com"
@@ -9,7 +9,20 @@
   "homepage": "https://coss.com/docs/agents",
   "repository": "https://github.com/cosscom/coss",
   "license": "MIT",
-  "keywords": ["email", "sms", "webhooks", "coss"],
+  "keywords": [
+    "coss",
+    "email",
+    "marketing",
+    "inboxes",
+    "sms",
+    "verify",
+    "sign",
+    "forms",
+    "scheduling",
+    "hooks",
+    "risk",
+    "webhooks"
+  ],
   "userConfig": {
     "api_key": {
       "type": "string",

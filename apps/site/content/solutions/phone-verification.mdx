@@ -1,6 +1,6 @@
 ---
 title: Phone verification
-description: Verify phone numbers with one-time SMS codes from coss.com's shared numbers or your own, a fraud guard that stops SMS pumping, and Risk line checks.
+description: Verify phone numbers with one-time SMS codes from your own registered numbers, a fraud guard that stops SMS pumping, and Risk line checks.
 seoTitle: "Phone number verification API with SMS codes · coss.com"
 headline: Verify phone numbers with one-time codes.
 mark: verify
@@ -12,9 +12,9 @@ faq:
   - question: How do I verify a phone number in my app?
     answer: Call coss.verify.start() with the number in E.164 form and the user's IP address, then coss.verify.check() with the code they typed. coss.com makes the code, sends it, counts the attempts and expires it, and only a valid check proves the number is theirs.
   - question: Do I need my own phone number to send codes?
-    answer: No. Live codes go from coss.com's shared numbers by default, which coss.com registered with carriers, and their messages are billed to you by country. Choose one of your own registered numbers in Verify's settings when your users should see your number, or for countries the shared numbers don't reach. Sandbox environments need no number.
+    answer: For live SMS codes, yes for now. Choose one of your registered numbers in Verify's settings; without one, a live code fails with shared_sender_unavailable. coss.com's shared numbers are being rolled out and will send when you haven't chosen a number. Sandbox environments and email codes need no number.
   - question: How long does it take to start sending live codes?
-    answer: Live SMS needs a paid plan, and the shared numbers need no registration from you. If you send from your own number instead, US 10DLC registration goes through carrier review and usually takes a few days. You can build and test in a sandbox environment at any point.
+    answer: Live SMS needs a paid plan and a registered number. US 10DLC registration goes through carrier review and usually takes a few days. You can build and test in a sandbox environment at any point.
   - question: How does coss.com stop SMS pumping?
     answer: Verify's fraud guard checks every new verification before a code is sent. It blocks premium-rate and non-mobile numbers, Tor exit nodes, entries on your Risk block list, bursts from one IP address, user or number prefix, and prefixes or countries whose codes are rarely entered. A blocked verification is neither sent nor billed.
   - question: Can I find out whether a number is VoIP before sending a code?
@@ -31,7 +31,7 @@ faq:
 
 Phone verification proves someone has a number, at sign-up or before a sensitive action. It also attracts SMS pumping: scripts request codes for numbers whose owners earn money from every text, and you pay for messages nobody reads. Building it yourself means generating and hashing codes, counting attempts, handling resends and expiry, and working out who's abusing your form.
 
-coss.com covers this with three products on one key: [Verify](/products/verify) for the codes and the fraud guard, [SMS](/products/sms) if you'd rather send from your own number, and [Risk](/products/risk) for lists of who to allow or block and for checking the line itself.
+coss.com covers this with three products on one key: [Verify](/products/verify) for the codes and the fraud guard, [SMS](/products/sms) for the registered number that sends them, and [Risk](/products/risk) for lists of who to allow or block and for checking the line itself.
 
 </Section>
 
@@ -66,11 +66,11 @@ Read more in the [fraud guard](/docs/verify/fraud-guard), [phone checks](/docs/r
 
 </Section>
 
-<Section title="Sending live codes" lede="Codes go from coss.com's shared numbers by default, so there's no number to buy and nothing to register first.">
+<Section title="Sending live codes" lede="Live codes go from one of your own registered numbers while coss.com's shared numbers roll out.">
 
 1. **Choose a paid plan.** Live SMS is available on paid plans.
-2. **Start sending.** coss.com registered its shared numbers with carriers for one-time codes, and each destination always gets its codes from the same number. The messages are billed to you by country once a carrier takes them. See [SMS codes](/docs/verify/sms).
-3. **Use your own number if you'd rather.** Choose one in Verify's settings when your users should see your number, or for countries the shared numbers don't reach. It must be registered and approved, and its messages appear under SMS in your environment and are billed as SMS. See [numbers and registration](/docs/sms/senders).
+2. **Register a number.** Buy one and register it with the carriers. It must be approved before it can send. See [numbers and registration](/docs/sms/senders).
+3. **Choose it in Verify's settings.** Its messages appear under SMS in your environment and are billed as SMS. Without a number, a live code fails with `shared_sender_unavailable`. See [SMS codes](/docs/verify/sms).
 
 You can see which of your own numbers are ready to send:
 
@@ -143,7 +143,7 @@ Pass an email address instead of a number and the code goes by [email](/docs/ver
 <Spec label="Codes per verification">5, the first and its resends</Spec>
 <Spec label="Codes per destination">5 every 10 minutes</Spec>
 <Spec label="Default SMS countries">US and Canada</Spec>
-<Spec label="Live SMS sender">coss.com's shared numbers, or your own registered number</Spec>
+<Spec label="Live SMS sender">Your own registered number; coss.com's shared numbers as they roll out</Spec>
 <Spec label="Phone checks per organization">5 per second, bursts of 10, 1,000 per day</Spec>
 <Spec label="Verifications kept"><RetentionPeriod of="verifications" /></Spec>
 <Spec label="Sandbox codes">always zeros</Spec>

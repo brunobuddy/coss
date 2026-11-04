@@ -121,4 +121,6 @@ One-time codes as a service: `start` sends a code to a phone number (SMS) or an 
   send) and settings (`verify:update`, audited `verify_settings.updated`; `email_from` checked
   with `authorizeLiveSender` in live environments). Members read.
 - **Docs**: `apps/site/content/docs/verify/` (overview, SMS, email, fraud guard with every reason,
-  testing). The reasons table there mirrors `VERIFICATION_REASONS`: change them together.
+  testing). The reasons table there mirrors `VERIFICATION_REASONS`: change them together. They say
+  shared numbers are rolling out, and so do `content/products/verify.mdx` and
+  `content/solutions/phone-verification.mdx`: rewrite them when `VERIFY_SMS_*` is set in production.

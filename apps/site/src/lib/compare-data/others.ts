@@ -179,7 +179,7 @@ const TWILIO_VERIFY: Competitor = {
     },
     {
       label: "SMS channel",
-      coss: "From coss.com's shared numbers, billed at the country's SMS price; or from your own number, billed as any SMS",
+      coss: "From your own number, billed as any SMS; or, as they roll out, coss.com's shared numbers, billed at the country's SMS price",
       them: "Plus the channel fee: $0.0083 per SMS in the US",
     },
     {
@@ -231,7 +231,7 @@ const TWILIO_VERIFY: Competitor = {
     },
     {
       title: "You want your own message text",
-      body: "Twilio Verify lets you bring your own one-time code. coss.com makes the code itself, and its messages are fixed text, which is what carriers approve the shared numbers for.",
+      body: "Twilio Verify lets you bring your own one-time code. coss.com makes the code itself, and its messages are fixed text.",
     },
   ],
   chooseCoss: [

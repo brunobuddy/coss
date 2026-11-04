@@ -3,5 +3,5 @@
   "description": "Email addresses for AI agents: conversations kept as threads, replies from the same address.",
   "root": true,
   "icon": "Inbox",
-  "pages": ["index", "threads"]
+  "pages": ["index", "threads", "testing"]
 }

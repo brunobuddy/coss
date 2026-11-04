@@ -17,7 +17,9 @@ where PHI can go and who at coss.com can reach it, and shows the customer what t
 - **The catalog** (`./catalog`, client-safe, no imports): `HIPAA_CONTROLS`, `HIPAA_VENDORS`,
   `HIPAA_RESPONSIBILITIES`. Enforcement and `/<org>/settings/compliance` both read it. When a vendor
   signs a BAA, change its `status` here (`hipaaVendorCovered`). Never write "HIPAA compliant": the
-  controls support the customer's compliance, which also depends on how they use coss.com.
+  controls support the customer's compliance, which also depends on how they use coss.com. The
+  public docs (`apps/site/content/docs/(platform)/hipaa.mdx`) restate the catalog and the refusals
+  by hand: change them together.
 - **Reading it**: packages call `isHipaaMode`/`hipaaModeApplies` themselves. Never inject them: a
   missing wire would leave a safeguard off, and a database failure must fail the operation rather
   than skip the check. `authenticateApiKey` and `getMembership` carry `hipaaMode`, so requests add
