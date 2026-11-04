@@ -776,8 +776,10 @@ export function startJobs(deps: WorkerDeps): Loop[] {
           name: "scheduling-calendar-writes",
           intervalMs: 2000,
           run: async () =>
-            (await runDueCalendarWrites(calendars, { limit: SCHEDULING_BATCH })) ===
-            SCHEDULING_BATCH,
+            (await runDueCalendarWrites(
+              { ...calendars, dataKeys: scheduling.dataKeys },
+              { limit: SCHEDULING_BATCH },
+            )) === SCHEDULING_BATCH,
         }),
         start({
           // Until a new calendar has its channel, changes to it wait for the 5 minute poll.

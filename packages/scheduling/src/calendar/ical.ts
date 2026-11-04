@@ -200,6 +200,7 @@ export const escapeIcsText = (value: string): string =>
 export function buildIcs(input: {
   uid: string;
   title: string;
+  description?: string | null;
   startMs: number;
   endMs: number;
   stampMs: number;
@@ -224,6 +225,7 @@ export function buildIcs(input: {
     `DTEND:${ICS_DATE(input.endMs)}`,
     `SEQUENCE:${input.sequence ?? 0}`,
     `SUMMARY:${escapeIcsText(input.title)}`,
+    ...(input.description ? [`DESCRIPTION:${escapeIcsText(input.description)}`] : []),
     `STATUS:${input.method === "CANCEL" ? "CANCELLED" : "CONFIRMED"}`,
     "TRANSP:OPAQUE",
     ...(input.private ? ["CLASS:PRIVATE"] : []),
