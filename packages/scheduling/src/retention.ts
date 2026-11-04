@@ -5,7 +5,7 @@
  */
 import { db, schema } from "@coss/db";
 import { RETENTION_DAYS } from "@coss/retention";
-import { and, eq, inArray, isNull, lt, type SQL, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lt, or, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import type { SchedulingEnvironment } from "./types.ts";
 
@@ -54,6 +54,24 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
       ),
     )
     .limit(opts.limit ?? 1000);
+  const sessionsDue = db
+    .select({ id: schedulingGroupSession.id })
+    .from(schedulingGroupSession)
+    .where(
+      and(
+        lt(schedulingGroupSession.endAt, cutoff),
+        or(
+          isNotNull(schedulingGroupSession.location),
+          isNotNull(schedulingGroupSession.meetingUrl),
+        ),
+        scoped(schedulingGroupSession.organizationId, opts),
+      ),
+    )
+    .limit(opts.limit ?? 1000);
+  await db
+    .update(schedulingGroupSession)
+    .set({ location: null, meetingUrl: null })
+    .where(inArray(schedulingGroupSession.id, sessionsDue));
   if (due.length === 0) return 0;
   return db.transaction(async (tx) => {
     // Under the lock: a booking moved into the future meanwhile keeps its attendees.

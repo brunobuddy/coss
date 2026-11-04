@@ -9,6 +9,7 @@ import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
+import { confirmedSeats, locationOfSession } from "../group-sessions.ts";
 import { carryReminders } from "../notifications.ts";
 import { CalendarError, type CalendarEventWrite } from "./client.ts";
 import { type CalendarDeps, clientFor, markNeedsReauth } from "./connections.ts";
@@ -20,10 +21,12 @@ const {
   schedulingCalendar,
   schedulingCalendarConnection,
   schedulingCalendarEvent,
+  schedulingGroupSession,
 } = schema;
 
 type LedgerRow = typeof schedulingCalendarEvent.$inferSelect;
 type BookingRow = typeof schedulingBooking.$inferSelect;
+type SessionRow = typeof schedulingGroupSession.$inferSelect;
 
 const LEASE_MS = 2 * 60_000;
 const MAX_ATTEMPTS = 8;
@@ -72,16 +75,18 @@ async function claimDue(now: Date, opts: Scan): Promise<LedgerRow[]> {
   });
 }
 
+// A session's event can go and come back, as a new row, while a booking's key lasts for good.
 const eventKey = (row: LedgerRow) =>
-  `${row.bookingId}-${row.calendarId}`.replace(/[^a-z0-9_-]/gi, "");
+  (row.groupSessionId ? row.id : `${row.bookingId}-${row.calendarId}`).replace(/[^a-z0-9_-]/gi, "");
 
-function conferenceOf(booking: BookingRow): CalendarEventWrite["conference"] {
-  const type = booking.location?.type;
+type Location = BookingRow["location"];
+
+function conferenceOf(location: Location): CalendarEventWrite["conference"] {
+  const type = location?.type;
   return type === "google_meet" || type === "microsoft_teams" || type === "zoom" ? type : null;
 }
 
-function locationText(booking: BookingRow): string | null {
-  const location = booking.location;
+function locationText(location: Location): string | null {
   if (!location) return null;
   if (location.type === "link" || location.type === "zoom") return location.url;
   if (location.type === "phone") return location.number;
@@ -152,6 +157,53 @@ async function setMeetingLink(booking: BookingRow, url: string, now: Date): Prom
   });
 }
 
+/** Every confirmed seat gets the session's link, unless they've all left since the write. */
+async function setSessionMeetingLink(session: SessionRow, url: string, now: Date): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [locked] = await tx
+      .select()
+      .from(schedulingGroupSession)
+      .where(
+        and(
+          eq(schedulingGroupSession.id, session.id),
+          eq(schedulingGroupSession.organizationId, session.organizationId),
+        ),
+      )
+      .for("update");
+    if (!locked || locked.meetingUrl === url || locked.location?.type === "link") return;
+    const seats = await confirmedSeats(tx, locked);
+    if (seats.length === 0) return;
+    await tx
+      .update(schedulingGroupSession)
+      .set({ meetingUrl: url })
+      .where(
+        and(
+          eq(schedulingGroupSession.id, locked.id),
+          eq(schedulingGroupSession.organizationId, locked.organizationId),
+        ),
+      );
+    for (const seat of seats) {
+      await announce(tx, seat, "scheduling.booking.location_ready", "Meeting link ready", now);
+    }
+  });
+}
+
+/** Who a ledger row's news is about: its booking, or each confirmed seat of its session. */
+async function bookingsOfRow(tx: Executor, row: LedgerRow): Promise<BookingRow[]> {
+  if (row.groupSessionId) {
+    return confirmedSeats(tx, { id: row.groupSessionId, organizationId: row.organizationId });
+  }
+  return tx
+    .select()
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.id, row.bookingId as string),
+        eq(schedulingBooking.organizationId, row.organizationId),
+      ),
+    );
+}
+
 type WritableEvent =
   | "scheduling.booking.location_ready"
   | "scheduling.booking.calendar_write_failed"
@@ -217,16 +269,30 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
       eq(schedulingCalendarConnection.id, schedulingCalendar.connectionId),
     )
     .where(eq(schedulingCalendar.id, row.calendarId));
-  const [booking] = await db
-    .select()
-    .from(schedulingBooking)
-    .where(
-      and(
-        eq(schedulingBooking.id, row.bookingId),
-        eq(schedulingBooking.organizationId, row.organizationId),
-      ),
-    );
-  if (!target || !booking) return;
+  const [booking] = row.bookingId
+    ? await db
+        .select()
+        .from(schedulingBooking)
+        .where(
+          and(
+            eq(schedulingBooking.id, row.bookingId),
+            eq(schedulingBooking.organizationId, row.organizationId),
+          ),
+        )
+    : [];
+  const [session] = row.groupSessionId
+    ? await db
+        .select()
+        .from(schedulingGroupSession)
+        .where(
+          and(
+            eq(schedulingGroupSession.id, row.groupSessionId),
+            eq(schedulingGroupSession.organizationId, row.organizationId),
+          ),
+        )
+    : [];
+  if (!target || !(booking || session)) return;
+  const location = session ? locationOfSession(session) : (booking?.location ?? null);
   const { calendar, connection } = target;
   // Waits for the host to reconnect, without using up attempts.
   if (connection.status !== "active") {
@@ -250,8 +316,8 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
       title: NEUTRAL_TITLE,
       startMs: row.desiredStart.getTime(),
       endMs: row.desiredEnd.getTime(),
-      conference: conferenceOf(booking),
-      location: locationText(booking),
+      conference: conferenceOf(location),
+      location: locationText(location),
     };
     const written = row.providerEventId
       ? await client.updateEvent(calendar.externalId, row.providerEventId, event)
@@ -263,7 +329,10 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
       lastErrorCode: null,
       externalState: "in_sync",
     });
-    if (written.meetingUrl) await setMeetingLink(booking, written.meetingUrl, now);
+    if (written.meetingUrl) {
+      if (session) await setSessionMeetingLink(session, written.meetingUrl, now);
+      else if (booking) await setMeetingLink(booking, written.meetingUrl, now);
+    }
   } catch (error) {
     if (!(error instanceof CalendarError)) {
       await finish(row, { nextAttemptAt: new Date(now.getTime() + backoffMs(row.attempts)) });
@@ -291,13 +360,15 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
             leaseUntil: null,
           })
           .where(eq(schedulingCalendarEvent.id, row.id));
-        await announce(
-          tx,
-          booking,
-          "scheduling.booking.calendar_write_failed",
-          "This booking couldn't be written to the host's calendar",
-          now,
-        );
+        for (const about of await bookingsOfRow(tx, row)) {
+          await announce(
+            tx,
+            about,
+            "scheduling.booking.calendar_write_failed",
+            "This booking couldn't be written to the host's calendar",
+            now,
+          );
+        }
       });
       return;
     }
@@ -376,16 +447,12 @@ export async function checkHostEditedEvents(deps: CalendarDeps, opts: Scan = {})
           .where(eq(schedulingCalendarEvent.id, row.id));
         continue;
       }
-      const [booking] = await db
-        .select()
-        .from(schedulingBooking)
-        .where(eq(schedulingBooking.id, row.bookingId));
       await db.transaction(async (tx) => {
         await tx
           .update(schedulingCalendarEvent)
           .set({ externalState: moved ? "moved" : "deleted" })
           .where(eq(schedulingCalendarEvent.id, row.id));
-        if (booking) {
+        for (const booking of await bookingsOfRow(tx, row)) {
           await tx
             .update(schedulingBooking)
             .set({ externalConflictAt: now })

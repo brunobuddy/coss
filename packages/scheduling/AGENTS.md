@@ -23,6 +23,13 @@ it questions it would refuse.
 - Anything that retries in a savepoint goes through `inSavepoint` (`claims.ts`), never drizzle's nested `transaction`:
   that one rolls back without releasing, so each failed attempt nests deeper and keeps a transaction id lock until
   commit. On a 500-host pool that ran Postgres out of lock table (`53200`), which is shared by the whole server.
+- A group session has one claim, and every change to it happens under the session's lock, conversions included:
+  firm while a seat is confirmed, otherwise as long as the latest live reservation, gone with the last live seat. A
+  conversion counts the other seats first, because an expired hold's seat may have been taken. An expired approval
+  gives up its seat like an expired hold.
+- `deleteHost` refuses while a `held` or `pending_approval` booking has that host, expired or not. The cascade takes the
+  host's `scheduling_booking_host` and claim rows together, so a collective booking can't tell afterwards that it lost
+  one: a conversion can only catch a booking with no hosts at all.
 
 An audit in `test/bookings.test.ts` checks every live booking holds exactly one claim per host.
 
@@ -58,6 +65,12 @@ embeds the booker. Local dates (overrides, limits) never pass through `Date`.
 - `scheduling_calendar_event` is desired state: the worker converges on the latest, so create, move and cancel can't
   reorder, and a key makes a retry after a lost answer harmless (Google's client-chosen `id`, Graph's `transactionId`,
   CalDAV's `If-None-Match`). iCalUID doesn't do this on Google.
+- A ledger row belongs to a booking or a group session, never a seat: a session has one event, from its first confirmed
+  seat to its last, and news about it (`location_ready`, `external_conflict`, `calendar_write_failed`) goes to each
+  confirmed seat. `scheduling_group_session.location` is where a session meets and `meeting_url` the link a provider
+  made, gone with the event; a seat's own `location` is never read (`withSessionLocation`, `group-sessions.ts`), and
+  since others see it, a booker's browser or an attendee's own number can't fill it in. A session's event that was
+  deleted comes back as a new row, because its key can't be used twice.
 - `freeBusy` carries no identity, so our own events are subtracted at read time. Limit, documented for customers: a
   foreign event wholly inside a booking's written event can't be detected.
 - Host-supplied CalDAV URLs go through `pinnedDavTransport` (public addresses only, pinned against rebinding, redirects

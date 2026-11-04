@@ -15,7 +15,7 @@ import type {
 import { refuseLinks, type SetupScreening, screenSetup } from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
-const { schedulingHost, schedulingClaim } = schema;
+const { schedulingBooking, schedulingBookingHost, schedulingClaim, schedulingHost } = schema;
 
 export type HostRow = typeof schedulingHost.$inferSelect;
 type Scope = Pick<SchedulingEnvironment, "organizationId" | "environmentId">;
@@ -191,10 +191,23 @@ export async function deleteHost(scope: Scope, ref: string): Promise<{ id: strin
         ),
       )
       .limit(1);
-    if (live) {
+    // An expired hold can still convert, and the cascade would leave nothing to say it lost a host.
+    const [unfinished] = await tx
+      .select({ id: schedulingBookingHost.bookingId })
+      .from(schedulingBookingHost)
+      .innerJoin(schedulingBooking, eq(schedulingBooking.id, schedulingBookingHost.bookingId))
+      .where(
+        and(
+          eq(schedulingBookingHost.hostId, host.id),
+          eq(schedulingBookingHost.organizationId, host.organizationId),
+          inArray(schedulingBooking.status, ["held", "pending_approval"]),
+        ),
+      )
+      .limit(1);
+    if (live || unfinished) {
       throw new SchedulingError(
         "host_has_live_bookings",
-        "This host has upcoming bookings. Cancel them, or set the host's status to disabled.",
+        "This host has upcoming bookings or holds. Cancel them, or set the host's status to disabled.",
       );
     }
     await tx

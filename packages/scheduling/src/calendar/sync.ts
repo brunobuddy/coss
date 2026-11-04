@@ -167,12 +167,19 @@ export async function flagExternalConflicts(
 ): Promise<number> {
   const claims = await db
     .select({
-      bookingId: schedulingClaim.bookingId,
+      bookingId: schedulingBooking.id,
       occupiedStart: schedulingClaim.occupiedStart,
       occupiedEnd: schedulingClaim.occupiedEnd,
     })
     .from(schedulingClaim)
-    .innerJoin(schedulingBooking, eq(schedulingBooking.id, schedulingClaim.bookingId))
+    // A session's claim stands for each of its seats, and each has a flag of its own.
+    .innerJoin(
+      schedulingBooking,
+      or(
+        eq(schedulingBooking.id, schedulingClaim.bookingId),
+        eq(schedulingBooking.groupSessionId, schedulingClaim.groupSessionId),
+      ),
+    )
     .where(
       and(
         eq(schedulingClaim.hostId, hostId),
@@ -234,7 +241,6 @@ export async function flagExternalConflicts(
   ).filter((interval) => !inFlight.has(`${interval.startMs}:${interval.endMs}`));
   let flagged = 0;
   for (const claim of claims) {
-    if (!claim.bookingId) continue;
     const start = claim.occupiedStart.getTime();
     const end = claim.occupiedEnd.getTime();
     if (!external.some((interval) => interval.startMs < end && interval.endMs > start)) continue;
@@ -244,7 +250,7 @@ export async function flagExternalConflicts(
         .set({ externalConflictAt: now })
         .where(
           and(
-            eq(schedulingBooking.id, claim.bookingId as string),
+            eq(schedulingBooking.id, claim.bookingId),
             eq(schedulingBooking.organizationId, organizationId),
             isNull(schedulingBooking.externalConflictAt),
           ),

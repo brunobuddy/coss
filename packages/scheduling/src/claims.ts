@@ -5,7 +5,7 @@
  */
 import { type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, newId } from "@coss/db/id";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 import type { Interval } from "./engine/intervals.ts";
 import { localDateOf, localWeekOf } from "./engine/time.ts";
 
@@ -92,6 +92,50 @@ export async function releaseBookingClaims(
         eq(schedulingClaim.organizationId, booking.organizationId),
       ),
     );
+}
+
+type SessionClaim = { organizationId: string; groupSessionId: string };
+
+const ofSession = (where: SessionClaim) =>
+  and(
+    eq(schedulingClaim.groupSessionId, where.groupSessionId),
+    eq(schedulingClaim.organizationId, where.organizationId),
+  );
+
+export async function releaseSessionClaim(tx: Executor, where: SessionClaim): Promise<void> {
+  await tx.delete(schedulingClaim).where(ofSession(where));
+}
+
+/** Lasts at least `ttlSeconds` more; a firm claim stays firm. Expired: as `makeClaimPermanent`. */
+export async function extendSessionClaim(
+  tx: Executor,
+  where: SessionClaim,
+  ttlSeconds: number,
+): Promise<Date | null> {
+  const [row] = await tx
+    .update(schedulingClaim)
+    .set({
+      liveFrom: sql`case when ${schedulingClaim.liveUntil} <= clock_timestamp() then clock_timestamp() else ${schedulingClaim.liveFrom} end`,
+      liveUntil: sql`greatest(${schedulingClaim.liveUntil}, clock_timestamp() + (${ttlSeconds}::int * interval '1 second'))`,
+    })
+    .where(and(ofSession(where), isNotNull(schedulingClaim.liveUntil)))
+    .returning({ liveUntil: schedulingClaim.liveUntil });
+  return row?.liveUntil ?? null;
+}
+
+/** Ends a session's claim by `until` at the latest, when its seats no longer need it longer. */
+export async function limitSessionClaim(
+  tx: Executor,
+  where: SessionClaim,
+  until: Date,
+): Promise<void> {
+  const iso = until.toISOString();
+  await tx
+    .update(schedulingClaim)
+    .set({
+      liveUntil: sql`least(coalesce(${schedulingClaim.liveUntil}, ${iso}::timestamptz), ${iso}::timestamptz)`,
+    })
+    .where(ofSession(where));
 }
 
 /** Drizzle's nested `transaction` never releases after a rollback, so retries nest and keep their locks. */

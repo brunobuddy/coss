@@ -165,7 +165,9 @@ export async function loadHostInputs(
           // would compare the wrong `id`.
           seats: sql<number>`(select count(*)::int from scheduling_booking b
             where b.group_session_id = scheduling_group_session.id
-              and (b.status in ('confirmed', 'pending_approval')
+              and (b.status = 'confirmed'
+                or (b.status = 'pending_approval'
+                  and (b.approval_expires_at is null or b.approval_expires_at > clock_timestamp()))
                 or (b.status = 'held' and b.hold_expires_at > clock_timestamp())))`,
         })
         .from(schedulingGroupSession)

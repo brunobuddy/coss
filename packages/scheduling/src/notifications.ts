@@ -13,6 +13,7 @@ import { and, asc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { decryptContact } from "./attendees.ts";
 import { accentColors } from "./branding.ts";
 import { buildIcs } from "./calendar/ical.ts";
+import { withSessionLocation } from "./group-sessions.ts";
 import { getLogoRow, LOGO_CONTENT_ID, type SchedulingLogoRow } from "./logo.ts";
 import { createHostInvitationSession, createManageSession } from "./sessions.ts";
 import type { SchedulingDeps } from "./types.ts";
@@ -654,7 +655,7 @@ export async function runDueSchedulingNotifications(
         await finish(row, await sendHostNews(row, deps, now), now);
         continue;
       }
-      const [booking] = await db
+      const [found] = await db
         .select()
         .from(schedulingBooking)
         .where(
@@ -663,10 +664,11 @@ export async function runDueSchedulingNotifications(
             eq(schedulingBooking.organizationId, row.organizationId),
           ),
         );
-      if (!booking || isStale(row, booking)) {
+      if (!found || isStale(row, found)) {
         await finish(row, "stale", now);
         continue;
       }
+      const booking = await withSessionLocation(db, found);
       // A Meet, Teams or Zoom link appears only after the write: a confirmation gives it a moment,
       // then goes without. The manage page always shows the link once it exists.
       const waitingForLink =
