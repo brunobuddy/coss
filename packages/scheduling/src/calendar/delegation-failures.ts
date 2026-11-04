@@ -257,33 +257,37 @@ export async function settleRefusal(
   mailbox: string,
   error: CalendarError,
   deps: CalendarDeps,
-): Promise<"mailbox" | "stop"> {
+): Promise<{ settled: "stop" } | { settled: "mailbox"; credentials: string }> {
   const scope = delegationFailureScope(error);
   // A mailbox with no calendar has answered, and asking again would get the same answer.
-  if (error.code === "no_primary") return "mailbox";
+  if (error.code === "no_primary") {
+    return { settled: "mailbox", credentials: delegation.encryptedCredentials };
+  }
   // Any refusal may be an old one, of credentials since replaced or a mailbox since restored, from a
   // request that was already on its way, so nothing below acts on it without asking again. Taking
   // every host out needs the current credentials refused, and the flip is conditional on them still
   // being what's stored.
   const [current] = await db.select().from(schedulingCalendarDelegation).where(rowOf(delegation));
-  if (current?.status !== "active") return "stop";
+  if (current?.status !== "active") return { settled: "stop" };
   if (scope !== "mailbox") {
     const { result } = await probeDelegation(current, deps, { except: mailbox });
     if (result === "refused") {
       await markDelegationFailing(current, error.code, deps, {
         ifCredentials: current.encryptedCredentials,
       });
-      return "stop";
+      return { settled: "stop" };
     }
-    if (result !== "ok" || scope !== "ambiguous") return "stop";
+    if (result !== "ok" || scope !== "ambiguous") return { settled: "stop" };
   }
   // Everyone else is fine, but the answer may be that same old one: ask about this mailbox too.
   try {
     await checkMailbox(current, mailbox, deps);
-    return "stop";
+    return { settled: "stop" };
   } catch (recheck) {
     if (!(recheck instanceof CalendarError)) throw recheck;
-    return recheck.kind === "auth" ? "mailbox" : "stop";
+    return recheck.kind === "auth"
+      ? { settled: "mailbox", credentials: current.encryptedCredentials }
+      : { settled: "stop" };
   }
 }
 
@@ -302,9 +306,9 @@ export async function handleAccessLost(
     .from(schedulingCalendarDelegation)
     .where(rowOf({ id: connection.delegationId, organizationId: connection.organizationId }));
   if (delegation?.status !== "active") return;
-  const settled = await settleRefusal(delegation, connection.accountId, error, deps);
-  if (settled === "mailbox") {
-    await markNeedsReauth(connection, error.code, deps);
+  const outcome = await settleRefusal(delegation, connection.accountId, error, deps);
+  if (outcome.settled === "mailbox") {
+    await markNeedsReauth(connection, error.code, deps, { ifCredentials: outcome.credentials });
     return;
   }
   // Whatever's wrong isn't this mailbox, so the token that was refused shouldn't be tried again.

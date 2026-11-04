@@ -1149,6 +1149,52 @@ describe("losing access", () => {
     expect(await listConnections(env, ana.id)).toMatchObject([{ status: "needs_reauth" }]);
   });
 
+  test("credentials replaced during the recheck keep a mailbox from being marked", async () => {
+    const { env, api, deps, ana, delegation } = await connected();
+    // Holds only this mailbox's token answer: the recheck, after the others have said they're fine.
+    let arrive = () => {};
+    let release = () => {};
+    const arrived = new Promise<void>((resolve) => {
+      arrive = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let held = false;
+    const holding = {
+      ...deps,
+      fetcher: async (url: string, init?: RequestInit) => {
+        const response = await api.fetch(url, init);
+        const claims = new URLSearchParams(String(init?.body ?? ""))
+          .get("assertion")
+          ?.split(".")[1];
+        const sub = claims && JSON.parse(Buffer.from(claims, "base64url").toString()).sub;
+        if (!held && sub === `ana@${DOMAIN}`) {
+          held = true;
+          arrive();
+          await gate;
+        }
+        return response;
+      },
+    };
+    api.failNext = {
+      path: /freeBusy$/,
+      status: 403,
+      body: { error: { errors: [{ reason: "insufficientPermissions" }] } },
+    };
+    api.goneMailboxes.add(`ana@${DOMAIN}`);
+    await db
+      .update(schema.schedulingCalendar)
+      .set({ nextSyncAt: new Date(0) })
+      .where(eq(schema.schedulingCalendar.hostId, ana.id));
+    const syncing = runDueCalendarSyncs(holding, { scope: scope(env) });
+    await arrived;
+    await updateCalendarDelegation(env, delegation.id, { service_account_key: account.key }, deps);
+    release();
+    await syncing;
+    expect(await listConnections(env, ana.id)).toMatchObject([{ status: "active" }]);
+  });
+
   test("a refusal that's since gone away leaves a healthy mailbox alone", async () => {
     const { env, api, deps, ana, ben, delegation } = await connected();
     api.failNext = {

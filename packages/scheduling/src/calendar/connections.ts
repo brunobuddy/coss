@@ -639,9 +639,25 @@ export async function markNeedsReauth(
   connection: ConnectionRow,
   code: string,
   deps: Pick<CalendarDeps, "now">,
+  opts: { ifCredentials?: string } = {},
 ): Promise<void> {
   const now = deps.now?.() ?? new Date();
   await db.transaction(async (tx) => {
+    // The delegation before the connection, as a bulk flip locks them. Credentials replaced since the
+    // mailbox was asked about may well reach it, and whoever replaced them has already retried it.
+    if (opts.ifCredentials && connection.delegationId) {
+      const [delegation] = await tx
+        .select({ stored: schedulingCalendarDelegation.encryptedCredentials })
+        .from(schedulingCalendarDelegation)
+        .where(
+          and(
+            eq(schedulingCalendarDelegation.id, connection.delegationId),
+            eq(schedulingCalendarDelegation.organizationId, connection.organizationId),
+          ),
+        )
+        .for("share");
+      if (delegation?.stored !== opts.ifCredentials) return;
+    }
     const [current] = await tx
       .select({ delegationId: schedulingCalendarConnection.delegationId })
       .from(schedulingCalendarConnection)

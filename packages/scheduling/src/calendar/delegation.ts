@@ -529,6 +529,7 @@ async function hostStillWants(
   tx: Executor,
   delegation: DelegationRow,
   host: Host,
+  opts: { ifCredentials?: string | undefined } = {},
 ): Promise<boolean> {
   const [current] = await tx
     .select({ calendarAccount: schedulingHost.calendarAccount, email: schedulingHost.email })
@@ -548,6 +549,7 @@ async function hostStillWants(
     .select({
       status: schedulingCalendarDelegation.status,
       matchHostEmail: schedulingCalendarDelegation.matchHostEmail,
+      credentials: schedulingCalendarDelegation.encryptedCredentials,
     })
     .from(schedulingCalendarDelegation)
     .where(
@@ -558,6 +560,7 @@ async function hostStillWants(
     )
     .for("share");
   if (state?.status !== "active") return false;
+  if (opts.ifCredentials && state.credentials !== opts.ifCredentials) return false;
   if (!host.existing) {
     const wanted = current.calendarAccount ?? (state.matchHostEmail ? current.email : null);
     return wanted?.toLowerCase() === host.mailbox;
@@ -740,6 +743,7 @@ async function recordMailboxFailure(
   host: Host,
   code: string,
   now: Date,
+  credentials: string | undefined,
 ): Promise<void> {
   if (host.existing) {
     await db
@@ -749,7 +753,7 @@ async function recordMailboxFailure(
     return;
   }
   await db.transaction(async (tx) => {
-    if (!(await hostStillWants(tx, delegation, host))) return;
+    if (!(await hostStillWants(tx, delegation, host, { ifCredentials: credentials }))) return;
     const [row] = await tx
       .insert(schedulingCalendarConnection)
       .values({
@@ -813,15 +817,15 @@ async function connectHosts(delegation: DelegationRow, deps: CalendarDeps): Prom
         const retryMs = error.retryAfterSeconds ? error.retryAfterSeconds * 1000 : BACKOFF_MS;
         return new Date(started + retryMs);
       }
-      const settled =
+      const outcome =
         error.kind === "auth"
           ? await settleRefusal(delegation, host.mailbox, error, deps)
-          : "mailbox";
-      if (settled === "stop") {
+          : ({ settled: "mailbox", credentials: undefined } as const);
+      if (outcome.settled === "stop") {
         if (reached) await moveCursor(reached);
         return new Date(started + BACKOFF_MS);
       }
-      await recordMailboxFailure(delegation, host, error.code, now);
+      await recordMailboxFailure(delegation, host, error.code, now, outcome.credentials);
     }
   }
   // A full batch means more behind it. Otherwise this pass is done, and the next starts over.

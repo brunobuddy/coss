@@ -149,7 +149,8 @@ once, and every host on it gets their calendar with no consent screen.
   before it. `markNeedsReauth` re-reads the row, so a late failure of the old tokens does nothing.
 - **Losing access**: every `auth` failure goes through `handleAccessLost`. Any refusal may be old, from a request already on its way,
   so nothing acts on one without asking again: before anything flips the credentials stored now are tried, and the flip
-  is conditional on them still being stored; before a mailbox is marked, it's asked again too.
+  is conditional on them still being stored; before a mailbox is marked, it's asked again too, and the same goes for
+  that mark.
   Refused credentials flip every connection to `delegation_failing` in one update (compare-and-set on the delegation: one webhook, log line and owner email), so
   every `status = 'active'` filter works with no join in the availability path, and one update brings them back. On
   the wire that status is `needs_reauth`. One mailbox gone only marks that connection, with no email to the host, who
