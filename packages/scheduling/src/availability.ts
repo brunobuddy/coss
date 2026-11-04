@@ -3,7 +3,7 @@
  * they see the same world; inside a booking's transaction it also sees the bucket locks' effects.
  */
 import { db, type Executor, schema } from "@coss/db";
-import { and, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { notZoomMeeting } from "./calendar/zoom.ts";
 import { buildAvailability, overrideDateRange } from "./engine/availability.ts";
 import { type CalendarFreshness, calendarVerdict } from "./engine/calendar-verdict.ts";
@@ -96,6 +96,8 @@ export async function loadHostInputs(
     /** Group events: this event type's sessions are joinable rather than blocking. */
     groupSessions?: boolean;
     calendarFailureMode: "hide" | "last_known";
+    /** Moving a booking: its own claims don't count, since the move gives them up first. */
+    exceptBookingId?: string | undefined;
   },
 ): Promise<Map<string, LoadedHost>> {
   const { scope, hosts, fromMs, toMs, nowMs } = input;
@@ -152,6 +154,12 @@ export async function loadHostInputs(
           isNull(schedulingClaim.liveUntil),
           sql`${schedulingClaim.liveUntil} > clock_timestamp()`,
         ),
+        input.exceptBookingId
+          ? or(
+              isNull(schedulingClaim.bookingId),
+              ne(schedulingClaim.bookingId, input.exceptBookingId),
+            )
+          : undefined,
       ),
     );
   const sessions = input.groupSessions
@@ -435,7 +443,7 @@ export async function candidatesOf(
   return { required, members };
 }
 
-function checkWindow(fromMs: number, toMs: number): void {
+export function checkWindow(fromMs: number, toMs: number): void {
   if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || toMs <= fromMs) {
     throw new SchedulingError("invalid_time", "`end` must be a valid time after `start`.");
   }
@@ -504,20 +512,13 @@ export async function listEventTypeSlots(
     hostRefs?: readonly string[] | undefined;
     attributes?: Record<string, string | string[]> | undefined;
     durationMinutes?: number | undefined;
-    /** Moving a booking keeps its length, even if the event type no longer offers that length. */
-    bookedDurationMinutes?: number | undefined;
   },
 ): Promise<SlotResult[]> {
   checkWindow(input.fromMs, input.toMs);
   const eventType = await resolveEventType(db, scope, input.eventTypeRef);
   if (eventType.status !== "active") return [];
-  const duration =
-    input.bookedDurationMinutes ?? input.durationMinutes ?? eventType.durationMinutes;
-  if (
-    input.bookedDurationMinutes === undefined &&
-    duration !== eventType.durationMinutes &&
-    !eventType.durationOptions.includes(duration)
-  ) {
+  const duration = input.durationMinutes ?? eventType.durationMinutes;
+  if (duration !== eventType.durationMinutes && !eventType.durationOptions.includes(duration)) {
     throw new SchedulingError(
       "invalid_time",
       `${duration} minutes isn't one of this event type's durations.`,

@@ -807,6 +807,114 @@ describe("client API", () => {
       expect((await errorOf(moved)).code).toBe("booking_not_changeable");
     });
 
+    describe("the times offered for a move are the ones the move accepts", () => {
+      const offered = async (
+        s: Awaited<ReturnType<typeof setUp>>,
+        token: string,
+        id: string,
+        from = "09:00",
+        to = "13:00",
+      ) =>
+        (
+          (await (
+            await client(
+              s.app,
+              token,
+              "GET",
+              `/host/bookings/${id}/slots?start=${at(from)}&end=${at(to)}`,
+            )
+          ).json()) as { data: { start: string }[] }
+        ).data.map((slot) => slot.start);
+      const move = (s: Awaited<ReturnType<typeof setUp>>, token: string, id: string, to: string) =>
+        client(s.app, token, "POST", `/host/bookings/${id}/reschedule`, { start: to });
+
+      test("a booking doesn't count against a limit it would give back", async () => {
+        const s = await setUp();
+        await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+          limits: [{ period: "day", max: 1 }],
+        });
+        const id = await book(s, at("09:00"));
+        const token = await hostToken(s);
+        expect(await offered(s, token, id)).toContain(at("10:00"));
+        expect((await move(s, token, id, at("10:00"))).status).toBe(200);
+      });
+
+      test("nor does it block a time overlapping its own", async () => {
+        const s = await setUp();
+        await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, { step_minutes: 15 });
+        const id = await book(s, at("09:00"));
+        const token = await hostToken(s);
+        const times = await offered(s, token, id);
+        expect(times).toContain(at("09:15"));
+        expect(times).not.toContain(at("09:00"));
+        expect((await move(s, token, id, at("09:15"))).status).toBe(200);
+      });
+
+      test("its buffers are the ones it was booked with", async () => {
+        const s = await setUp();
+        await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+          buffer_after_minutes: 60,
+        });
+        const id = await book(s, at("09:00"));
+        await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+          buffer_after_minutes: 0,
+        });
+        await book(s, at("12:00"), { attendee: { uid: "p2", time_zone: "UTC" } });
+        const token = await hostToken(s);
+        const times = await offered(s, token, id);
+        expect(times).toContain(at("10:30"));
+        expect(times).not.toContain(at("11:00"));
+        expect((await move(s, token, id, at("11:00"))).status).toBe(422);
+        expect((await move(s, token, id, at("10:30"))).status).toBe(200);
+      });
+
+      test("a required host added since doesn't hold it back", async () => {
+        const s = await setUp();
+        const pool = (await (
+          await call(s.app, s.key, "POST", "/event_types", {
+            title: "Pool",
+            kind: "pool",
+            duration_minutes: 30,
+            hosts: [{ host: s.host }],
+          })
+        ).json()) as { id: string };
+        const created = (await (
+          await call(s.app, s.key, "POST", "/bookings", booking(pool.id, at("09:00")))
+        ).json()) as { id: string };
+        await call(s.app, s.key, "POST", "/hosts", { uid: "late", name: "Late", time_zone: "UTC" });
+        await call(s.app, s.key, "POST", "/hosts/late/schedules", {
+          rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "16:00", end: "17:00" }],
+        });
+        await call(s.app, s.key, "PATCH", `/event_types/${pool.id}`, {
+          hosts: [{ host: s.host }, { host: "late", role: "required" }],
+        });
+        const token = await hostToken(s);
+        expect(await offered(s, token, created.id)).toContain(at("10:00"));
+        expect((await move(s, token, created.id, at("10:00"))).status).toBe(200);
+      });
+
+      test("a host taken off the event type has nothing to offer, and the move agrees", async () => {
+        const s = await setUp();
+        const id = await book(s, at("09:00"));
+        await call(s.app, s.key, "POST", "/hosts", { uid: "new", name: "New", time_zone: "UTC" });
+        await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+          hosts: [{ host: "new" }],
+        });
+        const token = await hostToken(s);
+        expect(await offered(s, token, id)).toEqual([]);
+        expect((await move(s, token, id, at("10:00"))).status).toBe(422);
+      });
+
+      test("a disabled host has nothing to offer, and the move agrees", async () => {
+        const s = await setUp();
+        const id = await book(s, at("09:00"));
+        const token = await hostToken(s);
+        await call(s.app, s.key, "PATCH", `/hosts/${s.host}`, { status: "disabled" });
+        expect(await offered(s, token, id)).toEqual([]);
+        expect((await move(s, token, id, at("10:00"))).status).toBe(422);
+      });
+    });
+
     test("moving keeps a booking's length after its event type changes", async () => {
       const s = await setUp();
       const id = await book(s, at("09:00"));

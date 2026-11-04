@@ -26,6 +26,7 @@ import {
   listConnections,
   listEventTypeSlots,
   listRecentHostBookings,
+  listRescheduleSlots,
   listSchedules,
   listUpcomingHostBookings,
   logoDataUrl,
@@ -259,37 +260,49 @@ export function createSchedulingClientRoutes(opts: {
     return c.json(base);
   });
 
-  const slotsFor = async (
-    c: Context<ClientEnv>,
-    eventType: string,
-    hostRefs: readonly string[] | undefined,
-    opts: {
-      bookedDurationMinutes?: number;
-      attributes?: Record<string, string | string[]> | undefined;
-    } = {},
-  ) => {
+  const slotWindow = (c: Context<ClientEnv>) => {
     const query = SlotQuery.safeParse({
       start: c.req.query("start"),
       end: c.req.query("end"),
       duration_minutes: c.req.query("duration_minutes"),
     });
     if (!query.success) throw invalidBody("`start` and `end` are required.");
-    const slots = await listEventTypeSlots(c.var.session.env, {
-      eventTypeRef: eventType,
+    return {
       fromMs: instant(query.data.start, "start"),
       toMs: instant(query.data.end, "end"),
       nowMs: (deps.now?.() ?? new Date()).getTime(),
-      hostRefs,
-      attributes: opts.attributes,
-      bookedDurationMinutes: opts.bookedDurationMinutes,
       durationMinutes: query.data.duration_minutes,
-    });
-    // An attendee sees times, never who else could take them.
-    return c.json({
+    };
+  };
+
+  /** An attendee sees times, never who else could take them. */
+  const slotList = (c: Context<ClientEnv>, slots: { startMs: number; endMs: number }[]) =>
+    c.json({
       object: "list" as const,
       data: slots.map((slot) => ({ start: iso(slot.startMs), end: iso(slot.endMs) })),
       has_more: false,
     });
+
+  const slotsFor = async (
+    c: Context<ClientEnv>,
+    eventType: string,
+    hostRefs: readonly string[] | undefined,
+    attributes?: Record<string, string | string[]>,
+  ) =>
+    slotList(
+      c,
+      await listEventTypeSlots(c.var.session.env, {
+        ...slotWindow(c),
+        eventTypeRef: eventType,
+        hostRefs,
+        attributes,
+      }),
+    );
+
+  /** Where this booking could move to: its own hosts, length and buffers. */
+  const rescheduleSlots = async (c: Context<ClientEnv>, id: string) => {
+    const { fromMs, toMs, nowMs } = slotWindow(c);
+    return slotList(c, await listRescheduleSlots(c.var.session.env, id, { fromMs, toMs, nowMs }));
   };
 
   router.get("/slots", async (c) =>
@@ -297,7 +310,7 @@ export function createSchedulingClientRoutes(opts: {
       c,
       eventTypeOf(c),
       c.var.session.session.hostId ? [c.var.session.session.hostId] : undefined,
-      { attributes: sessionAttributes(c.var.session.session, deps) },
+      sessionAttributes(c.var.session.session, deps),
     ),
   );
 
@@ -347,22 +360,12 @@ export function createSchedulingClientRoutes(opts: {
       .map((attendee) => ({ name: attendee.name, time_zone: attendee.time_zone })),
   });
 
-  /** A booking's length, which an edit to its event type never changes. */
-  const lengthOf = (booking: { start: string; end: string }) =>
-    (Date.parse(booking.end) - Date.parse(booking.start)) / 60_000;
-
   router.get("/booking", async (c) => {
     const id = bookingOf(c);
     return c.json(clientBooking(await getBooking(c.var.session.env, id, deps)));
   });
 
-  router.get("/booking/slots", async (c) => {
-    const id = bookingOf(c);
-    const booking = await getBooking(c.var.session.env, id, deps);
-    return slotsFor(c, booking.event_type, booking.hosts, {
-      bookedDurationMinutes: lengthOf(booking),
-    });
-  });
+  router.get("/booking/slots", async (c) => rescheduleSlots(c, bookingOf(c)));
 
   router.post("/booking/reschedule", async (c) => {
     const id = bookingOf(c);
@@ -507,12 +510,10 @@ export function createSchedulingClientRoutes(opts: {
     return booking;
   };
 
-  /** Times this booking could move to: every one of its hosts is free, and its length stays. */
   router.get("/host/bookings/:id/slots", async (c) => {
-    const booking = await hostsOwnBooking(c, hostOf(c), c.req.param("id"));
-    return slotsFor(c, booking.event_type, booking.hosts, {
-      bookedDurationMinutes: lengthOf(booking),
-    });
+    const id = c.req.param("id");
+    await hostsOwnBooking(c, hostOf(c), id);
+    return rescheduleSlots(c, id);
   });
 
   /** Moves it for everyone on it. A host isn't held to the cutoffs attendees are. */
