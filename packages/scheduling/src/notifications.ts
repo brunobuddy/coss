@@ -296,8 +296,18 @@ function locationLine(booking: BookingRow): string | null {
   return null;
 }
 
-function copyKindOf(row: Claimed, rule: ReminderRule | null): CopyKind {
-  return rule ? reminderCopyKind(rule) : (row.kind as CopyKind);
+function copyKindOf(
+  row: Claimed,
+  rule: ReminderRule | null,
+  booking: BookingRow,
+  now: Date,
+): CopyKind {
+  if (!rule) return row.kind as CopyKind;
+  return reminderCopyKind(rule, {
+    nowMs: now.getTime(),
+    startMs: booking.startAt.getTime(),
+    endMs: booking.endAt.getTime(),
+  });
 }
 
 const isEnded = (booking: Pick<BookingRow, "status">) =>
@@ -517,7 +527,7 @@ async function sendBookingEmail(
   if (!env) return "no_address";
   const branding = await brandingOf(row);
   const { settings } = branding;
-  const copyKind = copyKindOf(row, rule);
+  const copyKind = copyKindOf(row, rule, booking, now);
   const senderName = oneLine(settings?.brandName ?? titleOf(booking));
   const uid = `${booking.id}@coss.com`;
   const icsMethod = isEnded(booking) ? ("CANCEL" as const) : ("REQUEST" as const);
@@ -768,7 +778,7 @@ async function sendBookingSms(
   if (!settings?.smsFrom || !deps.notifier.sms) return "no_sender";
   const send = deps.notifier.sms;
   const smsFrom = settings.smsFrom;
-  const copyKind = copyKindOf(row, rule);
+  const copyKind = copyKindOf(row, rule, booking, now);
   const recipients =
     row.recipient === "host"
       ? (await bookingHosts(booking)).flatMap((host) =>

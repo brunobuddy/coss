@@ -1564,6 +1564,38 @@ describe("guests", () => {
   });
 });
 
+describe("links in a customer's words", () => {
+  const saving = (s: Setup, words: Record<string, unknown>) =>
+    updateSettings(s.env, {
+      email_from: "appointments@example.com",
+      reminders: [
+        rule({ anchor: "start", before_minutes: 60, send: ["email_attendee"], ...words }),
+      ],
+    });
+
+  test.each([
+    "Please confirm at appointments.attacker.dev",
+    "Confirm at attacker。dev",
+    "Confirm at attacker.\u200bdev",
+    "Go to https://example.com/x",
+    // A value can finish what the text started.
+    "Confirm at attacker.{{brand}}",
+    "Confirm at {{attendee_first_name}}.dev",
+  ])("%s is refused", async (message) => {
+    const s = await setUp();
+    await expect(saving(s, { message })).rejects.toThrow(/link/);
+    await expect(saving(s, { subject: message })).rejects.toThrow(/link/);
+  });
+
+  test("ordinary sentences aren't links", async () => {
+    const s = await setUp();
+    await saving(s, {
+      subject: "See you at {{time}}, {{attendee_first_name}}.",
+      message: "Dr. Reyes will meet you, e.g. in the lobby, at 9 a.m.\n\nSee you then.\nThanks.",
+    });
+  });
+});
+
 describe("what a list can be", () => {
   test("every timing gets a key that can be sent back, and what's returned can be", () => {
     const list = Reminders.parse([
@@ -1734,6 +1766,45 @@ describe("clearing a policy", () => {
     await updateSettings(s.env, { notifications: null });
     await runDueReminderSyncs({ now: () => NOW }, scope(s));
     expect((await rows(s, booking.id)).some((row) => row.reminder_key === "reminder")).toBe(true);
+  });
+});
+
+describe("the standard words", () => {
+  const sendsAt = async (s: Setup, when: number, match: string) => {
+    const n = await runAt(s, when);
+    return n.emails.filter((email) => email.subject.startsWith(match));
+  };
+
+  test("say what's true when it goes out, whatever it's timed from", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      email_from: "appointments@example.com",
+      reminders: [
+        // Half an hour before this half-hour meeting starts.
+        rule({ key: "early", anchor: "end", before_minutes: 60, send: ["email_attendee"] }),
+        // An hour after it's over.
+        rule({ key: "late", anchor: "start", after_minutes: 90, send: ["email_attendee"] }),
+        // During it.
+        rule({ key: "during", anchor: "start", after_minutes: 10, send: ["email_host"] }),
+      ],
+    });
+    await book(s);
+    expect(await sendsAt(s, START - 30 * MINUTE, "Reminder:")).toHaveLength(1);
+    expect(await sendsAt(s, START + 10 * MINUTE, "Happening now:")).toHaveLength(1);
+    const after = await sendsAt(s, START + 90 * MINUTE, "Follow-up:");
+    expect(after).toHaveLength(1);
+    expect(after[0]?.text).toContain("Thanks for your time.");
+  });
+
+  test("the same goes for a text", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      sms_from: "+15005550006",
+      reminders: [rule({ key: "text", anchor: "end", before_minutes: 60, send: ["sms_attendee"] })],
+    } as never);
+    await book(s);
+    const n = await runAt(s, START - 30 * MINUTE);
+    expect(n.texts[0]?.body).toContain("Reminder: Consultation");
   });
 });
 

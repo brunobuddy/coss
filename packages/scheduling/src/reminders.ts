@@ -12,13 +12,14 @@ import { db, type Executor, schema } from "@coss/db";
 import { and, asc, eq, gt, gte, inArray, isNull, lt, notInArray, or, sql } from "drizzle-orm";
 import { SchedulingError } from "./errors.ts";
 import { type Policies, policiesOf, resolvePolicy } from "./notification-policy.ts";
+import { REMINDER_VARIABLES, type ReminderValues, renderReminderCopy } from "./reminder-copy.ts";
 import {
   MAX_REMINDER_EMAILS_FROM_COSS,
   type ReminderInputOutput,
   reminderKeyOf,
   reminderUrlHost,
 } from "./schemas.ts";
-import { refuseLinks, type SetupScreening, screenSetup } from "./screening.ts";
+import { linkedHosts, refuseLinks, type SetupScreening, screenSetup } from "./screening.ts";
 import type { SchedulingEnvironment } from "./types.ts";
 
 const { member, schedulingBooking, schedulingNotification, schedulingReminderSync, user } = schema;
@@ -560,6 +561,23 @@ export function checkRemindersWithoutSender(rules: readonly ReminderRule[], para
   }
 }
 
+const FILLED_IN = Object.fromEntries(
+  Object.keys(REMINDER_VARIABLES).map((name) => [name, "xx"]),
+) as ReminderValues;
+
+/**
+ * Anything shaped like a domain, as a reader's browser would take it: a button is the one link that
+ * was checked. Filled in first, or `attacker.{{brand}}` is nothing here and a link in the inbox.
+ */
+function refuseCopyLinks(value: string | null | undefined, param: string): void {
+  if (!value) return;
+  refuseLinks(value, param);
+  const hosts = linkedHosts(renderReminderCopy(value, FILLED_IN));
+  if (hosts === null || hosts.length > 0) {
+    throw new SchedulingError("content_refused", "This text can't contain a link.", { param });
+  }
+}
+
 export async function checkReminders(
   env: Pick<SchedulingEnvironment, "organizationId" | "mode">,
   rules: readonly ReminderRule[],
@@ -582,10 +600,10 @@ export async function checkReminders(
         at(rule.subject ? "subject" : rule.message ? "message" : "button"),
       );
     }
-    refuseLinks(rule.subject, at("subject"));
-    refuseLinks(rule.message, at("message"));
-    refuseLinks(rule.sms_message, at("sms_message"));
-    refuseLinks(rule.button?.label, at("button"));
+    refuseCopyLinks(rule.subject, at("subject"));
+    refuseCopyLinks(rule.message, at("message"));
+    refuseCopyLinks(rule.sms_message, at("sms_message"));
+    refuseCopyLinks(rule.button?.label, at("button"));
     // One at a time: a rule fits within what the classifier reads, and a whole list doesn't, so
     // what's past its limit would go out unscreened.
     const text = [rule.subject, rule.message, rule.sms_message, rule.button?.label]

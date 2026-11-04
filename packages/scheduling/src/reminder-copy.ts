@@ -120,19 +120,22 @@ export function standardLead(
   return key ? translator(locale)(key) : "";
 }
 
-/** "This is coming up." would be wrong after a meeting: the standard words follow the timing. */
-export function reminderCopyKind(rule: {
-  anchor: string;
-  before_minutes: number | null;
-}): CopyKind {
-  switch (rule.anchor) {
-    case "start":
-      return rule.before_minutes ? "reminder" : "happening";
-    case "end":
-      return rule.before_minutes ? "happening" : "finished";
-    default:
-      return rule.anchor as CopyKind;
+/**
+ * "This is coming up." would be wrong after a meeting: the standard words follow the timing. A rule
+ * alone can't always say, since an hour before the end of a half-hour meeting is before it starts, so
+ * with a booking they follow when it's actually going out. The preview has no booking.
+ */
+export function reminderCopyKind(
+  rule: { anchor: string; before_minutes: number | null },
+  sending?: { nowMs: number; startMs: number; endMs: number },
+): CopyKind {
+  if (rule.anchor !== "start" && rule.anchor !== "end") return rule.anchor as CopyKind;
+  if (sending) {
+    if (sending.nowMs < sending.startMs) return "reminder";
+    return sending.nowMs < sending.endMs ? "happening" : "finished";
   }
+  if (rule.anchor === "start") return rule.before_minutes ? "reminder" : "happening";
+  return rule.before_minutes ? "happening" : "finished";
 }
 
 /** A list's key for a rule that has none: stable, since it's what its rows are found by. */
