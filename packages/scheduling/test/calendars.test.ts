@@ -643,6 +643,45 @@ describe("writing to calendars", () => {
     });
   });
 
+  test("moving a Meet booking to another host doesn't keep the old host's link", async () => {
+    const setup = await setUp();
+    const api = new FakeGoogleCalendarApi();
+    const deps = calendarDeps(api);
+    const other = await createHost(setup.env, { name: "Dr. Chen", time_zone: "UTC" });
+    await createSchedule(setup.env, other.id, {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+    });
+    await connectGoogle(setup.env, setup.host.id, deps);
+    await runDueCalendarSyncs(deps, { scope: scope(setup.env) });
+    const meet = await createEventType(setup.env, {
+      title: "Video",
+      kind: "pool",
+      duration_minutes: 30,
+      locations: [{ type: "google_meet" }],
+      hosts: [
+        { host: setup.host.id, role: "member", weight: 100, schedule: null },
+        { host: other.id, role: "member", weight: 100, schedule: null },
+      ],
+    } as never);
+    const plain = testSchedulingDeps({ now: () => NOW });
+    const { booking } = await createBooking(
+      setup.env,
+      { eventType: meet.id, startMs: at("09:00"), host: setup.host.id, attendee },
+      plain,
+      actor,
+    );
+    await runDueCalendarWrites(deps, { scope: scope(setup.env) });
+    expect((await getBooking(setup.env, booking.id, plain)).location?.type).toBe("link");
+    const moved = await rescheduleBooking(
+      setup.env,
+      booking.id,
+      { startMs: at("10:00"), host: other.id },
+      plain,
+      actor,
+    );
+    expect(moved.location).toEqual({ type: "google_meet" });
+  });
+
   test("a host deleting the event is recorded, and the booking stays", async () => {
     const w = await writable();
     const { booking } = await book(w);

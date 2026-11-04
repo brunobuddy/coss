@@ -9,6 +9,7 @@ import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
+import { carryReminders } from "../notifications.ts";
 import { CalendarError, type CalendarEventWrite } from "./client.ts";
 import { type CalendarDeps, clientFor, markNeedsReauth } from "./connections.ts";
 import { notZoomMeeting } from "./zoom.ts";
@@ -114,7 +115,10 @@ async function setMeetingLink(booking: BookingRow, url: string, now: Date): Prom
     const [updated] = await tx
       .update(schedulingBooking)
       .set({
-        location: zoom ? { type: "zoom", url } : { type: "link", url },
+        // Remembers where the link came from, for when another host takes the booking.
+        location: zoom
+          ? { type: "zoom", url }
+          : ({ type: "link", url, conference: location.type } as never),
         version: sql`${schedulingBooking.version} + 1`,
       })
       .where(
@@ -125,6 +129,7 @@ async function setMeetingLink(booking: BookingRow, url: string, now: Date): Prom
       )
       .returning();
     if (!updated) return;
+    await carryReminders(tx, updated);
     // The host's calendar event went out without the link.
     if (zoom) {
       await tx

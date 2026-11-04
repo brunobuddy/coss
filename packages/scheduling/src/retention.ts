@@ -55,8 +55,24 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
     )
     .limit(opts.limit ?? 1000);
   if (due.length === 0) return 0;
-  await db.transaction(async (tx) => {
-    const ids = due.map((row) => row.id);
+  return db.transaction(async (tx) => {
+    // Under the lock: a booking moved into the future meanwhile keeps its attendees.
+    const locked = await tx
+      .select({ id: schedulingBooking.id })
+      .from(schedulingBooking)
+      .where(
+        and(
+          inArray(
+            schedulingBooking.id,
+            due.map((row) => row.id),
+          ),
+          lt(schedulingBooking.endAt, cutoff),
+          isNull(schedulingBooking.redactedAt),
+        ),
+      )
+      .for("update");
+    if (locked.length === 0) return 0;
+    const ids = locked.map((row) => row.id);
     await tx
       .update(schedulingAttendee)
       .set({ ...REDACTED, redactedAt: now })
@@ -64,9 +80,9 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
     await tx
       .update(schedulingBooking)
       .set({ metadata: {}, location: null, redactedAt: now })
-      .where(and(inArray(schedulingBooking.id, ids), lt(schedulingBooking.endAt, cutoff)));
+      .where(inArray(schedulingBooking.id, ids));
+    return ids.length;
   });
-  return due.length;
 }
 
 /** Deletes what's left of bookings past the policy's whole period; cascades take their children. */

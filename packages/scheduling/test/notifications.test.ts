@@ -3,6 +3,7 @@ import { db, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { eq, sql } from "drizzle-orm";
 import {
+  approveBooking,
   authenticateSchedulingSession,
   cancelBooking,
   confirmHold,
@@ -21,6 +22,7 @@ import {
   type SchedulingEnvironment,
   SchedulingError,
   type SchedulingSms,
+  updateBookingLocation,
   updateEventType,
   updateHost,
   updateSettings,
@@ -253,6 +255,47 @@ describe("booking emails", () => {
   });
 });
 
+describe("bookings waiting for approval", () => {
+  const approval = { requires_approval: true };
+
+  test("moving one sends no calendar invitation", async () => {
+    const s = await setUp(approval);
+    const { booking } = await book(s);
+    await rescheduleBooking(s.env, booking.id, { startMs: at("10:00") }, deps, actor);
+    const n = notifier();
+    await run(s.env, n.notification);
+    const moved = n.emails.filter((email) => email.subject.startsWith("Rescheduled"));
+    expect(moved.length).toBeGreaterThan(0);
+    expect(moved.every((email) => email.ics === null)).toBe(true);
+  });
+
+  test("approving one before its notice goes out drops the notice", async () => {
+    const s = await setUp(approval);
+    const { booking } = await book(s);
+    await approveBooking(s.env, booking.id, deps, actor);
+    const n = notifier();
+    await run(s.env, n.notification);
+    const subjects = n.emails.map((email) => email.subject);
+    expect(subjects.some((subject) => subject.startsWith("Confirmed"))).toBe(true);
+    expect(subjects.filter((subject) => /request|approv/i.test(subject))).toEqual([]);
+  });
+});
+
+describe("repeated changes", () => {
+  test("two moves before the worker runs send one notice", async () => {
+    const s = await setUp();
+    const { booking } = await book(s);
+    await rescheduleBooking(s.env, booking.id, { startMs: at("10:00") }, deps, actor);
+    await rescheduleBooking(s.env, booking.id, { startMs: at("11:00") }, deps, actor);
+    const n = notifier();
+    await run(s.env, n.notification);
+    const toAttendee = n.emails.filter(
+      (email) => email.to === attendee.email && email.subject.startsWith("Rescheduled"),
+    );
+    expect(toAttendee.length).toBe(1);
+  });
+});
+
 describe("reminders", () => {
   const dayBefore = () => new Date(at("09:00") - 24 * 3_600_000 + 1000);
 
@@ -285,6 +328,21 @@ describe("reminders", () => {
     const newTime = notifier(() => new Date(at("09:00", "2031-01-20") - 24 * 3_600_000 + 1000));
     await run(s.env, newTime.notification);
     expect(newTime.emails.filter((email) => email.subject.startsWith("Reminder")).length).toBe(1);
+  });
+
+  test("setting a booking's location keeps its reminder", async () => {
+    const s = await setUp();
+    const { booking } = await book(s);
+    await updateBookingLocation(
+      s.env,
+      booking.id,
+      { type: "link", url: "https://meet.example.com/abc" },
+      deps,
+      actor,
+    );
+    const later = notifier(dayBefore);
+    await run(s.env, later.notification);
+    expect(later.emails.filter((email) => email.subject.startsWith("Reminder")).length).toBe(1);
   });
 
   test("SMS is opt-in, and needs the customer's own number", async () => {

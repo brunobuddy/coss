@@ -88,11 +88,15 @@ export async function createHostAction(
     const { context, env } = await contextFor(formData, "create");
     const email = formString(formData, "email");
     const host = await friendly(() =>
-      createHost(env, {
-        name: formString(formData, "name"),
-        time_zone: formString(formData, "timeZone"),
-        ...(email ? { email } : {}),
-      }),
+      createHost(
+        env,
+        {
+          name: formString(formData, "name"),
+          time_zone: formString(formData, "timeZone"),
+          ...(email ? { email } : {}),
+        },
+        { screen: configuredDeps().screenSetup },
+      ),
     );
     await friendly(() =>
       createSchedule(env, host.id, {
@@ -224,20 +228,24 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
       throw new ActionError("A logo can be 200 KB at most.");
     }
     await friendly(async () =>
-      updateSettings(env, {
-        allowed_origins: origins,
-        brand_name: brandName || null,
-        accent_color: useAccent ? accentColor : null,
-        ...(newLogo
-          ? { logo: { content: Buffer.from(await newLogo.arrayBuffer()).toString("base64") } }
-          : formString(formData, "removeLogo") === "on"
-            ? { logo: null }
-            : {}),
-        email_from: emailFrom || null,
-        sms_from: smsFrom || null,
-        calendar_failure_mode:
-          formString(formData, "calendarFailureMode") === "last_known" ? "last_known" : "hide",
-      }),
+      updateSettings(
+        env,
+        {
+          allowed_origins: origins,
+          brand_name: brandName || null,
+          accent_color: useAccent ? accentColor : null,
+          ...(newLogo
+            ? { logo: { content: Buffer.from(await newLogo.arrayBuffer()).toString("base64") } }
+            : formString(formData, "removeLogo") === "on"
+              ? { logo: null }
+              : {}),
+          email_from: emailFrom || null,
+          sms_from: smsFrom || null,
+          calendar_failure_mode:
+            formString(formData, "calendarFailureMode") === "last_known" ? "last_known" : "hide",
+        },
+        { screen: configuredDeps().screenSetup },
+      ),
     );
     await audit(context, "scheduling_settings.updated", {
       type: "scheduling_settings",

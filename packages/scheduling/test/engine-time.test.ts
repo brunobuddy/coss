@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildAvailability } from "../src/engine/availability.ts";
+import { expandRecurrence } from "../src/engine/recurrence.ts";
 import {
   localDateOf,
   localWeekOf,
@@ -242,4 +243,18 @@ test("an unavailable override removes the whole local day", () => {
     { startMs: ms("2026-12-23T05:00:00Z"), endMs: ms("2026-12-24T05:00:00Z") },
     { startMs: ms("2026-12-25T05:00:00Z"), endMs: ms("2026-12-26T05:00:00Z") },
   ]);
+});
+
+describe("a recurring series' first occurrence", () => {
+  test("stays the instant that was asked for, in a daylight saving overlap", () => {
+    const secondHalfTwo = Date.parse("2026-10-25T01:30:00Z");
+    for (const frequency of ["weekly", "monthly"] as const) {
+      const [first] = expandRecurrence({
+        startMs: secondHalfTwo,
+        timeZone: "Europe/Berlin",
+        rule: { frequency, interval: 1, count: 2 },
+      });
+      expect(first).toBe(secondHalfTwo);
+    }
+  });
 });

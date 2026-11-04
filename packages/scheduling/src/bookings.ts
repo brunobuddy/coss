@@ -12,7 +12,21 @@ import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { requestHash as hashRequest, withIdempotencyKey } from "@coss/db/idempotency";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
-import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import {
   decryptAnswers,
   decryptContact,
@@ -46,7 +60,7 @@ import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
-import { enqueueBookingNotifications } from "./notifications.ts";
+import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
 import {
   type AttendeeInputOutput,
   type BookingObjectOutput,
@@ -89,6 +103,7 @@ export type BookingRequest = {
   attendee: AttendeeInputOutput;
   answers?: Answers | undefined;
   location?: Location | undefined;
+  locationFromBrowser?: boolean | undefined;
   metadata?: Record<string, string> | undefined;
   idempotencyKey?: string | undefined;
 };
@@ -150,7 +165,26 @@ function checkAttendee(attendee: AttendeeInputOutput): void {
   }
 }
 
-function chooseLocation(eventType: EventTypeRow, wanted: Location | undefined): Location | null {
+/** What a meeting created on a host's account reverts to when another host takes the booking. */
+function locationForNewHost(location: BookingRow["location"]): BookingRow["location"] {
+  if (location?.type === "zoom") return { type: "zoom", url: null };
+  if (location?.type !== "link" || !("conference" in location)) return null;
+  return { type: location.conference as "google_meet" | "microsoft_teams" };
+}
+
+function wireLocation(location: BookingRow["location"]): BookingRow["location"] {
+  if (!location || !("conference" in location)) return location ?? null;
+  const { conference: _conference, ...rest } = location as typeof location & {
+    conference: string;
+  };
+  return rest as BookingRow["location"];
+}
+
+function chooseLocation(
+  eventType: EventTypeRow,
+  wanted: Location | undefined,
+  fromBrowser = false,
+): Location | null {
   const location = wanted ?? eventType.locations[0] ?? null;
   // Its link comes from the meeting we create, never from whoever's booking.
   if (location?.type === "zoom" && eventType.locations.some((l) => l.type === "zoom")) {
@@ -165,7 +199,11 @@ function chooseLocation(eventType: EventTypeRow, wanted: Location | undefined): 
       { param: "location" },
     );
   }
-  return wanted;
+  if (!fromBrowser) return wanted;
+  // A browser picks among what's offered. It can't supply a link or address of its own, only the
+  // number to call it on when the event type leaves that open.
+  if (offered.type === "phone" && wanted.type === "phone" && !offered.number) return wanted;
+  return offered;
 }
 
 function checkBookableEventType(eventType: EventTypeRow, durationMinutes: number): void {
@@ -1109,7 +1147,7 @@ export async function toBookingObject(
           : {}),
       };
     }),
-    location: (booking.location ?? null) as BookingObjectOutput["location"],
+    location: wireLocation(booking.location) as BookingObjectOutput["location"],
     hold_expires_at: booking.holdExpiresAt?.toISOString() ?? null,
     approval_expires_at: booking.approvalExpiresAt?.toISOString() ?? null,
     series: booking.seriesId,
@@ -1181,7 +1219,7 @@ async function book(
   const durationMinutes = request.durationMinutes ?? eventType.durationMinutes;
   checkBookableEventType(eventType, durationMinutes);
   checkAnswers(eventType, request.answers);
-  const location = chooseLocation(eventType, request.location);
+  const location = chooseLocation(eventType, request.location, request.locationFromBrowser);
   const status = chooseStatus(eventType, wantHold);
   const ttlSeconds = ttlFor(eventType, status);
   const now = nowOf(deps);
@@ -1740,14 +1778,13 @@ export async function rescheduleBooking(
         })
         .onConflictDoNothing();
     }
+    const newLocation = replacement ? locationForNewHost(booking.location) : null;
     const updated = await bumped(tx, booking, {
       startAt: new Date(input.startMs),
       endAt: new Date(input.startMs + durationMinutes * MINUTE_MS),
       externalConflictAt: null,
       // The old host's meeting goes with them, so the new host's gets a new link.
-      ...(replacement && booking.location?.type === "zoom"
-        ? { location: { type: "zoom" as const, url: null } }
-        : {}),
+      ...(newLocation ? { location: newLocation } : {}),
     });
     const after = await participants(tx, updated);
     if (updated.status === "confirmed") {
@@ -1810,6 +1847,7 @@ export async function updateBookingLocation(
       throw notChangeable(booking);
     }
     const updated = await bumped(tx, booking, { location });
+    await carryReminders(tx, updated);
     await recordChange(tx, updated, {
       type: "scheduling.booking.location_ready",
       webhook: "scheduling.booking.location_ready",
@@ -1900,6 +1938,48 @@ export async function listBookings(
   return {
     data: await Promise.all(page.map((row) => toBookingObject(db, row, deps))),
     hasMore: rows.length > query.limit,
+  };
+}
+
+/** A host's coming bookings, soonest first, without the ones that are off. */
+export async function listUpcomingHostBookings(
+  scope: Scope,
+  query: { hostId: string; now: Date; limit: number; cursor?: string | undefined },
+  deps: Pick<SchedulingDeps, "dataKeys">,
+): Promise<{ data: BookingObjectOutput[]; nextCursor: string | null }> {
+  const [cursorStart, cursorId] = query.cursor?.split("_after_") ?? [];
+  const cursorMs = cursorStart ? Number(cursorStart) : Number.NaN;
+  const rows = await db
+    .select()
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.organizationId, scope.organizationId),
+        eq(schedulingBooking.environmentId, scope.environmentId),
+        gte(schedulingBooking.startAt, query.now),
+        notInArray(schedulingBooking.status, ["cancelled", "declined"]),
+        sql`exists (select 1 from ${schedulingBookingHost}
+          where ${schedulingBookingHost.bookingId} = ${schedulingBooking.id}
+            and ${schedulingBookingHost.hostId} = ${query.hostId})`,
+        Number.isFinite(cursorMs) && cursorId
+          ? or(
+              gt(schedulingBooking.startAt, new Date(cursorMs)),
+              and(
+                eq(schedulingBooking.startAt, new Date(cursorMs)),
+                gt(schedulingBooking.id, cursorId),
+              ),
+            )
+          : undefined,
+      ),
+    )
+    .orderBy(asc(schedulingBooking.startAt), asc(schedulingBooking.id))
+    .limit(query.limit + 1);
+  const page = rows.slice(0, query.limit);
+  const last = page[page.length - 1];
+  return {
+    data: await Promise.all(page.map((row) => toBookingObject(db, row, deps))),
+    nextCursor:
+      rows.length > query.limit && last ? `${last.startAt.getTime()}_after_${last.id}` : null,
   };
 }
 
@@ -2065,7 +2145,7 @@ export async function createSeries(
   const durationMinutes = request.durationMinutes ?? eventType.durationMinutes;
   checkBookableEventType(eventType, durationMinutes);
   checkAnswers(eventType, request.answers);
-  const location = chooseLocation(eventType, request.location);
+  const location = chooseLocation(eventType, request.location, request.locationFromBrowser);
   const anchor = request.attendee.time_zone;
   const starts = expandedStarts(request, anchor);
   const now = nowOf(deps);

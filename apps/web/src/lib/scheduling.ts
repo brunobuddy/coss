@@ -1,8 +1,10 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { hostedPageScreening } from "@coss/forms";
 import type { SchedulingDeps } from "@coss/scheduling";
 import { schedulingDataKeysFromEnv } from "@coss/scheduling/runtime";
 import { env } from "@/env";
+import { riskDeps } from "@/lib/risk";
 
 /** Origin of the hosted pages sessions link to. */
 export function schedulingUrl(): string | null {
@@ -22,5 +24,6 @@ export function schedulingDeps(): SchedulingDeps | null {
     // The dashboard never looks attendees up by email; the key only has to exist.
     lookupKey: createHash("sha256").update("scheduling dashboard").digest(),
     publicUrl: schedulingUrl(),
+    screenSetup: hostedPageScreening(riskDeps()),
   };
 }

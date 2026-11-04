@@ -415,9 +415,11 @@ export async function candidatesOf(
   }
   const required: Candidates["required"] = [];
   const members: Candidates["members"] = [];
+  let hasMembers = false;
   for (const host of hosts.values()) {
-    if (host.status !== "active") continue;
     const membership = byHost.get(host.id) ?? null;
+    if (membership?.role !== "required") hasMembers = true;
+    if (host.status !== "active") continue;
     if (membership?.role === "required") {
       required.push({ host, membership });
       continue;
@@ -426,6 +428,8 @@ export async function candidatesOf(
     if (!attributesMatch(host.attributes, narrow.attributes)) continue;
     members.push({ host, membership });
   }
+  // A pool's required hosts come with a member: they're never booked alone in place of one.
+  if (hasMembers && members.length === 0) return { required: [], members };
   return { required, members };
 }
 

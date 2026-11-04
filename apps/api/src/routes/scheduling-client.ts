@@ -8,6 +8,7 @@
 import {
   type AuthenticatedSession,
   approveBooking,
+  attendeeEmailedOnConfirm,
   authenticateSchedulingSession,
   cancelBooking,
   connectCaldav,
@@ -22,10 +23,10 @@ import {
   getHost,
   getLogoRow,
   getSettingsRow,
-  listBookings,
   listConnections,
   listEventTypeSlots,
   listSchedules,
+  listUpcomingHostBookings,
   logoDataUrl,
   rescheduleBooking,
   type SchedulingDeps,
@@ -313,13 +314,17 @@ export function createSchedulingClientRoutes(opts: {
         attendee,
         answers: body.answers,
         location: body.location,
+        locationFromBrowser: true,
         idempotencyKey: c.req.header("idempotency-key"),
       },
       deps,
       sessionActor(session),
     );
     if (replayed) c.header("Idempotent-Replayed", "true");
-    return c.json(clientBooking(booking), 201);
+    const emailed =
+      booking.attendees.some((person) => person.email) &&
+      (await attendeeEmailedOnConfirm(env, session.eventTypeId as string));
+    return c.json({ ...clientBooking(booking), attendee_emailed: emailed }, 201);
   });
 
   /** What a browser sees of a booking: its own details, never other hosts or answers. */
@@ -464,17 +469,22 @@ export function createSchedulingClientRoutes(opts: {
 
   /** A host's own bookings, with attendee names but not their answers. */
   router.get("/host/bookings", async (c) => {
-    const hostId = hostOf(c);
-    const page = await listBookings(
+    const page = await listUpcomingHostBookings(
       c.var.session.env,
       {
+        hostId: hostOf(c),
+        now: deps.now?.() ?? new Date(),
         limit: 50,
-        hostRef: hostId,
-        startAfter: deps.now?.() ?? new Date(),
+        cursor: c.req.query("cursor"),
       },
       deps,
     );
-    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore });
+    return c.json({
+      object: "list" as const,
+      data: page.data,
+      has_more: page.nextCursor !== null,
+      next_cursor: page.nextCursor,
+    });
   });
 
   const hostsOwnBooking = async (c: Context<ClientEnv>, hostId: string, id: string) => {

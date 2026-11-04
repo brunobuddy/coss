@@ -161,6 +161,7 @@ export function Calendars(props: { call: ClientCall; session: HostSession }) {
     setProblem(null);
     // Opened before the call, or browsers treat it as a popup nobody asked for.
     const popup = window.open("about:blank", "coss-calendar", "width=520,height=680");
+    const known = connections?.length ?? 0;
     try {
       const { url } = await call<{ url: string }>("/host/calendar_connections/authorize", {
         method: "POST",
@@ -172,8 +173,16 @@ export function Calendars(props: { call: ClientCall; session: HostSession }) {
           if (!popup.closed) return;
           window.clearInterval(timer);
           load();
-          postToHost({ type: "calendar_connected" });
+          // Closing the window doesn't mean they connected anything.
+          call<{ data: Connection[] }>("/host/calendar_connections")
+            .then((response) => {
+              if (response.data.length > known) postToHost({ type: "calendar_connected" });
+            })
+            .catch(() => {});
         }, 800);
+      } else if (window.parent !== window) {
+        // Providers refuse to be framed, so going there from an embed would only break the page.
+        setProblem("Your browser blocked the window. Allow pop-ups for this page and try again.");
       } else {
         window.location.href = url;
       }
