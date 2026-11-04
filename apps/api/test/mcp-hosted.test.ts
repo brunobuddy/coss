@@ -3,6 +3,7 @@
  * speaking Streamable HTTP to `app.fetch`. The tools reach the API the way production does.
  */
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { memoryLogWriter } from "@coss/logs/testing";
 import { cachedOverrides, clientIpResolver, setRateLimitOverride } from "@coss/ratelimit";
 import { memoryLimiter } from "@coss/ratelimit/testing";
@@ -723,6 +724,15 @@ describe("limits and logs", () => {
 });
 
 describe("stopping", () => {
+  test("the server waits for tools' API calls before closing what they use", () => {
+    // `src/index.ts` can't be imported (it starts the server), so this reads the order it stops in.
+    const index = readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+    const drained = index.indexOf("mcp.drain(MCP_DRAIN_MS)");
+    expect(drained).toBeGreaterThan(-1);
+    expect(index.indexOf("logWriter.close()", drained)).toBeGreaterThan(drained);
+    expect(index.indexOf("closeDb()", drained)).toBeGreaterThan(drained);
+  });
+
   const slowApi = (ms: number) => () =>
     new Promise<Response>((resolve) => setTimeout(() => resolve(new Response()), ms));
 

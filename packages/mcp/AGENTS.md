@@ -35,7 +35,11 @@ directory unless they name a workspace.
   (`upload_sign_document` is omitted; `create_webhook_endpoint` returns the secret), and `test/hosted.test.ts` calls
   every hosted tool with paths for arguments and fails if `node:fs/promises` is touched, or if a file under
   `src/tools/` starts importing the filesystem without being listed. Outgoing requests are pinned: the API's `/v1/*`
-  at the origin given at start, the docs' origin (redirects never followed). No request can name another. The
+  at the origin given at start, the docs' origin (redirects never followed). No request can name another. An API
+  call's answer is read here, not by the SDK (`readAnswer`): at most 8 MiB, cancelled on a stop, and a 2xx that isn't
+  JSON is refused unread, because an in-process streaming route has nothing else stopping it. Failures this server makes
+  itself carry their own `hint` in the envelope, as `result.ts`'s hints name the local server's env vars. `drain` waits
+  for API calls that outlive their request (`apps/api`'s `onDrained`, before it closes the database). The
   key goes no further than the SDK client: `onFailure` gets an error's name only, since messages can quote what
   the caller sent. Don't log in here. `server.json` is for the MCP registry (not published yet: it needs
   `com.coss`'s DNS verification); `version-packages` keeps its versions equal to `package.json`'s.

@@ -57,8 +57,9 @@ directory unless they name a workspace.
   in JSON-RPC, never the envelope: `router.onError` turns `ApiError`s into `{ jsonrpc, id: null, error: { code,
   message, data: { type, code, request_id } } }` with `/v1`'s statuses and headers. Before authentication `precheck`
   refuses anything with an `Origin` (403: no browser origin is allowed and it has no CORS headers, `API_CORS_ORIGINS`
-  doesn't apply) and anything but POST (405). Limits: 1 MiB (`hasOwnBodyLimit`, then the handler), 50 s, and
-  `shutdownSignal` answers at once like long polls. Each tool's API call runs in process through `app.fetch` (no
+  doesn't apply) and anything but POST (405). Limits: 1 MiB (`hasOwnBodyLimit`, then the handler), 50 s, 8 MiB per API
+  call's answer, JSON only, and `shutdownSignal` answers at once like long polls; `onDrained` then waits up to 10 s
+  for tools' API calls still running (`mcp.drain`) before closing the database. Each tool's API call runs in process through `app.fetch` (no
   socket, no edge): it re-runs all of `/v1`'s middleware with the caller's key, is logged and limited like any
   other call, and its client IP is the caller's, passed in `inProcessClientIps` (a `WeakMap`, so no header can claim
   one). A tool call therefore spends one more `api.authentication.*` token than the API calls it makes; the

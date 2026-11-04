@@ -159,8 +159,10 @@ export function registerWebhookTools(ctx: ToolContext): void {
             secret: null,
             hint:
               "This URL already has an endpoint. Its signing secret was returned only when it " +
-              "was created. Pass force only when you mean to create another (that replaces " +
-              "COSS_WEBHOOK_SECRET with the new secret).",
+              "was created. Pass force only when you mean to create another" +
+              (projectDir === null
+                ? "."
+                : " (that replaces COSS_WEBHOOK_SECRET with the new secret)."),
           });
         }
         const types = (event_types ?? []).filter((type) => type.length > 0);

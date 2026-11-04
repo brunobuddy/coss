@@ -187,8 +187,8 @@ What's different from the local server:
   `COSS_WEBHOOK_SECRET` yourself; it isn't shown again.
 - **Environment variables don't apply.** `COSS_MCP_TOOLSETS` isn't available, so a client gets every
   tool, and `COSS_BASE_URL` can't be set: it only talks to coss.com.
-- **Answers come whole.** Requests take at most 50 seconds and 1 MB; requests from browsers are
-  refused. [Rate limits](/docs/api-reference/rate-limits) count requests to `/mcp` per key, on top of the API
+- **Answers come whole.** Requests take at most 50 seconds and 1 MB, and an API call's answer at most
+  8 MB of JSON, so a tool can't read a CSV export; requests from browsers are refused. [Rate limits](/docs/api-reference/rate-limits) count requests to `/mcp` per key, on top of the API
   calls each tool makes.
 
 ## Tools

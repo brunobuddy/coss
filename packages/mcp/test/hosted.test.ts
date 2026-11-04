@@ -5,6 +5,7 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import * as realFsPromises from "node:fs/promises";
+import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
@@ -308,5 +309,335 @@ describe("createHostedMcp", () => {
     });
     expect(response.status).toBe(500);
     expect(names).toEqual(["TypeError"]);
+  });
+});
+
+describe("what an API call may answer", () => {
+  const MIB = 1024 * 1024;
+  const CHUNK = new Uint8Array(64 * 1024).fill(120);
+  const toolCall = (name: string, args: Record<string, unknown> = {}, id = 1) =>
+    new Request("http://api.test/mcp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+        "Mcp-Protocol-Version": "2025-06-18",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id,
+        method: "tools/call",
+        params: { name, arguments: args },
+      }),
+    });
+
+  /** A body that never ends (or, with `stalled`, never answers), saying how it was treated. */
+  function endless({ stalled = false } = {}) {
+    const state = { bytes: 0, cancelled: false };
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (stalled) return new Promise<void>(() => {});
+        // Endless to whatever is reading, up to where a regression should fail, not hang the run.
+        if (state.bytes > 64 * MIB) return controller.close();
+        state.bytes += CHUNK.byteLength;
+        controller.enqueue(CHUNK);
+      },
+      cancel() {
+        state.cancelled = true;
+      },
+    });
+    return { state, body };
+  }
+
+  /** `find_emails`'s one API call answered by `apiFetch`, read as a tool's answer. */
+  async function toolAnswer(
+    apiFetch: (request: Request) => Response | Promise<Response>,
+    options: Partial<Parameters<typeof createHostedMcp>[0]> = {},
+  ) {
+    const mcp = createHostedMcp({ apiBaseUrl: "http://api.test", ...options });
+    const response = await mcp.handle(toolCall("find_emails"), {
+      apiKey: "coss_test_x",
+      apiFetch,
+    });
+    const { result } = (await response.json()) as {
+      result: { isError?: boolean; content: { text: string }[] };
+    };
+    const text = result.content[0]?.text ?? "null";
+    return {
+      status: response.status,
+      isError: result.isError === true,
+      text,
+      data: JSON.parse(text),
+    };
+  }
+
+  test("a JSON answer that never ends is cut at 8 MiB, cancelled, and a tool error", async () => {
+    const { state, body } = endless();
+    const answer = await toolAnswer(
+      () => new Response(body, { headers: { "Content-Type": "application/json" } }),
+    );
+    expect(answer.status).toBe(200);
+    expect(answer.isError).toBe(true);
+    expect(answer.data.error.code).toBe("response_too_large");
+    expect(state.cancelled).toBe(true);
+    expect(state.bytes).toBeGreaterThan(8 * MIB);
+    expect(state.bytes).toBeLessThan(8 * MIB + 4 * CHUNK.byteLength);
+  });
+
+  test("a declared length over the cap isn't read at all", async () => {
+    const { state, body } = endless();
+    const answer = await toolAnswer(
+      () =>
+        new Response(body, {
+          headers: { "Content-Type": "application/json", "Content-Length": String(9 * MIB) },
+        }),
+    );
+    expect(answer.data.error.code).toBe("response_too_large");
+    expect(state.cancelled).toBe(true);
+    expect(state.bytes).toBeLessThanOrEqual(CHUNK.byteLength);
+  });
+
+  test("a 2xx that isn't JSON is refused and cancelled before it is read", async () => {
+    const { state, body } = endless();
+    const answer = await toolAnswer(
+      () => new Response(body, { headers: { "Content-Type": "text/csv; charset=utf-8" } }),
+    );
+    expect(answer.isError).toBe(true);
+    expect(answer.data.error.code).toBe("unsupported_response");
+    expect(state.cancelled).toBe(true);
+    expect(state.bytes).toBeLessThanOrEqual(CHUNK.byteLength);
+  });
+
+  test("an answer with no body is passed on, and JSON of any charset is read", async () => {
+    const empty = await toolAnswer(() => new Response(null, { status: 204 }));
+    expect(empty.text).not.toContain("unsupported_response");
+    const json = await toolAnswer(
+      () =>
+        new Response('{"data":[],"has_more":false}', {
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+        }),
+    );
+    expect(json.isError).toBe(false);
+  });
+
+  test.each([
+    ["the deadline", 504, { timeoutMs: 30 }, false],
+    ["the caller's signal (SIGTERM, a disconnect)", 503, {}, true],
+  ] as const)("%s cancels a body being read", async (_name, status, options, aborts) => {
+    const { state, body } = endless({ stalled: true });
+    const controller = new AbortController();
+    const mcp = createHostedMcp({ apiBaseUrl: "http://api.test", ...options });
+    let dispatched = () => {};
+    const started = new Promise<void>((resolve) => {
+      dispatched = resolve;
+    });
+    const answering = mcp.handle(toolCall("find_emails"), {
+      apiKey: "coss_test_x",
+      signal: controller.signal,
+      apiFetch: () => {
+        dispatched();
+        return new Response(body, { headers: { "Content-Type": "application/json" } });
+      },
+    });
+    await started;
+    if (aborts) controller.abort();
+    const response = await answering;
+    expect(response.status).toBe(status);
+    await Bun.sleep(5);
+    expect(state.cancelled).toBe(true);
+  });
+
+  test("an answer that arrives after the abort is cancelled too", async () => {
+    const { state, body } = endless();
+    const controller = new AbortController();
+    const mcp = createHostedMcp({ apiBaseUrl: "http://api.test" });
+    let answer = (_response: Response) => {};
+    let dispatched = () => {};
+    const started = new Promise<void>((resolve) => {
+      dispatched = resolve;
+    });
+    const response = await (async () => {
+      const answering = mcp.handle(toolCall("find_emails"), {
+        apiKey: "coss_test_x",
+        signal: controller.signal,
+        apiFetch: () => {
+          dispatched();
+          return new Promise<Response>((resolve) => {
+            answer = resolve;
+          });
+        },
+      });
+      await started;
+      controller.abort();
+      return answering;
+    })();
+    expect(response.status).toBe(503);
+    answer(new Response(body, { headers: { "Content-Type": "application/json" } }));
+    await Bun.sleep(5);
+    expect(state.cancelled).toBe(true);
+  });
+
+  test("nothing is dispatched once the request has been stopped", async () => {
+    const mcp = createHostedMcp({ apiBaseUrl: "http://api.test" });
+    const dispatched: string[] = [];
+    const response = await mcp.handle(toolCall("find_emails"), {
+      apiKey: "coss_test_x",
+      signal: AbortSignal.abort(),
+      apiFetch: (request) => {
+        dispatched.push(request.url);
+        return Response.json({ data: [], has_more: false });
+      },
+    });
+    expect(response.status).toBe(503);
+    // The tool itself runs on behind the answer: give it the time to try.
+    await Bun.sleep(20);
+    expect(dispatched).toEqual([]);
+  });
+
+  test("hosted answers never point at the local server's configuration", async () => {
+    const answers = [
+      // A key revoked while its request is in flight.
+      await toolAnswer(() =>
+        Response.json(
+          {
+            error: {
+              type: "authentication_error",
+              code: "invalid_api_key",
+              message: "The API key is invalid, revoked or expired.",
+              request_id: "req_1",
+            },
+          },
+          { status: 401 },
+        ),
+      ),
+      // The API failing to answer at all, and answering too slowly.
+      await toolAnswer(() => {
+        throw new Error("secret detail");
+      }),
+      await toolAnswer(() => new Promise<Response>(() => {}), { apiCallTimeoutMs: 10 }),
+    ];
+    expect(answers[0]?.data.error).toMatchObject({ code: "invalid_api_key", request_id: "req_1" });
+    expect(answers[0]?.data.hint).toContain("Authorization header");
+    expect(answers[1]?.data.error.code).toBe("api_unavailable");
+    expect(answers[2]?.data.error.code).toBe("request_timeout");
+    for (const answer of answers) {
+      expect(answer.isError).toBe(true);
+      expect(typeof answer.data.hint).toBe("string");
+      expect(answer.text).not.toMatch(/COSS_API_KEY|COSS_BASE_URL|secret detail/);
+    }
+
+    const client = await hostedClient((async () => Response.json({})) as unknown as typeof fetch);
+    expect(client.getInstructions()).not.toMatch(/COSS_API_KEY|COSS_BASE_URL/);
+    const { tools } = await client.listTools();
+    expect(JSON.stringify(tools)).not.toMatch(/COSS_API_KEY|COSS_BASE_URL/);
+  });
+});
+
+describe("dropped uploads", () => {
+  test("a client that goes away mid-body isn't reported as a failure", async () => {
+    const failures: string[] = [];
+    const statuses: number[] = [];
+    const mcp = createHostedMcp({
+      apiBaseUrl: "http://api.test",
+      onFailure: (name) => failures.push(name),
+    });
+    const server = Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch: async (request) => {
+        const response = await mcp.handle(request, {
+          apiKey: "coss_test_x",
+          apiFetch: () => new Response(),
+          signal: request.signal,
+        });
+        statuses.push(response.status);
+        return response;
+      },
+    });
+    try {
+      const socket = connect(server.port as number, "127.0.0.1");
+      await new Promise((resolve) => socket.once("connect", resolve));
+      socket.write(
+        "POST /mcp HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\n" +
+          'Content-Length: 100000\r\n\r\n{"jsonrpc":',
+      );
+      await Bun.sleep(50);
+      socket.destroy();
+      for (let i = 0; i < 100 && statuses.length === 0; i++) await Bun.sleep(5);
+      // The body's read fails after the answer: give it the time to report.
+      await Bun.sleep(20);
+    } finally {
+      server.stop(true);
+    }
+    expect(statuses).toEqual([503]);
+    expect(failures).toEqual([]);
+  });
+});
+
+describe("drain", () => {
+  const post = () =>
+    new Request("http://api.test/mcp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+        "Mcp-Protocol-Version": "2025-06-18",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "find_emails", arguments: {} },
+      }),
+    });
+
+  /** A request stopped with its API call still running, as SIGTERM leaves one. */
+  async function stoppedInFlight() {
+    const mcp = createHostedMcp({ apiBaseUrl: "http://api.test" });
+    const controller = new AbortController();
+    let finish = () => {};
+    let dispatched = () => {};
+    const started = new Promise<void>((resolve) => {
+      dispatched = resolve;
+    });
+    const answering = mcp.handle(post(), {
+      apiKey: "coss_test_x",
+      signal: controller.signal,
+      apiFetch: () => {
+        dispatched();
+        return new Promise<Response>((resolve) => {
+          finish = () => resolve(Response.json({ data: [], has_more: false }));
+        });
+      },
+    });
+    await started;
+    controller.abort();
+    expect((await answering).status).toBe(503);
+    return { mcp, finish: () => finish() };
+  }
+
+  test("waits for API calls still running after their request was answered", async () => {
+    const { mcp, finish } = await stoppedInFlight();
+    let drained = false;
+    const draining = mcp.drain(5_000).then((clean) => {
+      drained = true;
+      return clean;
+    });
+    await Bun.sleep(10);
+    expect(drained).toBe(false);
+    finish();
+    expect(await draining).toBe(true);
+  });
+
+  test("gives up at its limit, and says so", async () => {
+    const { mcp } = await stoppedInFlight();
+    const started = Date.now();
+    expect(await mcp.drain(20)).toBe(false);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
+
+  test("with nothing running, answers at once", async () => {
+    const mcp = createHostedMcp({ apiBaseUrl: "http://api.test" });
+    expect(await mcp.drain(5_000)).toBe(true);
   });
 });

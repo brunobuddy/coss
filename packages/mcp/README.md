@@ -51,8 +51,8 @@ What's different from the local server:
 - It can't touch your files: it doesn't read a project's env file, and `upload_sign_document` doesn't
   exist (upload the PDF with the API or an SDK, then use its id).
 - `create_webhook_endpoint` returns the signing secret instead of writing it to a file.
-- `COSS_MCP_TOOLSETS` and `COSS_BASE_URL` don't apply. Requests take at most 50 seconds and 1 MB, and
-  browsers' requests are refused.
+- `COSS_MCP_TOOLSETS` and `COSS_BASE_URL` don't apply. Requests take at most 50 seconds and 1 MB, an
+  API call's answer at most 8 MB of JSON, and browsers' requests are refused.
 
 `server.json` describes both for the [MCP registry](https://registry.modelcontextprotocol.io).
 
