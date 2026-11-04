@@ -360,7 +360,7 @@ function locationKind(location: BookingRow["location"]): string {
 /** What a due row's rule says now, or the outcome that finishes the row instead of sending it. */
 export function ruleVerdict(
   row: NotificationRow,
-  booking: Pick<BookingRow, "metadata" | "noShowAt" | "location" | "startAt">,
+  booking: Pick<BookingRow, "metadata" | "noShowAt" | "location" | "startAt" | "endAt">,
   rules: readonly ReminderRule[],
   now: Date,
 ):
@@ -372,10 +372,12 @@ export function ruleVerdict(
   );
   if (!rule) return { outcome: "stale" };
   if (offsetOf(rule) !== row.reminderOffsetMinutes) {
-    // On a start or end, the changed list's walk has made a row for the new moment. Nothing walks
-    // what's timed from something that's happened, so that row takes the new timing itself, or the
+    // A changed list's walk makes a row for the new moment, on a start or end of a booking that
+    // hasn't ended. Nothing walks anything else, so that row takes the new timing itself, or the
     // edit would lose it. An edit to sooner can only be seen once the row comes due: it goes then.
-    if (rule.anchor === "start" || rule.anchor === "end") return { outcome: "stale" };
+    const walked =
+      (rule.anchor === "start" || rule.anchor === "end") && booking.endAt.getTime() > now.getTime();
+    if (walked) return { outcome: "stale" };
     const due = (row.anchorAt?.getTime() ?? now.getTime()) + offsetOf(rule) * MINUTE_MS;
     if (due > now.getTime()) return { moveTo: new Date(due), offsetMinutes: offsetOf(rule) };
   }

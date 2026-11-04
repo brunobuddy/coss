@@ -1775,6 +1775,26 @@ describe("a waiting reminder whose timing is edited", () => {
     expect((await outcome(s, booking.id))?.outcome).toBe("sent");
   });
 
+  test("a follow-up to a meeting that's over keeps going, at its new time", async () => {
+    const s = await setUp();
+    const followUp = (after_minutes: number) =>
+      rule({ key: "welcome", anchor: "end", after_minutes, send: ["email_attendee"] });
+    await updateSettings(s.env, { reminders: [followUp(1440)] });
+    const { booking } = await book(s);
+    await updateSettings(s.env, { reminders: [followUp(2880)] });
+    // The walk leaves ended bookings alone, so it's only this row that can carry on.
+    await runDueReminderSyncs(
+      { now: () => new Date(END + 60 * MINUTE) },
+      { scope: { organizationIds: [s.env.organizationId] } },
+    );
+    await runAt(s, END + 1440 * MINUTE);
+    const moved = await outcome(s, booking.id);
+    expect(moved?.outcome).toBeNull();
+    expect(moved?.due_at).toBe(new Date(END + 2880 * MINUTE).toISOString());
+    await runAt(s, END + 2880 * MINUTE);
+    expect((await outcome(s, booking.id))?.outcome).toBe("sent");
+  });
+
   test("a webhook takes the new timing too", async () => {
     const s = await setUp();
     const hook = (after_minutes: number) =>
