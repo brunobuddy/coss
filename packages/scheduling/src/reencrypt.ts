@@ -4,7 +4,7 @@ import type { SecretsKeyRing } from "@coss/webhooks";
 import { decryptSecret, encryptSecret, isEncryptedWithPrimary } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, or } from "drizzle-orm";
 
-const { schedulingAttendee, schedulingSession } = schema;
+const { schedulingAttendee, schedulingBooking, schedulingSession } = schema;
 
 /** A test compares this with the database's columns. */
 export const SCHEDULING_DATA_KEY_COLUMNS = [
@@ -12,6 +12,7 @@ export const SCHEDULING_DATA_KEY_COLUMNS = [
   "scheduling_attendee.encrypted_answers",
   "scheduling_session.encrypted_attendee",
   "scheduling_session.encrypted_attributes",
+  "scheduling_booking.encrypted_cancellation_reason",
 ] as const;
 
 export type SchedulingDataKeyColumn = (typeof SCHEDULING_DATA_KEY_COLUMNS)[number];
@@ -234,6 +235,69 @@ async function reencryptSessions(opts: Options, result: SchedulingReencryptResul
 }
 
 /** Idempotent and safe while the apps serve traffic: it resumes by running again. */
+async function reencryptCancellationReasons(
+  opts: Options,
+  result: SchedulingReencryptResult,
+): Promise<void> {
+  const batchSize = opts.batchSize ?? 200;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingBooking.id,
+        organizationId: schedulingBooking.organizationId,
+        reason: schedulingBooking.encryptedCancellationReason,
+      })
+      .from(schedulingBooking)
+      .where(
+        and(
+          gt(schedulingBooking.id, after),
+          isNotNull(schedulingBooking.encryptedCancellationReason),
+          opts.scope
+            ? inArray(schedulingBooking.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingBooking.id))
+      .limit(batchSize);
+    for (const row of rows) {
+      result.checked++;
+      const next = rewritten(
+        row,
+        [["scheduling_booking.encrypted_cancellation_reason", row.reason]],
+        opts,
+        result,
+      );
+      if (!next) continue;
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      await opts.beforeWrite?.(row.id);
+      // The compare-and-set is what keeps a reason erased meanwhile erased.
+      const [updated] = await db
+        .update(schedulingBooking)
+        .set({
+          encryptedCancellationReason:
+            next.get("scheduling_booking.encrypted_cancellation_reason") ?? null,
+        })
+        .where(
+          and(
+            eq(schedulingBooking.id, row.id),
+            eq(schedulingBooking.organizationId, row.organizationId),
+            eq(schedulingBooking.encryptedCancellationReason, row.reason as string),
+          ),
+        )
+        .returning({ id: schedulingBooking.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < batchSize) break;
+    after = last.id;
+  }
+}
+
 export async function reencryptSchedulingData(opts: Options): Promise<SchedulingReencryptResult> {
   const result: SchedulingReencryptResult = {
     checked: 0,
@@ -244,5 +308,6 @@ export async function reencryptSchedulingData(opts: Options): Promise<Scheduling
   };
   await reencryptAttendees(opts, result);
   await reencryptSessions(opts, result);
+  await reencryptCancellationReasons(opts, result);
   return result;
 }
