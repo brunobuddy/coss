@@ -175,6 +175,8 @@ export const schedulingHost = pgTable(
     // The mailbox a calendar delegation connects, when it isn't `email` or matching is off.
     calendarAccount: text("calendar_account"),
     timeZone: text("time_zone").notNull(),
+    // What this host's notifications are written in. Null: English.
+    locale: text("locale"),
     attributes: jsonb("attributes")
       .$type<Record<string, string | string[]>>()
       .notNull()

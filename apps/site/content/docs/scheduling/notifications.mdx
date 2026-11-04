@@ -85,3 +85,13 @@ await coss.scheduling.bookings.updateLocation(bookingId, {
   location: { type: "link", url: "https://video.example.com/room/abc" },
 });
 ```
+
+## Languages
+
+Emails and texts are written in the attendee's `locale`, set when booking (the hosted booking page sends the
+browser's), and guests get the same. Hosts' are written in the host's own `locale`. Dates follow it too. What's yours
+stays as you wrote it: an event type's title and your brand name aren't translated.
+
+English, Chinese (Simplified and Traditional), Dutch, French, German, Italian, Japanese, Korean, Polish, Portuguese
+(Portugal and Brazil), Russian, Spanish, Swedish and Turkish are covered. Any other locale gets English, with its
+date in English too. Texts in languages outside the GSM alphabet take more segments, so they cost more.

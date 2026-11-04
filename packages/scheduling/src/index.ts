@@ -15,6 +15,7 @@ export { isDeadlock, isExclusionViolation } from "./claims.ts";
 export * from "./errors.ts";
 export * from "./event-types.ts";
 export * from "./hosts.ts";
+export * from "./i18n.ts";
 export * from "./logo.ts";
 export * from "./notifications.ts";
 export * from "./plan.ts";
