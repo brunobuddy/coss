@@ -16,6 +16,8 @@ describe("choosing a language", () => {
     ["zh-TW", "zh-TW"],
     ["zh-HK", "zh-TW"],
     ["zh-Hant", "zh-TW"],
+    ["zh-Hans-TW", "zh-CN"],
+    ["zh-Hant-CN", "zh-TW"],
     ["es-419", "es"],
     ["en-GB", "en"],
     ["ar", "en"],

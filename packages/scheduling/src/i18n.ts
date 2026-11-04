@@ -653,7 +653,7 @@ const CATALOGS = {
     lead_confirmed_host: "Du har en ny bokning.",
     lead_confirmed_guest: "Du har lagts till i den här bokningen.",
     lead_pending_approval_attendee:
-      "Vi har tagit emot din förfrågan. Du hör av oss när den har godkänts.",
+      "Vi har tagit emot din förfrågan. Du hör från oss när den har godkänts.",
     lead_pending_approval_host: "En ny bokning väntar på godkännande.",
     lead_rescheduled_attendee: "Din bokning har flyttats.",
     lead_rescheduled_host: "En bokning har flyttats.",
@@ -700,7 +700,8 @@ export function messageLocale(locale: string | null | undefined): MessageLocale 
   }
   const { language, region, script } = parsed;
   if (language === "zh") {
-    return script === "Hant" || ["TW", "HK", "MO"].includes(region ?? "") ? "zh-TW" : "zh-CN";
+    if (script) return script === "Hant" ? "zh-TW" : "zh-CN";
+    return ["TW", "HK", "MO"].includes(region ?? "") ? "zh-TW" : "zh-CN";
   }
   if (language === "pt") return region === "BR" ? "pt-BR" : "pt";
   return language in CATALOGS ? (language as MessageLocale) : "en";
