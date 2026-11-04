@@ -246,6 +246,8 @@ export const schedulingEventType = pgTable(
     environmentId: text("environment_id").notNull(),
     uid: text("uid"),
     title: text("title").notNull(),
+    // Shown on hosted pages, never in emails. Links only to the organization's verified domains.
+    description: text("description"),
     kind: schedulingEventTypeKind("kind").notNull().default("one_on_one"),
     status: schedulingEventTypeStatus("status").notNull().default("active"),
     durationMinutes: integer("duration_minutes").notNull(),

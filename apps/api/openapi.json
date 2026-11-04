@@ -18685,6 +18685,13 @@
             ],
             "description": "Your own id for this event type, accepted wherever its id is. `null` when none is set."
           },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Plain text shown on hosted booking pages. `null` when there's none."
+          },
           "title": {
             "type": "string",
             "description": "Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`."
@@ -18887,6 +18894,7 @@
           "object",
           "id",
           "uid",
+          "description",
           "title",
           "kind",
           "status",
@@ -18922,6 +18930,7 @@
             "id": "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
             "uid": null,
             "title": "Initial consultation",
+            "description": null,
             "kind": "one_on_one",
             "status": "active",
             "duration_minutes": 30,
@@ -19262,6 +19271,14 @@
             "default": "one_on_one",
             "description": "Who a booking needs. `one_on_one`: one host. `pool`: any one of its hosts. `collective`: every `required` host, plus at most one `member`. `group`: one host, with attendees taking seats up to `capacity`. Fixed once created."
           },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it."
+          },
           "title": {
             "type": "string",
             "minLength": 1,
@@ -19538,6 +19555,7 @@
                 "id": "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
                 "uid": null,
                 "title": "Initial consultation",
+                "description": null,
                 "kind": "one_on_one",
                 "status": "active",
                 "duration_minutes": 30,
@@ -19589,6 +19607,14 @@
             "minLength": 1,
             "maxLength": 255,
             "description": "Your own id for this event type. `null` removes it."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it."
           },
           "title": {
             "type": "string",

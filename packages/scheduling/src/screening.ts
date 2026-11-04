@@ -18,6 +18,45 @@ export function refuseLinks(value: string | null | undefined, param: string): vo
   }
 }
 
+const SCHEME_LINK = /[a-z][a-z0-9+.-]*:\/\/[^\s<>"']*/giu;
+const BARE_HOST =
+  /(?<![\p{L}\p{N}.-])(?:[\p{L}\p{N}-]+\.)+\p{L}{2,}(?![\p{L}\p{N}-])(?:\/[^\s<>"']*)?/gu;
+
+function hostOf(value: string): string | null {
+  try {
+    return new URL(value).hostname.replace(/\.$/, "").toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Every host text links to, as it would resolve: lookalike letters come out as punycode, and
+ * `https://acme.com@evil.com` as `evil.com`. Null when a link isn't `https` or can't be read. Anything
+ * shaped like a domain counts, since a person can follow one that isn't a link at all.
+ */
+export function linkedHosts(text: string): string[] | null {
+  // The dots browsers also accept in a host name, which NFKC leaves alone.
+  const normalized = text.normalize("NFKC").replace(/[\u3002\uff0e\uff61]/g, ".");
+  const hosts = new Set<string>();
+  for (const [link] of normalized.matchAll(SCHEME_LINK)) {
+    if (!link.toLowerCase().startsWith("https://")) return null;
+    const host = hostOf(link);
+    if (!host) return null;
+    hosts.add(host);
+  }
+  for (const [bare] of normalized.replace(SCHEME_LINK, " ").matchAll(BARE_HOST)) {
+    const host = hostOf(`https://${bare}`);
+    if (!host) return null;
+    hosts.add(host);
+  }
+  return [...hosts];
+}
+
+export function isWithinDomains(host: string, domains: readonly string[]): boolean {
+  return domains.some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
 export async function screenSetup(
   env: { organizationId: string; mode: "live" | "sandbox" },
   text: string,

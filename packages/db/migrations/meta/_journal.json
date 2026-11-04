@@ -911,6 +911,13 @@
       "when": 1793821697717,
       "tag": "0129_oval_sharon_ventura",
       "breakpoints": true
+    },
+    {
+      "idx": 130,
+      "version": "7",
+      "when": 1793821966684,
+      "tag": "0130_past_karnak",
+      "breakpoints": true
     }
   ]
 }

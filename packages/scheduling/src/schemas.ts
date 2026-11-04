@@ -501,6 +501,10 @@ const EventTypeHostInput = z
   .meta({ id: "SchedulingEventTypeHostInput" });
 
 const eventTypeFields = {
+  description: z.string().max(2000).nullable().optional().meta({
+    description:
+      "Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it.",
+  }),
   title: z.string().min(1).max(120).meta({
     description:
       "Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.",
@@ -656,6 +660,7 @@ const EVENT_TYPE_EXAMPLE = {
   id: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
   uid: null,
   title: "Initial consultation",
+  description: null,
   kind: "one_on_one" as const,
   status: "active" as const,
   duration_minutes: 30,
@@ -699,6 +704,9 @@ export const EventTypeObject = z
     uid: z.string().nullable().meta({
       description:
         "Your own id for this event type, accepted wherever its id is. `null` when none is set.",
+    }),
+    description: z.string().nullable().meta({
+      description: "Plain text shown on hosted booking pages. `null` when there's none.",
     }),
     title: z.string().meta({
       description:

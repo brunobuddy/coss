@@ -213,6 +213,7 @@ export function createSchedulingClientRoutes(opts: {
     return {
       id: eventType.id,
       title: eventType.title,
+      description: eventType.description,
       kind: eventType.kind,
       duration_minutes: eventType.duration_minutes,
       duration_options: eventType.duration_options,

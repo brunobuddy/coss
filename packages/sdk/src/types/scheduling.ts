@@ -199,6 +199,11 @@ interface SchedulingEventTypeFields {
   hold_ttl_seconds?: number;
   cancel_notice_minutes?: number;
   reschedule_notice_minutes?: number;
+  /**
+   * Plain text, shown on hosted booking pages and never in emails. Links must be on your
+   * organization's verified domains and use `https`.
+   */
+  description?: string | null;
   /** How many people an attendee can add to a booking. Default: 0. Not on `group`. */
   max_guests?: number;
   /**
@@ -240,6 +245,7 @@ export interface SchedulingEventType {
   id: string;
   uid: string | null;
   title: string;
+  description: string | null;
   kind: SchedulingEventTypeKind;
   status: "active" | "archived";
   duration_minutes: number;
