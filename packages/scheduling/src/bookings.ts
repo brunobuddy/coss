@@ -414,6 +414,8 @@ async function lockHostsAndMemberships(
   tx: Executor,
   eventType: EventTypeRow,
   hostIds: readonly string[],
+  /** Someone named a host past membership, who may have been taken off it (`any_host`). */
+  opts: { evenIfRemoved?: boolean } = {},
 ): Promise<void> {
   const sorted = [...hostIds].sort();
   const active = await tx
@@ -448,7 +450,7 @@ async function lockHostsAndMemberships(
         eq(schedulingEventTypeHost.eventTypeId, eventType.id),
         eq(schedulingEventTypeHost.organizationId, eventType.organizationId),
         inArray(schedulingEventTypeHost.hostId, sorted),
-        isNull(schedulingEventTypeHost.removedAt),
+        opts.evenIfRemoved ? undefined : isNull(schedulingEventTypeHost.removedAt),
       ),
     )
     .orderBy(asc(schedulingEventTypeHost.hostId))

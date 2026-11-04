@@ -238,7 +238,12 @@ export async function deleteHolidayCalendar(
   await calendarRow(db, scope, id);
   await db
     .update(schedulingHolidayCalendar)
-    .set({ deletedAt: nowOf(deps), nextSyncAt: nowOf(deps), encryptedIcsUrl: null })
+    .set({
+      deletedAt: nowOf(deps),
+      nextSyncAt: nowOf(deps),
+      settingsChangedAt: nowOf(deps),
+      encryptedIcsUrl: null,
+    })
     .where(
       and(
         eq(schedulingHolidayCalendar.id, id),
@@ -556,16 +561,28 @@ async function syncOne(
     environmentId: row.environmentId,
     mode: row.mode,
   };
+  const here = and(
+    eq(schedulingHolidayCalendar.id, row.id),
+    eq(schedulingHolidayCalendar.organizationId, row.organizationId),
+  );
+  /** Whether someone's changed it since this was claimed: compared in JS, since rows hold more than a `Date`. */
+  const changedSince = async (tx: Executor, lock: boolean) => {
+    const query = tx
+      .select({ at: schedulingHolidayCalendar.settingsChangedAt })
+      .from(schedulingHolidayCalendar)
+      .where(here);
+    const [latest] = await (lock ? query.for("update") : query);
+    return latest?.at.getTime() !== row.settingsChangedAt.getTime();
+  };
+  // A change made meanwhile asked to be looked at now, and that's not this sync's to put off.
   const done = (values: Partial<typeof schedulingHolidayCalendar.$inferInsert>) =>
-    db
-      .update(schedulingHolidayCalendar)
-      .set({ leaseUntil: null, ...values })
-      .where(
-        and(
-          eq(schedulingHolidayCalendar.id, row.id),
-          eq(schedulingHolidayCalendar.organizationId, row.organizationId),
-        ),
-      );
+    db.transaction(async (tx) => {
+      const changed = await changedSince(tx, true);
+      await tx
+        .update(schedulingHolidayCalendar)
+        .set({ leaseUntil: null, ...(changed ? {} : values) })
+        .where(here);
+    });
   const today = dayOf(now);
   const until = dayOf(new Date(now.getTime() + LOOK_AHEAD_DAYS * DAY_MS));
   let holidays: Holiday[];
@@ -605,6 +622,12 @@ async function syncOne(
       });
       return;
     }
+  }
+  // Reading a feed takes a while. What it found is for the settings this started with, so a calendar
+  // that's been changed or deleted starts over, and nothing's made from what it no longer says.
+  if (await changedSince(db, false)) {
+    await done({});
+    return;
   }
   const more = await reconcile(
     row,

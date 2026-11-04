@@ -1906,6 +1906,21 @@ describe("out of office", () => {
         ((await (await send(`/bookings/${id}`, "GET")).json()) as { hosts: string[] }).hosts;
       expect(await hostsOf(mine.id)).toEqual([host.id]);
       expect(await hostsOf(later.id)).toEqual([outsider.id]);
+
+      // Undoing that is still this team's, and so is what comes of it.
+      const undoneRun = (await undone.json()) as { id: string };
+      const again = await lead(`/manager/reassignments/${undoneRun.id}/undo`, "POST", {});
+      expect(again.status).toBe(202);
+      const againRun = (await again.json()) as { id: string };
+      await runDueReassignments(testDeps, { scope });
+      expect(await hostsOf(mine.id)).toEqual([peer.id]);
+      expect((await lead(`/manager/reassignments/${againRun.id}`, "GET")).status).toBe(200);
+      const runs = (await (await lead("/manager/reassignments", "GET")).json()) as {
+        data: { id: string }[];
+      };
+      expect(runs.data.map((run) => run.id)).toEqual(
+        expect.arrayContaining([made.id, undoneRun.id, againRun.id]),
+      );
     });
 
     test("another team's run doesn't exist", async () => {

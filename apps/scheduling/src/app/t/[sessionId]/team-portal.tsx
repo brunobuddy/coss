@@ -29,6 +29,7 @@ import {
 import { type Branding, useAccentColor } from "@/lib/branding";
 import { type ClientApiError, type ClientCall, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
+import { chosenTarget } from "@/lib/team-moves";
 
 type TeamSession = Branding & { read_only: boolean; sandbox: boolean };
 type Host = { id: string; name: string; status: string };
@@ -609,11 +610,11 @@ function MoveMany(props: {
   const [notify, setNotify] = useState(true);
   const [truncated, setTruncated] = useState(false);
   const [items, setItems] = useState<PreviewItem[] | null>(null);
-  const [choices, setChoices] = useState<Record<string, string>>({});
+  const [choices, setChoices] = useState<Record<string, string | null>>({});
   const [problem, setProblem] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
   const others = hosts.filter((host) => host.status === "active" && host.id !== from);
-  const targetOf = (item: PreviewItem) => choices[item.booking] ?? item.to_host ?? null;
+  const targetOf = (item: PreviewItem) => chosenTarget(item, choices);
   const assignments = (items ?? []).flatMap((item) => {
     const to = targetOf(item);
     return to && item.from_host
@@ -742,12 +743,7 @@ function MoveMany(props: {
                     hosts={others.filter((host) => host.id !== item.from_host)}
                     label={`Who ${item.title} goes to`}
                     onChange={(next) =>
-                      setChoices((current) => {
-                        const copy = { ...current };
-                        if (next) copy[item.booking] = next;
-                        else delete copy[item.booking];
-                        return copy;
-                      })
+                      setChoices((current) => ({ ...current, [item.booking]: next }))
                     }
                     placeholder="Stays"
                     value={targetOf(item)}

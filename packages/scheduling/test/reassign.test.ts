@@ -34,6 +34,7 @@ import {
   type SchedulingEmail,
   type SchedulingEnvironment,
   startCalendarAuthorization,
+  updateEventType,
   updateHost,
   updateSettings,
 } from "../src/index.ts";
@@ -574,6 +575,43 @@ describe("a collective", () => {
     expect((await reassign(env, booking.id, both)).hosts.sort()).toEqual(
       [spare.id, spare2.id].sort(),
     );
+    await auditClaims(env);
+  });
+});
+
+describe("someone taken off the event type", () => {
+  test("`any_host` can name them, without putting them back on it", async () => {
+    const env = await environment();
+    const [first, second, former] = [
+      await host(env, "First"),
+      await host(env, "Second"),
+      await host(env, "Former"),
+    ];
+    const pool = await eventTypeWith(env, "pool", [member(first), member(second), member(former)]);
+    await updateEventType(env, pool.id, { hosts: [member(first), member(second)] } as never);
+    const { booking } = await createBooking(
+      env,
+      { eventType: pool.id, startMs: at("10:00"), host: first.id, attendee },
+      plain,
+      actor,
+    );
+    await expect(reassign(env, booking.id, change(former.id))).rejects.toBeDefined();
+    const moved = await reassign(
+      env,
+      booking.id,
+      change(former.id, { overrides: ["any_host"], note: "They said they'd take it" }),
+    );
+    expect(moved.hosts).toEqual([former.id]);
+    const [membership] = await db
+      .select({ removedAt: schema.schedulingEventTypeHost.removedAt })
+      .from(schema.schedulingEventTypeHost)
+      .where(
+        and(
+          eq(schema.schedulingEventTypeHost.eventTypeId, pool.id),
+          eq(schema.schedulingEventTypeHost.hostId, former.id),
+        ),
+      );
+    expect(membership?.removedAt).not.toBeNull();
     await auditClaims(env);
   });
 });

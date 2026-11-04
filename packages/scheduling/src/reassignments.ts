@@ -640,7 +640,10 @@ export async function previewReassignment(
         )
     : [];
   // What the proposal's used so far. A host's one person, across event types.
-  const proposed = new Map<string, { startMs: number; occupied: Interval }[]>();
+  const proposed = new Map<
+    string,
+    { eventTypeId: string; startMs: number; occupied: Interval }[]
+  >();
   const fairness = new Map<string, number>();
   const seriesHost = new Map<string, string>();
   const byEventType = new Map<string, BookingRow[]>();
@@ -664,14 +667,12 @@ export async function previewReassignment(
         entry.membership?.scheduleId ?? null,
       ]),
     );
-    const coverage = coverageWindows(unrouted);
     const loaded = await loadHostInputs(db, {
       scope: env,
       hosts: [...everyone.values()].map((host) => ({
         id: host.id,
         timeZone: host.timeZone,
         scheduleId: scheduleOf.get(host.id) ?? null,
-        onlyWithin: anyHost ? undefined : coverage.get(host.id),
       })),
       eventTypeId,
       fromMs: Math.min(...group.map((booking) => booking.startAt.getTime())),
@@ -698,6 +699,8 @@ export async function previewReassignment(
       const memberIds = new Set(
         [...candidates.members, ...candidates.required].map((entry) => entry.host.id),
       );
+      // Whose time someone's covering depends on who this booking could have gone to.
+      const coverage = coverageWindows(candidates);
       const durationMinutes = (booking.endAt.getTime() - booking.startAt.getTime()) / MINUTE_MS;
       const rule = {
         ...slotRuleOf(eventType, durationMinutes),
@@ -719,7 +722,9 @@ export async function previewReassignment(
           for (const limit of rule.limits) {
             const key = limitUsageKey(limit, inputs.timeZone, startMs);
             const inSameBucket = taken.filter(
-              (claim) => limitUsageKey(limit, inputs.timeZone, claim.startMs) === key,
+              (claim) =>
+                (limit.scope === "host" || claim.eventTypeId === eventTypeId) &&
+                limitUsageKey(limit, inputs.timeZone, claim.startMs) === key,
             ).length;
             limitUsage[key] = (limitUsage[key] ?? 0) + inSameBucket;
           }
@@ -728,6 +733,7 @@ export async function previewReassignment(
             rule,
             host: {
               ...inputs,
+              onlyWithin: anyHost ? undefined : coverage.get(hostId),
               limitUsage,
               claims: normalizeIntervals([
                 ...inputs.claims,
@@ -780,7 +786,7 @@ export async function previewReassignment(
       }
       if (to) {
         const taken = proposed.get(to) ?? [];
-        taken.push({ startMs, occupied: occupiedRange(startMs, rule) });
+        taken.push({ eventTypeId, startMs, occupied: occupiedRange(startMs, rule) });
         proposed.set(to, taken);
         if (eventType.kind === "pool") {
           const key = `${eventTypeId}:${to}`;

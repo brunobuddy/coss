@@ -230,9 +230,10 @@ async function claimTarget(
   schedules: ReadonlyMap<string, string | null>,
   owner: { bookingId: string } | { groupSessionId: string },
   ttlOf: (tx: Transaction) => Promise<number | null>,
+  anyHost: boolean,
 ): Promise<Date | null> {
   const { eventType, rule, startMs } = plan;
-  await lockHostsAndMemberships(tx, eventType, [target.id]);
+  await lockHostsAndMemberships(tx, eventType, [target.id], { evenIfRemoved: anyHost });
   await lockLimitBuckets(tx, eventType, rule, [target], startMs);
   const verdict = (await verdictsOf(tx, plan, [target], schedules)).get(target.id);
   if (!verdict?.ok) throw new LostSlot(verdict?.reason ?? "host_unavailable");
@@ -460,9 +461,19 @@ async function reassignOne(
         const claimed = started
           ? null
           : await inSavepoint(tx, (savepoint) =>
-              claimTarget(savepoint, plan, choice, schedules, { bookingId: booking.id }, ttlOf),
+              claimTarget(
+                savepoint,
+                plan,
+                choice,
+                schedules,
+                { bookingId: booking.id },
+                ttlOf,
+                anyHost,
+              ),
             );
-        if (started) await lockHostsAndMemberships(tx, eventType, [choice.id]);
+        if (started) {
+          await lockHostsAndMemberships(tx, eventType, [choice.id], { evenIfRemoved: anyHost });
+        }
         if (claimed && (!liveUntil || claimed < liveUntil)) liveUntil = claimed;
         won = choice;
         break;
@@ -711,6 +722,7 @@ async function reassignSession(
           schedules,
           { groupSessionId: session.id },
           ttlOf,
+          anyHost,
         );
       });
       target = choice;

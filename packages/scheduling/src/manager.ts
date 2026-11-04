@@ -241,10 +241,16 @@ export async function managedRunWhere(hostIds: readonly string[]) {
     sql`, `,
   );
   if (hostIds.length === 0) return sql`false`;
-  return sql`(
-    ${schedulingReassignment.selection}->>'host_id' in (${ids})
-    or ${schedulingReassignment.undoOfId} in (
-      select r.id from scheduling_reassignment r where r.selection->>'host_id' in (${ids})
+  // An undo only names its bookings, so whose it is goes back to the run that started it, however
+  // many undos ago that was.
+  return sql`exists (
+    with recursive chain (selection, undo_of_id) as (
+      select r.selection, r.undo_of_id from scheduling_reassignment r
+      where r.id = ${schedulingReassignment.id}
+      union all
+      select p.selection, p.undo_of_id from scheduling_reassignment p
+      join chain on p.id = chain.undo_of_id
     )
+    select 1 from chain where chain.selection->>'host_id' in (${ids})
   )`;
 }

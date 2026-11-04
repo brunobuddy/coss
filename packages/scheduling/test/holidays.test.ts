@@ -95,6 +95,18 @@ function feed(initial: string) {
   return { state, transport };
 }
 
+/** Does something once, while the feed's being read. */
+const during = (transport: DavTransport, change: () => Promise<unknown>): DavTransport => {
+  let done = false;
+  return async (request) => {
+    if (!done) {
+      done = true;
+      await change();
+    }
+    return transport(request);
+  };
+};
+
 const sync = async (env: SchedulingEnvironment, transport: DavTransport, at: Date = NOW) => {
   for (let pass = 0; pass < 20; pass++) {
     const ran = await runDueHolidayCalendars(
@@ -124,6 +136,38 @@ const dueAgain = (id: string) =>
     .update(schema.schedulingHolidayCalendar)
     .set({ nextSyncAt: NOW, leaseUntil: null })
     .where(eq(schema.schedulingHolidayCalendar.id, id));
+
+describe("a calendar changed while its feed is being read", () => {
+  test("deleted, it makes nobody away, and goes", async () => {
+    const env = await environment();
+    const doctor = await host(env, "Doctor");
+    const created = await calendar(env, [doctor.id]);
+    const { transport } = feed(ics(day("2031-01-05", "One")));
+    await sync(
+      env,
+      during(transport, () => deleteHolidayCalendar(env, created.id, plain)),
+    );
+    expect(await datesOf(env, doctor.id)).toEqual([]);
+    const left = await db
+      .select({ id: schema.schedulingHolidayCalendar.id })
+      .from(schema.schedulingHolidayCalendar)
+      .where(eq(schema.schedulingHolidayCalendar.id, created.id));
+    expect(left).toEqual([]);
+  });
+
+  test("edited, it goes by the new settings, straight away", async () => {
+    const env = await environment();
+    const [a, b] = [await host(env, "A"), await host(env, "B")];
+    const created = await calendar(env, [a.id]);
+    const { transport } = feed(ics(day("2031-01-05", "One")));
+    await sync(
+      env,
+      during(transport, () => updateHolidayCalendar(env, created.id, { hosts: [b.id] }, plain)),
+    );
+    expect(await datesOf(env, a.id)).toEqual([]);
+    expect(await datesOf(env, b.id)).toEqual(["2031-01-05"]);
+  });
+});
 
 describe("reading a feed", () => {
   test("whole days, with names, between the dates", () => {

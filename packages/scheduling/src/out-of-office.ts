@@ -903,8 +903,8 @@ export async function putOutOfOffice(
   };
   const delegates = await delegateIdsOf(env, params.delegates, undefined);
   refuseSelfCover(delegates, host.id);
-  try {
-    return await db.transaction(async (tx) => {
+  const attempt = () =>
+    db.transaction(async (tx) => {
       const [existing] = await tx
         .select()
         .from(schedulingOutOfOffice)
@@ -984,6 +984,15 @@ export async function putOutOfOffice(
       await noteConflicts(tx, env, inserted, actor, now);
       return { entry: await objectOf(tx, inserted, deps), created: true };
     });
+  // A retry of the same request can overlap it: both see nothing, and whichever's second loses on the
+  // unique index. By then there's an entry for it to update, as if it had come a moment later.
+  try {
+    return await attempt();
+  } catch (error) {
+    if (!isExternalIdTaken(error)) throw error;
+  }
+  try {
+    return await attempt();
   } catch (error) {
     if (isExternalIdTaken(error)) throw externalIdTaken(externalId);
     throw error;

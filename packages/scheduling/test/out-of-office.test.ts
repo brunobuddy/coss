@@ -430,6 +430,18 @@ describe("many hosts at once", () => {
 });
 
 describe("syncing from a system of record", () => {
+  test("the same id sent twice at once leaves one entry, and neither fails", async () => {
+    const env = await environment();
+    const doctor = await host(env);
+    const params = { host: doctor.id, start_date: "2031-01-06", end_date: "2031-01-07" };
+    const answers = await Promise.all([
+      putOutOfOffice(env, "leave_race", params, plain, actor),
+      putOutOfOffice(env, "leave_race", params, plain, actor),
+    ]);
+    expect(answers.map((answer) => answer.created).sort()).toEqual([false, true]);
+    expect(answers[0]?.entry.id).toBe(answers[1]?.entry.id as string);
+  });
+
   test("sending the same id twice leaves one entry, with the latest of what it says", async () => {
     const env = await environment();
     const doctor = await host(env);

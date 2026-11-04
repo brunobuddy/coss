@@ -233,6 +233,85 @@ describe("what a run covers", () => {
     expect(items).toEqual([]);
   });
 
+  test("a limit on an event type only counts what's proposed from it", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const limits = [{ period: "day", max: 1, scope: "event_type" }];
+    const first = await pool(env, [a, b], { limits });
+    const second = await pool(env, [a, b], { limits });
+    const one = await book(env, first.id, at("10:00"), a.id);
+    const two = await book(env, second.id, at("11:00"), a.id);
+    const { items } = await previewReassignment(
+      env,
+      request({ host: a.id }, { to_host: b.id }),
+      plain,
+    );
+    expect(Object.fromEntries(items.map((item) => [item.booking, item.to_host]))).toEqual({
+      [one.id]: b.id,
+      [two.id]: b.id,
+    });
+    await start(env, request({ host: a.id }, { to_host: b.id }));
+    await drain(env);
+    expect(await hostsOf(one.id)).toEqual([b.id]);
+    expect(await hostsOf(two.id)).toEqual([b.id]);
+  });
+
+  test("a limit on a host counts what's proposed from any event type", async () => {
+    const env = await environment();
+    const [a, c, b] = await Promise.all([host(env, "A"), host(env, "C"), host(env, "B")]);
+    const limits = [{ period: "day", max: 1, scope: "host" }];
+    const first = await pool(env, [a, b], { limits });
+    const second = await pool(env, [c, b], { limits });
+    const one = await book(env, first.id, at("10:00"), a.id);
+    const two = await book(env, second.id, at("11:00"), c.id);
+    const { items } = await previewReassignment(
+      env,
+      request({ booking_ids: [one.id, two.id] }, { to_host: b.id }),
+      plain,
+    );
+    expect(items.filter((item) => item.to_host === b.id).length).toBe(1);
+  });
+
+  test("someone covering only counts for those the booking could have gone to", async () => {
+    const env = await environment();
+    const inTeam = { attributes: { team: "heart" } };
+    const [principal, other, current, delegate] = await Promise.all([
+      createHost(env, { name: "Principal", time_zone: "UTC", ...inTeam }),
+      createHost(env, { name: "Other", time_zone: "UTC", attributes: { team: "skin" } }),
+      createHost(env, { name: "Current", time_zone: "UTC", ...inTeam }),
+      createHost(env, { name: "Delegate", time_zone: "UTC", ...inTeam }),
+    ]);
+    for (const entry of [principal, other, current, delegate]) {
+      await createSchedule(env, entry.id, {
+        rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+      });
+    }
+    const type = await pool(env, [principal, other, current]);
+    const booking = await book(env, type.id, at("14:00"), current.id, {
+      attributes: { team: "heart" },
+    });
+    // They cover the principal in the morning, and someone this booking couldn't go to now.
+    const cover = (hostId: string, from: string, to: string) =>
+      createOutOfOffice(
+        env,
+        { host: hostId, start: iso(from), end: iso(to), delegates: [delegate.id] } as never,
+        plain,
+        actor,
+        "api",
+      );
+    await cover(principal.id, "09:00", "10:00");
+    await cover(other.id, "13:00", "15:00");
+    const { items } = await previewReassignment(
+      env,
+      request(
+        { booking_ids: [booking.id] },
+        { preferred_hosts: [delegate.id], otherwise: "leave" },
+      ),
+      plain,
+    );
+    expect(items[0]?.to_host ?? null).toBeNull();
+  });
+
   test("by event type, by id and by what's in an out of office entry", async () => {
     const env = await environment();
     const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
