@@ -214,6 +214,9 @@ Injected as `SchedulingDeps.plans`; without it nothing is enforced. What the pla
 - `schedulingWhiteLabel` (`coss_attribution` in the client API's `/session`).
 - `scheduling.slots.second` (`limitSchedulingSlots` in the API): live slot lists and searches per organization.
 
+Gates take a connection of their own, so they never run inside a transaction: holding one connection while waiting for
+another stalls the pool under load. They run before it, and `gateNewRequest` skips a retry of a key already used.
+
 A person on a hosted page never meets a plan gate (Free's booking allowance aside): a session's attributes aren't
 checked again. Never gate the double-booking guarantee, calendars or series. A filter or a group size that exists keeps working whatever the plan; a downgrade is refused only for live
 `host_filter`s (the dashboard's preflight).

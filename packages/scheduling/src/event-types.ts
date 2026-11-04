@@ -20,7 +20,7 @@ import {
 import { notZoomMeeting } from "./calendar/zoom.ts";
 import { SchedulingError } from "./errors.ts";
 import { checkTimeZone, type HostRow, resolveHost } from "./hosts.ts";
-import { requireRouting } from "./plan.ts";
+import { requireLiveFeature } from "./plan.ts";
 import type {
   CreateEventTypeRequestOutput,
   EventTypeObjectOutput,
@@ -401,7 +401,8 @@ export async function createEventType(
   params: CreateEventTypeRequestOutput,
   opts: { screen?: SetupScreening | undefined; plans?: PlanGate | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
-  await requireRouting(env, opts.plans, params.host_filter);
+  // `{}` is a filter too: it matches every active host.
+  if (params.host_filter != null) await requireLiveFeature(env, opts.plans, "schedulingRouting");
   await checkGroupSeats(env, opts.plans, params.capacity);
   refuseLinks(params.title, "title");
   refuseLinksInAddresses(params.locations);
@@ -572,16 +573,21 @@ export async function updateEventType(
       "locations",
     );
   }
+  // What it already has keeps working: only a change meets the plan. Before the transaction, since
+  // the gate takes a connection of its own.
+  if (opts.plans && (params.host_filter != null || params.capacity != null)) {
+    const current = await resolveEventType(db, scope, ref);
+    if (
+      params.host_filter != null &&
+      JSON.stringify(params.host_filter) !== JSON.stringify(current.hostFilter)
+    ) {
+      await requireLiveFeature(scope, opts.plans, "schedulingRouting");
+    }
+    await checkGroupSeats(scope, opts.plans, params.capacity, current.capacity ?? 0);
+  }
   try {
     return await db.transaction(async (tx) => {
       const existing = await resolveEventType(tx, scope, ref);
-      // What it already has keeps working: only a change meets the plan.
-      if (JSON.stringify(params.host_filter ?? null) !== JSON.stringify(existing.hostFilter)) {
-        if (params.host_filter !== undefined) {
-          await requireRouting(scope, opts.plans, params.host_filter);
-        }
-      }
-      await checkGroupSeats(scope, opts.plans, params.capacity, existing.capacity ?? 0);
       const set = {
         ...(params.uid !== undefined ? { uid: params.uid } : {}),
         ...(params.title !== undefined ? { title: params.title } : {}),

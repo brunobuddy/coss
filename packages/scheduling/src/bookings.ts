@@ -75,7 +75,7 @@ import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { confirmedSeats, withSessionLocation } from "./group-sessions.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
 import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
-import { refuseNewBookingWhileHeld, requireLiveFeature } from "./plan.ts";
+import { refuseNewBookingWhileHeld, requireLiveFeature, requireRouting } from "./plan.ts";
 import {
   type AttendeeInputOutput,
   type BookingObjectOutput,
@@ -112,6 +112,8 @@ type Location = NonNullable<BookingRow["location"]>;
 export type BookingActor = NonNullable<typeof schedulingBookingEvent.$inferInsert.actor>;
 
 export type BookingRequest = {
+  /** The API's gate on `attributes`. A session's were checked when it was made, so it passes none. */
+  gateRouting?: boolean | undefined;
   eventType: string;
   startMs: number;
   host?: string | undefined;
@@ -1419,6 +1421,35 @@ const idempotencyErrors = {
     ),
 };
 
+/**
+ * What the plan decides about a new live request. A retry of a key already used skips it: whatever
+ * the plan says now, what it made is answered with (`withIdempotencyKey` checks that it matches).
+ */
+async function gateNewRequest(
+  env: SchedulingEnvironment,
+  request: Pick<BookingRequest, "attributes" | "gateRouting" | "idempotencyKey">,
+  deps: SchedulingDeps,
+  opts: { hold: boolean; table: typeof schedulingBooking | typeof schedulingSeries },
+): Promise<void> {
+  if (env.mode !== "live" || !deps.plans) return;
+  if (request.idempotencyKey) {
+    const [made] = await db
+      .select({ id: opts.table.id })
+      .from(opts.table)
+      .where(
+        and(
+          eq(opts.table.organizationId, env.organizationId),
+          eq(opts.table.environmentId, env.environmentId),
+          eq(opts.table.idempotencyKey, request.idempotencyKey),
+        ),
+      )
+      .limit(1);
+    if (made) return;
+  }
+  if (opts.hold) await requireLiveFeature(env, deps.plans, "schedulingHolds");
+  if (request.gateRouting) await requireRouting(env, deps.plans, request.attributes);
+}
+
 async function book(
   env: SchedulingEnvironment,
   request: BookingRequest,
@@ -1426,6 +1457,7 @@ async function book(
   actor: BookingActor,
   wantHold: boolean,
 ): Promise<{ booking: BookingObjectOutput; replayed: boolean }> {
+  await gateNewRequest(env, request, deps, { hold: wantHold, table: schedulingBooking });
   checkStart(request.startMs);
   checkAttendee(request.attendee);
   const eventType = await resolveEventType(db, env, request.eventType);
@@ -1526,10 +1558,7 @@ export const createHold = (
   request: BookingRequest,
   deps: SchedulingDeps,
   actor: BookingActor,
-) =>
-  requireLiveFeature(env, deps.plans, "schedulingHolds").then(() =>
-    book(env, request, deps, actor, true),
-  );
+) => book(env, request, deps, actor, true);
 
 async function lockBooking(tx: Executor, scope: Scope, id: string): Promise<BookingRow> {
   if (!isId(ID_PREFIXES.schedulingBooking, id)) {
@@ -2711,6 +2740,7 @@ export async function createSeries(
   deps: SchedulingDeps,
   actor: BookingActor,
 ): Promise<{ result: SeriesResult; replayed: boolean }> {
+  await gateNewRequest(env, request, deps, { hold: false, table: schedulingSeries });
   checkStart(request.startMs);
   checkAttendee(request.attendee);
   const eventType = await resolveEventType(db, env, request.eventType);

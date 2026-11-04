@@ -102,6 +102,75 @@ describe("Scheduling's plan gates", () => {
     }
   });
 
+  test("concurrent creates can't pass the limit, and the gate isn't asked under the lock", async () => {
+    const tenant = await createTestTenant();
+    const gate = createPlanGate();
+    let asked = 0;
+    const app = enforced({
+      plans: {
+        ...gate,
+        requireCapacity: async (...args) => {
+          asked++;
+          return gate.requireCapacity(...args);
+        },
+      },
+    });
+    const results = await Promise.all(
+      ["a", "b", "c", "d", "e"].map((uid) =>
+        call(app, tenant.liveKey, "POST", "/hosts", hostBody(uid)),
+      ),
+    );
+    expect(results.filter((res) => res.status === 201)).toHaveLength(3);
+    expect(results.filter((res) => res.status === 402)).toHaveLength(2);
+    expect(await countLiveHosts(tenant.organization.id)).toBe(3);
+    // Only the refused ones: a create that fits never takes a second connection under the lock.
+    expect(asked).toBe(2);
+  });
+
+  test("an empty host_filter is a filter: it matches every active host", async () => {
+    const pro = await onPlan("pro");
+    const app = enforced();
+    const res = await call(app, pro.liveKey, "POST", "/event_types", {
+      title: "Pool",
+      kind: "pool",
+      duration_minutes: 30,
+      hosts: [],
+      host_filter: {},
+    });
+    expect(res.status).toBe(402);
+  });
+
+  test("a retry of a key already used meets no plan gate", async () => {
+    const scale = await onPlan("scale");
+    const app = enforced();
+    const eventType = await bookable(app, scale.liveKey);
+    const body = { event_type: eventType, start: at("09:00"), attendee };
+    const keyed = (target: TestApp, key: string, payload: object) =>
+      target.request("/v1/scheduling/holds", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${scale.liveKey}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": key,
+        },
+        body: JSON.stringify(payload),
+      });
+    expect((await keyed(app, "hold-key", body)).status).toBe(201);
+    // The plan no longer has it, as after a downgrade.
+    const lower = enforced({
+      plans: {
+        ...createPlanGate(),
+        requireFeature: async () => {
+          throw new BillingError("plan_feature_unavailable", "Not on this plan.");
+        },
+      },
+    });
+    const replay = await keyed(lower, "hold-key", body);
+    expect(replay.status).toBe(201);
+    expect(replay.headers.get("Idempotent-Replayed")).toBe("true");
+    expect((await keyed(lower, "another-key", { ...body, start: at("10:00") })).status).toBe(402);
+  });
+
   test("the embedded host portal needs Scale", async () => {
     const free = await createTestTenant();
     const app = enforced();
@@ -334,7 +403,16 @@ describe("the host fee", () => {
   test("nothing is charged before the meter is priced, and a day at a time after", async () => {
     const tenant = await onPlan("scale");
     const app = enforced();
-    await call(app, tenant.liveKey, "POST", "/hosts", hostBody("a"));
+    await createHost(
+      {
+        organizationId: tenant.organization.id,
+        projectId: tenant.project.id,
+        environmentId: tenant.production.id,
+        mode: "live",
+      },
+      hostBody("a"),
+      { now: new Date("2026-12-01T00:00:00Z") },
+    );
     await call(app, tenant.sandboxKey, "POST", "/hosts", hostBody("sandbox"));
     const scope = { organizationIds: [tenant.organization.id] };
     expect(await chargeDueHostFees({ now: new Date("2026-12-31T23:00:00Z"), scope })).toBe(0);

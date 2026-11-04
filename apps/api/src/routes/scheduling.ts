@@ -1423,6 +1423,7 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     body: z.output<typeof CreateBookingRequest>,
     idempotencyKey: string | undefined,
   ) => ({
+    gateRouting: true,
     eventType: body.event_type,
     startMs: instant(body.start, "start"),
     host: body.host,
@@ -1439,7 +1440,6 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   router.openapi(
     createBookingRoute,
     async (c) => {
-      await requireRouting(c.var.auth, deps.plans, c.req.valid("json").attributes);
       const { booking, replayed } = await createBooking(
         c.var.auth,
         bookingRequest(c.req.valid("json"), c.req.valid("header")["Idempotency-Key"]),
@@ -1536,7 +1536,6 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   router.openapi(
     createHoldRoute,
     async (c) => {
-      await requireRouting(c.var.auth, deps.plans, c.req.valid("json").attributes);
       const { booking, replayed } = await createHold(
         c.var.auth,
         bookingRequest(c.req.valid("json"), c.req.valid("header")["Idempotency-Key"]),
@@ -1580,7 +1579,6 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
   router.openapi(
     createSeriesRoute,
     async (c) => {
-      await requireRouting(c.var.auth, deps.plans, c.req.valid("json").attributes);
       const { result, replayed } = await createSeries(
         c.var.auth,
         seriesRequest(c.req.valid("json"), c.req.valid("header")["Idempotency-Key"]),

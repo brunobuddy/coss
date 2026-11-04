@@ -148,62 +148,74 @@ export async function createHost(
   const now = opts.now ?? new Date();
   const pricedFrom = meterPricedFrom(HOST_FEE_METER) ?? now;
   const chargedNow = live && pricedFrom <= now;
+  // Read before the transaction: the gate takes a connection of its own, and waiting for one while
+  // holding this lock would stall the pool under concurrent creates.
+  const limit = live
+    ? ((await opts.plans?.limit(env.organizationId, "schedulingHosts")) ?? null)
+    : null;
   try {
-    return await db.transaction(async (tx) => {
-      if (live && opts.plans) {
-        // One creation at a time per organization, so the count holds.
-        await tx.execute(
-          sql`select pg_advisory_xact_lock(hashtext(${`scheduling-hosts:${env.organizationId}`}))`,
-        );
-        const [total] = await tx
-          .select({ value: count() })
-          .from(schedulingHost)
-          .where(
-            and(
-              eq(schedulingHost.organizationId, env.organizationId),
-              isNotNull(schedulingHost.nextFeeAt),
-            ),
+    const created = await db.transaction(
+      async (tx): Promise<{ host: HostObjectOutput } | { full: number }> => {
+        if (limit !== null) {
+          // One creation at a time per organization, so the count holds.
+          await tx.execute(
+            sql`select pg_advisory_xact_lock(hashtext(${`scheduling-hosts:${env.organizationId}`}))`,
           );
-        await opts.plans.requireCapacity(env.organizationId, "schedulingHosts", total?.value ?? 0);
-      }
-      const [row] = await tx
-        .insert(schedulingHost)
-        .values({
-          organizationId: env.organizationId,
-          projectId: env.projectId,
-          environmentId: env.environmentId,
-          uid: params.uid ?? null,
-          name: params.name,
-          email: params.email ?? null,
-          timeZone: params.time_zone,
-          attributes: params.attributes ?? {},
-          locations: params.locations ?? [],
-          metadata: params.metadata ?? {},
-          nextFeeAt: !live
-            ? null
-            : chargedNow
-              ? new Date(now.getTime() + HOST_FEE_INTERVAL_MS)
-              : pricedFrom,
-        })
-        .returning();
-      if (chargedNow) {
-        // Past a capped plan's allowance a new host is refused, or deleting and creating would
-        // never run out. Hosts that already exist are only ever written off.
-        await opts.billing?.reserve(tx, {
-          organizationId: env.organizationId,
-          meter: HOST_FEE_METER,
-          quantity: 1,
-        });
-        await recordUsage(tx, {
-          organizationId: env.organizationId,
-          environmentId: env.environmentId,
-          projectId: env.projectId,
-          meter: HOST_FEE_METER,
-          quantity: 1,
-        });
-      }
-      return toHostObject(row as HostRow);
-    });
+          const [total] = await tx
+            .select({ value: count() })
+            .from(schedulingHost)
+            .where(
+              and(
+                eq(schedulingHost.organizationId, env.organizationId),
+                isNotNull(schedulingHost.nextFeeAt),
+              ),
+            );
+          const current = total?.value ?? 0;
+          if (current >= limit) return { full: current };
+        }
+        const [row] = await tx
+          .insert(schedulingHost)
+          .values({
+            organizationId: env.organizationId,
+            projectId: env.projectId,
+            environmentId: env.environmentId,
+            uid: params.uid ?? null,
+            name: params.name,
+            email: params.email ?? null,
+            timeZone: params.time_zone,
+            attributes: params.attributes ?? {},
+            locations: params.locations ?? [],
+            metadata: params.metadata ?? {},
+            nextFeeAt: !live
+              ? null
+              : chargedNow
+                ? new Date(now.getTime() + HOST_FEE_INTERVAL_MS)
+                : pricedFrom,
+          })
+          .returning();
+        if (chargedNow) {
+          // Past a capped plan's allowance a new host is refused, or deleting and creating would
+          // never run out. Hosts that already exist are only ever written off.
+          await opts.billing?.reserve(tx, {
+            organizationId: env.organizationId,
+            meter: HOST_FEE_METER,
+            quantity: 1,
+          });
+          await recordUsage(tx, {
+            organizationId: env.organizationId,
+            environmentId: env.environmentId,
+            projectId: env.projectId,
+            meter: HOST_FEE_METER,
+            quantity: 1,
+          });
+        }
+        return { host: toHostObject(row as HostRow) };
+      },
+    );
+    if ("host" in created) return created.host;
+    // The gate's own refusal, now the lock is gone. If it no longer refuses, the plan just grew.
+    await opts.plans?.requireCapacity(env.organizationId, "schedulingHosts", created.full);
+    return await createHost(env, params, opts);
   } catch (error) {
     if (isUniqueViolation(error)) throw uidTaken(params.uid);
     throw error;
