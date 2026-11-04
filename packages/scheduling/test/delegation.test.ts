@@ -322,6 +322,29 @@ describe("connecting hosts", () => {
     expect(await slotStarts(env, eventType.id)).toEqual(["09:30", "10:00"]);
   });
 
+  test("hosts that keep failing can't hold up the ones behind them", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    // A failed mailbox with an OAuth connection to it leaves no delegated row to skip it by.
+    for (let index = 0; index < 20; index++) {
+      const stuck = await hostOn(env, `stuck${index}`);
+      api.goneMailboxes.add(`stuck${index}@${DOMAIN}`);
+      await db.insert(schema.schedulingCalendarConnection).values({
+        organizationId: env.organizationId,
+        environmentId: env.environmentId,
+        hostId: stuck.id,
+        provider: "google",
+        accountId: `stuck${index}@${DOMAIN}`,
+      });
+    }
+    const healthy = await hostOn(env, "healthy");
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    await run(env, deps);
+    expect(await listConnections(env, healthy.id)).toMatchObject([{ status: "active" }]);
+  });
+
   test("a big domain arrives in batches, and a run with hosts left comes straight back", async () => {
     const env = await environment();
     const api = new FakeGoogleCalendarApi();
@@ -655,6 +678,56 @@ describe("a host who already connected by OAuth", () => {
     ).toMatchObject({ write_target: true });
   });
 
+  test("a consent racing the takeover leaves the delegation's row as it is", async () => {
+    const { env, deps, ana } = await connectedByOAuth();
+    const delegation = await createCalendarDelegation(
+      env,
+      { provider: "google", domain: DOMAIN, service_account_key: account.key },
+      deps,
+    );
+    const { url } = await startCalendarAuthorization(
+      env,
+      ana.id,
+      { provider: "google", returnUrl: null },
+      deps,
+    );
+    // The takeover holds the row, uncommitted, while the consent's upsert runs into it.
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked = () => {};
+    const lockTaken = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const takeover = db.transaction(async (tx) => {
+      await tx
+        .update(schema.schedulingCalendarConnection)
+        .set({ delegationId: delegation.id, encryptedCredentials: "the delegation's" })
+        .where(eq(schema.schedulingCalendarConnection.hostId, ana.id));
+      locked();
+      await gate;
+    });
+    await lockTaken;
+    const consent = completeCalendarAuthorization(
+      {
+        provider: "google",
+        state: new URL(url).searchParams.get("state") as string,
+        code: "code",
+        error: null,
+      },
+      deps,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    release();
+    await Promise.all([takeover, consent]);
+    const [row] = await db
+      .select()
+      .from(schema.schedulingCalendarConnection)
+      .where(eq(schema.schedulingCalendarConnection.hostId, ana.id));
+    expect(row?.encryptedCredentials).toBe("the delegation's");
+  });
+
   test("a consent after that leaves the delegated row as it is", async () => {
     const { env, deps, ana } = await connectedByOAuth();
     await activeGoogle(env, deps);
@@ -824,6 +897,29 @@ describe("losing access", () => {
     await verifyCalendarDelegation(env, delegation.id, { account: `boss@${DOMAIN}` }, deps);
     await run(env, deps);
     expect(await listConnections(env, ana.id)).toMatchObject([{ status: "active" }]);
+  });
+
+  test("new credentials are tried on whoever's left when the verified mailbox is gone", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    await hostOn(env, "ben");
+    const delegation = await activeGoogle(env, deps, "ana");
+    await run(env, deps);
+    api.goneMailboxes.add(`ana@${DOMAIN}`);
+    const updated = await updateCalendarDelegation(
+      env,
+      delegation.id,
+      { service_account_key: account.key },
+      deps,
+    );
+    expect(updated.status).toBe("active");
+    api.delegationRefused = { error: "invalid_client" };
+    expect(
+      await code(
+        updateCalendarDelegation(env, delegation.id, { service_account_key: account.key }, deps),
+      ),
+    ).toBe("calendar_delegation_refused");
   });
 
   test("a failure while it's already failing doesn't announce again", async () => {

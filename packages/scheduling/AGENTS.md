@@ -128,12 +128,14 @@ once, and every host on it gets their calendar with no consent screen.
   channel, the first read) and commits it all in one transaction, so a host goes from no calendar to a verified one,
   never hidden or empty. A push can't find a channel that isn't stored yet, so the calendar is read once more straight
   after. Before activating it takes the delegation's row `FOR SHARE`, or it could land just after a bulk flip to
-  `delegation_failing` and escape the outage. Delegations are claimed one at a time, and a lease is fenced. A delegation with hosts left runs again at once;
-  `nudgeDelegations` asks for a run when a host is created or changed.
+  `delegation_failing` and escape the outage. Delegations are claimed one at a time, and a lease is fenced. A delegation with hosts left runs again at once, walking
+  them with a cursor, so hosts that keep failing can't hold up the ones behind them; `nudgeDelegations` asks for a run
+  when a host is created or changed.
 - **Taking over an OAuth row** matches only on the account, keeping calendars, write target and ledger. A calendar in
   common proves nothing: a personal account can subscribe to a work calendar, and would get the wrong credentials. Never revoke the old token: Google's revoke drops all of the project's tokens for that person,
   which could be another host's. `saveConnection` leaves a delegated row alone, or a host's consent would replace the
-  delegation's token. `markNeedsReauth` re-reads the row, so a late failure of the old tokens does nothing.
+  delegation's token, and its upsert checks that again under its own lock, since a takeover in progress isn't visible
+  before it. `markNeedsReauth` re-reads the row, so a late failure of the old tokens does nothing.
 - **Losing access**: every `auth` failure goes through `handleAccessLost`. Refused credentials flip every connection
   to `delegation_failing` in one update (compare-and-set on the delegation: one webhook, log line and owner email), so
   every `status = 'active'` filter works with no join in the availability path, and one update brings them back. On

@@ -18,6 +18,7 @@ CREATE TABLE "scheduling_calendar_delegation" (
 	"failing_since" timestamp with time zone,
 	"secret_expires_at" timestamp with time zone,
 	"next_reconcile_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"reconcile_cursor" text,
 	"lease_until" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,

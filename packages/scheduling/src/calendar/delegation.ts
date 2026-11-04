@@ -13,6 +13,7 @@ import {
   and,
   asc,
   eq,
+  gt,
   inArray,
   isNotNull,
   isNull,
@@ -343,15 +344,11 @@ export async function updateCalendarDelegation(
   }
   const encryptedCredentials = credentials && encryptCredentials(credentials, deps.secretsKeys);
   if (encryptedCredentials && delegation.verifyAccount) {
-    try {
-      await checkMailbox(
-        { provider: delegation.provider, encryptedCredentials },
-        delegation.verifyAccount,
-        deps,
-      );
-    } catch (error) {
-      if (!(error instanceof CalendarError)) throw error;
-      if (error.kind === "auth" || error.kind === "permanent") throw refusal(error);
+    // Any mailbox that's left will do: the person who verified it may be long gone, and refusing good
+    // credentials over that would leave the delegation stuck once the old ones expire.
+    const { result, error } = await probeDelegation({ ...delegation, encryptedCredentials }, deps);
+    if (result === "refused" && error) throw refusal(error);
+    if (result === "inconclusive") {
       throw new SchedulingError("calendar_unavailable", "The provider didn't answer. Try again.");
     }
   }
@@ -421,6 +418,10 @@ const hostMailbox = (delegation: DelegationRow) =>
     ? sql<string>`lower(coalesce(${schedulingHost.calendarAccount}, ${schedulingHost.email}))`
     : sql<string>`lower(${schedulingHost.calendarAccount})`;
 
+/**
+ * Walks the hosts with a cursor. A host whose mailbox fails and who has an OAuth connection to it
+ * leaves no row of ours to skip it by, so without one, enough of them would hold up everyone behind.
+ */
 async function hostsToConnect(delegation: DelegationRow, now: Date): Promise<Host[]> {
   const mailbox = hostMailbox(delegation);
   const fresh = await db
@@ -431,6 +432,7 @@ async function hostsToConnect(delegation: DelegationRow, now: Date): Promise<Hos
         eq(schedulingHost.organizationId, delegation.organizationId),
         eq(schedulingHost.environmentId, delegation.environmentId),
         eq(schedulingHost.status, "active"),
+        delegation.reconcileCursor ? gt(schedulingHost.id, delegation.reconcileCursor) : undefined,
         sql`split_part(${mailbox}, '@', 2) = ${delegation.domain}`,
         // Any delegation's: a host has one delegated mailbox, and only `calendar_account` moves it.
         notExists(
@@ -720,11 +722,24 @@ async function connectHosts(delegation: DelegationRow, deps: CalendarDeps): Prom
   const started = nowMs(deps);
   const now = new Date(started);
   const hosts = await hostsToConnect(delegation, now);
-  if (hosts.length === 0) return new Date(started + IDLE_MS);
+  const moveCursor = (reconcileCursor: string | null) =>
+    db
+      .update(schedulingCalendarDelegation)
+      .set({ reconcileCursor })
+      .where(eq(schedulingCalendarDelegation.id, delegation.id));
+  if (hosts.length === 0) {
+    if (delegation.reconcileCursor) await moveCursor(null);
+    return new Date(started + IDLE_MS);
+  }
   const credentials = delegationCredentials(delegation.encryptedCredentials, deps.secretsKeys);
   const deadline = Date.now() + RUN_BUDGET_MS;
+  let reached: string | null = null;
   for (const host of hosts) {
-    if (Date.now() > deadline) break;
+    if (Date.now() > deadline) {
+      if (reached) await moveCursor(reached);
+      return now;
+    }
+    if (!host.existing) reached = host.id;
     try {
       await connectHost(delegation, credentials, host, deps);
     } catch (error) {
@@ -741,7 +756,10 @@ async function connectHosts(delegation: DelegationRow, deps: CalendarDeps): Prom
       await recordMailboxFailure(delegation, host, error.code, now);
     }
   }
-  return hosts.length >= HOSTS_PER_RUN ? now : new Date(started + IDLE_MS);
+  // A full batch means more behind it. Otherwise this pass is done, and the next starts over.
+  const full = hosts.length >= HOSTS_PER_RUN;
+  await moveCursor(full ? (reached ?? delegation.reconcileCursor) : null);
+  return full ? now : new Date(started + IDLE_MS);
 }
 
 /** Stops each connection's channels, then removes it with the host locked, as a booking reads it. */
@@ -812,8 +830,8 @@ async function warnOfExpiringSecret(delegation: DelegationRow, deps: CalendarDep
 async function reconcile(delegation: DelegationRow, deps: CalendarDeps): Promise<Date> {
   if (delegation.status === "deleting") return finishDeleting(delegation, deps);
   if (delegation.status === "failing") {
-    const probe = await probeDelegation(delegation, deps);
-    if (probe === "ok") await restoreDelegation(delegation, deps);
+    const { result } = await probeDelegation(delegation, deps);
+    if (result === "ok") await restoreDelegation(delegation, deps);
     return new Date(nowMs(deps) + BACKOFF_MS);
   }
   await warnOfExpiringSecret(delegation, deps);

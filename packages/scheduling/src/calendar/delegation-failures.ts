@@ -26,7 +26,11 @@ import { delegationFailureScope, mintDelegatedToken } from "./delegation-tokens.
 const { schedulingCalendar, schedulingCalendarConnection, schedulingCalendarDelegation } = schema;
 
 export type DelegationRow = typeof schedulingCalendarDelegation.$inferSelect;
-export type ProbeResult = "ok" | "refused" | "inconclusive";
+export type ProbeResult = {
+  result: "ok" | "refused" | "inconclusive";
+  /** What the provider said, when it refused. */
+  error?: CalendarError;
+};
 
 const PROBE_MAILBOXES = 3;
 
@@ -209,13 +213,13 @@ export async function probeDelegation(
     ]),
   ].slice(0, PROBE_MAILBOXES);
   const mailboxes = candidates.length > 0 || !opts.except ? candidates : [opts.except];
-  if (mailboxes.length === 0) return "inconclusive";
-  let refused = false;
+  if (mailboxes.length === 0) return { result: "inconclusive" };
+  let refused: CalendarError | undefined;
   let inconclusive = false;
   for (const mailbox of mailboxes) {
     try {
       await checkMailbox(delegation, mailbox, deps);
-      return "ok";
+      return { result: "ok" };
     } catch (error) {
       if (!(error instanceof CalendarError)) throw error;
       if (error.kind !== "auth") {
@@ -223,12 +227,12 @@ export async function probeDelegation(
         continue;
       }
       const scope = delegationFailureScope(error);
-      if (scope === "credentials") return "refused";
-      if (scope === "ambiguous") refused = true;
+      if (scope === "credentials") return { result: "refused", error };
+      if (scope === "ambiguous") refused = error;
     }
   }
-  if (inconclusive) return "inconclusive";
-  return refused ? "refused" : "ok";
+  if (inconclusive) return { result: "inconclusive" };
+  return refused ? { result: "refused", error: refused } : { result: "ok" };
 }
 
 /** Settles one refusal: `mailbox` is this mailbox's alone, `stop` means nothing more can be done now. */
@@ -244,9 +248,9 @@ export async function settleRefusal(
     await markDelegationFailing(delegation, error.code, deps);
     return "stop";
   }
-  const probe = await probeDelegation(delegation, deps, { except: mailbox });
-  if (probe === "ok") return "mailbox";
-  if (probe === "refused") await markDelegationFailing(delegation, error.code, deps);
+  const { result } = await probeDelegation(delegation, deps, { except: mailbox });
+  if (result === "ok") return "mailbox";
+  if (result === "refused") await markDelegationFailing(delegation, error.code, deps);
   return "stop";
 }
 

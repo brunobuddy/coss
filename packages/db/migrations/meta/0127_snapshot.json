@@ -1,5 +1,5 @@
 {
-  "id": "581a2c16-8e57-4742-a8e9-5362464340b9",
+  "id": "3333c80e-e7c2-47c7-925b-6aac6579e42e",
   "prevId": "b2ce9d5e-da75-4d24-9428-00a6111ab223",
   "version": "7",
   "dialect": "postgresql",
@@ -22283,6 +22283,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "reconcile_cursor": {
+          "name": "reconcile_cursor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "lease_until": {
           "name": "lease_until",

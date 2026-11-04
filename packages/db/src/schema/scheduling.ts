@@ -371,6 +371,8 @@ export const schedulingCalendarDelegation = pgTable(
     failingSince: instant("failing_since"),
     secretExpiresAt: instant("secret_expires_at"),
     nextReconcileAt: instant("next_reconcile_at").notNull().defaultNow(),
+    // How far through the hosts the worker has got: the last host id of its latest full batch.
+    reconcileCursor: text("reconcile_cursor"),
     leaseUntil: instant("lease_until"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

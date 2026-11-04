@@ -8,7 +8,7 @@ import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
 import { withoutTrailingSlashes } from "@coss/db/url";
 import { decryptSecret, encryptSecret, type SecretsKeyRing } from "@coss/webhooks";
-import { and, asc, desc, eq, inArray, isNotNull, lt, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import type { Interval } from "../engine/intervals.ts";
 import { SchedulingError } from "../errors.ts";
 import { resolveHost } from "../hosts.ts";
@@ -249,8 +249,25 @@ async function saveConnection(
           lastErrorCode: null,
           lastErrorAt: null,
         },
+        // Checked again on the row as it stands once the lock is ours: a takeover that hadn't
+        // committed when this began isn't visible above.
+        where: isNull(schedulingCalendarConnection.delegationId),
       })
       .returning();
+    if (!connection) {
+      const [taken] = await tx
+        .select()
+        .from(schedulingCalendarConnection)
+        .where(
+          and(
+            eq(schedulingCalendarConnection.hostId, host.id),
+            eq(schedulingCalendarConnection.organizationId, host.organizationId),
+            eq(schedulingCalendarConnection.provider, input.provider),
+            eq(schedulingCalendarConnection.accountId, input.accountId),
+          ),
+        );
+      return taken as ConnectionRow;
+    }
     const row = connection as ConnectionRow;
     await addRemoteCalendars(tx, row, remote, now);
     await recordCalendarEvent(tx, row, "scheduling.calendar.connected", now);
@@ -1007,7 +1024,8 @@ export async function releaseConnection(
         .unsubscribe?.({ channelId: calendar.channelId, resourceId: calendar.channelResourceId })
         .catch(() => {});
     }
-    if (connection.encryptedCredentials) {
+    // A delegation's tokens aren't this host's to revoke.
+    if (connection.encryptedCredentials && !connection.delegationId) {
       const tokens = JSON.parse(
         decryptSecret(connection.encryptedCredentials, deps.secretsKeys),
       ) as OAuthTokens;
