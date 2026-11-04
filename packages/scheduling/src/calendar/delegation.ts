@@ -687,6 +687,8 @@ async function connectHosts(delegation: DelegationRow, deps: CalendarDeps): Prom
 /** Stops each connection's channels, then removes it with the host locked, as a booking reads it. */
 async function finishDeleting(delegation: DelegationRow, deps: CalendarDeps): Promise<Date> {
   const now = deps.now?.() ?? new Date();
+  // Each release can spend a while taking details off events, and that mustn't outlast the lease.
+  const deadline = Date.now() + RUN_BUDGET_MS;
   const connections = await db
     .select()
     .from(schedulingCalendarConnection)
@@ -698,6 +700,7 @@ async function finishDeleting(delegation: DelegationRow, deps: CalendarDeps): Pr
     )
     .limit(REMOVALS_PER_RUN);
   for (const connection of connections) {
+    if (Date.now() > deadline) break;
     await releaseConnection(connection, deps);
     await db.transaction(async (tx) => {
       await tx

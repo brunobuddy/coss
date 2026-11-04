@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createHmac } from "node:crypto";
+import { pool } from "@coss/db";
 import type { LogWriter } from "@coss/logs";
 import { memoryLogWriter } from "@coss/logs/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
@@ -196,6 +197,30 @@ describe("scheduling API", () => {
     }
   });
 
+  test("a guest is erased by address, and the address isn't kept in the audit log", async () => {
+    const { app, key, eventType, tenant } = await setUp();
+    await call(app, key, "PATCH", `/event_types/${eventType}`, { max_guests: 1 });
+    const created = (await (
+      await call(app, key, "POST", "/bookings", {
+        ...booking(eventType, at("09:00")),
+        guests: [{ email: "jo@example.com" }],
+      })
+    ).json()) as { id: string };
+    const erased = await call(app, key, "POST", "/attendees/erase", { email: "jo@example.com" });
+    expect(erased.status).toBe(200);
+    expect(await erased.json()).toEqual({ object: "scheduling.attendee_erasure", erased: 1 });
+    const one = (await (await call(app, key, "GET", `/bookings/${created.id}`)).json()) as {
+      attendees: { email: string | null }[];
+    };
+    expect(one.attendees.map((person) => person.email)).toEqual(["sam@example.com", null]);
+    const audited = await pool.query(
+      "select action, target_id, metadata from org_audit_event where organization_id = $1 and action = 'scheduling_attendee.erased'",
+      [tenant.organization.id],
+    );
+    expect(audited.rows.length).toBe(1);
+    expect(JSON.stringify(audited.rows)).not.toContain("jo@example.com");
+  });
+
   test("erasing an attendee removes their details, and keeps the booking", async () => {
     const { app, key, eventType } = await setUp();
     const created = (await (
@@ -338,6 +363,39 @@ describe("client API", () => {
     const booking = await booked.json();
     expect(JSON.stringify(booking)).not.toContain("host_");
     expect(JSON.stringify(booking)).not.toContain("sam@example.com");
+  });
+
+  test("a booker can add guests the event type allows, and sees only the attendee back", async () => {
+    const s = await setUp();
+    await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, { max_guests: 1 });
+    const { token } = await bookerSession(s);
+    const session = (await (await client(s.app, token, "GET", "/session")).json()) as {
+      event_type: { max_guests: number };
+    };
+    expect(session.event_type.max_guests).toBe(1);
+    const attendee = { name: "Sam", email: "sam@example.com", time_zone: "UTC" };
+    const tooMany = await client(s.app, token, "POST", "/bookings", {
+      start: new Date(at("09:00")).toISOString(),
+      attendee,
+      guests: [{ email: "a@example.com" }, { email: "b@example.com" }],
+    });
+    expect(tooMany.status).toBe(422);
+    expect((await errorOf(tooMany)).code).toBe("invalid_attendee");
+    const booked = await client(s.app, token, "POST", "/bookings", {
+      start: new Date(at("09:00")).toISOString(),
+      attendee,
+      guests: [{ email: "jo@example.com", name: "Jo Park" }],
+    });
+    expect(booked.status).toBe(201);
+    const booking = (await booked.json()) as { id: string; attendees: { name: string }[] };
+    expect(booking.attendees).toEqual([{ name: "Sam", time_zone: "UTC" }] as never);
+    const full = (await (await call(s.app, s.key, "GET", `/bookings/${booking.id}`)).json()) as {
+      attendees: { role: string; email: string }[];
+    };
+    expect(full.attendees.map((person) => [person.role, person.email])).toEqual([
+      ["attendee", "sam@example.com"],
+      ["guest", "jo@example.com"],
+    ]);
   });
 
   test("a session routes to a specialist: the browser can't see or widen it", async () => {

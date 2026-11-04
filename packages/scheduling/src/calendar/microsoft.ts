@@ -44,6 +44,9 @@ function toBody(event: CalendarEventWrite) {
     sensitivity: "private",
     showAs: "busy",
     responseRequested: false,
+    ...(event.description !== undefined
+      ? { body: { contentType: "text", content: event.description ?? "" } }
+      : {}),
     start: { dateTime: new Date(event.startMs).toISOString(), timeZone: "UTC" },
     end: { dateTime: new Date(event.endMs).toISOString(), timeZone: "UTC" },
     ...(event.location ? { location: { displayName: event.location } } : {}),
@@ -55,6 +58,8 @@ function toBody(event: CalendarEventWrite) {
 
 function saysTheSame(existing: GraphEvent, event: CalendarEventWrite): boolean {
   return (
+    // We don't read what an event says: if a lost attempt wrote details, only a write settles it.
+    event.description === undefined &&
     instantOf(existing.start) === event.startMs &&
     instantOf(existing.end) === event.endMs &&
     (!event.location || existing.location?.displayName === event.location)

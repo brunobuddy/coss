@@ -8,6 +8,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { markDelegationFailing } from "../src/calendar/delegation-failures.ts";
 import {
   type CalendarDeps,
+  type CalendarWriteDeps,
   completeCalendarAuthorization,
   createBooking,
   createCalendarDelegation,
@@ -26,6 +27,7 @@ import {
   SchedulingError,
   startCalendarAuthorization,
   updateCalendarDelegation,
+  updateEventType,
   updateHost,
   verifyCalendarDelegation,
 } from "../src/index.ts";
@@ -48,9 +50,10 @@ const DOMAIN = "acme.example";
 const account = testServiceAccount();
 const secretsKeys = secretsKeyRing([createHash("sha256").update("delegation test").digest()]);
 
-function googleDeps(api: FakeGoogleCalendarApi, now: () => Date = () => NOW): CalendarDeps {
+function googleDeps(api: FakeGoogleCalendarApi, now: () => Date = () => NOW): CalendarWriteDeps {
   api.serviceAccountPublicKey = account.publicKey;
   return {
+    dataKeys: testSchedulingDeps().dataKeys,
     secretsKeys,
     apps: { google: { clientId: "google-client", clientSecret: "google-secret" }, microsoft: null },
     publicUrl: "https://api.example.test",
@@ -794,6 +797,29 @@ describe("deleting", () => {
     await dueNow(delegation.id);
     await run(env, deps);
     expect(await code(getCalendarDelegation(env, delegation.id))).toBe("not_found");
+  });
+
+  test("details come off a host's events before the access goes", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    const eventType = await eventTypeFor(env, [ana.id]);
+    await updateEventType(env, eventType.id, { host_calendar_details: "full" });
+    const delegation = await activeGoogle(env, deps);
+    await run(env, deps);
+    await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("09:00"), attendee },
+      testSchedulingDeps({ now: () => NOW }),
+      actor,
+    );
+    await runDueCalendarWrites(deps, { scope: scope(env) });
+    expect([...api.events.values()][0]?.title).toContain("Sam Lee");
+    await deleteCalendarDelegation(env, delegation.id, deps);
+    await run(env, deps);
+    expect(await listConnections(env, ana.id)).toEqual([]);
+    expect([...api.events.values()][0]?.title).toBe("Appointment");
   });
 
   test("a booking racing the removal still succeeds", async () => {

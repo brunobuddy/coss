@@ -54,7 +54,14 @@ export function testSchedulingDeps(overrides: Partial<SchedulingDeps> = {}): Sch
   };
 }
 
-type FakeEvent = { id: string; startMs: number; endMs: number; deleted?: boolean; title: string };
+type FakeEvent = {
+  id: string;
+  startMs: number;
+  endMs: number;
+  deleted?: boolean;
+  title: string;
+  description?: string;
+};
 
 /**
  * Google Calendar as a `fetch`, for `CalendarDeps.fetcher`. Written events echo back as busy, as
@@ -222,6 +229,7 @@ export class FakeGoogleCalendarApi {
         ? (JSON.parse(String(init.body)) as {
             id?: string;
             summary?: string;
+            description?: string;
             start?: { dateTime: string };
             end?: { dateTime: string };
             conferenceData?: unknown;
@@ -232,6 +240,7 @@ export class FakeGoogleCalendarApi {
         title: body.summary ?? "",
         startMs: Date.parse(body.start?.dateTime ?? ""),
         endMs: Date.parse(body.end?.dateTime ?? ""),
+        ...(body.description !== undefined ? { description: body.description } : {}),
       });
       const wire = (event: FakeEvent) => ({
         id: event.id,
@@ -260,6 +269,8 @@ export class FakeGoogleCalendarApi {
         return new Response(null, { status: 204 });
       }
       if (method === "PATCH" || method === "PUT") {
+        // PATCH leaves what it doesn't name, as Google's does; PUT replaces the event.
+        if (method === "PUT") delete existing.description;
         Object.assign(existing, toEvent(existing.id), { deleted: false });
         return json(200, wire(existing));
       }

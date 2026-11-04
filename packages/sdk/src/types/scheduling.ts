@@ -190,6 +190,14 @@ interface SchedulingEventTypeFields {
   hold_ttl_seconds?: number;
   cancel_notice_minutes?: number;
   reschedule_notice_minutes?: number;
+  /** How many people an attendee can add to a booking. Default: 0. Not on `group`. */
+  max_guests?: number;
+  /**
+   * What hosts' calendars say about a booking. `neutral` (the default): a private event titled
+   * "Appointment". `full`: this title with the attendee's name, plus who's coming in its
+   * description, which go to the host's calendar provider. Refused in HIPAA mode.
+   */
+  host_calendar_details?: SchedulingHostCalendarDetails;
   questions?: SchedulingQuestionInput[];
   locations?: SchedulingLocationInput[];
   host_filter?: SchedulingAttributes | null;
@@ -235,6 +243,8 @@ export interface SchedulingEventType {
   hold_ttl_seconds: number;
   cancel_notice_minutes: number;
   reschedule_notice_minutes: number;
+  max_guests: number;
+  host_calendar_details: SchedulingHostCalendarDetails;
   questions: SchedulingQuestion[];
   locations: SchedulingLocation[];
   host_filter: SchedulingAttributes | null;
@@ -295,6 +305,12 @@ export type SchedulingBookingStatus =
   | "cancelled"
   | "declined";
 
+/** Someone else coming along. They're emailed about the booking, with no manage link. */
+export interface SchedulingGuestInput {
+  email: string;
+  name?: string;
+}
+
 export interface SchedulingAttendeeInput {
   /** Your own id for this person, used to erase their data later. */
   uid?: string;
@@ -313,6 +329,8 @@ export interface CreateSchedulingBookingParams {
   attributes?: SchedulingAttributes;
   duration_minutes?: number;
   attendee: SchedulingAttendeeInput;
+  /** Up to the event type's `max_guests`. */
+  guests?: SchedulingGuestInput[];
   answers?: Record<string, string | string[]>;
   location?: SchedulingLocationInput;
   metadata?: Record<string, string>;
@@ -320,8 +338,12 @@ export interface CreateSchedulingBookingParams {
 
 export type CreateSchedulingHoldParams = CreateSchedulingBookingParams;
 
+export type SchedulingHostCalendarDetails = "neutral" | "full";
+
 export interface SchedulingBookingAttendee {
   id: string;
+  /** `attendee` booked it and comes first; a `guest` was added by them. */
+  role: "attendee" | "guest";
   uid: string | null;
   name: string | null;
   email: string | null;
@@ -416,6 +438,11 @@ export interface SchedulingCancelledSeries {
 export interface SchedulingAttendeeErasure {
   object: "scheduling.attendee_erasure";
   uid: string;
+  erased: number;
+}
+
+export interface SchedulingAttendeeEmailErasure {
+  object: "scheduling.attendee_erasure";
   erased: number;
 }
 

@@ -49,6 +49,7 @@ function toBody(event: CalendarEventWrite) {
     start: { dateTime: new Date(event.startMs).toISOString() },
     end: { dateTime: new Date(event.endMs).toISOString() },
     visibility: "private",
+    ...(event.description !== undefined ? { description: event.description ?? "" } : {}),
     ...(event.location ? { location: event.location } : {}),
     ...(event.conference === "google_meet"
       ? {

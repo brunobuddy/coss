@@ -229,7 +229,9 @@ import type {
   CreateHoldRequest,
   CreateHostRequest,
   CreateSeriesRequest,
+  EraseAttendeeByEmailRequest,
   ErasedAttendee,
+  ErasedAttendeeByEmail,
   EventTypeObject,
   HostObject,
   RescheduleBookingRequest,
@@ -363,6 +365,7 @@ import type {
   RescheduleSchedulingBookingParams,
   RiskFeedbackParams,
   RollWebhookEndpointSecretParams,
+  SchedulingAttendeeEmailErasure,
   SchedulingAttendeeErasure,
   SchedulingAvailabilitySearchResult,
   SchedulingBooking,
@@ -1116,6 +1119,10 @@ export type SubaccountContract = [
   Assert<MutuallyAssignable<z.input<typeof CancelSeriesRequest>, CancelSchedulingSeriesParams>>,
   Assert<MutuallyAssignable<z.output<typeof CancelledSeries>, SchedulingCancelledSeries>>,
   Assert<MutuallyAssignable<z.output<typeof ErasedAttendee>, SchedulingAttendeeErasure>>,
+  Assert<
+    MutuallyAssignable<z.output<typeof ErasedAttendeeByEmail>, SchedulingAttendeeEmailErasure>
+  >,
+  Assert<MutuallyAssignable<z.input<typeof EraseAttendeeByEmailRequest>, { email: string }>>,
   Assert<MutuallyAssignable<z.output<typeof SettingsObject>, SchedulingSettings>>,
   Assert<MutuallyAssignable<z.input<typeof UpdateSettingsRequest>, UpdateSchedulingSettingsParams>>,
   Assert<

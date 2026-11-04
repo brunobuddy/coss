@@ -139,8 +139,8 @@ once, and every host on it gets their calendar with no consent screen.
 - **Tokens outlive a revocation** by up to an hour: Google's and Entra's tokens aren't recalled. A delegated client
   raises `auth` for what a revocation looks like (Graph's inner `$batch` 401/403, Google's `insufficientPermissions`),
   or it'd pass as a failed read or a permanent write failure.
-- **Deleting** is `deleting`, then the worker: each channel stopped, then the connection removed with the host locked
-  `FOR UPDATE`, or a booking reading its write target would hit a foreign key. Hosts stay bookable with no conflict
+- **Deleting** is `deleting`, then the worker, within a run's budget: each connection released (details scrubbed,
+  channels stopped), then removed with the host locked `FOR UPDATE`, or a booking reading its write target would hit a foreign key. Hosts stay bookable with no conflict
   check (the dialog and docs say so), as with any disconnect.
 - Bookers' live check and sync need no changes. Provider behaviour the fakes can't prove (granular scopes under
   domain-wide delegation, Graph ids matching between `/me` and `/users/{id}`, app-only subscriptions and Teams links)
@@ -167,7 +167,33 @@ attendee sees times, never other hosts.
 - Answers come back only from `getBooking`: never lists, webhooks, logs, emails or calendars. The dashboard's iOS
   routes map bookings to name or uid only (`scheduling/wire.ts` under `apps/web/src/app/api/mobile/v1`).
 - Webhooks and log lines carry ids, times and statuses. `request-log.ts` keeps no bodies of these routes.
-- Host calendar events are private, titled "Appointment", with no attendees.
+- Host calendar events are private, titled "Appointment", with no attendees, unless the event type's
+  `host_calendar_details` is `full`: then `calendar/details.ts` adds its title, and who's coming to the title and
+  description. Nobody's ever invited through a provider (Graph can't be stopped from emailing them), answers never go
+  there, a group session's event has only the title, and Zoom stays neutral (`detailedEvent`, `writes.ts`). HIPAA mode
+  refuses `full` at setup, and is read again at each write.
+- A provider's copy of someone's details has to go when ours does. `details_written` marks a row whose event may say
+  more than "Appointment", and `scrub_pending` says details have to come off it.
+- `detailsToSend` takes `FOR SHARE` on the organization and the attendee rows, then sets the mark, in one transaction:
+  a plain read wouldn't wait for an uncommitted erasure or HIPAA enablement, and would send what they're removing. So
+  erasures and redaction change the attendee rows **before** calling `rewriteDetailedEvents`, in one transaction, and
+  `enableHipaaMode` updates the organization's row before its rewrite. The ledger row is locked last, or these deadlock.
+- A write clears both flags only if `desired_version` hasn't moved since it started (`clearedUnlessNewer`), and a stale
+  writer that sent details sets both again (`redrive`). A row with `scrub_pending` never gives up: it retries with capped
+  backoff and reports to Sentry once, until the write lands or the provider says the event is gone. Never work out
+  "is this a cleanup?" from what the event will say: erasing the attendee leaves a guest in the description.
+- `description` is left out of writes to an event that never held details, so what a host wrote there stays.
+- Known limit: disconnecting and deleting a delegation scrub what they can within a budget before access goes
+  (`scrubDetailedEvents`, which can't stop either), and deleting a host, moving a delegated host's `calendar_account`
+  or a host revoking access at the provider scrubs nothing. Those copies are
+  out of reach, and the docs say so.
+- A guest is a `scheduling_attendee` with `role = 'guest'`, only an email and optional name, and the attendee's zone and
+  locale; `participants` lists the attendee first. The event type's `max_guests` (default 0, never on `group`) allows
+  them, since each is an address someone typed that we then email. So in live environments they're only emailed from the
+  customer's own `email_from`, never coss.com's, even when it stops being verified (`ownSenderOnly`). They get no manage link and no SMS, and hear nothing until a booking's
+  confirmed (`guestsAreTold`, `notifications.ts`). Their emails say nothing the booker wrote. The booker
+  and manage pages and the iOS app see only the attendee; a host's portal sees everyone on their own bookings. With no `uid`, a guest is erased by address (`POST /scheduling/attendees/erase`):
+  never put the address in a path or the audit log.
 - `redactExpiredBookings` erases details 90 days after a booking ends, `purgeExpiredBookings` the row at 395;
   `eraseAttendee` on request, which also ends booker sessions fixed to them (found by `attendee_uid`). Periods live in
   `@coss/retention`.

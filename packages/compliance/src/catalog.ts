@@ -205,6 +205,6 @@ export const HIPAA_RESPONSIBILITIES: readonly string[] = [
   "Discarding only covers sent email and SMS. Received email and SMS, broadcasts, contacts, form submissions and bookings stay stored under your BAA for their normal retention periods.",
   "Keep PHI out of email subject lines and metadata such as tags and categories. Discarding removes a subject only once the email is finished, and tags and categories are kept.",
   "Webhook endpoints and log drains deliver to services you choose, so you need your own BAA with them where they receive PHI. Form submission webhooks include what was submitted.",
-  "Calendars connected to Scheduling (Google, Microsoft, CalDAV) and Zoom receive event titles, under your own agreements with those providers.",
+  "Calendars connected to Scheduling (Google, Microsoft, CalDAV) and Zoom receive each booking's time and location with a neutral title, under your own agreements with those providers. Attendees' details stay off them in this mode.",
   "A captcha you configure on a form sends the submitter's address to that captcha provider.",
 ];

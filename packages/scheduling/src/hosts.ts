@@ -263,8 +263,9 @@ async function hasLiveBookings(tx: Executor, host: HostRow): Promise<boolean> {
 /**
  * Changing `calendar_account` moves a delegated host to another mailbox, which ends the old
  * connection. Its events would be left on the old calendar with nothing to move or cancel them, so
- * that's refused while there are bookings. The old channel is left to run out: only the worker has
- * the provider's credentials, and a push from it finds nothing.
+ * that's refused while there are bookings. The old channel is left to run out, and past events keep
+ * any details on them, like deleting a host: reaching them takes the provider's credentials, which
+ * this doesn't hold.
  */
 async function releaseOldMailbox(
   tx: Executor,

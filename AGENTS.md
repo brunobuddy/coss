@@ -617,7 +617,7 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
   `createEnvironmentApiKey`, webhook `claimDue` (held, not failed), the Better Auth org hooks
   (`packages/auth/AGENTS.md`), and the dashboard (`OrgContext.can()` / `requireOrgPermission` allow only reads). New
   write paths must respect it. Domain re-checks and SES event ingestion keep running. Gate dashboard controls with `can(…)` from `requireOrgMember`, not `orgRoleCan`.
-- **Monitoring** (Sentry, `@coss/observability`): worker loops check in with Sentry at most once a minute (`worker-<loop>`, `loopMonitorConfig`) and `dispatch-backlog` reports messages waiting over 15 minutes; `GET /health/ready` is for uptime monitors only (load balancers stay on `/health`, which never touches the database). api and worker import `src/instrument.ts` first in `src/index.ts`
+- **Monitoring** (Sentry, `@coss/observability`): one cron monitor covers all worker loops (`worker-loops`, `watchLoops`: Sentry bills per monitor, so never one per loop) and `dispatch-backlog` reports messages waiting over 15 minutes; `GET /health/ready` is for uptime monitors only (load balancers stay on `/health`, which never touches the database). api and worker import `src/instrument.ts` first in `src/index.ts`
   (`@sentry/bun`; Bun has no runtime module hooks, so Hono gets `honoMiddleware(app)` in `createApp` — route names
   only, errors come from `onError`'s `console.error` — and pg/AWS calls aren't traced). The dashboard initializes
   its server in `register()` after env validation and exports `onRequestError`; both Next apps' browsers run

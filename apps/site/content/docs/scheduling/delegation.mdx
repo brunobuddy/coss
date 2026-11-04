@@ -13,8 +13,7 @@ reach anyone else's calendars. If you serve several organizations, add a delegat
 Each environment has its own delegations.
 
 Coss.com reads and writes the same things as it does for any other calendar, and
-[no more](/docs/scheduling/calendars#what-cosscom-reads-and-writes): busy times, and private events titled
-"Appointment".
+[no more](/docs/scheduling/calendars#what-cosscom-reads-and-writes).
 
 ## Google Workspace
 
@@ -116,7 +115,8 @@ come from your own records.
 
 The mailbox is set when a host connects. Changing their `email` later moves nothing. Changing `calendar_account`
 moves them, and is refused while they have upcoming bookings or holds, since those events would be left on the
-old calendar with nothing to move or cancel them.
+old calendar with nothing to move or cancel them. Past events on the old calendar stay as they are, including any
+[details](/docs/scheduling/calendars#what-cosscom-reads-and-writes) on them.
 
 A host's existing connection to the same mailbox is taken over, keeping their calendar choices and bookings. Their
 connections to anything else stay as they are, and they can still connect more.
@@ -151,6 +151,8 @@ the delegation. Look for `hosts_failed` on the delegation, or the webhook.
 
 `coss.scheduling.calendarDelegations.delete` removes its connections within minutes, and stops using your
 credentials. Its hosts **stay bookable with no conflict check**, until they connect a calendar of their own. Events
-already written stay on their calendars, and later moves or cancellations won't reach them.
+already written stay on their calendars, and later moves or cancellations won't reach them. As with
+[disconnecting](/docs/scheduling/calendars#what-cosscom-reads-and-writes), details come off as many of them as
+time allows first.
 
 To cut off access at once, also remove the client ID in Google's Admin console, or the app's consent in Entra.
