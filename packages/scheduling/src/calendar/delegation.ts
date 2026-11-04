@@ -563,7 +563,20 @@ async function hostStillWants(
   if (opts.ifCredentials && state.credentials !== opts.ifCredentials) return false;
   if (!host.existing) {
     const wanted = current.calendarAccount ?? (state.matchHostEmail ? current.email : null);
-    return wanted?.toLowerCase() === host.mailbox;
+    if (wanted?.toLowerCase() !== host.mailbox) return false;
+    // None when this was picked, but that was a while ago, and a host has only one.
+    const [other] = await tx
+      .select({ id: schedulingCalendarConnection.id })
+      .from(schedulingCalendarConnection)
+      .where(
+        and(
+          eq(schedulingCalendarConnection.hostId, host.id),
+          eq(schedulingCalendarConnection.organizationId, delegation.organizationId),
+          isNotNull(schedulingCalendarConnection.delegationId),
+        ),
+      )
+      .limit(1);
+    return !other;
   }
   const [stillThere] = await tx
     .select({ id: schedulingCalendarConnection.id })
@@ -629,6 +642,7 @@ async function connectHost(
       const upgraded = host.existing ? null : await connectionToUpgrade(tx, delegation, host);
       const fields = {
         delegationId: delegation.id,
+        reachedAt: now,
         encryptedCredentials: encryptCredentials(tokens, deps.secretsKeys),
         status: "active" as const,
         lastErrorCode: null,
@@ -685,7 +699,8 @@ async function connectHost(
           );
       }
       // What stood in for a mailbox that couldn't be reached, if it's not a calendar after all.
-      if (host.existing) {
+      const wasStandIn = host.existing !== null && host.existing.reachedAt === null;
+      if (wasStandIn) {
         await tx.delete(schedulingCalendar).where(
           and(
             eq(schedulingCalendar.connectionId, connection.id),
@@ -711,15 +726,9 @@ async function connectHost(
           ),
         )
         .for("update");
-      // A stand-in that turned out to be the primary calendar was made without a write target. One
-      // that's been read before had its target chosen, which coming back mustn't overrule.
-      if (
-        calendar &&
-        primary.writable &&
-        !calendar.writeTarget &&
-        calendar.verifiedAt === null &&
-        host.existing
-      ) {
+      // A stand-in that turned out to be the primary calendar was made without a write target. A
+      // connection that's worked before had its target chosen, which coming back mustn't overrule.
+      if (calendar && primary.writable && !calendar.writeTarget && wasStandIn) {
         const [target] = await tx
           .select({ id: schedulingCalendar.id })
           .from(schedulingCalendar)

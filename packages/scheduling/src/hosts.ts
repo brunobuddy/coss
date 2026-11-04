@@ -357,8 +357,8 @@ async function releaseOldMailbox(
     );
   }
   // A cancellation not written yet would stay on the old calendar for good, since this takes its
-  // ledger row with it. Access can come back, so that holds for one that can't be reached too, as
-  // long as there's an event there to cancel: one never written leaves nothing behind.
+  // ledger row with it. Access can come back, so that holds for one that can't be reached too, unless
+  // nothing was ever attempted: a create whose answer was lost has no id, and may well be there.
   const reachable = connection.status === "active";
   const [owed] = await tx
     .select({ id: schedulingCalendarEvent.id })
@@ -369,7 +369,14 @@ async function releaseOldMailbox(
         eq(schedulingCalendar.connectionId, connection.id),
         eq(schedulingCalendarEvent.organizationId, connection.organizationId),
         sql`${schedulingCalendarEvent.appliedVersion} < ${schedulingCalendarEvent.desiredVersion}`,
-        reachable ? undefined : isNotNull(schedulingCalendarEvent.providerEventId),
+        reachable
+          ? undefined
+          : or(
+              isNotNull(schedulingCalendarEvent.providerEventId),
+              sql`${schedulingCalendarEvent.attempts} > 0`,
+              isNotNull(schedulingCalendarEvent.lastErrorCode),
+              isNotNull(schedulingCalendarEvent.leaseUntil),
+            ),
       ),
     )
     .limit(1);
@@ -403,23 +410,6 @@ async function releaseUnreachedMailbox(tx: Executor, host: HostRow): Promise<voi
     .from(schedulingHost)
     .where(eq(schedulingHost.id, host.id))
     .for("update");
-  const [reached] = await tx
-    .select({ id: schedulingCalendar.id })
-    .from(schedulingCalendar)
-    .innerJoin(
-      schedulingCalendarConnection,
-      eq(schedulingCalendarConnection.id, schedulingCalendar.connectionId),
-    )
-    .where(
-      and(
-        eq(schedulingCalendar.hostId, host.id),
-        eq(schedulingCalendar.organizationId, host.organizationId),
-        isNotNull(schedulingCalendarConnection.delegationId),
-        isNotNull(schedulingCalendar.verifiedAt),
-      ),
-    )
-    .limit(1);
-  if (reached) return;
   await tx
     .delete(schedulingCalendarConnection)
     .where(
@@ -427,7 +417,7 @@ async function releaseUnreachedMailbox(tx: Executor, host: HostRow): Promise<voi
         eq(schedulingCalendarConnection.hostId, host.id),
         eq(schedulingCalendarConnection.organizationId, host.organizationId),
         isNotNull(schedulingCalendarConnection.delegationId),
-        eq(schedulingCalendarConnection.status, "needs_reauth"),
+        isNull(schedulingCalendarConnection.reachedAt),
       ),
     );
 }

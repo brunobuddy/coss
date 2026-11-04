@@ -129,7 +129,7 @@ once, and every host on it gets their calendar with no consent screen.
 - **The mailbox is stamped when a host connects** (`accountId`), and `email` changing later moves nothing, since it's
   "never an identity". Otherwise old events are orphaned, and a new connection has no write target. A host has one
   delegated mailbox, even if their email moves to another delegation's domain. Only `calendar_account` moves it
-  (`releaseOldMailbox`, `hosts.ts`), refused while bookings are live, under the host's lock. `hostStillWants` takes that
+  (`releaseOldMailbox`, `hosts.ts`), refused while bookings are live or a write that may have reached the provider is still owed, under the host's lock. `hostStillWants` takes that
   lock and the delegation's before anything fetched is committed, and re-reads both: a mailbox changed or
   `match_host_email` turned off during the provider calls has to win. Locks: host, then delegation, then connections;
   a bulk flip takes the delegation, then connections, so nothing may lock a delegation after a connection. `match_host_email`
@@ -164,7 +164,8 @@ once, and every host on it gets their calendar with no consent screen.
 - **A mailbox never reached still hides its host**: its connection gets a stand-in calendar row, since availability reads
   health through calendars and with none the host reads as free. `connectHost` replaces it, and gives it a write target
   if it turns out to be the primary. An email correction releases such a connection (`releaseUnreachedMailbox`): it
-  has no events, and it's the only mailbox change that doesn't need `calendar_account`.
+  has no events, and it's the only mailbox change that doesn't need `calendar_account`. `reached_at` is what says it was
+  never reached: `verified_at` isn't, since toggling `read_busy` clears it.
 - **Deleting** is `deleting`, then the worker, within a run's budget: each connection released (details scrubbed,
   channels stopped), then removed with the host locked `FOR UPDATE`, or a booking reading its write target would hit a foreign key. Hosts stay bookable with no conflict
   check (the dialog and docs say so), as with any disconnect.

@@ -414,6 +414,9 @@ export const schedulingCalendarConnection = pgTable(
     encryptedCredentials: text("encrypted_credentials"),
     // Set: the delegation's credentials reach this mailbox, and it isn't the host's to end.
     delegationId: text("delegation_id"),
+    // When a delegation first reached this mailbox. Null with one: it never has, so a host's calendars
+    // here are only a stand-in, and there are no events.
+    reachedAt: instant("reached_at"),
     status: schedulingConnectionStatus("status").notNull().default("active"),
     lastErrorCode: text("last_error_code"),
     lastErrorAt: instant("last_error_at"),

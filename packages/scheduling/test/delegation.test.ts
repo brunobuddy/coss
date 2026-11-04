@@ -751,6 +751,85 @@ describe("a host's email and mailbox", () => {
     expect(await listConnections(env, ana.id)).toHaveLength(1);
   });
 
+  test("a lost create's cancellation isn't given up by a move, though it has no id", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    const eventType = await eventTypeFor(env, [ana.id]);
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    const plain = testSchedulingDeps({ now: () => NOW });
+    const { booking } = await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("09:00"), attendee },
+      plain,
+      actor,
+    );
+    api.loseNextAnswer = true;
+    await runDueCalendarWrites(deps, { scope: scope(env) });
+    const [row] = await db
+      .select()
+      .from(schema.schedulingCalendarEvent)
+      .where(eq(schema.schedulingCalendarEvent.hostId, ana.id));
+    expect(row?.providerEventId).toBeNull();
+    expect(api.events.size).toBe(1);
+    await db
+      .update(schema.schedulingCalendarConnection)
+      .set({ status: "needs_reauth", lastErrorAt: NOW })
+      .where(eq(schema.schedulingCalendarConnection.hostId, ana.id));
+    await cancelBooking(env, booking.id, plain, actor);
+    const moved = { calendar_account: `ana.new@${DOMAIN}` };
+    expect(await code(updateHost(env, ana.id, moved))).toBe("host_has_live_bookings");
+  });
+
+  test("an email update doesn't release a connection that worked, whatever its calendars say", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    await activeGoogle(env, deps);
+    await run(env, deps);
+    const [connection] = await listConnections(env, ana.id);
+    const calendarId = connection?.calendars[0]?.id as string;
+    // Turning it off and on clears when it was last read.
+    await updateCalendar(env, ana.id, calendarId, { read_busy: false });
+    await updateCalendar(env, ana.id, calendarId, { read_busy: true });
+    await db
+      .update(schema.schedulingCalendarConnection)
+      .set({ status: "needs_reauth", lastErrorAt: NOW })
+      .where(eq(schema.schedulingCalendarConnection.hostId, ana.id));
+    await updateHost(env, ana.id, { email: `other@${DOMAIN}` });
+    expect(await listConnections(env, ana.id)).toMatchObject([{ account: `ana@${DOMAIN}` }]);
+  });
+
+  test("a host can't end up with two delegated mailboxes", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const ana = await hostOn(env, "ana");
+    await activeGoogle(env, deps);
+    const other = await createCalendarDelegation(
+      env,
+      { provider: "google", domain: "other.example", service_account_key: account.key },
+      deps,
+    );
+    const held = api.hold("POST", /freeBusy$/);
+    const running = run(env, deps);
+    await held.arrived;
+    await db.insert(schema.schedulingCalendarConnection).values({
+      organizationId: env.organizationId,
+      environmentId: env.environmentId,
+      hostId: ana.id,
+      provider: "google",
+      accountId: "ana@other.example",
+      delegationId: other.id,
+    });
+    held.release();
+    await running;
+    expect(await listConnections(env, ana.id)).toMatchObject([{ account: "ana@other.example" }]);
+  });
+
   test("a mailbox that can't be reached and was never written to can be moved", async () => {
     const env = await environment();
     const api = new FakeGoogleCalendarApi();

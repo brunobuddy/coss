@@ -27,6 +27,7 @@ CREATE TABLE "scheduling_calendar_delegation" (
 );
 --> statement-breakpoint
 ALTER TABLE "scheduling_calendar_connection" ADD COLUMN "delegation_id" text;--> statement-breakpoint
+ALTER TABLE "scheduling_calendar_connection" ADD COLUMN "reached_at" timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "scheduling_host" ADD COLUMN "calendar_account" text;--> statement-breakpoint
 ALTER TABLE "scheduling_calendar_delegation" ADD CONSTRAINT "scheduling_calendar_delegation_environment_fk" FOREIGN KEY ("environment_id","organization_id") REFERENCES "public"."environment"("id","organization_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "scheduling_calendar_delegation_due_idx" ON "scheduling_calendar_delegation" USING btree ("next_reconcile_at");--> statement-breakpoint

@@ -1,5 +1,5 @@
 {
-  "id": "4df3d6f0-cbb2-4fef-b8ee-06df9b62cae3",
+  "id": "426b5121-a6de-4126-8ab3-93fe7cae379d",
   "prevId": "d09f1f6e-9294-45c3-8700-b4db33285970",
   "version": "7",
   "dialect": "postgresql",
@@ -22067,6 +22067,12 @@
         "delegation_id": {
           "name": "delegation_id",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reached_at": {
+          "name": "reached_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
