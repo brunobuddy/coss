@@ -42,11 +42,21 @@ directory unless they name a workspace.
   `webhooks add` writes the new endpoint's signing secret to the project env file as `COSS_WEBHOOK_SECRET`.
 - `inboxes list|create|threads|thread|reply` wrap `coss.inboxes` (`src/commands/inboxes.ts`; `thread` prints each
   message's `extracted_text` unless `--full`); `inbox` (singular) follows every received email.
-- `verify …` (`src/commands/verify.ts`), `contacts …`, `broadcasts …` (`marketing.ts`), `sign …` (`sign.ts`) and the
-  read commands of `sms`, `forms` and `scheduling` share `src/commands/list-output.ts` (`--limit`, tables,
-  `confirmLive`). Text someone else wrote goes through `printable`. `broadcasts send` asks before a live send and needs
-  `--yes` off a terminal; `broadcasts create` and `sign create` make drafts (`sign create --send` sends); `verify
-  check` exits 1 for a wrong code.
+- `verify …` (`src/commands/verify.ts`), `contacts …`, `broadcasts …` (`marketing.ts`), `audiences …`, `segments …`,
+  `topics …`, `marketing settings …` (`marketing-lists.ts`), `suppressions …`, `subaccounts …`, `log-drains …`,
+  `risk rules|check|classify|settings` (`risk-manage.ts`), `sign …` (`sign.ts`) and `sms`, `forms` and `scheduling`
+  share `src/commands/list-output.ts` (`--limit`, tables, `confirmLive`, `secretInput`, flag values). Text someone
+  else wrote goes through `printable`. `broadcasts send` and `resume`, `scheduling book|reschedule|approve|decline` and
+  `emails reschedule` to a past time ask before a live send and need `--yes` off a terminal, as do the deletes that
+  can't be undone and take a lot with them (`forms remove`, `subaccounts delete`); other removes don't ask;
+  `broadcasts create` and `sign create` make drafts (`sign create --send` sends); `verify check` exits 1 for a wrong
+  code, `contacts import` when it skipped a row, `audiences contacts add` when one is no contact. Secrets never come
+  from a flag: `secretInput` prompts or reads stdin (`log-drains --auth-header`, `risk settings set
+  --captcha-secret-stdin`). `--data` takes the rest of a request body as JSON (inline, `@file`, `-`) and flags win over
+  it. `test/management.test.ts` holds a case per management command.
+- A word can be both a command and a group (`scheduling hosts`, `scheduling event-types`, `sign templates`, `inbox`):
+  `findCommand` takes the longest match, so keep the bare form working and add `<word> list`. `run` treats a word
+  after such a command as an unknown subcommand. Unknown-command errors point at `coss api`.
 - `logs tail` polls `GET /v1/logs` like the dashboard's live mode (re-reads from a minute before the newest line,
   prints unseen ids oldest first, `src/logs/tail.ts`); `emails send --simulate` uses the mailbox simulator addresses
   (`src/emails/simulate.ts`, must match `packages/email/src/providers/fake.ts`).

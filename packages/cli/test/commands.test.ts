@@ -46,7 +46,10 @@ describe("the command registry", () => {
     for (const [argv, message] of [
       [["emails"], '"emails" needs a command: try `coss emails send`, `coss emails list`'],
       [["emails", "lst"], 'Unknown command "emails lst"'],
-      [["nope"], 'Unknown command "nope"'],
+      [
+        ["nope"],
+        'Unknown command "nope". Run `coss --help` to see the commands. `coss api <path>`',
+      ],
       [
         ["hooks", "apps"],
         '"hooks apps" needs a command: try `coss hooks apps list`, `coss hooks apps create`.',
@@ -63,6 +66,14 @@ describe("the command registry", () => {
       const io = testIo();
       expect(await run([...argv], io)).toBe(2);
       expect(io.errors()).toContain(message);
+    }
+  });
+
+  test("each of those errors says `coss api` calls anything without a command", async () => {
+    for (const argv of [["emails"], ["emails", "lst"], ["nope"], ["hooks", "apps"]]) {
+      const io = testIo();
+      expect(await run(argv, io)).toBe(2);
+      expect(io.errors()).toContain("`coss api <path>` calls any endpoint");
     }
   });
 
@@ -91,7 +102,7 @@ describe("shell completion", () => {
         "trigger",
       ]),
     );
-    expect(await c(["lo"])).toEqual(["login", "logout", "logs"]);
+    expect(await c(["lo"])).toEqual(["login", "logout", "logs", "log-drains"]);
     // Groups inside groups: `coss hooks apps list`.
     expect(await c(["hooks", "e"])).toEqual(["event-types", "endpoints"]);
     expect(await c(["hooks", "apps", ""])).toEqual(["list", "create"]);
@@ -102,7 +113,15 @@ describe("shell completion", () => {
       "succeeded",
       "failed",
     ]);
-    expect(await c(["emails", ""])).toEqual(["send", "list", "get", "events", "diagnose"]);
+    expect(await c(["emails", ""])).toEqual([
+      "send",
+      "list",
+      "get",
+      "events",
+      "diagnose",
+      "cancel",
+      "reschedule",
+    ]);
     expect(await c(["webhooks", ""])).toEqual(["list", "add", "deliveries", "retry"]);
     // A command that has subcommands of its own.
     expect(await c(["inbox", ""])).toEqual(["get"]);

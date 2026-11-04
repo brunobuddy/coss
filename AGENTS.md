@@ -77,7 +77,7 @@ text it shows is a gist that must match `CLA.md`: change both together, as a new
 | `packages/sdk` | `coss` | **Public** SDK. Zero deps, ESM-only, built with tsdown. `coss/device` is its browser-only entry (risk's device tokens) and `coss/sign` another (`mountSigning`: Sign's signing page in an iframe); `coss/diagnose` explains an email's delivery (used by the MCP server and the CLI); `coss/nodemailer`, `coss/better-auth` and `coss/authjs` are the integrations (docs: `/docs/integrations`). See `packages/sdk/AGENTS.md`. |
 | `packages/mcp` | `coss-mcp` | **Public** MCP server (`npx coss-mcp`, stdio, Node): tools for coding agents built only on the published `coss` SDK: docs search, email and SMS delivery diagnosis, sends, suppressions, domains, webhooks, received mail, logs, marketing, Verify, Sign, Forms, Scheduling, Hooks, Risk, account status; `COSS_MCP_TOOLSETS` offers fewer. See `packages/mcp/AGENTS.md`. |
 | `plugins/coss` | — | **Public** Claude Code plugin (marketplace: the root `.claude-plugin/marketplace.json`; `/plugin install coss --marketplace cosscom/coss`) with the `coss` Agent Skill (`skills/coss/SKILL.md`, also installed into other agents by `npx skills add cosscom/coss`) and the MCP server (`.mcp.json`, `npx -y coss-mcp`). Plain files, not a workspace; served from main. See "Coding agents" below. |
-| `packages/cli` | `coss-cli` | **Public** CLI (`npm i -g coss-cli`, command `coss`, Node): `login`, `init`, `emails`, `sms`, `verify`, `contacts`, `broadcasts`, `sign`, `forms`, `scheduling`, `hooks`, `risk`, `domains`, `templates`, `webhooks`, `logs tail`, `listen`, `api`, built only on the published `coss` SDK. See `packages/cli/AGENTS.md`. |
+| `packages/cli` | `coss-cli` | **Public** CLI (`npm i -g coss-cli`, command `coss`, Node): `login`, `init`, `emails`, `suppressions`, `subaccounts`, `sms`, `verify`, `contacts`, `audiences`, `segments`, `topics`, `broadcasts`, `marketing settings`, `sign`, `forms`, `scheduling`, `hooks`, `risk`, `domains`, `templates`, `webhooks`, `logs tail`, `log-drains`, `listen`, `api`, built only on the published `coss` SDK. See `packages/cli/AGENTS.md`. |
 | `packages/kloq` | `kloq` | The kloq library (the `cosscom/calendar` repository's `packages/kloq/src`, tests left out): the `<Kloq>` calendar, its themes, settings dialog, design mode and stylesheet. Vendored (excluded from Biome, `noUncheckedIndexedAccess` off); also what `/kloq/r/kloq.json` serves as source. Used only by `apps/site`. |
 | `tooling/typescript` | `@coss/tsconfig` | Shared tsconfig bases. |
 | `tooling/sdkgen` | `@coss/sdkgen` | Builds the generated SDKs: `SDK_METHODS` (every operation's SDK method, named as in the TypeScript SDK) and `NO_RETRY` (`src/methods.ts`), the derive step that turns `apps/api/openapi.json` into the spec Fern generates from (`src/derive.ts`), the post-processing of each generator's output (`src/languages.ts`), the API reference's code samples (`snippets.json`, from each SDK's `reference.md`); `scripts/generate.ts` (`bun run sdks:generate`, needs Docker). See `sdks/AGENTS.md`. |
@@ -324,13 +324,15 @@ work on it from elsewhere.
 What an agent pointed at coss.com reads, all describing the same facts — change them together:
 - `/llms.txt` and `/llms-full.txt` open with `AGENT_BRIEF` (`apps/site/src/lib/llms.ts`): how to read the docs, get a
   key with `npx coss-cli init`, the SDK's conventions, testing webhooks. Every docs page is Markdown at `<page>.md`
-  (`apps/site/AGENTS.md`); API reference pages render the OpenAPI document (`operation-markdown.ts`).
+  (`apps/site/AGENTS.md`); API reference pages render the OpenAPI document (`operation-markdown.ts`). `/llms.txt` lists
+  the guides within a size budget; API operations are in `/docs/<product>/llms.txt` and `/docs/api-reference/llms.txt`.
 - The landing page's prompt (`AGENT_PROMPT`, `apps/site/src/lib/site.ts`), quoted by `/docs/agents`.
 - The `coss` skill (`plugins/coss/skills/coss/SKILL.md`), the notes `coss init` writes into a project's
   AGENTS.md (`agentNotes`, `packages/cli/src/commands/init.ts`) and the MCP server's instructions (`packages/mcp/src/server.ts`).
 - `claude plugin validate .` and `claude plugin validate plugins/coss` check the marketplace and the plugin. The
   plugin has no `version` on purpose: installs follow main. Its MCP server takes the key from the plugin's optional
-  `api_key` (`userConfig`); without one `coss-mcp` serves only the docs tools.
+  `api_key` (`userConfig`); without one `coss-mcp` serves only the docs tools. Its optional `toolsets` becomes
+  `COSS_MCP_TOOLSETS`, where empty means every tool.
 
 ## coss.com zones
 
@@ -796,7 +798,7 @@ Verify in the iOS app, Verify's shared numbers in
 production (they wait for coss.com's own one-time-code registration and `VERIFY_SMS_*`),
 these parts of email sub-accounts: marketing sends, contacts and broadcasts per sub-account, sub-account-bound API keys
 and SMTP credentials, dedicated IP pools for sub-accounts, tracking and receiving domains on their domains, webhook
-endpoint filters by sub-account, budgets per sub-account, a portal for end users, MCP and CLI support, rollups of
+endpoint filters by sub-account, budgets per sub-account, a portal for end users, MCP support, rollups of
 sub-account reputation counts (each evaluation counts its window live), and sub-account tenant pause webhooks,
 Sign's archival timestamps in seals (PAdES B-LTA: renewing a document timestamp before its TSA certificate expires) and a standalone certificate download,
 a price for `sign.completed_requests`, Sign in the iOS app and the admin console, and Sign

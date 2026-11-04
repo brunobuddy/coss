@@ -17,6 +17,13 @@ export const ABOUT_LEDE = {
 export const ABOUT_PRODUCTS = [
   ...PRODUCTS,
   {
+    id: "sign",
+    name: "Sign",
+    call: "coss.sign",
+    summary:
+      "E-signatures in your product, embedded or by email, with an audit trail and a sealed PDF.",
+  },
+  {
     id: "hooks",
     name: "Hooks",
     call: "coss.hooks",

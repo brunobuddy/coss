@@ -1,6 +1,6 @@
 ---
 title: CLI
-description: Sign in from your terminal, send test emails and SMS, follow your log, and get webhooks on localhost.
+description: Use email, marketing, inboxes, SMS, Verify, Sign, Forms, Scheduling, Hooks and Risk from your terminal, follow your log and get webhooks on localhost.
 icon: Terminal
 ---
 
@@ -58,7 +58,8 @@ revokes a key you pasted; `--all` signs every profile out). Keys are saved in `~
 
 `coss open` opens the environment in the dashboard: `coss open logs`, `coss open webhooks`,
 `coss open api-keys`, `coss open domains`, or an organization page (`coss open members`, `coss open billing`).
-`coss open --help` lists every page; `--print` (or `--json`) prints the URL instead.
+`coss open --help` lists every page, each product's included (`coss open risk-rules`,
+`coss open scheduling-hosts`); `--print` (or `--json`) prints the URL instead.
 
 ## Set a project up
 
@@ -223,6 +224,57 @@ billing hold) and the next steps, as commands to run. `--to <address>` diagnoses
 to that address. It's the same diagnosis as the SDK's `coss/diagnose` and the MCP server's
 `diagnose_email`.
 
+## Scheduled emails
+
+`coss emails cancel <email>` cancels an email scheduled for later. `coss emails reschedule <email> --at <time>`
+moves it (ISO 8601 with an offset, at most 30 days ahead). A time that has passed sends it right
+away, so a live key asks first; off a terminal that needs `--yes`.
+
+## Suppressions
+
+```sh
+coss suppressions check ada@example.com --category newsletter
+coss suppressions add ada@example.com --scope newsletter
+coss suppressions list --scope "*"
+coss suppressions remove sup_01k7c8m4q2f3e9v6t5r1n0p8yz
+```
+
+[Suppressions](/docs/email/suppressions) are the addresses sends skip.
+
+- `coss suppressions list` lists them, newest first (`--address`, `--scope`, `--limit`).
+- `coss suppressions check <address>` says whether a send would skip it and which entries match
+  (`--category`, `--stream transactional|marketing`). It exits `0` either way: scripts read
+  `suppressed` from `--json`.
+- `coss suppressions add <address>` adds one, for every email or one category (`--scope`).
+- `coss suppressions remove <suppression>` removes one by id. Someone who complained or unsubscribed
+  asked not to be contacted.
+
+Each takes `--subaccount <subaccount>` for a sub-account's own list (`check` for the sub-account you
+plan to send for), except `remove`, which takes the entry's id.
+
+## Sub-accounts
+
+```sh
+coss subaccounts create "Acme Inc" --uid acme --per-day 1000
+coss subaccounts stats acme --from 2026-10-01
+```
+
+[Sub-accounts](/docs/email/subaccounts) give each of your users their own domains, suppressions,
+quotas and reputation. Every `<subaccount>` is its id or your uid.
+
+- `coss subaccounts list` (`--limit`) and `coss subaccounts get <subaccount>` show them, with their
+  quotas and reputation.
+- `coss subaccounts create <name>` makes one (`--uid`, `--metadata name=value`, and the quotas
+  `--per-day`, `--per-second`, `--burst`).
+- `coss subaccounts update <subaccount>` changes what is given: `--name`, `--uid` (`none` removes it),
+  `--status active|disabled`, `--metadata` (replaces what it has) and the quotas (`none` removes one).
+- `coss subaccounts reinstate <subaccount>` lifts a reputation pause once you fixed the cause.
+- `coss subaccounts stats <subaccount>` prints its sending per day (`--from`, `--to`; at most the
+  last 45 days).
+- `coss subaccounts delete <subaccount>` starts deleting it: its sends are refused at once, then its
+  domains are released and it is removed with its suppressions. It can't be undone, so with a live
+  key it asks first, and off a terminal it needs `--yes`.
+
 ## Send test SMS
 
 ```sh
@@ -248,6 +300,9 @@ from the coss.com CLI"), `--tag name=value` (repeatable) and `--json`.
 - `coss sms numbers` lists your numbers and whether each can send.
 - `coss sms suppressions list` (`--number`, `--limit`), `coss sms suppressions add <number>` and
   `coss sms suppressions remove <suppression>` manage the numbers that won't be texted.
+
+`coss sms cancel <message>` cancels a scheduled message. `coss sms suppressions check <number>`
+says whether a send to a number would be skipped; it exits `0` either way.
 
 ## Verify
 
@@ -291,6 +346,65 @@ coss broadcasts send bcast_01kd2m8n3p4q5r6s7t8v9w0x1y
 - `coss broadcasts send <broadcast>` sends it, or schedules it with `--at <time>`. With a production
   key it asks first, and needs `--yes` off a terminal.
 
+Change and move contacts in bulk:
+
+```sh
+coss contacts update ada@example.com --first-name Ada --property plan=pro
+coss contacts import people.csv --audience aud_01k7c8m4q2f3e9v6t5r1n0p8yz
+coss contacts export --status subscribed --out contacts.csv
+```
+
+- `coss contacts update <contact>` changes what is given: `--first-name` and `--last-name` (`""`
+  clears one), `--status subscribed|unsubscribed`, `--property name=value` (JSON values when they
+  parse, `null` removes it), and `--data '{…}'` for the rest of the body, such as `topics`.
+- `coss contacts import <file>` creates or updates contacts from a CSV or a JSON array of import
+  entries (`-` reads stdin), and adds them to `--audience`. A CSV is what `coss contacts export`
+  writes, or any file with an email column (`First Name`-style headers work) or just addresses, one
+  per line. Columns named after a custom property set it, and other columns are reported and left
+  out. Imports never resubscribe an unsubscribed contact and are safe to run again. Rows it can't use
+  are skipped and listed, and then it exits `1`. Only import people who agreed to hear from you.
+- `coss contacts export` prints the contacts as CSV (`--status`, `--audience`), or saves them with
+  `--out <file>` (a new file is readable only by you). A pipe gets the bytes as they came; a terminal gets them
+  without control characters. `--json` prints `{ csv }`, or `{ file, size }` with `--out`.
+
+Broadcasts can change until they send, and stop and start while they do:
+
+- `coss broadcasts update <broadcast>` changes a draft (`--name`, `--from`, `--subject`, `--html`,
+  `--text`, `--audience`, `--segment`, `--topic`, where `none` means every contact, and `--data`).
+- `coss broadcasts remove <broadcast>` deletes a draft, or a broadcast canceled before it sent
+  anything.
+- `coss broadcasts pause <broadcast>` pauses a scheduled or sending one. `coss broadcasts resume <broadcast>`
+  sends the rest: with a live key it asks first, and off a terminal it needs `--yes`.
+
+## Audiences, segments and topics
+
+```sh
+coss audiences create Customers
+coss audiences contacts add aud_01k7c8m4q2f3e9v6t5r1n0p8yz ada@example.com bo@example.com
+coss segments create "Acme staff" --filter '{"version":1,"match":"all","conditions":[{"field":"email","op":"ends_with","value":"@acme.com"}]}'
+coss topics create product --name "Product news" --default opt_in
+```
+
+- [Audiences](/docs/email/audiences-and-segments) are static lists: `coss audiences list`,
+  `coss audiences get <audience>`, `coss audiences create <name>`, `coss audiences update <audience> --name <name>`
+  and `coss audiences remove <audience>`, which leaves their contacts. `coss audiences contacts list <audience>`,
+  `coss audiences contacts add <audience> <contact>...` (ids or addresses of existing contacts; exits
+  `1` when one is no contact) and `coss audiences contacts remove <audience> <contact>` manage who is in one.
+- Segments are filters, evaluated whenever they're used: `coss segments list`,
+  `coss segments get <segment>`, `coss segments create <name> --filter <json>`,
+  `coss segments update <segment>` (`--name`, `--filter`) and `coss segments remove <segment>`.
+  `--filter` takes JSON inline, as `@file` or as `-` for stdin. `coss segments contacts list <segment>`
+  lists who a segment matches now.
+- [Topics](/docs/email/topics-and-preferences) are what contacts subscribe to: `coss topics list`,
+  `coss topics get <topic>`, `coss topics create <key> --name <name> --default opt_in|opt_out`,
+  `coss topics update <topic>` and `coss topics remove <topic>` (`--description`, where `none` clears it on
+  update, `--visibility public|private`, `--position`).
+- `coss marketing settings get` shows the sender's name and postal address marketing email carries,
+  and how double opt-in confirms. `coss marketing settings set` changes `--display-name`,
+  `--mailing-address`, `--double-opt-in` or `--no-double-opt-in`, `--confirmation-from`,
+  `--confirmation-subject`, `--confirmation-html <file>`, `--confirmation-text <file>` and
+  `--confirmed-redirect-url`; the word `default` clears one.
+
 ## Sign
 
 Collect [signatures](/docs/sign) on a PDF:
@@ -312,6 +426,18 @@ coss sign send sreq_01kd2m8n3p4q5r6s7t8v9w0x1y
   `coss sign audit <request>` prints the audit trail.
 - `coss sign templates` lists templates and their roles.
 
+`coss sign templates` (or `coss sign templates list`) lists templates.
+`coss sign templates create <name>` makes one: `--title`, `--message`,
+`--signing-order parallel|sequential`, `--document <document>` (repeatable), `--role key:Name`
+(repeatable), and `--data '{"fields":[…]}'` or `--data @template.json` for its fields. It may start
+empty and be built in the embedded builder; requests can be made from it once it has documents and a
+signature field for every role.
+
+`coss sign settings get` shows the name signers see, the sender, branding, reminders and embedding
+origins. `coss sign settings set` changes `--display-name`, `--email-from`, `--accent-color`,
+`--theme system|light|dark`, `--disclosure`, `--reminder-days` and `--origin` (repeatable, replacing
+the list); the word `default` clears one.
+
 ## Follow the log
 
 ```sh
@@ -325,6 +451,28 @@ email and SMS events, webhook attempts and `coss listen` forwards. Filter by `--
 `--type`, `--status` and free text (`-q`); `--since` starts with earlier lines, and `--json`
 prints one log object per line for `jq`. It checks for new lines every 2 seconds (`--interval <ms>`,
 at least 500).
+
+## Log drains
+
+```sh
+coss log-drains create https://logs.acme.com/in --source api,email
+printf '%s' "$DD_API_KEY" | coss log-drains create https://http-intake.logs.datadoghq.com/api/v2/logs --format datadog --auth-header DD-API-KEY
+coss log-drains update ldr_01k7c8m4q2f3e9v6t5r1n0p8yz --disabled
+```
+
+[Log drains](/docs/log-drains) stream the environment's log to your own endpoint or an intake API.
+
+- `coss log-drains list` and `coss log-drains get <drain>` show them; secrets are never included.
+- `coss log-drains create <url>` makes one (`--description`, `--source api|email|webhook|audit`,
+  repeatable or comma-separated, `--format ndjson|loki|datadog|otlp`) and prints its signing secret:
+  the only time it's shown. It isn't retried, since the API doesn't deduplicate it.
+- `--auth-header <name>` sends that header with every batch. Its value is a secret, and no flag takes
+  a secret, since command lines are visible to other local processes: a terminal asks for it without
+  echoing, and anything else pipes it to stdin.
+- `coss log-drains update <drain>` changes what is given: `--url`, `--description` (`none` clears it),
+  `--source`, `--format`, `--auth-header`, `--remove-auth-header`. `--disabled` stops it and drops the
+  lines waiting for it; `--enabled` starts it again, also after coss.com disabled it for failing.
+- `coss log-drains delete <drain>` deletes it and its batch log.
 
 ## Hooks
 
@@ -388,6 +536,35 @@ coss risk lists add block domain evil.example --expires 30d --note "spam wave"
   `--expires` as `7d`, `12h` or a time) and `coss risk lists remove <entry>` manage the allow and
   block lists.
 
+Manage what decides:
+
+```sh
+coss risk rules create "No Tor sign-ups" --action block --event signup --condition "ip.tor is true"
+coss risk check email ada@gmial.com
+coss risk classify --file message.txt
+coss risk settings set --review-threshold 0.4
+```
+
+- `coss risk rules list` and `coss risk rules get <rule>` show the [rules](/docs/risk/rules), in the
+  order they're tried: the first enabled one whose conditions match decides, after the lists.
+- `coss risk rules create <name>` adds one: `--action allow|review|block` and `--condition "<field> <operator> <value>"`,
+  repeatable (`"velocity.ip_1h gt 10"`, `"ip.country in RU,KP"`; operators `is`, `eq`, `neq`, `gt`, `gte`,
+  `lt`, `lte`, `in`, `not_in`), with `--match all|any`, `--event` (repeatable), `--position`,
+  `--enabled` or `--disabled`, and `--data` for the same body as JSON.
+- `coss risk rules update <rule>` changes what is given (`--name` too); `--condition` replaces all of
+  its conditions. `coss risk rules delete <rule>` deletes it.
+- `coss risk check email <address>`, `coss risk check ip <ip>` and `coss risk check phone <number>` ask
+  about [one signal on its own](/docs/risk/lookups). Nothing is stored. Live phone checks that get an
+  answer are billed, so they're never retried.
+- `coss risk classify <text>` scores text for spam, phishing, malware and fraud (`--file <path>`, or
+  `-` for stdin). You choose the thresholds, and the text is neither stored nor logged.
+- `coss risk settings get` shows the [settings](/docs/risk/settings). `coss risk settings set` changes
+  `--review-threshold`, `--block-threshold`, `--disabled-reason` (repeatable, replacing the list;
+  `none` empties it) and `--data` for `content_thresholds` and `reason_weights`.
+- `--captcha turnstile|hcaptcha|off` sets the captcha provider, with `--captcha-required` or
+  `--captcha-optional`. `--captcha-secret-stdin` reads its secret from stdin (a terminal asks without
+  echoing), and inline `--data` refuses one: no secret goes on a command line.
+
 ## Forms
 
 See the environment's [forms](/docs/forms) and what was submitted to them:
@@ -402,6 +579,11 @@ coss forms submissions form_01kd2m8n3p4q5r6s7t8v9w0x1y --status held
 - `coss forms get <form>` prints a form's endpoint and settings; `coss forms create <name>` makes one
   that accepts any field (`--origin`, repeatable, and `--redirect <url>`; `coss api` takes every
   other setting).
+- `coss forms update <form>` changes what is given and leaves the rest: `--name`, `--enabled` or
+  `--disabled`, `--origin` (replaces the list), `--redirect` (`none` clears it) and `--data '{…}'` for
+  any other setting (`fields`, `spam`, `notifications`, `hosted`…).
+- `coss forms remove <form>` deletes a form with its submissions and files. It can't be undone, so with a
+  live key it asks first, and off a terminal it needs `--yes`.
 - `coss forms submission <form> <submission>` prints one submission's values, and
   `coss forms release <form> <submission>` accepts one Risk held for review, which sends it on to the form's
   webhooks, notification emails and contacts.
@@ -429,6 +611,42 @@ coss scheduling bookings --host doctor_482 --status confirmed
   it and tells the attendee.
 - `coss scheduling calendars <host>` lists a host's calendar connections. `needs_reauth` means that
   calendar can't be read, so the host isn't offered.
+
+Set scheduling up and book from the command line:
+
+```sh
+coss scheduling hosts create "Dr. Reyes" --uid doctor_482 --time-zone America/New_York
+coss scheduling schedules create doctor_482 --rule "mon-fri 09:00-17:00"
+coss scheduling event-types create Consultation --uid consult --minutes 30 --host doctor_482
+coss scheduling book consult --start 2027-01-04T15:00:00Z --time-zone America/New_York --name Bo --email bo@example.com
+```
+
+`coss scheduling hosts` and `coss scheduling event-types` still list; `coss scheduling hosts list` and
+`coss scheduling event-types list` are the same commands.
+
+- `coss scheduling hosts create <name> --time-zone <zone>` adds a host (`--uid`, `--email`,
+  `--attribute name=value`, repeat a name for a list, `--metadata name=value`, `--data`).
+  `coss scheduling hosts update <host>` changes what is given (`--name`, `--time-zone`,
+  `--status active|disabled`; `--uid` and `--email` take `none`). `coss scheduling hosts remove <host>`
+  deletes one.
+- `coss scheduling schedules list <host>`, `coss scheduling schedules create <host> --rule "<days> <start>-<end>"`
+  (repeatable: `"mon-fri 09:00-17:00"`, `"sat,sun 10:00-12:00"`; `--name`, `--time-zone`, `--default`,
+  `--data` for `overrides`), `coss scheduling schedules update <host> <schedule>` (`--rule` replaces its
+  rules; without one they stay) and `coss scheduling schedules remove <host> <schedule>` manage when a
+  host is free.
+- `coss scheduling event-types create <title> --minutes <n>` adds what can be booked (`--uid`, `--kind one_on_one|pool|collective|group`,
+  `--host`, repeatable, `--requires-approval`, `--data` for buffers, limits, questions and locations).
+  `coss scheduling event-types update <event-type>` changes what is given (`--title`, `--status active|archived`,
+  `--no-approval`; `--host` replaces the hosts).
+- `coss scheduling book <event-type> --start <time> --time-zone <zone>` books a slot for an attendee
+  (`--name`, `--email`, `--phone`, `--uid`, `--host`, `--minutes`, `--attribute`, `--answer name=value`,
+  `--metadata`, `--data`).
+- `coss scheduling reschedule <booking> --start <time>` moves a booking (`--host`); the old time stays
+  booked if the new one isn't free. `coss scheduling approve <booking>` and
+  `coss scheduling decline <booking>` decide one waiting for approval.
+
+`book`, `reschedule`, `approve` and `decline` tell the attendee, so with a live key they ask first, and
+off a terminal they need `--yes`.
 
 ## Receive emails
 
@@ -530,7 +748,8 @@ templates.
 ## Call any endpoint
 
 `coss api` calls an endpoint of the [API](/docs/api-reference) with the CLI's key and prints the
-response's JSON, for anything the other commands don't cover. Paths are relative to `/v1`:
+response's JSON, for anything the other commands don't cover (an unknown command's error says so too).
+Paths are relative to `/v1`:
 
 ```sh
 coss api domains

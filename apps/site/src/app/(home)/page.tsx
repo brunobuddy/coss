@@ -43,7 +43,7 @@ const FAQ = [
   {
     question: "What is coss.com?",
     answer:
-      "coss.com is a developer platform: one API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, one-time codes, forms, scheduling, webhooks for your own users, and risk checks with rate limiting. It is built by the team behind Cal.com.",
+      "coss.com is a developer platform: one API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, one-time codes, e-signatures, forms, scheduling, webhooks for your own users, and risk checks with rate limiting. It is built by the team behind Cal.com.",
   },
   {
     question: "How much does coss.com cost?",
@@ -72,7 +72,7 @@ const FAQ = [
   {
     question: "Does coss.com work with coding agents?",
     answer:
-      "Yes. Every docs page is Markdown at its URL plus .md, /llms.txt indexes them, npx coss-cli init gets a development key approved in the browser, and an MCP server lets agents search the docs and explain deliveries.",
+      "Yes. Every docs page is Markdown at its URL plus .md, /llms.txt is the place to start, npx coss-cli init gets a development key approved in the browser, and an MCP server lets agents search the docs and explain deliveries.",
   },
 ];
 
@@ -340,7 +340,7 @@ const STEPS = [
   {
     icon: BookOpenTextIcon,
     title: "Your agent reads the manual",
-    body: "/llms.txt indexes every docs page, each one Markdown at its URL plus .md, the API reference with every field.",
+    body: "/llms.txt lists the guides and where each product's API operations are, every page Markdown at its URL plus .md, the API reference with every field.",
   },
   {
     icon: FlaskConicalIcon,
@@ -350,7 +350,7 @@ const STEPS = [
 ];
 
 const INTERFACES: [string, string, string | null][] = [
-  ["/llms.txt", "How to start, and every docs page as Markdown.", "/llms.txt"],
+  ["/llms.txt", "How to start, the guides, and where to find each API operation.", "/llms.txt"],
   ["/llms-full.txt", "The whole manual in one file.", "/llms-full.txt"],
   [
     "OpenAPI 3.1",
