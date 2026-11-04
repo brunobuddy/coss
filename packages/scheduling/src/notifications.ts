@@ -9,6 +9,7 @@
  * can carry the customer's own words and one button on their verified domain (`reminders.ts`), but
  * never under coss.com's address: `cossHtml`, `cossSubject` and `cossText` are always fixed copy.
  */
+import { createHash } from "node:crypto";
 import { HipaaModeError } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { type EmailBlock, type EmailContent, oneLine, renderEmail } from "@coss/email-layout";
@@ -172,6 +173,30 @@ export async function enqueueBookingNotifications(
   }
 }
 
+/**
+ * A reminder an older task queued during a deploy is only as good as its version, so a change that
+ * keeps the time carries it forward. Rows made by this code don't need it: they're timed from
+ * `anchor_at`. Remove once a deploy of this has finished.
+ */
+export async function carryAnchorlessReminders(
+  tx: Executor,
+  booking: Pick<BookingRow, "id" | "organizationId" | "version">,
+): Promise<void> {
+  await tx
+    .update(schedulingNotification)
+    .set({ bookingVersion: booking.version })
+    .where(
+      and(
+        eq(schedulingNotification.bookingId, booking.id),
+        eq(schedulingNotification.organizationId, booking.organizationId),
+        eq(schedulingNotification.kind, "reminder"),
+        isNull(schedulingNotification.anchorAt),
+        isNull(schedulingNotification.finishedAt),
+        eq(schedulingNotification.bookingVersion, booking.version - 1),
+      ),
+    );
+}
+
 /** What marking a no-show owes: its own rules, whatever else the booking has queued. */
 export async function enqueueNoShowReminders(
   tx: Executor,
@@ -210,7 +235,10 @@ export type SchedulingEmail = {
   /** Inline in `html`, so it goes only with that, never with `cossHtml`. */
   logo: { filename: string; content: string; contentType: string; contentId: string } | null;
   idempotencyKey: string;
-  /** To someone who asked for nothing: goes from the customer's own address or not at all. */
+  /**
+   * Goes from the customer's own address or not at all: to someone who asked for nothing, or past
+   * what coss.com's address sends for free.
+   */
   ownSenderOnly: boolean;
 };
 
@@ -224,7 +252,8 @@ export type SchedulingSms = {
 
 /** Sending goes through the email and SMS products, which this package can't import. */
 export type SchedulingNotifier = {
-  email(message: SchedulingEmail): Promise<void>;
+  /** `"not_sent"`: it was only for the customer's own address, and that couldn't send it. */
+  email(message: SchedulingEmail): Promise<"not_sent" | undefined>;
   /** Absent without SMS. Throws if refused; an opted-out number is the product's to skip. */
   sms?(message: SchedulingSms): Promise<void>;
 };
@@ -477,7 +506,8 @@ async function sendBookingEmail(
   deps: NotificationDeps,
   now: Date,
   rule: ReminderRule | null,
-): Promise<"sent" | "no_address"> {
+  ownSenderOnly: boolean,
+): Promise<"sent" | "no_address" | "no_sender"> {
   const env = await environmentOf(row);
   if (!env) return "no_address";
   const branding = await brandingOf(row);
@@ -578,6 +608,7 @@ async function sendBookingEmail(
       (env.mode === "sandbox" || Boolean(settings?.emailFrom)) &&
       (await guestsAreTold(booking, copyKind));
     let sent = false;
+    let refused = false;
     for (const attendee of await bookingAttendees(booking)) {
       const guest = attendee.role === "guest";
       if (guest && !toldGuests) continue;
@@ -612,7 +643,7 @@ async function sendBookingEmail(
         }),
       });
       const rendered = renderMessage(branding, senderName, message.content, message.fixed);
-      await deps.notifier.email({
+      const result = await deps.notifier.email({
         environment: env,
         from: settings?.emailFrom ?? null,
         senderName,
@@ -627,11 +658,13 @@ async function sendBookingEmail(
         ics: withIcs ? ics({ name: contact.name, email: contact.email }) : null,
         logo: rendered.logo,
         idempotencyKey: `${key}:${attendee.id}`,
-        ownSenderOnly: guest,
+        ownSenderOnly: guest || ownSenderOnly,
       });
-      sent = true;
+      // A guest not reached isn't why the row didn't send: that's the attendee's to say.
+      if (result !== "not_sent") sent = true;
+      else if (!guest) refused = true;
     }
-    return sent ? "sent" : "no_address";
+    return sent ? "sent" : refused ? "no_sender" : "no_address";
   }
 
   // Hosts and fixed addresses read about the booking's first attendee, in the host's time zone.
@@ -647,13 +680,15 @@ async function sendBookingEmail(
             ? [{ id: host.id, email: host.email, name: host.name, timeZone: host.timeZone }]
             : [],
         )
-      : (rule?.email_to ?? []).map((email, index) => ({
-          id: `to${index}`,
+      : (rule?.email_to ?? []).map((email) => ({
+          // From the address, not its place: a list reordered before a retry mustn't swap who's done.
+          id: createHash("sha256").update(email).digest("hex").slice(0, 32),
           email,
           name: null,
           timeZone: hosts[0]?.timeZone ?? "UTC",
         }));
   let sent = false;
+  let refused = false;
   for (const recipient of staffRecipients) {
     const message = content({
       audience: "host",
@@ -674,7 +709,7 @@ async function sendBookingEmail(
       }),
     });
     const rendered = renderMessage(branding, senderName, message.content, message.fixed);
-    await deps.notifier.email({
+    const result = await deps.notifier.email({
       environment: env,
       from: settings?.emailFrom ?? null,
       senderName,
@@ -689,11 +724,12 @@ async function sendBookingEmail(
       ics: withIcs ? ics({ name: recipient.name, email: recipient.email }) : null,
       logo: rendered.logo,
       idempotencyKey: `${key}:${recipient.id}`,
-      ownSenderOnly: false,
+      ownSenderOnly,
     });
-    sent = true;
+    if (result !== "not_sent") sent = true;
+    else refused = true;
   }
-  return sent ? "sent" : "no_address";
+  return sent ? "sent" : refused ? "no_sender" : "no_address";
 }
 
 async function sendBookingSms(
@@ -969,6 +1005,7 @@ export async function runDueSchedulingNotifications(
       }
       const booking = await withSessionLocation(db, found);
       let rule: ReminderRule | null = null;
+      let ownSenderOnly = false;
       if (row.kind === "reminder" && row.reminderKey) {
         const rules = effectiveRules(await policiesOf(db, found));
         const location = await chosenLocation(db, found);
@@ -978,11 +1015,9 @@ export async function runDueSchedulingNotifications(
           continue;
         }
         rule = verdict.rule;
-        const fromCoss = row.channel === "email" && !(await settingsOf(row))?.emailFrom;
-        if (fromCoss && !withinCossAllowance(rules, rule)) {
-          await finish(row, "no_sender", now);
-          continue;
-        }
+        // Whether coss.com's address ends up sending it is only known when the customer's is tried:
+        // `email_from` may be set and not verified.
+        ownSenderOnly = !withinCossAllowance(rules, rule);
       }
       // A Meet, Teams or Zoom link appears only after the write: a confirmation gives it a moment,
       // then goes without. The manage page always shows the link once it exists.
@@ -1005,7 +1040,7 @@ export async function runDueSchedulingNotifications(
       }
       const outcome =
         row.channel === "email"
-          ? await sendBookingEmail(row, booking, deps, now, rule)
+          ? await sendBookingEmail(row, booking, deps, now, rule, ownSenderOnly)
           : await sendBookingSms(row, booking, deps, now, rule);
       await finish(row, outcome, now);
     } catch (error) {

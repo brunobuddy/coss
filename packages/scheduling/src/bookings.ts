@@ -64,7 +64,11 @@ import { SchedulingError } from "./errors.ts";
 import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { confirmedSeats, withSessionLocation } from "./group-sessions.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
-import { enqueueBookingNotifications, enqueueNoShowReminders } from "./notifications.ts";
+import {
+  carryAnchorlessReminders,
+  enqueueBookingNotifications,
+  enqueueNoShowReminders,
+} from "./notifications.ts";
 import {
   type AttendeeInputOutput,
   type BookingObjectOutput,
@@ -1956,6 +1960,7 @@ export async function updateBookingLocation(
     }
     // A seat's version stays: nothing about the seat changed.
     const updated = booking.groupSessionId ? booking : await bumped(tx, booking, { location });
+    if (!booking.groupSessionId) await carryAnchorlessReminders(tx, updated);
     await recordChange(tx, updated, {
       type: "scheduling.booking.location_ready",
       webhook: "scheduling.booking.location_ready",

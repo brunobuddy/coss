@@ -158,8 +158,9 @@ export function schedulingNotifier(opts: {
           if (!(error instanceof EmailError && error.code === "domain_not_verified")) throw error;
         }
       }
-      // A guest's address is only what someone typed: never on coss.com's sender or reputation.
-      if (email.ownSenderOnly) return;
+      // A guest's address is only what someone typed, and past its allowance a reminder is coss.com's
+      // to pay for: never on coss.com's sender or reputation.
+      if (email.ownSenderOnly) return "not_sent";
       if (!opts.fallback) {
         throw new Error(
           "Scheduling can't send without the environment's own sender: coss.com's sender " +

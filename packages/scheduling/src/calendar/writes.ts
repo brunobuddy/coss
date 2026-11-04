@@ -13,6 +13,7 @@ import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } fr
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { decryptContact } from "../attendees.ts";
 import { confirmedSeats, locationOfSession } from "../group-sessions.ts";
+import { carryAnchorlessReminders } from "../notifications.ts";
 import type { SchedulingDeps } from "../types.ts";
 import { type CalendarClient, CalendarError, type CalendarEventWrite } from "./client.ts";
 import { type CalendarDeps, clientFor, markNeedsReauth } from "./connections.ts";
@@ -227,6 +228,7 @@ async function setMeetingLink(
       )
       .returning();
     if (!updated) return;
+    await carryAnchorlessReminders(tx, updated);
     // The host's calendar event went out without the link.
     if (zoom) {
       await tx

@@ -342,7 +342,7 @@ test("mail to a guest never falls back to coss.com's sender", async () => {
     from: "appointments@not-verified.example",
     ownSenderOnly: true,
   });
-  await notifier.email(guest);
+  expect(await notifier.email(guest)).toBe("not_sent");
   const sent = await db
     .select()
     .from(schema.email)

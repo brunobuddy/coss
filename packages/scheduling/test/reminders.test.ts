@@ -440,6 +440,11 @@ describe("who it goes to", () => {
     ]);
     const row = (await rows(s, booking.id)).find((found) => found.recipient === "address");
     expect(row?.outcome).toBe("sent");
+    // A key of its own for each, that doesn't depend on where it is in the list.
+    const keys = n.emails
+      .filter((email) => isReminder(email.subject))
+      .map((email) => (email.idempotencyKey.split(":").at(-1) as string).length);
+    expect(keys).toEqual([32, 32]);
     // What a booking says about its sends never says who they went to.
     expect(JSON.stringify(row)).not.toContain("example.com");
   });
@@ -1065,8 +1070,41 @@ describe("coss.com's own address", () => {
       ],
     });
     const { booking } = await book(s);
-    await runAt(s, START - 30 * MINUTE);
+    const n = notifier(() => new Date(START - 30 * MINUTE));
+    // As the real notifier does in a live environment, with no address of the customer's to try.
+    n.notification.notifier.email = async (message) =>
+      message.ownSenderOnly ? "not_sent" : undefined;
+    await runDueSchedulingNotifications(n.notification, {
+      scope: { organizationIds: [s.env.organizationId] },
+    });
     const found = await rows(s, booking.id);
+    expect(found.find((row) => row.reminder_key === "b")?.outcome).toBe("sent");
+    expect(found.find((row) => row.reminder_key === "c")?.outcome).toBe("no_sender");
+  });
+
+  test("and an unverified `email_from` doesn't get round it", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, {
+      email_from: "appointments@not-verified.example",
+      reminders: [
+        rule({ key: "a", anchor: "start", before_minutes: 60, send: ["email_attendee"] }),
+        rule({ key: "b", anchor: "start", before_minutes: 50, send: ["email_attendee"] }),
+        rule({ key: "c", anchor: "start", before_minutes: 40, send: ["email_attendee"] }),
+      ],
+    });
+    const { booking } = await book(s);
+    const n = notifier(() => new Date(START - 30 * MINUTE));
+    const flags: Record<string, boolean> = {};
+    // As the real notifier does when the customer's domain turns out not to be verified.
+    n.notification.notifier.email = async (message) => {
+      flags[message.subject] = message.ownSenderOnly;
+      return message.ownSenderOnly ? "not_sent" : undefined;
+    };
+    await runDueSchedulingNotifications(n.notification, {
+      scope: { organizationIds: [s.env.organizationId] },
+    });
+    const found = await rows(s, booking.id);
+    expect(found.find((row) => row.reminder_key === "a")?.outcome).toBe("sent");
     expect(found.find((row) => row.reminder_key === "b")?.outcome).toBe("sent");
     expect(found.find((row) => row.reminder_key === "c")?.outcome).toBe("no_sender");
   });
@@ -1172,6 +1210,22 @@ describe("rows from before this", () => {
     await updateSettings(s.env, { reminders: [] });
     const { booking } = await book(s);
     await legacyRow(s, booking.id, 0);
+    const n = await runAt(s, START - 1440 * MINUTE);
+    expect(subjects(n).filter(isReminder)).toEqual(["Reminder: Consultation"]);
+  });
+
+  test("a location change carries them forward, as it always did", async () => {
+    const s = await setUp();
+    await updateSettings(s.env, { reminders: [] });
+    const { booking } = await book(s);
+    await legacyRow(s, booking.id, 0);
+    await updateBookingLocation(
+      s.env,
+      booking.id,
+      { type: "link", url: "https://meet.example.com/abc" },
+      deps,
+      actor,
+    );
     const n = await runAt(s, START - 1440 * MINUTE);
     expect(subjects(n).filter(isReminder)).toEqual(["Reminder: Consultation"]);
   });
@@ -1573,5 +1627,54 @@ describe("the migration, for bookings from before this", () => {
       .from(schema.schedulingReminderSync)
       .where(eq(schema.schedulingReminderSync.organizationId, s.env.organizationId));
     expect(syncs).toEqual([]);
+  });
+});
+
+describe("retrying fixed addresses", () => {
+  test("a list reordered before the retry doesn't swap who was done", async () => {
+    const s = await setUp();
+    const first = rule({
+      key: "desk",
+      anchor: "start",
+      before_minutes: 30,
+      email_to: ["a@example.com", "b@example.com"],
+    });
+    await updateSettings(s.env, { reminders: [first] });
+    await book(s);
+    const when = START - 30 * MINUTE;
+    const delivered = new Map<string, string>();
+    const n = notifier(() => new Date(when));
+    n.notification.notifier.email = async (message) => {
+      if (!isReminder(message.subject)) return;
+      if (message.to === "b@example.com") throw new Error("provider down");
+      delivered.set(message.idempotencyKey, message.to);
+    };
+    await runDueSchedulingNotifications(n.notification, {
+      scope: { organizationIds: [s.env.organizationId] },
+    });
+    expect([...delivered.values()]).toEqual(["a@example.com"]);
+
+    await updateSettings(s.env, {
+      reminders: [
+        rule({
+          key: "desk",
+          anchor: "start",
+          before_minutes: 30,
+          email_to: ["b@example.com", "a@example.com"],
+        }),
+      ],
+    });
+    const retry = notifier(() => new Date(when + 5 * MINUTE));
+    const asked: [string, string][] = [];
+    retry.notification.notifier.email = async (message) => {
+      if (isReminder(message.subject)) asked.push([message.to, message.idempotencyKey]);
+    };
+    await runDueSchedulingNotifications(retry.notification, {
+      scope: { organizationIds: [s.env.organizationId] },
+    });
+    // A's key is the one already delivered, so the real notifier skips it; B's is new.
+    const keyOf = (to: string) => asked.find(([address]) => address === to)?.[1] as string;
+    expect(delivered.get(keyOf("a@example.com"))).toBe("a@example.com");
+    expect(delivered.has(keyOf("b@example.com"))).toBe(false);
   });
 });
