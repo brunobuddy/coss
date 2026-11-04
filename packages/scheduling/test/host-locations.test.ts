@@ -435,6 +435,20 @@ describe("moving a booking to another host", () => {
     expect(moved.location).toEqual(OFFICE_B);
   });
 
+  test("naming the host it already has keeps the location it was given", async () => {
+    const { env, booking } = await poolBooking([OFFICE_B]);
+    await updateHost(env, booking.hosts[0] as string, { locations: [OFFICE_B] });
+    const moved = await rescheduleBooking(
+      env,
+      booking.id,
+      { startMs: at("10:00"), host: "a" },
+      deps,
+      actor,
+    );
+    expect(moved.hosts).toEqual(booking.hosts);
+    expect(moved.location).toEqual(OFFICE_A);
+  });
+
   test("a location the customer set survives", async () => {
     const { env, booking } = await poolBooking([OFFICE_B]);
     const room = { type: "in_person" as const, address: "Conference room 4" };

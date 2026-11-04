@@ -2044,9 +2044,11 @@ export async function rescheduleBooking(
         })
         .onConflictDoNothing();
     }
-    const newLocation = replacement
-      ? locationForNewHost(booking.location, member?.hostId, hosts)
-      : null;
+    // Naming the host it already has changes nothing about where it happens.
+    const newLocation =
+      replacement && replacement.id !== member?.hostId
+        ? locationForNewHost(booking.location, member?.hostId, hosts)
+        : null;
     const updated = await bumped(tx, booking, {
       startAt: new Date(input.startMs),
       endAt: new Date(input.startMs + durationMinutes * MINUTE_MS),
