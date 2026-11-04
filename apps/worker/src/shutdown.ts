@@ -8,7 +8,7 @@ import type { Loop } from "./loop.ts";
  */
 export function createShutdown(options: {
   controller: AbortController;
-  loops: readonly Loop[];
+  loops: readonly Pick<Loop, "name" | "stop">[];
   close: () => Promise<void>;
 }): () => Promise<void> {
   let stopping: Promise<void> | undefined;
