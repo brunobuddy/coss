@@ -1,11 +1,13 @@
 import "server-only";
 import spec from "@coss/api/openapi.json";
 import snippets from "@coss/sdkgen/snippets.json";
+import type { StructuredData } from "fumadocs-core/mdx-plugins";
 import { llms, loader } from "fumadocs-core/source";
 import { operationsMarkdown, sectionsMarkdown } from "../components/docs-sections";
 import { renderApiKeyComponents } from "./api-key-permissions-text";
 import { renderBillingComponents } from "./billing-text";
 import { docs } from "./collections";
+import { createDocsSearch, type SearchablePage } from "./docs-search";
 import { sectionsOf } from "./docs-tree";
 import { kebabCase } from "./kebab-case";
 import { openapi } from "./openapi";
@@ -143,3 +145,35 @@ export function renderTableComponents(markdown: string): string {
 
 /** /llms.txt's page tree (src/lib/llms.ts adds the rest). */
 export const docsLlms = llms(source);
+
+/** A page as the docs' search indexes it. */
+async function searchablePage(page: DocsPage): Promise<SearchablePage> {
+  const data = page.data as {
+    structuredData?: StructuredData | (() => Promise<StructuredData>);
+    load?: () => Promise<{ structuredData: StructuredData }>;
+  };
+  const structuredData =
+    typeof data.structuredData === "function"
+      ? await data.structuredData()
+      : (data.structuredData ?? (await data.load?.())?.structuredData);
+  if (!structuredData) throw new Error(`${page.url} has no structured data to search.`);
+  return {
+    url: page.url,
+    title: page.data.title ?? page.url,
+    description: page.data.description,
+    structuredData,
+    ...(page.type === "openapi"
+      ? { keywords: `${operationOf(page).method} ${operationOf(page).path}` }
+      : {}),
+  };
+}
+
+/** /docs/search.json (src/lib/docs-search.ts). */
+export const docsSearch = createDocsSearch(async () => {
+  const tree = source.getPageTree();
+  return {
+    pages: await Promise.all(source.getPages().map(searchablePage)),
+    tree,
+    overviews: new Set(sectionsOf(tree).map((section) => section.url)),
+  };
+});
