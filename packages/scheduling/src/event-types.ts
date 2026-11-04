@@ -293,6 +293,9 @@ async function rewriteUpcomingEvents(tx: Executor, row: EventTypeRow): Promise<v
   await tx
     .update(schedulingCalendarEvent)
     .set({
+      ...(row.hostCalendarDetails === "neutral"
+        ? { scrubPending: sql<boolean>`${schedulingCalendarEvent.detailsWritten}` }
+        : {}),
       desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
       nextAttemptAt: now,
       attempts: 0,

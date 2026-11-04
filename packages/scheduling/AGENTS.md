@@ -132,16 +132,19 @@ attendee sees times, never other hosts.
   there, a group session's event has only the title, and Zoom stays neutral (`detailedEvent`, `writes.ts`). HIPAA mode
   refuses `full` at setup, and is read again at each write.
 - A provider's copy of someone's details has to go when ours does. `details_written` marks a row whose event may say
-  more than "Appointment". It's set before a detailed write, in `detailsToSend`'s transaction, which takes `FOR SHARE` on
-  the attendee rows and the organization: a plain read wouldn't wait for an uncommitted erasure or HIPAA enablement, and
-  would send what they're removing. So erasures and redaction change the attendee rows **before** calling
-  `rewriteDetailedEvents`, in one transaction, and `enableHipaaMode` updates the organization's row before its rewrite.
-  Only a neutral write clears the mark, and a stale writer that sent details sets it again (`redrive`).
-- A write that's removing details never gives up: it retries with capped backoff and reports to Sentry once, until the
-  write lands or the provider says the event is gone. `description` is left out of writes to an event that never held
-  details, so what a host wrote there stays.
-- Known limit: disconnecting scrubs what it can within a budget before access goes (`scrubDetailedEvents`), and deleting
-  a host or a host revoking access at the provider scrubs nothing. Those copies are out of reach, and the docs say so.
+  more than "Appointment", and `scrub_pending` says details have to come off it.
+- `detailsToSend` takes `FOR SHARE` on the organization and the attendee rows, then sets the mark, in one transaction:
+  a plain read wouldn't wait for an uncommitted erasure or HIPAA enablement, and would send what they're removing. So
+  erasures and redaction change the attendee rows **before** calling `rewriteDetailedEvents`, in one transaction, and
+  `enableHipaaMode` updates the organization's row before its rewrite. The ledger row is locked last, or these deadlock.
+- A write clears both flags only if `desired_version` hasn't moved since it started (`clearedUnlessNewer`), and a stale
+  writer that sent details sets both again (`redrive`). A row with `scrub_pending` never gives up: it retries with capped
+  backoff and reports to Sentry once, until the write lands or the provider says the event is gone. Never work out
+  "is this a cleanup?" from what the event will say: erasing the attendee leaves a guest in the description.
+- `description` is left out of writes to an event that never held details, so what a host wrote there stays.
+- Known limit: disconnecting scrubs what it can within a budget before access goes (`scrubDetailedEvents`, which can't
+  stop the disconnect), and deleting a host or a host revoking access at the provider scrubs nothing. Those copies are
+  out of reach, and the docs say so.
 - A guest is a `scheduling_attendee` with `role = 'guest'`, only an email and optional name, and the attendee's zone and
   locale; `participants` lists the attendee first. The event type's `max_guests` (default 0, never on `group`) allows
   them, since each is an address someone typed that we then email. So in live environments they're only emailed from the

@@ -780,6 +780,8 @@ export const schedulingCalendarEvent = pgTable(
     // The provider's copy may say more than "Appointment": set before such a write is sent, cleared
     // only after a neutral one. Erasing someone and enabling HIPAA mode rewrite these rows.
     detailsWritten: boolean("details_written").notNull().default(false),
+    // Someone's details have to come off this event, so a failing write never gives up on it.
+    scrubPending: boolean("scrub_pending").notNull().default(false),
     nextAttemptAt: instant("next_attempt_at").notNull().defaultNow(),
     leaseUntil: instant("lease_until"),
     attempts: integer("attempts").notNull().default(0),

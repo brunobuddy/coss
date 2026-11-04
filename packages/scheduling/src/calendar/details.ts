@@ -16,6 +16,17 @@ export const NEUTRAL_EVENT: HostEventText = { title: "Appointment", description:
 
 type Person = AttendeeContact & { role: "attendee" | "guest" };
 
+/** What an event's location field says. */
+export function locationText(
+  location: (typeof schema.schedulingBooking.$inferSelect)["location"],
+): string | null {
+  if (!location) return null;
+  if (location.type === "link" || location.type === "zoom") return location.url;
+  if (location.type === "phone") return location.number;
+  if (location.type === "in_person") return location.address;
+  return null;
+}
+
 const oneLine = (value: string) => value.replace(/\s+/g, " ").trim();
 
 function line(label: string, person: AttendeeContact): string | null {
@@ -53,6 +64,7 @@ export async function rewriteDetailedEvents(
   await tx
     .update(schedulingCalendarEvent)
     .set({
+      scrubPending: true,
       desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
       nextAttemptAt: now,
       attempts: 0,

@@ -1,5 +1,5 @@
 {
-  "id": "e8584e53-7e9b-4c09-be26-9c61900087c3",
+  "id": "b2ce9d5e-da75-4d24-9428-00a6111ab223",
   "prevId": "05854061-63ad-4a3c-b76c-02b6f4a74d47",
   "version": "7",
   "dialect": "postgresql",
@@ -22237,6 +22237,13 @@
         },
         "details_written": {
           "name": "details_written",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "scrub_pending": {
+          "name": "scrub_pending",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,

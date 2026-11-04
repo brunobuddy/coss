@@ -341,6 +341,7 @@ async function applyHipaaModeToWaitingMessages(tx: Executor, organizationId: str
   await tx
     .update(schema.schedulingCalendarEvent)
     .set({
+      scrubPending: true,
       desiredVersion: sql`${schema.schedulingCalendarEvent.desiredVersion} + 1`,
       nextAttemptAt: sql`now()`,
       attempts: 0,

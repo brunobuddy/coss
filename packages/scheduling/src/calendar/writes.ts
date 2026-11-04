@@ -10,13 +10,14 @@ import { ID_PREFIXES, newId } from "@coss/db/id";
 import { appendLogEntries } from "@coss/logs";
 import { enqueueWebhookMessage } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
+import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { decryptContact } from "../attendees.ts";
 import { confirmedSeats, locationOfSession } from "../group-sessions.ts";
 import { carryReminders } from "../notifications.ts";
 import type { SchedulingDeps } from "../types.ts";
 import { type CalendarClient, CalendarError, type CalendarEventWrite } from "./client.ts";
 import { type CalendarDeps, clientFor, markNeedsReauth } from "./connections.ts";
-import { type HostEventText, hostEventText, NEUTRAL_EVENT } from "./details.ts";
+import { type HostEventText, hostEventText, locationText, NEUTRAL_EVENT } from "./details.ts";
 import { notZoomMeeting } from "./zoom.ts";
 
 const {
@@ -113,18 +114,19 @@ function conferenceOf(location: Location): CalendarEventWrite["conference"] {
   return type === "google_meet" || type === "microsoft_teams" || type === "zoom" ? type : null;
 }
 
-function locationText(location: Location): string | null {
-  if (!location) return null;
-  if (location.type === "link" || location.type === "zoom") return location.url;
-  if (location.type === "phone") return location.number;
-  if (location.type === "in_person") return location.address;
-  return null;
-}
+/**
+ * A write done with neither flag owed anything any more, unless the row has moved on meanwhile: a
+ * stale writer's `redrive` may have just asked for details to come off again.
+ */
+const clearedUnlessNewer = (row: LedgerRow) => ({
+  detailsWritten: sql<boolean>`case when ${schedulingCalendarEvent.desiredVersion} = ${row.desiredVersion} then false else ${schedulingCalendarEvent.detailsWritten} end`,
+  scrubPending: sql<boolean>`case when ${schedulingCalendarEvent.desiredVersion} = ${row.desiredVersion} then false else ${schedulingCalendarEvent.scrubPending} end`,
+});
 
 /** Records what happened, only if this worker still holds the row. */
 async function finish(
   row: LedgerRow,
-  set: Partial<typeof schedulingCalendarEvent.$inferInsert>,
+  set: PgUpdateSetSource<typeof schedulingCalendarEvent>,
 ): Promise<boolean> {
   const [updated] = await db
     .update(schedulingCalendarEvent)
@@ -142,7 +144,7 @@ async function redrive(row: LedgerRow, now: Date, carriedDetails: boolean): Prom
   await db
     .update(schedulingCalendarEvent)
     .set({
-      ...(carriedDetails ? { detailsWritten: true } : {}),
+      ...(carriedDetails ? { detailsWritten: true, scrubPending: true } : {}),
       desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
       nextAttemptAt: now,
       attempts: 0,
@@ -381,11 +383,12 @@ async function detailedTitle(
 
 /**
  * What the event may say, decided against anything that could take details away while it's sent.
- * The row is marked in the same transaction, and the row locks make both orders safe. An erasure
- * holds its attendee rows while it asks for a rewrite of marked events, and enabling HIPAA mode
- * holds the organization's row while it does the same. So they either commit first, and these
- * locks wait and then read what they left, or wait for this to commit and see its mark. A plain
- * read wouldn't wait: it would see the old details with an uncommitted erasure's rewrite missed.
+ * The locks come first and the row is marked before they're released, which makes both orders safe.
+ * An erasure holds its attendee rows while it asks for a rewrite of marked events, and enabling HIPAA
+ * mode holds the organization's row while it does the same. So they either commit first, and these
+ * locks wait and then read what they left, or wait for this to commit and see its mark. A plain read
+ * wouldn't wait: it would see the old details with an uncommitted erasure's rewrite already missed.
+ * Marking last means this never holds the ledger row while waiting for what those two hold.
  */
 async function detailsToSend(
   row: LedgerRow,
@@ -394,6 +397,26 @@ async function detailsToSend(
   deps: CalendarWriteDeps,
 ): Promise<HostEventText | null> {
   return db.transaction(async (tx) => {
+    await tx
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.id, row.organizationId))
+      .for("share");
+    if (await hipaaModeApplies(row.environmentId, tx)) return NEUTRAL_EVENT;
+    // A group session's seats come and go without a write, so its event names nobody.
+    const attendees = booking
+      ? await tx
+          .select()
+          .from(schedulingAttendee)
+          .where(
+            and(
+              eq(schedulingAttendee.bookingId, booking.id),
+              eq(schedulingAttendee.organizationId, booking.organizationId),
+            ),
+          )
+          .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id))
+          .for("share")
+      : [];
     if (!row.detailsWritten) {
       const [marked] = await tx
         .update(schedulingCalendarEvent)
@@ -402,25 +425,7 @@ async function detailsToSend(
         .returning({ id: schedulingCalendarEvent.id });
       if (!marked) return null;
     }
-    await tx
-      .select({ id: organization.id })
-      .from(organization)
-      .where(eq(organization.id, row.organizationId))
-      .for("share");
-    if (await hipaaModeApplies(row.environmentId, tx)) return NEUTRAL_EVENT;
-    // A group session's seats come and go without a write, so its event names nobody.
     if (!booking) return { title, description: null };
-    const attendees = await tx
-      .select()
-      .from(schedulingAttendee)
-      .where(
-        and(
-          eq(schedulingAttendee.bookingId, booking.id),
-          eq(schedulingAttendee.organizationId, booking.organizationId),
-        ),
-      )
-      .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id))
-      .for("share");
     return hostEventText(
       title,
       attendees.map((attendee) => ({
@@ -476,7 +481,8 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
   let sent = false;
   let carriedDetails = false;
   // Taking details off an event isn't something to give up on: they'd stay on a provider for good.
-  let removingDetails = false;
+  // A deletion counts, since a row that's absent is never rewritten when someone's erased.
+  const removingDetails = row.scrubPending || (row.desiredState === "absent" && row.detailsWritten);
   const settle = async (set: Parameters<typeof finish>[1]): Promise<boolean> => {
     const finished = await finish(row, set);
     if (!finished && sent) await redrive(row, now, carriedDetails);
@@ -492,7 +498,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
       await settle({
         appliedVersion: row.desiredVersion,
         providerEventId: null,
-        detailsWritten: false,
+        ...clearedUnlessNewer(row),
         attempts: 0,
         lastErrorCode: null,
       });
@@ -503,7 +509,6 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
     const text = title ? await detailsToSend(row, booking, title, deps) : NEUTRAL_EVENT;
     if (!text) return;
     carriedDetails = text !== NEUTRAL_EVENT;
-    removingDetails = held && !text.description && (!title || !session);
     sent = true;
     const event: CalendarEventWrite = {
       key: eventKey(row),
@@ -521,7 +526,10 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
     const finished = await settle({
       appliedVersion: row.desiredVersion,
       providerEventId: written.providerEventId,
-      detailsWritten: carriedDetails,
+      // Whatever else this write did, an event still saying more keeps its mark.
+      ...(carriedDetails
+        ? { detailsWritten: true, scrubPending: clearedUnlessNewer(row).scrubPending }
+        : clearedUnlessNewer(row)),
       attempts: 0,
       lastErrorCode: null,
       externalState: "in_sync",
@@ -553,7 +561,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
         await settle({
           appliedVersion: row.desiredVersion,
           providerEventId: null,
-          detailsWritten: false,
+          ...clearedUnlessNewer(row),
           attempts: 0,
           lastErrorCode: null,
         });

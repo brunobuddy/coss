@@ -21,7 +21,7 @@ import { resolveHost } from "../hosts.ts";
 import type { SchedulingCalendarWebhookEventType } from "../webhook-types.ts";
 import { caldavCalendarClient, type DavTransport, pinnedDavTransport } from "./caldav.ts";
 import { type CalendarClient, CalendarError, type HttpFetch } from "./client.ts";
-import { NEUTRAL_EVENT } from "./details.ts";
+import { locationText, NEUTRAL_EVENT } from "./details.ts";
 import { googleCalendarClient } from "./google.ts";
 import { microsoftCalendarClient } from "./microsoft.ts";
 import {
@@ -38,6 +38,7 @@ import { simulatedCalendarClient } from "./simulated.ts";
 import { ZOOM_CALENDAR_ID, zoomCalendarClient, zoomUserId } from "./zoom.ts";
 
 const {
+  schedulingBooking,
   schedulingBusyInterval,
   schedulingCalendar,
   schedulingCalendarConnection,
@@ -67,6 +68,8 @@ export type CalendarDeps = {
   fetcher?: HttpFetch;
   /** Defaults to well inside a write's lease, so a hung request can't outlive it. */
   requestTimeoutMs?: number;
+  /** How long disconnecting may spend taking details off events. */
+  scrubBudgetMs?: number;
   davTransport?: DavTransport;
   now?: () => Date;
 };
@@ -857,17 +860,20 @@ export async function refreshIdleZoomConnections(
 }
 
 /** Best effort at the provider: leaving is never blocked by one being down. */
-/**
- * Details come off events while there's still access to them, newest first and within a budget, so
- * disconnecting stays quick. Best effort: whatever's left, like everything on a calendar whose
- * access the host revoked at the provider, is out of coss.com's reach.
- */
-async function scrubDetailedEvents(connection: ConnectionRow, deps: CalendarDeps): Promise<void> {
-  if (connection.status !== "active") return;
+async function scrubEvents(
+  connection: ConnectionRow,
+  deps: CalendarDeps,
+  deadline: number,
+): Promise<void> {
   const rows = await db
-    .select({ event: schedulingCalendarEvent, calendarId: schedulingCalendar.externalId })
+    .select({
+      event: schedulingCalendarEvent,
+      calendarId: schedulingCalendar.externalId,
+      location: schedulingBooking.location,
+    })
     .from(schedulingCalendarEvent)
     .innerJoin(schedulingCalendar, eq(schedulingCalendar.id, schedulingCalendarEvent.calendarId))
+    .innerJoin(schedulingBooking, eq(schedulingBooking.id, schedulingCalendarEvent.bookingId))
     .where(
       and(
         eq(schedulingCalendar.connectionId, connection.id),
@@ -880,26 +886,49 @@ async function scrubDetailedEvents(connection: ConnectionRow, deps: CalendarDeps
     .orderBy(desc(schedulingCalendarEvent.desiredEnd))
     .limit(SCRUB_MAX_EVENTS);
   if (rows.length === 0) return;
-  const deadline = Date.now() + SCRUB_BUDGET_MS;
-  try {
-    const client = await clientFor(connection, deps);
-    for (const { event, calendarId } of rows) {
-      if (Date.now() > deadline) return;
-      await client
-        .updateEvent(calendarId, event.providerEventId as string, {
-          key: event.providerEventId as string,
-          ...NEUTRAL_EVENT,
-          startMs: event.desiredStart.getTime(),
-          endMs: event.desiredEnd.getTime(),
-          conference: null,
-          location: null,
-        })
-        .catch((error) => {
-          if (!(error instanceof CalendarError)) throw error;
-        });
+  const client = await clientFor(connection, deps);
+  for (const { event, calendarId, location } of rows) {
+    if (Date.now() > deadline) return;
+    const providerEventId = event.providerEventId as string;
+    try {
+      // Where the host may have moved it: nothing will ever correct this event again.
+      const current = await client.getEvent?.(calendarId, providerEventId);
+      if (current?.state === "deleted") continue;
+      await client.updateEvent(calendarId, providerEventId, {
+        key: providerEventId,
+        ...NEUTRAL_EVENT,
+        startMs: current?.startMs ?? event.desiredStart.getTime(),
+        endMs: current?.endMs ?? event.desiredEnd.getTime(),
+        conference: null,
+        location: locationText(location),
+      });
+    } catch (error) {
+      if (!(error instanceof CalendarError)) throw error;
     }
+  }
+}
+
+/**
+ * Details come off events while there's still access to them, newest first and within a budget, so
+ * disconnecting stays quick. Best effort, and nothing here may stop the disconnect: whatever's left,
+ * like everything on a calendar whose access was revoked at the provider, is out of coss.com's reach.
+ * A group session's event has only its title, naming nobody, so it isn't scrubbed.
+ */
+async function scrubDetailedEvents(connection: ConnectionRow, deps: CalendarDeps): Promise<void> {
+  if (connection.status !== "active") return;
+  const budgetMs = deps.scrubBudgetMs ?? SCRUB_BUDGET_MS;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      scrubEvents(connection, deps, Date.now() + budgetMs),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, budgetMs);
+      }),
+    ]);
   } catch (error) {
-    if (!(error instanceof CalendarError)) throw error;
+    console.error(`[scheduling] couldn't scrub events of connection ${connection.id}:`, error);
+  } finally {
+    clearTimeout(timer);
   }
 }
 

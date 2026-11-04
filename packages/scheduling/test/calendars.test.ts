@@ -695,6 +695,7 @@ describe("writing to calendars", () => {
       await runDueCalendarWrites(stale, { scope: scope(w.env) });
       expect(stolen).toBe(true);
       expect((await w.ledger()).detailsWritten).toBe(true);
+      expect((await w.ledger()).scrubPending).toBe(true);
       await db
         .update(schema.schedulingCalendarEvent)
         .set({ leaseUntil: null, nextAttemptAt: NOW })
@@ -736,6 +737,144 @@ describe("writing to calendars", () => {
         .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
       await w.write();
       expect(w.event()?.description).toBe("");
+    });
+
+    test("removing the attendee is retried though a guest keeps the description non-empty", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      await eraseAttendee(w.env, { uid: "sam" });
+      const logged = spyOn(console, "error").mockImplementation(() => {});
+      await runDueCalendarWrites(
+        {
+          ...w.deps,
+          fetcher: async (url, init) =>
+            init?.method === "PATCH"
+              ? Response.json({ error: { errors: [{ reason: "forbidden" }] } }, { status: 400 })
+              : w.api.fetch(url, init),
+        },
+        { scope: scope(w.env) },
+      );
+      logged.mockRestore();
+      const row = await w.ledger();
+      expect(row.appliedVersion).toBeLessThan(row.desiredVersion);
+      expect(row.scrubPending).toBe(true);
+      await db
+        .update(schema.schedulingCalendarEvent)
+        .set({ nextAttemptAt: NOW })
+        .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
+      await w.write();
+      expect(w.event()?.title).toBe("Intro call");
+      expect((await w.ledger()).scrubPending).toBe(false);
+    });
+
+    test("a detailed event being deleted isn't given up on either", async () => {
+      const w = await detailed();
+      const { booking } = await w.bookIt();
+      await w.write();
+      await cancelBooking(w.env, booking.id, w.plain, actor);
+      await runDueCalendarWrites(
+        {
+          ...w.deps,
+          fetcher: async (url, init) =>
+            init?.method === "DELETE"
+              ? Response.json({ error: { errors: [{ reason: "forbidden" }] } }, { status: 400 })
+              : w.api.fetch(url, init),
+        },
+        { scope: scope(w.env) },
+      );
+      const row = await w.ledger();
+      expect(row.appliedVersion).toBeLessThan(row.desiredVersion);
+      expect(row.detailsWritten).toBe(true);
+    });
+
+    test("a write that started before a rewrite was asked for doesn't clear its flags", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      await updateEventType(w.env, w.eventType.id, { host_calendar_details: "neutral" });
+      await db
+        .update(schema.schedulingCalendarEvent)
+        .set({ detailsWritten: false, scrubPending: false })
+        .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
+      let raced = false;
+      await runDueCalendarWrites(
+        {
+          ...w.deps,
+          fetcher: async (url, init) => {
+            if (!raced && init?.method === "PATCH") {
+              raced = true;
+              // An old writer's details land, and it asks for them to come off again.
+              await db
+                .update(schema.schedulingCalendarEvent)
+                .set({
+                  detailsWritten: true,
+                  scrubPending: true,
+                  desiredVersion: sql`${schema.schedulingCalendarEvent.desiredVersion} + 1`,
+                })
+                .where(eq(schema.schedulingCalendarEvent.hostId, w.host.id));
+            }
+            return w.api.fetch(url, init);
+          },
+        },
+        { scope: scope(w.env) },
+      );
+      expect(raced).toBe(true);
+      const row = await w.ledger();
+      expect(row.detailsWritten).toBe(true);
+      expect(row.scrubPending).toBe(true);
+      await w.write();
+      expect(w.event()?.description).toBe("");
+    });
+
+    test("disconnecting leaves an event where the host moved it", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      const moved = at("15:00");
+      const event = w.event();
+      if (event) {
+        event.startMs = moved;
+        event.endMs = moved + 1_800_000;
+      }
+      const [connection] = await listConnections(w.env, w.host.id);
+      await disconnectCalendar(w.env, w.host.id, connection?.id as string, w.deps);
+      expect(w.event()?.description).toBe("");
+      expect(w.event()?.startMs).toBe(moved);
+    });
+
+    test("nothing about scrubbing can stop a disconnect", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      const [connection] = await listConnections(w.env, w.host.id);
+      const logged = spyOn(console, "error").mockImplementation(() => {});
+      await disconnectCalendar(w.env, w.host.id, connection?.id as string, {
+        ...w.deps,
+        fetcher: async (url, init) => {
+          if (init?.method === "PATCH") throw new Error("something unexpected");
+          return w.api.fetch(url, init);
+        },
+      });
+      logged.mockRestore();
+      expect(await listConnections(w.env, w.host.id)).toEqual([]);
+    });
+
+    test("a provider that never answers can't hold a disconnect past the budget", async () => {
+      const w = await detailed();
+      await w.bookIt();
+      await w.write();
+      const [connection] = await listConnections(w.env, w.host.id);
+      const started = Date.now();
+      await disconnectCalendar(w.env, w.host.id, connection?.id as string, {
+        ...w.deps,
+        scrubBudgetMs: 50,
+        requestTimeoutMs: 60_000,
+        fetcher: (url, init) =>
+          init?.method === "PATCH" ? new Promise<Response>(() => {}) : w.api.fetch(url, init),
+      });
+      expect(Date.now() - started).toBeLessThan(5_000);
+      expect(await listConnections(w.env, w.host.id)).toEqual([]);
     });
 
     test("disconnecting takes details off before access goes", async () => {
