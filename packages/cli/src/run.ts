@@ -21,6 +21,7 @@ import { inboxCommand, inboxGetCommand } from "./commands/inbox.ts";
 import { INBOXES_COMMANDS } from "./commands/inboxes.ts";
 import { initCommand } from "./commands/init.ts";
 import { listenCommand } from "./commands/listen.ts";
+import { LOG_DRAINS_COMMANDS } from "./commands/log-drains.ts";
 import { loginCommand } from "./commands/login.ts";
 import { logoutCommand } from "./commands/logout.ts";
 import { logsTailCommand } from "./commands/logs.ts";
@@ -31,6 +32,8 @@ import { RISK_COMMANDS } from "./commands/risk.ts";
 import { SCHEDULING_COMMANDS } from "./commands/scheduling.ts";
 import { SIGN_COMMANDS } from "./commands/sign.ts";
 import { SMS_COMMANDS } from "./commands/sms.ts";
+import { SUBACCOUNTS_COMMANDS } from "./commands/subaccounts.ts";
+import { SUPPRESSIONS_COMMANDS } from "./commands/suppressions.ts";
 import {
   templatesListCommand,
   templatesPreviewCommand,
@@ -68,10 +71,13 @@ export const COMMANDS: readonly Command[] = [
   emailsGetCommand,
   emailsEventsCommand,
   emailsDiagnoseCommand,
+  ...SUPPRESSIONS_COMMANDS,
+  ...SUBACCOUNTS_COMMANDS,
   ...MARKETING_COMMANDS,
   ...SMS_COMMANDS,
   ...VERIFY_COMMANDS,
   logsTailCommand,
+  ...LOG_DRAINS_COMMANDS,
   inboxCommand,
   inboxGetCommand,
   ...INBOXES_COMMANDS,
