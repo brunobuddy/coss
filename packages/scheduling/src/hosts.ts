@@ -217,9 +217,11 @@ export async function updateHost(
           ),
         )
         .returning();
-      await nudgeDelegations(tx, scope, [calendarAccount, params.email]);
       return updated;
     });
+    // After the commit: this locks the delegation, and in that transaction it would be after the
+    // connection, the opposite of a bulk flip's order, which deadlocks.
+    await nudgeDelegations(db, scope, [calendarAccount, params.email]);
     return toHostObject(row as HostRow);
   } catch (error) {
     if (isUniqueViolation(error)) throw uidTaken(params.uid);

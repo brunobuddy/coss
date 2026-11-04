@@ -258,20 +258,24 @@ export async function settleRefusal(
   deps: CalendarDeps,
 ): Promise<"mailbox" | "stop"> {
   const scope = delegationFailureScope(error);
-  if (scope === "mailbox") return "mailbox";
-  // The refusal may be of credentials that have since been replaced, by a request that was already
-  // on its way. Taking every host out needs the current ones refused, and the flip is conditional on
-  // them still being what's stored.
+  // A mailbox with no calendar has answered, and asking again would get the same answer.
+  if (error.code === "no_primary") return "mailbox";
+  // Any refusal may be an old one, of credentials since replaced or a mailbox since restored, from a
+  // request that was already on its way, so nothing below acts on it without asking again. Taking
+  // every host out needs the current credentials refused, and the flip is conditional on them still
+  // being what's stored.
   const [current] = await db.select().from(schedulingCalendarDelegation).where(rowOf(delegation));
   if (current?.status !== "active") return "stop";
-  const { result } = await probeDelegation(current, deps, { except: mailbox });
-  if (result === "refused") {
-    await markDelegationFailing(current, error.code, deps, {
-      ifCredentials: current.encryptedCredentials,
-    });
-    return "stop";
+  if (scope !== "mailbox") {
+    const { result } = await probeDelegation(current, deps, { except: mailbox });
+    if (result === "refused") {
+      await markDelegationFailing(current, error.code, deps, {
+        ifCredentials: current.encryptedCredentials,
+      });
+      return "stop";
+    }
+    if (result !== "ok" || scope !== "ambiguous") return "stop";
   }
-  if (result !== "ok" || scope !== "ambiguous") return "stop";
   // Everyone else is fine, but the answer may be that same old one: ask about this mailbox too.
   try {
     await checkMailbox(current, mailbox, deps);

@@ -344,14 +344,17 @@ describe("connecting hosts", () => {
     const env = await environment();
     const api = new FakeGoogleCalendarApi();
     const deps = googleDeps(api);
-    await hostOn(env, "aaa");
-    const later = await hostOn(env, "bbb");
+    // Whichever sorts first: ids made in the same millisecond can land either way.
+    const [first, second] = [await hostOn(env, "aaa"), await hostOn(env, "bbb")].sort((a, b) =>
+      a.id < b.id ? -1 : 1,
+    );
+    api.unavailableMailboxes.add(first?.email as string);
     const delegation = await activeGoogle(env, deps);
-    api.failNext = { path: /calendarList$/, status: 503 };
     await run(env, deps);
     await dueNow(delegation.id);
     await run(env, deps);
-    expect(await listConnections(env, later.id)).toMatchObject([{ status: "active" }]);
+    expect(await listConnections(env, first?.id as string)).toEqual([]);
+    expect(await listConnections(env, second?.id as string)).toMatchObject([{ status: "active" }]);
   });
 
   test("hosts that keep failing can't hold up the ones behind them", async () => {
@@ -574,6 +577,21 @@ describe("a host's mailbox changing under a connection being made", () => {
     await dueNow(delegation.id);
     await run(env, deps);
     expect(await listConnections(env, ana.id)).toMatchObject([{ account: `ana.new@${DOMAIN}` }]);
+  });
+
+  test("turning matching off stops a typed-in email that's already being connected", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    const deps = googleDeps(api);
+    const typedIn = await hostOn(env, "ceo");
+    const delegation = await activeGoogle(env, deps);
+    const held = api.hold("POST", /freeBusy$/);
+    const running = run(env, deps);
+    await held.arrived;
+    await updateCalendarDelegation(env, delegation.id, { match_host_email: false }, deps);
+    held.release();
+    await running;
+    expect(await listConnections(env, typedIn.id)).toEqual([]);
   });
 
   test("a failure of the old mailbox during the move isn't recorded against the host", async () => {
@@ -1050,6 +1068,44 @@ describe("losing access", () => {
         updateCalendarDelegation(env, delegation.id, { service_account_key: account.key }, deps),
       ),
     ).toBe("calendar_delegation_refused");
+  });
+
+  test("a mailbox refused just before it came back isn't marked", async () => {
+    const { env, api, deps, ana, later } = await connected();
+    api.goneMailboxes.add(`ana@${DOMAIN}`);
+    later(59);
+    await db
+      .update(schema.schedulingCalendar)
+      .set({ nextSyncAt: new Date(0) })
+      .where(eq(schema.schedulingCalendar.hostId, ana.id));
+    const held = api.hold("POST", /token$/, "after");
+    const syncing = runDueCalendarSyncs(deps, { scope: scope(env) });
+    await held.arrived;
+    api.goneMailboxes.clear();
+    held.release();
+    await syncing;
+    expect(await listConnections(env, ana.id)).toMatchObject([{ status: "active" }]);
+  });
+
+  test("a mailbox that keeps failing doesn't stop another from being retried", async () => {
+    const { env, api, deps, ana, ben, delegation, later } = await connected();
+    // Both lost, with the one that won't answer first in line.
+    await db
+      .update(schema.schedulingCalendarConnection)
+      .set({ status: "needs_reauth", lastErrorAt: new Date(NOW.getTime() - 7_200_000) })
+      .where(eq(schema.schedulingCalendarConnection.hostId, ana.id));
+    await db
+      .update(schema.schedulingCalendarConnection)
+      .set({ status: "needs_reauth", lastErrorAt: new Date(NOW.getTime() - 3_700_000) })
+      .where(eq(schema.schedulingCalendarConnection.hostId, ben.id));
+    api.unavailableMailboxes.add(`ana@${DOMAIN}`);
+    later(2);
+    await dueNow(delegation.id);
+    await run(env, deps);
+    await dueNow(delegation.id);
+    await run(env, deps);
+    expect(await listConnections(env, ben.id)).toMatchObject([{ status: "active" }]);
+    expect(await listConnections(env, ana.id)).toMatchObject([{ status: "needs_reauth" }]);
   });
 
   test("a refusal that's since gone away leaves a healthy mailbox alone", async () => {

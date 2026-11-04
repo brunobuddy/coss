@@ -121,8 +121,10 @@ once, and every host on it gets their calendar with no consent screen.
 - **The mailbox is stamped when a host connects** (`accountId`), and `email` changing later moves nothing, since it's
   "never an identity". Otherwise old events are orphaned, and a new connection has no write target. A host has one
   delegated mailbox, even if their email moves to another delegation's domain. Only `calendar_account` moves it
-  (`releaseOldMailbox`, `hosts.ts`), refused while bookings are live, under the host's lock, which `connectHost` takes
-  too before committing what it fetched. `match_host_email`
+  (`releaseOldMailbox`, `hosts.ts`), refused while bookings are live, under the host's lock. `hostStillWants` takes that
+  lock and the delegation's before anything fetched is committed, and re-reads both: a mailbox changed or
+  `match_host_email` turned off during the provider calls has to win. Locks: host, then delegation, then connections;
+  a bulk flip takes the delegation, then connections, so nothing may lock a delegation after a connection. `match_host_email`
   trusts `host.email`, which the docs warn about: a customer taking emails from end users must turn it off.
 - **`runDueCalendarDelegations`** connects a batch per run. `connectHost` fetches everything first (calendars, a
   channel, the first read) and commits it all in one transaction, so a host goes from no calendar to a verified one,
@@ -137,8 +139,9 @@ once, and every host on it gets their calendar with no consent screen.
   which could be another host's. `saveConnection` leaves a delegated row alone, or a host's consent would replace the
   delegation's token, and its upsert checks that again under its own lock, since a takeover in progress isn't visible
   before it. `markNeedsReauth` re-reads the row, so a late failure of the old tokens does nothing.
-- **Losing access**: every `auth` failure goes through `handleAccessLost`. Before anything flips, the credentials stored
-  now are tried, since the refusal may be of ones just replaced, and the flip is conditional on them still being stored.
+- **Losing access**: every `auth` failure goes through `handleAccessLost`. Any refusal may be old, from a request already on its way,
+  so nothing acts on one without asking again: before anything flips the credentials stored now are tried, and the flip
+  is conditional on them still being stored; before a mailbox is marked, it's asked again too.
   Refused credentials flip every connection to `delegation_failing` in one update (compare-and-set on the delegation: one webhook, log line and owner email), so
   every `status = 'active'` filter works with no join in the availability path, and one update brings them back. On
   the wire that status is `needs_reauth`. One mailbox gone only marks that connection, with no email to the host, who

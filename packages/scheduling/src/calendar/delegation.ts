@@ -461,6 +461,7 @@ async function hostsToConnect(delegation: DelegationRow, now: Date): Promise<Hos
         lt(schedulingCalendarConnection.lastErrorAt, new Date(now.getTime() - MAILBOX_RETRY_MS)),
       ),
     )
+    .orderBy(asc(schedulingCalendarConnection.lastErrorAt))
     .limit(Math.max(HOSTS_PER_RUN - fresh.length, 0));
   return [
     ...fresh.map((host) => ({ ...host, existing: null })),
@@ -505,7 +506,7 @@ async function hostStillWants(
   host: Host,
 ): Promise<boolean> {
   const [current] = await tx
-    .select({ mailbox: hostMailbox(delegation) })
+    .select({ calendarAccount: schedulingHost.calendarAccount, email: schedulingHost.email })
     .from(schedulingHost)
     .where(
       and(
@@ -515,7 +516,27 @@ async function hostStillWants(
     )
     .for("update");
   if (!current) return false;
-  if (!host.existing) return current.mailbox === host.mailbox;
+  // Waits out a bulk flip in progress and holds off the next, since a connection activated just
+  // after one would escape the outage. And what this delegation may match can have changed: turning
+  // `match_host_email` off has to stop what's already fetched, or a typed-in email still gets through.
+  const [state] = await tx
+    .select({
+      status: schedulingCalendarDelegation.status,
+      matchHostEmail: schedulingCalendarDelegation.matchHostEmail,
+    })
+    .from(schedulingCalendarDelegation)
+    .where(
+      and(
+        eq(schedulingCalendarDelegation.id, delegation.id),
+        eq(schedulingCalendarDelegation.organizationId, delegation.organizationId),
+      ),
+    )
+    .for("share");
+  if (state?.status !== "active") return false;
+  if (!host.existing) {
+    const wanted = current.calendarAccount ?? (state.matchHostEmail ? current.email : null);
+    return wanted?.toLowerCase() === host.mailbox;
+  }
   const [stillThere] = await tx
     .select({ id: schedulingCalendarConnection.id })
     .from(schedulingCalendarConnection)
@@ -577,19 +598,6 @@ async function connectHost(
     const now = deps.now?.() ?? new Date();
     channelKept = await db.transaction(async (tx): Promise<boolean> => {
       if (!(await hostStillWants(tx, delegation, host))) return false;
-      // Waits out a bulk flip in progress, and holds off the next: a connection activated after one
-      // has finished would escape the outage, since nothing would flip it again.
-      const [state] = await tx
-        .select({ status: schedulingCalendarDelegation.status })
-        .from(schedulingCalendarDelegation)
-        .where(
-          and(
-            eq(schedulingCalendarDelegation.id, delegation.id),
-            eq(schedulingCalendarDelegation.organizationId, delegation.organizationId),
-          ),
-        )
-        .for("share");
-      if (state?.status !== "active") return false;
       const upgraded = host.existing ? null : await connectionToUpgrade(tx, delegation, host);
       const fields = {
         delegationId: delegation.id,
@@ -765,6 +773,13 @@ async function connectHosts(delegation: DelegationRow, deps: CalendarDeps): Prom
       await connectHost(delegation, credentials, host, deps);
     } catch (error) {
       if (!(error instanceof CalendarError)) throw error;
+      // Back of the line, or a mailbox that keeps failing would be first again next time.
+      if (host.existing) {
+        await db
+          .update(schedulingCalendarConnection)
+          .set({ lastErrorAt: now })
+          .where(eq(schedulingCalendarConnection.id, host.existing.id));
+      }
       // One calendar that can't be read says nothing about the rest. It comes up again next pass.
       if (error.code === "read_failed") continue;
       if (error.kind === "rate_limited" || error.kind === "transient") {

@@ -88,6 +88,8 @@ export class FakeGoogleCalendarApi {
   delegationRefused: { error: string; error_description?: string } | null = null;
   /** Mailboxes that aren't in the Workspace. */
   readonly goneMailboxes = new Set<string>();
+  /** Mailboxes whose calendars don't answer: 503, every time. */
+  readonly unavailableMailboxes = new Set<string>();
   /** Every mailbox a token was asked for. */
   readonly minted: string[] = [];
   /** Where each calendar's writes went, by the calendar in the path. */
@@ -183,6 +185,7 @@ export class FakeGoogleCalendarApi {
     if (path === "/users/me/calendarList") {
       const bearer = new Headers(init?.headers).get("authorization") ?? "";
       const mailbox = /^Bearer dwd:(.+)$/.exec(bearer)?.[1];
+      if (mailbox && this.unavailableMailboxes.has(mailbox)) return json(503, {});
       // Under `sub`, "me" is the mailbox, and its primary calendar has its address as an id.
       return json(200, {
         items: mailbox
