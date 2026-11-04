@@ -308,6 +308,7 @@ describe("GET /openapi.json", () => {
       "/v1/scheduling/hosts/{host}/schedules/{schedule_id}",
       "/v1/scheduling/hosts/{host}/sessions",
       "/v1/scheduling/hosts/{host}/simulated_busy",
+      "/v1/scheduling/manager_sessions",
       "/v1/scheduling/out_of_office",
       "/v1/scheduling/out_of_office/by_external_id/{external_id}",
       "/v1/scheduling/out_of_office/{id}",

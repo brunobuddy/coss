@@ -317,6 +317,15 @@ export const CreateOutOfOfficeRequest = z
 export type CreateOutOfOfficeRequestOutput = z.output<typeof CreateOutOfOfficeRequest>;
 
 /** What a host says about their own time: whose it is comes from their session. */
+/** A team page's: for its own people, and moving bookings is a run of its own. */
+export const ManagerOutOfOfficeRequest = z
+  .strictObject({
+    ...outOfOfficeWhen,
+    ...outOfOfficeDetails,
+    hosts: z.array(z.string()).min(1).max(MAX_OUT_OF_OFFICE_HOSTS),
+  })
+  .meta({ id: "SchedulingManagerOutOfOfficeRequest" });
+
 export const HostOutOfOfficeRequest = z
   .strictObject({ ...outOfOfficeWhen, ...outOfOfficeDetails })
   .meta({ id: "SchedulingHostOutOfOfficeRequest" });
@@ -1010,6 +1019,10 @@ export const SettingsObject = z
     name_host_in_attendee_emails: z.boolean().meta({
       description: "Name the new host when telling an attendee their booking has one.",
     }),
+    host_reassignment: z.enum(["off", "eligible"]).meta({
+      description:
+        "Whether hosts can give their own bookings to someone else from their page. `eligible` lets them, to anyone free who takes that event type.",
+    }),
     out_of_office_reasons: z.array(z.object({ key: z.string(), label: z.string() })).meta({
       description: "Reasons of your own for time away, on top of the preset ones.",
     }),
@@ -1041,6 +1054,7 @@ export const SettingsObject = z
         email_from: "appointments@example.com",
         sms_from: null,
         name_host_in_attendee_emails: false,
+        host_reassignment: "off",
         out_of_office_reasons: [],
         calendar_failure_mode: "hide",
         notifications: { reminder: { sms_attendee: true } },
@@ -1075,6 +1089,7 @@ export const UpdateSettingsRequest = z
       .optional(),
     calendar_failure_mode: z.enum(["hide", "last_known"]).optional(),
     name_host_in_attendee_emails: z.boolean().optional(),
+    host_reassignment: z.enum(["off", "eligible"]).optional(),
     out_of_office_reasons: z
       .array(
         z.strictObject({

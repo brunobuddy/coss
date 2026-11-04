@@ -1,0 +1,815 @@
+"use client";
+
+import { Badge } from "@coss/ui/components/badge";
+import { Button } from "@coss/ui/components/button";
+import { Checkbox } from "@coss/ui/components/checkbox";
+import { Input } from "@coss/ui/components/input";
+import { Label } from "@coss/ui/components/label";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "@coss/ui/components/select";
+import { Skeleton } from "@coss/ui/components/skeleton";
+import { Spinner } from "@coss/ui/components/spinner";
+import { Tabs, TabsList, TabsPanel, TabsTab } from "@coss/ui/components/tabs";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  BrandMark,
+  BrokenLink,
+  LoadingPanel,
+  PageTitle,
+  Panel,
+  TestModeNotice,
+} from "@/components/page";
+import { type Branding, useAccentColor } from "@/lib/branding";
+import { type ClientApiError, type ClientCall, useClientApi } from "@/lib/client-api";
+import { postToHost, reportHeight } from "@/lib/embed";
+
+type TeamSession = Branding & { read_only: boolean; sandbox: boolean };
+type Host = { id: string; name: string; status: string };
+type Entry = {
+  id: string;
+  host: string;
+  start: string;
+  end: string;
+  all_day: { start_date: string; end_date: string } | null;
+  reason: string;
+  public_message: string | null;
+  delegates: string[];
+};
+type Reason = { key: string; label: string };
+type ManagedBooking = {
+  id: string;
+  title: string;
+  status: string;
+  start: string;
+  end: string;
+  hosts: string[];
+  external_conflict: boolean;
+  host_away: boolean;
+};
+type Candidate = {
+  host: string;
+  name: string;
+  available: boolean;
+  reason: string | null;
+  member: boolean;
+};
+type PreviewItem = {
+  booking: string;
+  title: string;
+  start: string;
+  from_host: string | null;
+  to_host: string | null;
+  reason: string | null;
+};
+type Run = {
+  id: string;
+  status: "pending" | "running" | "completed" | "cancelled";
+  undo_of: string | null;
+  created_at: string;
+  counts: {
+    total: number;
+    reassigned: number;
+    skipped: number;
+    no_candidate: number;
+    failed: number;
+  };
+};
+
+const when = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
+const dayOnly = new Intl.DateTimeFormat(undefined, { timeZone: "UTC", dateStyle: "medium" });
+
+const WHY_NOT: Record<string, string> = {
+  out_of_office: "Away",
+  outside_coverage: "Only covers at other times",
+  outside_availability: "Outside their hours",
+  host_busy: "Busy on their calendar",
+  limit_reached: "At their booking limit",
+  calendar_unverified: "Their calendar can't be read",
+  already_claimed: "Already booked",
+  no_candidate: "Nobody's free",
+  not_on_team: "Not on this team",
+  not_a_member: "Doesn't take this event type",
+  already_a_host: "Already a host of this",
+  routing_unknown: "Choose someone: this one's routing isn't known",
+  reassignment_disabled: "This event type's bookings stay with their hosts",
+};
+
+function Problem({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <p className="text-destructive-foreground text-sm" role="alert">
+      {message}
+    </p>
+  );
+}
+
+function HostSelect(props: {
+  hosts: readonly Host[];
+  value: string | null;
+  onChange: (value: string | null) => void;
+  placeholder: string;
+  label: string;
+}) {
+  return (
+    <Select
+      items={[
+        { value: null, label: props.placeholder },
+        ...props.hosts.map((host) => ({ value: host.id, label: host.name })),
+      ]}
+      onValueChange={(next) => props.onChange(next ? String(next) : null)}
+      value={props.value}
+    >
+      <SelectTrigger aria-label={props.label}>
+        <SelectValue placeholder={props.placeholder} />
+      </SelectTrigger>
+      <SelectPopup>
+        <SelectItem value={null}>{props.placeholder}</SelectItem>
+        {props.hosts.map((host) => (
+          <SelectItem key={host.id} value={host.id}>
+            {host.name}
+          </SelectItem>
+        ))}
+      </SelectPopup>
+    </Select>
+  );
+}
+
+function Away(props: {
+  call: ClientCall;
+  hosts: readonly Host[];
+  nameOf: (id: string) => string;
+  readOnly: boolean;
+}) {
+  const { call, hosts, nameOf, readOnly } = props;
+  const [entries, setEntries] = useState<Entry[] | null>(null);
+  const [reasons, setReasons] = useState<Reason[]>([]);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [first, setFirst] = useState("");
+  const [last, setLast] = useState("");
+  const [reason, setReason] = useState("unspecified");
+  const [cover, setCover] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(() => {
+    call<{ data: Entry[]; reasons?: Reason[] }>("/manager/out_of_office")
+      .then((response) => {
+        setEntries(response.data);
+        setReasons(response.reasons ?? []);
+      })
+      .catch((error: Error) => setProblem(error.message));
+  }, [call]);
+  useEffect(load, [load]);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setProblem(null);
+    try {
+      await call("/manager/out_of_office", {
+        method: "POST",
+        body: {
+          hosts: chosen,
+          start_date: first,
+          end_date: last || first,
+          reason,
+          ...(cover ? { delegates: [cover] } : {}),
+        },
+      });
+      setChosen([]);
+      setFirst("");
+      setLast("");
+      setCover(null);
+      load();
+    } catch (error) {
+      setProblem((error as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const remove = async (id: string) => {
+    setProblem(null);
+    try {
+      await call(`/manager/out_of_office/${id}`, { method: "DELETE" });
+      load();
+    } catch (error) {
+      setProblem((error as Error).message);
+    }
+  };
+  const whenOf = (entry: Entry) => {
+    if (!entry.all_day)
+      return `${when.format(new Date(entry.start))} – ${when.format(new Date(entry.end))}`;
+    const from = dayOnly.format(new Date(`${entry.all_day.start_date}T00:00:00Z`));
+    const to = dayOnly.format(new Date(`${entry.all_day.end_date}T00:00:00Z`));
+    return from === to ? from : `${from} – ${to}`;
+  };
+  const reasonOf = (key: string) => reasons.find((entry) => entry.key === key)?.label ?? key;
+  const active = hosts.filter((host) => host.status === "active");
+  return (
+    <div className="flex flex-col gap-4">
+      <Problem message={problem} />
+      {readOnly ? null : (
+        <form className="flex flex-col gap-3 rounded-xl border p-4" onSubmit={submit}>
+          <div className="flex flex-col gap-1.5">
+            <Label>Who's away</Label>
+            <div className="flex max-h-36 flex-col gap-2 overflow-y-auto rounded-lg border p-3">
+              {active.map((host) => (
+                <Label className="font-normal" key={host.id}>
+                  <Checkbox
+                    checked={chosen.includes(host.id)}
+                    onCheckedChange={(checked) =>
+                      setChosen((current) =>
+                        checked ? [...current, host.id] : current.filter((id) => id !== host.id),
+                      )
+                    }
+                  />
+                  {host.name}
+                </Label>
+              ))}
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="team-first">First day</Label>
+              <Input
+                id="team-first"
+                onChange={(event) => setFirst(event.target.value)}
+                required
+                type="date"
+                value={first}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="team-last">Last day</Label>
+              <Input
+                id="team-last"
+                min={first || undefined}
+                onChange={(event) => setLast(event.target.value)}
+                type="date"
+                value={last}
+              />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label>Reason</Label>
+              <Select
+                items={reasons.map((entry) => ({ value: entry.key, label: entry.label }))}
+                onValueChange={(next) => setReason(String(next))}
+                value={reason}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectPopup>
+                  {reasons.map((entry) => (
+                    <SelectItem key={entry.key} value={entry.key}>
+                      {entry.label}
+                    </SelectItem>
+                  ))}
+                </SelectPopup>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Who covers</Label>
+              <HostSelect
+                hosts={active}
+                label="Who covers"
+                onChange={setCover}
+                placeholder="Nobody"
+                value={cover}
+              />
+            </div>
+          </div>
+          <Button className="self-start" disabled={saving || chosen.length === 0} type="submit">
+            {saving ? <Spinner /> : null}
+            Add time off
+          </Button>
+        </form>
+      )}
+      {entries === null ? (
+        <Skeleton className="h-16" />
+      ) : entries.length === 0 ? (
+        <p className="text-muted-foreground text-sm">Nobody's away.</p>
+      ) : (
+        <ul className="flex flex-col divide-y rounded-xl border">
+          {entries.map((entry) => (
+            <li
+              className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm"
+              key={entry.id}
+            >
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="font-medium">{nameOf(entry.host)}</span>
+                <span className="text-muted-foreground">
+                  {whenOf(entry)}, {reasonOf(entry.reason)}
+                </span>
+                {entry.delegates.length > 0 ? (
+                  <span className="text-muted-foreground">
+                    Covered by {entry.delegates.map(nameOf).join(", ")}
+                  </span>
+                ) : null}
+              </span>
+              {readOnly ? null : (
+                <Button onClick={() => remove(entry.id)} size="sm" variant="ghost">
+                  Remove
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function BookingRow(props: {
+  call: ClientCall;
+  booking: ManagedBooking;
+  nameOf: (id: string) => string;
+  readOnly: boolean;
+  onMoved: () => void;
+}) {
+  const { call, booking, nameOf, readOnly, onMoved } = props;
+  const [candidates, setCandidates] = useState<Candidate[] | null>(null);
+  const [from, setFrom] = useState(booking.hosts[0] ?? "");
+  const [to, setTo] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  const [problem, setProblem] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+  const open = async () => {
+    setProblem(null);
+    try {
+      const response = await call<{ data: Candidate[] }>(
+        `/manager/bookings/${booking.id}/reassign_candidates?from_host=${encodeURIComponent(from)}`,
+      );
+      setCandidates(response.data);
+    } catch (error) {
+      setProblem((error as Error).message);
+    }
+  };
+  const picked = candidates?.find((candidate) => candidate.host === to);
+  const overrides = picked
+    ? [
+        ...(picked.member ? [] : ["any_host"]),
+        ...(!picked.available && picked.reason ? [picked.reason] : []),
+      ]
+    : [];
+  const overriding = Boolean(picked && !picked.available);
+  const move = async () => {
+    if (!to) return;
+    setWorking(true);
+    setProblem(null);
+    try {
+      await call(`/manager/bookings/${booking.id}/reassign`, {
+        method: "POST",
+        body: {
+          changes: [{ from_host: from, to_host: to }],
+          reason_code: booking.host_away ? "out_of_office" : "other",
+          ...(note.trim() ? { note: note.trim() } : {}),
+          ...(overrides.length > 0 ? { overrides } : {}),
+        },
+      });
+      onMoved();
+    } catch (error) {
+      setProblem((error as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  };
+  return (
+    <li className="flex flex-col gap-3 p-4 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="flex flex-wrap items-center gap-2 font-medium">
+            {when.format(new Date(booking.start))}
+            {booking.host_away ? <Badge variant="warning">Host away</Badge> : null}
+            {booking.external_conflict ? <Badge variant="warning">Calendar conflict</Badge> : null}
+          </span>
+          <span className="text-muted-foreground">
+            {booking.title}, with {booking.hosts.map(nameOf).join(", ")}
+          </span>
+        </span>
+        {readOnly || candidates ? null : (
+          <Button onClick={open} size="sm" variant="outline">
+            Give to someone else
+          </Button>
+        )}
+      </div>
+      {candidates ? (
+        <div className="flex flex-col gap-2 rounded-lg border p-3">
+          {booking.hosts.length > 1 ? (
+            <HostSelect
+              hosts={booking.hosts.map((id) => ({ id, name: nameOf(id), status: "active" }))}
+              label="Who's leaving"
+              onChange={(next) => setFrom(next ?? from)}
+              placeholder="Who's leaving"
+              value={from}
+            />
+          ) : null}
+          {candidates.length === 0 ? (
+            <p className="text-muted-foreground">There's nobody else on this team.</p>
+          ) : (
+            <Select
+              items={candidates.map((candidate) => ({
+                value: candidate.host,
+                label: candidate.name,
+              }))}
+              onValueChange={(next) => setTo(next ? String(next) : null)}
+              value={to}
+            >
+              <SelectTrigger aria-label="Who it goes to">
+                <SelectValue placeholder="Who it goes to" />
+              </SelectTrigger>
+              <SelectPopup>
+                {candidates.map((candidate) => (
+                  <SelectItem
+                    disabled={candidate.reason === "already_claimed"}
+                    key={candidate.host}
+                    value={candidate.host}
+                  >
+                    {candidate.name}
+                    {candidate.available
+                      ? ""
+                      : `: ${WHY_NOT[candidate.reason ?? ""] ?? "Not available"}`}
+                  </SelectItem>
+                ))}
+              </SelectPopup>
+            </Select>
+          )}
+          {overriding ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`note-${booking.id}`}>Why, since they aren't free</Label>
+              <Input
+                id={`note-${booking.id}`}
+                maxLength={500}
+                onChange={(event) => setNote(event.target.value)}
+                value={note}
+              />
+            </div>
+          ) : null}
+          <div className="flex gap-2">
+            <Button
+              disabled={working || !to || (overriding && !note.trim())}
+              onClick={move}
+              size="sm"
+            >
+              {working ? <Spinner /> : null}
+              Give it to them
+            </Button>
+            <Button onClick={() => setCandidates(null)} size="sm" variant="ghost">
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      <Problem message={problem} />
+    </li>
+  );
+}
+
+function MoveMany(props: {
+  call: ClientCall;
+  hosts: readonly Host[];
+  nameOf: (id: string) => string;
+  onStarted: () => void;
+}) {
+  const { call, hosts, nameOf, onStarted } = props;
+  const [from, setFrom] = useState<string | null>(null);
+  const [prefer, setPrefer] = useState<string | null>(null);
+  const [items, setItems] = useState<PreviewItem[] | null>(null);
+  const [choices, setChoices] = useState<Record<string, string>>({});
+  const [problem, setProblem] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+  const others = hosts.filter((host) => host.status === "active" && host.id !== from);
+  const targetOf = (item: PreviewItem) => choices[item.booking] ?? item.to_host ?? null;
+  const assignments = (items ?? []).flatMap((item) => {
+    const to = targetOf(item);
+    return to && item.from_host
+      ? [{ booking: item.booking, to_host: to, from_host: item.from_host }]
+      : [];
+  });
+  const preview = async () => {
+    setWorking(true);
+    setProblem(null);
+    try {
+      const response = await call<{ items: PreviewItem[] }>("/manager/reassignments/preview", {
+        method: "POST",
+        body: {
+          selection: { host: from },
+          strategy: {
+            preferred_hosts: prefer ? [prefer] : others.map((host) => host.id),
+            otherwise: "leave",
+          },
+        },
+      });
+      setItems(response.items);
+      setChoices({});
+    } catch (error) {
+      setProblem((error as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  };
+  const start = async () => {
+    setWorking(true);
+    setProblem(null);
+    try {
+      const run = await call<{ id: string }>("/manager/reassignments", {
+        method: "POST",
+        body: {
+          selection: { host: from },
+          strategy: { assignments },
+          reason_code: "other",
+        },
+      });
+      postToHost({ type: "reassignment_started", reassignment_id: run.id });
+      setItems(null);
+      setFrom(null);
+      onStarted();
+    } catch (error) {
+      setProblem((error as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  };
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border p-4">
+      <h2 className="font-medium text-sm">Move someone's bookings</h2>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <HostSelect
+          hosts={hosts}
+          label="Whose bookings"
+          onChange={(next) => {
+            setFrom(next);
+            setItems(null);
+          }}
+          placeholder="Whose bookings"
+          value={from}
+        />
+        <HostSelect
+          hosts={others}
+          label="Try first"
+          onChange={setPrefer}
+          placeholder="Anyone on this team"
+          value={prefer}
+        />
+      </div>
+      {items === null ? (
+        <Button className="self-start" disabled={working || !from} onClick={preview} size="sm">
+          See who they'd go to
+        </Button>
+      ) : items.length === 0 ? (
+        <p className="text-muted-foreground text-sm">There's nothing to move.</p>
+      ) : (
+        <>
+          <ul className="flex flex-col gap-1">
+            {items.map((item) => (
+              <li
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md p-1.5 text-sm"
+                key={item.booking}
+              >
+                <span className="flex min-w-0 flex-col">
+                  <span>{when.format(new Date(item.start))}</span>
+                  <span className="text-muted-foreground text-xs">
+                    {item.title}
+                    {item.reason && !choices[item.booking]
+                      ? `. ${WHY_NOT[item.reason] ?? "Not available"}`
+                      : ""}
+                  </span>
+                </span>
+                <div className="w-48">
+                  <HostSelect
+                    hosts={others}
+                    label={`Who ${item.title} goes to`}
+                    onChange={(next) =>
+                      setChoices((current) => {
+                        const copy = { ...current };
+                        if (next) copy[item.booking] = next;
+                        else delete copy[item.booking];
+                        return copy;
+                      })
+                    }
+                    placeholder="Stays"
+                    value={targetOf(item)}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="text-muted-foreground text-xs">
+            Each host hears once. A booking nobody can take stays where it is, with{" "}
+            {from ? nameOf(from) : "them"}.
+          </p>
+          <Button
+            className="self-start"
+            disabled={working || assignments.length === 0}
+            onClick={start}
+            size="sm"
+          >
+            {working ? <Spinner /> : null}
+            Move {assignments.length} {assignments.length === 1 ? "booking" : "bookings"}
+          </Button>
+        </>
+      )}
+      <Problem message={problem} />
+    </section>
+  );
+}
+
+function Cover(props: {
+  call: ClientCall;
+  hosts: readonly Host[];
+  nameOf: (id: string) => string;
+  readOnly: boolean;
+  onStarted: () => void;
+}) {
+  const { call, hosts, nameOf, readOnly, onStarted } = props;
+  const [bookings, setBookings] = useState<ManagedBooking[] | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [everything, setEverything] = useState(false);
+  const load = useCallback(() => {
+    call<{ data: ManagedBooking[] }>(`/manager/bookings${everything ? "" : "?needs_cover=true"}`)
+      .then((response) => setBookings(response.data))
+      .catch((error: Error) => setProblem(error.message));
+  }, [call, everything]);
+  useEffect(load, [load]);
+  return (
+    <div className="flex flex-col gap-4">
+      <Problem message={problem} />
+      {readOnly ? null : (
+        <MoveMany call={call} hosts={hosts} nameOf={nameOf} onStarted={onStarted} />
+      )}
+      <Label className="font-normal">
+        <Checkbox
+          checked={everything}
+          onCheckedChange={(checked) => setEverything(Boolean(checked))}
+        />
+        Show every upcoming booking
+      </Label>
+      {bookings === null ? (
+        <Skeleton className="h-16" />
+      ) : bookings.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          {everything ? "Nothing coming up." : "Nothing needs cover."}
+        </p>
+      ) : (
+        <ul className="flex flex-col divide-y rounded-xl border">
+          {bookings.map((booking) => (
+            <BookingRow
+              booking={booking}
+              call={call}
+              key={booking.id}
+              nameOf={nameOf}
+              onMoved={load}
+              readOnly={readOnly}
+            />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Moves(props: { call: ClientCall; readOnly: boolean; refreshKey: number }) {
+  const { call, readOnly, refreshKey } = props;
+  const [runs, setRuns] = useState<Run[] | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const load = useCallback(() => {
+    call<{ data: Run[] }>("/manager/reassignments")
+      .then((response) => setRuns(response.data))
+      .catch((error: Error) => setProblem(error.message));
+  }, [call]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new run elsewhere on the page reloads this.
+  useEffect(load, [load, refreshKey]);
+  const running = runs?.some((run) => run.status === "pending" || run.status === "running");
+  useEffect(() => {
+    if (!running) return;
+    const timer = setInterval(load, 2000);
+    return () => clearInterval(timer);
+  }, [running, load]);
+  const act = async (id: string, action: "cancel" | "undo") => {
+    setProblem(null);
+    try {
+      await call(`/manager/reassignments/${id}/${action}`, {
+        method: "POST",
+        ...(action === "undo" ? { body: {} } : {}),
+      });
+      load();
+    } catch (error) {
+      setProblem((error as Error).message);
+    }
+  };
+  if (runs === null) return <Skeleton className="h-16" />;
+  if (runs.length === 0) return <p className="text-muted-foreground text-sm">Nothing moved yet.</p>;
+  return (
+    <div className="flex flex-col gap-4">
+      <Problem message={problem} />
+      <ul className="flex flex-col divide-y rounded-xl border">
+        {runs.map((run) => {
+          const active = run.status === "pending" || run.status === "running";
+          return (
+            <li
+              className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm"
+              key={run.id}
+            >
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="flex flex-wrap items-center gap-2 font-medium">
+                  {when.format(new Date(run.created_at))}
+                  {active ? <Badge variant="warning">Running</Badge> : null}
+                  {run.status === "cancelled" ? <Badge variant="outline">Cancelled</Badge> : null}
+                  {run.undo_of ? <Badge variant="outline">Gave back</Badge> : null}
+                </span>
+                <span className="text-muted-foreground">
+                  {run.counts.reassigned} of {run.counts.total} moved
+                  {run.counts.no_candidate + run.counts.failed > 0
+                    ? `, ${run.counts.no_candidate + run.counts.failed} stayed`
+                    : ""}
+                  {run.counts.skipped > 0 ? `, ${run.counts.skipped} had changed` : ""}
+                </span>
+              </span>
+              {readOnly ? null : active ? (
+                <Button onClick={() => act(run.id, "cancel")} size="sm" variant="outline">
+                  Cancel the rest
+                </Button>
+              ) : run.counts.reassigned > 0 ? (
+                <Button onClick={() => act(run.id, "undo")} size="sm" variant="ghost">
+                  Undo
+                </Button>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+export function TeamPortal({ sessionId, apiUrl }: { sessionId: string; apiUrl: string }) {
+  const call = useClientApi(sessionId, apiUrl);
+  const [session, setSession] = useState<TeamSession | null>(null);
+  const [hosts, setHosts] = useState<Host[]>([]);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [runsVersion, setRunsVersion] = useState(0);
+  useAccentColor(session?.accent_color);
+  useEffect(reportHeight, []);
+  useEffect(() => {
+    Promise.all([call<TeamSession>("/session"), call<{ data: Host[] }>("/manager/hosts")])
+      .then(([value, team]) => {
+        setSession(value);
+        setHosts(team.data);
+        postToHost({ type: "ready" });
+      })
+      .catch((error: ClientApiError) => {
+        setProblem(error.message);
+        postToHost({
+          type: "error",
+          code: error.detail?.code ?? "unknown",
+          message: error.message,
+        });
+      });
+  }, [call]);
+  const names = useMemo(() => new Map(hosts.map((host) => [host.id, host.name])), [hosts]);
+  const nameOf = useCallback((id: string) => names.get(id) ?? "Someone else", [names]);
+  if (problem) return <BrokenLink message={problem} title="This link isn't working" />;
+  if (!session) return <LoadingPanel className="max-w-3xl" />;
+  return (
+    <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 sm:py-12">
+      {session.sandbox ? <TestModeNotice /> : null}
+      <Panel>
+        <header className="flex flex-col gap-4 px-4 pt-6 sm:px-6">
+          <BrandMark branding={session} />
+          <PageTitle>Team cover</PageTitle>
+        </header>
+        <Tabs defaultValue="cover">
+          <div className="mt-3 overflow-x-auto border-b px-2 sm:px-4">
+            <TabsList variant="underline">
+              <TabsTab value="cover">Needs cover</TabsTab>
+              <TabsTab value="away">Who's away</TabsTab>
+              <TabsTab value="moves">Moves</TabsTab>
+            </TabsList>
+          </div>
+          <TabsPanel className="p-4 sm:p-6" value="cover">
+            <Cover
+              call={call}
+              hosts={hosts}
+              nameOf={nameOf}
+              onStarted={() => setRunsVersion((version) => version + 1)}
+              readOnly={session.read_only}
+            />
+          </TabsPanel>
+          <TabsPanel className="p-4 sm:p-6" value="away">
+            <Away call={call} hosts={hosts} nameOf={nameOf} readOnly={session.read_only} />
+          </TabsPanel>
+          <TabsPanel className="p-4 sm:p-6" value="moves">
+            <Moves call={call} readOnly={session.read_only} refreshKey={runsVersion} />
+          </TabsPanel>
+        </Tabs>
+      </Panel>
+    </main>
+  );
+}

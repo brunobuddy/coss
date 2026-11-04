@@ -20,6 +20,7 @@ import {
   createHold,
   createHost,
   createHostSession,
+  createManagerSession,
   createManageSession,
   createOutOfOffice,
   createReassignment,
@@ -1031,6 +1032,23 @@ const CreateHostSessionRequest = z
   })
   .meta({ id: "CreateSchedulingHostSessionRequest", examples: [{ expires_in: 3600 }] });
 
+const CreateManagerSessionRequest = z
+  .strictObject({
+    hosts: z.array(z.string()).min(1).max(1000).optional().meta({
+      description: "The hosts this page can reach, by id or uid.",
+    }),
+    host_filter: z
+      .record(z.string(), z.union([z.string(), z.array(z.string())]))
+      .optional()
+      .meta({ description: "Everyone matching these attributes, asked again on every request." }),
+    expires_in: SessionExpiry,
+    read_only: z.boolean().optional(),
+  })
+  .meta({
+    id: "CreateSchedulingManagerSessionRequest",
+    examples: [{ host_filter: { team: "cardiology" }, expires_in: 3600 }],
+  });
+
 const CreateBookerSessionRequest = z
   .strictObject({
     event_type: z.string().meta({ description: "The event type's id or uid." }),
@@ -1068,6 +1086,31 @@ export const createHostSessionRoute = createRoute({
   request: {
     params: HostParams,
     body: { required: true, content: { "application/json": { schema: CreateHostSessionRequest } } },
+  },
+  responses: {
+    201: jsonDoc("The session.", CreatedSessionBody),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const createManagerSessionRoute = createRoute({
+  method: "post",
+  path: "/scheduling/manager_sessions",
+  operationId: "createSchedulingManagerSession",
+  tags: [TAG_HOSTS],
+  summary: "Create a manager session",
+  description:
+    "Lets a team lead manage cover for the hosts you name, or those matching an attribute filter whenever it's asked: time off, bookings that need someone else, and moving them. It never sees attendees' details. Send the `url` to their browser, or embed it with `coss/scheduling`.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/manager_sessions"),
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: CreateManagerSessionRequest } },
+    },
   },
   responses: {
     201: jsonDoc("The session.", CreatedSessionBody),
@@ -2198,6 +2241,19 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     token: session.token,
     url: session.url,
     expires_at: session.expiresAt.toISOString(),
+  });
+
+  router.openapi(createManagerSessionRoute, async (c) => {
+    const body = c.req.valid("json");
+    const session = await createManagerSession(c.var.auth, {
+      hosts: body.hosts,
+      hostFilter: body.host_filter,
+      expiresIn: body.expires_in,
+      readOnly: body.read_only,
+      apiKeyId: c.var.auth.apiKeyId,
+      publicUrl: deps.publicUrl ?? null,
+    });
+    return c.json(sessionBody(session), 201);
   });
 
   router.openapi(createHostSessionRoute, async (c) => {

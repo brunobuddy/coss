@@ -14,6 +14,7 @@ export * from "./errors.ts";
 export * from "./event-types.ts";
 export * from "./hosts.ts";
 export * from "./logo.ts";
+export * from "./manager.ts";
 export * from "./notifications.ts";
 export * from "./out-of-office.ts";
 export * from "./reassign.ts";

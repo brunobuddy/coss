@@ -96,6 +96,7 @@ export type SchedulingActor =
   | { kind: "host_session"; id: string }
   | { kind: "booker_session"; id: string }
   | { kind: "manage_session"; id: string }
+  | { kind: "manager_session"; id: string }
   | { kind: "system" };
 
 export const schedulingHostStatus = pgEnum("scheduling_host_status", ["active", "disabled"]);
@@ -149,6 +150,7 @@ export const schedulingSessionKind = pgEnum("scheduling_session_kind", [
   "host",
   "booker",
   "manage",
+  "manager",
 ]);
 export const schedulingOutOfOfficeSource = pgEnum("scheduling_out_of_office_source", [
   "api",
@@ -1038,6 +1040,9 @@ export const schedulingSession = pgTable(
     encryptedAttributes: text("encrypted_attributes"),
     // The fixed identity's `uid`, in the clear like `scheduling_attendee.uid`: how erasure finds it.
     attendeeUid: text("attendee_uid"),
+    // Who a manager session reaches: named once, or a filter asked again on every request.
+    managerHostIds: jsonb("manager_host_ids").$type<string[]>(),
+    managerHostFilter: jsonb("manager_host_filter").$type<Record<string, string | string[]>>(),
     readOnly: boolean("read_only").notNull().default(false),
     apiKeyId: text("api_key_id"),
     createdByUserId: text("created_by_user_id"),
@@ -1076,7 +1081,8 @@ export const schedulingSession = pgTable(
       "scheduling_session_scope",
       sql`(${t.kind} = 'host' AND ${t.hostId} IS NOT NULL)
         OR (${t.kind} = 'booker' AND (${t.eventTypeId} IS NOT NULL OR ${t.hostId} IS NOT NULL))
-        OR (${t.kind} = 'manage' AND ${t.bookingId} IS NOT NULL)`,
+        OR (${t.kind} = 'manage' AND ${t.bookingId} IS NOT NULL)
+        OR (${t.kind}::text = 'manager' AND (${t.managerHostIds} IS NOT NULL OR ${t.managerHostFilter} IS NOT NULL))`,
     ),
   ],
 );
@@ -1211,6 +1217,11 @@ export const schedulingSettings = pgTable(
     outOfOfficeReasons: jsonb("out_of_office_reasons").$type<{ key: string; label: string }[]>(),
     // Emails name no host unless asked to: an attendee may have no idea who else works there.
     nameHostInAttendeeEmails: boolean("name_host_in_attendee_emails").notNull().default(false),
+    // Whether hosts can give their own bookings to someone else: `off`, or `eligible`.
+    hostReassignment: text("host_reassignment")
+      .$type<"off" | "eligible">()
+      .notNull()
+      .default("off"),
     calendarFailureMode: schedulingCalendarFailureMode("calendar_failure_mode")
       .notNull()
       .default("hide"),

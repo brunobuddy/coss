@@ -1093,6 +1093,8 @@ export function SettingsForm(
       email_from: string | null;
       sms_from: string | null;
       calendar_failure_mode: "hide" | "last_known";
+      host_reassignment: "off" | "eligible";
+      name_host_in_attendee_emails: boolean;
     };
   },
 ) {
@@ -1149,6 +1151,20 @@ export function SettingsForm(
             </Label>
           </RadioGroup>
         </div>
+        <Label className="font-normal">
+          <Switch
+            defaultChecked={settings.host_reassignment === "eligible"}
+            name="hostReassignment"
+          />
+          Let hosts give their own bookings to someone free who takes that event type
+        </Label>
+        <Label className="font-normal">
+          <Switch
+            defaultChecked={settings.name_host_in_attendee_emails}
+            name="nameHostInAttendeeEmails"
+          />
+          Name the new host when telling an attendee their booking has one
+        </Label>
         {state && !state.ok ? <FormError message={state.error} /> : null}
         <div>
           <Button disabled={pending || !canEdit} type="submit">

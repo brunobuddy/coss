@@ -441,6 +441,8 @@ export interface SchedulingSettings {
   /** Reasons of your own for time away, on top of the preset ones. */
   /** Name the new host when telling an attendee their booking has one. */
   name_host_in_attendee_emails: boolean;
+  /** Whether hosts can give their own bookings to someone else from their page. */
+  host_reassignment: "off" | "eligible";
   out_of_office_reasons: { key: string; label: string }[];
   calendar_failure_mode: "hide" | "last_known";
   notifications: Record<string, SchedulingNotificationSettings> | null;
@@ -455,6 +457,7 @@ export interface UpdateSchedulingSettingsParams {
   email_from?: string | null;
   sms_from?: string | null;
   name_host_in_attendee_emails?: boolean;
+  host_reassignment?: "off" | "eligible";
   out_of_office_reasons?: { key: string; label: string }[] | null;
   calendar_failure_mode?: "hide" | "last_known";
   notifications?: Record<string, SchedulingNotificationSettings> | null;
@@ -510,6 +513,17 @@ export interface SetSchedulingSimulatedBusyParams {
 }
 
 export interface CreateSchedulingHostSessionParams {
+  /** Seconds until it stops working. At most a day. */
+  expires_in?: number;
+  read_only?: boolean;
+}
+
+/** Give one of `hosts` and `host_filter`. */
+export interface CreateSchedulingManagerSessionParams {
+  /** The hosts this page can reach, by id or uid. */
+  hosts?: string[];
+  /** Everyone matching these attributes, asked again on every request. */
+  host_filter?: Record<string, string | string[]>;
   /** Seconds until it stops working. At most a day. */
   expires_in?: number;
   read_only?: boolean;

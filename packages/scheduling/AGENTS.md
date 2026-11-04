@@ -202,6 +202,24 @@ A booking's ledger row can come back when a host leaves and returns, and its `ke
 so an event on a calendar that's stopped being one still goes. Slots for moving a booking come from the hosts it has
 (`listBookingSlots`), never `candidatesOf`, which answers who'd take a new one.
 
+## Team pages
+
+`manager.ts`: a `manager` session reaches the hosts it names, or those matching `manager_host_filter` on every request
+(`managedHosts`). There's no team table: who manages whom is the customer's to say, when they mint one. An empty filter
+is refused at minting, since `{}` matches everyone.
+
+- It's checked before anything's read, and **again with the booking locked** (`fromHosts`, `toHosts` in `reassign.ts`):
+  until then, a booking may have moved to someone out of reach. Someone else's looks like it doesn't exist.
+- Bookings it reads are `ManagedBooking`: when, what and who's hosting. It never calls `toBookingObject` for a response,
+  and `getBooking` only to check hosts, since a lead's job is cover and not the attendee.
+- A run from a team page says who each goes to (`checkManagedRun`), since `otherwise: auto` could reach another team, and
+  the worker has no session to ask. Its entries can't start a run either: moving bookings is its own step.
+- A migration adding an enum value and using it in a check runs in one transaction, where a literal of the new value is
+  refused (`55P04`): that's why `scheduling_session_scope` says `kind::text = 'manager'`.
+
+`settings.host_reassignment` is `off` by default: with `eligible`, hosts can give their own bookings to someone free who
+takes that event type, seeing names only, with no overrides.
+
 ## Sessions and the client API
 
 `sessions.ts`: a token (`cossch_`) stored only as a sha256, in the URL's fragment then an `Authorization` header, never

@@ -1,6 +1,6 @@
 # apps/scheduling — the hosted scheduling pages
 
-A host's page (`/h/<session>`), the booker (`/b/<session>`) and an attendee's manage page (`/m/<session>`). Next.js 16
+A host's page (`/h/<session>`), the booker (`/b/<session>`), an attendee's manage page (`/m/<session>`) and a team lead's page (`/t/<session>`). Next.js 16
 (:3005 locally), standalone image, on **a registrable domain of its own**, `cossbook.com` (never under coss.com, which
 would make it same-site with the dashboard). Product rules are in `packages/scheduling/AGENTS.md`.
 

@@ -42,6 +42,7 @@ const ACTOR_LABEL = {
   host_session: "Host",
   booker_session: "Booker",
   manage_session: "Attendee",
+  manager_session: "Team lead",
   system: "coss.com",
 } as const;
 

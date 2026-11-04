@@ -46,6 +46,7 @@ function toSettingsObject(
     email_from: row?.emailFrom ?? null,
     sms_from: row?.smsFrom ?? null,
     name_host_in_attendee_emails: row?.nameHostInAttendeeEmails ?? false,
+    host_reassignment: row?.hostReassignment ?? "off",
     out_of_office_reasons: row?.outOfOfficeReasons ?? [],
     calendar_failure_mode: row?.calendarFailureMode ?? "hide",
     notifications: toWireNotifications(row),
@@ -115,6 +116,9 @@ export async function updateSettings(
       : {}),
     ...(params.name_host_in_attendee_emails !== undefined
       ? { nameHostInAttendeeEmails: params.name_host_in_attendee_emails }
+      : {}),
+    ...(params.host_reassignment !== undefined
+      ? { hostReassignment: params.host_reassignment }
       : {}),
     ...(params.out_of_office_reasons !== undefined
       ? { outOfOfficeReasons: params.out_of_office_reasons }

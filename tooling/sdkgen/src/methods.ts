@@ -60,6 +60,7 @@ export const SDK_METHODS: Readonly<Record<string, string>> = {
   "PUT /v1/scheduling/out_of_office/by_external_id/{external_id}": "scheduling.outOfOffice.put",
   "DELETE /v1/scheduling/out_of_office/{id}": "scheduling.outOfOffice.remove",
   "GET /v1/scheduling/out_of_office/{id}/conflicts": "scheduling.outOfOffice.conflicts",
+  "POST /v1/scheduling/manager_sessions": "scheduling.sessions.createForManager",
   "POST /v1/scheduling/reassignments": "scheduling.reassignments.create",
   "POST /v1/scheduling/reassignments/preview": "scheduling.reassignments.preview",
   "GET /v1/scheduling/reassignments": "scheduling.reassignments.list",
@@ -360,6 +361,7 @@ export const NO_RETRY: ReadonlySet<string> = new Set([
   "POST /v1/scheduling/event_types",
   "POST /v1/scheduling/hosts/{host}/sessions",
   "POST /v1/scheduling/booker_sessions",
+  "POST /v1/scheduling/manager_sessions",
   "POST /v1/scheduling/bookings/{id}/manage_sessions",
   // Deduplicated only by `client_id` (the TypeScript SDK retries only then).
   "POST /v1/inboxes",

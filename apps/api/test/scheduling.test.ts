@@ -860,6 +860,447 @@ describe("out of office", () => {
     expect(changing.status).toBe(422);
   });
 
+  describe("a team page", () => {
+    async function team(extra: Record<string, unknown> = {}) {
+      const base = await booker();
+      const { send, host, eventType } = base;
+      const rules = [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }];
+      const add = async (name: string, attributes?: Record<string, string>) => {
+        const created = (await (
+          await send("/hosts", "POST", { name, time_zone: "UTC", attributes })
+        ).json()) as { id: string };
+        await send(`/hosts/${created.id}/schedules`, "POST", { rules });
+        return created;
+      };
+      const peer = await add("Dr. Peer", { team: "heart" });
+      const outsider = await add("Dr. Outsider", { team: "skin" });
+      const pool = (await (
+        await send("/event_types", "POST", {
+          title: "Shared",
+          kind: "pool",
+          duration_minutes: 30,
+          hosts: [{ host: host.id }, { host: peer.id }, { host: outsider.id }],
+        })
+      ).json()) as { id: string };
+      const tokenRes = await send("/manager_sessions", "POST", {
+        hosts: [host.id, peer.id],
+        ...extra,
+      });
+      expect(tokenRes.status).toBe(201);
+      const session = (await tokenRes.json()) as { token: string; url: string | null };
+      const lead = base.client(session.token);
+      const bookFor = async (hostId: string, start: string) =>
+        (await (
+          await send("/bookings", "POST", {
+            event_type: pool.id,
+            start,
+            host: hostId,
+            attendee: {
+              uid: `p-${start}-${hostId}`,
+              name: "Private Person",
+              email: "private@example.com",
+              time_zone: "UTC",
+            },
+          })
+        ).json()) as { id: string };
+      return { ...base, host, eventType, peer, outsider, pool, lead, bookFor, session };
+    }
+    const START = "2031-01-06T10:00:00.000Z";
+    const WHEN = { start_date: "2031-01-20", end_date: "2031-01-20" };
+
+    test("an empty scope is refused, and so is giving both", async () => {
+      const { send, host } = await booker();
+      const empty = await send("/manager_sessions", "POST", { host_filter: {} });
+      expect(empty.status).toBe(422);
+      expect((await errorOf(empty)).code).toBe("invalid_session");
+      expect((await send("/manager_sessions", "POST", { hosts: [] })).status).toBe(422);
+      expect((await send("/manager_sessions", "POST", {})).status).toBe(422);
+      const both = await send("/manager_sessions", "POST", {
+        hosts: [host.id],
+        host_filter: { team: "x" },
+      });
+      expect(both.status).toBe(422);
+    });
+
+    test("its url is its own kind of page", async () => {
+      const { session } = await team();
+      if (session.url) expect(session.url).toContain("/t/schs_");
+    });
+
+    test("sees its own people, and only what it takes to choose them", async () => {
+      const { lead, host, peer, outsider } = await team();
+      const { data } = (await (await lead("/manager/hosts")).json()) as {
+        data: Record<string, unknown>[];
+      };
+      expect(data.map((row) => row.id)).toEqual(expect.arrayContaining([host.id, peer.id]));
+      expect(data.map((row) => row.id)).not.toContain(outsider.id);
+      expect(Object.keys(data[0] as object).sort()).toEqual(
+        ["id", "name", "object", "status", "time_zone", "uid"].sort(),
+      );
+    });
+
+    test("a filter's asked again on every request", async () => {
+      const { send, booker: _unused, client, ...rest } = { ...(await team()), booker: null };
+      const { outsider } = rest;
+      const session = (await (
+        await send("/manager_sessions", "POST", { host_filter: { team: "skin" } })
+      ).json()) as { token: string };
+      const lead = client(session.token);
+      const ids = async () =>
+        ((await (await lead("/manager/hosts")).json()) as { data: { id: string }[] }).data.map(
+          (row) => row.id,
+        );
+      expect(await ids()).toEqual([outsider.id]);
+      await send(`/hosts/${outsider.id}`, "PATCH", { attributes: { team: "heart" } });
+      expect(await ids()).toEqual([]);
+    });
+
+    test("another kind of session can't use it, nor it theirs", async () => {
+      const { lead, client, host, tokenFor } = await team();
+      const hostPage = client(await tokenFor(`/hosts/${host.id}/sessions`, {}));
+      expect((await hostPage("/manager/hosts")).status).toBe(404);
+      expect((await lead("/host/out_of_office")).status).toBe(404);
+    });
+
+    test("bookings carry no attendee", async () => {
+      const { lead, host, bookFor } = await team();
+      const booking = await bookFor(host.id, START);
+      const response = await lead("/manager/bookings");
+      const text = await response.text();
+      expect(text).toContain(booking.id);
+      expect(text).not.toContain("Private Person");
+      expect(text).not.toContain("private@example.com");
+      expect(text).not.toContain("attendee");
+    });
+
+    test("what needs cover: someone's away during it", async () => {
+      const { lead, host, peer, bookFor, send } = await team();
+      const away = await bookFor(host.id, START);
+      const fine = await bookFor(peer.id, START);
+      await send("/out_of_office", "POST", {
+        host: host.id,
+        start: START,
+        end: "2031-01-06T12:00:00.000Z",
+      });
+      const { data } = (await (await lead("/manager/bookings?needs_cover=true")).json()) as {
+        data: { id: string; host_away: boolean }[];
+      };
+      expect(data.map((row) => row.id)).toContain(away.id);
+      expect(data.map((row) => row.id)).not.toContain(fine.id);
+      expect(data.find((row) => row.id === away.id)?.host_away).toBe(true);
+    });
+
+    test("someone else's booking doesn't exist", async () => {
+      const { lead, outsider, peer, bookFor } = await team();
+      const theirs = await bookFor(outsider.id, START);
+      expect((await lead(`/manager/bookings/${theirs.id}/reassign_candidates`)).status).toBe(404);
+      const taking = await lead(`/manager/bookings/${theirs.id}/reassign`, "POST", {
+        changes: [{ to_host: peer.id }],
+        reason_code: "other",
+      });
+      expect(taking.status).toBe(404);
+    });
+
+    test("moves a booking among its own people, and no further", async () => {
+      const { lead, host, peer, outsider, bookFor, send } = await team();
+      const mine = await bookFor(host.id, START);
+      const candidates = (await (
+        await lead(`/manager/bookings/${mine.id}/reassign_candidates`)
+      ).json()) as { data: { host: string }[] };
+      expect(candidates.data.map((row) => row.host)).toEqual([peer.id]);
+      const outward = await lead(`/manager/bookings/${mine.id}/reassign`, "POST", {
+        changes: [{ to_host: outsider.id }],
+        reason_code: "other",
+      });
+      expect(outward.status).toBe(422);
+      const moved = await lead(`/manager/bookings/${mine.id}/reassign`, "POST", {
+        changes: [{ to_host: peer.id }],
+        reason_code: "other",
+      });
+      expect(moved.status).toBe(200);
+      expect(await moved.text()).not.toContain("private@example.com");
+      const after = (await (await send(`/bookings/${mine.id}`, "GET")).json()) as {
+        hosts: string[];
+      };
+      expect(after.hosts).toEqual([peer.id]);
+    });
+
+    test("auto stays on the team", async () => {
+      const { lead, host, peer, bookFor } = await team();
+      const mine = await bookFor(host.id, START);
+      const moved = await lead(`/manager/bookings/${mine.id}/reassign`, "POST", {
+        changes: [{ auto: true }],
+        reason_code: "other",
+      });
+      expect(moved.status).toBe(200);
+      expect(((await moved.json()) as { hosts: string[] }).hosts).toEqual([peer.id]);
+    });
+
+    test("time off for its own people, naming only them", async () => {
+      const { lead, host, peer, outsider, client, send } = await team();
+      const created = await lead("/manager/out_of_office", "POST", {
+        ...WHEN,
+        hosts: [host.id],
+        delegates: [peer.id],
+      });
+      expect(created.status).toBe(201);
+      const { data } = (await created.json()) as {
+        data: { id: string; source: string; delegates: string[] }[];
+      };
+      expect(data[0]).toMatchObject({ source: "manager", delegates: [peer.id] });
+
+      const notMine = await lead("/manager/out_of_office", "POST", {
+        ...WHEN,
+        hosts: [outsider.id],
+      });
+      expect(notMine.status).toBe(404);
+      const delegate = await lead("/manager/out_of_office", "POST", {
+        ...WHEN,
+        hosts: [host.id],
+        delegates: [outsider.id],
+      });
+      expect(delegate.status).toBe(422);
+
+      const theirs = (await (
+        await send("/out_of_office", "POST", { ...WHEN, host: outsider.id })
+      ).json()) as { data: { id: string }[] };
+      const theirId = theirs.data[0]?.id as string;
+      expect((await lead(`/manager/out_of_office/${theirId}`, "DELETE")).status).toBe(404);
+      expect((await lead(`/manager/out_of_office/${theirId}/conflicts`)).status).toBe(404);
+      const list = (await (await lead("/manager/out_of_office")).json()) as {
+        data: { id: string }[];
+      };
+      expect(list.data.map((row) => row.id)).not.toContain(theirId);
+      expect(client).toBeTruthy();
+      expect((await lead(`/manager/out_of_office/${data[0]?.id}`, "DELETE")).status).toBe(204);
+    });
+
+    test("can't start moving bookings from an entry", async () => {
+      const { lead, host } = await team();
+      const asked = await lead("/manager/out_of_office", "POST", {
+        ...WHEN,
+        hosts: [host.id],
+        existing_bookings: "reassign",
+      });
+      expect(asked.status).toBe(422);
+    });
+
+    test("a run stays on the team, and says who each goes to", async () => {
+      const { lead, host, peer, outsider, bookFor } = await team();
+      const mine = await bookFor(host.id, START);
+      const theirs = await bookFor(outsider.id, START);
+      const run = (body: unknown) => lead("/manager/reassignments", "POST", body);
+      const fromOutside = await run({
+        selection: { host: outsider.id },
+        strategy: { to_host: peer.id },
+        reason_code: "other",
+      });
+      expect(fromOutside.status).toBe(422);
+      const toOutside = await run({
+        selection: { host: host.id },
+        strategy: { to_host: outsider.id },
+        reason_code: "other",
+      });
+      expect(toOutside.status).toBe(422);
+      const anyone = await run({
+        selection: { host: host.id },
+        strategy: { preferred_hosts: [peer.id] },
+        reason_code: "other",
+      });
+      expect(anyone.status).toBe(422);
+      const byId = await run({
+        selection: { booking_ids: [theirs.id] },
+        strategy: { to_host: peer.id },
+        reason_code: "other",
+      });
+      expect(byId.status).toBe(422);
+
+      const preview = await lead("/manager/reassignments/preview", "POST", {
+        selection: { host: host.id },
+        strategy: { preferred_hosts: [outsider.id] },
+      });
+      expect(preview.status).toBe(422);
+      const fine = await lead("/manager/reassignments/preview", "POST", {
+        selection: { host: host.id },
+        strategy: { preferred_hosts: [peer.id] },
+      });
+      const { items } = (await fine.json()) as { items: { booking: string; to_host: string }[] };
+      expect(items[0]).toMatchObject({ booking: mine.id, to_host: peer.id });
+      expect(await (await lead("/manager/bookings")).text()).not.toContain("private@example.com");
+
+      const started = await run({
+        selection: { host: host.id },
+        strategy: { assignments: [{ booking: mine.id, to_host: peer.id, from_host: host.id }] },
+        reason_code: "other",
+      });
+      expect(started.status).toBe(202);
+      const { id } = (await started.json()) as { id: string };
+      expect((await lead(`/manager/reassignments/${id}`)).status).toBe(200);
+      const list = (await (await lead("/manager/reassignments")).json()) as {
+        data: { id: string }[];
+      };
+      expect(list.data.map((row) => row.id)).toEqual([id]);
+    });
+
+    test("another team's run doesn't exist", async () => {
+      const { send, host, peer, client, outsider, lead } = await team();
+      const other = (await (
+        await send("/reassignments", "POST", {
+          selection: { host: outsider.id },
+          strategy: { to_host: peer.id },
+          reason_code: "other",
+        })
+      ).json()) as { id: string };
+      expect((await lead(`/manager/reassignments/${other.id}`)).status).toBe(404);
+      expect((await lead(`/manager/reassignments/${other.id}/items`)).status).toBe(404);
+      expect((await lead(`/manager/reassignments/${other.id}/cancel`, "POST")).status).toBe(404);
+      expect((await lead(`/manager/reassignments/${other.id}/undo`, "POST", {})).status).toBe(404);
+      const list = (await (await lead("/manager/reassignments")).json()) as { data: unknown[] };
+      expect(list.data).toEqual([]);
+      expect(client).toBeTruthy();
+      expect(host).toBeTruthy();
+    });
+
+    test("read-only looks and doesn't touch", async () => {
+      const { lead, host, peer, bookFor } = await team({ read_only: true });
+      const mine = await bookFor(host.id, START);
+      expect((await lead("/manager/bookings")).status).toBe(200);
+      const refusals = [
+        await lead("/manager/out_of_office", "POST", { ...WHEN, hosts: [host.id] }),
+        await lead(`/manager/bookings/${mine.id}/reassign`, "POST", {
+          changes: [{ to_host: peer.id }],
+          reason_code: "other",
+        }),
+        await lead("/manager/reassignments", "POST", {
+          selection: { host: host.id },
+          strategy: { to_host: peer.id },
+          reason_code: "other",
+        }),
+      ];
+      for (const refused of refusals) {
+        expect(refused.status).toBe(403);
+        expect((await errorOf(refused)).code).toBe("read_only_session");
+      }
+    });
+  });
+
+  describe("a host giving away their own booking", () => {
+    async function setup() {
+      const base = await booker();
+      const { send, host } = base;
+      const rules = [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }];
+      const add = async (name: string) => {
+        const created = (await (
+          await send("/hosts", "POST", { name, time_zone: "UTC" })
+        ).json()) as { id: string };
+        await send(`/hosts/${created.id}/schedules`, "POST", { rules });
+        return created;
+      };
+      const peer = await add("Dr. Peer");
+      const stranger = await add("Dr. Stranger");
+      const pool = (await (
+        await send("/event_types", "POST", {
+          title: "Shared",
+          kind: "pool",
+          duration_minutes: 30,
+          hosts: [{ host: host.id }, { host: peer.id }],
+        })
+      ).json()) as { id: string };
+      const booking = (await (
+        await send("/bookings", "POST", {
+          event_type: pool.id,
+          start: "2031-01-06T10:00:00.000Z",
+          host: host.id,
+          attendee: {
+            uid: "p",
+            name: "Private Person",
+            email: "private@example.com",
+            time_zone: "UTC",
+          },
+        })
+      ).json()) as { id: string };
+      const mine = base.client(await base.tokenFor(`/hosts/${host.id}/sessions`, {}));
+      return { ...base, peer, stranger, booking, mine };
+    }
+
+    test("is off until the environment says so, and then nothing's there", async () => {
+      const { mine, booking, peer } = await setup();
+      expect((await mine(`/host/bookings/${booking.id}/reassign_candidates`)).status).toBe(404);
+      const refused = await mine(`/host/bookings/${booking.id}/reassign`, "POST", {
+        to_host: peer.id,
+      });
+      expect(refused.status).toBe(404);
+      const session = (await (await mine("/session")).json()) as { can_reassign: boolean };
+      expect(session.can_reassign).toBe(false);
+    });
+
+    test("sees names only, and only those free who take it", async () => {
+      const { send, mine, booking, peer } = await setup();
+      await send("/settings", "PATCH", { host_reassignment: "eligible" });
+      const { data } = (await (
+        await mine(`/host/bookings/${booking.id}/reassign_candidates`)
+      ).json()) as { data: Record<string, unknown>[] };
+      expect(data).toEqual([{ host: peer.id, name: "Dr. Peer" }]);
+    });
+
+    test("can give it to them, and to nobody else", async () => {
+      const { send, mine, booking, peer, stranger } = await setup();
+      await send("/settings", "PATCH", { host_reassignment: "eligible" });
+      const toStranger = await mine(`/host/bookings/${booking.id}/reassign`, "POST", {
+        to_host: stranger.id,
+      });
+      expect(toStranger.status).toBe(422);
+      const past = await mine(`/host/bookings/${booking.id}/reassign`, "POST", {
+        to_host: peer.id,
+        overrides: ["any_host"],
+      });
+      expect(past.status).toBe(422);
+      const moved = await mine(`/host/bookings/${booking.id}/reassign`, "POST", {
+        to_host: peer.id,
+      });
+      expect(moved.status).toBe(200);
+      // It isn't theirs any more, and it looks like it.
+      const again = await mine(`/host/bookings/${booking.id}/reassign`, "POST", {
+        to_host: peer.id,
+      });
+      expect(again.status).toBe(404);
+    });
+
+    test("someone else's can't be given away", async () => {
+      const { send, tokenFor, client, booking, peer } = await setup();
+      await send("/settings", "PATCH", { host_reassignment: "eligible" });
+      const theirs = client(await tokenFor(`/hosts/${peer.id}/sessions`, {}));
+      expect((await theirs(`/host/bookings/${booking.id}/reassign_candidates`)).status).toBe(404);
+      const refused = await theirs(`/host/bookings/${booking.id}/reassign`, "POST", {
+        to_host: peer.id,
+      });
+      expect(refused.status).toBe(404);
+    });
+
+    test("read-only can't", async () => {
+      const { send, tokenFor, client, host, booking, peer } = await setup();
+      await send("/settings", "PATCH", { host_reassignment: "eligible" });
+      const session = client(await tokenFor(`/hosts/${host.id}/sessions`, { read_only: true }));
+      const refused = await session(`/host/bookings/${booking.id}/reassign`, "POST", {
+        to_host: peer.id,
+      });
+      expect(refused.status).toBe(403);
+    });
+
+    test("a host's own list has no contact details", async () => {
+      const { mine, booking } = await setup();
+      const response = await mine("/host/bookings");
+      const text = await response.text();
+      expect(text).toContain(booking.id);
+      expect(text).toContain("Private Person");
+      expect(text).not.toContain("private@example.com");
+      const { data } = JSON.parse(text) as { data: Record<string, unknown>[] };
+      expect(Object.keys(data[0] as object).sort()).toEqual(
+        ["attendees", "end", "id", "start", "status", "title"].sort(),
+      );
+    });
+  });
+
   test("a read-only host session can look but not change anything", async () => {
     const { host, tokenFor, client } = await booker();
     const session = client(await tokenFor(`/hosts/${host.id}/sessions`, { read_only: true }));

@@ -480,6 +480,8 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
           sms_from: smsFrom || null,
           calendar_failure_mode:
             formString(formData, "calendarFailureMode") === "last_known" ? "last_known" : "hide",
+          host_reassignment: formData.get("hostReassignment") === "on" ? "eligible" : "off",
+          name_host_in_attendee_emails: formData.get("nameHostInAttendeeEmails") === "on",
         },
         { screen: configuredDeps().screenSetup },
       ),

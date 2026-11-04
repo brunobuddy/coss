@@ -104,6 +104,20 @@ gets a new one, and the attendee hears when it's ready. If they stay, the link d
 `reason_code` and `note` stay in the booking's history. They're never in webhooks, logs or emails, and the note is
 encrypted and goes when the attendee's details do.
 
+## Hosts giving away their own
+
+Hosts can't reassign their own bookings until you let them:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({ host_reassignment: "eligible" });
+```
+
+They then get a button on each booking on their page, listing who's free and takes that event type, by name. They don't
+see why anyone else isn't listed, and can't go past anyone's availability. [Team leads](/docs/scheduling/embedding) can.
+
 ## Many at once
 
 When someone's away, leaving or has too much on, a run moves up to 5,000 bookings in the background. See who each would

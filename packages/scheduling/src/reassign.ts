@@ -55,6 +55,13 @@ type Options = {
   quietHosts?: boolean | undefined;
   /** With `auto`: only the preferred hosts, not whoever else a pool would pick. */
   onlyPreferred?: boolean | undefined;
+  /**
+   * A session's reach, known before the booking's locked. Only here is it certain who has the booking
+   * now, so here's where it's checked: someone else's looks like it doesn't exist.
+   */
+  fromHosts?: ReadonlySet<string> | undefined;
+  /** Who a session can give it to. */
+  toHosts?: ReadonlySet<string> | undefined;
   /** In the same transaction, so a report can't disagree with what happened. */
   onMoved?:
     | ((tx: Transaction, moves: readonly { from: string; to: string }[]) => Promise<void>)
@@ -357,6 +364,11 @@ async function reassignOne(
   const started = booking.startAt.getTime() <= now.getTime();
   if (started && booking.status !== "confirmed") throw notChangeable(booking);
   const rows = await bookingHostRows(tx, booking);
+  // Before anything else says what's wrong with it: someone else's doesn't exist.
+  const { fromHosts } = opts;
+  if (fromHosts && !rows.some((row) => fromHosts.has(row.hostId))) {
+    throw new SchedulingError("not_found", `No booking "${booking.id}" in this environment.`);
+  }
   const { candidates, routingKnown } = await candidatesFor(tx, env, booking, eventType, deps);
   const memberIds = new Set(
     [...candidates.members, ...candidates.required].map((entry) => entry.host.id),
@@ -387,6 +399,9 @@ async function reassignOne(
       change.from_host ? await refId(tx, env, change.from_host) : undefined,
     );
     if (leaving.has(from.hostId)) throw invalid("Each change has a different `from_host`.");
+    if (opts.fromHosts && !opts.fromHosts.has(from.hostId)) {
+      throw new SchedulingError("not_found", `No booking "${booking.id}" in this environment.`);
+    }
     leaving.add(from.hostId);
   }
   await holdSources(tx, env, [...leaving]);
@@ -402,6 +417,8 @@ async function reassignOne(
     let choices: HostRow[];
     if (change.to_host) {
       const named = await hostRowOf(tx, env, change.to_host);
+      if (opts.toHosts && !opts.toHosts.has(named.id))
+        throw invalid("They can't take it from here.");
       if (taken.has(named.id)) {
         throw invalid("That host is already on this booking.");
       }
@@ -422,6 +439,7 @@ async function reassignOne(
         : ranked({ required: [], members: candidates.members }, `${booking.id}:${booking.version}`);
       const seen = new Set<string>();
       choices = [...preferred, ...ranking].filter((host) => {
+        if (opts.toHosts && !opts.toHosts.has(host.id)) return false;
         if (seen.has(host.id) || taken.has(host.id)) return false;
         seen.add(host.id);
         return true;
@@ -585,6 +603,9 @@ async function reassignSession(
   const asked = seats.find((seat) => seat.id === askedSeatId);
   if (!asked) throw new SchedulingError("not_found", `No booking "${askedSeatId}".`);
   checkChangeable(asked);
+  if (opts.fromHosts && !opts.fromHosts.has(session.hostId)) {
+    throw new SchedulingError("not_found", `No booking "${askedSeatId}".`);
+  }
   if (session.startAt.getTime() <= now.getTime()) {
     throw new SchedulingError("booking_not_changeable", "A session that's started keeps its host.");
   }
@@ -608,6 +629,7 @@ async function reassignSession(
   let choices: HostRow[];
   if (change.to_host) {
     const named = await hostRowOf(tx, env, change.to_host);
+    if (opts.toHosts && !opts.toHosts.has(named.id)) throw invalid("They can't take it from here.");
     if (named.id === session.hostId) throw invalid("That host already runs this session.");
     if (!memberIds.has(named.id) && !anyHost) {
       throw invalid("That host can't take this event type. Pass `any_host` in `overrides`.");
@@ -620,6 +642,7 @@ async function reassignSession(
       : ranked({ required: [], members: candidates.members }, `${session.id}:${now.getTime()}`);
     const seen = new Set<string>([session.hostId]);
     choices = [...preferred, ...others].filter((host) => {
+      if (opts.toHosts && !opts.toHosts.has(host.id)) return false;
       if (seen.has(host.id)) return false;
       seen.add(host.id);
       return true;

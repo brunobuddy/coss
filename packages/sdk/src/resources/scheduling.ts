@@ -12,6 +12,7 @@ import type {
   CreateSchedulingHoldParams,
   CreateSchedulingHostParams,
   CreateSchedulingHostSessionParams,
+  CreateSchedulingManagerSessionParams,
   CreateSchedulingOutOfOfficeParams,
   CreateSchedulingReassignmentParams,
   CreateSchedulingSeriesParams,
@@ -662,6 +663,23 @@ export class SchedulingSessionsResource {
     return this.#http.request<SchedulingSession>({
       method: "POST",
       path: `/v1/scheduling/hosts/${part(host)}/sessions`,
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
+  /**
+   * Lets a team lead manage cover for the hosts you name: time off, bookings that need someone else,
+   * and moving them. Not retried: each one's a new token.
+   */
+  createForManager(
+    params: CreateSchedulingManagerSessionParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingSession>> {
+    return this.#http.request<SchedulingSession>({
+      method: "POST",
+      path: "/v1/scheduling/manager_sessions",
       body: params,
       retry: false,
       signal: options?.signal,

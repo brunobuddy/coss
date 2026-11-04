@@ -39,6 +39,12 @@ export type HostPortalEvent =
   | { type: "calendar_connected" }
   | { type: "error"; code: string; message: string };
 
+/** What a team page tells your app. */
+export type TeamPortalEvent =
+  | { type: "ready" }
+  | { type: "reassignment_started"; reassignment_id: string }
+  | { type: "error"; code: string; message: string };
+
 export interface MountOptions<Event> {
   /** A session's `url`. */
   url: string;
@@ -107,6 +113,11 @@ function mount<Event>(options: MountOptions<Event>, defaultTitle: string): Sched
 /** Mounts the booking page of a booker session, or the page of a manage session. */
 export function mountBooker(options: MountOptions<BookerEvent>): SchedulingEmbed {
   return mount(options, "Book a time");
+}
+
+/** Mounts a team page: who's away, bookings that need cover, and moving them. */
+export function mountTeamPortal(options: MountOptions<TeamPortalEvent>): SchedulingEmbed {
+  return mount(options, "Team cover");
 }
 
 /** Mounts a host's page for their hours, calendars and bookings. */

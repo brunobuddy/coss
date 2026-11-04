@@ -19,6 +19,13 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@coss/ui/components/empty";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "@coss/ui/components/select";
 import { Skeleton } from "@coss/ui/components/skeleton";
 import { CalendarIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -35,6 +42,86 @@ type HostBooking = {
 };
 
 type BookingPage = { data: HostBooking[]; next_cursor: string | null };
+
+/** Giving a booking away: who's free and takes this, by name, and nothing about anyone else. */
+function GiveAway(props: { call: ClientCall; bookingId: string; onMoved: () => void }) {
+  const { call, bookingId, onMoved } = props;
+  const [people, setPeople] = useState<{ host: string; name: string }[] | null>(null);
+  const [to, setTo] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+  const open = async () => {
+    setProblem(null);
+    try {
+      const response = await call<{ data: { host: string; name: string }[] }>(
+        `/host/bookings/${bookingId}/reassign_candidates`,
+      );
+      setPeople(response.data);
+    } catch (error) {
+      setProblem((error as Error).message);
+    }
+  };
+  const give = async () => {
+    if (!to) return;
+    setWorking(true);
+    setProblem(null);
+    try {
+      await call(`/host/bookings/${bookingId}/reassign`, { method: "POST", body: { to_host: to } });
+      onMoved();
+    } catch (error) {
+      setProblem((error as Error).message);
+    } finally {
+      setWorking(false);
+    }
+  };
+  if (people === null) {
+    return (
+      <>
+        <Button onClick={open} size="sm" variant="outline">
+          Give to someone
+        </Button>
+        {problem ? (
+          <p className="text-destructive-foreground text-xs" role="alert">
+            {problem}
+          </p>
+        ) : null}
+      </>
+    );
+  }
+  if (people.length === 0) {
+    return <span className="text-muted-foreground text-xs">Nobody else is free then.</span>;
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-44">
+        <Select
+          items={people.map((person) => ({ value: person.host, label: person.name }))}
+          onValueChange={(next) => setTo(next ? String(next) : null)}
+          value={to}
+        >
+          <SelectTrigger aria-label="Who it goes to">
+            <SelectValue placeholder="Who it goes to" />
+          </SelectTrigger>
+          <SelectPopup>
+            {people.map((person) => (
+              <SelectItem key={person.host} value={person.host}>
+                {person.name}
+              </SelectItem>
+            ))}
+          </SelectPopup>
+        </Select>
+      </div>
+      <Button disabled={working || !to} onClick={give} size="sm">
+        Give
+      </Button>
+      {problem ? (
+        <p className="text-destructive-foreground text-xs" role="alert">
+          {problem}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export function Bookings(props: { call: ClientCall; session: HostSession }) {
   const { call, session } = props;
@@ -171,7 +258,10 @@ export function Bookings(props: { call: ClientCall; session: HostSession }) {
                     </span>
                   </div>
                   {session.read_only ? null : (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {session.can_reassign ? (
+                        <GiveAway bookingId={booking.id} call={call} onMoved={load} />
+                      ) : null}
                       {pending ? (
                         <>
                           <Button

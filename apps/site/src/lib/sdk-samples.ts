@@ -525,6 +525,10 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.sessions.createForHost",
     args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
   },
+  "POST /v1/scheduling/manager_sessions": {
+    method: "scheduling.sessions.createForManager",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
   "POST /v1/scheduling/booker_sessions": {
     method: "scheduling.sessions.createForBooker",
     args: (r) => [tsValue(r.body ?? {})],

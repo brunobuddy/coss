@@ -19,6 +19,7 @@ import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
 import { resolveEventType } from "./event-types.ts";
 import { type HostRow, resolveHost } from "./hosts.ts";
+import { checkManagedRun, managedRunWhere } from "./manager.ts";
 import { reassignBooking, skipsOfOverrides } from "./reassign.ts";
 import {
   queueReassignment,
@@ -301,12 +302,17 @@ export async function createReassignment(
   params: CreateReassignmentRequestOutput,
   deps: Keys,
   actor: BookingActor,
-  opts: { idempotencyKey?: string | undefined; maxBookings?: number | undefined } = {},
+  opts: {
+    idempotencyKey?: string | undefined;
+    maxBookings?: number | undefined;
+    onlyHosts?: ReadonlySet<string> | undefined;
+  } = {},
 ): Promise<{ reassignment: ReassignmentObjectOutput; replayed: boolean }> {
   const now = nowOf(deps);
   const strategy = await resolveStrategy(env, params.strategy);
   const selection = await resolveSelection(env, params.selection, strategy);
   checkOverrides(params);
+  if (opts.onlyHosts) checkManagedRun({ selection, strategy }, opts.onlyHosts);
   const cap = opts.maxBookings ?? MAX_REASSIGNMENT_BOOKINGS;
   if ((await countSelected(env, selection, now)) > cap) {
     throw invalid(
@@ -383,6 +389,26 @@ function checkOverrides(params: Pick<CreateReassignmentRequestOutput, "overrides
   }
 }
 
+/** Whether a team page can see this run: someone else's looks like it doesn't exist. */
+export async function assertManagedRun(
+  scope: Scope,
+  id: string,
+  hostIds: readonly string[],
+): Promise<void> {
+  const [row] = await db
+    .select({ id: schedulingReassignment.id })
+    .from(schedulingReassignment)
+    .where(
+      and(
+        eq(schedulingReassignment.id, id),
+        eq(schedulingReassignment.organizationId, scope.organizationId),
+        eq(schedulingReassignment.environmentId, scope.environmentId),
+        await managedRunWhere(hostIds),
+      ),
+    );
+  if (!row) throw new SchedulingError("not_found", `No reassignment "${id}".`);
+}
+
 export async function getReassignment(scope: Scope, id: string): Promise<ReassignmentObjectOutput> {
   const row = await runRow(db, scope, id);
   return toObject(row, await countsOf(db, row));
@@ -405,7 +431,7 @@ async function runRow(executor: Executor, scope: Scope, id: string): Promise<Rea
 
 export async function listReassignments(
   scope: Scope,
-  query: { limit: number; after?: string | undefined },
+  query: { limit: number; after?: string | undefined; hostIds?: readonly string[] | undefined },
 ): Promise<{ data: ReassignmentObjectOutput[]; hasMore: boolean }> {
   const rows = await db
     .select()
@@ -414,6 +440,7 @@ export async function listReassignments(
       and(
         eq(schedulingReassignment.organizationId, scope.organizationId),
         eq(schedulingReassignment.environmentId, scope.environmentId),
+        query.hostIds ? await managedRunWhere(query.hostIds) : undefined,
         query.after ? lt(schedulingReassignment.id, query.after) : undefined,
       ),
     )
@@ -548,6 +575,10 @@ export async function undoReassignment(
   return toObject(row, await countsOf(db, row));
 }
 
+/** A preview's fairest may be anyone, and it only proposes people the team reaches anyway. */
+const previewable = (strategy: ReassignmentStrategy): ReassignmentStrategy =>
+  strategy.kind === "auto" ? { ...strategy, otherwise: "leave" } : strategy;
+
 /**
  * What would happen, without doing it: who each booking would go to, working down them in order so
  * two can't both be promised the same free hour. Things can change before it's asked for, and the
@@ -557,10 +588,13 @@ export async function previewReassignment(
   env: Scope,
   params: Pick<CreateReassignmentRequestOutput, "selection" | "strategy" | "overrides">,
   deps: Keys,
+  opts: { onlyHosts?: ReadonlySet<string> | undefined } = {},
 ): Promise<ReassignmentPreviewOutput> {
   const now = nowOf(deps);
   const strategy = await resolveStrategy(env, params.strategy);
   const selection = await resolveSelection(env, params.selection, strategy);
+  if (opts.onlyHosts)
+    checkManagedRun({ selection, strategy: previewable(strategy) }, opts.onlyHosts);
   const bookings = await selectBookings(db, env, selection, now, MAX_PREVIEW_BOOKINGS + 1);
   const truncated = bookings.length > MAX_PREVIEW_BOOKINGS;
   const chosen = bookings.slice(0, MAX_PREVIEW_BOOKINGS);
@@ -663,7 +697,8 @@ export async function previewReassignment(
       let reason: string | null = null;
       const attempt = (hostId: string): boolean => {
         const inputs = loaded.get(hostId);
-        if (current.has(hostId)) reason = "already_a_host";
+        if (opts.onlyHosts && !opts.onlyHosts.has(hostId)) reason = "not_on_team";
+        else if (current.has(hostId)) reason = "already_a_host";
         else if (!memberIds.has(hostId) && !anyHost) reason = "not_a_member";
         else if (!inputs) reason = "host_unavailable";
         else {
