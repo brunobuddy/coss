@@ -60,7 +60,7 @@ import {
   releaseSessionClaim,
   tryClaim,
 } from "./claims.ts";
-import { type PoolMember, rankCandidates } from "./engine/rank.ts";
+import { type PoolMember, rankCandidates, startingUnits } from "./engine/rank.ts";
 import { expandRecurrence } from "./engine/recurrence.ts";
 import {
   isBookable,
@@ -71,7 +71,7 @@ import {
 } from "./engine/slots.ts";
 import { MINUTE_MS } from "./engine/time.ts";
 import { SchedulingError } from "./errors.ts";
-import { type EventTypeRow, poolStartingUnits, resolveEventType } from "./event-types.ts";
+import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { confirmedSeats, withSessionLocation } from "./group-sessions.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
 import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
@@ -356,6 +356,40 @@ const slotLost = (reason?: string) =>
     { param: "start" },
   );
 
+/** Hosts a pool's filter found have no row of their own until they're first chosen. */
+async function joinFoundHosts(
+  tx: Executor,
+  eventType: EventTypeRow,
+  hostIds: readonly string[],
+): Promise<void> {
+  const known = await tx
+    .select({ hostId: schedulingEventTypeHost.hostId })
+    .from(schedulingEventTypeHost)
+    .where(
+      and(
+        eq(schedulingEventTypeHost.eventTypeId, eventType.id),
+        eq(schedulingEventTypeHost.organizationId, eventType.organizationId),
+        inArray(schedulingEventTypeHost.hostId, [...hostIds]),
+      ),
+    );
+  const missing = hostIds.filter((id) => !known.some((row) => row.hostId === id));
+  if (missing.length === 0) return;
+  const { members } = await candidatesOf(tx, eventType, eventType);
+  const pool = members.flatMap(({ membership }) => (membership ? [membership] : []));
+  for (const hostId of missing) {
+    await tx
+      .insert(schedulingEventTypeHost)
+      .values({
+        eventTypeId: eventType.id,
+        hostId,
+        organizationId: eventType.organizationId,
+        assigned: false,
+        fairUnits: startingUnits(pool, 100),
+      })
+      .onConflictDoNothing();
+  }
+}
+
 async function lockHostsAndMemberships(
   tx: Executor,
   eventType: EventTypeRow,
@@ -375,18 +409,7 @@ async function lockHostsAndMemberships(
     .orderBy(asc(schedulingHost.id))
     .for("share");
   if (active.length !== sorted.length) throw new LostSlot("host_unavailable");
-  for (const hostId of sorted) {
-    await tx
-      .insert(schedulingEventTypeHost)
-      .values({
-        eventTypeId: eventType.id,
-        hostId,
-        organizationId: eventType.organizationId,
-        assigned: false,
-        fairUnits: poolStartingUnits(eventType, 100),
-      })
-      .onConflictDoNothing();
-  }
+  await joinFoundHosts(tx, eventType, sorted);
   const memberships = await tx
     .select({ hostId: schedulingEventTypeHost.hostId })
     .from(schedulingEventTypeHost)

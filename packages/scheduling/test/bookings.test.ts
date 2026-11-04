@@ -27,6 +27,7 @@ import {
   SchedulingError,
   searchAvailability,
   updateEventType,
+  updateHost,
 } from "../src/index.ts";
 import { testSchedulingDeps } from "../src/testing.ts";
 
@@ -1102,6 +1103,71 @@ describe("pools", () => {
 
       expect(counts.get(a)).toBe(4);
       expect(counts.get(b)).toBe(2);
+    });
+
+    test("a weight taken right down and back loses nothing", async () => {
+      const env = await tenantEnv();
+      const [a, b] = await threeHosts(env);
+      const eventType = await poolOf(env, [a, b]);
+      await setUnits(eventType.id, 40);
+      await updateEventType(env, eventType.id, { hosts: [member(a, 1), member(b)] });
+      expect(await fairUnits(eventType.id, a)).toBeCloseTo(0.4);
+      await updateEventType(env, eventType.id, { hosts: [member(a), member(b)] });
+      expect(await fairUnits(eventType.id, a)).toBeCloseTo(40);
+
+      const counts = await bookTurns(env, eventType.id, 4);
+
+      expect(counts.get(a)).toBe(2);
+      expect(counts.get(b)).toBe(2);
+    });
+
+    test("big counters and weights fit", async () => {
+      const env = await tenantEnv();
+      const [a, late] = await threeHosts(env);
+      const eventType = await poolOf(env, [a]);
+      await updateEventType(env, eventType.id, { hosts: [member(a, 1)] });
+      await setUnits(eventType.id, 214_749);
+      await updateEventType(env, eventType.id, {
+        hosts: [member(a, 1), member(late, 10_000)],
+      });
+      expect(await fairUnits(eventType.id, late)).toBe(2_147_490_000);
+      await updateEventType(env, eventType.id, {
+        hosts: [member(a, 10_000), member(late, 10_000)],
+      });
+      expect(await fairUnits(eventType.id, a)).toBe(2_147_490_000);
+    });
+
+    test("someone taking bookings starts against who'll be in the pool, not who's leaving", async () => {
+      const env = await tenantEnv();
+      const [x, y, z] = await threeHosts(env);
+      const eventType = await eventTypeFor(
+        env,
+        [{ host: x }, { host: y }, { host: z, role: "required" }],
+        { kind: "pool", duration_minutes: 15 },
+      );
+      await setUnits(eventType.id, 100, x);
+      await setUnits(eventType.id, 1, y);
+
+      await updateEventType(env, eventType.id, {
+        hosts: [member(x), { ...member(y), role: "required" }, member(z)],
+      });
+
+      expect(await fairUnits(eventType.id, z)).toBe(100);
+    });
+
+    test("a disabled host doesn't set where someone starts", async () => {
+      const env = await tenantEnv();
+      const [a, off, late] = await threeHosts(env);
+      const eventType = await poolOf(env, [a, off]);
+      await setUnits(eventType.id, 50, a);
+      await setUnits(eventType.id, 1, off);
+      await updateHost(env, off, { status: "disabled" });
+
+      await updateEventType(env, eventType.id, {
+        hosts: [member(a), member(off), member(late)],
+      });
+
+      expect(await fairUnits(eventType.id, late)).toBe(50);
     });
 
     test("a cancellation before the start gives the turn back", async () => {
