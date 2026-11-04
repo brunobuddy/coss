@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createTestTenant } from "@coss/tenancy/testing";
 import {
+  cancelBooking,
   createBooking,
   createEventType,
   createHost,
@@ -222,7 +223,86 @@ describe("explaining a slot", () => {
   });
 });
 
+describe("explaining a group session's slot", () => {
+  test("someone can still join inside the notice, as booking lets them", async () => {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    const eventType = await eventTypeFor(env, [member(host.id)], {
+      kind: "group",
+      capacity: 2,
+      min_notice_minutes: 60,
+    });
+    await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("10:00"), attendee },
+      deps,
+      actor,
+    );
+
+    const joining = await explainSlot(env, {
+      eventTypeRef: eventType.id,
+      startMs: at("10:00"),
+      nowMs: at("09:30"),
+    });
+    expect(joining).toMatchObject({ available: true, reason: null });
+
+    const starting = await explainSlot(env, {
+      eventTypeRef: eventType.id,
+      startMs: at("11:00"),
+      nowMs: at("10:30"),
+    });
+    expect(starting).toMatchObject({ available: false, reason: "too_soon" });
+  });
+
+  test("a full session says so", async () => {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    const eventType = await eventTypeFor(env, [member(host.id)], { kind: "group", capacity: 2 });
+    for (const uid of ["one", "two"]) {
+      await createBooking(
+        env,
+        {
+          eventType: eventType.id,
+          startMs: at("10:00"),
+          attendee: { ...attendee, uid, email: `${uid}@example.com` },
+        },
+        deps,
+        actor,
+      );
+    }
+    const explained = await explainSlot(env, {
+      eventTypeRef: eventType.id,
+      startMs: at("10:00"),
+      nowMs: NOW,
+    });
+    expect(explained).toMatchObject({ available: false, reason: "session_full" });
+  });
+});
+
 describe("seats left on slots", () => {
+  test("an emptied session keeps its own capacity after the event type's changes", async () => {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    const eventType = await eventTypeFor(env, [member(host.id)], { kind: "group", capacity: 3 });
+    const { booking } = await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("10:00"), attendee },
+      deps,
+      actor,
+    );
+    await cancelBooking(env, booking.id, deps, actor);
+    await updateEventType(env, eventType.id, { capacity: 5 } as never);
+
+    const slots = await listEventTypeSlots(env, {
+      eventTypeRef: eventType.id,
+      fromMs: at("00:00"),
+      toMs: at("23:59"),
+      nowMs: NOW,
+    });
+    expect(slots.find((slot) => slot.startMs === at("10:00"))?.seatsLeft).toBe(3);
+    expect(slots.find((slot) => slot.startMs === at("11:00"))?.seatsLeft).toBe(5);
+  });
+
   test("counts down for a group session, and only a group has them", async () => {
     const env = await tenantEnv();
     const host = await hostWithHours(env);

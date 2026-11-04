@@ -3,7 +3,7 @@
  * they see the same world; inside a booking's transaction it also sees the bucket locks' effects.
  */
 import { db, type Executor, schema } from "@coss/db";
-import { and, eq, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { notZoomMeeting } from "./calendar/zoom.ts";
 import { buildAvailability, overrideDateRange } from "./engine/availability.ts";
 import { type CalendarFreshness, calendarVerdict } from "./engine/calendar-verdict.ts";
@@ -350,6 +350,7 @@ export async function loadHostInputs(
                   endMs: claim.occupiedEnd.getTime(),
                 },
                 seatsLeft: session.capacity - session.seats,
+                seatsTaken: session.seats,
               },
             ]
           : [];
@@ -579,13 +580,35 @@ export async function listEventTypeSlots(
     duration * MINUTE_MS,
   );
   if (eventType.kind !== "group") return slots;
+  // A session keeps the capacity it was made with, even once its last seat's gone and it has no
+  // claim, and booking that start reuses it.
+  const sessions = await db
+    .select({
+      hostId: schedulingGroupSession.hostId,
+      startAt: schedulingGroupSession.startAt,
+      capacity: schedulingGroupSession.capacity,
+    })
+    .from(schedulingGroupSession)
+    .where(
+      and(
+        eq(schedulingGroupSession.eventTypeId, eventType.id),
+        eq(schedulingGroupSession.organizationId, scope.organizationId),
+        gte(schedulingGroupSession.startAt, new Date(input.fromMs)),
+        lt(schedulingGroupSession.startAt, new Date(input.toMs)),
+      ),
+    );
+  const capacityOf = new Map(
+    sessions.map((session) => [`${session.hostId}:${session.startAt.getTime()}`, session.capacity]),
+  );
   return slots.map((slot) => ({
     ...slot,
     seatsLeft: Math.max(
       ...slot.hostIds.map(
         (hostId) =>
           loaded.get(hostId)?.sessions?.find((session) => session.startMs === slot.startMs)
-            ?.seatsLeft ?? (eventType.capacity as number),
+            ?.seatsLeft ??
+          capacityOf.get(`${hostId}:${slot.startMs}`) ??
+          (eventType.capacity as number),
       ),
     ),
   }));
@@ -656,9 +679,16 @@ export async function explainSlot(
   const rule = slotRuleOf(eventType, duration);
   const hosts = entries.map((entry) => {
     const host = loaded.get(entry.host.id);
-    const verdict = host
-      ? isBookable(startMs, { nowMs, rule, host })
-      : { ok: false as const, reason: "outside_availability" as const };
+    // Joining a session with people in it commits the host to nothing new, so booking doesn't ask
+    // `isBookable`: notice or changed hours don't stop it, only a full session does.
+    const session = host?.sessions?.find((candidate) => candidate.startMs === startMs);
+    const verdict: ReturnType<typeof isBookable> = !host
+      ? { ok: false, reason: "outside_availability" }
+      : session && session.seatsLeft <= 0
+        ? { ok: false, reason: "session_full" }
+        : session?.seatsTaken
+          ? { ok: true }
+          : isBookable(startMs, { nowMs, rule, host });
     const reason = verdict.ok ? null : verdict.reason;
     return {
       hostId: entry.host.id,
