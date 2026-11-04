@@ -65,7 +65,7 @@ const BroadcastFields = {
       "unsubscribe link leaves just that topic. It is the emails' `category`.",
   }),
   from: Address.meta({ examples: ["Acme <news@acme.com>"] }),
-  reply_to: z.array(Address).max(10).optional(),
+  reply_to: z.array(Address).max(10).optional().meta({ description: "Addresses replies go to." }),
   subject: Subject.meta({
     description: "May use `{{{contact.<key>|fallback}}}` (e.g. `{{{contact.first_name|there}}}`).",
   }),
@@ -82,10 +82,18 @@ const BroadcastFields = {
         "`{{{unsubscribe_url}}}`, `{{{preferences_url}}}`, `{{{mailing_address}}}`; a footer with " +
         "the postal address and an unsubscribe link is added unless they are there.",
     }),
-  text: z.string().max(BODY_MAX_LENGTH).optional(),
+  text: z
+    .string()
+    .max(BODY_MAX_LENGTH)
+    .optional()
+    .meta({ description: "The plain text part. Takes the same placeholders as `html`." }),
   tracking: z
-    .strictObject({ opens: z.boolean().optional(), clicks: z.boolean().optional() })
-    .optional(),
+    .strictObject({
+      opens: z.boolean().optional().meta({ description: "Track opens with a pixel." }),
+      clicks: z.boolean().optional().meta({ description: "Track clicks by rewriting links." }),
+    })
+    .optional()
+    .meta({ description: "Which opens and clicks are tracked." }),
   rate_per_second: z.int().min(1).max(1000).optional().meta({
     description: "Recipients per second, at most the plan's marketing rate (the default).",
   }),
@@ -137,17 +145,48 @@ export type CreateBroadcastRequestOutput = z.output<typeof CreateBroadcastReques
 export const UpdateBroadcastRequest = z
   .strictObject({
     name: BroadcastFields.name.optional(),
-    audience_id: z.string().nullable().optional(),
-    segment_id: z.string().nullable().optional(),
-    topic: Category.nullable().optional(),
+    audience_id: z
+      .string()
+      .nullable()
+      .optional()
+      .meta({ description: "Send to this audience. `null` clears it." }),
+    segment_id: z
+      .string()
+      .nullable()
+      .optional()
+      .meta({ description: "Send to this segment. `null` clears it." }),
+    topic: Category.nullable()
+      .optional()
+      .meta({ description: "The topic it's about (its key). `null` clears it." }),
     from: BroadcastFields.from.optional(),
     reply_to: BroadcastFields.reply_to,
     subject: BroadcastFields.subject.optional(),
-    preview_text: z.string().max(PREVIEW_TEXT_MAX_LENGTH).nullable().optional(),
-    html: z.string().max(BODY_MAX_LENGTH).nullable().optional(),
-    text: z.string().max(BODY_MAX_LENGTH).nullable().optional(),
+    preview_text: z
+      .string()
+      .max(PREVIEW_TEXT_MAX_LENGTH)
+      .nullable()
+      .optional()
+      .meta({ description: "The inbox preview line. `null` removes it." }),
+    html: z
+      .string()
+      .max(BODY_MAX_LENGTH)
+      .nullable()
+      .optional()
+      .meta({ description: "The HTML part. `null` removes it, if `text` remains." }),
+    text: z
+      .string()
+      .max(BODY_MAX_LENGTH)
+      .nullable()
+      .optional()
+      .meta({ description: "The plain text part. `null` removes it, if `html` remains." }),
     tracking: BroadcastFields.tracking,
-    rate_per_second: z.int().min(1).max(1000).nullable().optional(),
+    rate_per_second: z
+      .int()
+      .min(1)
+      .max(1000)
+      .nullable()
+      .optional()
+      .meta({ description: "Recipients per second. `null`: the plan's marketing rate." }),
   })
   .meta({ id: "UpdateBroadcastRequest", examples: [{ subject: "Our October news" }] });
 export type UpdateBroadcastRequestOutput = z.output<typeof UpdateBroadcastRequest>;
@@ -160,7 +199,11 @@ export const SendBroadcastRequest = z
 
 export const TestBroadcastRequest = z
   .strictObject({
-    to: z.array(Address).min(1).max(MAX_BROADCAST_TEST_RECIPIENTS),
+    to: z
+      .array(Address)
+      .min(1)
+      .max(MAX_BROADCAST_TEST_RECIPIENTS)
+      .meta({ description: "Who gets the test, at most 5 addresses." }),
     contact: z.string().optional().meta({
       description: "A contact (id or address) whose values fill the template; default: fallbacks.",
     }),
@@ -188,16 +231,16 @@ export type ListBroadcastsQueryOutput = z.output<typeof ListBroadcastsQuery>;
 export const BroadcastStats = z
   .object({
     recipients: z.int().meta({ description: "Emails made so far (one per reached contact)." }),
-    sent: z.int(),
-    delivered: z.int(),
+    sent: z.int().meta({ description: "Emails accepted by the provider." }),
+    delivered: z.int().meta({ description: "Emails delivered to recipients' servers." }),
     bounced: z.int().meta({ description: "Permanent bounces." }),
-    complained: z.int(),
-    failed: z.int(),
+    complained: z.int().meta({ description: "Emails marked as spam by recipients." }),
+    failed: z.int().meta({ description: "Emails that couldn't be sent." }),
     opened: z.int().meta({ description: "Emails opened at least once (with open tracking)." }),
     clicked: z.int().meta({ description: "Emails clicked at least once (with click tracking)." }),
     unsubscribed: z.int().meta({ description: "Unsubscribes through the broadcast's links." }),
   })
-  .meta({ id: "BroadcastStats" });
+  .meta({ description: "How its emails fared so far.", id: "BroadcastStats" });
 export type BroadcastStatsOutput = z.output<typeof BroadcastStats>;
 
 const STATS_EXAMPLE = {
@@ -245,27 +288,58 @@ export const Broadcast = z
   .object({
     object: z.literal("broadcast"),
     id: z.string(),
-    name: z.string(),
+    name: z.string().meta({ description: "Shown only to you." }),
     status: z.enum(BROADCAST_STATUSES).meta({
       description:
         "`draft` (editable), `scheduled`, `sending`, `paused` (see `pause_reason`), `sent`, " +
         "`canceled`, or `failed` (see `error`).",
     }),
-    audience_id: z.string().nullable(),
-    segment_id: z.string().nullable(),
-    topic: z.string().nullable(),
-    from: z.string(),
-    reply_to: z.array(z.string()),
-    subject: z.string(),
-    preview_text: z.string().nullable(),
-    html: z.string().nullable(),
-    text: z.string().nullable(),
-    tracking: z.object({ opens: z.boolean(), clicks: z.boolean() }),
-    rate_per_second: z.int().nullable(),
-    scheduled_at: NullableTimestamp,
-    started_at: NullableTimestamp,
-    completed_at: NullableTimestamp,
-    canceled_at: NullableTimestamp,
+    audience_id: z
+      .string()
+      .nullable()
+      .meta({ description: "The audience it goes to. `null`: a segment." }),
+    segment_id: z
+      .string()
+      .nullable()
+      .meta({ description: "The segment it goes to. `null`: an audience." }),
+    topic: z
+      .string()
+      .nullable()
+      .meta({
+        description: "The topic it's about (its key), and its emails' `category`. `null`: none.",
+      }),
+    from: z.string().meta({ description: "Who it's sent from." }),
+    reply_to: z.array(z.string()).meta({ description: "Addresses replies go to." }),
+    subject: z.string().meta({ description: "The subject, before contact fields are filled in." }),
+    preview_text: z
+      .string()
+      .nullable()
+      .meta({ description: "The inbox preview line. `null`: none." }),
+    html: z
+      .string()
+      .nullable()
+      .meta({
+        description: "The HTML part, before contact fields are filled in. `null`: text only.",
+      }),
+    text: z.string().nullable().meta({ description: "The plain text part. `null`: HTML only." }),
+    tracking: z
+      .object({
+        opens: z.boolean().meta({ description: "Whether opens are tracked." }),
+        clicks: z.boolean().meta({ description: "Whether clicks are tracked." }),
+      })
+      .meta({ description: "Which opens and clicks are tracked." }),
+    rate_per_second: z
+      .int()
+      .nullable()
+      .meta({ description: "Recipients per second. `null`: the plan's marketing rate." }),
+    scheduled_at: NullableTimestamp.meta({
+      description: "When it's set to start. `null`: not scheduled.",
+    }),
+    started_at: NullableTimestamp.meta({ description: "When sending started. `null`: it hasn't." }),
+    completed_at: NullableTimestamp.meta({ description: "When it finished. `null`: it hasn't." }),
+    canceled_at: NullableTimestamp.meta({
+      description: "When it was canceled. `null`: it wasn't.",
+    }),
     recipients_estimated: z.int().nullable().meta({
       description: "How many contacts it would reach, counted when it started.",
     }),
@@ -277,7 +351,16 @@ export const Broadcast = z
           "Why a paused broadcast waits: `paused` (by you), `billing_hold`, `budget_exceeded`, `usage_limit`, " +
           "`marketing_paused`, `account_suspended`, `sending_paused`.",
       }),
-    error: z.object({ code: z.string(), message: z.string() }).nullable(),
+    error: z
+      .object({
+        code: z.string().meta({ description: "Machine-readable reason." }),
+        message: z.string().meta({ description: "Human-readable explanation." }),
+      })
+      .nullable()
+      .meta({
+        description:
+          "Why it `failed`, such as `target_unavailable` when its audience, segment or topic was deleted while sending. `null`: it didn't.",
+      }),
     stats: BroadcastStats,
     created_at: Timestamp,
     updated_at: Timestamp,
@@ -302,7 +385,7 @@ export const DeletedBroadcast = z
 export const BroadcastTest = z
   .object({
     object: z.literal("broadcast_test"),
-    email_ids: z.array(z.string()),
+    email_ids: z.array(z.string()).meta({ description: "The ids of the test emails." }),
   })
   .meta({
     id: "BroadcastTest",
@@ -314,20 +397,35 @@ export const BroadcastWebhookEvent = z
   .object({
     id: z.string().meta({ examples: ["evt_01k7c8m4r0c2b8w9y3d5f6g7h9"] }),
     object: z.literal("event"),
-    type: z.enum(BROADCAST_EVENT_TYPES),
+    type: z.enum(BROADCAST_EVENT_TYPES).meta({ description: "What happened to the broadcast." }),
     api_version: z.string().meta({
       description:
         "The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.",
       examples: [LATEST_API_VERSION],
     }),
-    created_at: Timestamp,
-    data: z.object({
-      broadcast: z.object({ id: z.string(), name: z.string(), status: z.enum(BROADCAST_STATUSES) }),
-      pause_reason: z.string().nullable(),
-      error: z.object({ code: z.string(), message: z.string() }).nullable(),
-      stats: BroadcastStats,
-      occurred_at: Timestamp,
-    }),
+    created_at: Timestamp.meta({ description: "When the event was created." }),
+    data: z
+      .object({
+        broadcast: z.object({
+          id: z.string().meta({ description: "The broadcast's id." }),
+          name: z.string().meta({ description: "Its name." }),
+          status: z.enum(BROADCAST_STATUSES).meta({ description: "Its status after this event." }),
+        }),
+        pause_reason: z
+          .string()
+          .nullable()
+          .meta({ description: "Why a paused broadcast waits. `null`: it isn't paused." }),
+        error: z
+          .object({
+            code: z.string().meta({ description: "Machine-readable reason." }),
+            message: z.string().meta({ description: "Human-readable explanation." }),
+          })
+          .nullable()
+          .meta({ description: "Why it failed. `null`: it didn't." }),
+        stats: BroadcastStats,
+        occurred_at: Timestamp.meta({ description: "When this happened." }),
+      })
+      .meta({ description: "The broadcast and how it fared." }),
   })
   .meta({
     id: "BroadcastWebhookEvent",
