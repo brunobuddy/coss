@@ -144,7 +144,7 @@ jobs:
   # Standalone `coss` executables (packages/cli/scripts/binaries.ts) on the coss-cli@<version>
   # GitHub release, then the Homebrew formula in cosscom/homebrew-tap (`brew install
   # cosscom/tap/coss`). Every job is skipped until the repository variable CLI_BINARIES_PUBLISH is
-  # `true` (AGENTS.md, "CLI binaries"). The check looks at the release itself, so a rerun, or the
+  # `true` (packages/cli/AGENTS.md, "CLI binaries"). The check looks at the release itself, so a rerun, or the
   # first run after the variable is set, fills in whatever the current version is missing. Builds
   # come from the version's tag, never from a newer main (a dry run's from the commit it ran on).
   cli-binaries-check:
@@ -222,7 +222,7 @@ jobs:
   # The macOS executables signed with coss.com's Developer ID certificate (hardened runtime) and
   # notarized by Apple (scripts/notarize.ts), then archived again with a new SHA256SUMS, so a copy
   # downloaded with a browser opens without Gatekeeper's warning. Skipped until the repository
-  # variable CLI_MACOS_NOTARIZE is `true` (AGENTS.md, "CLI binaries"): releases then ship the
+  # variable CLI_MACOS_NOTARIZE is `true` (packages/cli/AGENTS.md, "CLI binaries"): releases then ship the
   # ad-hoc signed builds. A dry run always notarizes (that's what it is for).
   cli-binaries-notarize:
     needs: [cli-binaries-check, cli-binaries-build]
