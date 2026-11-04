@@ -71,12 +71,7 @@ async function fixture(
   const standing = async (at: Date = now) => {
     const account = await getBillingAccount(organizationId);
     if (!account) throw new Error("No account.");
-    return creditStandingOf(
-      account,
-      await billingStateAt(organizationId, at),
-      (await estimatePeriod(organizationId, at)).totals.totalCents,
-      at,
-    );
+    return creditStandingOf(account, await billingStateAt(organizationId, at), at);
   };
   const close = (period = periodOf(now)) =>
     closeBillingPeriod({
@@ -306,35 +301,47 @@ describe("the credit limit", () => {
     const accountId = account?.id ?? "";
     await old(40_000n, { accountId });
     await old(90_000n, { accountId, paymentState: "disputed", paymentError: "general" });
-    const [refunded] = await db
-      .insert(schema.billingInvoice)
-      .values({
+    const refund = async (values: { amount: bigint; paidAt: Date; kind?: "threshold" }) => {
+      const [invoice] = await db
+        .insert(schema.billingInvoice)
+        .values({
+          organizationId: f.organizationId,
+          accountId,
+          organizationName: "Test",
+          organizationSlug: "test",
+          kind: values.kind ?? "plan_change",
+          status: "paid",
+          periodStart: paidAt,
+          periodEnd: paidAt,
+          totalCents: values.amount,
+          amountPaidCents: values.amount,
+          collectionMethod: "charge_automatically",
+          provider: "fake",
+          paidAt: values.paidAt,
+        })
+        .returning();
+      await db.insert(schema.billingCreditNote).values({
         organizationId: f.organizationId,
-        accountId,
-        organizationName: "Test",
-        organizationSlug: "test",
-        kind: "plan_change",
-        status: "paid",
-        periodStart: paidAt,
-        periodEnd: paidAt,
-        collectionMethod: "charge_automatically",
-        provider: "fake",
-      })
-      .returning();
-    await db.insert(schema.billingCreditNote).values({
-      organizationId: f.organizationId,
-      invoiceId: refunded?.id ?? "",
-      number: `CN-T-${f.organizationId}`,
-      amountCents: 10_000n,
-      refundCents: 10_000n,
-      memo: "Test",
-      reason: "Test",
-      status: "issued",
-    });
+        invoiceId: invoice?.id ?? "",
+        number: `CN-T-${invoice?.id}`,
+        amountCents: 10_000n,
+        refundCents: 10_000n,
+        memo: "Test",
+        reason: "Test",
+        status: "issued",
+      });
+    };
+    // A settled payment, partly refunded: what's kept counts.
+    await refund({ amount: 20_000n, paidAt });
+    // A recent one's refund has nothing to do with what has settled…
+    await refund({ amount: 30_000n, paidAt: now });
+    // … and a recent threshold charge's lowers what's at risk.
+    await refund({ amount: 30_000n, paidAt: now, kind: "threshold" });
     expect(await f.standing()).toMatchObject({
-      settledPaidCents: 30_000n,
-      usedCents: 0n,
-      limitCents: 60_000n,
+      settledPaidCents: 50_000n,
+      unsettledChargesCents: 20_000n,
+      usedCents: 20_000n,
+      limitCents: 100_000n,
     });
   });
 
@@ -470,6 +477,55 @@ describe("the credit limit", () => {
     // Held, but never charged: it's invoiced with terms.
     expect(await terms.standing()).toMatchObject({ thresholdCents: null });
     expect(await terms.invoices("threshold")).toHaveLength(0);
+  });
+
+  test("usage of a month that ended stays at risk until it closes", async () => {
+    const f = await fixture({ collectionMethod: "send_invoice" });
+    await db
+      .update(schema.billingAccount)
+      .set({ creditLimitCents: 50_000n })
+      .where(eq(schema.billingAccount.organizationId, f.organizationId));
+    // Past the first 1,000,000 recipients the band's lower price applies: $512.50.
+    await f.useCents(55_000);
+    await f.check();
+    expect(await f.held()).toBeTrue();
+
+    // A new month, the old one still waiting for its close: nothing changed.
+    const rollover = new Date("2026-11-01T00:05:00Z");
+    await f.check(rollover);
+    expect(await f.standing(rollover)).toMatchObject({
+      accruedCents: 51_250n,
+      accruedThisMonthCents: 0n,
+    });
+    expect(await f.held()).toBeTrue();
+
+    // Closed, it's an unpaid invoice instead (its first month's fee on top).
+    await f.close();
+    await f.check(rollover);
+    const closed = await f.standing(rollover);
+    expect(closed?.accruedCents).toBe(0n);
+    expect(closed?.unpaidCents).toBe(53_750n);
+    expect(await f.held()).toBeTrue();
+  });
+
+  test("a threshold charge is credit for one month's estimate, not two", async () => {
+    const f = await fixture();
+    await f.useCents(15_000);
+    await f.check();
+    await f.collect();
+    // The charge paid for October; November's usage can't spend it as well before October closes.
+    const rollover = new Date("2026-11-01T02:00:00Z");
+    await recordTestUsage({
+      organizationId: f.organizationId,
+      environmentId: f.tenant.production.id,
+      meter: "email.recipients",
+      quantity: recipientsFor(5_000),
+      at: new Date("2026-11-01T01:00:00Z"),
+    });
+    expect(await f.standing(rollover)).toMatchObject({
+      accruedCents: 5_000n,
+      accruedThisMonthCents: 5_000n,
+    });
   });
 
   test("its emails say what happened, and a hold is pushed to the app", async () => {

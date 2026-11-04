@@ -61,9 +61,7 @@ export async function billingOverview(
   ]);
   const period = periodOf(now);
   const grants = await grantsFor(organizationId, period);
-  const credit = account
-    ? await creditStandingOf(account, state, estimate.totals.totalCents, now)
-    : null;
+  const credit = account ? await creditStandingOf(account, state, now) : null;
   return { account, state, pending, estimate, grants, holds, credit };
 }
 

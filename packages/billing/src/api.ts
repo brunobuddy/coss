@@ -64,9 +64,7 @@ export async function billingObject(
         ),
       ),
   ]);
-  const credit = account
-    ? await creditStandingOf(account, state, estimate.totals.totalCents, now)
-    : null;
+  const credit = account ? await creditStandingOf(account, state, now) : null;
   const entitlements = creatableEntitlements(state);
   const lines = estimate.composition.lines;
   const sumOf = (kinds: string[]) =>

@@ -23,16 +23,24 @@ import {
   organizationLabel,
 } from "./accounts.ts";
 import { automaticCreditLimit, CREDIT_POLICY, chargeThreshold } from "./catalog/credit.ts";
+import type { GrantApplication } from "./engine/types.ts";
 import { insertComposedGrants } from "./grants.ts";
 import { liftHold, placeHold } from "./holds.ts";
 import { createInvoice, finalizeInvoice, type InvoiceRow } from "./invoices.ts";
 import { formatCents } from "./money.ts";
 import { enqueueBillingNotification } from "./notifications.ts";
-import { composeMonth } from "./periods.ts";
+import { CATCH_UP_MONTHS, composeMonth, hasContractIn } from "./periods.ts";
 import { type BillingState, billingStateAt } from "./resolve.ts";
-import { HOUR_MS, periodOf } from "./time.ts";
+import { HOUR_MS, type Interval, periodOf, previousPeriod } from "./time.ts";
 
-const { billingAccount, billingCreditNote, billingHold, billingInvoice, billingUsage } = schema;
+const {
+  billingAccount,
+  billingCreditNote,
+  billingHold,
+  billingInvoice,
+  billingPeriod,
+  billingUsage,
+} = schema;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** A Stripe dispute reason: the cardholder says they didn't make the payment. */
@@ -48,8 +56,10 @@ export type CreditStanding = {
   thresholdCents: bigint | null;
   /** What could still be lost: the next three together. */
   usedCents: bigint;
-  /** This month's usage not invoiced yet, after credits. */
+  /** Usage not invoiced yet, after credits: this month's and any ended month's not closed yet. */
   accruedCents: bigint;
+  /** This month's part of it (what a threshold charge bills; the close bills the rest). */
+  accruedThisMonthCents: bigint;
   /** Open invoices' amounts due. */
   unpaidCents: bigint;
   /** Threshold charges paid but not settled yet. */
@@ -75,13 +85,57 @@ function creditTerms(
 }
 
 /**
- * Where an account stands against its credit limit, given its unbilled usage (`null`: not under
- * one).
+ * Usage not invoiced yet, after credits. A month that ended stays here until it closes (the settle
+ * window, a backlog), or the rollover would make it vanish from what's at risk and lift a hold. Each
+ * month's estimate spends credit the earlier ones didn't, as the closes will.
  */
+async function unbilledUsage(
+  organizationId: string,
+  now: Date,
+  executor: Executor,
+): Promise<{ thisMonthCents: bigint; unclosedCents: bigint }> {
+  const current = periodOf(now);
+  const ended: Interval[] = [];
+  for (let period = current, i = 0; i < CATCH_UP_MONTHS; i++) {
+    period = previousPeriod(period);
+    ended.unshift(period);
+  }
+  const closed = await executor
+    .select({ start: billingPeriod.periodStart })
+    .from(billingPeriod)
+    .where(
+      and(
+        eq(billingPeriod.organizationId, organizationId),
+        inArray(
+          billingPeriod.periodStart,
+          ended.map((period) => period.start),
+        ),
+      ),
+    );
+  const closedAt = new Set(closed.map((row) => row.start.getTime()));
+  const drawnDown: GrantApplication[] = [];
+  let unclosedCents = 0n;
+  for (const period of ended) {
+    if (closedAt.has(period.start.getTime())) continue;
+    if (!(await hasContractIn(organizationId, period, executor))) continue;
+    const { composition } = await composeMonth(
+      { organizationId, period, withAdvance: false, drawnDown },
+      executor,
+    );
+    unclosedCents += composition.totalCents;
+    drawnDown.push(...composition.applications);
+  }
+  const { composition } = await composeMonth(
+    { organizationId, period: current, withAdvance: false, usageUntil: now, drawnDown },
+    executor,
+  );
+  return { thisMonthCents: composition.totalCents, unclosedCents };
+}
+
+/** Where an account stands against its credit limit (`null`: not under one). */
 export async function creditStandingOf(
   account: BillingAccount,
   state: Pick<BillingState, "contract">,
-  accruedCents: bigint,
   now: Date,
   executor: Executor = db,
 ): Promise<CreditStanding | null> {
@@ -93,28 +147,28 @@ export async function creditStandingOf(
   const settled = sql`${paid} and ${billingInvoice.paidAt} <= ${settledBefore}`;
   const disputed = sql`${billingInvoice.paymentState} = 'disputed'`;
   const threshold = sql`${billingInvoice.kind} = 'threshold'`;
+  // What each payment still stands at: a refund takes back its own invoice's, no other's. The outer
+  // column is spelled out: in a single-table select Drizzle doesn't qualify columns.
+  const refunded = sql`coalesce((select sum(${billingCreditNote.refundCents}) from ${billingCreditNote} where ${billingCreditNote.invoiceId} = ${sql.raw('"billing_invoice"."id"')} and ${billingCreditNote.status} <> 'failed'), 0)`;
+  const kept = sql`${billingInvoice.amountPaidCents} - ${refunded}`;
   const [row] = await executor
     .select({
-      settled: sql<string>`coalesce(sum(${billingInvoice.amountPaidCents}) filter (where ${settled} and not coalesce(${disputed}, false)), 0)`,
-      unsettled: sql<string>`coalesce(sum(${billingInvoice.amountPaidCents}) filter (where ${threshold} and ${paid} and ${billingInvoice.paidAt} > ${settledBefore}), 0)`,
+      settled: sql<string>`coalesce(sum(${kept}) filter (where ${settled} and not coalesce(${disputed}, false)), 0)`,
+      unsettled: sql<string>`coalesce(sum(${kept}) filter (where ${threshold} and ${paid} and ${billingInvoice.paidAt} > ${settledBefore}), 0)`,
       unpaid: sql<string>`coalesce(sum(${billingInvoice.amountDueCents}) filter (where ${billingInvoice.status} = 'open'), 0)`,
       chargeFailed: sql<boolean>`coalesce(bool_or(${threshold} and ${billingInvoice.status} = 'open' and ${billingInvoice.paymentState} = 'failed'), false)`,
       fraud: sql<boolean>`coalesce(bool_or(${disputed} and ${billingInvoice.paymentError} = ${FRAUD_DISPUTE}), false)`,
     })
     .from(billingInvoice)
     .where(eq(billingInvoice.organizationId, organizationId));
-  const [refunds] = await executor
-    .select({ refunded: sql<string>`coalesce(sum(${billingCreditNote.refundCents}), 0)` })
-    .from(billingCreditNote)
-    .where(eq(billingCreditNote.organizationId, organizationId));
-  const netOfRefunds = BigInt(row?.settled ?? 0) - BigInt(refunds?.refunded ?? 0);
-  const settledPaidCents = netOfRefunds > 0n ? netOfRefunds : 0n;
+  const settledPaidCents = BigInt(row?.settled ?? 0);
   const unpaidCents = BigInt(row?.unpaid ?? 0);
   const unsettledChargesCents = BigInt(row?.unsettled ?? 0);
-  const accrued = accruedCents > 0n ? accruedCents : 0n;
+  const { thisMonthCents, unclosedCents } = await unbilledUsage(organizationId, now, executor);
+  const accruedCents = thisMonthCents + unclosedCents;
   const customLimit = account.creditLimitCents !== null;
   const limitCents = account.creditLimitCents ?? automaticCreditLimit(settledPaidCents);
-  const usedCents = accrued + unpaidCents + unsettledChargesCents;
+  const usedCents = accruedCents + unpaidCents + unsettledChargesCents;
   // An admin's limit is a decision about this account: it replaces the automatic signals too.
   const holdCause: CreditHoldCause | null =
     usedCents > limitCents
@@ -131,7 +185,8 @@ export async function creditStandingOf(
     customLimit,
     thresholdCents: chargesAutomatically ? chargeThreshold(limitCents) : null,
     usedCents,
-    accruedCents: accrued,
+    accruedCents,
+    accruedThisMonthCents: thisMonthCents,
     unpaidCents,
     unsettledChargesCents,
     settledPaidCents,
@@ -166,11 +221,7 @@ export async function chargeAccruedUsage(input: {
       .limit(1);
     if (open) return null;
     const period = periodOf(now);
-    const { composition } = await composeMonth(
-      { organizationId, period, withAdvance: false, usageUntil: now },
-      tx,
-    );
-    const amount = composition.totalCents;
+    const { thisMonthCents: amount } = await unbilledUsage(organizationId, now, tx);
     if (amount <= 0n || amount < input.thresholdCents) return null;
     const organization = await organizationLabel(organizationId, tx);
     if (!organization) return null;
@@ -233,22 +284,11 @@ export async function checkOrganizationCredit(organizationId: string, now: Date)
   const account = await getBillingAccount(organizationId);
   if (!account) return;
   const state = await billingStateAt(organizationId, now);
-  const standing = creditTerms(account, state).applies
-    ? await creditStandingOf(
-        account,
-        state,
-        (
-          await composeMonth({
-            organizationId,
-            period: periodOf(now),
-            withAdvance: false,
-            usageUntil: now,
-          })
-        ).composition.totalCents,
-        now,
-      )
-    : null;
-  if (standing?.thresholdCents != null && standing.accruedCents >= standing.thresholdCents) {
+  const standing = await creditStandingOf(account, state, now);
+  if (
+    standing?.thresholdCents != null &&
+    standing.accruedThisMonthCents >= standing.thresholdCents
+  ) {
     // What it moves from unbilled to unpaid, so what's at risk (and the hold below) doesn't change.
     await chargeAccruedUsage({
       organizationId,

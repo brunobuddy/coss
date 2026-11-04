@@ -103,7 +103,7 @@ repository root.
     (`applies_to: any`, no expiry), which the month's invoice draws down: **rating stays the engine's**, re-rating the
     whole month, and a charge that fails is still owed exactly once. One open at a time. Threshold grants aren't credit:
     `creditCents`/`creditUsedCents` leave them out (`alreadyChargedCents`), so they never loosen a spend limit. The
-    limit is on `usedCents`: unbilled usage + open invoices + threshold charges paid in the last `settleDays`, so
+    limit is on `usedCents`: unbilled usage (months not closed yet too) + open invoices + threshold charges paid in the last `settleDays`, so
     a stolen card that pays every charge stays capped until its payments settle; only settled payments (net of
     refunds and disputes) raise it. Over it, or on a fraud dispute, or when a threshold charge fails with nothing
     settled yet: a `credit_limit` hold, re-evaluated every run and lifted by the same evaluation.
