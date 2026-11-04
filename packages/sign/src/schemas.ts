@@ -149,17 +149,20 @@ export type UploadSignDocumentRequestOutput = z.output<typeof UploadSignDocument
 
 const PageSize = z.object({
   width: z.number().meta({ description: "In PDF points (1/72 inch)." }),
-  height: z.number(),
+  height: z.number().meta({ description: "In PDF points (1/72 inch)." }),
 });
 
 const Anchor = z
   .object({
-    text: z.string().meta({ examples: ["{{signature:signer_1}}"] }),
-    page: z.number().int(),
-    x: z.number(),
-    y: z.number(),
-    width: z.number(),
-    height: z.number(),
+    text: z.string().meta({
+      description: "The anchor as it appears in the document.",
+      examples: ["{{signature:signer_1}}"],
+    }),
+    page: z.number().int().meta({ description: "1-based page number." }),
+    x: z.number().meta({ description: "Left edge, in PDF points from the page's left." }),
+    y: z.number().meta({ description: "Top edge, in PDF points from the page's top." }),
+    width: z.number().meta({ description: "In PDF points." }),
+    height: z.number().meta({ description: "In PDF points." }),
   })
   .meta({
     description: "A text anchor found in the document, in points from the page's top left.",
@@ -169,16 +172,16 @@ export const SignDocumentObject = z
   .object({
     object: z.literal("sign_document"),
     id: z.string().meta({ examples: [DOCUMENT_ID_EXAMPLE] }),
-    filename: z.string(),
+    filename: z.string().meta({ description: "The file's name, as uploaded." }),
     size: z.number().int().meta({ description: "Bytes." }),
     sha256: z.string().meta({ description: "Hex SHA-256 of the uploaded bytes." }),
-    page_count: z.number().int(),
+    page_count: z.number().int().meta({ description: "How many pages it has." }),
     pages: z.array(PageSize).meta({ description: "Each page's size, in order." }),
     anchors: z.array(Anchor).meta({
       description:
         "Text anchors (`{{signature:signer_1}}`) found in the document, which fields can be placed by.",
     }),
-    sandbox: z.boolean(),
+    sandbox: z.boolean().meta({ description: "Whether it belongs to a sandbox environment." }),
     created_at: z.iso.datetime(),
   })
   .meta({
@@ -243,8 +246,8 @@ const PlacedField = z.strictObject({
   page: z.number().int().min(1).meta({ description: "1-based page number." }),
   x: Coordinate.meta({ description: "Left edge, in PDF points from the page's left." }),
   y: Coordinate.meta({ description: "Top edge, in PDF points from the page's top." }),
-  width: Size,
-  height: Size,
+  width: Size.meta({ description: "In PDF points." }),
+  height: Size.meta({ description: "In PDF points." }),
 });
 
 const AnchoredField = z.strictObject({
@@ -269,8 +272,15 @@ export const SignFieldInput = z.union([PlacedField, AnchoredField]).meta({ id: "
 export type SignFieldInputOutput = z.output<typeof SignFieldInput>;
 
 const SignerInput = z.strictObject({
-  name: z.string().trim().min(1).max(200),
-  email: z.email().max(254),
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .meta({ description: "Shown on the signing page and in the audit trail." }),
+  email: z.email().max(254).meta({
+    description: "Where a `delivery: email` signer gets their link. Unique within a request.",
+  }),
   delivery: z.enum(SIGN_DELIVERIES).optional().meta({
     description:
       "`email` (default): coss.com emails the signer a link. `embedded`: your app shows the signing page (create a session) and vouches for who the signer is.",
@@ -315,7 +325,11 @@ export const CreateSignRequestRequest = z
       .min(1)
       .max(MAX_SIGN_REQUEST_DOCUMENTS)
       .meta({ description: "Uploaded documents by id, or PDFs inline (base64)." }),
-    signers: z.array(SignerInput).min(1).max(MAX_SIGN_SIGNERS),
+    signers: z
+      .array(SignerInput)
+      .min(1)
+      .max(MAX_SIGN_SIGNERS)
+      .meta({ description: "Who signs, and what each fills." }),
     signing_order: z.enum(SIGN_SIGNING_ORDERS).optional().meta({
       description:
         "`parallel` (default): everyone at once. `sequential`: in each signer's `order`.",
@@ -365,9 +379,9 @@ export type CreateSignRequestRequestOutput = z.output<typeof CreateSignRequestRe
 
 const RequestDocument = z.object({
   id: z.string().meta({ examples: [DOCUMENT_ID_EXAMPLE] }),
-  filename: z.string(),
-  sha256: z.string(),
-  page_count: z.number().int(),
+  filename: z.string().meta({ description: "The file's name." }),
+  sha256: z.string().meta({ description: "Hex SHA-256 of the uploaded bytes." }),
+  page_count: z.number().int().meta({ description: "How many pages it has." }),
 });
 
 export const SignSignerObject = z
@@ -376,38 +390,68 @@ export const SignSignerObject = z
     id: z.string().meta({ examples: [SIGNER_ID_EXAMPLE] }),
     name: z.string(),
     email: z.string(),
-    order: z.number().int(),
-    delivery: z.enum(SIGN_DELIVERIES),
+    order: z
+      .number()
+      .int()
+      .meta({ description: "Where they come in `signing_order: sequential`. Lower signs first." }),
+    delivery: z.enum(SIGN_DELIVERIES).meta({
+      description:
+        "`email`: coss.com emails them a link. `embedded`: your app shows the signing page.",
+    }),
     authentication: z.enum(SIGN_AUTHENTICATIONS).meta({
       description:
         "How the signer is identified: `email_link` (they opened the link coss.com emailed) or `customer_asserted` (your app vouched for them).",
     }),
-    status: z.enum(SIGN_SIGNER_STATUSES),
-    client_ref: z.string().nullable(),
-    viewed_at: z.iso.datetime().nullable(),
-    signed_at: z.iso.datetime().nullable(),
-    declined_at: z.iso.datetime().nullable(),
-    decline_reason: z.string().nullable(),
+    status: z.enum(SIGN_SIGNER_STATUSES).meta({
+      description:
+        "`pending`: not contacted yet. `notified`: emailed their link. `viewed`: opened the signing page. `signed`: done. `declined`: refused, which declines the whole request.",
+    }),
+    client_ref: z
+      .string()
+      .nullable()
+      .meta({ description: "Your own id for the signer. `null`: none given." }),
+    viewed_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When they first opened the signing page. `null`: not yet." }),
+    signed_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When they signed. `null`: not yet." }),
+    declined_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When they declined. `null`: they haven't." }),
+    decline_reason: z
+      .string()
+      .nullable()
+      .meta({ description: "The reason they gave. `null`: none given." }),
   })
-  .meta({ id: "SignSigner" });
+  .meta({ description: "Someone asked to sign.", id: "SignSigner" });
 
 export const SignFieldObject = z
   .object({
     object: z.literal("sign_field"),
     id: z.string().meta({ examples: [FIELD_ID_EXAMPLE] }),
-    signer_id: z.string(),
-    document_id: z.string(),
-    type: z.enum(SIGN_FIELD_TYPES),
-    page: z.number().int(),
-    x: z.number(),
-    y: z.number(),
-    width: z.number(),
-    height: z.number(),
-    required: z.boolean(),
-    label: z.string().nullable(),
-    anchor: z.string().nullable(),
+    signer_id: z.string().meta({ description: "The id of the signer who fills it." }),
+    document_id: z.string().meta({ description: "The id of the document it's on." }),
+    type: z.enum(SIGN_FIELD_TYPES).meta({
+      description:
+        "`signature` and `initials` take the signer's adopted signature, `date_signed` is filled with the signing date, `name` and `email` with the signer's, `text` and `checkbox` by the signer.",
+    }),
+    page: z.number().int().meta({ description: "1-based page number." }),
+    x: z.number().meta({ description: "Left edge, in PDF points from the page's left." }),
+    y: z.number().meta({ description: "Top edge, in PDF points from the page's top." }),
+    width: z.number().meta({ description: "In PDF points." }),
+    height: z.number().meta({ description: "In PDF points." }),
+    required: z.boolean().meta({ description: "Whether a signer can finish with it empty." }),
+    label: z.string().nullable().meta({ description: "Shown to the signer. `null`: none." }),
+    anchor: z
+      .string()
+      .nullable()
+      .meta({ description: "The text anchor it was placed by. `null`: placed by position." }),
   })
-  .meta({ id: "SignField" });
+  .meta({ description: "A box on a page that one signer fills.", id: "SignField" });
 
 export const SignRequestObject = z
   .object({
@@ -417,29 +461,49 @@ export const SignRequestObject = z
       description:
         "`draft` until sent, `sent` while signers sign, then `completed` (everyone signed), `declined` (a signer declined), `canceled` or `expired`.",
     }),
-    title: z.string(),
-    message: z.string().nullable(),
-    signing_order: z.enum(SIGN_SIGNING_ORDERS),
-    documents: z.array(RequestDocument),
-    signers: z.array(SignSignerObject),
-    fields: z.array(SignFieldObject),
-    metadata: z.record(z.string(), z.string()),
-    sandbox: z.boolean(),
+    title: z.string().meta({ description: "Shown to signers." }),
+    message: z.string().nullable().meta({ description: "A note to signers. `null`: none." }),
+    signing_order: z.enum(SIGN_SIGNING_ORDERS).meta({
+      description: "`parallel`: everyone at once. `sequential`: in each signer's `order`.",
+    }),
+    documents: z.array(RequestDocument).meta({ description: "The documents to sign, in order." }),
+    signers: z.array(SignSignerObject).meta({ description: "Who signs." }),
+    fields: z.array(SignFieldObject).meta({ description: "What each signer fills." }),
+    metadata: z.record(z.string(), z.string()).meta({ description: "Your own key-value pairs." }),
+    sandbox: z.boolean().meta({ description: "Whether it belongs to a sandbox environment." }),
     reminder_interval_days: z.number().int().nullable().meta({
       description: "Days between automatic reminders to email signers; `null`: none.",
     }),
-    expires_at: z.iso.datetime().nullable(),
-    expired_at: z.iso.datetime().nullable(),
-    sent_at: z.iso.datetime().nullable(),
-    completed_at: z.iso.datetime().nullable(),
-    canceled_at: z.iso.datetime().nullable(),
-    declined_at: z.iso.datetime().nullable(),
+    expires_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it expires if it isn't finished. `null`: never." }),
+    expired_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it expired. `null`: it hasn't." }),
+    sent_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was sent. `null`: still a draft." }),
+    completed_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When the last signer signed. `null`: not yet." }),
+    canceled_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When it was canceled. `null`: it wasn't." }),
+    declined_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When a signer declined it. `null`: nobody has." }),
     // A union, not `.nullable()`: that loses the `null` in the OpenAPI document.
     signed_document: z
       .union([
         z.object({
           sha256: z.string().meta({ description: "Hex SHA-256 of the sealed PDF." }),
-          sealed_at: z.iso.datetime(),
+          sealed_at: z.iso.datetime().meta({ description: "When it was sealed." }),
         }),
         z.null(),
       ])
@@ -578,35 +642,57 @@ export const SignEventObject = z
     object: z.literal("sign_event"),
     id: z.string().meta({ examples: [EVENT_ID_EXAMPLE] }),
     sequence: z.number().int().meta({ description: "1-based position in the request's trail." }),
-    type: z.enum(SIGN_EVENT_TYPES),
-    signer_id: z.string().nullable(),
+    type: z.enum(SIGN_EVENT_TYPES).meta({
+      description:
+        "What happened. `created`, `sent`, `canceled`, `expired` and `reminded` concern the request; `notified`, `viewed`, `consented`, `signed` and `declined` a signer; `completed` is the last signature and `sealed` the sealed document being ready.",
+    }),
+    signer_id: z
+      .string()
+      .nullable()
+      .meta({ description: "The id of the signer it concerns. `null`: the whole request." }),
     actor: z.enum(SIGN_EVENT_ACTORS).meta({
       description: "Who did it: your API key, a signer, a member in the dashboard, or coss.com.",
     }),
-    ip_address: z.string().nullable(),
-    user_agent: z.string().nullable(),
-    details: z.object({
-      reason: z.string().optional(),
-      document_sha256: z.record(z.string(), z.string()).optional().meta({
-        description: "Each document's SHA-256 at that moment, by document id.",
-      }),
-      disclosure_sha256: z.string().optional().meta({
-        description: "SHA-256 of the consent text the signer accepted.",
-      }),
-      field_ids: z.array(z.string()).optional(),
-      signature_sha256: z.string().optional().meta({
-        description: "SHA-256 of the signature image the signer adopted.",
-      }),
-      initials_sha256: z.string().optional(),
-      session_id: z.string().optional().meta({
-        description: "The signing session the signer used.",
-      }),
-      signed_document_sha256: z.string().optional().meta({
-        description: "`sealed`: the SHA-256 of the sealed, completed document.",
-      }),
+    ip_address: z.string().nullable().meta({
+      description: "The address the action came from. `null`: unknown, or coss.com acted.",
     }),
-    occurred_at: z.iso.datetime(),
-    previous_hash: z.string().nullable(),
+    user_agent: z
+      .string()
+      .nullable()
+      .meta({ description: "The client's `User-Agent`. `null`: unknown." }),
+    details: z
+      .object({
+        reason: z.string().optional().meta({ description: "`declined`: the signer's reason." }),
+        document_sha256: z.record(z.string(), z.string()).optional().meta({
+          description: "Each document's SHA-256 at that moment, by document id.",
+        }),
+        disclosure_sha256: z.string().optional().meta({
+          description: "SHA-256 of the consent text the signer accepted.",
+        }),
+        field_ids: z
+          .array(z.string())
+          .optional()
+          .meta({ description: "`signed`: the fields the signer filled." }),
+        signature_sha256: z.string().optional().meta({
+          description: "SHA-256 of the signature image the signer adopted.",
+        }),
+        initials_sha256: z
+          .string()
+          .optional()
+          .meta({ description: "SHA-256 of the initials image the signer adopted." }),
+        session_id: z.string().optional().meta({
+          description: "The signing session the signer used.",
+        }),
+        signed_document_sha256: z.string().optional().meta({
+          description: "`sealed`: the SHA-256 of the sealed, completed document.",
+        }),
+      })
+      .meta({ description: "What this event recorded, depending on its type." }),
+    occurred_at: z.iso.datetime().meta({ description: "When it happened." }),
+    previous_hash: z
+      .string()
+      .nullable()
+      .meta({ description: "The previous event's `hash`. `null` on the first event." }),
     hash: z.string().meta({
       description:
         "SHA-256 over this event and `previous_hash`: changing or removing an event breaks the chain from there on.",
@@ -667,14 +753,14 @@ export const SignSessionObject = z
   .object({
     object: z.literal("sign_session"),
     id: z.string().meta({ examples: [SESSION_ID_EXAMPLE] }),
-    request_id: z.string(),
-    signer_id: z.string(),
+    request_id: z.string().meta({ description: "The signature request's id." }),
+    signer_id: z.string().meta({ description: "The signer's id." }),
     url: z.string().meta({
       description:
         "The signing page: embed it in an iframe (from an allowed origin, with `coss/sign`'s `mountSigning`) or redirect to it. The token is in the URL fragment, so it never reaches a server log: show it only to that signer.",
     }),
     token: z.string().meta({ description: "The secret part of `url`, shown only here." }),
-    expires_at: z.iso.datetime(),
+    expires_at: z.iso.datetime().meta({ description: "When the link stops working." }),
   })
   .meta({
     id: "SignSession",
@@ -728,8 +814,13 @@ export const SignSettingsObject = z
     display_name: z.string().nullable().meta({
       description: "The requester's name signers see. `null`: the organization's name.",
     }),
-    accent_color: z.string().nullable(),
-    theme: z.enum(SIGN_THEMES),
+    accent_color: z
+      .string()
+      .nullable()
+      .meta({ description: "The signing page's accent color, as `#RRGGBB`. `null`: the default." }),
+    theme: z
+      .enum(SIGN_THEMES)
+      .meta({ description: "The signing page's theme. `system` follows the signer's device." }),
     disclosure: z.string().nullable().meta({
       description:
         "Your own consent text signers accept before they see a document. `null`: coss.com's default, which covers ESIGN's consumer disclosure. Have your counsel review a replacement.",
@@ -761,19 +852,36 @@ export type SignSettingsObjectOutput = z.output<typeof SignSettingsObject>;
 
 export const UpdateSignSettingsRequest = z
   .strictObject({
-    allowed_origins: Origins.optional(),
-    display_name: DisplayName.nullable().optional(),
-    accent_color: AccentColor.nullable().optional(),
-    theme: z.enum(SIGN_THEMES).optional(),
-    disclosure: Disclosure.nullable().optional(),
-    email_from: z.email().max(254).nullable().optional(),
+    allowed_origins: Origins.optional().meta({
+      description:
+        "Origins that may embed the signing page in an iframe, like `https://app.example.com` (sandbox environments also `http://localhost:<port>`). Empty: it can only be opened on its own.",
+    }),
+    display_name: DisplayName.nullable()
+      .optional()
+      .meta({ description: "The requester's name signers see. `null`: the organization's name." }),
+    accent_color: AccentColor.nullable()
+      .optional()
+      .meta({ description: "The signing page's accent color, as `#RRGGBB`. `null`: the default." }),
+    theme: z
+      .enum(SIGN_THEMES)
+      .optional()
+      .meta({ description: "The signing page's theme. `system` follows the signer's device." }),
+    disclosure: Disclosure.nullable().optional().meta({
+      description:
+        "Your own consent text signers accept before they see a document. `null`: coss.com's default. Have your counsel review a replacement.",
+    }),
+    email_from: z.email().max(254).nullable().optional().meta({
+      description:
+        'Signing emails come from this address, on a verified domain in live environments. `null`: from coss.com, as "<display name> via coss.com".',
+    }),
     reminder_interval_days: z
       .number()
       .int()
       .min(1)
       .max(MAX_SIGN_REMINDER_INTERVAL_DAYS)
       .nullable()
-      .optional(),
+      .optional()
+      .meta({ description: "The default days between reminders for new requests. `null`: none." }),
   })
   .meta({
     id: "UpdateSignSettingsRequest",
@@ -819,33 +927,45 @@ export const SignRequestWebhookEvent = z
       .string()
       .meta({ description: "The event id: the same as the audit trail's `SignEvent.id`." }),
     object: z.literal("event"),
-    type: z.enum(SIGN_WEBHOOK_EVENT_TYPES),
-    api_version: ApiVersion,
-    created_at: z.iso.datetime(),
-    data: z.object({
-      sign_request_id: z.string(),
-      status: z
-        .enum(SIGN_REQUEST_STATUSES)
-        .meta({ description: "The request's status after the event." }),
-      title: z.string(),
-      metadata: z.record(z.string(), z.string()),
-      signer: z
-        .object({
-          id: z.string(),
-          name: z.string(),
-          email: z.string(),
-          client_ref: z.string().nullable(),
-          status: z.enum(SIGN_SIGNER_STATUSES),
-        })
-        .nullable()
-        .meta({ description: "The signer who viewed, signed or declined; `null` otherwise." }),
-      reason: z
-        .string()
-        .nullable()
-        .meta({ description: "A decline's reason, if the signer gave one." }),
-      sandbox: z.boolean(),
-      occurred_at: z.iso.datetime(),
+    type: z.enum(SIGN_WEBHOOK_EVENT_TYPES).meta({
+      description:
+        "`sent`: sent to signers. `viewed`: a signer opened it. `signer_signed`: a signer signed. `declined`: a signer declined. `completed`: the sealed document is ready to download. `canceled` and `expired`: it ended unsigned.",
     }),
+    api_version: ApiVersion,
+    created_at: z.iso.datetime().meta({ description: "When the event was created." }),
+    data: z
+      .object({
+        sign_request_id: z.string().meta({ description: "The signature request's id." }),
+        status: z
+          .enum(SIGN_REQUEST_STATUSES)
+          .meta({ description: "The request's status after the event." }),
+        title: z.string().meta({ description: "The request's title." }),
+        metadata: z
+          .record(z.string(), z.string())
+          .meta({ description: "Your own key-value pairs." }),
+        signer: z
+          .object({
+            id: z.string().meta({ description: "The signer's id." }),
+            name: z.string().meta({ description: "The signer's name." }),
+            email: z.string().meta({ description: "The signer's email address." }),
+            client_ref: z
+              .string()
+              .nullable()
+              .meta({ description: "Your own id for the signer. `null`: none given." }),
+            status: z
+              .enum(SIGN_SIGNER_STATUSES)
+              .meta({ description: "The signer's status after the event." }),
+          })
+          .nullable()
+          .meta({ description: "The signer who viewed, signed or declined; `null` otherwise." }),
+        reason: z
+          .string()
+          .nullable()
+          .meta({ description: "A decline's reason, if the signer gave one." }),
+        sandbox: z.boolean().meta({ description: "Whether it belongs to a sandbox environment." }),
+        occurred_at: z.iso.datetime().meta({ description: "When it happened." }),
+      })
+      .meta({ description: "The request. Never documents or field values." }),
   })
   .meta({
     id: "SignRequestWebhookEvent",
@@ -899,7 +1019,9 @@ const MergeKey = z
   });
 /** A template role as the API takes it (the builder checks its saves with it too). */
 export const SignTemplateRoleInput = z.strictObject({
-  key: RoleKey,
+  key: RoleKey.meta({
+    description: "The role's id within the template, used by fields and signers.",
+  }),
   name: z
     .string()
     .trim()
@@ -914,15 +1036,21 @@ const TemplateField = z.union([
 ]);
 
 const TemplateBody = {
-  name: z.string().trim().min(1).max(200),
+  name: z.string().trim().min(1).max(200).meta({ description: "Your name for the template." }),
   title: z.string().trim().min(1).max(200).nullable().optional().meta({
     description: "Requests' title (a request may set its own). Default: `name`.",
   }),
   message: z.string().max(5000).nullable().optional().meta({
     description: "Requests' message to signers (a request may set its own).",
   }),
-  signing_order: z.enum(SIGN_SIGNING_ORDERS).optional(),
-  documents: z.array(DocumentInput).max(MAX_SIGN_REQUEST_DOCUMENTS),
+  signing_order: z.enum(SIGN_SIGNING_ORDERS).optional().meta({
+    description:
+      "`parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.",
+  }),
+  documents: z
+    .array(DocumentInput)
+    .max(MAX_SIGN_REQUEST_DOCUMENTS)
+    .meta({ description: "Uploaded documents by id, or PDFs inline (base64)." }),
   roles: z.array(SignTemplateRoleInput).max(MAX_SIGN_TEMPLATE_ROLES).meta({
     description: "Who signs: each request names one signer per role.",
   }),
@@ -987,41 +1115,65 @@ export const SignTemplateObject = z
   .object({
     object: z.literal("sign_template"),
     id: z.string().meta({ examples: [TEMPLATE_ID_EXAMPLE] }),
-    name: z.string(),
-    title: z.string().nullable(),
-    message: z.string().nullable(),
-    signing_order: z.enum(SIGN_SIGNING_ORDERS),
-    documents: z.array(
-      z.object({
-        id: z.string(),
-        filename: z.string(),
-        sha256: z.string(),
-        page_count: z.number().int(),
-        pages: z.array(PageSize),
-      }),
-    ),
-    roles: z.array(z.object({ key: z.string(), name: z.string() })),
-    fields: z.array(
-      z.object({
-        id: z.string(),
-        role: z.string(),
-        document_id: z.string(),
-        type: z.enum(SIGN_FIELD_TYPES),
-        page: z.number().int(),
-        x: z.number(),
-        y: z.number(),
-        width: z.number(),
-        height: z.number(),
-        required: z.boolean(),
-        label: z.string().nullable(),
-        merge_key: z.string().nullable(),
-      }),
-    ),
+    name: z.string().meta({ description: "Your name for the template." }),
+    title: z
+      .string()
+      .nullable()
+      .meta({ description: "Requests' title. `null`: the template's name." }),
+    message: z
+      .string()
+      .nullable()
+      .meta({ description: "Requests' message to signers. `null`: none." }),
+    signing_order: z
+      .enum(SIGN_SIGNING_ORDERS)
+      .meta({ description: "Its requests' order, unless one sets its own." }),
+    documents: z
+      .array(
+        z.object({
+          id: z.string(),
+          filename: z.string().meta({ description: "The file's name." }),
+          sha256: z.string().meta({ description: "Hex SHA-256 of the uploaded bytes." }),
+          page_count: z.number().int().meta({ description: "How many pages it has." }),
+          pages: z.array(PageSize).meta({ description: "Each page's size, in order." }),
+        }),
+      )
+      .meta({ description: "The documents its requests use, in order." }),
+    roles: z
+      .array(
+        z.object({
+          key: z.string().meta({ description: "The role's id within the template." }),
+          name: z.string().meta({ description: "Shown in the builder, e.g. `Client`." }),
+        }),
+      )
+      .meta({ description: "Who signs: each request names one signer per role." }),
+    fields: z
+      .array(
+        z.object({
+          id: z.string(),
+          role: z.string().meta({ description: "The `key` of the role that fills it." }),
+          document_id: z.string().meta({ description: "The id of the document it's on." }),
+          type: z
+            .enum(SIGN_FIELD_TYPES)
+            .meta({ description: "What the field takes, as on a signature request." }),
+          page: z.number().int().meta({ description: "1-based page number." }),
+          x: z.number().meta({ description: "Left edge, in PDF points from the page's left." }),
+          y: z.number().meta({ description: "Top edge, in PDF points from the page's top." }),
+          width: z.number().meta({ description: "In PDF points." }),
+          height: z.number().meta({ description: "In PDF points." }),
+          required: z.boolean().meta({ description: "Whether a signer can finish with it empty." }),
+          label: z.string().nullable().meta({ description: "Shown to the signer. `null`: none." }),
+          merge_key: z.string().nullable().meta({
+            description:
+              "`text` fields: which `merge_fields` value fills it. `null`: the signer fills it.",
+          }),
+        }),
+      )
+      .meta({ description: "Each role's fields." }),
     ready: z.boolean().meta({
       description:
         "It has documents and every role has a `signature` field, so requests can be made from it.",
     }),
-    sandbox: z.boolean(),
+    sandbox: z.boolean().meta({ description: "Whether it belongs to a sandbox environment." }),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
   })
@@ -1090,16 +1242,38 @@ export const CreateSignRequestFromTemplateRequest = z
     title: z.string().trim().min(1).max(200).optional().meta({
       description: "Default: the template's title (else its name).",
     }),
-    message: z.string().max(5000).optional(),
+    message: z
+      .string()
+      .max(5000)
+      .optional()
+      .meta({ description: "Default: the template's message." }),
     signers: z
       .array(
         z.strictObject({
-          role: RoleKey,
-          name: z.string().trim().min(1).max(200),
-          email: z.email().max(254),
-          delivery: z.enum(SIGN_DELIVERIES).optional(),
-          order: z.number().int().min(1).max(MAX_SIGN_SIGNERS).optional(),
-          client_ref: z.string().min(1).max(255).optional(),
+          role: RoleKey.meta({ description: "The `key` of the template's role they sign as." }),
+          name: z
+            .string()
+            .trim()
+            .min(1)
+            .max(200)
+            .meta({ description: "Shown on the signing page and in the audit trail." }),
+          email: z
+            .email()
+            .max(254)
+            .meta({ description: "Where a `delivery: email` signer gets their link." }),
+          delivery: z.enum(SIGN_DELIVERIES).optional().meta({
+            description:
+              "`email` (default): coss.com emails the signer a link. `embedded`: your app shows the signing page.",
+          }),
+          order: z.number().int().min(1).max(MAX_SIGN_SIGNERS).optional().meta({
+            description: "With `sequential` signing, signers sign in increasing `order`.",
+          }),
+          client_ref: z
+            .string()
+            .min(1)
+            .max(255)
+            .optional()
+            .meta({ description: "Your own id for the signer, recorded in the audit trail." }),
         }),
       )
       .min(1)
@@ -1112,7 +1286,10 @@ export const CreateSignRequestFromTemplateRequest = z
     signing_order: z.enum(SIGN_SIGNING_ORDERS).optional().meta({
       description: "Default: the template's.",
     }),
-    expires_at: z.iso.datetime({ offset: true }).optional(),
+    expires_at: z.iso
+      .datetime({ offset: true })
+      .optional()
+      .meta({ description: "When an unfinished request expires, at most 365 days ahead." }),
     metadata: Metadata.optional(),
     reminder_interval_days: z
       .number()
@@ -1120,7 +1297,11 @@ export const CreateSignRequestFromTemplateRequest = z
       .min(1)
       .max(MAX_SIGN_REMINDER_INTERVAL_DAYS)
       .nullable()
-      .optional(),
+      .optional()
+      .meta({
+        description:
+          "Days between reminders to email signers. Default: your Sign settings'. `null`: none.",
+      }),
     send: z.boolean().optional().meta({ description: "Default `true`." }),
   })
   .meta({
@@ -1157,13 +1338,13 @@ export const SignBuilderSessionObject = z
   .object({
     object: z.literal("sign_builder_session"),
     id: z.string().meta({ examples: [BUILDER_SESSION_ID_EXAMPLE] }),
-    template_id: z.string(),
+    template_id: z.string().meta({ description: "The id of the template it edits." }),
     url: z.string().meta({
       description:
         "The builder: embed it (from an allowed origin, `mountBuilder` from `coss/sign`) for whoever edits the template: they can upload documents, add roles and place fields. Show it only to them.",
     }),
     token: z.string().meta({ description: "The secret part of `url`, shown only here." }),
-    expires_at: z.iso.datetime(),
+    expires_at: z.iso.datetime().meta({ description: "When the link stops working." }),
   })
   .meta({
     id: "SignBuilderSession",
