@@ -72,7 +72,13 @@ export async function checkOrganizationSpend(organizationId: string, now: Date):
   const { estimate } = spend;
   const thresholds = account?.alertThresholds.length ? account.alertThresholds : DEFAULT_THRESHOLDS;
   // The email and the webhook event go out once per threshold and month (the dedupe key).
-  const alert = (meter: MeterKey | null, percent: number, what: string, blocked: boolean) =>
+  const alert = (
+    meter: MeterKey | null,
+    percent: number,
+    what: string,
+    blocked: boolean,
+    atLimit?: string,
+  ) =>
     db.transaction(async (tx) => {
       const fresh = await enqueueBillingNotification(tx, {
         organizationId,
@@ -83,6 +89,7 @@ export async function checkOrganizationSpend(organizationId: string, now: Date):
           what,
           period: formatPeriod(period),
           blocked: blocked ? "true" : "false",
+          ...(atLimit ? { atLimit } : {}),
         },
         now,
       });
@@ -117,6 +124,9 @@ export async function checkOrganizationSpend(organizationId: string, now: Date):
         crossed,
         `${cap.toLocaleString("en-US")} included ${METERS[meter].units}`,
         true,
+        meter === "risk.assessments"
+          ? "Past the limit, assessments go on until the next billing period without velocity, memory or content checks. Upgrade to keep them."
+          : undefined,
       );
     }
   }

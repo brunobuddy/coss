@@ -134,6 +134,29 @@ export const METERS = {
     dimensions: [],
     requires: "plan",
   },
+  // Risk: an assessment asked for through the API that didn't end in `block` (blocked traffic,
+  // sandbox, replays and assessments Forms makes for its submissions are free, and so are the
+  // reduced ones past a plan's allowance). Its content is part of the price.
+  "risk.assessments": {
+    product: "risk",
+    label: "Risk assessments",
+    unit: "assessment",
+    units: "assessments",
+    displayPer: 1000,
+    dimensions: [],
+    requires: "plan",
+  },
+  // Risk: a live `POST /v1/risk/content/classify` the model answered (content inside an assessment
+  // is part of the assessment).
+  "risk.content_checks": {
+    product: "risk",
+    label: "Risk content checks",
+    unit: "check",
+    units: "checks",
+    displayPer: 1000,
+    dimensions: [],
+    requires: "plan",
+  },
   // Verify: a verification whose code was checked correctly (failed, blocked and expired ones are
   // free). The channel's own cost is billed on its own meter.
   "verify.verifications": {

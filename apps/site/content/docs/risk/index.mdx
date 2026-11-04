@@ -98,10 +98,23 @@ Velocity is counted per event, so a burst of invitations doesn't count as sign-u
 
 The SDK retries network errors and server errors with the same `Idempotency-Key`, and a retried
 assessment returns the first result without counting the event again. Assessments are limited to
-100 per second per API key (bursts of 200).
+100 per second per API key (bursts of 200), or 10 per second (bursts of 50) on the Free plan.
 
 When a signal is unavailable (a slow DNS lookup, missing IP data, a failed classification), the
 assessment is made without it and the group is listed in `degraded`; it never fails because of it.
+
+## Pricing
+
+Live assessments cost <Rate meter="risk.assessments" />. The Free plan includes <Included meter="risk.assessments" />, Pro
+<Included meter="risk.assessments" plan="pro" /> and Scale
+<Included meter="risk.assessments" plan="scale" />. Decisions that block, retried requests and
+sandbox assessments are always free, and content in an assessment is part of its price.
+
+An assessment never fails over billing. Past the Free plan's allowance, on a billing hold, or when
+an API key, member or project is over its [budget](/docs/spend), it answers as usual, for free, and
+lists `usage_limit` in `degraded`. Your lists, rules, thresholds and the email and IP signals still
+decide, but velocity, memory of earlier events (duplicates, reported fraud, a user's usual networks),
+content and address-level IP data are skipped. What it sees is still remembered for later.
 
 ## Building blocks
 

@@ -208,6 +208,21 @@ export async function reservedThisPeriod(
 }
 
 /**
+ * Whether a capped plan's allowance of a meter is used up this period, for pages that explain
+ * what follows. `false` without a cap.
+ */
+export async function allowanceUsedUp(
+  organizationId: string,
+  meter: MeterKey,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const { terms } = await billingStateAt(organizationId, now);
+  const cap = terms.usageCaps[meter];
+  if (cap === undefined) return false;
+  return (await reservedThisPeriod(organizationId, meter, now)) >= cap;
+}
+
+/**
  * The organization's plan rate limits, for `@coss/ratelimit`'s plan layer (an admin override
  * still wins). Keys are bucket names.
  */

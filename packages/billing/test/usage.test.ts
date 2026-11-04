@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { db, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
+import { eq } from "drizzle-orm";
+import { checkOrganizationSpend } from "../src/alerts.ts";
 import { rateCardAt } from "../src/catalog/rates.ts";
-import { createUsageGate } from "../src/enforcement.ts";
+import { allowanceUsedUp, createUsageGate, planRateLimits } from "../src/enforcement.ts";
 import { getInvoice, listInvoices } from "../src/invoices.ts";
 import { runDueBillingPeriods } from "../src/periods.ts";
 import { createTestContract, recordTestUsage } from "../src/testing.ts";
@@ -118,5 +120,109 @@ describe("hooks.messages", () => {
       );
     await reserve();
     await expect(reserve()).rejects.toMatchObject({ code: "usage_limit_exceeded" });
+  });
+});
+
+describe("risk.assessments", () => {
+  test("is priced from November 2026 on, getting cheaper with volume", () => {
+    const october = rateCardAt(new Date("2026-10-31T23:59:59Z"));
+    const november = rateCardAt(new Date("2026-11-01T00:00:00Z"));
+    expect(october.rates["risk.assessments"]).toBeUndefined();
+    expect(november.rates["risk.assessments"]?.default?.tiers).toEqual([
+      { upTo: 1_000_000, unitNanos: 1_000_000n },
+      { upTo: 10_000_000, unitNanos: 500_000n },
+      { upTo: null, unitNanos: 250_000n },
+    ]);
+    expect(november.rates["risk.content_checks"]?.default?.tiers).toEqual([
+      { upTo: null, unitNanos: 250_000n },
+    ]);
+  });
+
+  test("Free assesses at 10 a second, paid plans at the bucket's 100", async () => {
+    const free = await createTestTenant();
+    const pro = await createTestTenant();
+    await createTestContract(
+      pro.organization.id,
+      { version: 1, plan: "pro" },
+      { effectiveFrom: new Date("2026-01-01T00:00:00Z") },
+    );
+    expect((await planRateLimits(free.organization.id))["risk.assess"]?.limit).toBe(10);
+    expect((await planRateLimits(pro.organization.id))["risk.assess"]?.limit).toBe(100);
+  });
+
+  async function closeMonth(plan: "pro" | "scale", quantity: number) {
+    const tenant = await createTestTenant();
+    const organizationId = tenant.organization.id;
+    await createTestContract(
+      organizationId,
+      { version: 1, plan },
+      { effectiveFrom: new Date("2026-11-01T00:00:00Z") },
+    );
+    await recordTestUsage({
+      organizationId,
+      environmentId: tenant.production.id,
+      meter: "risk.assessments",
+      quantity,
+      at: new Date("2026-11-10T12:00:00Z"),
+    });
+    await runDueBillingPeriods({
+      now: new Date("2026-12-01T00:20:00Z"),
+      scope: { organizationIds: [organizationId] },
+    });
+    const invoices = await listInvoices(organizationId, { limit: 10 });
+    const lines = await Promise.all(
+      invoices.map(async (row) => (await getInvoice(organizationId, row.id))?.lines ?? []),
+    );
+    return lines.flat().find((row) => row.meter === "risk.assessments");
+  }
+
+  test("Pro's 250,000 assessments cost $200 past its 50,000", async () => {
+    expect((await closeMonth("pro", 250_000))?.amountCents).toBe(20_000n);
+  });
+
+  test("Scale's 1,000,000 cost $500 past its 500,000", async () => {
+    expect((await closeMonth("scale", 1_000_000))?.amountCents).toBe(50_000n);
+  });
+
+  test("Free's allowance is announced, and says assessments go on", async () => {
+    const tenant = await createTestTenant();
+    const organizationId = tenant.organization.id;
+    const now = new Date("2026-11-15T12:00:00Z");
+    const periodStart = periodOf(now).start;
+    await recordTestUsage({
+      organizationId,
+      environmentId: tenant.production.id,
+      meter: "risk.assessments",
+      quantity: 10_000,
+      // Estimates read whole hours before their moment.
+      at: new Date(now.getTime() - 2 * 60 * 60_000),
+    });
+    await db.insert(schema.billingQuota).values({
+      organizationId,
+      meter: "risk.assessments",
+      periodStart,
+      reserved: 9_999,
+    });
+    expect(await allowanceUsedUp(organizationId, "risk.assessments", now)).toBe(false);
+    await db
+      .update(schema.billingQuota)
+      .set({ reserved: 10_000 })
+      .where(eq(schema.billingQuota.organizationId, organizationId));
+    expect(await allowanceUsedUp(organizationId, "risk.assessments", now)).toBe(true);
+
+    await checkOrganizationSpend(organizationId, now);
+    const notifications = await db
+      .select({
+        dedupeKey: schema.billingNotification.dedupeKey,
+        payload: schema.billingNotification.payload,
+      })
+      .from(schema.billingNotification)
+      .where(eq(schema.billingNotification.organizationId, organizationId));
+    expect(notifications.map((row) => row.dedupeKey)).toEqual([
+      `usage:${organizationId}:2026-11:risk.assessments:100`,
+    ]);
+    const payload = notifications[0]?.payload as { blocked?: string; atLimit?: string } | undefined;
+    expect(payload?.blocked).toBe("true");
+    expect(payload?.atLimit).toContain("assessments go on");
   });
 });

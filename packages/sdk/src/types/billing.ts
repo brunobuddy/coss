@@ -16,6 +16,8 @@ export type Meter =
   | "sms.registrations"
   | "sign.completed_requests"
   | "risk.phone_checks"
+  | "risk.assessments"
+  | "risk.content_checks"
   | "verify.verifications"
   | "verify.sms"
   | "forms.submissions"

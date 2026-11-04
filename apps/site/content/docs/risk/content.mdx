@@ -76,6 +76,12 @@ at what they catch in the dashboard, and adjust.
   day, across `coss.risk.classify()` and assessments with `content`. Over the limit, `classify`
   returns a `429` (`classification_rate_limited`) and assessments go on without the scores
   (`degraded`). Sandbox classifications don't count.
+- `coss.risk.classify()` costs <Rate meter="risk.content_checks" /> for each
+  text the model answered about, and the Free plan includes
+  <Included meter="risk.content_checks" /> (beyond it, a `402`, `usage_limit_exceeded`). It also
+  returns a `402` on a billing hold (`billing_hold`) or over a budget (`budget_exceeded`). Content
+  in an assessment is part of the [assessment's price](/docs/risk#pricing) and is skipped when the
+  assessment runs reduced.
 
 ## Privacy
 

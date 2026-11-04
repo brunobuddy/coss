@@ -7,9 +7,10 @@
  *
  * Every signal is best-effort: a slow DNS lookup, missing IP data, a failed classification, a slow
  * IP privacy provider or an unreachable Valkey make the assessment go without it (listed in
- * `degraded`) rather than fail.
+ * `degraded`) rather than fail. Billing never fails one either (`./billing.ts`).
  */
 import type { UsageGate } from "@coss/billing/gate";
+import { recordUsage } from "@coss/billing/metering";
 import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, newId } from "@coss/db/id";
 import { IDEMPOTENCY_KEY_TTL_MS, isReplayOf, requestHash } from "@coss/db/idempotency";
@@ -22,6 +23,13 @@ import { analyzeEmail, type EmailAnalysis, type MailDomainVerdict } from "@coss/
 import { isBlockedAddress, normalizeIp, subnetOf } from "@coss/signals/ip";
 import { enqueueWebhookMessage, type SecretsKeyRing } from "@coss/webhooks";
 import { and, eq, gte, isNotNull, lt, ne, or, type SQL, sql } from "drizzle-orm";
+import {
+  ASSESSMENT_METER,
+  type AssessmentBilling,
+  NOT_BILLED,
+  openAssessmentBilling,
+  releaseAssessmentUnit,
+} from "./billing.ts";
 import type { IpIntelligenceSource } from "./datasets.ts";
 import { readDeviceToken } from "./device.ts";
 import type { DomainAgeLookup } from "./domain-age.ts";
@@ -99,7 +107,10 @@ export type RiskDeps = {
   /** Line type, carrier and SIM swaps (a paid provider); `null`: phone checks are unavailable. */
   phoneLookup?: PhoneLookup | null;
   phoneLookupTimeoutMs?: number;
-  /** Caps metered phone checks on capped plans (Free's allowance); without it, nothing is capped. */
+  /**
+   * Caps metered usage on capped plans (Free's allowances): phone checks and content checks stop
+   * there, assessments go on reduced (`./billing.ts`). Without it, nothing is capped.
+   */
   usage?: UsageGate;
 };
 
@@ -116,6 +127,10 @@ export type AssessRiskInput = {
   params: CreateRiskAssessmentRequestOutput;
   idempotencyKey?: string | null;
   apiKeyId?: string | null;
+  /** The member a personal key belongs to (who the usage is attributed to). */
+  userId?: string | null;
+  /** A customer's API call, which is billed. Internal callers (Forms, sign-ups) aren't. */
+  metered?: boolean;
   requestId?: string | null;
 };
 
@@ -162,18 +177,53 @@ export async function assessRisk(
     }
   }
 
+  const billing =
+    input.metered && environment.mode === "live"
+      ? await openAssessmentBilling(deps, {
+          organizationId: environment.organizationId,
+          projectId: environment.projectId,
+          apiKeyId: input.apiKeyId ?? null,
+          userId: input.userId ?? null,
+        })
+      : NOT_BILLED;
+  // Only a unit that was reserved and isn't owed goes back; never one a commit recorded.
+  try {
+    const result = await assessInTransaction(deps, input, billing, { idempotencyKey, hash });
+    if (result.replayed || result.assessment.decision === "block") {
+      await releaseAssessmentUnit(deps, environment.organizationId, billing);
+    }
+    return result;
+  } catch (error) {
+    await releaseAssessmentUnit(deps, environment.organizationId, billing);
+    throw error;
+  }
+}
+
+async function assessInTransaction(
+  deps: RiskDeps,
+  input: AssessRiskInput,
+  billing: AssessmentBilling,
+  key: { idempotencyKey: string | null; hash: string | null },
+): Promise<{ assessment: RiskAssessmentOutput; replayed: boolean }> {
+  const { environment, params } = input;
+  const { idempotencyKey, hash } = key;
   // The dataset source can need its own database connection on first load, classification takes
   // up to 3 s and the privacy provider is a network call. Resolve them before occupying a
   // transaction connection, so concurrent requests cannot exhaust the pool.
   const ip = params.ip ? normalizeIp(params.ip) : null;
   const sandbox = environment.mode === "sandbox";
+  const { reduced } = billing;
   const [ipSignals, privacy, content] = await Promise.all([
     ipSignalsFor(deps, ip, sandbox),
-    ipPrivacyFor(deps, ip, sandbox),
-    // Only paid work needs a claim: assessments without content stay one transaction.
-    idempotencyKey && params.content?.text
-      ? prepareIdempotentContent(deps, input, idempotencyKey, hash as string)
-      : assessmentContentScores(deps, environment, params.content?.text),
+    reduced
+      ? { privacy: null, degraded: Boolean(ip && deps.ipPrivacy) }
+      : ipPrivacyFor(deps, ip, sandbox),
+    reduced
+      ? { scores: null, degraded: Boolean(params.content?.text) }
+      : // Only paid work needs a claim: assessments without content stay one transaction.
+        idempotencyKey && params.content?.text
+        ? prepareIdempotentContent(deps, input, idempotencyKey, hash as string)
+        : assessmentContentScores(deps, environment, params.content?.text),
   ]);
   return db.transaction(async (tx) => {
     if (idempotencyKey) {
@@ -198,12 +248,12 @@ export async function assessRisk(
     // runs one query at a time, so they go one after another (`./turns.ts`).
     const settings = await resolveRiskSettings(tx, environment);
     const rules = await listRiskRuleRows(tx, environment);
-    const collected = await collectSignals(tx, deps, environment, params, settings, {
+    const collected = await collectSignals(tx, deps, environment, params, settings, reduced, {
       ip: ipSignals,
       privacy,
       content,
     });
-    const row = await insertAssessment(tx, input, collected, settings, rules, {
+    const row = await insertAssessment(tx, input, collected, settings, rules, billing, {
       idempotencyKey,
       requestHash: hash,
     });
@@ -294,6 +344,7 @@ async function collectSignals(
   environment: RiskAssessEnvironment,
   params: CreateRiskAssessmentRequestOutput,
   settings: ResolvedRiskSettings,
+  reduced: boolean,
   resolved: {
     ip: Awaited<ReturnType<typeof ipSignalsFor>>;
     privacy: { privacy: IpPrivacy | null; degraded: boolean };
@@ -303,7 +354,7 @@ async function collectSignals(
   const sandbox = environment.mode === "sandbox";
   const env = environment.environmentId;
   const reasons: StoredReason[] = [];
-  const degraded = new Set<RiskDegradedSignal>();
+  const degraded = new Set<RiskDegradedSignal>(reduced ? ["usage_limit"] : []);
 
   const email = params.user?.email !== undefined ? analyzeEmail(params.user.email) : null;
   const ip = params.ip ? normalizeIp(params.ip) : null;
@@ -332,7 +383,7 @@ async function collectSignals(
       emailDomainAge(executor, deps, email, sandbox, turns),
       captchaVerdict(deps, settings, params, ip, sandbox),
       resolved.ip,
-      countVelocity(deps, environment, params, email, ip, hashes),
+      reduced ? null : countVelocity(deps, environment, params, email, ip, hashes),
       turns(() =>
         matchListEntries(executor, environment, {
           mailbox: email?.valid ? email.canonical : null,
@@ -343,9 +394,9 @@ async function collectSignals(
           userId,
         }),
       ),
-      turns(() => reportedHashes(executor, environment, hashes)),
+      reduced ? new Set<string>() : turns(() => reportedHashes(executor, environment, hashes)),
       // Logins compare the network with the user's earlier ones.
-      params.event === "login" && userHash
+      !reduced && params.event === "login" && userHash
         ? turns(() => userNetworks(executor, environment, userHash))
         : null,
     ]);
@@ -673,6 +724,7 @@ async function insertAssessment(
   collected: Collected,
   settings: ResolvedRiskSettings,
   rules: readonly RiskRuleRow[],
+  billing: AssessmentBilling,
   key: { idempotencyKey: string | null; requestHash: string | null },
 ): Promise<RiskAssessmentRow | undefined> {
   const { environment, params } = input;
@@ -683,9 +735,11 @@ async function insertAssessment(
 
   // "This mailbox (or browser) already has an account": serialized per mailbox and per device
   // (always in that order), so of two concurrent sign-ups the second sees the first.
+  // A reduced assessment doesn't read memory, but what it sees still goes in below.
   const signup = params.event === "signup";
+  const comparesAccounts = signup && !billing.reduced;
   const previousMailbox =
-    signup && mailboxHash
+    comparesAccounts && mailboxHash
       ? await previousAccount(tx, environment, "mailbox", mailboxHash, userId)
       : undefined;
   if (previousMailbox) {
@@ -696,7 +750,7 @@ async function insertAssessment(
     });
   }
   const previousDevice =
-    signup && deviceHash
+    comparesAccounts && deviceHash
       ? await previousAccount(tx, environment, "device", deviceHash, userId)
       : undefined;
   if (previousDevice) {
@@ -758,6 +812,19 @@ async function insertAssessment(
     .onConflictDoNothing({ target: [riskAssessment.environmentId, riskAssessment.idempotencyKey] })
     .returning();
   if (!row) return undefined;
+
+  // Blocked traffic is free: an attack mustn't use up an allowance or inflate a bill.
+  if (billing.billable && decision !== "block") {
+    await recordUsage(tx, {
+      organizationId: environment.organizationId,
+      environmentId: environment.environmentId,
+      projectId: environment.projectId,
+      apiKeyId: input.apiKeyId ?? null,
+      userId: input.userId ?? null,
+      meter: ASSESSMENT_METER,
+      quantity: 1,
+    });
+  }
 
   if (signup && decision !== "block") {
     const identities = [
