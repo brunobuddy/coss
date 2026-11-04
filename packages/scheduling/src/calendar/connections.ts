@@ -380,16 +380,21 @@ export async function connectCaldav(
     ...input,
     transport: deps.davTransport ?? pinnedDavTransport(),
   });
-  return saveConnection(
-    host,
-    {
-      provider: "caldav",
-      accountId: `${input.username}@${new URL(input.url).host}`,
-      encryptedCredentials: encryptCredentials(input, deps.secretsKeys),
-      client,
-    },
-    deps,
-  );
+  try {
+    return await saveConnection(
+      host,
+      {
+        provider: "caldav",
+        accountId: `${input.username}@${new URL(input.url).host}`,
+        encryptedCredentials: encryptCredentials(input, deps.secretsKeys),
+        client,
+      },
+      deps,
+    );
+  } catch (error) {
+    if (!(error instanceof CalendarError)) throw error;
+    throw new SchedulingError("calendar_unavailable", error.message, { param: "url" });
+  }
 }
 
 export async function connectSimulated(
