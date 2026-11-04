@@ -571,6 +571,7 @@ async function noteConflicts(
   // Changing an entry's notes isn't a reason to move anything again.
   const widened =
     before?.existingBookings !== "reassign" ||
+    before.hostId !== row.hostId ||
     before.startAt.getTime() !== row.startAt.getTime() ||
     before.endAt.getTime() !== row.endAt.getTime();
   if (reassigning && widened) {

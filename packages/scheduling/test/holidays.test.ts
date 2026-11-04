@@ -137,6 +137,18 @@ const dueAgain = (id: string) =>
     .set({ nextSyncAt: NOW, leaseUntil: null })
     .where(eq(schema.schedulingHolidayCalendar.id, id));
 
+test("an event with no date makes the whole feed unreadable, since it could be any day", () => {
+  const dateless = "BEGIN:VEVENT\r\nUID:broken\r\nSUMMARY:Broken\r\nEND:VEVENT";
+  expect(() =>
+    holidaysFromIcs(ics(day("2031-01-05", "One"), dateless), "2031-01-01", "2032-01-01"),
+  ).toThrow(UnreadableCalendarData);
+  const repeating =
+    "BEGIN:VEVENT\r\nUID:broken\r\nSUMMARY:Broken\r\nRRULE:FREQ=YEARLY\r\nEND:VEVENT";
+  expect(() =>
+    holidaysFromIcs(ics(day("2031-01-05", "One"), repeating), "2031-01-01", "2032-01-01"),
+  ).toThrow(UnreadableCalendarData);
+});
+
 describe("a calendar changed while its feed is being read", () => {
   test("deleted, it makes nobody away, and goes", async () => {
     const env = await environment();

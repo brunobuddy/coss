@@ -230,7 +230,9 @@ export function holidaysFromIcs(
     const addEvent = (vevent: ICAL.Component) => {
       if (!isDayOff(vevent)) return;
       const event = new ICAL.Event(vevent);
-      if (!event.startDate?.isDate) return;
+      // Not a timed event, which is fine to skip: this one's missing, and could be any day.
+      if (!event.startDate) throw new UnreadableCalendarData();
+      if (!event.startDate.isDate) return;
       const first = event.startDate.toString();
       const end = event.endDate?.isDate ? event.endDate.toString() : shiftDate(first, 1);
       if (end > shiftDate(first, MAX_HOLIDAY_SPAN_DAYS)) throw new UnreadableCalendarData();
@@ -250,7 +252,9 @@ export function holidaysFromIcs(
         addEvent(master);
         continue;
       }
-      if (!isDayOff(master) || !event.startDate?.isDate) continue;
+      if (!isDayOff(master)) continue;
+      if (!event.startDate) throw new UnreadableCalendarData();
+      if (!event.startDate.isDate) continue;
       const moved = new Set(
         (overridesOf.get(event.uid) ?? []).map((vevent) =>
           String(vevent.getFirstPropertyValue("recurrence-id")),

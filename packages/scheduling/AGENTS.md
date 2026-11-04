@@ -130,7 +130,8 @@ says `no_candidate`.
 - A run is leased (`lease_until`, `for update skip locked`), and renewing the lease before each item is the fence: a
   worker that lost it, or a run that's been cancelled, stops. A move's outcome is written by `onMoved`, in the move's own
   transaction, so a report can't disagree with what happened, and a crash in between can't leave a booking moved and
-  its item pending. An outcome that isn't a move only writes over `pending`.
+  its item pending. It only writes over `pending`, like any other outcome, and a move that finds the item decided rolls
+  back: that's what stops a worker that lost its lease while waiting on a lock, since nothing can tell it.
 - A preview simulates: it adds what it's proposed to each host's claims and limits, and to a pool's counts, so two
   bookings can't be promised one free hour. It uses `isBookable` and `candidatesOf` per booking's routing, like the run,
   and promises nothing: the run decides again.

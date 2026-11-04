@@ -932,21 +932,24 @@ async function processItem(
           ],
         }),
   };
-  const finish = (
+  /** Whether this wrote the outcome: only one can, and a later one finds it decided. */
+  const finish = async (
     executor: Executor,
     values: Partial<ItemRow> & Pick<ItemRow, "outcome">,
-    onlyIfPending: boolean,
-  ) =>
-    executor
+  ): Promise<boolean> => {
+    const decided = await executor
       .update(schedulingReassignmentItem)
       .set(values)
       .where(
         and(
           eq(schedulingReassignmentItem.id, item.id),
           eq(schedulingReassignmentItem.organizationId, item.organizationId),
-          onlyIfPending ? eq(schedulingReassignmentItem.outcome, "pending") : undefined,
+          eq(schedulingReassignmentItem.outcome, "pending"),
         ),
-      );
+      )
+      .returning({ id: schedulingReassignmentItem.id });
+    return decided.length > 0;
+  };
   try {
     await reassignBooking(
       env,
@@ -967,26 +970,34 @@ async function processItem(
         onMoved: async (tx, moves) => {
           const [move] = moves;
           if (!move) return;
+          // A worker that lost its lease mid-move can't be told, so this is the fence: the item's
+          // still open, or someone else has dealt with it and this move never happened. It's last,
+          // since a row lock here waits for them to commit, and then sees what they wrote.
+          const decided = await finish(tx, {
+            outcome: "reassigned",
+            errorCode: null,
+            fromHostId: move.from,
+            toHostId: move.to,
+          });
+          if (!decided) throw new ItemAlreadyDecided();
           if (item.seriesId) seriesHost.set(item.seriesId, move.to);
-          // What happened happened, even if someone's just cancelled what's left of the run.
-          await finish(
-            tx,
-            { outcome: "reassigned", errorCode: null, fromHostId: move.from, toHostId: move.to },
-            false,
-          );
         },
       },
     );
   } catch (error) {
+    if (error instanceof ItemAlreadyDecided) return;
     if (error instanceof SchedulingError) {
-      await finish(db, { outcome: outcomeOf(error, item), errorCode: error.code }, true);
+      await finish(db, { outcome: outcomeOf(error, item), errorCode: error.code });
     } else {
       // One booking's trouble isn't the run's: the rest still go, and this one says it failed.
       console.error("[scheduling] a reassignment item failed:", error);
-      await finish(db, { outcome: "failed", errorCode: "internal_error" }, true);
+      await finish(db, { outcome: "failed", errorCode: "internal_error" });
     }
   }
 }
+
+/** Rolls back a move whose item someone else has already dealt with. */
+class ItemAlreadyDecided extends Error {}
 
 async function finishRun(
   tx: Executor,
