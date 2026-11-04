@@ -125,6 +125,7 @@ const HOST = {
   name: "Dana",
   email: "dana@secret.example",
   time_zone: "America/New_York",
+  locale: null,
   attributes: {},
   metadata: {},
   status: "active" as const,
