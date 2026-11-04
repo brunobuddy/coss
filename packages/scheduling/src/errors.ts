@@ -17,6 +17,9 @@ export type SchedulingErrorCode =
   | "attendee_data_erased"
   | "content_refused"
   | "calendar_unavailable"
+  | "calendar_managed"
+  | "invalid_calendar_delegation"
+  | "calendar_delegation_refused"
   | "scheduling_unavailable"
   | "account_suspended"
   | "idempotency_in_progress"
@@ -42,6 +45,9 @@ const STATUS_BY_CODE = {
   attendee_data_erased: 422,
   content_refused: 422,
   calendar_unavailable: 422,
+  calendar_managed: 422,
+  invalid_calendar_delegation: 422,
+  calendar_delegation_refused: 422,
   scheduling_unavailable: 503,
   account_suspended: 403,
   idempotency_in_progress: 409,

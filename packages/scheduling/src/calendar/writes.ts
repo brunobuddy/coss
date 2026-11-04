@@ -16,7 +16,8 @@ import { confirmedSeats, locationOfSession } from "../group-sessions.ts";
 import { carryReminders } from "../notifications.ts";
 import type { SchedulingDeps } from "../types.ts";
 import { type CalendarClient, CalendarError, type CalendarEventWrite } from "./client.ts";
-import { type CalendarDeps, clientFor, markNeedsReauth } from "./connections.ts";
+import { type CalendarDeps, clientFor } from "./connections.ts";
+import { handleAccessLost } from "./delegation-failures.ts";
 import { type HostEventText, hostEventText, locationText, NEUTRAL_EVENT } from "./details.ts";
 import { notZoomMeeting } from "./zoom.ts";
 
@@ -548,7 +549,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
       throw error;
     }
     if (error.kind === "auth") {
-      await markNeedsReauth(connection, error.code, deps);
+      await handleAccessLost(connection, error, deps);
       await settle({
         nextAttemptAt: new Date(now.getTime() + 15 * 60_000),
         lastErrorCode: error.code,
@@ -714,7 +715,7 @@ export async function checkHostEditedEvents(deps: CalendarDeps, opts: Scan = {})
       });
     } catch (error) {
       if (!(error instanceof CalendarError)) throw error;
-      if (error.kind === "auth") await markNeedsReauth(connection, error.code, deps);
+      if (error.kind === "auth") await handleAccessLost(connection, error, deps);
     }
   }
   return rows.length;

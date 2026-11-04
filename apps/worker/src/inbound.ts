@@ -5,7 +5,12 @@
  * fails stays, is retried after the visibility timeout and lands in the dead-letter queue after 5
  * receives (the landing object outlives the DLQ, see `ses:bootstrap`).
  */
-import { type InboundDeps, type InboundQuota, receiveEmail } from "@coss/email";
+import {
+  type InboundDataQuota,
+  type InboundDeps,
+  type InboundQuota,
+  receiveEmail,
+} from "@coss/email";
 import { parseSesReceipt, type S3Api } from "@coss/email/ses";
 import type { RateLimiter } from "@coss/ratelimit";
 import type { QueueMessage, SqsApi } from "./sqs.ts";
@@ -27,6 +32,23 @@ export function inboundQuota(limiter: RateLimiter): InboundQuota {
         subject: organizationId,
         organizationId,
         // Outlive the source queue and DLQ: retries reuse admission even after a worker crash.
+        idempotency: { key: messageKey, ttlMs: 21 * 24 * 60 * 60 * 1000 },
+      });
+      return decision.allowed;
+    },
+  };
+}
+
+/** The daily per-organization limit of received data (`email.inbound.megabytes.day`). */
+export function inboundDataQuota(limiter: RateLimiter): InboundDataQuota {
+  return {
+    async consume(organizationId, messageKey, megabytes) {
+      const decision = await limiter.consume({
+        buckets: ["email.inbound.megabytes.day"],
+        subject: organizationId,
+        organizationId,
+        cost: megabytes,
+        // As for `email.inbound.day`: retries reuse admission.
         idempotency: { key: messageKey, ttlMs: 21 * 24 * 60 * 60 * 1000 },
       });
       return decision.allowed;

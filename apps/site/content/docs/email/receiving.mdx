@@ -100,10 +100,16 @@ without sending one. Put `[coss-test:spam]`, `[coss-test:virus]`, `[coss-test:sp
 
 - An organization receives up to 10,000 emails a day across its environments. Mail over the limit
   is dropped and counted on the **Received emails** page; contact support to raise it.
+- An organization also has a daily limit of received data, counted past each message's first MB
+  (spam included): 250 MB on Free, 10,000 MB on Pro, 100,000 MB on Scale and 500,000 MB on
+  Enterprise. Anyone can mail your addresses, so this bounds what they can add to your bill.
+  Messages over it are dropped and counted the same way, while messages of 1 MB or less still arrive.
 - Received email is billed per message and environment it's stored in, sandbox environments
-  included (it's real mail): see [billing](/docs/billing#usage). Mail flagged as spam or carrying a
-  virus is free, and so are **Send a test email**'s messages. On Free, mail past the month's
-  allowance is dropped and counted like mail over the daily limit.
+  included (it's real mail), and by the MB past a message's first: see
+  [billing](/docs/billing#usage). The size is the raw message's, so base64 makes an attachment about
+  a third larger. Mail flagged as spam or carrying a virus is free, and so are **Send a test
+  email**'s messages. On Free, mail past the month's allowance is dropped and counted like mail over
+  the daily limit, and once only its data allowance is used up, messages of 1 MB or less still arrive.
 - Messages can be up to 40 MB.
 - Received emails are kept for <RetentionPeriod of="received_emails" />, then deleted with their
   content (see [data retention](/docs/data-retention)). `coss.email.received.delete()` deletes one

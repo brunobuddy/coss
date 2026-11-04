@@ -10,7 +10,7 @@ import {
 import { db, schema } from "@coss/db";
 import { uniqueSuffix } from "@coss/db/testing";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
-import { count, eq, sql, sum } from "drizzle-orm";
+import { and, count, eq, sql, sum } from "drizzle-orm";
 import { createDomain } from "../src/domains.ts";
 import { EmailError } from "../src/errors.ts";
 import { ingestProviderEvents } from "../src/events.ts";
@@ -412,5 +412,162 @@ describe("billing enforcement", () => {
         deps,
       ),
     ).rejects.toThrow("Custom tracking domains are available on the Pro plan");
+  });
+
+  describe("attachment data", () => {
+    const MB = 2 ** 20;
+    const file = (bytes: number) => ({
+      filename: "a.pdf",
+      content: Buffer.alloc(bytes).toString("base64"),
+    });
+
+    async function meterTotal(tenant: TestTenant, meter: string): Promise<number> {
+      const [row] = await db
+        .select({ total: sum(schema.billingUsage.quantity) })
+        .from(schema.billingUsage)
+        .where(
+          and(
+            eq(schema.billingUsage.organizationId, tenant.organization.id),
+            eq(schema.billingUsage.meter, meter),
+          ),
+        );
+      return Number(row?.total ?? 0);
+    }
+
+    function testService(billing?: ReturnType<typeof createUsageGate>) {
+      const provider = new FakeEmailProvider({ log: false });
+      return dispatchingEmailService({
+        liveProvider: provider,
+        sandboxProvider: provider,
+        ...(billing ? { billing } : {}),
+      });
+    }
+
+    test("past the first MB, per email rounded up, for each recipient billed", async () => {
+      const tenant = await createTestTenant();
+      const service = testService();
+      const from = await verifiedFrom(tenant.organization.id);
+      await addSuppression(
+        { organizationId: tenant.organization.id, environmentId: tenant.production.id },
+        { address: "gone@example.com", scope: "*" },
+      );
+      await service.send({
+        environment: sendEnvironment(tenant.production),
+        apiKeyId: null,
+        params: params({
+          from,
+          to: ["a@example.com", "b@example.com", "gone@example.com"],
+          attachments: [file(2 * MB), file(1.5 * MB)],
+        }),
+      });
+      // 3.5 MB is 3 past the first (rounded up) for 2 recipients: the suppressed one isn't billed.
+      expect(await meterTotal(tenant, "email.attachment_data")).toBe(6);
+      expect(await meterTotal(tenant, "email.recipients")).toBe(2);
+    });
+
+    test("an email within the first MB, or in a sandbox, bills none", async () => {
+      const tenant = await createTestTenant();
+      const service = testService();
+      await service.send({
+        environment: sendEnvironment(tenant.production),
+        apiKeyId: null,
+        params: params({
+          from: await verifiedFrom(tenant.organization.id),
+          to: "a@example.com",
+          attachments: [file(MB)],
+        }),
+      });
+      await service.send({
+        environment: sendEnvironment(tenant.development),
+        apiKeyId: null,
+        params: params({ to: "a@example.com", attachments: [file(3 * MB)] }),
+      });
+      expect(await meterTotal(tenant, "email.attachment_data")).toBe(0);
+      expect(await meterTotal(tenant, "email.recipients")).toBe(1);
+    });
+
+    test("is metered once, with its content already purged", async () => {
+      const tenant = await createTestTenant();
+      const service = testService();
+      const { email } = await service.send({
+        environment: sendEnvironment(tenant.production),
+        apiKeyId: null,
+        params: params({
+          from: await verifiedFrom(tenant.organization.id),
+          to: "a@example.com",
+          attachments: [file(2 * MB)],
+        }),
+      });
+      const [stored] = await db
+        .select({ content: schema.emailAttachment.content })
+        .from(schema.emailAttachment)
+        .where(eq(schema.emailAttachment.emailId, email.id));
+      expect(stored?.content).toBeNull();
+      await ingestProviderEvents([sentEvent(email.id)]);
+      expect(await meterTotal(tenant, "email.attachment_data")).toBe(1);
+    });
+
+    test("Free's allowance refuses large sends, while small ones keep going", async () => {
+      const tenant = await createTestTenant();
+      const service = testService(createUsageGate());
+      const from = await verifiedFrom(tenant.organization.id);
+      await db.insert(schema.billingQuota).values({
+        organizationId: tenant.organization.id,
+        meter: "email.attachment_data",
+        periodStart: periodOf(new Date()).start,
+        reserved: 999,
+      });
+      await service.send({
+        environment: sendEnvironment(tenant.production),
+        apiKeyId: null,
+        params: params({ from, to: "a@example.com", attachments: [file(2 * MB)] }),
+      });
+      const refused = await service
+        .send({
+          environment: sendEnvironment(tenant.production),
+          apiKeyId: null,
+          params: params({ from, to: "b@example.com", attachments: [file(2 * MB)] }),
+        })
+        .catch((error: unknown) => error);
+      expect(refused).toBeInstanceOf(BillingError);
+      expect((refused as BillingError).code).toBe("usage_limit_exceeded");
+      expect((refused as BillingError).message).toContain("1,000 MB of email attachments");
+      await service.send({
+        environment: sendEnvironment(tenant.production),
+        apiKeyId: null,
+        params: params({ from, to: "c@example.com", attachments: [file(MB)] }),
+      });
+      expect(await meterTotal(tenant, "email.attachment_data")).toBe(1);
+      expect(await meterTotal(tenant, "email.recipients")).toBe(2);
+    });
+
+    test("a batch reserves its emails' data as one", async () => {
+      const tenant = await createTestTenant();
+      const service = testService(createUsageGate());
+      const from = await verifiedFrom(tenant.organization.id);
+      await db.insert(schema.billingQuota).values({
+        organizationId: tenant.organization.id,
+        meter: "email.attachment_data",
+        periodStart: periodOf(new Date()).start,
+        reserved: 999,
+      });
+      const emails = [
+        params({ from, to: "a@example.com", attachments: [file(2 * MB)] }),
+        params({ from, to: "b@example.com", attachments: [file(2 * MB)] }),
+      ];
+      const refused = await service
+        .sendBatch({
+          environment: sendEnvironment(tenant.production),
+          apiKeyId: null,
+          emails,
+        })
+        .catch((error: unknown) => error);
+      expect((refused as BillingError).code).toBe("usage_limit_exceeded");
+      const [row] = await db
+        .select({ n: count() })
+        .from(schema.email)
+        .where(eq(schema.email.organizationId, tenant.organization.id));
+      expect(row?.n).toBe(0);
+    });
   });
 });

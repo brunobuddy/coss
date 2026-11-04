@@ -392,6 +392,20 @@ route is dropped.
    `SES_INBOUND_QUEUE_URL` (plus `VALKEY_URL`, for the daily inbound limit) for the worker. Rerun bootstrap first on
    upgrades: the updated `<name>-*` policies grant the S3 and SQS access.
 
+**Abusive inbound mail.** SES charges for every message and 256 KB it accepts, before the worker sees it, and our
+limits only stop what gets stored and billed: spam, viruses, mail over a limit and unroutable mail all cost us and
+bill no one. When the SES budget alerts, block the sending network with a receipt filter, which SES applies when the
+sender connects (the top `Received` header of a stored copy's raw message names it):
+
+```sh
+aws ses create-receipt-filter --region "$AWS_REGION" \
+  --filter 'Name=block-203-0-113-0,IpFilter={Policy=Block,Cidr=203.0.113.0/24}'
+aws ses list-receipt-filters --region "$AWS_REGION"
+aws ses delete-receipt-filter --region "$AWS_REGION" --filter-name block-203-0-113-0   # later
+```
+
+Filters apply to the whole account and region, so block the narrowest range that stops it.
+
 Before relying on it in a new account, check against a live account (and note the results here): that a verified
 parent domain receives for its subdomains (`in.acme.com` on `acme.com`'s identity) and one identity covers the
 managed domain's wildcard; that identities associated with SES tenants still receive; that
@@ -687,8 +701,8 @@ Cloudflare DNS (coss.com zone, DNS only)
   (> 300 of ~410); Valkey throttling (raise `--max-ecpu`); plus ses:bootstrap's SES event queue backlog and dead
   letters. Route 53 health checks and CloudFront metrics exist only in us-east-1, which the organization's SCP
   denies: uptime is Sentry's.
-- **Cost:** an AWS budget (`monthly_budget_usd`, email at 80 % actual and 100 % forecasted) and Cost Anomaly
-  Detection per service (daily email for anomalies ≥ $25).
+- **Cost:** an AWS budget (`monthly_budget_usd`, email at 80 % actual and 100 % forecasted), one for SES alone
+  (`ses_monthly_budget_usd`, the same alerts) and Cost Anomaly Detection per service (daily email for anomalies ≥ $25).
 
 ### Secrets and environment
 

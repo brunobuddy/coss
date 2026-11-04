@@ -240,7 +240,9 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   email is `scheduled` or `queued` — cancellation, sender rejection, delivery, provider-event ingestion and
   the worker sweeps null them in the transaction that moves it to a terminal status. Reads select metadata columns only; API/SDK/dashboard and webhook payloads never
   expose content. A queued email whose content is gone fails with `attachments_unavailable` rather than sending without
-  it. The parsed request omits `attachments` when empty (request hashes). SES gets them as `Simple.Attachments`
+  it. The parsed request omits `attachments` when empty (request hashes). Past the first MB combined they bill
+  `email.attachment_data` per recipient (`recordEmailUsage`, sizes kept after the content is purged), reserved at
+  acceptance on capped plans, so Free's data allowance refuses only large sends. SES gets them as `Simple.Attachments`
   (`content_id` → `INLINE`); the fake provider keeps sha256 digests, not bytes.
 - **Content storage** (`packages/email/src/storage-settings.ts`, table `email_storage_settings` keyed by environment,
   `/v1/storage_settings`, `coss.email.storage`, the dashboard's `[envSlug]/content-storage`): `store` (default, no
@@ -291,7 +293,12 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   transaction, any environment: sandbox ones receive real mail) unless its provider is `fake` (the dashboard's test
   emails) or it has a spam or virus verdict (`isBillableReceipt`); `InboundDeps.billing` (the worker's `UsageGate`)
   reserves Free's allowance in the transaction that stores the copy (a failed attempt reserves nothing), and past it
-  the copy and its written content are dropped and counted like one over the daily limit (`over_limit`). The `email.received` payload is metadata only (no bodies, headers or cc).
+  the copy and its written content are dropped and counted like one over the daily limit (`over_limit`). A billed
+  copy past the first MB of its raw size also bills `email.received_data`, and `InboundDeps.dataQuota` (the worker's
+  `email.inbound.megabytes.day`, plan-set, fails open) drops copies over a daily data limit before writing content,
+  spam included. Both charge nothing for a message of 1 MB or less, so a stranger's large mail never stops the rest:
+  anyone can mail an address, and a spending limit doesn't stop receiving. SES has already charged us for all of it
+  (README, "Abusive inbound mail"). The `email.received` payload is metadata only (no bodies, headers or cc).
   `received_email.text`/`html` are cut at 2 MB and headers at 64 KB (`truncated`); the raw message is whole. The
   dashboard previews received HTML with `UNTRUSTED_PREVIEW_HEAD` (`apps/web/src/lib/email-preview.ts`; `img-src data:` only — no remote images, they are
   tracking pixels) and serves raw/attachment downloads as `attachment` + `nosniff` + `CSP: sandbox`; the API

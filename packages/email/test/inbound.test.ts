@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { createUsageGate, periodOf } from "@coss/billing";
 import { db, schema } from "@coss/db";
 import { uniqueSuffix } from "@coss/db/testing";
@@ -491,6 +491,163 @@ describe("receiveEmail", () => {
     expect(test?.kind).toBe("received");
     expect(await rowsFor(tenant.production.id)).toHaveLength(2);
     expect(await receivedUsage(tenant.organization.id)).toBe(1);
+  });
+
+  describe("received data", () => {
+    const MB = 2 ** 20;
+    /** A parseable raw message of exactly `bytes`. */
+    function sized(bytes: number): Uint8Array {
+      const head = Buffer.from("From: jane@example.com\r\nSubject: Large\r\n\r\n");
+      return new Uint8Array(Buffer.concat([head, Buffer.alloc(bytes - head.length, "a")]));
+    }
+
+    async function dataUsage(organizationId: string): Promise<number> {
+      const [row] = await db
+        .select({ total: sum(schema.billingUsage.quantity) })
+        .from(schema.billingUsage)
+        .where(
+          and(
+            eq(schema.billingUsage.organizationId, organizationId),
+            eq(schema.billingUsage.meter, "email.received_data"),
+          ),
+        );
+      return Number(row?.total ?? 0);
+    }
+
+    test("is billed past the first MB of the raw message, per copy", async () => {
+      const tenant = await createTestTenant();
+      const production = await managedAddress(tenant);
+      const development = await managedAddress(tenant, tenant.development);
+      await receiveEmail(
+        message({ provider: "ses", recipients: [production], rawBytes: sized(MB) }),
+        deps,
+      );
+      expect(await dataUsage(tenant.organization.id)).toBe(0);
+      await receiveEmail(
+        message({
+          provider: "ses",
+          recipients: [production, development],
+          rawBytes: sized(2.5 * MB),
+        }),
+        deps,
+      );
+      // 2 MB past the first (rounded up), once for each environment it reached.
+      expect(await dataUsage(tenant.organization.id)).toBe(4);
+      expect(await receivedUsage(tenant.organization.id)).toBe(3);
+    });
+
+    test("spam, viruses and the fake provider's mail aren't billed", async () => {
+      const tenant = await createTestTenant();
+      const to = await managedAddress(tenant);
+      const rawBytes = sized(3 * MB);
+      for (const verdicts of [{ spam: "fail" }, { virus: "fail" }] as const) {
+        await receiveEmail(
+          message({
+            provider: "ses",
+            recipients: [to],
+            rawBytes,
+            verdicts: { ...NO_VERDICTS, spam: "pass", virus: "pass", ...verdicts },
+          }),
+          deps,
+        );
+      }
+      await receiveEmail(message({ recipients: [to], rawBytes }), deps);
+      expect(await dataUsage(tenant.organization.id)).toBe(0);
+    });
+
+    test("past Free's data allowance large mail is dropped, while small mail still arrives", async () => {
+      const tenant = await createTestTenant();
+      const to = await managedAddress(tenant);
+      const billing = { ...deps, billing: createUsageGate() };
+      await db.insert(schema.billingQuota).values({
+        organizationId: tenant.organization.id,
+        meter: "email.received_data",
+        periodStart: periodOf(new Date()).start,
+        reserved: 1_000,
+      });
+      const now = new Date();
+      const [large] = await receiveEmail(
+        message({ provider: "ses", recipients: [to], rawBytes: sized(2 * MB), receivedAt: now }),
+        billing,
+      );
+      expect(large?.kind).toBe("over_limit");
+      expect(await inboundDropCount(tenant.organization.id, now.toISOString().slice(0, 10))).toBe(
+        1,
+      );
+      const [small] = await receiveEmail(
+        message({ provider: "ses", recipients: [to], rawBytes: sized(MB), receivedAt: now }),
+        billing,
+      );
+      expect(small?.kind).toBe("received");
+      expect(await rowsFor(tenant.production.id)).toHaveLength(1);
+      // The dropped copy's reservation of `email.received` rolled back with it.
+      expect(await receivedUsage(tenant.organization.id)).toBe(1);
+      const [reserved] = await db
+        .select({ reserved: schema.billingQuota.reserved })
+        .from(schema.billingQuota)
+        .where(
+          and(
+            eq(schema.billingQuota.organizationId, tenant.organization.id),
+            eq(schema.billingQuota.meter, "email.received"),
+          ),
+        );
+      expect(reserved?.reserved).toBe(1);
+    });
+
+    test("the daily data limit drops large mail, spam included, before writing content", async () => {
+      const tenant = await createTestTenant();
+      const to = await managedAddress(tenant);
+      const charges: number[] = [];
+      const limited = {
+        ...deps,
+        dataQuota: {
+          consume: async (_organizationId: string, _key: string, megabytes: number) => {
+            charges.push(megabytes);
+            return false;
+          },
+        },
+      };
+      const puts = spyOn(store, "put");
+      const baseline = puts.mock.calls.length;
+      const now = new Date();
+      for (const spam of ["pass", "fail"] as const) {
+        const [outcome] = await receiveEmail(
+          message({
+            provider: "ses",
+            recipients: [to],
+            rawBytes: sized(4 * MB),
+            receivedAt: now,
+            verdicts: { ...NO_VERDICTS, spam, virus: "pass" },
+          }),
+          limited,
+        );
+        expect(outcome?.kind).toBe("over_limit");
+      }
+      expect(charges).toEqual([3, 3]);
+      expect(puts.mock.calls.length).toBe(baseline);
+      expect(await inboundDropCount(tenant.organization.id, now.toISOString().slice(0, 10))).toBe(
+        2,
+      );
+      // Small mail isn't charged, and a virus stores nothing for the limit to bound.
+      const [small] = await receiveEmail(
+        message({ provider: "ses", recipients: [to], rawBytes: sized(MB) }),
+        limited,
+      );
+      expect(small?.kind).toBe("received");
+      const [virus] = await receiveEmail(
+        message({
+          provider: "ses",
+          recipients: [to],
+          rawBytes: sized(4 * MB),
+          verdicts: { ...NO_VERDICTS, spam: "pass", virus: "fail" },
+        }),
+        limited,
+      );
+      expect(virus?.kind).toBe("blocked");
+      expect(charges).toEqual([3, 3]);
+      puts.mockRestore();
+      expect(await dataUsage(tenant.organization.id)).toBe(0);
+    });
   });
 
   test("a failed attempt reserves nothing of Free's allowance, so its retry is received", async () => {

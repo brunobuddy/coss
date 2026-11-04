@@ -24,6 +24,7 @@ const FIRST: readonly [query: string, page: string][] = [
   ["hosted form endpoint spam", "/docs/forms"],
   ["file upload form", "/docs/forms/file-uploads"],
   ["connect google calendar", "/docs/scheduling/calendars"],
+  ["domain wide delegation", "/docs/scheduling/delegation"],
   ["availability slots", "/docs/scheduling"],
   ["email address for an ai agent", "/docs/inboxes"],
   ["block disposable email signups", "/docs/risk"],
