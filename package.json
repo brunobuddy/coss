@@ -115,7 +115,7 @@
     "openapi:generate": "bun run --cwd apps/api openapi:generate && bun run --cwd packages/sdk routes:generate",
     "sdks:generate": "bun run --cwd tooling/sdkgen generate",
     "changeset": "changeset",
-    "version-packages": "changeset version && bun packages/sdk/scripts/sync-version.ts && bun install --lockfile-only && biome check --write packages/sdk/package.json packages/sdk/src/version.ts packages/mcp/package.json packages/cli/package.json"
+    "version-packages": "changeset version && bun packages/sdk/scripts/sync-version.ts && bun packages/mcp/scripts/sync-server-json.ts && bun install --lockfile-only && biome check --write packages/sdk/package.json packages/sdk/src/version.ts packages/mcp/package.json packages/mcp/server.json packages/cli/package.json"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

@@ -22,6 +22,7 @@ import { ApiKeyPermissionsTable } from "./api-key-permissions";
 import {
   AddOns,
   BillingExample,
+  CreditAmount,
   GraduatedExample,
   Included,
   Limit,
@@ -157,6 +158,7 @@ export function getMDXComponents(components?: MDXComponents) {
     BillingExample,
     GraduatedExample,
     Included,
+    CreditAmount,
     Limit,
     PlanPrice,
     PlansWith,

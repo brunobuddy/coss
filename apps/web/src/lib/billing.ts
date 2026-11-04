@@ -85,7 +85,7 @@ export async function memberLimit(organizationId: string): Promise<number | null
 }
 
 export type BillingBannerState = {
-  held: "delinquent" | "spend_limit" | "admin" | null;
+  held: "delinquent" | "spend_limit" | "credit_limit" | "admin" | null;
   pastDue: boolean;
   /** The most used capped allowance (Free's emails), when at 80% or more. */
   allowance: { label: string; used: number; cap: number } | null;
@@ -101,6 +101,7 @@ export async function billingBannerState(organizationId: string): Promise<Billin
   ]);
   const held =
     holds.find((hold) => hold.reason === "delinquent")?.reason ??
+    holds.find((hold) => hold.reason === "credit_limit")?.reason ??
     holds.find((hold) => hold.reason === "spend_limit")?.reason ??
     holds[0]?.reason ??
     null;

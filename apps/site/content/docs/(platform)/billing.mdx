@@ -50,6 +50,17 @@ on the next month's invoice with the next fee.
 
 <BillingExample />
 
+### Charges during the month
+
+Usage beyond your credit doesn't always wait for the month's end. When usage not invoiced yet
+reaches your **billing threshold**, it's charged to your payment method right away, as an invoice
+of its own (`threshold`), and comes off the month's invoice, which still shows the whole month's
+usage. You pay for it once, at the same rates.
+
+New accounts start with a threshold of <CreditAmount of="min-threshold" />. It's a fifth of your [credit
+limit](#credit-limit), up to <CreditAmount of="max-threshold" />, so it rises with the limit. Contracts and net terms aren't
+charged this way.
+
 ## Add-ons
 
 Add-ons are charged on top of your plan, and aren't paid by its usage credit:
@@ -86,16 +97,37 @@ after removing it. On a contract, add-ons are part of the contract.
 - Owners can set a **spend limit**: when usage beyond your credit reaches it, live sending pauses
   until the next month or until the limit is raised. Usage alerts go out at 80% and 100% of your
   credit (owners can change the thresholds).
+- Every self-serve account has a [credit limit](#credit-limit). Over it, live sending pauses
+  (`402`, `billing_hold`) until it's back under.
 - Owners can also set monthly **budgets** for members' personal API keys, projects and single
   API keys: over a budget, only its live sending pauses (`402`, `budget_exceeded`). See
   [Spend and budgets](/docs/spend).
+
+## Credit limit
+
+The credit limit caps what coss.com carries for your organization: usage not invoiced yet, unpaid
+invoices, and threshold charges from the last 30 days (a card payment can still be disputed by
+then). Your plan's fee doesn't use it up, and usage its credit covers isn't counted.
+
+- A new account's limit is **<CreditAmount of="new-limit" />**.
+- It rises on its own to twice your **settled** payments (paid more than 30 days ago), up to
+  <CreditAmount of="max-limit" />. Payments for your plan's fee count towards this.
+- Billing settings show your limit and what's in use, and owners get an email at 80%.
+- If you need more sooner (say you're moving a large volume over), [ask
+  support](/docs/support) to raise it: a limit they set replaces the automatic one.
+- A threshold charge that fails pauses live sending right away until your first payment has
+  settled; after that, only reaching the limit (or the grace period above) does. Paying the charge
+  resumes sending within a minute. A payment disputed as fraud pauses it until support has looked
+  at it.
+
+Contracts and net terms have no credit limit unless one is agreed.
 
 ## Credits
 
 Besides your plan's credit, coss.com support can add credits, in dollars or as free units of a
 product (for example, 50,000 free emails). Credits that apply to one product are used before
 general ones, and those expiring soonest go first. Your billing settings list every credit with
-what's left of it.
+what's left of it, including threshold charges waiting to come off the month's invoice.
 
 ## Invoices and payment
 

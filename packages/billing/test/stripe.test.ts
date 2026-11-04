@@ -21,6 +21,7 @@ function account(overrides: Partial<BillingAccount> = {}): BillingAccount {
     billingAddress: null,
     taxId: null,
     spendLimitCents: null,
+    creditLimitCents: null,
     alertThresholds: [80, 100],
     graceDays: 14,
     status: "active",

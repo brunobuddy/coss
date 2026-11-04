@@ -3,6 +3,7 @@ import {
   ADD_ONS,
   type AddOnDefinition,
   addOnGranting,
+  CREDIT_POLICY,
   FEATURE_KEYS,
   FEATURE_LABELS,
   type FeatureKey,
@@ -317,6 +318,19 @@ export function renderBillingComponents(markdown: string): string {
  * in src/components/billing.tsx): a price or a limit is always read from the catalog, never typed.
  */
 
+const CREDIT_AMOUNTS = {
+  "new-limit": CREDIT_POLICY.newAccountLimitCents,
+  "max-limit": CREDIT_POLICY.maxAutomaticLimitCents,
+  "min-threshold": CREDIT_POLICY.minThresholdCents,
+  "max-threshold": CREDIT_POLICY.maxThresholdCents,
+} as const;
+export type CreditAmountKey = keyof typeof CREDIT_AMOUNTS;
+
+/** "$500": an amount of the credit policy. */
+export function creditAmountText(of: CreditAmountKey): string {
+  return formatCents(CREDIT_AMOUNTS[of]).replace(/\.00$/, "");
+}
+
 /** "Scale and Enterprise", or "Pro, Scale and Enterprise": the plans with a feature (or its add-on). */
 export function plansWithText(feature: FeatureKey): string {
   const names = PLAN_KEYS.filter(
@@ -428,6 +442,9 @@ export function renderInlineBillingComponents(markdown: string): string {
       limitText(limit as LimitKey, plan as PlanKey),
     )
     .replace(/<PlanPrice plan="([a-z]+)" \/>/g, (_, plan) => planPriceText(plan as PlanKey))
+    .replace(/<CreditAmount of="([a-z-]+)" \/>/g, (_, of) =>
+      creditAmountText(of as CreditAmountKey),
+    )
     .replaceAll("<GraduatedExample />", graduatedExampleText())
     .replaceAll("<BillingExample />", billingExampleMarkdown());
 }

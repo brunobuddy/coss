@@ -3,8 +3,9 @@
  * this project's setup state.
  */
 import type { McpServer } from "@modelcontextprotocol/server";
-import { type Coss, fetchSetupReport } from "coss";
+import type { Coss } from "coss";
 import { type DocsOptions, docsOrigin } from "./tools/docs.ts";
+import { setupReportFor } from "./tools/setup.ts";
 
 export const DOCS_INDEX_URI = "coss://docs/index";
 export const SETUP_URI = "coss://setup";
@@ -35,7 +36,7 @@ export function registerDocsResources(server: McpServer, options: DocsOptions = 
 }
 
 /** `get_setup`'s email-first answer, as something to attach. */
-export function registerSetupResource(server: McpServer, coss: Coss): void {
+export function registerSetupResource(server: McpServer, coss: Coss, hosted: boolean): void {
   server.registerResource(
     "setup",
     SETUP_URI,
@@ -50,7 +51,7 @@ export function registerSetupResource(server: McpServer, coss: Coss): void {
         {
           uri: uri.href,
           mimeType: "application/json",
-          text: JSON.stringify(await fetchSetupReport(coss), null, 2),
+          text: JSON.stringify(await setupReportFor(coss, undefined, hosted), null, 2),
         },
       ],
     }),

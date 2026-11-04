@@ -88,7 +88,7 @@ export type ReputationStanding = {
 };
 
 export type BillingAlerts = {
-  held: "delinquent" | "spend_limit" | "admin" | null;
+  held: "delinquent" | "spend_limit" | "credit_limit" | "admin" | null;
   past_due: boolean;
   allowance: { label: string; used: number; cap: number } | null;
 };

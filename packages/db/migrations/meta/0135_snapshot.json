@@ -1,5 +1,5 @@
 {
-  "id": "60f027e0-b97f-4712-b479-f20a383f5002",
+  "id": "d8546727-50d2-4b17-baf2-f02a5519c1b5",
   "prevId": "84dbeb6d-7ad4-42b3-8ea8-e63022265290",
   "version": "7",
   "dialect": "postgresql",
@@ -2724,6 +2724,12 @@
         },
         "spend_limit_cents": {
           "name": "spend_limit_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credit_limit_cents": {
+          "name": "credit_limit_cents",
           "type": "bigint",
           "primaryKey": false,
           "notNull": false
@@ -23631,12 +23637,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "next_fee_at": {
-          "name": "next_fee_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -23694,38 +23694,6 @@
           "isUnique": false,
           "concurrently": false,
           "method": "gin",
-          "with": {}
-        },
-        "scheduling_host_next_fee_at_idx": {
-          "name": "scheduling_host_next_fee_at_idx",
-          "columns": [
-            {
-              "expression": "next_fee_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"scheduling_host\".\"next_fee_at\" IS NOT NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "scheduling_host_live_organization_idx": {
-          "name": "scheduling_host_live_organization_idx",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"scheduling_host\".\"next_fee_at\" IS NOT NULL",
-          "concurrently": false,
-          "method": "btree",
           "with": {}
         }
       },
@@ -30251,7 +30219,8 @@
         "support",
         "promotion",
         "refund",
-        "sla"
+        "sla",
+        "threshold"
       ]
     },
     "public.billing_hold_reason": {
@@ -30260,6 +30229,7 @@
       "values": [
         "delinquent",
         "spend_limit",
+        "credit_limit",
         "admin"
       ]
     },
@@ -30270,7 +30240,8 @@
         "period",
         "plan_change",
         "one_off",
-        "final"
+        "final",
+        "threshold"
       ]
     },
     "public.billing_invoice_status": {

@@ -88,23 +88,28 @@ export function registerSignTools(ctx: ToolContext): void {
   const { server, coss, projectDir } = ctx;
   const requestId = z.string().describe("The request's id. list_sign_requests finds it.");
 
-  server.registerTool(
-    "upload_sign_document",
-    {
-      title: "Upload a PDF to sign",
-      description:
-        "Uploads a PDF from the project (a path relative to it). The answer lists each page's size " +
-        "and the text anchors found, which fields can be placed on.",
-      inputSchema: z.object({ path: z.string().describe("For example contracts/nda.pdf.") }),
-      annotations: WRITE,
-    },
-    ({ path }) =>
-      run(async () => {
-        const full = await projectPdf(projectDir, path);
-        const content = (await readFile(full)).toString("base64");
-        return ok(unwrap(await coss.sign.documents.upload({ filename: basename(full), content })));
-      }),
-  );
+  // Reads a file, so it isn't on the hosted server.
+  if (projectDir !== null) {
+    server.registerTool(
+      "upload_sign_document",
+      {
+        title: "Upload a PDF to sign",
+        description:
+          "Uploads a PDF from the project (a path relative to it). The answer lists each page's size " +
+          "and the text anchors found, which fields can be placed on.",
+        inputSchema: z.object({ path: z.string().describe("For example contracts/nda.pdf.") }),
+        annotations: WRITE,
+      },
+      ({ path }) =>
+        run(async () => {
+          const full = await projectPdf(projectDir, path);
+          const content = (await readFile(full)).toString("base64");
+          return ok(
+            unwrap(await coss.sign.documents.upload({ filename: basename(full), content })),
+          );
+        }),
+    );
+  }
 
   server.registerTool(
     "list_sign_requests",
@@ -183,7 +188,12 @@ export function registerSignTools(ctx: ToolContext): void {
       inputSchema: z.object({
         title: z.string(),
         message: z.string().optional(),
-        document_ids: z.array(z.string()).min(1).describe("From upload_sign_document."),
+        document_ids: z
+          .array(z.string())
+          .min(1)
+          .describe(
+            projectDir === null ? "Uploaded with the API or an SDK." : "From upload_sign_document.",
+          ),
         signers: z
           .array(
             signerSchema.extend({
@@ -320,7 +330,7 @@ export function registerSignTools(ctx: ToolContext): void {
     {
       title: "Create a signature template",
       description:
-        "A reusable request: documents from upload_sign_document, roles like `client`, and fields " +
+        `A reusable request: documents ${projectDir === null ? "uploaded with the API or an SDK" : "from upload_sign_document"}, roles like \`client\`, and fields ` +
         "for each role.",
       inputSchema: z.object({
         name: z.string(),

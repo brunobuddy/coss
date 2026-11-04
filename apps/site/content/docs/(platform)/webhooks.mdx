@@ -119,7 +119,7 @@ These concern the whole organization, so every **live** environment's endpoints 
 | `billing.invoice_voided`          | An open invoice was voided                                                              |
 | `billing.plan_changed`            | The plan changed or a change was scheduled or undone (`change`, `plan`, `effective_at`) |
 | `billing.usage_threshold_reached` | Usage reached an alert threshold of the month's credit or Free's allowance (`percent`)  |
-| `billing.hold_placed`             | Live sending was paused for billing (`reason`: `delinquent`, `spend_limit` or `admin`)  |
+| `billing.hold_placed`             | Live sending was paused for billing (`reason`: `delinquent`, `spend_limit`, `credit_limit` or `admin`) |
 | `billing.hold_lifted`             | That pause ended                                                                        |
 | `billing.credit_granted`          | A credit was added (`data.credit`)                                                      |
 | `billing.budget_threshold_reached` | A member's, project's or API key's spend reached an alert threshold of its monthly budget (`scope`, `target_id`, `percent`) |

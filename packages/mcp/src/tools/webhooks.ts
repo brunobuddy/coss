@@ -43,7 +43,7 @@ function deliverySummary(delivery: WebhookDelivery): object {
 const endpointId = z.string().describe("The webhook endpoint id.");
 
 export function registerWebhookTools(ctx: ToolContext): void {
-  const { server, coss } = ctx;
+  const { server, coss, projectDir } = ctx;
 
   server.registerTool(
     "list_webhook_endpoints",
@@ -121,9 +121,13 @@ export function registerWebhookTools(ctx: ToolContext): void {
       title: "Create a webhook endpoint",
       description:
         "Registers an https URL that receives signed events, once. The signing secret is " +
-        "returned only now and is written to the project env file as COSS_WEBHOOK_SECRET, " +
-        "which verifyWebhook and `coss listen` both read (a previous value is replaced, so " +
-        "local forwarding and this endpoint sign the same way). If this URL already has an " +
+        "returned only now and " +
+        (projectDir === null
+          ? "must be stored as COSS_WEBHOOK_SECRET, which verifyWebhook reads (this server writes no files). "
+          : "is written to the project env file as COSS_WEBHOOK_SECRET, which verifyWebhook and " +
+            "`coss listen` both read (a previous value is replaced, so local forwarding and this " +
+            "endpoint sign the same way). ") +
+        "If this URL already has an " +
         "endpoint, that one is returned and nothing is created or overwritten — pass force " +
         "only to add another. Creation is not retried: a lost response should be checked with " +
         "list_webhook_endpoints before calling again.",
@@ -155,8 +159,10 @@ export function registerWebhookTools(ctx: ToolContext): void {
             secret: null,
             hint:
               "This URL already has an endpoint. Its signing secret was returned only when it " +
-              "was created. Pass force only when you mean to create another (that replaces " +
-              "COSS_WEBHOOK_SECRET with the new secret).",
+              "was created. Pass force only when you mean to create another" +
+              (projectDir === null
+                ? "."
+                : " (that replaces COSS_WEBHOOK_SECRET with the new secret)."),
           });
         }
         const types = (event_types ?? []).filter((type) => type.length > 0);
@@ -167,9 +173,17 @@ export function registerWebhookTools(ctx: ToolContext): void {
             ...(types.length > 0 ? { event_types: types as WebhookEventType[] } : {}),
           }),
         );
+        if (projectDir === null) {
+          return ok({
+            created: true,
+            endpoint: endpointSummary(created),
+            secret: created.secret,
+            hint: "Store this secret as COSS_WEBHOOK_SECRET now; the API will not show it again.",
+          });
+        }
         let saved: { file: string; replaced: boolean } | { error: string };
         try {
-          const wrote = await saveWebhookSecret(ctx.projectDir, created.secret);
+          const wrote = await saveWebhookSecret(projectDir, created.secret);
           saved = { file: wrote.file, replaced: wrote.replaced };
         } catch (error) {
           saved = {

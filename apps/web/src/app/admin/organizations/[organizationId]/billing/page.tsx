@@ -98,7 +98,7 @@ export default async function AdminOrganizationBillingPage({
     listBillingPeriods(organization.id),
     listCreditNotes(organization.id),
   ]);
-  const { account, state, estimate, holds } = overview;
+  const { account, state, estimate, holds, credit } = overview;
   const fields = { organizationId: organization.id };
   const adminHold = holds.some((hold) => hold.reason === "admin");
 
@@ -141,6 +141,9 @@ export default async function AdminOrganizationBillingPage({
               : " · no payment method"}
             . This month so far: {formatCents(estimate.usageCents)} of usage,{" "}
             {formatCents(estimate.totals.totalCents)} to invoice.
+            {credit
+              ? ` Credit limit ${formatCents(credit.limitCents)}${credit.customLimit ? " (set by an admin)" : ""}: ${formatCents(credit.usedCents)} at risk (${formatCents(credit.accruedCents)} unbilled, ${formatCents(credit.unpaidCents)} unpaid, ${formatCents(credit.unsettledChargesCents)} unsettled charges), ${formatCents(credit.settledPaidCents)} settled.`
+              : " No credit limit."}
             {state.scheduled
               ? ` Changes to ${PLANS[state.scheduled.terms.plan].name} on ${formatDate(state.scheduled.at)}.`
               : ""}
@@ -191,6 +194,10 @@ export default async function AdminOrganizationBillingPage({
               taxId: account?.taxId ?? "",
               graceDays: account?.graceDays ?? 14,
               holdExemptUntil: account?.holdExemptUntil?.toISOString().slice(0, 10) ?? "",
+              creditLimit:
+                account?.creditLimitCents == null
+                  ? ""
+                  : (Number(account.creditLimitCents) / 100).toFixed(2),
               notes: account?.notes ?? "",
             }}
           />
