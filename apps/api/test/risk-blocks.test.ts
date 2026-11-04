@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { createUsageGate } from "@coss/billing";
 import { pool } from "@coss/db";
 import { memoryLogWriter } from "@coss/logs/testing";
 import { cachedOverrides, setRateLimitOverride } from "@coss/ratelimit";
@@ -253,6 +254,71 @@ describe("POST /v1/risk/content/classify", () => {
     expect(limited.headers.get("Retry-After")).toBeTruthy();
     expect(await errorOf(limited)).toMatchObject({ code: "classification_rate_limited" });
     expect((await classify(tenant.sandboxKey)).status).toBe(200);
+  });
+});
+
+describe("metering Risk", () => {
+  const usage = async (organizationId: string, meter: string) => {
+    const { rows } = await pool.query<{ quantity: number }>(
+      "select coalesce(sum(quantity), 0)::int as quantity from billing_usage where organization_id = $1 and meter = $2",
+      [organizationId, meter],
+    );
+    return rows[0]?.quantity;
+  };
+
+  test("the API counts live assessments and content checks; sandbox ones are free", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp({
+      riskDeps: testRiskDeps({ classifier: fakeClassifier() }),
+    });
+    const assess = (key: string) =>
+      apiRequest(app, "POST", "/v1/risk/assessments", {
+        key,
+        body: { event: "signup", user: { email: "ada@example.com" } },
+      });
+    const classify = (key: string) =>
+      apiRequest(app, "POST", "/v1/risk/content/classify", { key, body: { text: "hi" } });
+
+    expect((await assess(tenant.sandboxKey)).status).toBe(201);
+    expect((await classify(tenant.sandboxKey)).status).toBe(200);
+    expect(await usage(tenant.organization.id, "risk.assessments")).toBe(0);
+    expect(await usage(tenant.organization.id, "risk.content_checks")).toBe(0);
+
+    expect((await assess(tenant.liveKey)).status).toBe(201);
+    expect((await classify(tenant.liveKey)).status).toBe(200);
+    expect(await usage(tenant.organization.id, "risk.assessments")).toBe(1);
+    expect(await usage(tenant.organization.id, "risk.content_checks")).toBe(1);
+  });
+
+  test("past the allowance an assessment still answers, and a content check is a 402", async () => {
+    const tenant = await createTestTenant();
+    const gate = createUsageGate({ ttlMs: 0 });
+    const { app } = createTestApp({
+      riskDeps: testRiskDeps({ usage: gate, classifier: fakeClassifier() }),
+    });
+    for (const meter of ["risk.assessments", "risk.content_checks"]) {
+      await pool.query(
+        "insert into billing_quota (organization_id, meter, period_start, reserved) values ($1, $2, date_trunc('month', now() at time zone 'UTC') at time zone 'UTC', 10000)",
+        [tenant.organization.id, meter],
+      );
+    }
+    const assessed = await apiRequest(app, "POST", "/v1/risk/assessments", {
+      key: tenant.liveKey,
+      body: { event: "signup", user: { email: "ada@example.com" } },
+    });
+    expect(assessed.status).toBe(201);
+    const assessment = (await assessed.json()) as { decision: string; degraded: string[] };
+    expect(assessment.degraded).toContain("usage_limit");
+
+    const classified = await apiRequest(app, "POST", "/v1/risk/content/classify", {
+      key: tenant.liveKey,
+      body: { text: "hi" },
+    });
+    expect(classified.status).toBe(402);
+    expect(await errorOf(classified)).toMatchObject({
+      type: "billing_error",
+      code: "usage_limit_exceeded",
+    });
   });
 });
 

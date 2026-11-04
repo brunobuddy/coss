@@ -177,6 +177,8 @@ export const METER_NOTES: Partial<Record<MeterKey, string>> = {
     "30 inbox-days are an inbox for a month, charged by the day; every plan includes 3 inboxes",
   "hooks.messages":
     "One per message whatever its fan-out; retries, recoveries and test sends are free",
+  "risk.assessments": "Live API calls. Blocked decisions and replays are free",
+  "risk.content_checks": "Classify on its own; content in an assessment is part of its price",
   "scheduling.hosts":
     "30 host-days are a host for a month, charged by the day from January 2027, beyond what your plan includes",
   "forms.file_uploads": `The files of accepted submissions, kept ${RETENTION_DAYS.formSubmissions} days; rounded up to the MB per submission`,

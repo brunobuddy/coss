@@ -45,6 +45,11 @@ export interface UsageGate {
     input: { organizationId: string; meter: MeterKey; quantity: number; dimension?: string },
   ): Promise<void>;
   /**
+   * Whether `reserve` would refuse another unit of this meter now (reads only), for usage that
+   * goes on in a reduced form instead of stopping. A race can still lose the last units.
+   */
+  exhausted?(organizationId: string, meter: MeterKey): Promise<boolean>;
+  /**
    * Gives back reserved units that will never be used (e.g. a canceled broadcast's unsent
    * emails), in `tx`, to the period they were reserved in (`reservedAt`, default now). Never
    * below zero.

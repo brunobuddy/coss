@@ -47,10 +47,11 @@ repository root.
     recipient, and `email.received_data` per billed copy of a received message. Received email is `email.received` when it is stored
     (sandbox too: it is real mail; not the fake provider's, spam or viruses), inboxes `email.inboxes` per day a live
     one exists (priced per 30 inbox-days; see `packages/email/AGENTS.md`). Hooks is `hooks.messages`, one per live
-    message accepted whatever its fan-out, with Free capped and paid plans including more (`packages/hooks/AGENTS.md`). Scheduling is
-    `scheduling.bookings` per booking and `scheduling.hosts` per day a live host exists, priced per 30 host-days
-    (`packages/scheduling/AGENTS.md`). A meter that starts charging for something already running gets its first rate on
-    a future card (`meterPricedFrom`), for the Terms' 30 days' notice.
+    message accepted whatever its fan-out, with Free capped and paid plans including more (`packages/hooks/AGENTS.md`).
+    Risk is `risk.assessments` and `risk.content_checks`; at Free's allowance assessments run reduced instead of
+    stopping (`packages/risk/AGENTS.md`). Scheduling is `scheduling.bookings` per booking and `scheduling.hosts` per day a
+    live host exists, priced per 30 host-days (`packages/scheduling/AGENTS.md`). A meter that starts charging for something
+    already running gets its first rate on a future card (`meterPricedFrom`), for the Terms' 30 days' notice.
   - **Attribution and spend** (`billing_usage_attribution`, `./spend`): `recordUsage` also writes who caused the usage
     (project, API key, and the member a personal key belongs to — `email.api_key_owner_id`, captured at
     acceptance, so revoking a key never erases a member's spend), same hour and shard as `billing_usage`, which

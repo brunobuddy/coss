@@ -1,3 +1,4 @@
+import { PLANS } from "@coss/billing/catalog";
 import { BUCKETS } from "@coss/ratelimit/buckets";
 import { formatRetentionDays, RETENTION_DAYS } from "@coss/retention";
 import { includedUnitsText, limitText, planPriceText, rateText } from "../billing-text";
@@ -9,9 +10,16 @@ import { formatRule } from "../rate-limits-text";
 
 const CHECKED = "2026-11-03";
 
-function apiKeyRate(bucket: "risk.assess" | "risk.limit"): string {
+function apiKeyRate(bucket: "risk.limit"): string {
   const { limit, periodMs, burst } = BUCKETS[bucket];
   return `${formatRule(limit, periodMs)} per API key, bursts of ${burst.toLocaleString("en-US")}`;
+}
+
+/** `risk.assess` is set per plan (Free's is lower); the others are the bucket's own. */
+function assessRate(): string {
+  const free = PLANS.free.entitlements.rateLimits["risk.assess"];
+  const paid = PLANS.pro.entitlements.rateLimits["risk.assess"];
+  return `${formatRule(free.limit, free.periodMs)} per API key on Free (bursts of ${free.burst}), ${formatRule(paid.limit, paid.periodMs)} on paid plans (bursts of ${paid.burst})`;
 }
 
 const NYLAS_SCHEDULER: Competitor = {
@@ -275,23 +283,23 @@ const CASTLE: Competitor = {
   products: ["risk"],
   query: "Castle.io alternative",
   verdict:
-    "Castle goes deeper on devices and bots, on web and mobile. coss.com Risk gives reasons for each decision, checks content too, with no per-assessment price.",
+    "Castle goes deeper on devices and bots, on web and mobile. coss.com Risk gives reasons for each decision, checks content too, and doesn't charge for blocks.",
   lede: "Both are called from your server at sign-up, login and payment, and answer with a score and a decision you act on: allow, challenge or deny at Castle, allow, review or block at coss.com. Castle fingerprints devices and watches behavior across web and native apps, and keeps separate abuse, account takeover and bot scores. coss.com Risk works from email, IP, velocity, your lists and rules, what users write and what you report back, without browser fingerprinting.",
   checked: CHECKED,
   rows: [
     {
       label: "Price",
-      coss: `Assessments and email, IP and content checks are part of your plan; live phone checks ${rateText("risk.phone_checks")}`,
+      coss: `Assessments ${rateText("risk.assessments")}, blocked decisions free; classify on its own ${rateText("risk.content_checks")}. Email and IP checks are part of your plan; live phone checks ${rateText("risk.phone_checks")}`,
       them: "Pay per request: $0.005 for Risk and Filter, $0.001 for IP Intelligence. Pro $200 a month of usage; Enterprise from $4,000 a month",
     },
     {
       label: "Free",
-      coss: `Assessments, and ${includedUnitsText("risk.phone_checks")}`,
+      coss: `${includedUnitsText("risk.assessments")} and ${includedUnitsText("risk.phone_checks")}; past the allowance, assessments go on without velocity, memory or content`,
       them: "$5 of usage a month: 1,000 Risk calls or 5,000 IP lookups, sharing one budget",
     },
     {
       label: "Request rate",
-      coss: apiKeyRate("risk.assess"),
+      coss: assessRate(),
       them: "1 a second on Free, 5 on Pro, unlimited on Enterprise",
     },
     {
@@ -397,8 +405,8 @@ const CASTLE: Competitor = {
   ],
   chooseCoss: [
     {
-      title: "No per-assessment bill",
-      body: "Assessments are part of every coss.com plan, within the rate limit per API key. Castle's Free and Pro plans count each request against a usage budget, at 1 and 5 requests a second.",
+      title: "You don't pay for attacks",
+      body: `Decisions that block are free, so a wave of fake sign-ups doesn't run up the bill, and other assessments cost ${rateText("risk.assessments")}. Castle charges $0.005 for every Risk request, and its Free and Pro plans run at 1 and 5 requests a second.`,
     },
     {
       title: "Decisions you can read and tune",
@@ -442,7 +450,7 @@ const CASTLE: Competitor = {
   faq: [
     {
       question: "How much does coss.com Risk cost?",
-      answer: `Assessments and email, IP and content checks are part of every plan, up to ${apiKeyRate("risk.assess")}. Live phone checks cost ${rateText("risk.phone_checks")} once they get an answer, and every plan includes ${includedUnitsText("risk.phone_checks")}.`,
+      answer: `Assessments cost ${rateText("risk.assessments")}, and Free includes ${includedUnitsText("risk.assessments")}; decisions that block are free. Rates are ${assessRate()}. Classify on its own costs ${rateText("risk.content_checks")}, email and IP checks are part of every plan, and live phone checks cost ${rateText("risk.phone_checks")} once they get an answer, with ${includedUnitsText("risk.phone_checks")} on every plan.`,
     },
     {
       question: "Does coss.com fingerprint browsers like Castle does?",

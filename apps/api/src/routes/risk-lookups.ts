@@ -2,7 +2,13 @@
  * Risk's building blocks: stateless lookups (email, IP, phone) and content classification. Nothing
  * about the person looked up is stored or counted; the text classified is never stored or logged.
  */
-import { checkEmail, checkIp, checkPhone, classifyContent, type RiskDeps } from "@coss/risk";
+import {
+  checkEmail,
+  checkIp,
+  checkPhone,
+  classifyContentForCustomer,
+  type RiskDeps,
+} from "@coss/risk";
 import {
   RiskContentClassification,
   RiskContentClassifyRequest,
@@ -149,7 +155,9 @@ export const classifyRiskContentRoute = createRoute({
     "phishing, malware and fraud with an AI model, with zero data retention. Returns scores " +
     "only: you decide what they mean. Neither the text nor the scores are stored, and request " +
     "logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can " +
-    "retry or treat as unknown. Limited per organization as well as per key. Sandbox keys use " +
+    "retry or treat as unknown. Each live classification the model answered is billed " +
+    "(`risk.content_checks`; plans include some every month, and Free stops at its allowance). " +
+    "Limited per organization as well as per key. Sandbox keys use " +
     "markers instead of a model: `[coss-test:phishing]` scores 0.99, " +
     "`[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.",
   security: [{ bearerAuth: [] }],
@@ -168,6 +176,11 @@ export const classifyRiskContentRoute = createRoute({
     200: json("The scores.", RiskContentClassification),
     ...jsonBodyErrors,
     ...commonErrors,
+    402: errorDoc(
+      "The plan's included content checks are used up (`usage_limit_exceeded`), or live checks " +
+        "are paused by an overdue invoice, a spend limit (`billing_hold`) or a budget " +
+        "(`budget_exceeded`).",
+    ),
     429: errorDoc(
       "Too many requests with this API key (`rate_limited`), too many classifications for this " +
         "organization (`classification_rate_limited`), or too many requests with invalid keys " +
@@ -231,7 +244,7 @@ export function createRiskLookupRoutes(deps: RiskDeps): OpenAPIHono<AppEnv> {
 
   router.openapi(classifyRiskContentRoute, async (c) => {
     const { text } = c.req.valid("json");
-    const { organizationId, mode } = c.var.auth;
+    const { organizationId, environmentId, projectId, apiKeyId, ownerUserId, mode } = c.var.auth;
     // Every live classification asks a model: capped per organization. Sandbox ones are free.
     if (mode === "live") {
       const decision = await c.var.rateLimiter.consume({
@@ -248,7 +261,15 @@ export function createRiskLookupRoutes(deps: RiskDeps): OpenAPIHono<AppEnv> {
         });
       }
     }
-    return c.json(await classifyContent(deps, { organizationId, mode }, text), 200);
+    const environment = {
+      organizationId,
+      mode,
+      environmentId,
+      projectId,
+      apiKeyId,
+      userId: ownerUserId,
+    };
+    return c.json(await classifyContentForCustomer(deps, environment, text), 200);
   });
 
   return router;

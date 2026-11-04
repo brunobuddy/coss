@@ -455,7 +455,8 @@ export class RiskResource {
 
   /**
    * Scores text for spam, phishing, malware and fraud. Scores only, never a verdict: you choose
-   * the thresholds. The text is neither stored nor logged.
+   * the thresholds. The text is neither stored nor logged. Live checks that get an answer are
+   * billed, so this method is never retried automatically.
    */
   classify(
     params: { text: string },
@@ -465,6 +466,7 @@ export class RiskResource {
       method: "POST",
       path: "/v1/risk/content/classify",
       body: params,
+      retry: false,
       signal: options?.signal,
     });
   }
