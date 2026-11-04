@@ -180,3 +180,4 @@ scheduling:reencrypt`). Still to do:
    production runs its Production credentials. Until it's approved, only reviewers and that Zoom account can consent.
 2. A BAA before any customer holds PHI. The Terms prohibit it without a written agreement, and
    HIPAA mode (`packages/compliance/AGENTS.md`) is what such a customer gets.
+- The dashboard reads one booking through `getBookingOverview`, which never returns answers (only `getBooking` does). Its `lookupKey` is the API's `RISK_HASH_KEY`, because `email_hmac` is searched with it.

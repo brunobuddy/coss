@@ -42,7 +42,7 @@ import {
 import { Textarea } from "@coss/ui/components/textarea";
 import { BotIcon, MessagesSquareIcon } from "lucide-react";
 import Link from "next/link";
-import { useActionState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
@@ -84,7 +84,9 @@ export function CreateInboxDialog(
 
 function CreateInboxForm(props: EnvTarget & { domains: { value: string; label: string }[] }) {
   const { domains, ...target } = props;
-  const [state, formAction, pending] = useActionState(createInboxAction, null);
+  const [state, formAction, pending] = useActionToast(createInboxAction, {
+    success: "Inbox created",
+  });
   if (state?.ok) {
     return (
       <>

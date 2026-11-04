@@ -57,6 +57,7 @@ export default async function HostsPage({
         {page.data.length === 0 ? (
           <PanelBody>
             <EmptyState
+              action={can({ scheduling: ["create"] }) ? <NewHostDialog {...target} /> : null}
               description="Create one here or with the API, usually one for each of your users who takes bookings."
               icon={UserRoundIcon}
               title="No hosts yet"

@@ -16,6 +16,8 @@ import {
   deleteHost,
   expireDueBookings,
   getBooking,
+  getBookingOverview,
+  listBookings,
   listEventTypeSlots,
   previewSeries,
   rescheduleBooking,
@@ -271,6 +273,69 @@ describe("booking", () => {
         ),
       );
     expect(row).toBeUndefined();
+  });
+});
+
+describe("the dashboard's reads", () => {
+  test("an overview names the host and has its history, but never answers", async () => {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    const eventType = await eventTypeFor(env, [{ host: host.id }], {
+      questions: [{ key: "reason", type: "text", label: "Reason", required: true, options: [] }],
+    });
+    const { booking } = await createBooking(
+      env,
+      request(eventType.id, at("09:00"), { answers: { reason: "chest pain" } }),
+      deps,
+      actor,
+    );
+    await cancelBooking(env, booking.id, deps, actor);
+    const overview = await getBookingOverview(env, booking.id, deps);
+    expect(overview.eventTypeTitle).toBe("Consultation");
+    expect(overview.hosts).toEqual([{ id: host.id, name: "Dr. Reyes" }]);
+    expect(overview.booking.attendees[0]?.email).toBe("sam@example.com");
+    expect(overview.booking.attendees[0]).not.toHaveProperty("answers");
+    expect(JSON.stringify(overview)).not.toContain("chest pain");
+    expect(overview.events.map((event) => event.type).at(0)).toBe("scheduling.booking.cancelled");
+    expect(overview.events.every((event) => event.actor === "system")).toBe(true);
+  });
+
+  test("an overview stays in its environment", async () => {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    const eventType = await eventTypeFor(env, [{ host: host.id }]);
+    const { booking } = await createBooking(env, request(eventType.id, at("09:00")), deps, actor);
+    const other = await tenantEnv();
+    expect(await code(getBookingOverview(other, booking.id, deps))).toBe("not_found");
+    expect(await code(getBookingOverview(env, "book_nope", deps))).toBe("not_found");
+  });
+
+  test("the list filters by status and finds an attendee by email or uid", async () => {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    const eventType = await eventTypeFor(env, [{ host: host.id }]);
+    const { booking: first } = await createBooking(
+      env,
+      request(eventType.id, at("09:00")),
+      deps,
+      actor,
+    );
+    const { booking: second } = await createBooking(
+      env,
+      request(eventType.id, at("10:00"), {
+        attendee: { uid: "patient_2", email: "Ada@Example.com", time_zone: "UTC" },
+      }),
+      deps,
+      actor,
+    );
+    await cancelBooking(env, first.id, deps, actor);
+    const ids = async (query: Parameters<typeof listBookings>[1]) =>
+      (await listBookings(env, query, deps)).data.map((booking) => booking.id);
+    expect(await ids({ limit: 10, status: "cancelled" })).toEqual([first.id]);
+    expect(await ids({ limit: 10, status: "confirmed" })).toEqual([second.id]);
+    expect(await ids({ limit: 10, attendeeEmail: "ada@example.com" })).toEqual([second.id]);
+    expect(await ids({ limit: 10, attendeeUid: "patient_2" })).toEqual([second.id]);
+    expect(await ids({ limit: 10, status: "cancelled", attendeeUid: "patient_2" })).toEqual([]);
   });
 });
 

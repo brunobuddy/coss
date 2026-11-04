@@ -58,6 +58,13 @@ export default async function SegmentsPage({
           <PanelBody flush>
             <EmptyState
               compact
+              action={
+                context.can({ contact: ["create"] }) ? (
+                  <Button render={<Link href={`${listPath}/new`} />} size="sm">
+                    New segment
+                  </Button>
+                ) : null
+              }
               description="Filter contacts by their properties, audiences, topics or email domain."
               icon={FilterIcon}
               title="No segments yet"

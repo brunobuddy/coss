@@ -40,6 +40,7 @@ export default async function ContactPropertiesPage({
           <PanelBody flush>
             <EmptyState
               compact
+              action={canCreate ? <CreatePropertyDialog {...target} /> : null}
               description="Add a property, e.g. plan or signed_up_at, to store it on contacts."
               icon={BracesIcon}
               title="No custom properties yet"

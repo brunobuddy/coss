@@ -64,6 +64,7 @@ export default async function FormsPage({
         {page.data.length === 0 ? (
           <PanelBody flush>
             <EmptyState
+              action={url && can({ form: ["create"] }) ? <NewFormDialog {...target} /> : null}
               compact
               description={
                 url

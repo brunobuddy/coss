@@ -1,6 +1,6 @@
 import "server-only";
-import { createHash } from "node:crypto";
 import { hostedPageScreening } from "@coss/forms";
+import { riskHashKeyFromEnv } from "@coss/risk/runtime";
 import type { SchedulingDeps } from "@coss/scheduling";
 import { schedulingDataKeysFromEnv } from "@coss/scheduling/runtime";
 import { env } from "@/env";
@@ -21,8 +21,8 @@ export function schedulingDeps(): SchedulingDeps | null {
   if (!dataKeys) return null;
   return {
     dataKeys,
-    // The dashboard never looks attendees up by email; the key only has to exist.
-    lookupKey: createHash("sha256").update("scheduling dashboard").digest(),
+    // The API's key: bookings' `email_hmac` is written with it, and the list searches by it.
+    lookupKey: Buffer.from(riskHashKeyFromEnv(env)),
     publicUrl: schedulingUrl(),
     // Built when something is screened: most of these deps only read.
     screenSetup: (input) => hostedPageScreening(riskDeps())(input),

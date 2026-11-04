@@ -65,6 +65,14 @@ export default async function EventTypesPage({
         {page.data.length === 0 ? (
           <PanelBody>
             <EmptyState
+              action={
+                can({ scheduling: ["create"] }) ? (
+                  <NewEventTypeDialog
+                    {...target}
+                    hosts={hosts.data.map((host) => ({ id: host.id, name: host.name }))}
+                  />
+                ) : null
+              }
               description="An appointment, a consultation or a class: how long it takes, and who takes it."
               icon={CalendarClockIcon}
               title="No event types yet"

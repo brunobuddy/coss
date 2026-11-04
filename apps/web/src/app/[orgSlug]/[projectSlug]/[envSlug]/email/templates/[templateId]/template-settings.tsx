@@ -26,9 +26,10 @@ import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Textarea } from "@coss/ui/components/textarea";
 import { LayoutTemplateIcon } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
+import { useActionToast } from "@/lib/toast";
 import { deleteTemplateAction, updateTemplateAction } from "../actions";
 
 type Target = { orgSlug: string; projectSlug: string; envSlug: string; templateId: string };
@@ -58,7 +59,9 @@ export function TemplateSettingsDialog(props: { target: Target; template: Templa
 }
 
 function SettingsForm(props: { target: Target; template: Template }) {
-  const [state, formAction, pending] = useActionState(updateTemplateAction, null);
+  const [state, formAction, pending] = useActionToast(updateTemplateAction, {
+    success: "Template saved",
+  });
   const [saved, setSaved] = useState(false);
   useEffect(() => {
     if (state?.ok) setSaved(true);
@@ -127,7 +130,9 @@ function SettingsForm(props: { target: Target; template: Template }) {
 
 export function DeleteTemplateButton(props: { target: Target; name: string }) {
   // On success the action redirects to the template list.
-  const [state, formAction, pending] = useActionState(deleteTemplateAction, null);
+  const [state, formAction, pending] = useActionToast(deleteTemplateAction, {
+    success: "Template deleted",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button size="sm" variant="destructive-outline" />}>

@@ -15,11 +15,12 @@ import {
   SelectValue,
 } from "@coss/ui/components/select";
 import { Textarea } from "@coss/ui/components/textarea";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { ListInput } from "@/components/fields/list-input";
 import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
+import { useActionToast } from "@/lib/toast";
 import { saveBroadcastAction } from "./actions";
 
 type Option = { value: string; label: string };
@@ -78,7 +79,9 @@ export function BroadcastEditor(
     canEdit: boolean;
   },
 ) {
-  const [state, formAction, pending] = useActionState(saveBroadcastAction, null);
+  const [state, formAction, pending] = useActionToast(saveBroadcastAction, {
+    success: "Broadcast saved",
+  });
   const [target, setTarget] = useState(props.draft.target);
   const [topic, setTopic] = useState(props.draft.topic || NO_TOPIC);
   const disabled = !props.canEdit;

@@ -3,11 +3,12 @@
 import { Button } from "@coss/ui/components/button";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { DateField } from "@/components/fields/date-field";
 import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { type MarketingFormTarget, TargetInputs } from "@/components/marketing";
+import { useActionToast } from "@/lib/toast";
 import { contactAudienceAction, setContactTopicAction, updateContactAction } from "../actions";
 
 type Property = { key: string; type: "string" | "number" | "boolean" | "date" };
@@ -92,7 +93,9 @@ export function ContactForm(
     canEdit: boolean;
   },
 ) {
-  const [state, formAction, pending] = useActionState(updateContactAction, null);
+  const [state, formAction, pending] = useActionToast(updateContactAction, {
+    success: "Contact saved",
+  });
   const disabled = !props.canEdit;
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -167,7 +170,9 @@ export function TopicChoiceButton(
     subscribed: boolean;
   },
 ) {
-  const [state, formAction, pending] = useActionState(setContactTopicAction, null);
+  const [state, formAction, pending] = useActionToast(setContactTopicAction, {
+    success: props.subscribed ? "Opted out of the topic" : "Opted in to the topic",
+  });
   return (
     <form action={formAction} className="flex items-center gap-2">
       <TargetInputs {...props} />
@@ -186,7 +191,9 @@ export function TopicChoiceButton(
 export function AudienceMembershipButton(
   props: MarketingFormTarget & { contactId: string; audienceId: string; member: boolean },
 ) {
-  const [state, formAction, pending] = useActionState(contactAudienceAction, null);
+  const [state, formAction, pending] = useActionToast(contactAudienceAction, {
+    success: props.member ? "Removed from the audience" : "Added to the audience",
+  });
   return (
     <form action={formAction} className="flex items-center gap-2">
       <TargetInputs {...props} />

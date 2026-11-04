@@ -27,7 +27,6 @@ import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { UsersRoundIcon } from "lucide-react";
 import Link from "next/link";
-import { useActionState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { UnitInput } from "@/components/fields/unit-input";
 import { FormError } from "@/components/form-error";
@@ -65,7 +64,9 @@ export function CreateSubaccountDialog(props: EnvTarget) {
 }
 
 function CreateSubaccountForm(props: EnvTarget) {
-  const [state, formAction, pending] = useActionState(createSubaccountAction, null);
+  const [state, formAction, pending] = useActionToast(createSubaccountAction, {
+    success: "Sub-account added",
+  });
   if (state?.ok) {
     return (
       <>

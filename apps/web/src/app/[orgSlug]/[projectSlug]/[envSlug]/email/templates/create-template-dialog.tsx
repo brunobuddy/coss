@@ -15,9 +15,9 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { LayoutTemplateIcon } from "lucide-react";
-import { useActionState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
+import { useActionToast } from "@/lib/toast";
 import { createTemplateAction } from "./actions";
 
 type Target = { orgSlug: string; projectSlug: string; envSlug: string };
@@ -35,7 +35,9 @@ export function CreateTemplateDialog(props: Target) {
 
 function CreateTemplateForm(props: Target) {
   // On success the action redirects to the new template's editor.
-  const [state, formAction, pending] = useActionState(createTemplateAction, null);
+  const [state, formAction, pending] = useActionToast(createTemplateAction, {
+    success: "Template created",
+  });
   return (
     <form action={formAction} className="contents">
       <input name="orgSlug" type="hidden" value={props.orgSlug} />

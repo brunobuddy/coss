@@ -83,6 +83,7 @@ const {
   schedulingCalendarConnection,
   schedulingCalendarEvent,
   schedulingClaim,
+  schedulingEventType,
   schedulingEventTypeHost,
   schedulingGroupSession,
   schedulingHost,
@@ -114,6 +115,7 @@ export type BookingRequest = {
 };
 
 const LIVE_CHECK_CANDIDATES = 3;
+const BOOKING_HISTORY_LIMIT = 100;
 
 /** Thrown inside a savepoint to undo a candidate's partial claims. Never leaves this file. */
 class LostSlot extends Error {
@@ -2073,11 +2075,7 @@ export async function updateBookingLocation(
   return toBookingObject(db, row, deps);
 }
 
-export async function getBooking(
-  scope: Scope,
-  id: string,
-  deps: Pick<SchedulingDeps, "dataKeys">,
-): Promise<BookingObjectOutput> {
+async function bookingRow(scope: Scope, id: string): Promise<BookingRow> {
   if (!isId(ID_PREFIXES.schedulingBooking, id)) {
     throw new SchedulingError("not_found", `No booking "${id}" in this environment.`);
   }
@@ -2092,7 +2090,76 @@ export async function getBooking(
       ),
     );
   if (!row) throw new SchedulingError("not_found", `No booking "${id}" in this environment.`);
-  return toBookingObject(db, row, deps, { includeAnswers: true });
+  return row;
+}
+
+export async function getBooking(
+  scope: Scope,
+  id: string,
+  deps: Pick<SchedulingDeps, "dataKeys">,
+): Promise<BookingObjectOutput> {
+  return toBookingObject(db, await bookingRow(scope, id), deps, { includeAnswers: true });
+}
+
+/** The dashboard's view of one booking: names and its history, never answers (only `getBooking`). */
+export async function getBookingOverview(
+  scope: Scope,
+  id: string,
+  deps: Pick<SchedulingDeps, "dataKeys">,
+): Promise<{
+  booking: BookingObjectOutput;
+  eventTypeTitle: string | null;
+  hosts: { id: string; name: string }[];
+  events: { id: string; type: string; actor: BookingActor["kind"]; occurredAt: Date }[];
+}> {
+  const row = await bookingRow(scope, id);
+  const booking = await toBookingObject(db, row, deps);
+  const [[eventType], hosts, events] = await Promise.all([
+    db
+      .select({ title: schedulingEventType.title })
+      .from(schedulingEventType)
+      .where(
+        and(
+          eq(schedulingEventType.id, row.eventTypeId),
+          eq(schedulingEventType.organizationId, scope.organizationId),
+          eq(schedulingEventType.environmentId, scope.environmentId),
+        ),
+      ),
+    booking.hosts.length === 0
+      ? []
+      : db
+          .select({ id: schedulingHost.id, name: schedulingHost.name })
+          .from(schedulingHost)
+          .where(
+            and(
+              inArray(schedulingHost.id, booking.hosts),
+              eq(schedulingHost.organizationId, scope.organizationId),
+              eq(schedulingHost.environmentId, scope.environmentId),
+            ),
+          ),
+    db
+      .select({
+        id: schedulingBookingEvent.id,
+        type: schedulingBookingEvent.type,
+        actor: schedulingBookingEvent.actor,
+        occurredAt: schedulingBookingEvent.occurredAt,
+      })
+      .from(schedulingBookingEvent)
+      .where(
+        and(
+          eq(schedulingBookingEvent.bookingId, row.id),
+          eq(schedulingBookingEvent.organizationId, scope.organizationId),
+        ),
+      )
+      .orderBy(desc(schedulingBookingEvent.sequence))
+      .limit(BOOKING_HISTORY_LIMIT),
+  ]);
+  return {
+    booking,
+    eventTypeTitle: eventType?.title ?? null,
+    hosts,
+    events: events.map((event) => ({ ...event, actor: event.actor.kind })),
+  };
 }
 
 export async function listBookings(

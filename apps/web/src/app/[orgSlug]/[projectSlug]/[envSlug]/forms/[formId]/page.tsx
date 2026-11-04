@@ -268,6 +268,13 @@ export default async function FormPage({
         {page.data.length === 0 ? (
           <PanelBody flush>
             <EmptyState
+              action={
+                filter?.value === "inbox" && !after ? (
+                  <Button render={<a href="/docs/forms" />} size="sm" variant="outline">
+                    Read the docs
+                  </Button>
+                ) : null
+              }
               compact
               description={
                 filter?.value === "inbox"

@@ -25,9 +25,10 @@ import {
 } from "@coss/ui/components/select";
 import { SendIcon } from "lucide-react";
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
+import { useActionToast } from "@/lib/toast";
 import { sendTestAction } from "../actions";
 
 type Target = { orgSlug: string; projectSlug: string; envSlug: string; templateId: string };
@@ -60,7 +61,7 @@ export function TestSendDialog(props: Props) {
 }
 
 function TestSendForm(props: Props) {
-  const [state, formAction, pending] = useActionState(sendTestAction, null);
+  const [state, formAction, pending] = useActionToast(sendTestAction, { success: "Test sent" });
   const [locale, setLocale] = useState(props.locales[0] ?? "");
   const [to, setTo] = useState<Set<string>>(
     new Set(props.recipients.includes(props.currentUserEmail) ? [props.currentUserEmail] : []),

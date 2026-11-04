@@ -37,6 +37,7 @@ export default async function TopicsPage({
           <PanelBody flush>
             <EmptyState
               compact
+              action={context.can({ contact: ["create"] }) ? <TopicDialog {...target} /> : null}
               description="E.g. a newsletter, product updates or event invitations."
               icon={BookmarkIcon}
               title="No topics yet"

@@ -13,16 +13,18 @@ import {
 import { Button } from "@coss/ui/components/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@coss/ui/components/tooltip";
 import { UploadIcon } from "lucide-react";
-import { useActionState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
+import { useActionToast } from "@/lib/toast";
 import { publishTemplateAction } from "../actions";
 
 type Target = { orgSlug: string; projectSlug: string; envSlug: string; templateId: string };
 
 /** Publishes the saved draft (at the revision the editor shows) as the next version. */
 export function PublishButton(props: { target: Target; revision: number; blocked: string | null }) {
-  const [state, formAction, pending] = useActionState(publishTemplateAction, null);
+  const [state, formAction, pending] = useActionToast(publishTemplateAction, {
+    success: (data) => `Published version ${data.version}`,
+  });
   if (props.blocked) {
     return (
       <Tooltip>

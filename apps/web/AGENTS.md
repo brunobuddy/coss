@@ -58,6 +58,9 @@ directory unless they name a workspace.
   but the old request headers.
 - When driving the dashboard in a browser, wait for hydration before typing or submitting.
 
+- Failed pages stay inside the shell: `[orgSlug]`, `settings` and `admin` each have an `error.tsx` built on `PageError` (`src/components/error-state.tsx`), which also handles the version-skew reload; a new `AppShell` layout needs one too (`test/error-boundaries.test.ts`). A mutation calling `useActionState` directly fails that test; add reads and hand-offs to its `NOT_MUTATIONS` list.
+- Browser smoke tests live in `e2e/*.e2e.ts` (Playwright, `bun run --cwd apps/web e2e`, the merge queue's `e2e` job). They run on `next dev` with the fake providers; keep Playwright's output outside the app, or `next dev` reloads every open page. A stale `.next` can do the same: delete all of it with the server stopped.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

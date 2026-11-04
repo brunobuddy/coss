@@ -59,6 +59,13 @@ export default async function BroadcastsPage({
           <PanelBody flush>
             <EmptyState
               compact
+              action={
+                context.can({ broadcast: ["create"] }) ? (
+                  <Button render={<Link href={`${listPath}/new`} />} size="sm">
+                    New broadcast
+                  </Button>
+                ) : null
+              }
               description="Write a newsletter or an announcement, pick who gets it, and send or schedule it."
               icon={SendIcon}
               title="No broadcasts yet"
