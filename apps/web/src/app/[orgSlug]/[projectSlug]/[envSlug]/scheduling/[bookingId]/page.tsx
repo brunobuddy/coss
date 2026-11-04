@@ -17,7 +17,7 @@ import { BookingStatusDot } from "@/components/scheduling-badges";
 import { SpecItem, SpecList } from "@/components/spec-list";
 import { formatDateTime } from "@/lib/format";
 import { schedulingPageContext } from "../page-context";
-import { CancelBookingButton } from "../scheduling-actions";
+import { CancelBookingButton, RescheduleBookingButton } from "../scheduling-actions";
 
 export const metadata: Metadata = { title: "Booking" };
 
@@ -76,6 +76,11 @@ export default async function BookingPage({
     throw error;
   });
   const ended = booking.status === "cancelled" || booking.status === "declined";
+  // A group seat is moved by cancelling it and booking another session.
+  const canMove =
+    (booking.status === "confirmed" || booking.status === "pending_approval") &&
+    !booking.group_session &&
+    Date.parse(booking.end) > Date.now();
   const metadataEntries = Object.entries(booking.metadata);
 
   return (
@@ -83,7 +88,10 @@ export default async function BookingPage({
       <PageHeader
         actions={
           !ended && can({ scheduling: ["update"] }) ? (
-            <CancelBookingButton {...target} bookingId={booking.id} />
+            <div className="flex gap-2">
+              {canMove ? <RescheduleBookingButton {...target} bookingId={booking.id} /> : null}
+              <CancelBookingButton {...target} bookingId={booking.id} />
+            </div>
           ) : null
         }
         description="Answers to booking questions are only available through the API."
@@ -98,14 +106,26 @@ export default async function BookingPage({
               {booking.id}
             </SpecItem>
             <SpecItem label="Event type">
-              <Link className="hover:underline" href={`${schedulingPath}/event-types`}>
+              <Link
+                className="hover:underline"
+                href={`${schedulingPath}/event-types/${booking.event_type}`}
+              >
                 {eventTypeTitle ?? booking.event_type}
               </Link>
             </SpecItem>
             <SpecItem label="Starts">{formatDateTime(booking.start)}</SpecItem>
             <SpecItem label="Ends">{formatDateTime(booking.end)}</SpecItem>
             <SpecItem label="Hosts">
-              {hosts.length > 0 ? hosts.map((host) => host.name).join(", ") : "—"}
+              {hosts.length > 0
+                ? hosts.map((host, index) => (
+                    <span key={host.id}>
+                      {index > 0 ? ", " : ""}
+                      <Link className="hover:underline" href={`${schedulingPath}/hosts/${host.id}`}>
+                        {host.name}
+                      </Link>
+                    </span>
+                  ))
+                : "—"}
             </SpecItem>
             <SpecItem label="Location">{locationText(booking.location)}</SpecItem>
             <SpecItem label="Created">{formatDateTime(booking.created_at)}</SpecItem>

@@ -8,7 +8,7 @@ thing, with its token in the URL's fragment, which never reaches a server.
 
 | Session | Lets the browser | Lasts |
 |---|---|---|
-| `createForHost` | Set one host's hours, connect their calendars, see their bookings | An hour by default, up to a day |
+| `createForHost` | Set one host's hours, connect their calendars, and manage their bookings: approve, decline, reschedule, cancel, mark a no-show | An hour by default, up to a day |
 | `createForBooker` | Book one event type | 30 minutes by default, up to a day |
 | `createForBooking` | Reschedule or cancel one booking | Until a day after it ends. Stops when it's cancelled |
 
@@ -75,5 +75,7 @@ not supply its own link or address, only a phone number where the event type lea
 
 Booker sessions have `GET /session`, `GET /slots` and `POST /bookings`. Manage sessions have
 `GET /booking`, `GET /booking/slots`, `POST /booking/reschedule` and `POST /booking/cancel`. Host sessions
-have `/host/schedules`, `/host/calendar_connections`, `/host/calendars/{id}`, `/host/locations` and
-`/host/bookings`.
+have `/host/schedules`, `/host/calendar_connections`, `/host/calendars/{id}`, `/host/locations` and `/host/bookings`
+(with `?when=past`, those that started in the last 30 days), and for one of their bookings
+`GET /host/bookings/{id}/slots` and `POST /host/bookings/{id}/approve`, `/decline`, `/cancel`, `/reschedule` and
+`/no_show`. A host isn't held to the cutoffs attendees are, and can't move a booking to another host.
