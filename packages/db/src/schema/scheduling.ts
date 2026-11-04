@@ -291,6 +291,8 @@ export const schedulingEventType = pgTable(
     environmentId: text("environment_id").notNull(),
     uid: text("uid"),
     title: text("title").notNull(),
+    // Shown on hosted pages, never in emails. Links only to the organization's verified domains.
+    description: text("description"),
     kind: schedulingEventTypeKind("kind").notNull().default("one_on_one"),
     status: schedulingEventTypeStatus("status").notNull().default("active"),
     durationMinutes: integer("duration_minutes").notNull(),
@@ -663,6 +665,10 @@ export const schedulingBooking = pgTable(
     externalConflictAt: instant("external_conflict_at"),
     noShowAt: instant("no_show_at"),
     cancelledAt: instant("cancelled_at"),
+    // The kind of actor who cancelled it. Null: not cancelled.
+    cancelledBy: text("cancelled_by").$type<SchedulingActor["kind"]>(),
+    // Why, if they said. Free text, so only `getBooking` returns it: never events, webhooks or logs.
+    encryptedCancellationReason: text("encrypted_cancellation_reason"),
     redactedAt: instant("redacted_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

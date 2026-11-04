@@ -33,6 +33,7 @@ const EVENT_TYPE: EventTypeObjectOutput = {
   hold_ttl_seconds: 600,
   cancel_notice_minutes: 60,
   reschedule_notice_minutes: 90,
+  description: null,
   max_guests: 3,
   max_active_bookings_per_attendee: null,
   host_calendar_details: "full",

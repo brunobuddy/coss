@@ -1729,7 +1729,7 @@ describe("clearing a policy", () => {
 
 describe("the migration, for bookings from before this", () => {
   const statements = readFileSync(
-    new URL("../../db/migrations/0132_scheduling_reminder_backfill.sql", import.meta.url),
+    new URL("../../db/migrations/0135_scheduling_reminder_backfill.sql", import.meta.url),
     "utf8",
   )
     .split("--> statement-breakpoint")

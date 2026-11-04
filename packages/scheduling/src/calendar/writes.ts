@@ -691,11 +691,9 @@ export async function checkHostEditedEvents(deps: CalendarDeps, opts: Scan = {})
         continue;
       }
       await db.transaction(async (tx) => {
-        await tx
-          .update(schedulingCalendarEvent)
-          .set({ externalState: moved ? "moved" : "deleted" })
-          .where(eq(schedulingCalendarEvent.id, row.id));
-        for (const booking of await bookingsOfRow(tx, row)) {
+        // Bookings before the ledger row, as cancelling and erasing take them, or these deadlock.
+        const bookings = await bookingsOfRow(tx, row);
+        for (const booking of [...bookings].sort((a, b) => (a.id < b.id ? -1 : 1))) {
           await tx
             .update(schedulingBooking)
             .set({ externalConflictAt: now })
@@ -710,6 +708,10 @@ export async function checkHostEditedEvents(deps: CalendarDeps, opts: Scan = {})
             now,
           );
         }
+        await tx
+          .update(schedulingCalendarEvent)
+          .set({ externalState: moved ? "moved" : "deleted" })
+          .where(eq(schedulingCalendarEvent.id, row.id));
       });
     } catch (error) {
       if (!(error instanceof CalendarError)) throw error;

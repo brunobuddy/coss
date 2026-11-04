@@ -31,6 +31,7 @@ export const SDK_METHODS: Readonly<Record<string, string>> = {
   "GET /v1/scheduling/bookings/{id}": "scheduling.bookings.get",
   "POST /v1/scheduling/bookings/{id}/reschedule": "scheduling.bookings.reschedule",
   "POST /v1/scheduling/bookings/{id}/cancel": "scheduling.bookings.cancel",
+  "GET /v1/scheduling/bookings/{id}/events": "scheduling.bookings.events",
   "POST /v1/scheduling/bookings/{id}/approve": "scheduling.bookings.approve",
   "POST /v1/scheduling/bookings/{id}/decline": "scheduling.bookings.decline",
   "POST /v1/scheduling/bookings/{id}/no_show": "scheduling.bookings.markNoShow",

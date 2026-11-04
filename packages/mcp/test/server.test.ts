@@ -104,6 +104,7 @@ describe("coss-mcp server", () => {
       "list_risk_assessments",
       "list_risk_list_entries",
       "list_risk_rules",
+      "list_scheduling_booking_events",
       "list_scheduling_booking_notifications",
       "list_scheduling_bookings",
       "list_scheduling_calendars",

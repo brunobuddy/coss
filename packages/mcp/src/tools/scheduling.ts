@@ -194,11 +194,39 @@ export function registerSchedulingTools(ctx: ToolContext): void {
       title: "Cancel a booking",
       description:
         "Frees the time, removes the calendar event and tells the attendee. It can't be undone, and the booking stays charged.",
-      inputSchema: z.object({ booking_id: bookingId }),
+      inputSchema: z.object({
+        booking_id: bookingId,
+        reason: z.string().optional().describe("Why. Only retrieving this booking returns it."),
+      }),
       annotations: DESTRUCTIVE,
     },
-    ({ booking_id }) =>
-      respond(coss.scheduling.bookings.cancel(booking_id), (booking) => bookingSummary(booking)),
+    ({ booking_id, reason }) =>
+      respond(coss.scheduling.bookings.cancel(booking_id, reason ? { reason } : {}), (booking) =>
+        bookingSummary(booking),
+      ),
+  );
+
+  server.registerTool(
+    "list_scheduling_booking_events",
+    {
+      title: "List a booking's history",
+      description:
+        "What's happened to a booking, oldest first, and who did it: created, confirmed, rescheduled, cancelled and so on.",
+      inputSchema: z.object({
+        booking_id: bookingId,
+        limit: z.number().int().optional(),
+        after: z.string().optional().describe("The last id of the previous page."),
+      }),
+      annotations: READ_ONLY,
+    },
+    ({ booking_id, limit, after }) =>
+      respond(
+        coss.scheduling.bookings.events(booking_id, {
+          ...(limit ? { limit } : {}),
+          ...(after ? { after } : {}),
+        }),
+        (events) => ({ events: events.data, has_more: events.has_more }),
+      ),
   );
 
   const host = z.string().describe("The host's id or uid. list_scheduling_hosts finds it.");

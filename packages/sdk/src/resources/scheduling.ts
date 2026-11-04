@@ -3,6 +3,7 @@ import type { HttpClient, RequestOptions } from "../core/http.ts";
 import type { List } from "../types/email.ts";
 import type {
   AuthorizeSchedulingCalendarParams,
+  CancelSchedulingBookingParams,
   CancelSchedulingSeriesParams,
   ConfirmSchedulingHoldParams,
   CreateSchedulingBookerSessionParams,
@@ -19,6 +20,7 @@ import type {
   DeletedSchedulingHost,
   DeletedSchedulingSchedule,
   ExplainSchedulingSlotParams,
+  ListSchedulingBookingEventsParams,
   ListSchedulingBookingsParams,
   ListSchedulingSlotsParams,
   RescheduleSchedulingBookingParams,
@@ -26,6 +28,7 @@ import type {
   SchedulingAttendeeErasure,
   SchedulingAvailabilitySearchResult,
   SchedulingBooking,
+  SchedulingBookingEventList,
   SchedulingBookingNotification,
   SchedulingCalendarAuthorization,
   SchedulingCalendarConnection,
@@ -380,10 +383,29 @@ export class SchedulingBookingsResource {
   }
 
   /** Cancels a booking and frees the time. */
-  cancel(id: string, options?: ReadOptions): Promise<CossResult<SchedulingBooking>> {
+  cancel(
+    id: string,
+    params: CancelSchedulingBookingParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingBooking>> {
     return this.#http.request<SchedulingBooking>({
       method: "POST",
       path: `/v1/scheduling/bookings/${part(id)}/cancel`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** What's happened to a booking, oldest first, and who did it. */
+  events(
+    id: string,
+    params: ListSchedulingBookingEventsParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingBookingEventList>> {
+    return this.#http.request<SchedulingBookingEventList>({
+      method: "GET",
+      path: `/v1/scheduling/bookings/${part(id)}/events`,
+      query: listQuery(params),
       signal: options?.signal,
     });
   }

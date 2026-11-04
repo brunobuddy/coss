@@ -18912,6 +18912,13 @@
             ],
             "description": "Your own id for this event type, accepted wherever its id is. `null` when none is set."
           },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Plain text shown on hosted booking pages. `null` when there's none."
+          },
           "title": {
             "type": "string",
             "description": "Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`."
@@ -19145,6 +19152,7 @@
           "object",
           "id",
           "uid",
+          "description",
           "title",
           "kind",
           "status",
@@ -19182,6 +19190,7 @@
             "id": "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
             "uid": null,
             "title": "Initial consultation",
+            "description": null,
             "kind": "one_on_one",
             "status": "active",
             "duration_minutes": 30,
@@ -19685,6 +19694,14 @@
             "default": "one_on_one",
             "description": "Who a booking needs. `one_on_one`: one host. `pool`: any one of its hosts. `collective`: every `required` host, plus at most one `member`. `group`: one host, with attendees taking seats up to `capacity`. Fixed once created."
           },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it."
+          },
           "title": {
             "type": "string",
             "minLength": 1,
@@ -20173,6 +20190,7 @@
                 "id": "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
                 "uid": null,
                 "title": "Initial consultation",
+                "description": null,
                 "kind": "one_on_one",
                 "status": "active",
                 "duration_minutes": 30,
@@ -20226,6 +20244,14 @@
             "minLength": 1,
             "maxLength": 255,
             "description": "Your own id for this event type. `null` removes it."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it."
           },
           "title": {
             "type": "string",
@@ -20999,6 +21025,29 @@
             ],
             "description": "When it was cancelled. `null`: not cancelled."
           },
+          "cancelled_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "api_key",
+              "user",
+              "host_session",
+              "booker_session",
+              "manage_session",
+              "system",
+              null
+            ],
+            "description": "Who cancelled it: `api_key`, `user` (the dashboard), `host_session`, `booker_session`, `manage_session` (the attendee's link) or `system`. `null`: not cancelled, or cancelled before this was recorded."
+          },
+          "cancellation_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why, if they said. Only when retrieving one booking. It's erased with the attendee's details, and it's never in webhooks, logs or emails."
+          },
           "metadata": {
             "type": "object",
             "additionalProperties": {
@@ -21033,6 +21082,7 @@
           "external_conflict_at",
           "no_show_at",
           "cancelled_at",
+          "cancelled_by",
           "metadata",
           "created_at",
           "updated_at"
@@ -21071,6 +21121,7 @@
             "external_conflict_at": null,
             "no_show_at": null,
             "cancelled_at": null,
+            "cancelled_by": null,
             "metadata": {},
             "created_at": "2027-01-01T10:00:00.000Z",
             "updated_at": "2027-01-01T10:00:00.000Z"
@@ -21444,6 +21495,7 @@
                 "external_conflict_at": null,
                 "no_show_at": null,
                 "cancelled_at": null,
+                "cancelled_by": null,
                 "metadata": {},
                 "created_at": "2027-01-01T10:00:00.000Z",
                 "updated_at": "2027-01-01T10:00:00.000Z"
@@ -21476,6 +21528,136 @@
           {
             "start": "2027-01-05T15:00:00.000Z"
           }
+        ]
+      },
+      "CancelSchedulingBookingRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "Why it's being cancelled. Only retrieving this booking returns it: it's never in webhooks, logs or emails."
+          }
+        },
+        "additionalProperties": false,
+        "examples": [
+          {
+            "reason": "Feeling better"
+          }
+        ]
+      },
+      "SchedulingBookingEventList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "list"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingBookingEvent"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "object",
+          "data",
+          "has_more"
+        ],
+        "examples": [
+          {
+            "object": "list",
+            "data": [
+              {
+                "object": "scheduling.booking_event",
+                "id": "bevt_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                "sequence": 1,
+                "type": "scheduling.booking.confirmed",
+                "actor": {
+                  "kind": "api_key",
+                  "id": "key_01kd2m9a0b1c2d3e4f5g6h7j8m"
+                },
+                "details": {},
+                "occurred_at": "2027-01-02T09:00:00.000Z"
+              }
+            ],
+            "has_more": false
+          }
+        ]
+      },
+      "SchedulingBookingEvent": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "scheduling.booking_event"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "number",
+            "description": "This booking's events count up from 1."
+          },
+          "type": {
+            "type": "string",
+            "description": "What happened, such as `scheduling.booking.confirmed`, `scheduling.booking.rescheduled` or `scheduling.booking.cancelled`."
+          },
+          "actor": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "api_key",
+                  "user",
+                  "host_session",
+                  "booker_session",
+                  "manage_session",
+                  "system"
+                ]
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The API key, user or session's id. `null` for `system`."
+              }
+            },
+            "required": [
+              "kind",
+              "id"
+            ],
+            "description": "Who did it."
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "More about it, such as `previous_start` on a reschedule. Never personal data."
+          },
+          "occurred_at": {
+            "type": "string",
+            "description": "When it happened."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "sequence",
+          "type",
+          "actor",
+          "details",
+          "occurred_at"
         ]
       },
       "SchedulingBookingNotificationList": {
@@ -21958,6 +22140,7 @@
                 "external_conflict_at": null,
                 "no_show_at": null,
                 "cancelled_at": null,
+                "cancelled_by": null,
                 "metadata": {},
                 "created_at": "2027-01-01T10:00:00.000Z",
                 "updated_at": "2027-01-01T10:00:00.000Z"
@@ -22387,6 +22570,7 @@
                 "external_conflict_at": null,
                 "no_show_at": null,
                 "cancelled_at": null,
+                "cancelled_by": null,
                 "metadata": {},
                 "created_at": "2027-01-01T10:00:00.000Z",
                 "updated_at": "2027-01-01T10:00:00.000Z"
@@ -71323,6 +71507,16 @@
             "$ref": "#/components/parameters/CossVersion"
           }
         ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelSchedulingBookingRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "The booking.",
@@ -71440,6 +71634,245 @@
           },
           "422": {
             "description": "The booking can't change that way (`booking_not_changeable`), the new time isn't available (`slot_unavailable`), or a hold expired (`hold_expired`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scheduling/bookings/{id}/events": {
+      "get": {
+        "operationId": "listSchedulingBookingEvents",
+        "tags": [
+          "Scheduling bookings"
+        ],
+        "summary": "List a booking's history",
+        "description": "What's happened to a booking, oldest first, and who did it. There's no personal data in here.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The booking's id.",
+              "examples": [
+                "book_01kd2m9a0b1c2d3e4f5g6h7j8m"
+              ]
+            },
+            "required": true,
+            "description": "The booking's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "The last id of the previous page."
+            },
+            "required": false,
+            "description": "The last id of the previous page.",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The events.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingBookingEventList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",
