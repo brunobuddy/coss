@@ -47,6 +47,13 @@ describe("/llms.txt", () => {
     expect(index).toContain("https://coss.com/docs/api-reference/llms.txt");
   });
 
+  test("the brief names every product", () => {
+    const summary = AGENT_BRIEF.split("\n").find((line: string) => line.startsWith("> ")) ?? "";
+    for (const product of ["email", "inboxes", "SMS", "Verify", "Sign", "Forms", "Scheduling"]) {
+      expect(summary).toContain(product);
+    }
+    for (const product of ["Hooks", "Risk"]) expect(summary).toContain(product);
+  });
 });
 
 describe("the API operation indexes", () => {

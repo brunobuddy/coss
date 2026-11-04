@@ -43,7 +43,7 @@ const FAQ = [
   {
     question: "What is coss.com?",
     answer:
-      "coss.com is a developer platform: one API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, one-time codes, forms, scheduling, webhooks for your own users, and risk checks with rate limiting. It is built by the team behind Cal.com.",
+      "coss.com is a developer platform: one API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, one-time codes, e-signatures, forms, scheduling, webhooks for your own users, and risk checks with rate limiting. It is built by the team behind Cal.com.",
   },
   {
     question: "How much does coss.com cost?",

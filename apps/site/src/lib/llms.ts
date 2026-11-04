@@ -24,7 +24,7 @@ const API_GROUP_SECTIONS: Readonly<Record<string, string>> = { Marketing: "Email
  */
 export const AGENT_BRIEF = `# coss.com
 
-> One API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, Verify (one-time codes by SMS or email), Forms (hosted form endpoints), Scheduling (bookings and calendars), Hooks (webhooks as a service for your own users) and Risk (sign-up, login and payment risk decisions, and rate limiting). These docs are written for people and coding agents alike.
+> One API key and one SDK for transactional and marketing email, inboxes for AI agents, SMS, Verify (one-time codes by SMS or email), Sign (e-signatures), Forms (hosted form endpoints), Scheduling (bookings and calendars), Hooks (webhooks as a service for your own users) and Risk (sign-up, login and payment risk decisions, and rate limiting). These docs are written for people and coding agents alike.
 
 ## Reading these docs
 

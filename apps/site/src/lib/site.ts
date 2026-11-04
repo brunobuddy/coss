@@ -2,7 +2,7 @@ export const SITE_NAME = "coss.com";
 export const SITE_URL = "https://coss.com";
 /** What coss.com is, in one line: the site's description, its schema and search results. */
 export const SITE_DESCRIPTION =
-  "One API key and one SDK for transactional email, AI agent inboxes, SMS, one-time codes, forms, scheduling, webhooks and risk checks.";
+  "One API key and one SDK for transactional email, AI agent inboxes, SMS, one-time codes, e-signatures, forms, scheduling, webhooks and risk checks.";
 export const DOCS_ROUTE = "/docs";
 
 /**
