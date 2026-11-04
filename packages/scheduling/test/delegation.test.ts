@@ -171,6 +171,8 @@ describe("the plan", () => {
         },
         requireCapacity: async () => {},
         limit: async () => null,
+        currentLimit: async () => null,
+        hasFeature: async () => allowed,
       },
     };
   };
