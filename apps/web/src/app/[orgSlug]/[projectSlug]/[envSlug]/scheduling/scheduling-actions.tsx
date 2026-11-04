@@ -28,11 +28,21 @@ import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
 import { Label } from "@coss/ui/components/label";
 import { Radio, RadioGroup } from "@coss/ui/components/radio-group";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "@coss/ui/components/select";
 import { Textarea } from "@coss/ui/components/textarea";
-import { CalendarClockIcon, UserRoundIcon } from "lucide-react";
+import { CalendarClockIcon, CalendarPlusIcon, UserRoundIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
+import type { ActionResult } from "@/lib/action-result";
+import { formatAttributes, formatKeyValues } from "@/lib/scheduling-edit";
 import { useActionToast } from "@/lib/toast";
 import {
   approveBookingAction,
@@ -41,9 +51,13 @@ import {
   createHostAction,
   declineBookingAction,
   deleteHostAction,
+  openBookerAction,
+  openBookingManagerAction,
   openHostPortalAction,
   saveSettingsAction,
+  setEventTypeStatusAction,
   setHostStatusAction,
+  updateHostAction,
 } from "./actions";
 
 export type EnvTarget = { orgSlug: string; projectSlug: string; envSlug: string };
@@ -109,21 +123,251 @@ export function NewHostDialog(props: EnvTarget) {
   );
 }
 
+/**
+ * A hosted page in a tab of its own, for what only the API can work out or a host does themselves.
+ * Coming back shows whatever happened there.
+ */
+function useOpensHostedPage(state: ActionResult<{ url: string }> | null) {
+  const router = useRouter();
+  useEffect(() => {
+    if (!state?.ok || !state.data) return;
+    window.open(state.data.url, "_blank", "noopener,noreferrer");
+    const onFocus = () => router.refresh();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [state, router]);
+}
+
 export function OpenPortalButton(props: EnvTarget & { hostId: string }) {
   const [state, formAction, pending] = useActionToast(openHostPortalAction, {
     errors: "toast",
   });
-  useEffect(() => {
-    if (state?.ok && state.data) {
-      window.open(state.data.url, "_blank", "noopener,noreferrer");
-    }
-  }, [state]);
+  useOpensHostedPage(state);
   return (
     <form action={formAction}>
       <Hidden {...props} />
       <Button disabled={pending} size="sm" type="submit" variant="outline">
         Open their page
       </Button>
+    </form>
+  );
+}
+
+/** The booker's page for one event type, in a tab of its own. */
+export function BookEventTypeButton(props: EnvTarget & { eventTypeId: string }) {
+  const [state, formAction, pending] = useActionToast(openBookerAction, { errors: "toast" });
+  useOpensHostedPage(state);
+  return (
+    <form action={formAction}>
+      <Hidden {...props} />
+      <Button disabled={pending} size="sm" type="submit">
+        New booking
+      </Button>
+    </form>
+  );
+}
+
+export function NewBookingDialog(
+  props: EnvTarget & { eventTypes: { id: string; title: string }[] },
+) {
+  const { eventTypes, ...target } = props;
+  const [state, formAction, pending] = useActionToast(openBookerAction, {});
+  const [open, setOpen] = useState(false);
+  useOpensHostedPage(state);
+  useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
+  const items = eventTypes.map((eventType) => ({ value: eventType.id, label: eventType.title }));
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button size="sm" />}>New booking</DialogTrigger>
+      <DialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...target} />
+          <DialogHeader>
+            <DialogIcon icon={CalendarPlusIcon} />
+            <DialogTitle>New booking</DialogTitle>
+            <DialogDescription>
+              Opens the booker's page in a new tab, where you choose a time and enter the attendee's
+              details. They're told as they would be if they'd booked it themselves.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogPanel className="flex flex-col gap-4">
+            <Field>
+              <FieldLabel>Event type</FieldLabel>
+              <Select defaultValue={items[0]?.value} items={items} name="eventTypeId" required>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectPopup>
+                  {items.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectPopup>
+              </Select>
+            </Field>
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </DialogPanel>
+          <DialogFooter>
+            <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
+            <Button disabled={pending} type="submit">
+              Open the booker's page
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+/** The manage page for one booking, in a tab of its own, for choosing a new time. */
+export function RescheduleBookingButton(props: EnvTarget & { bookingId: string }) {
+  const [state, formAction, pending] = useActionToast(openBookingManagerAction, {
+    errors: "toast",
+  });
+  useOpensHostedPage(state);
+  return (
+    <form action={formAction}>
+      <Hidden {...props} />
+      <Button disabled={pending} size="sm" type="submit" variant="outline">
+        Reschedule
+      </Button>
+    </form>
+  );
+}
+
+export function EventTypeStatusButton(
+  props: EnvTarget & { eventTypeId: string; status: "active" | "archived" },
+) {
+  const { status, ...rest } = props;
+  const next = status === "active" ? "archived" : "active";
+  const [state, formAction, pending] = useActionToast(setEventTypeStatusAction, {
+    success: next === "active" ? "Event type restored" : "Event type archived",
+  });
+  if (next === "active") {
+    return (
+      <form action={formAction}>
+        <Hidden {...rest} status={next} />
+        <Button disabled={pending} size="sm" type="submit" variant="outline">
+          Restore
+        </Button>
+      </form>
+    );
+  }
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button size="sm" variant="ghost" />}>Archive</AlertDialogTrigger>
+      <AlertDialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...rest} status={next} />
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive this event type?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It can't be booked or moved to a new time until you restore it. Existing bookings
+              stay, and can still be cancelled.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6">
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogClose render={<Button variant="ghost" />}>Keep it</AlertDialogClose>
+            <Button disabled={pending} type="submit" variant="destructive">
+              Archive
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </AlertDialogPopup>
+    </AlertDialog>
+  );
+}
+
+export function HostForm(
+  props: EnvTarget & {
+    canEdit: boolean;
+    host: {
+      id: string;
+      name: string;
+      email: string | null;
+      uid: string | null;
+      time_zone: string;
+      attributes: Record<string, string | string[]>;
+      metadata: Record<string, string>;
+    };
+  },
+) {
+  const { host, canEdit, ...target } = props;
+  const [state, formAction, pending] = useActionToast(updateHostAction, {
+    success: "Host saved",
+  });
+  // Controlled: React resets uncontrolled fields after an action, even a refused one.
+  const [values, setValues] = useState({
+    name: host.name,
+    email: host.email ?? "",
+    timeZone: host.time_zone,
+    uid: host.uid ?? "",
+    attributes: formatAttributes(host.attributes),
+    metadata: formatKeyValues(host.metadata),
+  });
+  const field = (name: keyof typeof values) => ({
+    name,
+    value: values[name],
+    onChange: (event: { target: { value: string } }) =>
+      setValues((old) => ({ ...old, [name]: event.target.value })),
+  });
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <Hidden {...target} hostId={host.id} />
+      <fieldset className="contents" disabled={!canEdit}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field>
+            <FieldLabel>Name</FieldLabel>
+            <Input {...field("name")} maxLength={100} required />
+          </Field>
+          <Field>
+            <FieldLabel>Email</FieldLabel>
+            <Input {...field("email")} type="email" />
+            <FieldDescription>Where their booking emails go. Optional.</FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel>Time zone</FieldLabel>
+            <Input {...field("timeZone")} required />
+          </Field>
+          <Field>
+            <FieldLabel>Your id</FieldLabel>
+            <Input {...field("uid")} maxLength={255} />
+            <FieldDescription>Optional. The API accepts it in place of the id.</FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel>Attributes</FieldLabel>
+            <Textarea
+              {...field("attributes")}
+              className="font-mono"
+              placeholder="licensed_in=CA, NY"
+            />
+            <FieldDescription>
+              What pools filter hosts by. One per line, as key=value. Commas make a list.
+            </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel>Metadata</FieldLabel>
+            <Textarea {...field("metadata")} className="font-mono" placeholder="team=north" />
+            <FieldDescription>
+              Your own key=value pairs, one per line. Don't put sensitive data here.
+            </FieldDescription>
+          </Field>
+        </div>
+        {state && !state.ok ? <FormError message={state.error} /> : null}
+        {canEdit ? (
+          <div>
+            <Button disabled={pending} type="submit">
+              Save host
+            </Button>
+          </div>
+        ) : null}
+      </fieldset>
     </form>
   );
 }
@@ -144,7 +388,9 @@ export function HostStatusButton(props: EnvTarget & { hostId: string; status: st
   );
 }
 
-export function DeleteHostButton(props: EnvTarget & { hostId: string; name: string }) {
+export function DeleteHostButton(
+  props: EnvTarget & { hostId: string; name: string; leavePage?: "on" },
+) {
   const [state, formAction, pending] = useActionToast(deleteHostAction, {
     success: "Host deleted",
   });
@@ -183,9 +429,17 @@ export function NewEventTypeDialog(props: EnvTarget & { hosts: { id: string; nam
     success: "Event type created",
   });
   const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState("one_on_one");
+  const router = useRouter();
+  const { orgSlug, projectSlug, envSlug } = target;
   useEffect(() => {
-    if (state?.ok) setOpen(false);
-  }, [state]);
+    if (!state?.ok) return;
+    setOpen(false);
+    // The rest of what it can be is set on its page.
+    if (state.data) {
+      router.push(`/${orgSlug}/${projectSlug}/${envSlug}/scheduling/event-types/${state.data.id}`);
+    }
+  }, [state, router, orgSlug, projectSlug, envSlug]);
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger render={<Button size="sm" />}>New event type</DialogTrigger>
@@ -196,7 +450,7 @@ export function NewEventTypeDialog(props: EnvTarget & { hosts: { id: string; nam
             <DialogIcon icon={CalendarClockIcon} />
             <DialogTitle>New event type</DialogTitle>
             <DialogDescription>
-              What can be booked. The API sets the rest: buffers, limits, questions, group sessions.
+              What can be booked. Hours, limits, questions and locations are set on its page next.
             </DialogDescription>
           </DialogHeader>
           <DialogPanel className="flex flex-col gap-4">
@@ -209,16 +463,46 @@ export function NewEventTypeDialog(props: EnvTarget & { hosts: { id: string; nam
               <FieldLabel>Duration, in minutes</FieldLabel>
               <Input defaultValue="30" max={1440} min={5} name="duration" required type="number" />
             </Field>
-            <RadioGroup defaultValue="one_on_one" name="kind">
-              <Label className="flex items-center gap-2 font-normal">
-                <Radio value="one_on_one" />
-                One host
-              </Label>
-              <Label className="flex items-center gap-2 font-normal">
-                <Radio value="pool" />
-                Any available host in a pool
-              </Label>
-            </RadioGroup>
+            <div className="flex flex-col gap-2">
+              <span className="font-medium text-sm">Kind</span>
+              <RadioGroup
+                name="kind"
+                onValueChange={(value) => setKind(value as string)}
+                value={kind}
+              >
+                <Label className="flex items-center gap-2 font-normal">
+                  <Radio value="one_on_one" />
+                  One host
+                </Label>
+                <Label className="flex items-center gap-2 font-normal">
+                  <Radio value="pool" />
+                  Any available host in a pool
+                </Label>
+                <Label className="flex items-center gap-2 font-normal">
+                  <Radio value="collective" />
+                  Several hosts together
+                </Label>
+                <Label className="flex items-center gap-2 font-normal">
+                  <Radio value="group" />
+                  One host with several attendees
+                </Label>
+              </RadioGroup>
+              <p className="text-muted-foreground text-xs">This can't change later.</p>
+            </div>
+            {kind === "group" ? (
+              <Field>
+                <FieldLabel>Capacity</FieldLabel>
+                <Input
+                  defaultValue="10"
+                  max={10000}
+                  min={2}
+                  name="capacity"
+                  required
+                  type="number"
+                />
+                <FieldDescription>Attendees per session.</FieldDescription>
+              </Field>
+            ) : null}
             <Field>
               <FieldLabel>Host</FieldLabel>
               <select

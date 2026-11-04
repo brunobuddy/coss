@@ -118,6 +118,7 @@ export type BookingRequest = {
 
 const LIVE_CHECK_CANDIDATES = 3;
 const BOOKING_HISTORY_LIMIT = 100;
+const RECENT_HOST_BOOKINGS_MS = 30 * 86_400_000;
 
 /** Thrown inside a savepoint to undo a candidate's partial claims. Never leaves this file. */
 class LostSlot extends Error {
@@ -2056,6 +2057,8 @@ export async function markNoShow(
   const row = await db.transaction(async (tx) => {
     const booking = await lockBooking(tx, env, id);
     if (booking.status !== "confirmed") throw notChangeable(booking);
+    // Marked already: a second click tells nobody anything new, and keeps the first time.
+    if (booking.noShowAt) return booking;
     const now = nowOf(deps);
     if (booking.startAt.getTime() > now.getTime()) {
       throw new SchedulingError("booking_not_changeable", "This booking hasn't started yet.");
@@ -2314,6 +2317,52 @@ export async function listUpcomingHostBookings(
       ),
     )
     .orderBy(asc(schedulingBooking.startAt), asc(schedulingBooking.id))
+    .limit(query.limit + 1);
+  const page = rows.slice(0, query.limit);
+  const last = page[page.length - 1];
+  return {
+    data: await Promise.all(page.map((row) => toBookingObject(db, row, deps))),
+    nextCursor:
+      rows.length > query.limit && last ? `${last.startAt.getTime()}_after_${last.id}` : null,
+  };
+}
+
+/**
+ * A host's confirmed bookings that have started, newest first: what can still be marked a no-show.
+ * Bounded, since the query walks the environment's bookings by start time.
+ */
+export async function listRecentHostBookings(
+  scope: Scope,
+  query: { hostId: string; now: Date; limit: number; cursor?: string | undefined },
+  deps: Pick<SchedulingDeps, "dataKeys">,
+): Promise<{ data: BookingObjectOutput[]; nextCursor: string | null }> {
+  const [cursorStart, cursorId] = query.cursor?.split("_after_") ?? [];
+  const cursorMs = cursorStart ? Number(cursorStart) : Number.NaN;
+  const rows = await db
+    .select()
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.organizationId, scope.organizationId),
+        eq(schedulingBooking.environmentId, scope.environmentId),
+        lt(schedulingBooking.startAt, query.now),
+        gte(schedulingBooking.startAt, new Date(query.now.getTime() - RECENT_HOST_BOOKINGS_MS)),
+        eq(schedulingBooking.status, "confirmed"),
+        sql`exists (select 1 from ${schedulingBookingHost}
+          where ${schedulingBookingHost.bookingId} = ${schedulingBooking.id}
+            and ${schedulingBookingHost.hostId} = ${query.hostId})`,
+        Number.isFinite(cursorMs) && cursorId
+          ? or(
+              lt(schedulingBooking.startAt, new Date(cursorMs)),
+              and(
+                eq(schedulingBooking.startAt, new Date(cursorMs)),
+                lt(schedulingBooking.id, cursorId),
+              ),
+            )
+          : undefined,
+      ),
+    )
+    .orderBy(desc(schedulingBooking.startAt), desc(schedulingBooking.id))
     .limit(query.limit + 1);
   const page = rows.slice(0, query.limit);
   const last = page[page.length - 1];

@@ -413,7 +413,12 @@ export async function getEventType(scope: Scope, ref: string): Promise<EventType
 
 export async function listEventTypes(
   scope: Scope,
-  query: { limit: number; after?: string | undefined },
+  query: {
+    limit: number;
+    after?: string | undefined;
+    /** Only those this host is assigned to by name. */
+    hostId?: string | undefined;
+  },
 ): Promise<{ data: EventTypeObjectOutput[]; hasMore: boolean }> {
   const rows = await db
     .select()
@@ -423,6 +428,13 @@ export async function listEventTypes(
         eq(schedulingEventType.organizationId, scope.organizationId),
         eq(schedulingEventType.environmentId, scope.environmentId),
         query.after ? lt(schedulingEventType.id, query.after) : undefined,
+        query.hostId
+          ? sql`exists (select 1 from ${schedulingEventTypeHost}
+              where ${schedulingEventTypeHost.eventTypeId} = ${schedulingEventType.id}
+                and ${schedulingEventTypeHost.hostId} = ${query.hostId}
+                and ${schedulingEventTypeHost.assigned}
+                and ${schedulingEventTypeHost.removedAt} is null)`
+          : undefined,
       ),
     )
     .orderBy(desc(schedulingEventType.id))

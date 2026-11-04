@@ -4,6 +4,7 @@ import { pool } from "@coss/db";
 import type { LogWriter } from "@coss/logs";
 import { memoryLogWriter } from "@coss/logs/testing";
 import { memoryLimiter } from "@coss/ratelimit/testing";
+import { createHostSession, createManageSession, getBookingOverview } from "@coss/scheduling";
 import { testPng, testSchedulingDeps } from "@coss/scheduling/testing";
 import { createTestTenant, type TestTenant } from "@coss/tenancy/testing";
 import { Hono } from "hono";
@@ -13,6 +14,9 @@ import { createTestApp, errorOf, type TestApp, waitForLogLines } from "./helpers
 
 const MONDAY = "2031-01-06";
 const at = (time: string) => `${MONDAY}T${time}:00.000Z`;
+// Cutoffs reach a year at most, so testing one needs a booking closer than 2031.
+const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+const soon = (time: string) => `${tomorrow}T${time}:00.000Z`;
 
 function call(
   app: TestApp,
@@ -608,6 +612,258 @@ describe("client API", () => {
     };
     expect(stored.attendees[0]?.uid).toBe("patient_9");
     expect(stored.attendees[0]?.name).toBe("Real");
+  });
+
+  describe("a host's own bookings", () => {
+    const hostToken = async (s: Awaited<ReturnType<typeof setUp>>, extra: object = {}) =>
+      (
+        (await (await call(s.app, s.key, "POST", `/hosts/${s.host}/sessions`, extra)).json()) as {
+          token: string;
+        }
+      ).token;
+    const book = async (s: Awaited<ReturnType<typeof setUp>>, start: string, extra: object = {}) =>
+      (
+        (await (
+          await call(s.app, s.key, "POST", "/bookings", booking(s.eventType, start, extra))
+        ).json()) as { id: string }
+      ).id;
+
+    test("a host moves one to a time the slots offer, past the attendee's cutoff", async () => {
+      const s = await setUp();
+      await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+        reschedule_notice_minutes: 525600,
+      });
+      const id = await book(s, soon("09:00"));
+      const token = await hostToken(s);
+      const slots = (await (
+        await client(
+          s.app,
+          token,
+          "GET",
+          `/host/bookings/${id}/slots?start=${soon("09:00")}&end=${soon("12:00")}`,
+        )
+      ).json()) as { data: { start: string; hosts?: unknown }[] };
+      expect(slots.data.map((slot) => slot.start)).toContain(soon("10:00"));
+      expect(slots.data.map((slot) => slot.start)).not.toContain(soon("09:00"));
+      expect(slots.data[0]?.hosts).toBeUndefined();
+      const moved = await client(s.app, token, "POST", `/host/bookings/${id}/reschedule`, {
+        start: soon("10:00"),
+      });
+      expect(moved.status).toBe(200);
+      const body = (await moved.json()) as Record<string, unknown>;
+      expect(body.start).toBe(soon("10:00"));
+      expect(body.answers).toBeUndefined();
+      const after = (await (await call(s.app, s.key, "GET", `/bookings/${id}`)).json()) as {
+        start: string;
+      };
+      expect(after.start).toBe(soon("10:00"));
+    });
+
+    test("a taken time is refused, and a browser can't choose another host", async () => {
+      const s = await setUp();
+      const id = await book(s, at("09:00"));
+      await book(s, at("10:00"), { attendee: { uid: "p2", time_zone: "UTC" } });
+      const token = await hostToken(s);
+      const taken = await client(s.app, token, "POST", `/host/bookings/${id}/reschedule`, {
+        start: at("10:00"),
+      });
+      expect(taken.status).toBe(422);
+      expect((await errorOf(taken)).code).toBe("slot_unavailable");
+      const elsewhere = await client(s.app, token, "POST", `/host/bookings/${id}/reschedule`, {
+        start: at("11:00"),
+        host: "doctor_1",
+      });
+      expect(elsewhere.status).toBe(422);
+    });
+
+    test("only the session's host can reach them, and a read-only session can only read", async () => {
+      const s = await setUp();
+      const id = await book(s, at("09:00"));
+      const other = await call(s.app, s.key, "POST", "/hosts", {
+        name: "Dr. Other",
+        time_zone: "UTC",
+      });
+      const otherHost = ((await other.json()) as { id: string }).id;
+      const { token: stranger } = (await (
+        await call(s.app, s.key, "POST", `/hosts/${otherHost}/sessions`, {})
+      ).json()) as { token: string };
+      const range = `start=${at("09:00")}&end=${at("12:00")}`;
+      for (const [method, path, body] of [
+        ["GET", `/host/bookings/${id}/slots?${range}`, undefined],
+        ["POST", `/host/bookings/${id}/reschedule`, { start: at("10:00") }],
+        ["POST", `/host/bookings/${id}/no_show`, undefined],
+      ] as const) {
+        expect((await client(s.app, stranger, method, path, body)).status).toBe(404);
+      }
+      const reader = await hostToken(s, { read_only: true });
+      expect(
+        (await client(s.app, reader, "GET", `/host/bookings/${id}/slots?${range}`)).status,
+      ).toBe(200);
+      expect(
+        (
+          await client(s.app, reader, "POST", `/host/bookings/${id}/reschedule`, {
+            start: at("10:00"),
+          })
+        ).status,
+      ).toBe(403);
+      expect((await client(s.app, reader, "POST", `/host/bookings/${id}/no_show`)).status).toBe(
+        403,
+      );
+    });
+
+    test("a no-show waits for the start, shows in the past list, and counts once", async () => {
+      const tenant = await createTestTenant();
+      let nowMs = Date.parse(`${MONDAY}T08:00:00.000Z`);
+      const { app } = createTestApp({
+        scheduling: testSchedulingDeps({ now: () => new Date(nowMs) }),
+      });
+      const key = tenant.sandboxKey;
+      const host = (await (
+        await call(app, key, "POST", "/hosts", { name: "Dr. Reyes", time_zone: "UTC" })
+      ).json()) as { id: string };
+      await call(app, key, "POST", `/hosts/${host.id}/schedules`, {
+        rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+      });
+      const eventType = (await (
+        await call(app, key, "POST", "/event_types", {
+          title: "Consultation",
+          duration_minutes: 30,
+          hosts: [{ host: host.id }],
+        })
+      ).json()) as { id: string };
+      const created = (await (
+        await call(app, key, "POST", "/bookings", booking(eventType.id, at("09:00")))
+      ).json()) as { id: string };
+      const env = {
+        organizationId: tenant.organization.id,
+        projectId: tenant.project.id,
+        environmentId: tenant.development.id,
+        mode: "sandbox" as const,
+      };
+      // The clock is the test's, and a session's expiry has to come from it too.
+      const { token } = await createHostSession(env, {
+        host: host.id,
+        publicUrl: null,
+        now: new Date(nowMs),
+        expiresIn: 86_400,
+      });
+      const early = await client(app, token, "POST", `/host/bookings/${created.id}/no_show`);
+      expect(early.status).toBe(422);
+      const pastList = async () =>
+        (await (await client(app, token, "GET", "/host/bookings?when=past")).json()) as {
+          data: { id: string; no_show_at: string | null }[];
+        };
+      expect((await pastList()).data).toEqual([]);
+
+      nowMs = Date.parse(at("09:45"));
+      const upcoming = (await (await client(app, token, "GET", "/host/bookings")).json()) as {
+        data: unknown[];
+      };
+      expect(upcoming.data).toEqual([]);
+      expect((await pastList()).data.map((item) => item.id)).toEqual([created.id]);
+      const marked = await client(app, token, "POST", `/host/bookings/${created.id}/no_show`);
+      expect(marked.status).toBe(200);
+      const first = (await pastList()).data[0]?.no_show_at;
+      expect(first).toBe(at("09:45"));
+
+      nowMs = Date.parse(at("09:50"));
+      const again = await client(app, token, "POST", `/host/bookings/${created.id}/no_show`);
+      expect(again.status).toBe(200);
+      expect((await pastList()).data[0]?.no_show_at).toBe(first ?? "");
+      const { events } = await getBookingOverview(env, created.id, testSchedulingDeps());
+      expect(events.filter((event) => event.type === "scheduling.booking.no_show")).toHaveLength(1);
+
+      nowMs = Date.parse(at("09:45")) + 31 * 86_400_000;
+      const later = await createHostSession(env, {
+        host: host.id,
+        publicUrl: null,
+        now: new Date(nowMs),
+      });
+      const aged = (await (
+        await client(app, later.token, "GET", "/host/bookings?when=past")
+      ).json()) as { data: unknown[] };
+      expect(aged.data).toEqual([]);
+    });
+
+    test("a group seat can't be moved", async () => {
+      const s = await setUp();
+      const group = (await (
+        await call(s.app, s.key, "POST", "/event_types", {
+          title: "Class",
+          kind: "group",
+          capacity: 3,
+          duration_minutes: 30,
+          hosts: [{ host: s.host }],
+        })
+      ).json()) as { id: string };
+      const seat = (await (
+        await call(s.app, s.key, "POST", "/bookings", booking(group.id, at("09:00")))
+      ).json()) as { id: string };
+      const token = await hostToken(s);
+      const moved = await client(s.app, token, "POST", `/host/bookings/${seat.id}/reschedule`, {
+        start: at("10:00"),
+      });
+      expect(moved.status).toBe(422);
+      expect((await errorOf(moved)).code).toBe("booking_not_changeable");
+    });
+
+    test("moving keeps a booking's length after its event type changes", async () => {
+      const s = await setUp();
+      const id = await book(s, at("09:00"));
+      await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, { duration_minutes: 45 });
+      const token = await hostToken(s);
+      const range = `start=${at("09:00")}&end=${at("12:00")}`;
+      const offered = await client(s.app, token, "GET", `/host/bookings/${id}/slots?${range}`);
+      expect(offered.status).toBe(200);
+      const first = ((await offered.json()) as { data: { start: string; end: string }[] }).data[0];
+      expect(first ? Date.parse(first.end) - Date.parse(first.start) : 0).toBe(30 * 60_000);
+      const manage = (await (
+        await call(s.app, s.key, "POST", `/bookings/${id}/manage_sessions`)
+      ).json()) as { token: string };
+      expect((await client(s.app, manage.token, "GET", `/booking/slots?${range}`)).status).toBe(
+        200,
+      );
+    });
+  });
+
+  test("a manage session a dashboard member opened acts as them, past the cutoffs", async () => {
+    const s = await setUp();
+    await call(s.app, s.key, "PATCH", `/event_types/${s.eventType}`, {
+      cancel_notice_minutes: 525600,
+      reschedule_notice_minutes: 525600,
+    });
+    const id = (
+      (await (
+        await call(s.app, s.key, "POST", "/bookings", booking(s.eventType, soon("09:00")))
+      ).json()) as { id: string }
+    ).id;
+    const attendee = (await (
+      await call(s.app, s.key, "POST", `/bookings/${id}/manage_sessions`)
+    ).json()) as { token: string };
+    const refused = await client(s.app, attendee.token, "POST", "/booking/reschedule", {
+      start: soon("10:00"),
+    });
+    expect(refused.status).toBe(422);
+
+    const env = {
+      organizationId: s.tenant.organization.id,
+      projectId: s.tenant.project.id,
+      environmentId: s.tenant.development.id,
+      mode: "sandbox" as const,
+    };
+    const session = await createManageSession(env, {
+      bookingId: id,
+      createdByUserId: s.tenant.owner.id,
+      publicUrl: null,
+    });
+    expect(session.expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(3_600_000);
+    const moved = await client(s.app, session.token, "POST", "/booking/reschedule", {
+      start: soon("10:00"),
+    });
+    expect(moved.status).toBe(200);
+    const { events } = await getBookingOverview(env, id, testSchedulingDeps());
+    expect(events[0]?.type).toBe("scheduling.booking.rescheduled");
+    expect(events[0]?.actor).toBe("user");
   });
 
   test("a session reaches only its scope", async () => {

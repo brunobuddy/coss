@@ -1,5 +1,5 @@
 import { isId } from "@coss/db/id";
-import { listBookings } from "@coss/scheduling";
+import { listBookings, listEventTypes } from "@coss/scheduling";
 import { BOOKING_STATUSES } from "@coss/scheduling/schemas";
 import { Button } from "@coss/ui/components/button";
 import {
@@ -28,6 +28,7 @@ import {
   ApproveBookingButton,
   CancelBookingButton,
   DeclineBookingButton,
+  NewBookingDialog,
 } from "./scheduling-actions";
 
 export const metadata: Metadata = { title: "Bookings" };
@@ -69,9 +70,17 @@ export default async function BookingsPage({
   };
   const last = page.data.at(-1);
   const narrowed = Boolean(status || q);
+  const bookable = can({ scheduling: ["create"] })
+    ? (await listEventTypes(scope, { limit: 100 })).data
+        .filter((eventType) => eventType.status === "active")
+        .map((eventType) => ({ id: eventType.id, title: eventType.title }))
+    : [];
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        actions={
+          bookable.length > 0 ? <NewBookingDialog {...target} eventTypes={bookable} /> : null
+        }
         description="Bookings in this environment, newest first. Answers to booking questions are only available through the API."
         meta={<ModeBadge mode={environment.mode} />}
         title="Bookings"

@@ -9,6 +9,7 @@ import {
 } from "@coss/ui/components/table";
 import { UserRoundIcon } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CursorPager } from "@/components/cursor-pager";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
@@ -77,7 +78,11 @@ export default async function HostsPage({
             <TableBody>
               {page.data.map((host) => (
                 <TableRow key={host.id}>
-                  <TableCell>{host.name}</TableCell>
+                  <TableCell>
+                    <Link className="font-medium hover:underline" href={`${hostsPath}/${host.id}`}>
+                      {host.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="font-mono text-xs">{host.uid ?? "—"}</TableCell>
                   <TableCell>{host.time_zone}</TableCell>
                   <TableCell>

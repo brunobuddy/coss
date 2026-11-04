@@ -53,6 +53,12 @@ Time is computed **only in Bun services** (api, worker), with `engine/time.ts`: 
 when this was written. Never compute slots in the dashboard or with SQL's `AT TIME ZONE`: the dashboard's preview
 embeds the booker. Local dates (overrides, limits) never pass through `Date`.
 
+The booking path computes slots, so the dashboard (Node) never calls `createBooking` or `rescheduleBooking`. It opens the
+hosted page in a tab through a session with `createdByUserId` (`openBookerAction`, `openBookingManagerAction`), and that
+session acts as the member (`sessionActor`), past attendees' cutoffs. A manage session made this way lasts an hour.
+Editing an event type never changes a booking's length: moving one lists slots with `bookedDurationMinutes`, which skips
+the check that a duration is on offer.
+
 ## Calendars
 
 - `CalendarClient` can't return a title: no method reads anything but busy intervals, and `scheduling_busy_interval`

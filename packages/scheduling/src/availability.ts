@@ -504,13 +504,20 @@ export async function listEventTypeSlots(
     hostRefs?: readonly string[] | undefined;
     attributes?: Record<string, string | string[]> | undefined;
     durationMinutes?: number | undefined;
+    /** Moving a booking keeps its length, even if the event type no longer offers that length. */
+    bookedDurationMinutes?: number | undefined;
   },
 ): Promise<SlotResult[]> {
   checkWindow(input.fromMs, input.toMs);
   const eventType = await resolveEventType(db, scope, input.eventTypeRef);
   if (eventType.status !== "active") return [];
-  const duration = input.durationMinutes ?? eventType.durationMinutes;
-  if (duration !== eventType.durationMinutes && !eventType.durationOptions.includes(duration)) {
+  const duration =
+    input.bookedDurationMinutes ?? input.durationMinutes ?? eventType.durationMinutes;
+  if (
+    input.bookedDurationMinutes === undefined &&
+    duration !== eventType.durationMinutes &&
+    !eventType.durationOptions.includes(duration)
+  ) {
     throw new SchedulingError(
       "invalid_time",
       `${duration} minutes isn't one of this event type's durations.`,

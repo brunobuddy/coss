@@ -4,23 +4,36 @@ import {
   approveBooking,
   type BookingActor,
   cancelBooking,
+  createBookerSession,
   createEventType,
   createHost,
   createHostSession,
+  createManageSession,
   createSchedule,
   declineBooking,
   deleteHost,
+  getEventType,
+  getHost,
   SchedulingError,
+  updateEventType,
   updateHost,
   updateSettings,
 } from "@coss/scheduling";
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
+import { EVENT_TYPE_KINDS, UpdateEventTypeRequest } from "@coss/scheduling/schemas";
 import { getEnvironment } from "@coss/tenancy";
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import type { ActionResult } from "@/lib/action-result";
 import { ActionError, formString, runAction } from "@/lib/actions";
 import { recordAudit } from "@/lib/audit";
 import { schedulingDeps, schedulingUrl } from "@/lib/scheduling";
+import {
+  eventTypeChanges,
+  issueLabel,
+  parseAttributes,
+  parseKeyValues,
+} from "@/lib/scheduling-edit";
 import { type OrgContext, requireOrgPermission } from "@/lib/session";
 
 type Permission = "create" | "read" | "update" | "delete";
@@ -80,6 +93,21 @@ async function friendly<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
+/** `key=value` lines a person typed, with the line that's wrong as the message. */
+function readKeyValues<T>(parse: (text: string) => T, text: string): T {
+  try {
+    return parse(text);
+  } catch (error) {
+    throw new ActionError((error as Error).message);
+  }
+}
+
+function publicUrlOrThrow(): string {
+  const publicUrl = schedulingUrl();
+  if (!publicUrl) throw new ActionError("The hosted scheduling pages aren't set up yet.");
+  return publicUrl;
+}
+
 const FULL_WEEK_DAYS = [1, 2, 3, 4, 5];
 
 export async function createHostAction(
@@ -136,6 +164,48 @@ export async function deleteHostAction(_prev: ActionResult | null, formData: For
     const { context, env } = await contextFor(formData, "delete");
     const { id } = await friendly(() => deleteHost(env, formString(formData, "hostId")));
     await audit(context, "scheduling_host.deleted", { type: "scheduling_host", id });
+    // From its own page, there's nothing left to come back to.
+    if (formString(formData, "leavePage") === "on") {
+      const slugs = ["orgSlug", "projectSlug", "envSlug"].map((name) => formString(formData, name));
+      redirect(`/${slugs.join("/")}/scheduling/hosts`);
+    }
+    refresh();
+    return null;
+  });
+}
+
+export async function updateHostAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const id = formString(formData, "hostId");
+    const current = await friendly(() => getHost(env, id));
+    const name = formString(formData, "name");
+    const email = formString(formData, "email") || null;
+    const uid = formString(formData, "uid") || null;
+    const timeZone = formString(formData, "timeZone");
+    const attributes = readKeyValues(parseAttributes, formString(formData, "attributes"));
+    const metadata = readKeyValues(parseKeyValues, formString(formData, "metadata"));
+    // Only what changed: a name goes through screening.
+    const host = await friendly(() =>
+      updateHost(
+        env,
+        id,
+        {
+          ...(name !== current.name ? { name } : {}),
+          ...(email !== current.email ? { email } : {}),
+          ...(uid !== current.uid ? { uid } : {}),
+          ...(timeZone !== current.time_zone ? { time_zone: timeZone } : {}),
+          attributes,
+          metadata,
+        },
+        { screen: configuredDeps().screenSetup },
+      ),
+    );
+    await audit(context, "scheduling_host.updated", {
+      type: "scheduling_host",
+      id: host.id,
+      label: host.name,
+    });
     refresh();
     return null;
   });
@@ -148,11 +218,55 @@ export async function openHostPortalAction(
 ) {
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "update");
-    const publicUrl = schedulingUrl();
-    if (!publicUrl) throw new ActionError("The hosted scheduling pages aren't set up yet.");
+    const publicUrl = publicUrlOrThrow();
     const session = await friendly(() =>
       createHostSession(env, {
         host: formString(formData, "hostId"),
+        createdByUserId: context.session.user.id,
+        publicUrl,
+      }),
+    );
+    return { url: session.url as string };
+  });
+}
+
+/**
+ * A booking is made on the booker's page, not here: working out what's bookable only runs in the
+ * API (`packages/scheduling/AGENTS.md`, "Slots"), so the dashboard opens the same page attendees use.
+ */
+export async function openBookerAction(
+  _prev: ActionResult<{ url: string }> | null,
+  formData: FormData,
+) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "create");
+    const publicUrl = publicUrlOrThrow();
+    const session = await friendly(() =>
+      createBookerSession(
+        env,
+        {
+          eventType: formString(formData, "eventTypeId"),
+          createdByUserId: context.session.user.id,
+          publicUrl,
+        },
+        configuredDeps(),
+      ),
+    );
+    return { url: session.url as string };
+  });
+}
+
+/** As `openBookerAction`: moving a booking checks what's free, which only the API does. */
+export async function openBookingManagerAction(
+  _prev: ActionResult<{ url: string }> | null,
+  formData: FormData,
+) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const publicUrl = publicUrlOrThrow();
+    const session = await friendly(() =>
+      createManageSession(env, {
+        bookingId: formString(formData, "bookingId"),
         createdByUserId: context.session.user.id,
         publicUrl,
       }),
@@ -168,10 +282,15 @@ export async function createEventTypeAction(
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "create");
     const hostId = formString(formData, "hostId");
-    const kind = formString(formData, "kind") === "pool" ? "pool" : "one_on_one";
+    const kind = EVENT_TYPE_KINDS.find((value) => value === formString(formData, "kind"));
+    if (!kind) throw new ActionError("Choose what kind of event type this is.");
     const duration = Number(formString(formData, "duration"));
     if (!Number.isInteger(duration) || duration < 5 || duration > 1440) {
       throw new ActionError("Enter a duration from 5 to 1440 minutes.");
+    }
+    const capacity = kind === "group" ? Number(formString(formData, "capacity")) : null;
+    if (capacity !== null && (!Number.isInteger(capacity) || capacity < 2 || capacity > 10000)) {
+      throw new ActionError("Enter a capacity from 2 to 10000 attendees.");
     }
     const eventType = await friendly(() =>
       createEventType(
@@ -180,7 +299,17 @@ export async function createEventTypeAction(
           title: formString(formData, "title"),
           kind,
           duration_minutes: duration,
-          hosts: hostId ? [{ host: hostId, role: "member", weight: 100, schedule: null }] : [],
+          ...(capacity !== null ? { capacity } : {}),
+          hosts: hostId
+            ? [
+                {
+                  host: hostId,
+                  role: kind === "collective" ? "required" : "member",
+                  weight: 100,
+                  schedule: null,
+                },
+              ]
+            : [],
         },
         { screen: configuredDeps().screenSetup },
       ),
@@ -192,6 +321,66 @@ export async function createEventTypeAction(
     });
     refresh();
     return { id: eventType.id };
+  });
+}
+
+export async function updateEventTypeAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const id = formString(formData, "eventTypeId");
+    let raw: unknown;
+    try {
+      raw = JSON.parse(formString(formData, "payload"));
+    } catch {
+      throw new ActionError("The form couldn't be read. Reload the page and try again.");
+    }
+    const current = await friendly(() => getEventType(env, id));
+    const filter = formData.get("hostFilter");
+    const parsed = UpdateEventTypeRequest.safeParse({
+      ...(raw as object),
+      metadata: readKeyValues(parseKeyValues, formString(formData, "metadata")),
+      // Only a pool's form has this field, and an event type's kind never changes.
+      ...(typeof filter === "string"
+        ? {
+            host_filter: filter.trim() === "" ? null : readKeyValues(parseAttributes, filter),
+          }
+        : {}),
+    });
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      throw new ActionError(
+        issue ? `${issueLabel(issue.path)}: ${issue.message}` : "The form has a mistake.",
+      );
+    }
+    const changes = eventTypeChanges(current, parsed.data);
+    if (Object.keys(changes).length === 0) return null;
+    const eventType = await friendly(() =>
+      updateEventType(env, id, changes, { screen: configuredDeps().screenSetup }),
+    );
+    await audit(context, "scheduling_event_type.updated", {
+      type: "scheduling_event_type",
+      id: eventType.id,
+      label: eventType.title,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function setEventTypeStatusAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const status = formString(formData, "status") === "active" ? "active" : "archived";
+    const eventType = await friendly(() =>
+      updateEventType(env, formString(formData, "eventTypeId"), { status }),
+    );
+    await audit(context, "scheduling_event_type.updated", {
+      type: "scheduling_event_type",
+      id: eventType.id,
+      label: eventType.title,
+    });
+    refresh();
+    return null;
   });
 }
 
