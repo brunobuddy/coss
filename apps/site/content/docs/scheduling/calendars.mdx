@@ -71,6 +71,15 @@ A calendar that can't be read never counts as free.
   stay.
 - **The provider's having a bad hour.** What's known keeps being used for up to seven hours, or twenty
   minutes for calendars without notifications, then the host stops being offered until a read works.
+- **A CalDAV server's answer is incomplete**: an event that can't be parsed, one the server won't hand over,
+  or a cut-off response. That's a failed read like the one above, and it lasts until the event is fixed or
+  removed, since coss.com can't tell when that event is busy.
+
+A recurring CalDAV event that's too dense or too unusual to expand, like one repeating every second, still
+leaves the calendar readable: it's expanded as far as is reasonable, and the rest of its span counts as busy.
+
+CalDAV servers must keep a host's calendars on the address they connected with, since the password goes only
+there. iCloud's move from `caldav.icloud.com` to its partition hosts is the one exception.
 
 A hidden host is visible and fixable, and a double-booked patient isn't, so that's the default. To keep
 offering last known times, flagging those bookings instead, set `calendar_failure_mode` to `last_known`

@@ -3,7 +3,7 @@
  * times, and a booking's meeting is an event in the write ledger, which gives it the same retries
  * and desired state. Nothing here reads a meeting's contents or attendees.
  */
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { schema } from "@coss/db";
 import { sql } from "drizzle-orm";
 import {
@@ -29,6 +29,7 @@ type ZoomMeeting = {
   start_time?: string;
   duration?: number;
   join_url?: string;
+  agenda?: string;
 };
 
 const errorOf = (res: Response) =>
@@ -36,6 +37,10 @@ const errorOf = (res: Response) =>
 
 const minutes = (event: CalendarEventWrite) => Math.round((event.endMs - event.startMs) / 60_000);
 const zoomTime = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+
+/** Zoom has no idempotency key, so a meeting carries this: a hash, as the host can read it. */
+const meetingMarker = (key: string) =>
+  `coss.com appointment ${createHash("sha256").update(key).digest("hex")}`;
 
 export function zoomCalendarClient(input: {
   accessToken: string;
@@ -60,27 +65,56 @@ export function zoomCalendarClient(input: {
     start_time: zoomTime(event.startMs),
     duration: minutes(event),
   });
+  // `upcoming` is reported to leave out the agenda; `scheduled` has it, cut to 250 characters.
+  const meetingsWithKey = async (key: string): Promise<ZoomMeeting[]> => {
+    const marker = meetingMarker(key);
+    const found: ZoomMeeting[] = [];
+    let token = "";
+    do {
+      const page = token ? `&next_page_token=${encodeURIComponent(token)}` : "";
+      const listed = await call("GET", `/users/me/meetings?type=scheduled&page_size=300${page}`);
+      if (!listed.ok) throw errorOf(listed);
+      const body = (await listed.json()) as { meetings?: ZoomMeeting[]; next_page_token?: string };
+      found.push(...(body.meetings ?? []).filter((meeting) => meeting.agenda?.includes(marker)));
+      token = body.next_page_token ?? "";
+    } while (token);
+    return found;
+  };
+  const updateMeeting = async (providerEventId: string, event: CalendarEventWrite) => {
+    const res = await call(
+      "PATCH",
+      `/meetings/${encodeURIComponent(providerEventId)}`,
+      meetingBody(event),
+    );
+    if (!res.ok) throw errorOf(res);
+  };
+  const deleteMeeting = async (providerEventId: string) => {
+    const res = await call(
+      "DELETE",
+      `/meetings/${encodeURIComponent(providerEventId)}?schedule_for_reminder=false`,
+    );
+    if (!res.ok && res.status !== 404) throw errorOf(res);
+  };
   return {
     listCalendars: async () => [
       { externalId: ZOOM_CALENDAR_ID, name: "Zoom", primary: false, writable: true },
     ],
     fetchBusy: async () => ({}),
     createEvent: async (_calendarId, event) => {
-      // Zoom has no idempotency key, so a retry after a lost answer finds its own meeting.
-      const listed = await call("GET", "/users/me/meetings?type=upcoming&page_size=300");
-      if (!listed.ok) throw errorOf(listed);
-      const { meetings = [] } = (await listed.json()) as { meetings?: ZoomMeeting[] };
-      const existing = meetings.find(
-        (meeting) =>
-          meeting.topic === event.title &&
-          meeting.start_time === zoomTime(event.startMs) &&
-          meeting.duration === minutes(event),
-      );
+      const [existing] = await meetingsWithKey(event.key);
       if (existing) {
-        return { providerEventId: String(existing.id), meetingUrl: existing.join_url ?? null };
+        const id = String(existing.id);
+        if (
+          existing.start_time !== zoomTime(event.startMs) ||
+          existing.duration !== minutes(event)
+        ) {
+          await updateMeeting(id, event);
+        }
+        return { providerEventId: id, meetingUrl: existing.join_url ?? null };
       }
       const res = await call("POST", "/users/me/meetings", {
         ...meetingBody(event),
+        agenda: meetingMarker(event.key),
         type: 2,
         default_password: true,
         settings: {
@@ -95,20 +129,12 @@ export function zoomCalendarClient(input: {
       return { providerEventId: String(created.id), meetingUrl: created.join_url ?? null };
     },
     updateEvent: async (_calendarId, providerEventId, event) => {
-      const res = await call(
-        "PATCH",
-        `/meetings/${encodeURIComponent(providerEventId)}`,
-        meetingBody(event),
-      );
-      if (!res.ok) throw errorOf(res);
+      await updateMeeting(providerEventId, event);
       return { providerEventId, meetingUrl: null };
     },
-    deleteEvent: async (_calendarId, providerEventId) => {
-      const res = await call(
-        "DELETE",
-        `/meetings/${encodeURIComponent(providerEventId)}?schedule_for_reminder=false`,
-      );
-      if (!res.ok && res.status !== 404) throw errorOf(res);
+    deleteEvent: (_calendarId, providerEventId) => deleteMeeting(providerEventId),
+    deleteEventByKey: async (_calendarId, key) => {
+      for (const meeting of await meetingsWithKey(key)) await deleteMeeting(String(meeting.id));
     },
   };
 }

@@ -16,6 +16,8 @@ const API = "https://graph.microsoft.com/v1.0";
 const GRAPH_BATCH = 20;
 // Graph allows a calendar subscription at most about three days.
 const MAX_SUBSCRIPTION_SECONDS = 4200 * 60;
+// A retried `transactionId`'s answer is undocumented and it can't be filtered on; this can.
+const EVENT_KEY_PROPERTY = "String {3f1c7a52-8e0b-4d6e-9a27-5c4b1e7d2f60} Name cossEventKey";
 
 type GraphDate = { dateTime: string; timeZone: string };
 type GraphEvent = {
@@ -25,6 +27,7 @@ type GraphEvent = {
   isAllDay?: boolean;
   start: GraphDate;
   end: GraphDate;
+  location?: { displayName?: string } | null;
   onlineMeeting?: { joinUrl?: string } | null;
 };
 
@@ -47,6 +50,14 @@ function toBody(event: CalendarEventWrite) {
       ? { isOnlineMeeting: true, onlineMeetingProvider: "teamsForBusiness" }
       : {}),
   };
+}
+
+function saysTheSame(existing: GraphEvent, event: CalendarEventWrite): boolean {
+  return (
+    instantOf(existing.start) === event.startMs &&
+    instantOf(existing.end) === event.endMs &&
+    (!event.location || existing.location?.displayName === event.location)
+  );
 }
 
 function written(event: GraphEvent): CalendarEventWritten {
@@ -87,6 +98,16 @@ export function microsoftCalendarClient(input: {
   };
 
   const encode = encodeURIComponent;
+
+  const eventsWithKey = async (key: string): Promise<GraphEvent[]> => {
+    const value = key.replace(/'/g, "''");
+    const filter = `singleValueExtendedProperties/Any(ep: ep/id eq '${EVENT_KEY_PROPERTY}' and ep/value eq '${value}')`;
+    const page = await call<{ value?: GraphEvent[] }>(
+      `/me/events?$filter=${encode(filter)}&$select=id,start,end,location,onlineMeeting`,
+      { headers: UTC_PREFER },
+    );
+    return page.value ?? [];
+  };
 
   return {
     async listCalendars(): Promise<RemoteCalendar[]> {
@@ -174,13 +195,21 @@ export function microsoftCalendarClient(input: {
     },
 
     async createEvent(calendarId, event) {
-      return written(
-        await call<GraphEvent>(`/me/calendars/${calendarId}/events`, {
+      const [found] = await eventsWithKey(event.key);
+      const existing =
+        found ??
+        (await call<GraphEvent>(`/me/calendars/${calendarId}/events`, {
           method: "POST",
-          // `transactionId` is what makes a retried create return the first event.
-          body: JSON.stringify({ ...toBody(event), transactionId: event.key }),
-        }),
-      );
+          headers: UTC_PREFER,
+          body: JSON.stringify({
+            ...toBody(event),
+            transactionId: event.key,
+            singleValueExtendedProperties: [{ id: EVENT_KEY_PROPERTY, value: event.key }],
+          }),
+        }));
+      return saysTheSame(existing, event)
+        ? written(existing)
+        : this.updateEvent(calendarId, existing.id, event);
     },
 
     async updateEvent(_calendarId, providerEventId, event) {
@@ -198,6 +227,12 @@ export function microsoftCalendarClient(input: {
       } catch (error) {
         if (error instanceof CalendarError && error.status === 404) return;
         throw error;
+      }
+    },
+
+    async deleteEventByKey(calendarId, key) {
+      for (const event of await eventsWithKey(key)) {
+        await this.deleteEvent(calendarId, event.id);
       }
     },
 

@@ -41,6 +41,8 @@ const MAX_BACKOFF_MS = 60 * 60_000;
 const CHANNEL_TTL_SECONDS = 2 * 86_400;
 const CHANNEL_RENEW_BEFORE_MS = 86_400_000;
 const CHANNEL_CLAIM_MS = 5 * 60_000;
+// Postgres takes 65,535 parameters a statement, and a dense calendar's rows can pass that.
+const BUSY_ROWS_PER_INSERT = 1_000;
 
 type Scan = { limit?: number; scope?: { organizationIds: readonly string[] } };
 
@@ -113,9 +115,9 @@ async function replaceIntervals(
     await tx
       .delete(schedulingBusyInterval)
       .where(eq(schedulingBusyInterval.calendarId, calendar.id));
-    if (intervals.length > 0) {
+    for (let index = 0; index < intervals.length; index += BUSY_ROWS_PER_INSERT) {
       await tx.insert(schedulingBusyInterval).values(
-        intervals.map((interval) => ({
+        intervals.slice(index, index + BUSY_ROWS_PER_INSERT).map((interval) => ({
           organizationId: calendar.organizationId,
           calendarId: calendar.id,
           hostId: calendar.hostId,

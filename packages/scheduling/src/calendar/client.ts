@@ -68,6 +68,7 @@ export interface CalendarClient {
     fromMs: number;
     toMs: number;
   }): Promise<Record<string, Interval[]>>;
+  /** Leaves the event as asked, even if a lost attempt already made it. */
   createEvent(calendarId: string, event: CalendarEventWrite): Promise<CalendarEventWritten>;
   updateEvent(
     calendarId: string,
@@ -76,6 +77,8 @@ export interface CalendarClient {
   ): Promise<CalendarEventWritten>;
   /** Succeeds if it's already gone. */
   deleteEvent(calendarId: string, providerEventId: string): Promise<void>;
+  /** Deletes what a lost create made. Succeeds if there's nothing. */
+  deleteEventByKey(calendarId: string, key: string): Promise<void>;
   /** Null when the provider can't tell, as CalDAV here can't. */
   getEvent?(calendarId: string, providerEventId: string): Promise<CalendarEventState | null>;
   /** Absent when the provider has no push notifications. */

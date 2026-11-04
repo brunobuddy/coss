@@ -185,12 +185,8 @@ export function googleCalendarClient(input: {
           }),
         );
       } catch (error) {
-        // 409: an earlier attempt made it and its answer was lost, or it was deleted since.
+        // 409: a lost attempt made it, or it was deleted since, and it may say something older.
         if (!(error instanceof CalendarError) || error.status !== 409) throw error;
-        const existing = await call<GoogleEvent>(
-          `/calendars/${encode(calendarId)}/events/${encode(id)}`,
-        );
-        if (existing.status !== "cancelled") return written(existing);
         return written(
           await call<GoogleEvent>(`/calendars/${encode(calendarId)}/events/${encode(id)}${query}`, {
             method: "PUT",
@@ -220,6 +216,10 @@ export function googleCalendarClient(input: {
           return;
         throw error;
       }
+    },
+
+    async deleteEventByKey(calendarId, key) {
+      await this.deleteEvent(calendarId, googleEventId(key));
     },
 
     async getEvent(calendarId, providerEventId): Promise<CalendarEventState | null> {

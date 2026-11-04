@@ -11,7 +11,7 @@ import { enqueueWebhookMessage } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { confirmedSeats, locationOfSession } from "../group-sessions.ts";
 import { carryReminders } from "../notifications.ts";
-import { CalendarError, type CalendarEventWrite } from "./client.ts";
+import { type CalendarClient, CalendarError, type CalendarEventWrite } from "./client.ts";
 import { type CalendarDeps, clientFor, markNeedsReauth } from "./connections.ts";
 import { notZoomMeeting } from "./zoom.ts";
 
@@ -28,6 +28,7 @@ type LedgerRow = typeof schedulingCalendarEvent.$inferSelect;
 type BookingRow = typeof schedulingBooking.$inferSelect;
 type SessionRow = typeof schedulingGroupSession.$inferSelect;
 
+// A row's `lease_until` is its fencing token: each claim sets a later one than any before it.
 const LEASE_MS = 2 * 60_000;
 const MAX_ATTEMPTS = 8;
 const MAX_BACKOFF_MS = 6 * 60 * 60_000;
@@ -62,17 +63,35 @@ async function claimDue(now: Date, opts: Scan): Promise<LedgerRow[]> {
       .limit(opts.limit ?? 50)
       .for("update", { skipLocked: true });
     if (due.length === 0) return [];
+    const leaseUntil = new Date(now.getTime() + LEASE_MS);
     await tx
       .update(schedulingCalendarEvent)
-      .set({ leaseUntil: new Date(now.getTime() + LEASE_MS) })
+      .set({ leaseUntil })
       .where(
         inArray(
           schedulingCalendarEvent.id,
           due.map((row) => row.id),
         ),
       );
-    return due;
+    return due.map((row) => ({ ...row, leaseUntil }));
   });
+}
+
+const stillHeld = (row: LedgerRow) =>
+  and(
+    eq(schedulingCalendarEvent.id, row.id),
+    eq(schedulingCalendarEvent.organizationId, row.organizationId),
+    row.leaseUntil ? eq(schedulingCalendarEvent.leaseUntil, row.leaseUntil) : undefined,
+  );
+
+/** A batch can outlast its lease: each row takes a new one and its latest state. */
+async function renewLease(row: LedgerRow, now: Date): Promise<LedgerRow | null> {
+  const [renewed] = await db
+    .update(schedulingCalendarEvent)
+    .set({ leaseUntil: new Date(now.getTime() + LEASE_MS) })
+    .where(stillHeld(row))
+    .returning();
+  return renewed ?? null;
 }
 
 // A session's event can go and come back, as a new row, while a booking's key lasts for good.
@@ -94,7 +113,7 @@ function locationText(location: Location): string | null {
   return null;
 }
 
-/** Records what happened, only if the row wasn't changed or reclaimed meanwhile. */
+/** Records what happened, only if this worker still holds the row. */
 async function finish(
   row: LedgerRow,
   set: Partial<typeof schedulingCalendarEvent.$inferInsert>,
@@ -102,14 +121,47 @@ async function finish(
   const [updated] = await db
     .update(schedulingCalendarEvent)
     .set({ ...set, leaseUntil: null })
+    .where(stillHeld(row))
+    .returning({ id: schedulingCalendarEvent.id });
+  return Boolean(updated);
+}
+
+/** The lost request may land after the newest write, so the row is written once more. */
+async function redrive(row: LedgerRow, now: Date): Promise<void> {
+  await db
+    .update(schedulingCalendarEvent)
+    .set({
+      desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
+      nextAttemptAt: now,
+      attempts: 0,
+    })
     .where(
       and(
         eq(schedulingCalendarEvent.id, row.id),
         eq(schedulingCalendarEvent.organizationId, row.organizationId),
       ),
-    )
-    .returning({ id: schedulingCalendarEvent.id });
-  return Boolean(updated);
+    );
+}
+
+/** A meeting this worker made is spare once the row names another: Zoom has no idempotency key. */
+async function dropSpareEvent(
+  row: LedgerRow,
+  client: CalendarClient,
+  calendarId: string,
+  providerEventId: string,
+): Promise<void> {
+  const [current] = await db
+    .select({ providerEventId: schedulingCalendarEvent.providerEventId })
+    .from(schedulingCalendarEvent)
+    .where(
+      and(
+        eq(schedulingCalendarEvent.id, row.id),
+        eq(schedulingCalendarEvent.organizationId, row.organizationId),
+      ),
+    );
+  if (current?.providerEventId && current.providerEventId !== providerEventId) {
+    await client.deleteEvent(calendarId, providerEventId).catch(() => {});
+  }
 }
 
 async function setMeetingLink(booking: BookingRow, url: string, now: Date): Promise<void> {
@@ -260,7 +312,10 @@ export async function announce(
   ]);
 }
 
-async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<void> {
+async function writeOne(claimed: LedgerRow, deps: CalendarDeps): Promise<void> {
+  const now = deps.now?.() ?? new Date();
+  const row = await renewLease(claimed, now);
+  if (!row) return;
   const [target] = await db
     .select({ calendar: schedulingCalendar, connection: schedulingCalendarConnection })
     .from(schedulingCalendar)
@@ -299,11 +354,20 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
     await finish(row, { nextAttemptAt: new Date(now.getTime() + 15 * 60_000) });
     return;
   }
+  let sent = false;
+  const settle = async (set: Parameters<typeof finish>[1]): Promise<boolean> => {
+    const finished = await finish(row, set);
+    if (!finished && sent) await redrive(row, now);
+    return finished;
+  };
   try {
     const client = await clientFor(connection, deps);
+    sent = true;
     if (row.desiredState === "absent") {
+      // No id doesn't mean no event: a create's answer may have been lost.
       if (row.providerEventId) await client.deleteEvent(calendar.externalId, row.providerEventId);
-      await finish(row, {
+      else await client.deleteEventByKey(calendar.externalId, eventKey(row));
+      await settle({
         appliedVersion: row.desiredVersion,
         providerEventId: null,
         attempts: 0,
@@ -322,25 +386,29 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
     const written = row.providerEventId
       ? await client.updateEvent(calendar.externalId, row.providerEventId, event)
       : await client.createEvent(calendar.externalId, event);
-    await finish(row, {
+    const finished = await settle({
       appliedVersion: row.desiredVersion,
       providerEventId: written.providerEventId,
       attempts: 0,
       lastErrorCode: null,
       externalState: "in_sync",
     });
+    if (!finished) {
+      await dropSpareEvent(row, client, calendar.externalId, written.providerEventId);
+      return;
+    }
     if (written.meetingUrl) {
       if (session) await setSessionMeetingLink(session, written.meetingUrl, now);
       else if (booking) await setMeetingLink(booking, written.meetingUrl, now);
     }
   } catch (error) {
     if (!(error instanceof CalendarError)) {
-      await finish(row, { nextAttemptAt: new Date(now.getTime() + backoffMs(row.attempts)) });
+      await settle({ nextAttemptAt: new Date(now.getTime() + backoffMs(row.attempts)) });
       throw error;
     }
     if (error.kind === "auth") {
       await markNeedsReauth(connection, error.code, deps);
-      await finish(row, {
+      await settle({
         nextAttemptAt: new Date(now.getTime() + 15 * 60_000),
         lastErrorCode: error.code,
       });
@@ -350,8 +418,8 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
     const exhausted = error.kind === "permanent" || attempts >= MAX_ATTEMPTS;
     if (exhausted) {
       // Given up on this version: the booking stands, and the customer knows.
-      await db.transaction(async (tx) => {
-        await tx
+      const gaveUp = await db.transaction(async (tx) => {
+        const [updated] = await tx
           .update(schedulingCalendarEvent)
           .set({
             appliedVersion: row.desiredVersion,
@@ -359,7 +427,9 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
             lastErrorCode: error.code,
             leaseUntil: null,
           })
-          .where(eq(schedulingCalendarEvent.id, row.id));
+          .where(stillHeld(row))
+          .returning({ id: schedulingCalendarEvent.id });
+        if (!updated) return false;
         for (const about of await bookingsOfRow(tx, row)) {
           await announce(
             tx,
@@ -369,10 +439,12 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
             now,
           );
         }
+        return true;
       });
+      if (!gaveUp && sent) await redrive(row, now);
       return;
     }
-    await finish(row, {
+    await settle({
       attempts,
       lastErrorCode: error.code,
       nextAttemptAt: new Date(
@@ -386,7 +458,7 @@ async function writeOne(row: LedgerRow, deps: CalendarDeps, now: Date): Promise<
 export async function runDueCalendarWrites(deps: CalendarDeps, opts: Scan = {}): Promise<number> {
   const now = deps.now?.() ?? new Date();
   const due = await claimDue(now, opts);
-  for (const row of due) await writeOne(row, deps, now);
+  for (const row of due) await writeOne(row, deps);
   return due.length;
 }
 
