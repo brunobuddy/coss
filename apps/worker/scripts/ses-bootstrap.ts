@@ -678,7 +678,10 @@ try {
     new SesIdentityProvider(createSesApi(region), { region, configurationSets, tenantPrefix }),
   );
   tenantsUpdated = await migrateSesSuppressions(ses, {
-    configurationSets: Object.values(configurationSets),
+    configurationSets: Object.values(configurationSets).flatMap((setName) => [
+      setName,
+      requiredTlsSetFor(setName),
+    ]),
     tenantPrefix,
   });
   // New tenants get theirs from `ensureTenant`; a live send needs the association before the mode.
