@@ -128,6 +128,27 @@ describe("Scheduling's plan gates", () => {
     expect(asked).toBe(2);
   });
 
+  test("resending an unchanged host filter isn't a change, whatever its key order", async () => {
+    const free = await createTestTenant();
+    const { app: unenforced } = createTestApp();
+    const created = await call(unenforced, free.liveKey, "POST", "/event_types", {
+      title: "Pool",
+      kind: "pool",
+      duration_minutes: 30,
+      hosts: [],
+      host_filter: { language: "es", specialty: "dermatology" },
+    });
+    expect(created.status).toBe(201);
+    const { id } = (await created.json()) as { id: string };
+    const app = enforced();
+    const edit = (host_filter: Record<string, string>) =>
+      call(app, free.liveKey, "PATCH", `/event_types/${id}`, { host_filter, title: "Renamed" });
+    // jsonb stores shorter keys first, so this is another order than the one read back.
+    expect((await edit({ specialty: "dermatology", language: "es" })).status).toBe(200);
+    expect((await edit({ language: "es", specialty: "dermatology" })).status).toBe(200);
+    expect((await edit({ language: "fr", specialty: "dermatology" })).status).toBe(402);
+  });
+
   test("an empty host_filter is a filter: it matches every active host", async () => {
     const pro = await onPlan("pro");
     const app = enforced();

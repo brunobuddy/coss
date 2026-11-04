@@ -3,6 +3,7 @@ import type { PlanGate } from "@coss/billing/gate";
 import { HipaaModeError, hipaaModeApplies } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
+import { canonicalJson } from "@coss/db/idempotency";
 import {
   and,
   asc,
@@ -623,7 +624,8 @@ export async function updateEventType(
     const current = await resolveEventType(db, scope, ref);
     if (
       params.host_filter != null &&
-      JSON.stringify(params.host_filter) !== JSON.stringify(current.hostFilter)
+      // Canonical: jsonb doesn't keep the order of an object's keys.
+      canonicalJson(params.host_filter) !== canonicalJson(current.hostFilter)
     ) {
       await requireLiveFeatureToCreate(scope, opts.plans, "schedulingRouting");
     }
