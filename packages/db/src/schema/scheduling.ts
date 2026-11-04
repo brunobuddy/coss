@@ -110,6 +110,18 @@ export const schedulingCalendarProvider = pgEnum("scheduling_calendar_provider",
 export const schedulingConnectionStatus = pgEnum("scheduling_connection_status", [
   "active",
   "needs_reauth",
+  // Its delegation lost access: every connection of it flips together, and back.
+  "delegation_failing",
+]);
+export const schedulingDelegationProvider = pgEnum("scheduling_delegation_provider", [
+  "google",
+  "microsoft",
+]);
+export const schedulingDelegationStatus = pgEnum("scheduling_delegation_status", [
+  "pending",
+  "active",
+  "failing",
+  "deleting",
 ]);
 export const schedulingBookingStatus = pgEnum("scheduling_booking_status", [
   "held",
@@ -159,6 +171,8 @@ export const schedulingHost = pgTable(
     name: text("name").notNull(),
     // Where notifications go; never an identity, and not unique.
     email: text("email"),
+    // The mailbox a calendar delegation connects, when it isn't `email` or matching is off.
+    calendarAccount: text("calendar_account"),
     timeZone: text("time_zone").notNull(),
     attributes: jsonb("attributes")
       .$type<Record<string, string | string[]>>()
@@ -338,6 +352,51 @@ export const schedulingEventTypeHost = pgTable(
   ],
 );
 
+/**
+ * One admin's authorization for a whole domain: the customer's own service account or Entra app, so
+ * the provider itself keeps it to their Workspace or tenant. Hosts get ordinary connections of it.
+ */
+export const schedulingCalendarDelegation = pgTable(
+  "scheduling_calendar_delegation",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.schedulingCalendarDelegation)),
+    organizationId: text("organization_id").notNull(),
+    projectId: text("project_id").notNull(),
+    environmentId: text("environment_id").notNull(),
+    provider: schedulingDelegationProvider("provider").notNull(),
+    domain: text("domain").notNull(),
+    matchHostEmail: boolean("match_host_email").notNull().default(true),
+    status: schedulingDelegationStatus("status").notNull().default("pending"),
+    // `encryptSecret`, and listed in `reencryptWebhookSecrets`. Never returned.
+    encryptedCredentials: text("encrypted_credentials").notNull(),
+    clientId: text("client_id").notNull(),
+    tenantId: text("tenant_id"),
+    // A mailbox known to work: what a failure is checked against.
+    verifyAccount: text("verify_account"),
+    lastErrorCode: text("last_error_code"),
+    failingSince: instant("failing_since"),
+    secretExpiresAt: instant("secret_expires_at"),
+    nextReconcileAt: instant("next_reconcile_at").notNull().defaultNow(),
+    // How far through the hosts the worker has got: the last host id of its latest full batch.
+    reconcileCursor: text("reconcile_cursor"),
+    leaseUntil: instant("lease_until"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    foreignKey({
+      name: "scheduling_calendar_delegation_environment_fk",
+      columns: [t.environmentId, t.organizationId],
+      foreignColumns: [environment.id, environment.organizationId],
+    }).onDelete("cascade"),
+    unique("scheduling_calendar_delegation_id_organization_unique").on(t.id, t.organizationId),
+    unique("scheduling_calendar_delegation_domain_unique").on(t.environmentId, t.domain),
+    index("scheduling_calendar_delegation_due_idx").on(t.nextReconcileAt),
+  ],
+);
+
 export const schedulingCalendarConnection = pgTable(
   "scheduling_calendar_connection",
   {
@@ -351,7 +410,13 @@ export const schedulingCalendarConnection = pgTable(
     // The provider's name for the account (an address, or a CalDAV user and URL).
     accountId: text("account_id").notNull(),
     // `encryptSecret`, and listed in `reencryptWebhookSecrets`. Null for the simulated provider.
+    // A delegated connection's holds only its current access token.
     encryptedCredentials: text("encrypted_credentials"),
+    // Set: the delegation's credentials reach this mailbox, and it isn't the host's to end.
+    delegationId: text("delegation_id"),
+    // When a delegation first reached this mailbox. Null with one: it never has, so a host's calendars
+    // here are only a stand-in, and there are no events.
+    reachedAt: instant("reached_at"),
     status: schedulingConnectionStatus("status").notNull().default("active"),
     lastErrorCode: text("last_error_code"),
     lastErrorAt: instant("last_error_at"),
@@ -364,7 +429,18 @@ export const schedulingCalendarConnection = pgTable(
       columns: [t.hostId, t.organizationId],
       foreignColumns: [schedulingHost.id, schedulingHost.organizationId],
     }).onDelete("cascade"),
+    foreignKey({
+      name: "scheduling_calendar_connection_delegation_fk",
+      columns: [t.delegationId, t.organizationId],
+      foreignColumns: [
+        schedulingCalendarDelegation.id,
+        schedulingCalendarDelegation.organizationId,
+      ],
+    }).onDelete("cascade"),
     unique("scheduling_calendar_connection_id_organization_unique").on(t.id, t.organizationId),
+    index("scheduling_calendar_connection_delegation_idx")
+      .on(t.delegationId)
+      .where(sql`${t.delegationId} IS NOT NULL`),
     unique("scheduling_calendar_connection_account_unique").on(t.hostId, t.provider, t.accountId),
   ],
 );

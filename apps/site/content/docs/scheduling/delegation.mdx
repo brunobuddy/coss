@@ -1,0 +1,159 @@
+---
+title: Calendar delegation
+description: Authorize a whole Google Workspace or Microsoft 365 domain once, instead of a consent screen for every host.
+---
+
+Normally [each host connects their own calendar](/docs/scheduling/calendars). With a delegation, an admin
+authorizes once, and every host on the domain gets their calendar with no consent screen, including hosts you
+add later.
+
+A delegation uses **your own credentials**: a service account in your Google Cloud project, or an app in your
+Microsoft Entra tenant. Google and Microsoft keep those credentials to your Workspace or tenant, so they can't
+reach anyone else's calendars. If you serve several organizations, add a delegation for each of their domains.
+Each environment has its own delegations.
+
+Coss.com reads and writes the same things as it does for any other calendar, and
+[no more](/docs/scheduling/calendars#what-cosscom-reads-and-writes).
+
+## Google Workspace
+
+1. In a Google Cloud project, enable the Google Calendar API, create a service account, and create a JSON key
+   for it. Some Google Cloud organizations block key creation until an admin allows it.
+2. Add the delegation with that key. It stays `pending`, and returns a numeric client ID and the scopes to
+   authorize:
+
+   ```ts twoslash
+   import { Coss } from "coss";
+   const coss = new Coss();
+   const serviceAccountJson = "";
+   // ---cut---
+   const { data: delegation } = await coss.scheduling.calendarDelegations.create({
+     provider: "google",
+     domain: "example.com",
+     service_account_key: serviceAccountJson,
+   });
+   // delegation?.client_id and delegation?.scopes
+   ```
+
+3. In the [Google Admin console](https://admin.google.com), open **Security**, **API controls**, **Manage Domain
+   Wide Delegation**, and add a new client with that client ID and those scopes, exactly as given. It usually
+   applies within minutes, and can take up to 24 hours.
+4. Verify it with a real mailbox:
+
+   ```ts twoslash
+   import { Coss } from "coss";
+   const coss = new Coss();
+   // ---cut---
+   await coss.scheduling.calendarDelegations.verify("caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m", {
+     account: "ana@example.com",
+   });
+   ```
+
+<Callout type="warn">
+Domain-wide delegation lets the service account act as anyone in your Workspace, within those scopes. Keep its
+project and key restricted to the people who administer your Workspace.
+</Callout>
+
+## Microsoft 365
+
+1. In the [Entra admin center](https://entra.microsoft.com), register a single-tenant app and create a client
+   secret.
+2. Give it the Microsoft Graph **application** permission `Calendars.ReadWrite`, and grant admin consent.
+3. Add the delegation:
+
+   ```ts twoslash
+   import { Coss } from "coss";
+   const coss = new Coss();
+   // ---cut---
+   const { data: delegation } = await coss.scheduling.calendarDelegations.create({
+     provider: "microsoft",
+     domain: "example.com",
+     tenant_id: "7d3f1c52-8e0b-4d6e-9a27-5c4b1e7d2f60",
+     client_id: "3f1c7a52-8e0b-4d6e-9a27-5c4b1e7d2f60",
+     client_secret: "abc~defghijklmnopqrstuvwxyz",
+     secret_expires_at: "2028-06-01T00:00:00Z",
+   });
+   ```
+
+4. Verify it with a user's mailbox, as for Google.
+
+As granted, that permission covers every mailbox in your tenant. To limit it to some of them, use
+[RBAC for Applications](https://learn.microsoft.com/en-us/exchange/permissions-exo/application-rbac) in Exchange
+Online, and **remove the `Calendars.ReadWrite` grant from Entra**: the two add together, so scoping one while the
+other stands limits nothing. A mailbox left out of the scope is refused, and shows up as a host with a problem.
+
+Entra's client secrets expire. With `secret_expires_at`, your organization's owners and admins are warned 14 days
+before. Paste a new one with `coss.scheduling.calendarDelegations.update`: it's tried first, so a bad paste can't
+take anyone out. Coss.com doesn't rotate secrets for you.
+
+## Which hosts connect
+
+Once a delegation is verified, every active host on exactly its domain connects (not subdomains), a batch every
+few seconds. New hosts connect within seconds. A host's mailbox is their `calendar_account` if you set one,
+otherwise their `email`:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.hosts.create({
+  uid: "doctor_482",
+  name: "Dr. Ana Reyes",
+  time_zone: "America/New_York",
+  email: "ana.reyes@gmail.com", // Their booking emails.
+  calendar_account: "areyes@example.com", // Their calendar.
+});
+```
+
+In Microsoft 365, `calendar_account` has to be the user's principal name, if that isn't their email.
+
+<Callout type="warn">
+**If your users can type their own email into your app, turn off `match_host_email`.** Otherwise someone could
+name a colleague's address and reach that person's calendar: their busy times would show as this host's slots,
+and bookings would be added to it. With it off, only hosts you give a `calendar_account` connect, so that has to
+come from your own records. Turning it off doesn't end connections already made.
+</Callout>
+
+The mailbox is set when a host connects. Changing their `email` later moves nothing. Changing `calendar_account`
+moves them, and is refused while they have upcoming bookings or holds, since those events would be left on the
+old calendar with nothing to move or cancel them. Past events on the old calendar stay as they are, including any
+[details](/docs/scheduling/calendars#what-cosscom-reads-and-writes) on them.
+
+A host's existing connection to the same mailbox is taken over, keeping their calendar choices and bookings. Their
+connections to anything else stay as they are, and they can still connect more.
+
+A delegated calendar can't be disconnected, by the host or with `coss.scheduling.calendars.disconnect`. Hosts can
+still choose which of its calendars count on [their page](/docs/scheduling/embedding), or with
+`coss.scheduling.calendars.update`. A primary calendar counts by default.
+
+## When access is lost
+
+- **The provider refuses the credentials** (the client ID removed, consent revoked, a secret expired). The
+  delegation goes `failing` and its hosts stop being offered at once, including any on the domain it hasn't connected
+  yet. You get
+  `scheduling.calendar_delegation.failing`, and your owners and admins get an email. Hosts aren't told, since
+  there's nothing they can do. Once access is back they return by themselves, with
+  `scheduling.calendar_delegation.restored`, and nobody has to reconnect. New credentials or a successful verify
+  bring them back straight away.
+- **One mailbox can't be reached** (someone left, or a typo), including one that never connected. Only that host is
+  affected, and they stop being offered: their calendar can't be read, which never counts as free. Their connection's
+  `status` is `needs_reauth`, with `delegation` set, and you get `scheduling.calendar.needs_reauth`. It's tried again
+  every hour. Correct a typo with `email`, or `calendar_account` if you set one.
+
+A token already issued keeps working until it expires, so revoking access can take up to an hour to show.
+
+As with any calendar, `calendar_failure_mode: "last_known"` in your [settings](/docs/scheduling/calendars#when-a-calendar-fails)
+keeps offering hosts on what's already known instead.
+
+So enabling a delegation can hide hosts whose address isn't a real mailbox on the domain. Check `hosts_failed` on the
+delegation afterwards.
+
+## Removing a delegation
+
+`coss.scheduling.calendarDelegations.delete` removes its connections within minutes, and stops using your
+credentials. Its hosts **stay bookable with no conflict check**, until they connect a calendar of their own. Events
+already written stay on their calendars, and later moves or cancellations won't reach them. As with
+[disconnecting](/docs/scheduling/calendars#what-cosscom-reads-and-writes), details come off as many of them as
+time allows first.
+
+To cut off access at once, also remove the client ID in Google's Admin console, or the app's consent in Entra.

@@ -69,6 +69,7 @@ interpreter. Add at most one `member`, and one of a pool is chosen alongside the
 With `kind: "group"` and a `capacity`, each attendee books a seat in the same session, with a booking and
 manage link of their own. The host's time is taken once, by the first seat, and given back with the last.
 A full session answers `slot_unavailable`. A seat moves by cancelling it and booking another session.
+Slots of a group event type carry `seats_left`, and the hosted booking page shows it next to each time.
 
 A session is one meeting. The first seat's `location` is everyone's, so don't pass one attendee's own details in
 it: a `phone` location only ever shows the number on the event type, and a booking page's seat can't fill one in.
