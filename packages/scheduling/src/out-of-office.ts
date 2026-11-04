@@ -685,13 +685,13 @@ async function noteConflicts(
     .limit(1);
   if (!conflict) return;
   const reassigning = row.existingBookings === "reassign";
-  // Changing an entry's notes isn't a reason to move anything again.
-  const widened =
-    before?.existingBookings !== "reassign" ||
+  const moved =
+    !before ||
     before.hostId !== row.hostId ||
     before.startAt.getTime() !== row.startAt.getTime() ||
     before.endAt.getTime() !== row.endAt.getTime();
-  if (reassigning && widened && !opts.startsNoRun) {
+  // Changing an entry's notes isn't a reason to move anything again.
+  if (reassigning && (moved || before?.existingBookings !== "reassign") && !opts.startsNoRun) {
     await queueReassignment(tx, {
       organizationId: row.organizationId,
       projectId: env.projectId,
@@ -709,6 +709,8 @@ async function noteConflicts(
     });
   }
   if (actor.kind === "host_session") return;
+  // Someone's own sync saying the same thing again is no news, however often it says it.
+  if (!moved && before?.existingBookings === row.existingBookings) return;
   await tx
     .insert(schedulingNotification)
     .values({

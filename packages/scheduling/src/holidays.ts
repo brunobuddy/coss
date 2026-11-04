@@ -337,7 +337,6 @@ async function refreshCountries(
           : undefined,
       ),
     );
-  const today = dayOf(now);
   const until = dayOf(new Date(now.getTime() + LOOK_AHEAD_DAYS * DAY_MS));
   for (const { country } of used) {
     if (!country) continue;

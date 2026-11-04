@@ -1152,7 +1152,14 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
   if (!host?.email) return "no_address";
   const summary =
     row.kind === "reassignment_summary" && row.reassignmentId
-      ? await reassignmentCountsForHost(row.organizationId, row.reassignmentId, host.id)
+      ? await reassignmentCountsForHost(
+          {
+            organizationId: row.organizationId,
+            environmentId: row.environmentId,
+            reassignmentId: row.reassignmentId,
+          },
+          host.id,
+        )
       : null;
   if (row.kind === "reassignment_summary" && (!summary || summary.joined + summary.left === 0)) {
     return "stale";

@@ -21,6 +21,7 @@ import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { type HostRow, resolveHost } from "./hosts.ts";
 import { checkManagedRun, managedRunWhere } from "./manager.ts";
 import { reassignBooking, skipsOfOverrides } from "./reassign.ts";
+import { hostsToldOfRun } from "./reassignment-counts.ts";
 import {
   queueReassignment,
   type ReassignmentRow,
@@ -45,7 +46,6 @@ const {
   schedulingOutOfOffice,
   schedulingReassignment,
   schedulingReassignmentItem,
-  schedulingSettings,
 } = schema;
 
 type Scope = Pick<SchedulingEnvironment, "organizationId" | "environmentId">;
@@ -1218,37 +1218,16 @@ async function finishRun(
 /** One email per host per run, whatever it moved: fifty at once isn't fifty things to read. */
 async function enqueueDigests(tx: Executor, run: ReassignmentRow, now: Date): Promise<void> {
   if (run.notifyHosts !== "digest") return;
-  const [settings] = await tx
-    .select({ notifications: schedulingSettings.notifications })
-    .from(schedulingSettings)
-    .where(
-      and(
-        eq(schedulingSettings.organizationId, run.organizationId),
-        eq(schedulingSettings.environmentId, run.environmentId),
-      ),
-    );
-  if (settings?.notifications?.reassigned?.emailHost === false) return;
-  const moved = await tx
-    .select({
-      fromHostId: schedulingReassignmentItem.fromHostId,
-      toHostId: schedulingReassignmentItem.toHostId,
-    })
-    .from(schedulingReassignmentItem)
-    .where(
-      and(
-        eq(schedulingReassignmentItem.reassignmentId, run.id),
-        eq(schedulingReassignmentItem.organizationId, run.organizationId),
-        eq(schedulingReassignmentItem.outcome, "reassigned"),
-      ),
-    );
-  const hostIds = new Set(
-    moved.flatMap((item) => [item.fromHostId, item.toHostId]).filter((id) => id !== null),
-  );
-  if (hostIds.size === 0) return;
+  const hostIds = await hostsToldOfRun(tx, {
+    organizationId: run.organizationId,
+    environmentId: run.environmentId,
+    reassignmentId: run.id,
+  });
+  if (hostIds.length === 0) return;
   await tx
     .insert(schedulingNotification)
     .values(
-      [...hostIds].map((hostId) => ({
+      hostIds.map((hostId) => ({
         organizationId: run.organizationId,
         environmentId: run.environmentId,
         hostId,

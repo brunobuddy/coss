@@ -147,7 +147,8 @@ says `no_candidate`.
   limit. The 5,000 cap counts the same way, and it's on what's asked for: a run an entry starts takes everything in it.
 - Hosts get one `reassignment_summary` email per run, with counts read at send time, and `quietHosts` keeps per-booking
   ones away, so a digest carries no calendar cancellations; `notify.hosts: "each"` does, one per seat of a session,
-  since each seat's invitation has a UID of its own. Attendees still hear per booking. Each booking's history gets its own copy of the note; the run's is
+  since each seat's invitation has a UID of its own. Each booking's event type has its say over a digest, as over a
+  booking moved by itself: what it silences is neither counted nor a reason to send one. Attendees still hear per booking. Each booking's history gets its own copy of the note; the run's is
   cleared when it finishes, and only exists for that long.
 - `existing_bookings: "reassign"` delays the conflicts email by 15 minutes, since it counts what's left when it's sent.
   Changing an entry's notes doesn't start another run; changing its times does.

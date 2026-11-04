@@ -35,8 +35,10 @@ import {
   type SchedulingEnvironment,
   startCalendarAuthorization,
   undoReassignment,
+  updateEventType,
   updateHost,
   updateOutOfOffice,
+  updateSettings,
 } from "../src/index.ts";
 import { expand } from "../src/reassignments.ts";
 import type { CreateReassignmentRequestOutput } from "../src/schemas.ts";
@@ -1578,6 +1580,62 @@ describe("telling people", () => {
     ).toHaveLength(2);
   });
 
+  test("a digest asks each booking's event type, whichever way it goes", async () => {
+    const summaries = async (env: SchedulingEnvironment) =>
+      db
+        .select({ hostId: schema.schedulingNotification.hostId })
+        .from(schema.schedulingNotification)
+        .where(
+          and(
+            eq(schema.schedulingNotification.environmentId, env.environmentId),
+            eq(schema.schedulingNotification.kind, "reassignment_summary"),
+          ),
+        );
+    const off = { reassigned: { email_host: false } };
+    const on = { reassigned: { email_host: true } };
+
+    const silenced = await environment();
+    const [a, b] = await Promise.all([host(silenced, "A"), host(silenced, "B")]);
+    const quiet = await pool(silenced, [a, b]);
+    await updateEventType(silenced, quiet.id, { notifications: off } as never);
+    await book(silenced, quiet.id, at("10:00"), a.id);
+    await start(silenced, request({ host: a.id }, { to_host: b.id }));
+    await drain(silenced);
+    expect(await summaries(silenced)).toEqual([]);
+
+    const asked = await environment();
+    await updateSettings(asked, { notifications: off } as never);
+    const [c, d] = await Promise.all([host(asked, "C"), host(asked, "D")]);
+    const loud = await pool(asked, [c, d]);
+    await updateEventType(asked, loud.id, { notifications: on } as never);
+    await book(asked, loud.id, at("10:00"), c.id);
+    await start(asked, request({ host: c.id }, { to_host: d.id }));
+    await drain(asked);
+    expect((await summaries(asked)).map((row) => row.hostId).sort()).toEqual([c.id, d.id].sort());
+  });
+
+  test("a digest doesn't count what an event type silenced", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([
+      host(env, "A", { email: "a@example.com" }),
+      host(env, "B", { email: "b@example.com" }),
+    ]);
+    const [told, quiet] = [await pool(env, [a, b]), await pool(env, [a, b])];
+    await updateEventType(env, quiet.id, {
+      notifications: { reassigned: { email_host: false } },
+    } as never);
+    await book(env, told.id, at("10:00"), a.id);
+    await book(env, quiet.id, at("11:00"), a.id);
+    await start(env, request({ host: a.id }, { to_host: b.id }, { notify: { attendees: false } }));
+    await drain(env);
+    const { sent, deps } = recordingDeps();
+    await runDueSchedulingNotifications(deps, scopeOf(env));
+    const toB = sent.find(
+      (email) => email.to === "b@example.com" && email.subject === "Your bookings have changed",
+    );
+    expect(toB?.text).toContain("Bookings that came to you: 1");
+  });
+
   test("the digest counts, and says nothing about why", async () => {
     const env = await environment();
     const [a, b] = await Promise.all([
@@ -1796,6 +1854,39 @@ describe("going out of office", () => {
     );
     await drain(env);
     expect(await hostsOf(mine.id)).toEqual([a.id]);
+  });
+
+  test("a sync saying the same thing again tells the host once", async () => {
+    const env = await environment();
+    const [a, b] = await Promise.all([host(env, "A"), host(env, "B")]);
+    const type = await pool(env, [a, b]);
+    await book(env, type.id, at("10:00"), a.id);
+    const put = (end: string) =>
+      putOutOfOffice(
+        env,
+        "hr_sync",
+        { host: a.id, start: iso("09:00"), end: iso(end) } as never,
+        plain,
+        actor,
+      );
+    const notices = async () =>
+      (
+        await db
+          .select({ id: schema.schedulingNotification.id })
+          .from(schema.schedulingNotification)
+          .where(
+            and(
+              eq(schema.schedulingNotification.environmentId, env.environmentId),
+              eq(schema.schedulingNotification.kind, "out_of_office_conflicts"),
+            ),
+          )
+      ).length;
+    await put("12:00");
+    await put("12:00");
+    await put("12:00");
+    expect(await notices()).toBe(1);
+    await put("13:00");
+    expect(await notices()).toBe(2);
   });
 
   test("time away taken back before its run gets there moves nothing", async () => {
