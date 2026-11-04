@@ -494,35 +494,45 @@ describe("client API", () => {
     expect(page.next_cursor).toBeNull();
   });
 
-  test("a manage page offers times for a pool with a required host", async () => {
+  test("a manage page offers the booked hosts' times, with a required host in the pool", async () => {
     const s = await setUp();
-    await call(s.app, s.key, "POST", "/hosts", { uid: "member", name: "M", time_zone: "UTC" });
-    await call(s.app, s.key, "POST", "/hosts/member/schedules", {
-      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
-    });
+    for (const [uid, start, end] of [
+      ["member", "09:00", "12:00"],
+      ["other", "14:00", "15:00"],
+    ] as const) {
+      await call(s.app, s.key, "POST", "/hosts", { uid, name: uid, time_zone: "UTC" });
+      await call(s.app, s.key, "POST", `/hosts/${uid}/schedules`, {
+        rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start, end }],
+      });
+    }
     const pool = (await (
       await call(s.app, s.key, "POST", "/event_types", {
         title: "Supervised",
         kind: "pool",
         duration_minutes: 30,
-        hosts: [{ host: s.host, role: "required" }, { host: "member" }],
+        hosts: [{ host: s.host, role: "required" }, { host: "member" }, { host: "other" }],
       })
     ).json()) as { id: string };
     const created = (await (
-      await call(s.app, s.key, "POST", "/bookings", booking(pool.id, at("09:00")))
+      await call(
+        s.app,
+        s.key,
+        "POST",
+        "/bookings",
+        booking(pool.id, at("09:00"), { host: "member" }),
+      )
     ).json()) as { id: string };
     const manage = (await (
       await call(s.app, s.key, "POST", `/bookings/${created.id}/manage_sessions`)
     ).json()) as { token: string };
-    const slots = (await (
-      await client(
-        s.app,
-        manage.token,
-        "GET",
-        `/booking/slots?start=${at("10:00")}&end=${at("11:00")}`,
-      )
-    ).json()) as { data: unknown[] };
-    expect(slots.data.length).toBeGreaterThan(0);
+    const times = async (from: string, to: string) =>
+      (
+        (await (
+          await client(s.app, manage.token, "GET", `/booking/slots?start=${at(from)}&end=${at(to)}`)
+        ).json()) as { data: unknown[] }
+      ).data.length;
+    expect(await times("10:00", "11:00")).toBeGreaterThan(0);
+    expect(await times("13:00", "16:00")).toBe(0);
   });
 
   test("a fixed attendee can't be replaced from the browser", async () => {

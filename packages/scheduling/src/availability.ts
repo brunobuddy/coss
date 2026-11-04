@@ -501,6 +501,7 @@ export async function listEventTypeSlots(
     toMs: number;
     nowMs: number;
     hostRef?: string | undefined;
+    hostRefs?: readonly string[] | undefined;
     attributes?: Record<string, string | string[]> | undefined;
     durationMinutes?: number | undefined;
   },
@@ -518,6 +519,7 @@ export async function listEventTypeSlots(
   }
   const candidates = await candidatesOf(db, scope, eventType, {
     hostRef: input.hostRef,
+    hostRefs: input.hostRefs,
     attributes: input.attributes,
   });
   const all = [...candidates.required, ...candidates.members];
