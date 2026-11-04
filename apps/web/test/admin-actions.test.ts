@@ -13,7 +13,8 @@ mock.module("@coss/email", () => ({
 }));
 mock.module("@coss/tenancy", () => ({ TenancyError: class extends Error {} }));
 const planHas = mock(async () => true);
-mock.module("@/lib/billing", () => ({ planHas }));
+const hasManagedContract = mock(async () => true);
+mock.module("@/lib/billing", () => ({ hasManagedContract, planHas }));
 const audit = mock(async () => {});
 const enableHipaaMode = mock(async () => {});
 const disableHipaaMode = mock(async () => {});
@@ -870,6 +871,7 @@ describe("HIPAA mode", () => {
     disableHipaaMode.mockClear();
     planHas.mockClear();
     planHas.mockImplementation(async () => true);
+    hasManagedContract.mockImplementation(async () => true);
     isMemberOfHipaaOrganization.mockImplementation(async () => false);
     emailContext.hipaaMode = false;
   });
@@ -886,6 +888,13 @@ describe("HIPAA mode", () => {
         reason: "Contract signed",
       }),
     );
+  });
+
+  test("it is contract-only: a self-serve plan can't have it, whatever it includes", async () => {
+    hasManagedContract.mockImplementation(async () => false);
+    const refused = await actions.enableHipaaModeAction(null, hipaaForm());
+    expect(refused).toMatchObject({ ok: false, error: expect.stringContaining("contract-only") });
+    expect(enableHipaaMode).not.toHaveBeenCalled();
   });
 
   test("it needs the audit log on the plan, and a reason", async () => {

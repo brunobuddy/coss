@@ -302,7 +302,7 @@ export function createApp(opts: CreateAppOptions) {
     app.route(
       SCHEDULING_CLIENT_PATH,
       createSchedulingClientRoutes({
-        deps: { ...opts.scheduling, billing: opts.billing },
+        deps: { ...opts.scheduling, billing: opts.billing, plans: opts.plans },
         hostedUrl: opts.scheduling.publicUrl ?? null,
       }),
     );
@@ -367,6 +367,7 @@ export function createApp(opts: CreateAppOptions) {
       scheduling: opts.scheduling && {
         ...opts.scheduling,
         billing: opts.billing,
+        plans: opts.plans,
         screenSetup: opts.scheduling.screenSetup ?? hostedPageScreening(opts.riskDeps),
       },
       riskDeps: opts.riskDeps,

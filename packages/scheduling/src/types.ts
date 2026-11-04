@@ -1,4 +1,4 @@
-import type { UsageGate } from "@coss/billing/gate";
+import type { PlanGate, UsageGate } from "@coss/billing/gate";
 import type { SecretsKeyRing } from "@coss/webhooks";
 import type { CalendarDeps } from "./calendar/connections.ts";
 import type { SetupScreening } from "./screening.ts";
@@ -18,6 +18,8 @@ export type SchedulingDeps = {
   lookupKey: Buffer;
   /** Reserves capped plans' bookings (live only). */
   billing?: UsageGate | undefined;
+  /** What the plan includes and allows (live only). */
+  plans?: PlanGate | undefined;
   /** Calendars: a last look at the provider before booking. Without it, synced data alone. */
   calendars?: CalendarDeps | undefined;
   /** `SCHEDULING_PUBLIC_URL`: the hosted pages sessions link to. */

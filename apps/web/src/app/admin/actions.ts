@@ -40,7 +40,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { ActionError, formString, runAction } from "@/lib/actions";
 import { supportAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
-import { planHas } from "@/lib/billing";
+import { hasManagedContract, planHas } from "@/lib/billing";
 import { riskHasher, signUpRiskScope } from "@/lib/risk";
 import { requirePlatformAdminAction } from "@/lib/session";
 import { isSystemOrganization, SYSTEM_ORGANIZATION_MESSAGE } from "@/lib/system-organization";
@@ -394,6 +394,12 @@ export async function enableHipaaModeAction(
     const organizationId = formOrganizationId(formData);
     if (await isSystemOrganization(organizationId)) {
       throw new ActionError(SYSTEM_ORGANIZATION_MESSAGE);
+    }
+    // Contract-only: a signed BAA goes with a contract, never a self-serve plan.
+    if (!(await hasManagedContract(organizationId))) {
+      throw new ActionError(
+        "HIPAA mode is contract-only: give this organization a sales contract first.",
+      );
     }
     if (!(await planHas(organizationId, "auditLog"))) {
       throw new ActionError(

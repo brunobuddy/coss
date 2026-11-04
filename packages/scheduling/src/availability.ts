@@ -724,6 +724,8 @@ export async function searchAvailability(
     hostRefs?: readonly string[] | undefined;
     slotsPerHost: number;
     limit: number;
+    /** The plan's hosts per search: beyond them, `hasMore` says there's more than was searched. */
+    maxHosts?: number | null | undefined;
   },
 ): Promise<{
   data: { hostId: string; uid: string | null; slots: { startMs: number; endMs: number }[] }[];
@@ -736,7 +738,9 @@ export async function searchAvailability(
     attributes: input.attributes,
     hostRefs: input.hostRefs,
   });
-  const entries = candidates.members;
+  const entries =
+    input.maxHosts != null ? candidates.members.slice(0, input.maxHosts) : candidates.members;
+  const cutShort = entries.length < candidates.members.length;
   const loaded = await loadHostInputs(db, {
     scope,
     hosts: entries.map((entry) => ({
@@ -778,5 +782,5 @@ export async function searchAvailability(
     });
   }
   rows.sort((a, b) => (a.slots[0]?.startMs ?? 0) - (b.slots[0]?.startMs ?? 0));
-  return { data: rows.slice(0, input.limit), hasMore: rows.length > input.limit };
+  return { data: rows.slice(0, input.limit), hasMore: cutShort || rows.length > input.limit };
 }

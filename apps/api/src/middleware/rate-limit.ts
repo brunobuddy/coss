@@ -30,6 +30,30 @@ export function rateLimitError(
 }
 
 /**
+ * Scheduling's live slot lists and searches, per organization, at the plan's rate: what a booking
+ * page or a marketplace's search costs. Sandbox environments keep only their key's own bucket.
+ */
+export async function limitSchedulingSlots(
+  rateLimiter: AppEnv["Variables"]["rateLimiter"],
+  env: { organizationId: string; mode: "live" | "sandbox" },
+): Promise<void> {
+  if (env.mode !== "live") return;
+  const decision = await rateLimiter.consume({
+    buckets: ["scheduling.slots.second"],
+    subject: env.organizationId,
+    organizationId: env.organizationId,
+  });
+  if (!decision.allowed) {
+    throw rateLimitError(decision, {
+      code: "scheduling_rate_limited",
+      message:
+        "Too many slot lists and searches for this organization. Retry after `Retry-After` " +
+        "seconds; higher plans allow more.",
+    });
+  }
+}
+
+/**
  * Route-level middleware, after `requireApiKey`: counts the request against the key's bucket for
  * this route class (`api.read`, `api.write`, `api.send`), with the organization's overrides.
  */

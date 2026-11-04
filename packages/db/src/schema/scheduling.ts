@@ -186,6 +186,8 @@ export const schedulingHost = pgTable(
     locations: jsonb("locations").$type<SchedulingHostLocation[]>().notNull().default([]),
     status: schedulingHostStatus("status").notNull().default("active"),
     screenedAt: instant("screened_at"),
+    // Live hosts: when the next day's `scheduling.hosts` is due. Sandbox ones are never charged.
+    nextFeeAt: instant("next_fee_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -199,6 +201,10 @@ export const schedulingHost = pgTable(
     unique("scheduling_host_id_organization_unique").on(t.id, t.organizationId),
     index("scheduling_host_environment_created_at_idx").on(t.environmentId, t.createdAt, t.id),
     index("scheduling_host_attributes_idx").using("gin", t.attributes.op("jsonb_path_ops")),
+    index("scheduling_host_next_fee_at_idx").on(t.nextFeeAt).where(sql`${t.nextFeeAt} IS NOT NULL`),
+    index("scheduling_host_live_organization_idx")
+      .on(t.organizationId)
+      .where(sql`${t.nextFeeAt} IS NOT NULL`),
   ],
 );
 

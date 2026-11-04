@@ -1,12 +1,28 @@
 /** What can be booked. Bookings snapshot what they occupy, so edits never move an existing one. */
+import type { PlanGate } from "@coss/billing/gate";
 import { HipaaModeError, hipaaModeApplies } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
-import { and, asc, desc, eq, gt, inArray, isNull, lt, notInArray, or, sql } from "drizzle-orm";
+import { canonicalJson } from "@coss/db/idempotency";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import { notZoomMeeting } from "./calendar/zoom.ts";
 import { startingUnits } from "./engine/rank.ts";
 import { SchedulingError } from "./errors.ts";
 import { attributesMatch, checkTimeZone, type HostRow, resolveHost } from "./hosts.ts";
+import { requireLiveFeatureToCreate } from "./plan.ts";
 import type {
   CreateEventTypeRequestOutput,
   EventTypeObjectOutput,
@@ -434,11 +450,49 @@ async function rewriteUpcomingEvents(tx: Executor, row: EventTypeRow): Promise<v
     );
 }
 
+/** Whether a live event type finds its hosts by attributes (what a downgrade would leave behind). */
+export async function hasLiveHostFilters(organizationId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: schedulingEventType.id })
+    .from(schedulingEventType)
+    .innerJoin(
+      schema.environment,
+      and(
+        eq(schema.environment.id, schedulingEventType.environmentId),
+        eq(schema.environment.organizationId, schedulingEventType.organizationId),
+      ),
+    )
+    .where(
+      and(
+        eq(schedulingEventType.organizationId, organizationId),
+        eq(schema.environment.mode, "live"),
+        isNotNull(schedulingEventType.hostFilter),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
+/** A live group session's seats, within the plan's limit (one that shrinks is never refused). */
+async function checkGroupSeats(
+  env: { organizationId: string; mode?: "live" | "sandbox" },
+  plans: PlanGate | undefined,
+  capacity: number | null | undefined,
+  existing = 0,
+): Promise<void> {
+  if (env.mode !== "live" || !capacity || capacity <= existing) return;
+  await plans?.requireCapacity(env.organizationId, "schedulingGroupSeats", 0, capacity);
+}
+
 export async function createEventType(
   env: SchedulingEnvironment,
   params: CreateEventTypeRequestOutput,
-  opts: { screen?: SetupScreening | undefined } = {},
+  opts: { screen?: SetupScreening | undefined; plans?: PlanGate | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
+  // `{}` is a filter too: it matches every active host.
+  if (params.host_filter != null)
+    await requireLiveFeatureToCreate(env, opts.plans, "schedulingRouting");
+  await checkGroupSeats(env, opts.plans, params.capacity);
   refuseLinks(params.title, "title");
   await checkDescription(env.organizationId, params.description);
   refuseLinksInAddresses(params.locations);
@@ -590,7 +644,7 @@ export async function updateEventType(
   scope: Scope & { mode?: "live" | "sandbox" },
   ref: string,
   params: UpdateEventTypeRequestOutput,
-  opts: { screen?: SetupScreening | undefined } = {},
+  opts: { screen?: SetupScreening | undefined; plans?: PlanGate | undefined } = {},
 ): Promise<EventTypeObjectOutput> {
   refuseLinks(params.title, "title");
   await checkDescription(scope.organizationId, params.description);
@@ -616,6 +670,19 @@ export async function updateEventType(
       opts.screen,
       "locations",
     );
+  }
+  // What it already has keeps working: only a change meets the plan. Before the transaction, since
+  // the gate takes a connection of its own.
+  if (opts.plans && (params.host_filter != null || params.capacity != null)) {
+    const current = await resolveEventType(db, scope, ref);
+    if (
+      params.host_filter != null &&
+      // Canonical: jsonb doesn't keep the order of an object's keys.
+      canonicalJson(params.host_filter) !== canonicalJson(current.hostFilter)
+    ) {
+      await requireLiveFeatureToCreate(scope, opts.plans, "schedulingRouting");
+    }
+    await checkGroupSeats(scope, opts.plans, params.capacity, current.capacity ?? 0);
   }
   try {
     return await db.transaction(async (tx) => {

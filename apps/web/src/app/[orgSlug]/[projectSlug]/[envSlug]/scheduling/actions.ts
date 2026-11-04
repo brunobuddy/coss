@@ -37,6 +37,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { ActionError, formString, runAction } from "@/lib/actions";
 import { recordAudit } from "@/lib/audit";
 import { planGate } from "@/lib/billing";
+import { usageGate } from "@/lib/broadcasts";
 import { schedulingCalendarDeps, schedulingDeps, schedulingUrl } from "@/lib/scheduling";
 import { eventTypeChanges, issueLabel, parseJsonObject } from "@/lib/scheduling-edit";
 import { type OrgContext, requireOrgPermission } from "@/lib/session";
@@ -254,6 +255,7 @@ export async function createHostAction(
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "create");
     const email = formString(formData, "email");
+    const billing = await usageGate();
     const host = await friendly(() =>
       createHost(
         env,
@@ -262,7 +264,11 @@ export async function createHostAction(
           time_zone: formString(formData, "timeZone"),
           ...(email ? { email } : {}),
         },
-        { screen: configuredDeps().screenSetup },
+        {
+          screen: configuredDeps().screenSetup,
+          plans: configuredDeps().plans,
+          billing,
+        },
       ),
     );
     await friendly(() =>
@@ -330,7 +336,10 @@ export async function updateHostLocationsAction(_prev: ActionResult | null, form
 export async function deleteHostAction(_prev: ActionResult | null, formData: FormData) {
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "delete");
-    const { id } = await friendly(() => deleteHost(env, formString(formData, "hostId")));
+    const billing = await usageGate();
+    const { id } = await friendly(() =>
+      deleteHost(env, formString(formData, "hostId"), { billing }),
+    );
     await audit(context, "scheduling_host.deleted", { type: "scheduling_host", id });
     // From its own page, there's nothing left to come back to.
     if (formString(formData, "leavePage") === "on") {
@@ -485,7 +494,7 @@ export async function createEventTypeAction(
                 ? { locations: [{ type: "phone" as const, number: null }] }
                 : {}),
         },
-        { screen: configuredDeps().screenSetup },
+        { screen: configuredDeps().screenSetup, plans: configuredDeps().plans },
       ),
     );
     await audit(context, "scheduling_event_type.created", {
@@ -523,7 +532,10 @@ export async function updateEventTypeAction(_prev: ActionResult | null, formData
     const changes = eventTypeChanges(current, update);
     if (Object.keys(changes).length === 0) return null;
     const eventType = await friendly(() =>
-      updateEventType(env, id, changes, { screen: configuredDeps().screenSetup }),
+      updateEventType(env, id, changes, {
+        screen: configuredDeps().screenSetup,
+        plans: configuredDeps().plans,
+      }),
     );
     await audit(context, "scheduling_event_type.updated", {
       type: "scheduling_event_type",

@@ -3,9 +3,9 @@
  * the larger of the fee and the usage (plus add-ons). Free has no credit but includes 3,000
  * emails, 1,000 MB each of attachments and received data past each email's first MB, 1,000 form
  * submissions, 1,000 MB of their uploads and 50,000 Hooks messages a month and blocks usage beyond
- * its allowance. Every plan includes 100 phone checks, 3 inboxes, Hooks messages and Risk
- * assessments a month (past Free's, assessments go on in a reduced form instead of stopping:
- * `packages/risk/AGENTS.md`).
+ * its allowance. Every plan includes 100 phone checks, 3 inboxes, Hooks messages, Scheduling hosts
+ * and Risk assessments a month (past Free's, assessments go on in a reduced form instead of
+ * stopping: `packages/risk/AGENTS.md`).
  */
 import { type Entitlements, perDay, perSecond } from "./entitlements.ts";
 import type { MeterKey } from "./meters.ts";
@@ -22,6 +22,13 @@ const HOOKS_MESSAGES_INCLUDED = {
   enterprise: 50_000_000,
 } as const;
 
+/** Host-days each plan includes each month: its hosts for the longest month. */
+const SCHEDULING_HOST_DAYS_INCLUDED = {
+  free: 3 * 31,
+  pro: 25 * 31,
+  scale: 100 * 31,
+  enterprise: 100 * 31,
+} as const;
 /** Risk assessments each plan includes each month: the same dollars as its Hooks messages. */
 const RISK_ASSESSMENTS_INCLUDED = {
   free: 10_000,
@@ -82,6 +89,7 @@ export const PLANS = {
       "hooks.messages": HOOKS_MESSAGES_INCLUDED.free,
       "risk.assessments": RISK_ASSESSMENTS_INCLUDED.free,
       "risk.content_checks": RISK_CONTENT_CHECKS_INCLUDED.free,
+      "scheduling.hosts": SCHEDULING_HOST_DAYS_INCLUDED.free,
     },
     overage: "blocked",
     termMonths: null,
@@ -95,6 +103,10 @@ export const PLANS = {
         dedicatedIps: false,
         subaccounts: false,
         calendarDelegation: false,
+        schedulingHolds: false,
+        schedulingHostPortal: false,
+        schedulingRouting: false,
+        schedulingWhiteLabel: false,
       },
       limits: {
         domains: 1,
@@ -104,6 +116,9 @@ export const PLANS = {
         smsNumbers: 0,
         inboxes: 3,
         subaccounts: 0,
+        schedulingHosts: 3,
+        schedulingSearchHosts: 5,
+        schedulingGroupSeats: 10,
       },
       rateLimits: {
         "email.recipients.second": perSecond(2, 50),
@@ -113,6 +128,7 @@ export const PLANS = {
         "sms.segments.second": perSecond(1, 5),
         "sms.segments.day": perDay(100),
         "risk.assess": perSecond(10, 50),
+        "scheduling.slots.second": perSecond(5, 20),
       },
     },
     highlights: ["3,000 emails per month", "1 domain", "3 team members", "3 inboxes"],
@@ -130,6 +146,7 @@ export const PLANS = {
       "hooks.messages": HOOKS_MESSAGES_INCLUDED.pro,
       "risk.assessments": RISK_ASSESSMENTS_INCLUDED.pro,
       "risk.content_checks": RISK_CONTENT_CHECKS_INCLUDED.pro,
+      "scheduling.hosts": SCHEDULING_HOST_DAYS_INCLUDED.pro,
     },
     overage: "billed",
     termMonths: null,
@@ -143,6 +160,10 @@ export const PLANS = {
         dedicatedIps: false,
         subaccounts: false,
         calendarDelegation: false,
+        schedulingHolds: true,
+        schedulingHostPortal: false,
+        schedulingRouting: false,
+        schedulingWhiteLabel: false,
       },
       limits: {
         domains: 10,
@@ -152,6 +173,9 @@ export const PLANS = {
         smsNumbers: 5,
         inboxes: 1_000,
         subaccounts: 0,
+        schedulingHosts: 25,
+        schedulingSearchHosts: 25,
+        schedulingGroupSeats: 50,
       },
       rateLimits: {
         "email.recipients.second": perSecond(14, 100),
@@ -161,6 +185,7 @@ export const PLANS = {
         "sms.segments.second": perSecond(10, 50),
         "sms.segments.day": perDay(10_000),
         "risk.assess": perSecond(100, 200),
+        "scheduling.slots.second": perSecond(25, 100),
       },
     },
     highlights: [
@@ -185,6 +210,7 @@ export const PLANS = {
       "hooks.messages": HOOKS_MESSAGES_INCLUDED.scale,
       "risk.assessments": RISK_ASSESSMENTS_INCLUDED.scale,
       "risk.content_checks": RISK_CONTENT_CHECKS_INCLUDED.scale,
+      "scheduling.hosts": SCHEDULING_HOST_DAYS_INCLUDED.scale,
     },
     overage: "billed",
     termMonths: null,
@@ -198,6 +224,10 @@ export const PLANS = {
         dedicatedIps: false,
         subaccounts: true,
         calendarDelegation: true,
+        schedulingHolds: true,
+        schedulingHostPortal: true,
+        schedulingRouting: true,
+        schedulingWhiteLabel: true,
       },
       limits: {
         domains: 100,
@@ -207,6 +237,9 @@ export const PLANS = {
         smsNumbers: 50,
         inboxes: 10_000,
         subaccounts: 1_000,
+        schedulingHosts: null,
+        schedulingSearchHosts: 500,
+        schedulingGroupSeats: 10_000,
       },
       rateLimits: {
         "email.recipients.second": perSecond(50, 200),
@@ -216,6 +249,7 @@ export const PLANS = {
         "sms.segments.second": perSecond(30, 150),
         "sms.segments.day": perDay(100_000),
         "risk.assess": perSecond(100, 200),
+        "scheduling.slots.second": perSecond(100, 300),
       },
     },
     highlights: [
@@ -224,6 +258,7 @@ export const PLANS = {
       "Unlimited team members",
       "Log drains",
       "Single sign-on",
+      "100 Scheduling hosts, more by the month",
     ],
   },
   enterprise: {
@@ -239,6 +274,7 @@ export const PLANS = {
       "hooks.messages": HOOKS_MESSAGES_INCLUDED.enterprise,
       "risk.assessments": RISK_ASSESSMENTS_INCLUDED.enterprise,
       "risk.content_checks": RISK_CONTENT_CHECKS_INCLUDED.enterprise,
+      "scheduling.hosts": SCHEDULING_HOST_DAYS_INCLUDED.enterprise,
     },
     overage: "billed",
     termMonths: 12,
@@ -252,6 +288,10 @@ export const PLANS = {
         dedicatedIps: false,
         subaccounts: true,
         calendarDelegation: true,
+        schedulingHolds: true,
+        schedulingHostPortal: true,
+        schedulingRouting: true,
+        schedulingWhiteLabel: true,
       },
       limits: {
         domains: null,
@@ -261,6 +301,9 @@ export const PLANS = {
         smsNumbers: null,
         inboxes: null,
         subaccounts: null,
+        schedulingHosts: null,
+        schedulingSearchHosts: 500,
+        schedulingGroupSeats: 10_000,
       },
       rateLimits: {
         "email.recipients.second": perSecond(100, 500),
@@ -270,11 +313,13 @@ export const PLANS = {
         "sms.segments.second": perSecond(100, 500),
         "sms.segments.day": perDay(1_000_000),
         "risk.assess": perSecond(100, 200),
+        "scheduling.slots.second": perSecond(200, 1000),
       },
     },
     highlights: [
       "Volume pricing and commitments",
       "Directory sync (SCIM)",
+      "HIPAA mode with a signed BAA",
       "Invoicing and direct debit",
     ],
   },
