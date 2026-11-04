@@ -28,6 +28,7 @@ import {
   type SchedulingEnvironment,
   SchedulingError,
   startCalendarAuthorization,
+  updateCalendar,
   updateCalendarDelegation,
   updateEventType,
   updateHost,
@@ -522,6 +523,28 @@ describe("connecting hosts", () => {
     const [connection] = await listConnections(env, back.id);
     expect(connection?.calendars).toMatchObject([
       { external_id: `back@${DOMAIN}`, read_busy: true, write_target: true },
+    ]);
+  });
+
+  test("coming back doesn't turn on a write target the host turned off", async () => {
+    const env = await environment();
+    const api = new FakeGoogleCalendarApi();
+    let now = NOW;
+    const deps = googleDeps(api, () => now);
+    const ana = await hostOn(env, "ana");
+    const delegation = await activeGoogle(env, deps);
+    await run(env, deps);
+    const [before] = await listConnections(env, ana.id);
+    await updateCalendar(env, ana.id, before?.calendars[0]?.id as string, { write_target: false });
+    await db
+      .update(schema.schedulingCalendarConnection)
+      .set({ status: "needs_reauth", lastErrorAt: NOW })
+      .where(eq(schema.schedulingCalendarConnection.hostId, ana.id));
+    now = new Date(NOW.getTime() + 2 * 3_600_000);
+    await dueNow(delegation.id);
+    await run(env, deps);
+    expect(await listConnections(env, ana.id)).toMatchObject([
+      { status: "active", calendars: [{ write_target: false }] },
     ]);
   });
 

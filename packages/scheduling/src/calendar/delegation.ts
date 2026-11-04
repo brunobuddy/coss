@@ -711,8 +711,15 @@ async function connectHost(
           ),
         )
         .for("update");
-      // A stand-in that turned out to be the primary calendar was made without a write target.
-      if (calendar && primary.writable && !calendar.writeTarget && host.existing) {
+      // A stand-in that turned out to be the primary calendar was made without a write target. One
+      // that's been read before had its target chosen, which coming back mustn't overrule.
+      if (
+        calendar &&
+        primary.writable &&
+        !calendar.writeTarget &&
+        calendar.verifiedAt === null &&
+        host.existing
+      ) {
         const [target] = await tx
           .select({ id: schedulingCalendar.id })
           .from(schedulingCalendar)
