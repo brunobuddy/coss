@@ -324,7 +324,8 @@ work on it from elsewhere.
 What an agent pointed at coss.com reads, all describing the same facts — change them together:
 - `/llms.txt` and `/llms-full.txt` open with `AGENT_BRIEF` (`apps/site/src/lib/llms.ts`): how to read the docs, get a
   key with `npx coss-cli init`, the SDK's conventions, testing webhooks. Every docs page is Markdown at `<page>.md`
-  (`apps/site/AGENTS.md`); API reference pages render the OpenAPI document (`operation-markdown.ts`).
+  (`apps/site/AGENTS.md`); API reference pages render the OpenAPI document (`operation-markdown.ts`). `/llms.txt` lists
+  the guides within a size budget; API operations are in `/docs/<product>/llms.txt` and `/docs/api-reference/llms.txt`.
 - The landing page's prompt (`AGENT_PROMPT`, `apps/site/src/lib/site.ts`), quoted by `/docs/agents`.
 - The `coss` skill (`plugins/coss/skills/coss/SKILL.md`), the notes `coss init` writes into a project's
   AGENTS.md (`agentNotes`, `packages/cli/src/commands/init.ts`) and the MCP server's instructions (`packages/mcp/src/server.ts`).

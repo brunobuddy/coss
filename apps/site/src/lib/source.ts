@@ -2,7 +2,7 @@ import "server-only";
 import spec from "@coss/api/openapi.json";
 import snippets from "@coss/sdkgen/snippets.json";
 import type { StructuredData } from "fumadocs-core/mdx-plugins";
-import { llms, loader } from "fumadocs-core/source";
+import { loader } from "fumadocs-core/source";
 import { operationsMarkdown, sectionsMarkdown } from "../components/docs-sections";
 import { renderApiKeyComponents } from "./api-key-permissions-text";
 import { renderBillingComponents } from "./billing-text";
@@ -142,9 +142,6 @@ export function renderTableComponents(markdown: string): string {
     ),
   );
 }
-
-/** /llms.txt's page tree (src/lib/llms.ts adds the rest). */
-export const docsLlms = llms(source);
 
 /** A page as the docs' search indexes it. */
 async function searchablePage(page: DocsPage): Promise<SearchablePage> {

@@ -16,7 +16,11 @@ delivered until you switch to a production key yourself.
 ## What agents read
 
 - **[/llms.txt](/llms.txt)** starts with a short brief (how to get a key, how the SDK reports
-  errors, how to test webhooks), then lists every docs page.
+  errors, how to test webhooks), then lists the guides and says where each product's API
+  operations are.
+- **`/docs/<product>/llms.txt`**, such as [/docs/sign/llms.txt](/docs/sign/llms.txt), lists a
+  product's guides with a summary of each, and its API operations.
+  [/docs/api-reference/llms.txt](/docs/api-reference/llms.txt) lists every operation.
 - **Every docs page is Markdown** at its URL plus `.md`: [/docs/email/sending.md](/docs/email/sending.md).
   The HTML pages point to it too (`<link rel="alternate" type="text/markdown">`), and each has a
   **Copy Markdown** button for pasting it into a chat yourself.
