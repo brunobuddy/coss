@@ -2,8 +2,24 @@
  * What in an event type's description is a link. The API checks these exact tokens and the booking
  * page renders them, so what's checked and what's clickable can't differ. No imports: client-safe.
  */
-const SCHEME_LINK = /[a-z][a-z0-9+.-]*:\/\/[^\s<>"']*/giu;
-const TRAILING_PUNCTUATION = /[.,;:!?)\]]+$/;
+const SCHEME_LINK = /[a-z][a-z0-9+.-]{0,31}:\/\/[^\s<>"']*/giu;
+const OPENING: Record<string, string> = { ")": "(", "]": "[" };
+
+const count = (text: string, char: string) => text.split(char).length - 1;
+
+/** Sentence punctuation isn't part of a link, but a bracket it opened itself is. */
+function withoutTrailingPunctuation(token: string): string {
+  let end = token.length;
+  while (end > 0) {
+    const char = token.charAt(end - 1);
+    const opening = OPENING[char];
+    const part = token.slice(0, end);
+    const unmatched = opening !== undefined && count(part, char) > count(part, opening);
+    if (!unmatched && !".,;:!?".includes(char)) break;
+    end--;
+  }
+  return token.slice(0, end);
+}
 
 export type DescriptionPart =
   | { kind: "text"; text: string }
@@ -35,7 +51,7 @@ export function descriptionParts(text: string): DescriptionPart[] {
   let at = 0;
   for (const match of text.matchAll(SCHEME_LINK)) {
     const whole = match[0];
-    const link = whole.replace(TRAILING_PUNCTUATION, "");
+    const link = withoutTrailingPunctuation(whole);
     const url = parseLink(link);
     if (!url) continue;
     const start = match.index;
@@ -49,5 +65,10 @@ export function descriptionParts(text: string): DescriptionPart[] {
 
 /** Everything shaped like a scheme and an address, as the page's tokenizer would see it. */
 export function schemeLinks(text: string): string[] {
-  return [...text.matchAll(SCHEME_LINK)].map((match) => match[0].replace(TRAILING_PUNCTUATION, ""));
+  return [...text.matchAll(SCHEME_LINK)].map((match) => withoutTrailingPunctuation(match[0]));
+}
+
+/** What's left once those are gone. */
+export function outsideSchemeLinks(text: string): string {
+  return text.replace(SCHEME_LINK, " ");
 }

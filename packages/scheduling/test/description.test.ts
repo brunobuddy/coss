@@ -36,6 +36,18 @@ describe("what a description links to", () => {
     expect(linkedHosts("evil\u200b.com")).toEqual(["evil.com"]);
     expect(linkedHosts("e\u200dvil.com")).toEqual(["evil.com"]);
     expect(linkedHosts("evil.xn--p1ai")).toEqual(["evil.xn--p1ai"]);
+    expect(linkedHosts("https://acme.com/ Visit evil.c\u034fom/login")).toEqual([
+      "acme.com",
+      "evil.com",
+    ]);
+    expect(linkedHosts("evil.c\ufe0fom")).toEqual(["evil.com"]);
+    expect(linkedHosts("evil.c\tom")).toEqual(["evil.com"]);
+    expect(linkedHosts("https://acme.com/ Continue here...evil.com/login")).toEqual([
+      "acme.com",
+      "evil.com",
+    ]);
+    expect(linkedHosts("See you there...bring your ID.\nThanks")).toEqual([]);
+    expect(linkedHosts("Ends here.\nNext line.")).toEqual([]);
     expect(linkedHosts("Dr. Reyes 👩\u200d⚕️ sees you soon.")).toEqual([]);
   });
 
@@ -132,6 +144,21 @@ describe("what the page makes clickable", () => {
       { kind: "link", text: "https://acme.com/a", href: "https://acme.com/a" },
       { kind: "text", text: ", then call." },
     ]);
+  });
+
+  test("keeps a bracket that belongs to the link, and drops one that doesn't", () => {
+    expect(hrefs("Read https://acme.com/intake_(new_patient).")).toEqual([
+      "https://acme.com/intake_(new_patient)",
+    ]);
+    expect(hrefs("(see https://acme.com/a)")).toEqual(["https://acme.com/a"]);
+    expect(hrefs("[https://acme.com/a[1]]")).toEqual(["https://acme.com/a[1]"]);
+  });
+
+  test("a very long scheme is still refused, and quickly", () => {
+    const text = `${"a".repeat(1990)}://x`;
+    expect(linkedHosts(text)).toBeNull();
+    expect(linkedHosts(`${"a".repeat(40)}https://acme.com`)).toBeNull();
+    expect(hrefs(`${"!".repeat(2000)}`)).toEqual([]);
   });
 
   test.each([
