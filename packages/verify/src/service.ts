@@ -642,7 +642,7 @@ export function createVerifyService(opts: VerifyServiceOptions): VerifyService {
     if (await isOnBillingHold(env.organizationId)) {
       throw new VerifyError(
         "billing_hold",
-        "Live sending is paused: your organization has an overdue invoice or reached its spend limit.",
+        "Live sending is paused: your organization has an overdue invoice or reached its spend or credit limit.",
       );
     }
     const held = await budgetHoldFor({

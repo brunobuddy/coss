@@ -49,6 +49,7 @@ const BILLING_EXAMPLE = {
   estimate: { usage: 4800, discount: 0, credit: 2500, total: 2300 },
   credit_remaining: 0,
   spend_limit: null,
+  credit_limit: { limit: 50000, used: 2300, charge_threshold: 10000 },
   payment_method: { type: "card", brand: "visa", last4: "4242" },
   add_ons: [],
   features: {
@@ -107,9 +108,9 @@ export const BillingObject = z
     holds: z
       .array(
         z.object({
-          reason: z.enum(["delinquent", "spend_limit", "admin"]).meta({
+          reason: z.enum(["delinquent", "spend_limit", "credit_limit", "admin"]).meta({
             description:
-              "`delinquent`: an invoice is past its grace period. `spend_limit`: the spend limit was reached. `admin`: placed by coss.com.",
+              "`delinquent`: an invoice is past its grace period. `spend_limit`: the spend limit was reached. `credit_limit`: the credit limit was reached, or a usage charge failed. `admin`: placed by coss.com.",
           }),
           since: Timestamp.meta({ description: "When the hold began." }),
         }),
@@ -145,6 +146,24 @@ export const BillingObject = z
     spend_limit: Cents.nullable().meta({
       description: "Usage beyond the credit past which live sending is held; `null`: none.",
     }),
+    credit_limit: z
+      .object({
+        limit: Cents.meta({
+          description:
+            "What coss.com carries before live sending is held. It rises as payments settle.",
+        }),
+        used: Cents.meta({
+          description: "Usage not invoiced yet, unpaid invoices and recent usage charges.",
+        }),
+        charge_threshold: Cents.nullable().meta({
+          description:
+            "Usage not invoiced yet is charged early at this amount; `null`: it isn't charged automatically.",
+        }),
+      })
+      .nullable()
+      .meta({
+        description: "Where the organization stands against its credit limit; `null`: it has none.",
+      }),
     payment_method: z
       .object({
         type: z.string().meta({ description: "Its type, such as `card`." }),
@@ -381,9 +400,9 @@ const invoiceFields = {
     .string()
     .nullable()
     .meta({ description: "The invoice number. `null` until it's finalized." }),
-  kind: z.enum(["period", "plan_change", "one_off", "final"]).meta({
+  kind: z.enum(["period", "plan_change", "one_off", "final", "threshold"]).meta({
     description:
-      "`period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account.",
+      "`period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account. `threshold`: usage charged early, taken off the month's invoice.",
   }),
   status: z.enum(INVOICE_STATUSES).meta({
     description:
@@ -496,10 +515,12 @@ export const CreditObject = z
     applies_to: z.enum(["usage", "any"]).meta({
       description: "`any`: also fees and other charges.",
     }),
-    source: z.enum(["fee", "commitment", "support", "promotion", "refund", "sla"]).meta({
-      description:
-        "Where it came from: `fee`, `commitment`, `support`, `promotion`, `refund` or `sla`.",
-    }),
+    source: z
+      .enum(["fee", "commitment", "support", "promotion", "refund", "sla", "threshold"])
+      .meta({
+        description:
+          "Where it came from: `fee`, `commitment`, `support`, `promotion`, `refund` or `sla`.",
+      }),
     description: z.string().meta({ description: "What it's for." }),
     effective_at: Timestamp.meta({ description: "When it can start being used." }),
     expires_at: Timestamp.nullable().meta({
@@ -628,7 +649,7 @@ export const BillingWebhookEvent = z
       type: z.enum(["billing.hold_placed", "billing.hold_lifted"]),
       data: z.object({
         ...eventData,
-        reason: z.enum(["delinquent", "spend_limit", "admin"]),
+        reason: z.enum(["delinquent", "spend_limit", "credit_limit", "admin"]),
       }),
     }),
     z.object({

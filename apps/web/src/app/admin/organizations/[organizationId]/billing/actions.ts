@@ -61,6 +61,13 @@ function dollars(formData: FormData, name: string, label: string): bigint {
   return cents;
 }
 
+/** An admin's credit limit; empty means the policy decides (`0` is a limit: nothing on credit). */
+function creditLimitField(formData: FormData): bigint | null {
+  return formString(formData, "creditLimit")
+    ? dollars(formData, "creditLimit", "Credit limit")
+    : null;
+}
+
 /** `YYYY-MM-DD` (UTC midnight) or `null` when empty. */
 function dateField(formData: FormData, name: string, label: string): Date | null {
   const value = formString(formData, name);
@@ -141,6 +148,7 @@ export async function updateAccountSettingsAction(
       taxId: formString(formData, "taxId") || null,
       graceDays: Number(formString(formData, "graceDays") || "14"),
       holdExemptUntil: dateField(formData, "holdExemptUntil", "Hold exemption"),
+      creditLimitCents: creditLimitField(formData),
       notes: formString(formData, "notes") || null,
     };
     await updateBillingAccountSettings({

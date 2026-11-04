@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm";
 import { getBillingAccount } from "./accounts.ts";
 import { METER_KEYS, type MeterKey } from "./catalog/meters.ts";
+import { creditStandingOf } from "./credit.ts";
 import { grantsFor } from "./grants.ts";
 import { holdsOf } from "./holds.ts";
 import { type InvoiceRow, invoiceLines } from "./invoices.ts";
@@ -63,6 +64,9 @@ export async function billingObject(
         ),
       ),
   ]);
+  const credit = account
+    ? await creditStandingOf(account, state, estimate.totals.totalCents, now)
+    : null;
   const entitlements = creatableEntitlements(state);
   const lines = estimate.composition.lines;
   const sumOf = (kinds: string[]) =>
@@ -126,6 +130,13 @@ export async function billingObject(
     },
     credit_remaining: toNumber(creditLeft > 0n ? creditLeft : 0n),
     spend_limit: account?.spendLimitCents == null ? null : toNumber(account.spendLimitCents),
+    credit_limit: credit
+      ? {
+          limit: toNumber(credit.limitCents),
+          used: toNumber(credit.usedCents),
+          charge_threshold: credit.thresholdCents === null ? null : toNumber(credit.thresholdCents),
+        }
+      : null,
     payment_method: account?.paymentMethod
       ? {
           type: account.paymentMethod.type,

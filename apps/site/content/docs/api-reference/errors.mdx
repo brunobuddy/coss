@@ -37,7 +37,7 @@ Errors use conventional HTTP status codes and always share one envelope:
 | `not_found_error`       | 404             | No such resource in the key's environment, or no such endpoint             |
 | `idempotency_error`     | 409 / 422       | A request with the key is in progress, or the key was reused with another body |
 | `rate_limit_error`      | 429             | Too many requests                                                          |
-| `billing_error`         | 402             | The plan or billing stands in the way: past the monthly allowance (`usage_limit_exceeded`), sending paused for an overdue invoice or the spend limit (`billing_hold`), a member's, project's or API key's monthly budget used up (`budget_exceeded`), or a plan limit (`plan_limit_reached`, `plan_feature_unavailable`). Don't retry; see [Plans and billing](/docs/billing) |
+| `billing_error`         | 402             | The plan or billing stands in the way: past the monthly allowance (`usage_limit_exceeded`), sending paused for an overdue invoice or the spend or credit limit (`billing_hold`), a member's, project's or API key's monthly budget used up (`budget_exceeded`), or a plan limit (`plan_limit_reached`, `plan_feature_unavailable`). Don't retry; see [Plans and billing](/docs/billing) |
 | `api_error`             | 5xx             | Something went wrong on our side; retry with backoff                       |
 
 Each endpoint page lists the codes it can return.

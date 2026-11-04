@@ -265,8 +265,8 @@ export async function checkPhone(
   if (await isOnBillingHold(organizationId)) {
     throw new RiskError(
       "billing_hold",
-      "Live phone checks are paused for this organization: an invoice is overdue or its spend " +
-        "limit was reached. Sandbox keys still work. See the organization's billing settings.",
+      "Live phone checks are paused for this organization: an invoice is overdue or its spend or " +
+        "credit limit was reached. Sandbox keys still work. See the organization's billing settings.",
     );
   }
   const usage = { organizationId, meter: PHONE_METER, quantity: 1 } as const;

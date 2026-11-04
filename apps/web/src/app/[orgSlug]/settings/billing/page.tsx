@@ -3,6 +3,7 @@ import {
   ADD_ONS,
   type AddOnDefinition,
   billingOverview,
+  CREDIT_POLICY,
   catalogAddOn,
   collectInvoiceNow,
   completePaymentSetup,
@@ -169,7 +170,7 @@ export default async function BillingPage({
     usageByEnvironment(organization.id, period),
     environmentLabels(organization.id),
   ]);
-  const { account, state, pending, estimate, holds } = overview;
+  const { account, state, pending, estimate, holds, credit } = overview;
   const plan = PLANS[state.terms.plan];
   const contract = state.contract;
   const selfServe = !contract || contract.kind === "self_serve";
@@ -234,7 +235,9 @@ export default async function BillingPage({
               ? "An invoice is overdue. Pay it below and sending resumes right away."
               : holds.some((hold) => hold.reason === "spend_limit")
                 ? "This month's usage reached your spend limit. Raise it below, or sending resumes next month."
-                : "coss.com paused live sending for billing reasons."}{" "}
+                : holds.some((hold) => hold.reason === "credit_limit")
+                  ? "Your organization reached its credit limit, or a usage charge failed. Pay anything open below; the limit rises as payments settle."
+                  : "coss.com paused live sending for billing reasons."}{" "}
             {holds.some(
               (hold) => hold.reason === "delinquent" || hold.reason === "spend_limit",
             ) ? null : (
@@ -286,9 +289,11 @@ export default async function BillingPage({
         <BillingFigures>
           <BillingFigure
             detail={
-              estimate.totals.creditCents > 0n
-                ? `${formatCents(estimate.totals.creditCents)} paid by credit`
-                : "Live usage so far"
+              estimate.alreadyChargedCents > 0n
+                ? `${formatCents(estimate.alreadyChargedCents)} already charged`
+                : estimate.totals.creditCents > 0n
+                  ? `${formatCents(estimate.totals.creditCents)} paid by credit`
+                  : "Live usage so far"
             }
             label="Usage this month"
             value={formatCents(estimate.usageCents)}
@@ -682,6 +687,38 @@ export default async function BillingPage({
           </SettingsNote>
         ) : null}
       </SettingsSection>
+
+      {credit ? (
+        <SettingsSection
+          description="What coss.com carries for your organization before live sending pauses."
+          title="Credit limit"
+        >
+          <SettingsRow
+            description={
+              <>
+                {formatCents(credit.usedCents)} in use: usage not invoiced yet, unpaid invoices and
+                usage charges from the last {CREDIT_POLICY.settleDays} days.
+                {credit.customLimit ? null : " The limit rises on its own as payments settle."}{" "}
+                <SupportLink
+                  orgSlug={organization.slug}
+                  subject="Raise our credit limit"
+                  topic="billing"
+                />
+                .
+              </>
+            }
+            label={formatCents(credit.limitCents)}
+          >
+            {null}
+          </SettingsRow>
+          {credit.thresholdCents === null ? null : (
+            <SettingsNote>
+              When usage not invoiced yet reaches {formatCents(credit.thresholdCents)}, it's charged
+              to your payment method right away and comes off this month's invoice.
+            </SettingsNote>
+          )}
+        </SettingsSection>
+      ) : null}
 
       <SettingsSection
         description={

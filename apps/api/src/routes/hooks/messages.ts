@@ -115,7 +115,7 @@ export const sendHookMessageRoute = createRoute({
     ...commonErrors,
     402: errorDoc(
       "The plan or the account's billing stands in the way of this live send: Free's monthly " +
-        "messages are used up (`usage_limit_exceeded`), an invoice is overdue or the spend limit " +
+        "messages are used up (`usage_limit_exceeded`), an invoice is overdue or the spend or credit limit " +
         "was reached (`billing_hold`), or a budget is spent (`budget_exceeded`).",
     ),
     404: applicationNotFound,

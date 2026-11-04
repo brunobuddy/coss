@@ -18,6 +18,7 @@ import { colors, space } from "../../../../../../lib/theme";
 const HOLDS: Record<string, string> = {
   delinquent: "An invoice is overdue. Sending resumes as soon as it is paid.",
   spend_limit: "This month's usage reached your spend limit. Sending resumes next month.",
+  credit_limit: "Your organization reached its credit limit, or a usage charge failed.",
   admin: "coss.com paused live sending for billing reasons. Contact support.",
 };
 
@@ -35,6 +36,7 @@ export default function BillingScreen() {
   const billing = query.data;
   const held =
     billing.holds.find((hold) => hold.reason === "delinquent") ??
+    billing.holds.find((hold) => hold.reason === "credit_limit") ??
     billing.holds.find((hold) => hold.reason === "spend_limit") ??
     billing.holds[0];
   return (
