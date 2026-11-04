@@ -182,6 +182,8 @@ export const SDK_METHODS: Readonly<Record<string, string>> = {
   "GET /v1/verifications": "verify.list",
   "GET /v1/verifications/{id}": "verify.get",
   "POST /v1/verifications/{id}/cancel": "verify.cancel",
+  "GET /v1/verify/settings": "verify.settings.get",
+  "PATCH /v1/verify/settings": "verify.settings.update",
   "POST /v1/email_templates": "email.templates.create",
   "GET /v1/email_templates": "email.templates.list",
   "GET /v1/email_templates/{id}": "email.templates.get",

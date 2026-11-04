@@ -18,7 +18,11 @@ directory unless they name a workspace.
   become `isError` results with a hint (`result.ts`; the API's `error.hint` wins over the local one). `get_setup`
   (`tools/setup.ts`, `describeSetup` in the SDK) is the readiness answer. Risk, Hooks, inboxes
   (`tools/inboxes.ts`: an agent's own address, its threads with each message's `extracted_text`, sends and
-  replies) and template drafts have tools that call only the public SDK. `publish_email_template` publishes the revision it just read.
+  replies), marketing (`tools/marketing.ts`), Verify, Sign, Forms and Scheduling have tools that call only the public
+  SDK, as do template drafts. `publish_email_template` publishes the revision it just read. `save_*` tools update with
+  an id and create without one; broadcasts and signature requests are always created as drafts (`send: false`), so
+  only `send_broadcast` and `send_sign_request` reach people. `upload_sign_document` reads a PDF by path, only inside
+  `projectDir` (through symlinks too). `COSS_MCP_TOOLSETS` (`TOOLSETS` in `src/server.ts`) offers fewer tools.
   `create_webhook_endpoint` registers a URL once and writes `COSS_WEBHOOK_SECRET` into the project
   env file (the same file the CLI uses; a repeat for that URL does not create another endpoint).
   Third-party text (email content, received mail, bounce and

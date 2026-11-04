@@ -102,6 +102,41 @@ export interface ListVerificationsParams {
   after?: string;
 }
 
+/** An environment's Verify settings. */
+export interface VerifySettings {
+  object: "verify_settings";
+  /** The name codes are sent for. */
+  app_name: string;
+  /** Whether `app_name` is the project's: no name of its own is set. */
+  app_name_is_default: boolean;
+  /** Digits in a code. */
+  code_length: number;
+  /** How long a code works. */
+  ttl_seconds: number;
+  /** Wrong codes before a verification fails. */
+  max_attempts: number;
+  /** One of the organization's numbers; `null`: coss.com's shared numbers. */
+  sms_from: string | null;
+  /** An address on one of the organization's verified domains; `null`: coss.com's. */
+  email_from: string | null;
+  /** ISO 3166 countries SMS codes may go to. */
+  allowed_countries: string[];
+}
+
+/** Only the fields given change. */
+export interface UpdateVerifySettingsParams {
+  /** The name codes are sent for; `null`: the project's. */
+  app_name?: string | null;
+  code_length?: number;
+  ttl_seconds?: number;
+  max_attempts?: number;
+  /** One of the organization's numbers; `null`: coss.com's shared numbers. */
+  sms_from?: string | null;
+  /** An address on one of the organization's verified domains (live keys); `null`: coss.com's. */
+  email_from?: string | null;
+  allowed_countries?: string[];
+}
+
 export type VerifyWebhookEventType =
   | "verification.approved"
   | "verification.failed"

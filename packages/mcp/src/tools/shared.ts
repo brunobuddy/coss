@@ -37,7 +37,7 @@ export const DESTRUCTIVE: ToolAnnotations = {
   openWorldHint: false,
 };
 
-/** Sends email to the outside world. */
+/** Reaches people outside: an email, a text, or a notification they get because of it. */
 export const SENDS: ToolAnnotations = {
   readOnlyHint: false,
   destructiveHint: false,
@@ -99,6 +99,13 @@ export function compact<T extends object>(value: T): Partial<T> {
       ([, v]) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0),
     ),
   ) as Partial<T>;
+}
+
+/** The arguments without the ones left out, for the SDK's exact optional parameters. */
+export function given<T extends object>(value: T): { [K in keyof T]: Exclude<T[K], undefined> } {
+  return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as {
+    [K in keyof T]: Exclude<T[K], undefined>;
+  };
 }
 
 /** The key's environment kind, from its prefix. */

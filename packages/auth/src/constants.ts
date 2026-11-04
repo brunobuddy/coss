@@ -44,8 +44,7 @@ export const API_KEY_PERMISSIONS: Record<string, string[]> = {
   smsSuppression: ["create", "read", "delete"],
   sign: ["create", "read", "update", "delete", "send"],
   inbox: ["create", "read", "update", "delete", "send"],
-  // Settings (`update`) are dashboard-only for now.
-  verify: ["send", "check", "read"],
+  verify: ["send", "check", "read", "update"],
   form: ["create", "read", "update", "delete"],
   scheduling: ["create", "read", "update", "delete"],
 };

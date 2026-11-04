@@ -111,7 +111,9 @@ One-time codes as a service: `start` sends a code to a phone number (SMS) or an 
   the worker's `retention` loop); organization deletion deletes them per environment.
 - **API** (`apps/api/src/routes/verify.ts`, `coss.verify` in the SDK): `POST /v1/verifications`
   (201), `POST /v1/verifications/check`, list, get, `POST …/{id}/cancel`; permissions `verify`
-  (`send`, `check`, `read`; `update` — settings — is dashboard-only). The API wires the service in
+  (`send`, `check`, `read`, `update`); `GET`/`PATCH /v1/verify/settings` (`coss.verify.settings`,
+  audited `verify_settings.updated`; `email_from` checked with `authorizeLiveSender` in live
+  environments, `sms_from` must be the organization's). The API wires the service in
   `createApp` with its rate limiter and the email sender `apps/api/src/verify-email.ts`
   (`NOTIFICATIONS_*` for coss.com's sender, `VERIFY_SMS_*` for the shared numbers).
 - **Dashboard** (`apps/web/src/app/[orgSlug]/projects/[projectSlug]/[envSlug]/verify/`):

@@ -37,6 +37,14 @@ describe("app", () => {
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
   });
 
+  test("GET /health/ready needs no API key and reads the database", async () => {
+    const { app } = createTestApp();
+    const res = await app.request("/health/ready");
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+
   test("unknown routes are a 404 not_found_error envelope", async () => {
     const { app } = createTestApp();
     const res = await app.request("/v1/nothing-here", { method: "POST" });
@@ -349,6 +357,7 @@ describe("GET /openapi.json", () => {
       "/v1/verifications/check",
       "/v1/verifications/{id}",
       "/v1/verifications/{id}/cancel",
+      "/v1/verify/settings",
       "/v1/webhook_endpoints",
       "/v1/webhook_endpoints/{id}",
       "/v1/webhook_endpoints/{id}/deliveries",

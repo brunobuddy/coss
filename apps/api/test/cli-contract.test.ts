@@ -13,10 +13,11 @@ import { buildTestMessage, receiveFakeEmail } from "@coss/email";
 import { runDueHookDeliveries } from "@coss/hooks";
 import { testHookDeliveryDeps } from "@coss/hooks/testing";
 import { queryLogs } from "@coss/logs";
+import { buildTestPdfBase64 } from "@coss/sign/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { runDueWebhookDeliveries } from "@coss/webhooks";
 import { TEST_SECRETS_KEYS, webhookReceiver } from "@coss/webhooks/testing";
-import { verifyWebhook } from "coss";
+import { Coss, verifyWebhook } from "coss";
 import { type CliIo, CURSOR_FIELDS, run } from "coss-cli";
 import { apiRequest, createTestApp, type TestApp, uniqueDomainName } from "./helpers.ts";
 
@@ -604,5 +605,220 @@ describe("coss-cli against the API", () => {
     } finally {
       receiver.stop();
     }
+  });
+
+  /** The JSON objects a `--json` command printed, one per line. */
+  function lines(output: string): Record<string, never>[] {
+    return output
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+  }
+
+  async function signedIn(app: TestApp, key: string) {
+    const first = cliIo(app, { answers: [key] });
+    expect(await run(["login", "--manual"], first.io)).toBe(0);
+    return (argv: string[]) => {
+      const cli = cliIo(app);
+      cli.io.configDir = first.io.configDir;
+      cli.io.cwd = first.io.cwd;
+      return { cli, code: run(argv, cli.io) };
+    };
+  }
+
+  test("verify: start, check and settings", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const coss = await signedIn(app, tenant.sandboxKey);
+    const started = coss(["verify", "start", "+15005550006", "--json"]);
+    expect(await started.code).toBe(0);
+    const [verification] = lines(started.cli.stdout());
+    const wrong = coss(["verify", "check", "--to", "+15005550006", "--code", "123456"]);
+    expect(await wrong.code).toBe(1);
+    const right = coss(["verify", "check", "--id", String(verification?.id), "--code", "000000"]);
+    expect(await right.code).toBe(0);
+    expect(right.cli.stdout()).toContain("approved");
+    const set = coss(["verify", "settings", "set", "--code-length", "8", "--json"]);
+    expect(await set.code).toBe(0);
+    expect(lines(set.cli.stdout())[0]).toMatchObject({ code_length: 8 });
+    const get = coss(["verify", "settings", "get"]);
+    expect(await get.code).toBe(0);
+    expect(get.cli.stdout()).toContain("8 digits");
+    expect(await coss(["verify", "list", "--status", "approved"]).code).toBe(0);
+    expect(await coss(["verify", "get", String(verification?.id)]).code).toBe(0);
+  });
+
+  test("contacts and broadcasts: a draft from a file, tested and scheduled", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const client = new Coss({
+      apiKey: tenant.sandboxKey,
+      baseUrl: "http://api.test",
+      fetch: (input, init) => Promise.resolve(app.fetch(toRequest(input, init))),
+    });
+    await client.email.marketingSettings.update({
+      display_name: "Acme",
+      mailing_address: "1 Main St, Springfield",
+    });
+    const audience = await client.email.audiences.create({ name: "Newsletter" });
+    const coss = await signedIn(app, tenant.sandboxKey);
+    const added = coss([
+      "contacts",
+      "add",
+      "ada@example.com",
+      "--audience",
+      String(audience.data?.id),
+      "--json",
+    ]);
+    expect(await added.code).toBe(0);
+    expect(lines(added.cli.stdout())[0]).toMatchObject({ status: "subscribed" });
+    const listed = coss(["contacts", "list", "--status", "subscribed"]);
+    expect(await listed.code).toBe(0);
+    expect(listed.cli.stdout()).toContain("ada@example.com");
+    expect(await coss(["contacts", "get", "ada@example.com"]).code).toBe(0);
+
+    const file = coss(["--help"]);
+    writeFileSync(
+      join(file.cli.io.cwd, "october.html"),
+      `<p>Hello</p><a href="{{{unsubscribe_url}}}">Unsubscribe</a> {{{mailing_address}}}`,
+    );
+    const created = coss([
+      "broadcasts",
+      "create",
+      "--name",
+      "October",
+      "--from",
+      "news@acme.com",
+      "--subject",
+      "News",
+      "--html",
+      "october.html",
+      "--audience",
+      String(audience.data?.id),
+      "--json",
+    ]);
+    expect(await created.code).toBe(0);
+    const [broadcast] = lines(created.cli.stdout());
+    expect(broadcast).toMatchObject({ status: "draft" });
+    const id = String(broadcast?.id);
+    expect(await coss(["broadcasts", "test", id, "--to", "me@example.com"]).code).toBe(0);
+    const at = new Date(Date.now() + 3_600_000).toISOString();
+    const sent = coss(["broadcasts", "send", id, "--at", at, "--json"]);
+    expect(await sent.code).toBe(0);
+    expect(lines(sent.cli.stdout())[0]).toMatchObject({ status: "scheduled" });
+    expect(await coss(["broadcasts", "list", "--status", "scheduled"]).code).toBe(0);
+    expect(await coss(["broadcasts", "get", id]).code).toBe(0);
+    expect(await coss(["broadcasts", "cancel", id]).code).toBe(0);
+    expect(await coss(["contacts", "remove", "ada@example.com"]).code).toBe(0);
+  });
+
+  test("sign: upload, a draft, sending it and the audit trail", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const coss = await signedIn(app, tenant.sandboxKey);
+    const file = coss(["--help"]);
+    writeFileSync(
+      join(file.cli.io.cwd, "nda.pdf"),
+      Buffer.from(await buildTestPdfBase64(), "base64"),
+    );
+    const uploaded = coss(["sign", "upload", "nda.pdf", "--json"]);
+    expect(await uploaded.code).toBe(0);
+    const [document] = lines(uploaded.cli.stdout());
+    const created = coss([
+      "sign",
+      "create",
+      "--title",
+      "NDA",
+      "--document",
+      String(document?.id),
+      "--signer",
+      "Ada Lovelace <ada@example.com>",
+      "--json",
+    ]);
+    expect(await created.code).toBe(0);
+    const [request] = lines(created.cli.stdout());
+    expect(request).toMatchObject({ status: "draft" });
+    const id = String(request?.id);
+    const sent = coss(["sign", "send", id]);
+    expect(await sent.code).toBe(0);
+    expect(sent.cli.stdout()).toContain("sent");
+    expect(await coss(["sign", "list", "--status", "sent"]).code).toBe(0);
+    expect(await coss(["sign", "get", id]).code).toBe(0);
+    // Invited moments ago: nobody is due a reminder yet.
+    const remind = coss(["sign", "remind", id]);
+    expect(await remind.code).toBe(1);
+    expect(remind.cli.stderr()).toContain("Couldn't send the reminder");
+    const audit = coss(["sign", "audit", id, "--json"]);
+    expect(await audit.code).toBe(0);
+    expect(lines(audit.cli.stdout()).length).toBeGreaterThan(0);
+    expect(await coss(["sign", "templates"]).code).toBe(0);
+    expect(await coss(["sign", "cancel", id]).code).toBe(0);
+  });
+
+  test("sms, forms and scheduling: reads on what the SDK set up", async () => {
+    const tenant = await createTestTenant();
+    const { app, dispatch } = createTestApp();
+    const client = new Coss({
+      apiKey: tenant.sandboxKey,
+      baseUrl: "http://api.test",
+      fetch: (input, init) => Promise.resolve(app.fetch(toRequest(input, init))),
+    });
+    const coss = await signedIn(app, tenant.sandboxKey);
+
+    const message = await client.sms.send({
+      from: "+14155550100",
+      to: "+15005550006",
+      body: "Hello",
+    });
+    await dispatch();
+    const got = coss(["sms", "get", String(message.data?.id)]);
+    expect(await got.code).toBe(0);
+    expect(got.cli.stdout()).toContain("Hello");
+    expect(await coss(["sms", "list", "--to", "+15005550006"]).code).toBe(0);
+    expect(await coss(["sms", "received"]).code).toBe(0);
+    expect(await coss(["sms", "numbers"]).code).toBe(0);
+    const added = coss(["sms", "suppressions", "add", "+15005550007", "--json"]);
+    expect(await added.code).toBe(0);
+    expect(await coss(["sms", "suppressions", "list"]).code).toBe(0);
+    const [suppression] = lines(added.cli.stdout());
+    expect(await coss(["sms", "suppressions", "remove", String(suppression?.id)]).code).toBe(0);
+
+    const form = coss(["forms", "create", "Contact", "--json"]);
+    expect(await form.code).toBe(0);
+    const [created] = lines(form.cli.stdout());
+    expect(await coss(["forms", "get", String(created?.id)]).code).toBe(0);
+
+    const host = await client.scheduling.hosts.create({
+      uid: "ada",
+      name: "Ada",
+      time_zone: "UTC",
+    });
+    await client.scheduling.schedules.create("ada", {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "00:00", end: "23:59" }],
+    });
+    await client.scheduling.eventTypes.create({
+      uid: "intro",
+      title: "Intro",
+      duration_minutes: 30,
+      hosts: [{ host: String(host.data?.id) }],
+    });
+    expect(await coss(["scheduling", "event-types"]).code).toBe(0);
+    const start = new Date(Date.now() + 86_400_000).toISOString();
+    const end = new Date(Date.now() + 3 * 86_400_000).toISOString();
+    const slots = coss(["scheduling", "slots", "intro", "--start", start, "--end", end, "--json"]);
+    expect(await slots.code).toBe(0);
+    const [slot] = lines(slots.cli.stdout());
+    const booking = await client.scheduling.bookings.create({
+      event_type: "intro",
+      start: String(slot?.start),
+      attendee: { name: "Bo", email: "bo@example.com", time_zone: "UTC" },
+    });
+    const id = String(booking.data?.id);
+    const shown = coss(["scheduling", "booking", id]);
+    expect(await shown.code).toBe(0);
+    expect(shown.cli.stdout()).toContain("confirmed");
+    expect(await coss(["scheduling", "calendars", "ada"]).code).toBe(0);
+    expect(await coss(["scheduling", "cancel", id]).code).toBe(0);
   });
 });

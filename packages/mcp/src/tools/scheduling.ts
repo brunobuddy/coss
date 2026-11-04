@@ -1,14 +1,25 @@
-import type { SchedulingBooking, SchedulingHost } from "coss";
+import type {
+  CreateSchedulingBookingParams,
+  CreateSchedulingEventTypeParams,
+  SchedulingBooking,
+  SchedulingEventType,
+  SchedulingHost,
+  UpdateSchedulingEventTypeParams,
+  UpsertSchedulingScheduleParams,
+} from "coss";
 import { z } from "zod";
-import { respond } from "../result.ts";
+import { failWith, respond } from "../result.ts";
 import {
   compact,
   cursorSchema,
   DESTRUCTIVE,
+  given,
   limitSchema,
   nextCursor,
   READ_ONLY,
+  SENDS,
   type ToolContext,
+  WRITE,
 } from "./shared.ts";
 
 const UNTRUSTED =
@@ -38,6 +49,25 @@ function bookingSummary(booking: SchedulingBooking): object {
     calendar_unverified: booking.calendar_unverified || undefined,
   });
 }
+
+function eventTypeSummary(eventType: SchedulingEventType): object {
+  return compact({
+    id: eventType.id,
+    uid: eventType.uid,
+    title: eventType.title,
+    kind: eventType.kind,
+    status: eventType.status,
+    duration_minutes: eventType.duration_minutes,
+    requires_approval: eventType.requires_approval || undefined,
+    host_filter: eventType.host_filter,
+    hosts: eventType.hosts.map((host) => host.host),
+  });
+}
+
+const attributes = z
+  .record(z.string(), z.union([z.string(), z.array(z.string())]))
+  .optional()
+  .describe("Only hosts whose attributes match these.");
 
 export function registerSchedulingTools(ctx: ToolContext): void {
   const { server, coss } = ctx;
@@ -141,5 +171,276 @@ export function registerSchedulingTools(ctx: ToolContext): void {
     },
     ({ booking_id }) =>
       respond(coss.scheduling.bookings.cancel(booking_id), (booking) => bookingSummary(booking)),
+  );
+
+  const host = z.string().describe("The host's id or uid. list_scheduling_hosts finds it.");
+  const sessionNote =
+    "Its token is the session's only authority: hand it only to the person it's for, in the URL " +
+    "fragment or an Authorization header, never a query string.";
+
+  server.registerTool(
+    "save_scheduling_host",
+    {
+      title: "Create or update a host",
+      description:
+        "With `host` it updates that host; without it, it creates one (name and time_zone " +
+        "needed). A new host has no hours until save_scheduling_schedule gives them some.",
+      inputSchema: z.object({
+        host: z.string().optional().describe("The host to update (id or uid)."),
+        uid: z.string().optional().describe("Your id for the host."),
+        name: z.string().optional(),
+        email: z.string().optional(),
+        time_zone: z.string().optional().describe("An IANA name, like Europe/London."),
+        attributes: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
+      }),
+      annotations: WRITE,
+    },
+    ({ host: existing, name, time_zone, ...fields }) => {
+      if (existing) {
+        return respond(
+          coss.scheduling.hosts.update(existing, given({ name, time_zone, ...fields })),
+          hostSummary,
+        );
+      }
+      if (!name || !time_zone) return failWith("A new host needs a name and a time_zone.");
+      return respond(
+        coss.scheduling.hosts.create({ name, time_zone, ...given(fields) }),
+        hostSummary,
+      );
+    },
+  );
+
+  server.registerTool(
+    "list_scheduling_schedules",
+    {
+      title: "List a host's schedules",
+      description: "A host's weekly hours and date overrides.",
+      inputSchema: z.object({ host }),
+      annotations: READ_ONLY,
+    },
+    ({ host: id }) =>
+      respond(coss.scheduling.schedules.list(id), (schedules) => ({ schedules: schedules.data })),
+  );
+
+  server.registerTool(
+    "save_scheduling_schedule",
+    {
+      title: "Create or update a schedule",
+      description:
+        "With an id it replaces that schedule's hours; without one it creates a schedule (a " +
+        "host's first is its default).",
+      inputSchema: z.object({
+        host,
+        id: z.string().optional().describe("The schedule to update."),
+        name: z.string().optional(),
+        time_zone: z.string().optional(),
+        is_default: z.boolean().optional(),
+        rules: z
+          .array(
+            z.object({
+              days: z.array(z.number().int().min(0).max(6)).describe("0 is Sunday."),
+              start: z.string().describe("HH:mm"),
+              end: z.string().describe("HH:mm"),
+            }),
+          )
+          .describe("Weekly hours."),
+      }),
+      annotations: WRITE,
+    },
+    ({ host: hostId, id, ...fields }) => {
+      const params = given(fields) as UpsertSchedulingScheduleParams;
+      return respond(
+        id
+          ? coss.scheduling.schedules.update(hostId, id, params)
+          : coss.scheduling.schedules.create(hostId, params),
+      );
+    },
+  );
+
+  server.registerTool(
+    "list_scheduling_calendars",
+    {
+      title: "List a host's calendars",
+      description:
+        "A host's calendar connections. `needs_reauth` means coss.com can't read that calendar, " +
+        "so the host isn't offered: that's the usual reason for having no slots.",
+      inputSchema: z.object({ host }),
+      annotations: READ_ONLY,
+    },
+    ({ host: id }) =>
+      respond(coss.scheduling.calendars.list(id), (calendars) => ({
+        calendar_connections: calendars.data,
+      })),
+  );
+
+  server.registerTool(
+    "authorize_scheduling_calendar",
+    {
+      title: "Get a calendar consent link",
+      description:
+        "A URL where the host gives consent at Google, Microsoft or Zoom. Give it to the host: " +
+        "only they can complete it.",
+      inputSchema: z.object({
+        host,
+        provider: z.enum(["google", "microsoft", "zoom"]),
+        return_url: z.string().optional(),
+      }),
+      annotations: WRITE,
+    },
+    ({ host: id, provider, return_url }) =>
+      respond(coss.scheduling.calendars.authorize(id, given({ provider, return_url }))),
+  );
+
+  server.registerTool(
+    "list_scheduling_event_types",
+    {
+      title: "List event types",
+      description: "What can be booked in this environment, with who hosts each.",
+      inputSchema: z.object({ limit: limitSchema(20), cursor: cursorSchema }),
+      annotations: READ_ONLY,
+    },
+    ({ limit, cursor }) =>
+      respond(coss.scheduling.eventTypes.list(given({ limit, after: cursor })), (page) => ({
+        event_types: page.data.map(eventTypeSummary),
+        next_cursor: nextCursor(page),
+      })),
+  );
+
+  server.registerTool(
+    "save_scheduling_event_type",
+    {
+      title: "Create or update an event type",
+      description:
+        "With an id it updates that event type; without one it creates one (title and " +
+        "duration_minutes needed). `settings` takes the rest (buffers, notice, limits, " +
+        "questions, locations): read_docs on /docs/scheduling has them.",
+      inputSchema: z.object({
+        id: z.string().optional().describe("The event type to update (id or uid)."),
+        uid: z.string().optional(),
+        kind: z.enum(["one_on_one", "pool", "collective", "group"]).optional(),
+        title: z.string().optional(),
+        duration_minutes: z.number().int().optional(),
+        hosts: z
+          .array(
+            z.object({
+              host: z.string(),
+              role: z.enum(["required", "member"]).optional(),
+              weight: z.number().optional(),
+            }),
+          )
+          .optional(),
+        settings: z.record(z.string(), z.unknown()).optional(),
+      }),
+      annotations: WRITE,
+    },
+    ({ id, settings, ...fields }) => {
+      const body = { ...settings, ...given(fields) };
+      if (id) {
+        const { kind: _kind, ...update } = body as UpdateSchedulingEventTypeParams & {
+          kind?: string;
+        };
+        return respond(coss.scheduling.eventTypes.update(id, update), eventTypeSummary);
+      }
+      if (!fields.title || !fields.duration_minutes) {
+        return failWith("A new event type needs a title and duration_minutes.");
+      }
+      return respond(
+        coss.scheduling.eventTypes.create(body as CreateSchedulingEventTypeParams),
+        eventTypeSummary,
+      );
+    },
+  );
+
+  server.registerTool(
+    "search_scheduling_availability",
+    {
+      title: "Search hosts' availability",
+      description:
+        "Which hosts of an event type are free between two instants, each with their slots.",
+      inputSchema: z.object({
+        event_type: z.string().describe("The event type's id or uid."),
+        start: z.string().describe("An ISO 8601 instant."),
+        end: z.string().describe("An ISO 8601 instant."),
+        attributes,
+        hosts: z.array(z.string()).optional(),
+        slots_per_host: z.number().int().optional(),
+        limit: z.number().int().optional(),
+      }),
+      annotations: READ_ONLY,
+    },
+    (args) => respond(coss.scheduling.availability.search(given(args))),
+  );
+
+  server.registerTool(
+    "create_scheduling_booking",
+    {
+      title: "Book a slot",
+      description:
+        "Books a start from list_scheduling_slots. The attendee is told by email, and the booking " +
+        "is billed on a live key: confirm it with the user first.",
+      inputSchema: z.object({
+        event_type: z.string(),
+        start: z.string().describe("An ISO 8601 instant, as list_scheduling_slots gives it."),
+        host: z.string().optional(),
+        attributes,
+        duration_minutes: z.number().int().optional(),
+        attendee: z
+          .record(z.string(), z.unknown())
+          .describe("{ name, email, time_zone, uid? }: read_docs on /docs/scheduling."),
+        answers: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
+      }),
+      annotations: SENDS,
+    },
+    (args) =>
+      respond(
+        coss.scheduling.bookings.create(given(args) as unknown as CreateSchedulingBookingParams),
+        bookingSummary,
+      ),
+  );
+
+  server.registerTool(
+    "reschedule_scheduling_booking",
+    {
+      title: "Reschedule a booking",
+      description: "Moves a booking to another start. The attendee is told.",
+      inputSchema: z.object({
+        booking_id: bookingId,
+        start: z.string().describe("An ISO 8601 instant."),
+        host: z.string().optional(),
+      }),
+      annotations: SENDS,
+    },
+    ({ booking_id, start, host: hostRef }) =>
+      respond(
+        coss.scheduling.bookings.reschedule(booking_id, given({ start, host: hostRef })),
+        bookingSummary,
+      ),
+  );
+
+  server.registerTool(
+    "create_scheduling_session",
+    {
+      title: "Create a scheduling session",
+      description: `A link to a hosted page: \`host\` lets one host manage their hours and calendars, \`event_type\` lets someone book it, \`booking_id\` lets an attendee change one booking. Pass exactly one. ${sessionNote}`,
+      inputSchema: z.object({
+        host: z.string().optional(),
+        event_type: z.string().optional(),
+        booking_id: z.string().optional(),
+        expires_in: z.number().int().optional().describe("Seconds."),
+      }),
+      annotations: WRITE,
+    },
+    ({ host: hostRef, event_type, booking_id, expires_in }) => {
+      if ([hostRef, event_type, booking_id].filter(Boolean).length !== 1) {
+        return failWith("Pass exactly one of host, event_type and booking_id.");
+      }
+      if (booking_id) return respond(coss.scheduling.sessions.createForBooking(booking_id));
+      if (event_type) {
+        return respond(coss.scheduling.sessions.createForBooker(given({ event_type, expires_in })));
+      }
+      return respond(
+        coss.scheduling.sessions.createForHost(hostRef as string, given({ expires_in })),
+      );
+    },
   );
 }

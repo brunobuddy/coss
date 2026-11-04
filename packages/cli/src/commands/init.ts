@@ -94,7 +94,8 @@ export function agentNotes(envFile: string): string {
   return `${NOTES_BEGIN}
 ## coss.com
 
-This project uses [coss.com](https://coss.com) (email, SMS, webhooks) through its SDK.
+This project uses [coss.com](https://coss.com) through its SDK (email, SMS, Verify, Sign, Forms,
+Scheduling, Hooks, Risk and webhooks, on one key).
 
 - Docs: https://coss.com/llms.txt lists every page, and every docs page is Markdown at its URL plus
   \`.md\` (e.g. https://coss.com/docs/email/sending.md). API reference pages give each operation's
@@ -113,6 +114,8 @@ This project uses [coss.com](https://coss.com) (email, SMS, webhooks) through it
   localhost:3000/<path>\` forwards webhook events to a local handler, \`npx coss-cli trigger
   <event type>\` sends a test event, and \`npx coss-cli logs tail\` follows the API requests and
   events. Send tests to \`bounce@simulator.amazonses.com\` and run \`npx coss-cli emails diagnose <id>\`.
+  \`npx coss-cli --help\` lists the commands for each product (\`verify\`, \`contacts\`, \`broadcasts\`,
+  \`sign\`, \`forms\`, \`scheduling\`, \`hooks\`, \`risk\`), and \`npx coss-cli api\` calls any endpoint.
 ${NOTES_END}
 `;
 }

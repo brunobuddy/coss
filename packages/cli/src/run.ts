@@ -24,11 +24,13 @@ import { listenCommand } from "./commands/listen.ts";
 import { loginCommand } from "./commands/login.ts";
 import { logoutCommand } from "./commands/logout.ts";
 import { logsTailCommand } from "./commands/logs.ts";
+import { MARKETING_COMMANDS } from "./commands/marketing.ts";
 import { openCommand } from "./commands/open.ts";
 import { profilesListCommand, useCommand } from "./commands/profiles.ts";
 import { RISK_COMMANDS } from "./commands/risk.ts";
 import { SCHEDULING_COMMANDS } from "./commands/scheduling.ts";
-import { smsSendCommand } from "./commands/sms.ts";
+import { SIGN_COMMANDS } from "./commands/sign.ts";
+import { SMS_COMMANDS } from "./commands/sms.ts";
 import {
   templatesListCommand,
   templatesPreviewCommand,
@@ -36,6 +38,7 @@ import {
   templatesPushCommand,
 } from "./commands/templates.ts";
 import { triggerCommand } from "./commands/trigger.ts";
+import { VERIFY_COMMANDS } from "./commands/verify.ts";
 import {
   webhooksAddCommand,
   webhooksDeliveriesCommand,
@@ -65,7 +68,9 @@ export const COMMANDS: readonly Command[] = [
   emailsGetCommand,
   emailsEventsCommand,
   emailsDiagnoseCommand,
-  smsSendCommand,
+  ...MARKETING_COMMANDS,
+  ...SMS_COMMANDS,
+  ...VERIFY_COMMANDS,
   logsTailCommand,
   inboxCommand,
   inboxGetCommand,
@@ -78,6 +83,7 @@ export const COMMANDS: readonly Command[] = [
   webhooksRetryCommand,
   ...HOOKS_COMMANDS,
   ...RISK_COMMANDS,
+  ...SIGN_COMMANDS,
   ...FORMS_COMMANDS,
   ...SCHEDULING_COMMANDS,
   domainsListCommand,

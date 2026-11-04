@@ -19,6 +19,7 @@ Published from [cosscom/coss](https://github.com/cosscom/coss) by CI, with
 
 | Variable | |
 | --- | --- |
+| `COSS_MCP_TOOLSETS` | Fewer tools: a comma-separated list of `email`, `marketing`, `inboxes`, `sms`, `verify`, `sign`, `forms`, `scheduling`, `webhooks`, `hooks`, `risk`. Docs, `get_setup`, logs and `get_account_status` are always there. Default: every tool. |
 | `COSS_API_KEY` | A `coss_test_…` (development) or `coss_live_…` (production) key; the server sees that key's environment. Without one, a `coss_test_` key in the project's `.env.local` or `.env` is used (`npx coss-cli init` writes it). A `coss_live_` key in that file is never loaded. With no key at all, only the docs tools are available. |
 | `COSS_BASE_URL` | Another API origin, e.g. `http://localhost:3001`. Defaults to `https://api.coss.com`. |
 
@@ -45,9 +46,13 @@ can ask before calling the ones that change something.
 | Logs | `search_logs`, `get_log` |
 | Setup | `get_setup` |
 | Templates | `pull_email_template`, `push_email_template`, `publish_email_template` |
-| Hooks | `list_hook_applications`, `send_hook_message`, `list_hook_deliveries` |
-| Risk | `assess_risk`, `list_risk_assessments`, `list_risk_rules`, `list_risk_list_entries` |
-| Forms | `list_forms`, `list_form_submissions`, `get_form_submission` |
+| Marketing | `list_contacts`, `upsert_contact`, `list_audiences`, `save_audience`, `list_segments`, `save_segment`, `list_topics`, `save_topic`, `list_broadcasts`, `get_broadcast`, `save_broadcast`, `send_test_broadcast`, `send_broadcast`, `cancel_broadcast`, `get_marketing_settings`, `update_marketing_settings` |
+| Verify | `start_verification`, `check_verification`, `list_verifications`, `get_verification`, `cancel_verification`, `get_verify_settings`, `update_verify_settings` |
+| Sign | `upload_sign_document`, `list_sign_requests`, `get_sign_request`, `get_sign_audit_trail`, `create_sign_request`, `create_sign_request_from_template`, `send_sign_request`, `remind_sign_request`, `cancel_sign_request`, `create_sign_session`, `list_sign_templates`, `create_sign_template`, `get_sign_settings`, `update_sign_settings` |
+| Hooks | `list_hook_applications`, `create_hook_application`, `list_hook_event_types`, `create_hook_event_type`, `list_hook_endpoints`, `create_hook_endpoint`, `send_hook_message`, `send_hook_test_message`, `list_hook_deliveries`, `list_hook_attempts`, `retry_hook_delivery`, `create_hook_portal_session` |
+| Risk | `assess_risk`, `list_risk_assessments`, `get_risk_assessment`, `record_risk_feedback`, `list_risk_rules`, `list_risk_list_entries`, `add_risk_list_entry`, `remove_risk_list_entry`, `get_risk_settings`, `check_email_risk`, `check_ip_risk`, `check_phone_risk` |
+| Forms | `list_forms`, `get_form`, `save_form`, `list_form_submissions`, `get_form_submission`, `release_form_submission` |
+| Scheduling | `list_scheduling_hosts`, `save_scheduling_host`, `list_scheduling_schedules`, `save_scheduling_schedule`, `list_scheduling_calendars`, `authorize_scheduling_calendar`, `list_scheduling_event_types`, `save_scheduling_event_type`, `list_scheduling_slots`, `search_scheduling_availability`, `list_scheduling_bookings`, `get_scheduling_booking`, `create_scheduling_booking`, `reschedule_scheduling_booking`, `cancel_scheduling_booking`, `create_scheduling_session` |
 | Account | `get_account_status` |
 
 ## As a library

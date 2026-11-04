@@ -573,6 +573,11 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
   "GET /v1/verifications": { method: "verify.list", args: (r) => [queryParams(r)] },
   "GET /v1/verifications/{id}": { method: "verify.get", args: (r) => [pathId(r)] },
   "POST /v1/verifications/{id}/cancel": { method: "verify.cancel", args: (r) => [pathId(r)] },
+  "GET /v1/verify/settings": { method: "verify.settings.get", args: () => [] },
+  "PATCH /v1/verify/settings": {
+    method: "verify.settings.update",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
   "GET /v1/sms/{id}": { method: "sms.get", args: (r) => [pathId(r)] },
   "GET /v1/sms/{id}/events": { method: "sms.listEvents", args: (r) => [pathId(r)] },
   "POST /v1/sms/{id}/cancel": { method: "sms.cancel", args: (r) => [pathId(r)] },

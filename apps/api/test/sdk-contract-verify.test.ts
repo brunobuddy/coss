@@ -42,3 +42,32 @@ test("coss.verify starts, checks, reads and cancels", async () => {
     code: "verification_not_cancelable",
   });
 });
+
+test("coss.verify.settings reads and changes the environment's settings", async () => {
+  const tenant = await createTestTenant();
+  const { app } = createTestApp();
+  const coss = clientFor(app, tenant.sandboxKey);
+  const read = await coss.verify.settings.get();
+  expect(read.data).toMatchObject({
+    object: "verify_settings",
+    code_length: 6,
+    sms_from: null,
+    allowed_countries: ["US", "CA"],
+  });
+  const updated = await coss.verify.settings.update({
+    app_name: "Acme",
+    code_length: 8,
+    allowed_countries: ["GB", "US"],
+  });
+  expect(updated.data).toMatchObject({
+    app_name: "Acme",
+    app_name_is_default: false,
+    code_length: 8,
+    allowed_countries: ["GB", "US"],
+  });
+  expect((await coss.verify.settings.get()).data?.code_length).toBe(8);
+  expect((await coss.verify.settings.update({ sms_from: "+14155550100" })).error).toMatchObject({
+    code: "invalid_settings",
+    param: "sms_from",
+  });
+});

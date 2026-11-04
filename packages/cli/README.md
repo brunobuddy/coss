@@ -47,6 +47,15 @@ ID and notarized by Apple (since 0.3.0), so one downloaded with a browser runs w
 | `coss emails events <id>` | Its delivery events, with the receiving server's answers. |
 | `coss emails diagnose <id>` | Whether it was delivered and, if not, why and what to do (or `--to <address>` for the newest email to it). |
 | `coss sms send` | A test text message: `--to +14155550123`, or `--simulate delivered\|invalid\|filtered\|opted-out\|reply` for the SMS simulator (sandbox keys); `--from` (default for sandbox keys `+14155550100`; live keys need one of your registered numbers), `--body`; `--wait` follows it to its outcome (and shows the simulator's reply). |
+| `coss sms list`, `coss sms get <message>`, `coss sms received`, `coss sms numbers` | Messages and their events, what your numbers received, and which numbers can send. |
+| `coss sms suppressions list`, `coss sms suppressions add <number>`, `coss sms suppressions remove <suppression>` | The numbers that won't be texted. |
+| `coss verify start <to>`, `coss verify check --code <code>` | [One-time codes](https://coss.com/docs/verify): sends one, and compares what the end user typed (`--id` or `--to`; exits 0 only when it's right). |
+| `coss verify list`, `coss verify get <verification>`, `coss verify cancel <verification>` | Verifications and what happened to each. |
+| `coss verify settings get`, `coss verify settings set` | Code length, lifetime and attempts, the senders and allowed countries. |
+| `coss contacts list`, `coss contacts get <contact>`, `coss contacts add <email>`, `coss contacts remove <contact>` | [Marketing contacts](https://coss.com/docs/email/contacts). |
+| `coss broadcasts list`, `coss broadcasts get <broadcast>`, `coss broadcasts create`, `coss broadcasts test <broadcast>`, `coss broadcasts send <broadcast>`, `coss broadcasts cancel <broadcast>` | [Marketing sends](https://coss.com/docs/email/broadcasts): `create` makes a draft from files, `send` asks before a live send (`--yes` off a terminal, `--at` to schedule). |
+| `coss sign upload <file.pdf>`, `coss sign create`, `coss sign send <request>` | [Signatures](https://coss.com/docs/sign): a PDF, a draft request (`--document` or `--template`, `--signer "Name <email>"`) and sending it. |
+| `coss sign list`, `coss sign get <request>`, `coss sign remind <request>`, `coss sign cancel <request>`, `coss sign download <request>`, `coss sign audit <request>`, `coss sign templates` | Requests, reminders, the sealed PDF, the audit trail and templates. |
 | `coss logs tail` | New lines of the environment's log as they arrive: API requests, email events, webhook attempts. Filter with `--source`, `--level`, `--type`, `--status`, `-q`; `--since 15m` starts earlier; `--interval` sets the poll interval (2000 ms). |
 | `coss inbox` | The environment's inbound domain, then each email it receives as it arrives (`--since`, `--interval`). |
 | `coss inbox get <id>` | A received email: verdicts, attachments and its text (`--html`, `--headers`); `--raw > message.eml` saves the message as received. |
@@ -68,8 +77,10 @@ ID and notarized by Apple (since 0.3.0), so one downloaded with a browser runs w
 | `coss risk assess --event <event>` | Assesses an event (`--email`, `--ip`, `--user`, `--content`, `--data '{…}'`…) and prints the decision, score and reasons. Sandbox fixtures (`192.0.2.1`, `disposable.test`, `[coss-test:spam]`…) produce each decision. |
 | `coss risk assessments`, `coss risk feedback <assessment> --outcome <outcome>` | Assessments (`--review open`: the review queue), and what a user turned out to be. |
 | `coss risk lists list`, `coss risk lists add <allow\|block> <type> <value>`, `coss risk lists remove <entry>` | The allow and block lists (`--note`, `--expires 7d`). |
-| `coss scheduling hosts`, `coss scheduling bookings` | The environment's [hosts and bookings](https://coss.com/docs/scheduling). |
-| `coss forms list`, `coss forms submissions <form>` | The environment's [forms](https://coss.com/docs/forms) and their endpoints, and a form's submissions (`--status held`: Risk's review queue). |
+| `coss scheduling hosts`, `coss scheduling bookings`, `coss scheduling event-types` | The environment's [hosts, bookings and event types](https://coss.com/docs/scheduling). |
+| `coss scheduling slots <event-type>`, `coss scheduling booking <booking>`, `coss scheduling cancel <booking>`, `coss scheduling calendars <host>` | Bookable starts (`--start`, `--end`), one booking, cancelling it, and a host's calendar connections. |
+| `coss forms list`, `coss forms get <form>`, `coss forms create <name>` | The environment's [forms](https://coss.com/docs/forms) and their endpoints. |
+| `coss forms submissions <form>`, `coss forms submission <form> <submission>`, `coss forms release <form> <submission>` | A form's submissions (`--status held`: Risk's review queue), one's values, and accepting a held one. |
 | `coss domains list` | The organization's sending domains and their status. |
 | `coss domains add <domain>` | Adds a domain and prints the DNS records to publish (`--format bind` prints zone-file lines). |
 | `coss domains get <domain>` | A domain's records and what the last DNS check saw (verified, missing, mismatch). `--format bind` too. |
