@@ -317,7 +317,7 @@ export const emailsEventsCommand: Command = defineCommand({
 });
 
 /** Next steps name the commands that look further. */
-const CLI_REFERENCES: DiagnosisReferences = {
+export const CLI_REFERENCES: DiagnosisReferences = {
   check_suppression: "`coss api suppressions -f address=<address>`",
   remove_suppression: "`coss api -X DELETE suppressions/<id>`",
   list_domains: "`coss api domains`",

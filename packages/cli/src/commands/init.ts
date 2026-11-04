@@ -1,6 +1,12 @@
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { fetchSetupReport, type SetupReport, SIMULATOR_TO } from "coss";
+import {
+  fetchSetupReport,
+  SETUP_PRODUCTS,
+  type SetupProduct,
+  type SetupReport,
+  SIMULATOR_TO,
+} from "coss";
 import type { Flags } from "../args.ts";
 import { type Command, type CommandInput, defineCommand } from "../command.ts";
 import { profileName, readConfig } from "../config.ts";
@@ -15,6 +21,7 @@ import { removeEnvVar, setEnvVar } from "../env-file.ts";
 import { apiError, CliError } from "../errors.ts";
 import type { CliIo } from "../io.ts";
 import { type DetectedStack, detectProjectStack } from "../project-stack.ts";
+import { oneOf } from "./list-output.ts";
 import { browserLogin, isRemote } from "./login.ts";
 
 export { removeEnvVar, setEnvVar };
@@ -113,9 +120,14 @@ Scheduling, Hooks, Risk and webhooks, on one key).
 - Commands use \`COSS_API_KEY\` from the environment. \`npx coss-cli listen --forward-to
   localhost:3000/<path>\` forwards webhook events to a local handler, \`npx coss-cli trigger
   <event type>\` sends a test event, and \`npx coss-cli logs tail\` follows the API requests and
-  events. Send tests to \`bounce@simulator.amazonses.com\` and run \`npx coss-cli emails diagnose <id>\`.
-  \`npx coss-cli --help\` lists the commands for each product (\`verify\`, \`contacts\`, \`broadcasts\`,
-  \`sign\`, \`forms\`, \`scheduling\`, \`hooks\`, \`risk\`), and \`npx coss-cli api\` calls any endpoint.
+  events. Send email tests to \`bounce@simulator.amazonses.com\` and run \`npx coss-cli emails diagnose <id>\`;
+  each product has a testing page in the docs. \`npx coss-cli --help\` lists the commands for each
+  product (\`verify\`, \`contacts\`, \`broadcasts\`, \`sign\`, \`forms\`, \`scheduling\`, \`hooks\`, \`risk\`),
+  and \`npx coss-cli api\` calls any endpoint.
+- What happened to something: \`npx coss-cli <emails|sms|verify|sign|forms|hooks|scheduling> diagnose\`
+  gives a verdict, what it means and what to do next. A form's spam is answered like a success, so
+  what a submitter saw proves nothing. \`npx coss-cli init --product <product>\` prints what a
+  product still needs, and the MCP server's \`get_setup\` takes the same \`product\`.
 ${NOTES_END}
 `;
 }
@@ -167,6 +179,12 @@ const FLAGS = {
     type: "boolean",
     description: "Don't open a browser: open the link yourself, then paste the code it shows",
   },
+  product: {
+    type: "string",
+    value: "<product>",
+    choices: SETUP_PRODUCTS,
+    description: `What you're about to add: ${SETUP_PRODUCTS.join(", ")}. The closing step is that product's. Default: email`,
+  },
   json: { type: "boolean", description: "Print what was done as one JSON object" },
 } as const satisfies Flags;
 
@@ -180,13 +198,18 @@ export const initCommand: Command = defineCommand({
     "is the project's key, not the CLI's: `coss login` signs the CLI in.\n\n" +
     "An env file that already has a key keeps it, unless --force. It also adds a short section on " +
     "coss.com (docs, the development key, testing) to the project's AGENTS.md, or its CLAUDE.md " +
-    "when it has no AGENTS.md; running it again updates that section. --no-agents skips the notes.",
+    "when it has no AGENTS.md; running it again updates that section. --no-agents skips the notes." +
+    "\n\nIt ends with the one next step for the key. --product says which product that's for: what it " +
+    "still needs (an approved number for SMS and Verify, a host, schedule and event type for " +
+    "Scheduling…) or, with a development key, how to try it. With no --product it answers for email " +
+    "and lists the products in use.",
   flags: FLAGS,
   run: init,
 });
 
 async function init({ values, context }: CommandInput<typeof FLAGS>): Promise<number> {
   const { io, out, flags } = context;
+  const product = oneOf("--product", values.product, SETUP_PRODUCTS);
   const dir = io.cwd;
   const pkg = await readPackageJson(dir);
   const next = pkg !== null && dependsOn(pkg, "next");
@@ -292,7 +315,10 @@ async function init({ values, context }: CommandInput<typeof FLAGS>): Promise<nu
     }
   }
 
-  const setup = await fetchSetupReport(clientFor(io, { apiKey, baseUrl }));
+  const setup = await fetchSetupReport(
+    clientFor(io, { apiKey, baseUrl }),
+    product ? { product } : {},
+  );
   const stack = await detectProjectStack(dir, pkg);
   if (setup.warning) out.warn(setup.warning);
 
@@ -307,7 +333,7 @@ async function init({ values, context }: CommandInput<typeof FLAGS>): Promise<nu
     });
     return 0;
   }
-  out.line(closingMessage({ stack, shownFile, setup }));
+  out.line(closingMessage({ stack, shownFile, setup, product }));
   return 0;
 }
 
@@ -351,14 +377,21 @@ function closingMessage(options: {
   stack: DetectedStack;
   shownFile: string;
   setup: SetupReport;
+  product: SetupProduct | undefined;
 }): string {
-  const { stack, shownFile, setup } = options;
+  const { stack, shownFile, setup, product } = options;
   const from = setup.from ?? "hello@example.com";
   const parts: string[] = [];
-  if (stack.driver) {
+  if (product && product !== "email") {
+    // Another product's step: the email drop-ins would be beside the point.
+  } else if (stack.driver) {
     parts.push(`Install the ${stack.driver.kind} driver yourself:\n\n  ${stack.driver.install}`);
   }
-  if (stack.integration === "nodemailer") {
+  if (product && product !== "email") {
+    parts.push(
+      `See https://coss.com/docs/${product === "marketing" ? "email/broadcasts" : product}.md for the guide.`,
+    );
+  } else if (stack.integration === "nodemailer") {
     parts.push(`Send with Nodemailer:\n\n${nodemailerSnippet(from, SIMULATOR_TO)}`);
   } else if (stack.integration === "better-auth") {
     parts.push(

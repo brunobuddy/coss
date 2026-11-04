@@ -2,6 +2,7 @@ import { GLOBAL_FLAGS, parseFlags } from "./args.ts";
 import { type Command, commandHelp, flagTable } from "./command.ts";
 import { apiCommand } from "./commands/api.ts";
 import { completionCommand } from "./commands/completion.ts";
+import { DIAGNOSE_COMMANDS } from "./commands/diagnose.ts";
 import {
   domainsAddCommand,
   domainsGetCommand,
@@ -86,6 +87,7 @@ export const COMMANDS: readonly Command[] = [
   ...SIGN_COMMANDS,
   ...FORMS_COMMANDS,
   ...SCHEDULING_COMMANDS,
+  ...DIAGNOSE_COMMANDS,
   domainsListCommand,
   domainsAddCommand,
   domainsGetCommand,
