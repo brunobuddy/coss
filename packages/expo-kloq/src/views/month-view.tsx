@@ -2,8 +2,10 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   type CalEvent,
+  fullDate,
   layoutMonth,
   type PlacedOccurrence,
+  plural,
   projectEvents,
   type ViewDescriptor,
 } from "../model.ts";
@@ -55,6 +57,11 @@ export function MonthView({ descriptor, events, onOpen, onCreate, onShowDay }: M
               const list = (layout.byDay[index] ?? []) as PlacedOccurrence[];
               const shown = list.length > slots ? list.slice(0, slots - 1) : list;
               const hidden = list.length - shown.length;
+              const showDay = () => onShowDay(day);
+              const createAllDay = () => {
+                const start = new Date(day);
+                onCreate(start, start, true);
+              };
               return (
                 <Pressable
                   key={day.toISOString()}
@@ -64,13 +71,16 @@ export function MonthView({ descriptor, events, onOpen, onCreate, onShowDay }: M
                     { borderColor: p.rule },
                     outside && { backgroundColor: p.offHours },
                   ]}
-                  onPress={() => onShowDay(day)}
-                  onLongPress={() => {
-                    const start = new Date(day);
-                    onCreate(start, start, true);
-                  }}
+                  onPress={showDay}
+                  onLongPress={createAllDay}
                 >
-                  <View style={[styles.date, today && { backgroundColor: p.today }]}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${fullDate(day)}, ${plural(list.length, "event")}`}
+                    style={[styles.date, today && { backgroundColor: p.today }]}
+                    onPress={showDay}
+                    onLongPress={createAllDay}
+                  >
                     <Text
                       style={[
                         styles.dateText,
@@ -79,7 +89,7 @@ export function MonthView({ descriptor, events, onOpen, onCreate, onShowDay }: M
                     >
                       {day.getDate()}
                     </Text>
-                  </View>
+                  </Pressable>
                   {shown.map((e) => (
                     <EventChip
                       key={e.id}
