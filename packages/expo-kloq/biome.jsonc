@@ -1,0 +1,12 @@
+{
+  "root": false,
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "extends": "//",
+  "linter": {
+    "domains": { "react": "recommended" },
+    "rules": {
+      // `role` on @expo/ui's SwiftUI Button is SwiftUI's ButtonRole (destructive, cancel), not ARIA
+      "a11y": { "useValidAriaRole": "off" }
+    }
+  }
+}
