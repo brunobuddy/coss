@@ -22,9 +22,12 @@ describe("cossPolicies", () => {
     }
   });
 
-  test("the api can only send, with the coss.com configuration sets", () => {
+  test("the api sends with the coss.com configuration sets", () => {
     // SES authorizes sends against the sender address, which carries no tags (verified live).
-    expect(policies.api.Statement).toEqual([
+    const sends = policies.api.Statement.filter((statement) =>
+      statement.Action.includes("ses:SendEmail"),
+    );
+    expect(sends).toEqual([
       expect.objectContaining({
         Action: ["ses:SendEmail"],
         Resource: ["arn:aws:ses:us-east-2:123456789012:identity/*"],
@@ -40,6 +43,32 @@ describe("cossPolicies", () => {
         ],
       }),
     ]);
+  });
+
+  test("the api can do everything /v1/domains asks of SES, and no more than the dashboard", () => {
+    const sesActions = (app: "api" | "dashboard") =>
+      policies[app].Statement.filter((statement) => statement.Sid !== "SendFromIdentities")
+        .filter((statement) => statement.Sid !== "SendWithCossConfigurationSet")
+        .filter((statement) => statement.Action.some((action) => action.startsWith("ses:")));
+    expect(sesActions("api")).toEqual(sesActions("dashboard"));
+
+    // What `SesIdentityProvider` calls while creating, verifying and deleting a domain.
+    const allowed = sesActions("api").flatMap((statement) => statement.Action);
+    for (const action of [
+      "ses:CreateTenant",
+      "ses:GetTenant",
+      "ses:TagResource",
+      "ses:CreateTenantResourceAssociation",
+      "ses:DeleteTenantResourceAssociation",
+      "ses:CreateEmailIdentity",
+      "ses:GetEmailIdentity",
+      "ses:ListResourceTenants",
+      "ses:ListTagsForResource",
+      "ses:PutEmailIdentityMailFromAttributes",
+      "ses:DeleteEmailIdentity",
+    ]) {
+      expect(allowed).toContain(action);
+    }
   });
 
   test("identity changes require the coss_managed tag; tenants are limited to the prefix", () => {
