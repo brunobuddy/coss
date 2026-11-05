@@ -449,6 +449,7 @@ describe("reading a feed", () => {
     }
   });
 
+  // It spends a rule's whole allowance on purpose, which takes CI's runners more than the default 5s.
   test("a rule that goes on forever can't take the worker with it", () => {
     const event = [
       "UID:loop@test",
@@ -460,7 +461,7 @@ describe("reading a feed", () => {
     expect(() => holidaysFromIcs(ics(event), "2031-01-01", "2032-01-01")).toThrow(
       UnreadableCalendarData,
     );
-  });
+  }, 30_000);
 });
 
 describe("creating one", () => {
