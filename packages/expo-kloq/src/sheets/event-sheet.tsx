@@ -36,6 +36,9 @@ export function EventSheet(props: EventSheetProps) {
 
 function EventSheetBody({ target, calendars, hour12, onClose, onSave, onDelete }: EventSheetProps) {
   const writable = calendars.filter((c) => !c.readOnly);
+  // a read-only calendar is never a target; the event's own stays listed so the picker can show it
+  const current = target?.kind === "event" ? target.event.calendarId : undefined;
+  const offered = calendars.filter((c) => !c.readOnly || c.id === current);
   const [draft, setDraft] = useState<EventDraft | null>(() =>
     target ? draftFor(target, defaultCalendarId(writable.length ? writable : calendars)) : null,
   );
@@ -91,7 +94,7 @@ function EventSheetBody({ target, calendars, hour12, onClose, onSave, onDelete }
       <EventForm
         draft={draft}
         onChange={setDraft}
-        calendars={target.kind === "new" ? writable : calendars}
+        calendars={offered}
         readOnly={readOnly}
         hour12={hour12}
         onDelete={
