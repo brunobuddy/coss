@@ -1,5 +1,45 @@
 # coss-mcp
 
+## 0.7.0
+
+### Minor Changes
+
+- 2012767: Setup and diagnosis know every product. `fetchSetupReport(coss, { product })`, the MCP server's `get_setup` and `coss init --product` say what a product still needs or how to try it in a sandbox, and report `products` and `products_in_use` next to the fields they had. `coss/diagnose` adds SMS, Verify, Sign, Forms, Hooks and Scheduling, as MCP tools (`diagnose_verification`, `diagnose_sign_request`, `diagnose_form_submission`, `diagnose_hook_delivery`, `diagnose_scheduling_slots`) and CLI commands (`coss sms diagnose`, `coss verify diagnose`, `coss sign diagnose`, `coss forms diagnose`, `coss hooks diagnose`, `coss scheduling diagnose`). The MCP server also gets `list_email_templates`, log drain and sub-account tools, `api_get` (a read-only fallback for any `/v1/` path), output schemas on `get_setup` and the diagnose tools, and its first prompts and resources.
+- a7ff535: Verify's settings have an API: `coss.verify.settings.get()` and `.update()`. The MCP server gets tools for marketing (contacts, audiences, segments, topics, broadcasts), Verify and Sign, and more for Forms, Scheduling, Hooks and Risk, plus `COSS_MCP_TOOLSETS` to offer fewer of them. The CLI gets `coss verify`, `coss contacts`, `coss broadcasts` and `coss sign`, and more of `coss sms`, `coss forms` and `coss scheduling`.
+- 411767c: `coss.environment.get()` and the MCP server's `get_account_status` say whether the organization is in HIPAA mode (`organization.hipaa_mode`). The MCP server explains `hipaa_mode_restriction` refusals.
+- cdec0a9: The server is also hosted at `https://api.coss.com/mcp` (Streamable HTTP, stateless, authenticated with `Authorization: Bearer <API key>`), for clients that can't start a local process. `coss-mcp/http` is its handler, and `createCossMcpServer` takes `transport: "hosted"`, which offers no tool that touches files. `server.json` describes both for the MCP registry.
+- 17ac7bc: Scheduling bookings have a readable history: `coss.scheduling.bookings.events(id)`, the MCP server's `list_scheduling_booking_events` and `coss scheduling booking-events`. A cancelled booking says who cancelled it in `cancelled_by`, and `bookings.cancel` takes an optional `reason`, which only retrieving that booking returns. `bookings.cancel`'s second argument is now its parameters, and request options moved to the third, as on `series.cancel`.
+- 4168d9e: Scheduling slots explain themselves. `coss.scheduling.slots.explain(eventType, { start })`, the MCP server's `explain_scheduling_slot` and `coss scheduling slots explain` say whether one start can be booked right now and, host by host, why not. Slots also carry `seats_left` for group event types.
+- f099789: Scheduling bookings can have guests: set an event type's `max_guests`, then pass `guests` when booking. They're emailed about it, and `coss.scheduling.attendees.eraseByEmail()` erases someone known only by their address. An event type's `host_calendar_details: "full"` puts its title and who's coming on hosts' calendars instead of a neutral "Appointment". The MCP server's `create_scheduling_booking` takes `guests`.
+- 6d31dd3: Scheduling reminders: `reminders` on `coss.scheduling.settings` and event types say what goes out around a booking, timed from its start, end or any change to it, to attendees, hosts, fixed addresses or a webhook, in your own words if you like. `coss.scheduling.bookings.notifications()` lists what was queued and why anything wasn't sent. New webhooks: `scheduling.booking.started`, `scheduling.booking.ended` and `scheduling.booking.reminder`. Hosts take a `phone`, event types take `notifications`, and settings take `email_reply_to`. The MCP server gets `get_scheduling_reminders`, `save_scheduling_reminders`, `list_scheduling_booking_notifications` and `mark_scheduling_no_show`, and the CLI `coss scheduling reminders`, `notifications` and `no-show`.
+
+### Patch Changes
+
+- 476ed3c: An empty or whitespace `COSS_MCP_TOOLSETS` now means every tool, as an unset one does, instead of only the core tools. The Claude Code plugin's new optional `toolsets` setting passes it through, and is empty unless someone picks toolsets.
+- 7452381: Avoid regular expressions that slow down on unusual input when trimming base URLs and reading From headers.
+- Updated dependencies [2012767]
+- Updated dependencies [a7ff535]
+- Updated dependencies [05dd81b]
+- Updated dependencies [9e79d10]
+- Updated dependencies [8dacd0f]
+- Updated dependencies [411767c]
+- Updated dependencies [fb681ad]
+- Updated dependencies [97e84b2]
+- Updated dependencies [cbed6ab]
+- Updated dependencies [56a7443]
+- Updated dependencies [17ac7bc]
+- Updated dependencies [346c63f]
+- Updated dependencies [4168d9e]
+- Updated dependencies [f099789]
+- Updated dependencies [895ef91]
+- Updated dependencies [cee7e38]
+- Updated dependencies [11286f6]
+- Updated dependencies [6d31dd3]
+- Updated dependencies [0101bab]
+- Updated dependencies [ddf6142]
+- Updated dependencies [7452381]
+  - coss@0.12.0
+
 ## 0.6.0
 
 ### Minor Changes

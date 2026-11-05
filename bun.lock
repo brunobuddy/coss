@@ -480,7 +480,7 @@
     },
     "packages/cli": {
       "name": "coss-cli",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "bin": {
         "coss": "dist/cli.js",
       },
@@ -706,7 +706,7 @@
     },
     "packages/mcp": {
       "name": "coss-mcp",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "bin": {
         "coss-mcp": "dist/cli.js",
       },
@@ -913,7 +913,7 @@
     },
     "packages/sdk": {
       "name": "coss",
-      "version": "0.11.0",
+      "version": "0.12.0",
       "devDependencies": {
         "@arethetypeswrong/core": "0.18.5",
         "@auth/core": "0.41.3",
