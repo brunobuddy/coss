@@ -14,6 +14,7 @@ import {
   cancelBooking,
   completeCalendarAuthorization,
   confirmHold,
+  connectSimulated,
   createBooking,
   createEventType,
   createHold,
@@ -2020,6 +2021,37 @@ describe("candidates", () => {
     expect(data.find((candidate) => candidate.host === second.id)?.meeting_provider_missing).toBe(
       true,
     );
+  });
+
+  test("a calendar nothing's written to makes no meeting", async () => {
+    const tenant = await createTestTenant();
+    const env: SchedulingEnvironment = {
+      organizationId: tenant.organization.id,
+      projectId: tenant.project.id,
+      environmentId: tenant.development.id,
+      mode: "sandbox",
+    };
+    const [first, second] = [await host(env, "First"), await host(env, "Second")];
+    const pool = await eventTypeWith(env, "pool", [member(first), member(second)], {
+      locations: [{ type: "zoom", url: null }],
+    });
+    const { booking } = await createBooking(
+      env,
+      { eventType: pool.id, startMs: at("10:00"), host: first.id, attendee },
+      plain,
+      actor,
+    );
+    await connectSimulated(env, second.id, { now: () => NOW });
+    const missing = async () =>
+      (await listReassignCandidates(env, booking.id, {}, plain)).data.find(
+        (candidate) => candidate.host === second.id,
+      )?.meeting_provider_missing;
+    expect(await missing()).toBe(false);
+    await db
+      .update(schema.schedulingCalendar)
+      .set({ writeTarget: false })
+      .where(eq(schema.schedulingCalendar.hostId, second.id));
+    expect(await missing()).toBe(true);
   });
 
   test("agree with what reassigning then does", async () => {

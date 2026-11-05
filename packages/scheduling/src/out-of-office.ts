@@ -274,6 +274,29 @@ async function coveringOf(
   return (await delegatesOf(executor, [row])).get(row.id) ?? [];
 }
 
+/**
+ * Holds the rows behind an entry as they are once it's waited. Whatever was read before waiting can
+ * have changed by then, and changing an entry's host or cover takes its host's lock, so what's read
+ * with that held stays true. A booking with a delegate holds only theirs, so missing one lets it
+ * commit on cover that's gone.
+ */
+async function lockEntrySettled<Row extends OutOfOfficeRow | undefined>(
+  tx: Executor,
+  scope: Scope,
+  read: () => Promise<Row>,
+  alreadyHeld: readonly string[],
+): Promise<Row> {
+  const held = new Set(alreadyHeld);
+  for (;;) {
+    const row = await read();
+    if (!row) return row;
+    const missing = [row.hostId, ...(await coveringOf(tx, row))].filter((id) => !held.has(id));
+    if (missing.length === 0) return row;
+    await lockHosts(tx, scope, missing);
+    for (const id of missing) held.add(id);
+  }
+}
+
 /** Someone can't cover for themselves. Across many hosts, that only drops them from their own list. */
 async function setDelegates(
   tx: Executor,
@@ -981,17 +1004,11 @@ export async function updateOutOfOffice(
   const delegates = await delegateIdsOf(env, params.delegates, opts.allowedDelegates);
   refuseSelfCover(delegates, found.hostId);
   const row = await db.transaction(async (tx) => {
-    await lockHosts(tx, env, [
-      found.hostId,
-      ...(await coveringOf(tx, found)),
-      ...(delegates ?? []),
-    ]);
+    const held = [found.hostId, ...(await coveringOf(tx, found)), ...(delegates ?? [])];
+    await lockHosts(tx, env, held);
     // It can have gone to someone else while this waited, and bookers hold that host's row.
-    const latest = await entryRow(tx, env, found.id, only);
-    if (latest.hostId !== found.hostId) {
-      refuseSelfCover(delegates, latest.hostId);
-      await lockHosts(tx, env, [latest.hostId, ...(await coveringOf(tx, latest))]);
-    }
+    const latest = await lockEntrySettled(tx, env, () => entryRow(tx, env, found.id, only), held);
+    refuseSelfCover(delegates, latest.hostId);
     // First: a run this change starts prefers whoever's covering, and reads them from here.
     if (delegates) await setDelegates(tx, latest, delegates);
     return applyChange(tx, env, found.id, params, deps, actor, now, strategy, only, opts);
@@ -1074,16 +1091,14 @@ export async function putOutOfOffice(
             ),
           );
       const [seen] = await current();
-      await lockHosts(tx, env, [
+      const held = [
         host.id,
         ...(seen ? [seen.hostId, ...(await coveringOf(tx, seen))] : []),
         ...(delegates ?? []),
-      ]);
+      ];
+      await lockHosts(tx, env, held);
       // It may have been deleted or moved while this waited: what's there now is what's replaced.
-      const [existing] = await current();
-      if (existing && existing.id === seen?.id && existing.hostId !== seen.hostId) {
-        await lockHosts(tx, env, [existing.hostId]);
-      }
+      const existing = await lockEntrySettled(tx, env, async () => (await current())[0], held);
       if (existing) {
         const [row] = await tx
           .update(schedulingOutOfOffice)
@@ -1171,10 +1186,10 @@ export async function deleteOutOfOffice(
   const now = nowOf(deps);
   return db.transaction(async (tx) => {
     const before = await entryRow(tx, scope, id, only);
-    await lockHosts(tx, scope, [before.hostId, ...(await coveringOf(tx, before))]);
+    const held = [before.hostId, ...(await coveringOf(tx, before))];
+    await lockHosts(tx, scope, held);
     // It can have gone to someone else while this waited, and then it isn't this session's to delete.
-    const row = await entryRow(tx, scope, id, only);
-    if (row.hostId !== before.hostId) await lockHosts(tx, scope, [row.hostId]);
+    const row = await lockEntrySettled(tx, scope, () => entryRow(tx, scope, id, only), held);
     const [deleted] = await tx
       .update(schedulingOutOfOffice)
       // Nobody will read these again, so they don't wait for the row to go.

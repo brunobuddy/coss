@@ -1461,7 +1461,7 @@ async function createOne(
     let joined: { host: HostRow; liveUntil: Date | null; sessionId: string } | null = null;
     for (const entry of entries) {
       try {
-        const session = await tx.transaction((savepoint) =>
+        const session = await inSavepoint(tx, (savepoint) =>
           joinGroupSession(
             savepoint,
             plan,

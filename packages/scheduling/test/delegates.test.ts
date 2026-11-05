@@ -653,6 +653,66 @@ describe("saying who", () => {
       return { env, a, d, type, entry, gate, release, holding, locked };
     }
 
+    test("an edit waiting for the host locks whoever's covering by the time it gets there", async () => {
+      const env = await environment();
+      const [a, before, after] = await Promise.all([
+        host(env, "A"),
+        host(env, "Before"),
+        host(env, "After"),
+      ]);
+      const [entry] = await away(env, a.id, [before.id]);
+      const lock = (tx: Parameters<Parameters<typeof db.transaction>[0]>[0], id: string) =>
+        tx
+          .select({ id: schema.schedulingHost.id })
+          .from(schema.schedulingHost)
+          .where(eq(schema.schedulingHost.id, id))
+          .for("no key update");
+      const signal = () => {
+        let open = () => {};
+        const opened = new Promise<void>((resolve) => {
+          open = resolve;
+        });
+        return { open, opened };
+      };
+      const [holdingHost, replace, holdingNew, letGo] = [signal(), signal(), signal(), signal()];
+      // Someone replacing the cover holds the host, as any change of it does.
+      const replacing = db.transaction(async (tx) => {
+        await lock(tx, a.id);
+        holdingHost.open();
+        await replace.opened;
+        await tx
+          .update(schema.schedulingOutOfOfficeDelegate)
+          .set({ hostId: after.id })
+          .where(eq(schema.schedulingOutOfOfficeDelegate.outOfOfficeId, entry?.id as string));
+      });
+      await holdingHost.opened;
+      let finished = false;
+      const edit = updateOutOfOffice(
+        env,
+        entry?.id as string,
+        { end: iso("14:00") } as never,
+        plain,
+        actor,
+      ).then(() => {
+        finished = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const holdingAfter = db.transaction(async (tx) => {
+        await lock(tx, after.id);
+        holdingNew.open();
+        await letGo.opened;
+      });
+      await holdingNew.opened;
+      replace.open();
+      await replacing;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(finished).toBe(false);
+      letGo.open();
+      await holdingAfter;
+      await edit;
+      expect(finished).toBe(true);
+    });
+
     test("a booking finding the cover gone doesn't go to who was covering", async () => {
       const { env, d, type, entry, gate, release, holding, locked } = await lockedDelegate();
       const change = db.transaction(async (tx) => {

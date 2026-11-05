@@ -17,6 +17,7 @@ import {
   type ClaimPlan,
   toBookingObject,
 } from "./bookings.ts";
+import { ZOOM_CALENDAR_ID } from "./calendar/zoom.ts";
 import {
   claimRemainingSeconds,
   inSavepoint,
@@ -1171,6 +1172,11 @@ async function hostsWithProvider(
           hosts.map((host) => host.id),
         ),
         sql`${schedulingCalendarConnection.provider}::text in (${provider}, 'simulated')`,
+        // What `setCalendarState` writes to: a calendar that's only read makes no meeting.
+        or(
+          eq(schedulingCalendar.writeTarget, true),
+          eq(schedulingCalendar.externalId, ZOOM_CALENDAR_ID),
+        ),
       ),
     );
   return new Set(rows.map((row) => row.hostId));
