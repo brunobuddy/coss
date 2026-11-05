@@ -232,6 +232,7 @@ import type {
   CreateHoldRequest,
   CreateHolidayCalendarRequest,
   CreateHostRequest,
+  CreateOauthAppRequest,
   CreateOutOfOfficeRequest,
   CreateReassignmentRequest,
   CreateSeriesRequest,
@@ -243,6 +244,7 @@ import type {
   HolidayCalendarObject,
   HostObject,
   ListOutOfOfficeQuery,
+  OauthAppObject,
   OutOfOfficeConflict,
   OutOfOfficeObject,
   PreviewReassignmentRequest,
@@ -257,6 +259,7 @@ import type {
   SchedulingBookingWebhookEvent,
   SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOauthAppWebhookEvent,
   SchedulingOutOfOfficeWebhookEvent,
   SchedulingReassignmentWebhookEvent,
   SeriesPreview,
@@ -273,6 +276,7 @@ import type {
   UpdateEventTypeRequest,
   UpdateHolidayCalendarRequest,
   UpdateHostRequest,
+  UpdateOauthAppRequest,
   UpdateOutOfOfficeRequest,
   UpdateSettingsRequest,
   UpsertScheduleRequest,
@@ -340,6 +344,7 @@ import type {
   CreateSchedulingHoldParams,
   CreateSchedulingHolidayCalendarParams,
   CreateSchedulingHostParams,
+  CreateSchedulingOauthAppParams,
   CreateSchedulingOutOfOfficeParams,
   CreateSchedulingReassignmentParams,
   CreateSchedulingSeriesParams,
@@ -411,6 +416,7 @@ import type {
   SchedulingEventType,
   SchedulingHolidayCalendar,
   SchedulingHost,
+  SchedulingOauthApp,
   SchedulingOutOfOffice,
   SchedulingOutOfOfficeConflict,
   SchedulingReassignCandidate,
@@ -554,6 +560,7 @@ import type {
   UpdateSchedulingEventTypeParams,
   UpdateSchedulingHolidayCalendarParams,
   UpdateSchedulingHostParams,
+  UpdateSchedulingOauthAppParams,
   UpdateSchedulingOutOfOfficeParams,
   UpdateSchedulingSettingsParams,
   UpdateSegmentParams,
@@ -818,7 +825,8 @@ export type Contract = [
       | z.output<typeof SchedulingCalendarWebhookEvent>
       | z.output<typeof SchedulingCalendarDelegationWebhookEvent>
       | z.output<typeof SchedulingOutOfOfficeWebhookEvent>
-      | z.output<typeof SchedulingReassignmentWebhookEvent>,
+      | z.output<typeof SchedulingReassignmentWebhookEvent>
+      | z.output<typeof SchedulingOauthAppWebhookEvent>,
       WebhookEvent
     >
   >,
@@ -1272,6 +1280,9 @@ export type SubaccountContract = [
   Assert<
     MutuallyAssignable<z.output<typeof CalendarDelegationObject>, SchedulingCalendarDelegation>
   >,
+  Assert<MutuallyAssignable<z.input<typeof CreateOauthAppRequest>, CreateSchedulingOauthAppParams>>,
+  Assert<MutuallyAssignable<z.input<typeof UpdateOauthAppRequest>, UpdateSchedulingOauthAppParams>>,
+  Assert<MutuallyAssignable<z.output<typeof OauthAppObject>, SchedulingOauthApp>>,
   Assert<
     MutuallyAssignable<z.input<typeof SetSimulatedBusyRequest>, SetSchedulingSimulatedBusyParams>
   >,

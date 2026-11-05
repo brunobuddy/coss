@@ -1128,6 +1128,7 @@ export function SettingsForm(
     settings: {
       allowed_origins: string[];
       brand_name: string | null;
+      privacy_url: string | null;
       accent_color: string | null;
       logo: { data_url: string; width: number; height: number } | null;
       email_from: string | null;
@@ -1184,6 +1185,19 @@ export function SettingsForm(
           />
           <FieldDescription>
             Sites that can embed the hosted pages and call the client API, one per line.
+          </FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel>Privacy policy</FieldLabel>
+          <Input
+            defaultValue={settings.privacy_url ?? ""}
+            name="privacyUrl"
+            placeholder="https://example.com/privacy"
+            type="url"
+          />
+          <FieldDescription>
+            With your own OAuth app and a name, hosts see this beside what connecting a calendar
+            does.
           </FieldDescription>
         </Field>
         <div className="flex flex-col gap-2">

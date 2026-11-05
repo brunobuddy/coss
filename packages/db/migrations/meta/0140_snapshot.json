@@ -1,5 +1,5 @@
 {
-  "id": "dcea9c2a-1e6b-4832-bd55-52370bc00448",
+  "id": "e51100c8-f180-430b-9ea7-30cd2b2521fb",
   "prevId": "3f39bc05-a004-4202-b808-76f92b10d3e5",
   "version": "7",
   "dialect": "postgresql",
@@ -17669,82 +17669,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.signup_attribution": {
-      "name": "signup_attribution",
-      "schema": "",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "landing_path": {
-          "name": "landing_path",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "referrer_host": {
-          "name": "referrer_host",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "utm_source": {
-          "name": "utm_source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "utm_medium": {
-          "name": "utm_medium",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "utm_campaign": {
-          "name": "utm_campaign",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "landed_at": {
-          "name": "landed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "signup_attribution_user_id_user_id_fk": {
-          "name": "signup_attribution_user_id_user_id_fk",
-          "tableFrom": "signup_attribution",
-          "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.topic": {
       "name": "topic",
       "schema": "",
@@ -22182,6 +22106,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "oauth_app_id": {
+          "name": "oauth_app_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "reached_at": {
           "name": "reached_at",
           "type": "timestamp with time zone",
@@ -22224,6 +22154,22 @@
         }
       },
       "indexes": {
+        "scheduling_calendar_connection_oauth_app_idx": {
+          "name": "scheduling_calendar_connection_oauth_app_idx",
+          "columns": [
+            {
+              "expression": "oauth_app_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"scheduling_calendar_connection\".\"oauth_app_id\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "scheduling_calendar_connection_delegation_idx": {
           "name": "scheduling_calendar_connection_delegation_idx",
           "columns": [
@@ -22270,6 +22216,21 @@
             "organization_id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "scheduling_calendar_connection_oauth_app_fk": {
+          "name": "scheduling_calendar_connection_oauth_app_fk",
+          "tableFrom": "scheduling_calendar_connection",
+          "tableTo": "scheduling_oauth_app",
+          "columnsFrom": [
+            "oauth_app_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -24510,6 +24471,159 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.scheduling_oauth_app": {
+      "name": "scheduling_oauth_app",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "environment_id": {
+          "name": "environment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "scheduling_oauth_app_provider",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "encrypted_credentials": {
+          "name": "encrypted_credentials",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "redirect_uri": {
+          "name": "redirect_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completion_url": {
+          "name": "completion_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "secret_expires_at": {
+          "name": "secret_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "scheduling_oauth_app_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "last_error_code": {
+          "name": "last_error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error_at": {
+          "name": "last_error_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verified_at": {
+          "name": "verified_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "scheduling_oauth_app_environment_fk": {
+          "name": "scheduling_oauth_app_environment_fk",
+          "tableFrom": "scheduling_oauth_app",
+          "tableTo": "environment",
+          "columnsFrom": [
+            "environment_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "scheduling_oauth_app_id_organization_unique": {
+          "name": "scheduling_oauth_app_id_organization_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organization_id"
+          ]
+        },
+        "scheduling_oauth_app_provider_unique": {
+          "name": "scheduling_oauth_app_provider_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "environment_id",
+            "provider"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.scheduling_oauth_state": {
       "name": "scheduling_oauth_state",
       "schema": "",
@@ -24563,6 +24677,24 @@
           "primaryKey": false,
           "notNull": false
         },
+        "oauth_app_id": {
+          "name": "oauth_app_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "redirect_uri": {
+          "name": "redirect_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "expires_at": {
           "name": "expires_at",
           "type": "timestamp with time zone",
@@ -24601,6 +24733,21 @@
           "tableTo": "scheduling_host",
           "columnsFrom": [
             "host_id",
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organization_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "scheduling_oauth_state_oauth_app_fk": {
+          "name": "scheduling_oauth_state_oauth_app_fk",
+          "tableFrom": "scheduling_oauth_state",
+          "tableTo": "scheduling_oauth_app",
+          "columnsFrom": [
+            "oauth_app_id",
             "organization_id"
           ],
           "columnsTo": [
@@ -26333,6 +26480,12 @@
         },
         "accent_color": {
           "name": "accent_color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "privacy_url": {
+          "name": "privacy_url",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -32669,6 +32822,23 @@
         "host",
         "endpoint",
         "address"
+      ]
+    },
+    "public.scheduling_oauth_app_provider": {
+      "name": "scheduling_oauth_app_provider",
+      "schema": "public",
+      "values": [
+        "google",
+        "microsoft",
+        "zoom"
+      ]
+    },
+    "public.scheduling_oauth_app_status": {
+      "name": "scheduling_oauth_app_status",
+      "schema": "public",
+      "values": [
+        "active",
+        "failing"
       ]
     },
     "public.scheduling_out_of_office_existing": {

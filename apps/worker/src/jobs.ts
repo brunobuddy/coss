@@ -83,6 +83,7 @@ import {
   runDueReminderSyncs,
   runDueSchedulingNotifications,
   type SchedulingWorkerDeps,
+  warnOfExpiringOauthAppSecrets,
 } from "@coss/scheduling";
 import { contentScreeningCheck } from "@coss/screening";
 import {
@@ -264,6 +265,7 @@ export const WORKER_LOOP_NAMES = [
   "scheduling-notifications",
   "scheduling-reminder-sync",
   "scheduling-calendar-sync",
+  "scheduling-oauth-app-secrets",
   "scheduling-calendar-writes",
   "scheduling-calendar-channels",
   "scheduling-calendar-delegations",
@@ -856,6 +858,14 @@ export function startJobs(deps: WorkerDeps): Loop[] {
           name: "scheduling-calendar-delegations",
           intervalMs: 15_000,
           run: async () => (await runDueCalendarDelegations(calendars, { limit: 5 })) === 5,
+        }),
+        start({
+          name: "scheduling-oauth-app-secrets",
+          intervalMs: 60 * 60_000,
+          run: async () => {
+            await warnOfExpiringOauthAppSecrets(calendars);
+            return false;
+          },
         }),
         start({
           name: "scheduling-calendar-host-edits",

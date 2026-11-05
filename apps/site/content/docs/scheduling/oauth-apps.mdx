@@ -1,0 +1,182 @@
+---
+title: Your own OAuth apps
+description: Connect hosts' calendars through your own Google, Microsoft or Zoom app, so the consent screen shows your brand.
+---
+
+<PlansWith feature="schedulingOauthApps" />
+
+When a host [connects a calendar](/docs/scheduling/calendars), Google, Microsoft or Zoom shows a consent screen
+naming the app that's asking. By default that's coss.com's. With your own app, it's your name and logo.
+
+You register the app with the provider, and give coss.com its client ID and secret. Each environment has its own
+apps, one per provider. You own the provider relationship: their review of your app, and what your privacy policy
+tells people. Coss.com requests the same access as it does through its own app, and
+[no more](/docs/scheduling/calendars#what-cosscom-reads-and-writes).
+
+With hundreds of hosts on one Google Workspace or Microsoft 365 domain, you may not need a consent screen at all:
+see [calendar delegation](/docs/scheduling/delegation).
+
+## How connections move over
+
+- **New consents** in the environment use your app as soon as you add it.
+- **Connected hosts stay on coss.com's app** until they connect again, because tokens only work with the app that
+  issued them. Nothing moves by itself, and nobody is disconnected. A calendar connection's `oauth_app` says which it
+  uses.
+- If your app stops working, coss.com never falls back to its own.
+
+## Google
+
+1. In a Google Cloud project, enable the Google Calendar API, and create an OAuth client of type **Web application**.
+2. Add these scopes to your consent screen, exactly as given:
+   - `https://www.googleapis.com/auth/calendar.events.freebusy`
+   - `https://www.googleapis.com/auth/calendar.events.owned`
+   - `https://www.googleapis.com/auth/calendar.calendarlist.readonly`
+3. Add a page on your own domain as the client's authorized redirect URI, and [have it forward](#forwarding-page).
+4. Add the app:
+
+   ```ts twoslash
+   import { Coss } from "coss";
+   const coss = new Coss();
+   const clientSecret = "";
+   // ---cut---
+   const { data: app } = await coss.scheduling.oauthApps.create({
+     provider: "google",
+     client_id: "1234567890-abc.apps.googleusercontent.com",
+     client_secret: clientSecret,
+     redirect_uri: "https://example.com/oauth/google",
+     completion_url: "https://example.com/calendar-connected",
+   });
+   // app?.coss_callback_url is where your page forwards to.
+   ```
+
+<Callout type="warn">
+  An external Google app needs its own [brand verification](https://support.google.com/cloud/answer/13464321). Google
+  requires you to own every domain on the app, redirect URIs included, which is why it needs a page on your domain: you
+  can't verify `api.coss.com`. Until it's verified, Google shows a warning and limits it to 100 users. An **Internal**
+  app, only for your own Workspace, skips this.
+</Callout>
+
+Your privacy policy has to say how you use Google user data, and that coss.com handles it for you. Check it meets
+Google's [API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy).
+
+## Microsoft
+
+1. In [Microsoft Entra](https://entra.microsoft.com), register an application. For hosts outside your own tenant, make
+   it multi-tenant.
+2. Add the delegated Microsoft Graph permissions `Calendars.ReadWrite`, `offline_access` and `User.Read`.
+3. Under **Authentication**, add a **Web** redirect URI. Use `coss_callback_url` from step 5, or
+   [your own page](#forwarding-page).
+4. Under **Certificates & secrets**, create a client secret and note when it expires.
+5. Add the app:
+
+   ```ts twoslash
+   import { Coss } from "coss";
+   const coss = new Coss();
+   const clientSecret = "";
+   // ---cut---
+   await coss.scheduling.oauthApps.create({
+     provider: "microsoft",
+     client_id: "3f1c7a52-8e0b-4d6e-9a27-5c4b1e7d2f60",
+     client_secret: clientSecret,
+     secret_expires_at: "2028-01-01T00:00:00Z",
+   });
+   ```
+
+For an app that's only for your own tenant, also pass `tenant_id`: Microsoft refuses a single-tenant app otherwise.
+
+## Zoom
+
+1. In the [Zoom App Marketplace](https://marketplace.zoom.us/develop), create a general app that users manage.
+2. Set the OAuth redirect URL to `coss_callback_url` from step 4, or [your own page](#forwarding-page).
+3. Add these scopes to the app, since Zoom doesn't take them in the request: `meeting:read:list_meetings`,
+   `meeting:read:meeting`, `meeting:write:meeting`, `meeting:update:meeting`, `meeting:delete:meeting` and
+   `user:read:user`.
+4. Add the app, with its **Secret Token**:
+
+   ```ts twoslash
+   import { Coss } from "coss";
+   const coss = new Coss();
+   const clientSecret = "";
+   const secretToken = "";
+   // ---cut---
+   const { data: app } = await coss.scheduling.oauthApps.create({
+     provider: "zoom",
+     client_id: "abcDEF123",
+     client_secret: clientSecret,
+     webhook_secret: secretToken,
+   });
+   // app?.zoom_event_url
+   ```
+
+5. Under **Event Subscriptions**, subscribe to **User has uninstalled or deauthorized the app**, at `zoom_event_url`.
+   That address is your app's own, and its events only ever reach connections made through it.
+
+<Callout type="warn">
+  Zoom only sends deauthorization events for apps published on its Marketplace. On an unpublished app, a host removing it
+  in Zoom shows up later as a connection that [needs reconnecting](/docs/scheduling/calendars), instead of straight away.
+</Callout>
+
+## Forwarding page
+
+A page on your domain takes the provider's redirect, and sends the browser on to `coss_callback_url` with the same query
+string. It needs nothing else: `code` and `state` already say everything. In most frameworks it's a single redirect:
+
+```ts
+export function GET(request: Request) {
+  const { search } = new URL(request.url);
+  return Response.redirect(`https://api.coss.com/scheduling/oauth/google/callback${search}`, 302);
+}
+```
+
+Register the page with the provider, and pass it as `redirect_uri`. The browser passes through `api.coss.com` for a
+moment, then lands on the consent's `return_url` or the app's `completion_url`, with `coss_calendar` set to `connected`,
+`denied` or `invalid`.
+
+## On your host page
+
+Set a name and a privacy policy in [settings](/docs/scheduling/embedding), and what a host reads before connecting
+names you and links your policy instead of coss.com's:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({
+  brand_name: "Acme Health",
+  privacy_url: "https://example.com/privacy",
+});
+```
+
+## When access is lost
+
+- **The provider refuses your client ID or secret**, because it was deleted or has expired: the app becomes `failing`,
+  you get `scheduling.oauth_app.failing`, and your owners and admins get an email. Hosts aren't told, since they can't
+  fix it. New consents are refused. Calendars can't be read, so hosts stop being offered once what's known of them is
+  out of date, according to your `calendar_failure_mode`.
+- **To fix it**, update the secret. It's tried on a host's connection before it replaces the old one, so a bad paste
+  changes nothing. Calendars recover on their own, you get `scheduling.oauth_app.restored`, and nobody has to reconnect.
+- **During a long outage**, a booking's calendar event is retried for a while, then given up on with
+  `scheduling.booking.calendar_write_failed`. The booking stands, and that event isn't written once the secret is fixed.
+- **One host revokes access**: that connection needs reconnecting, as with coss.com's app, and the app is fine.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const newSecret = "";
+// ---cut---
+await coss.scheduling.oauthApps.update("calapp_01kd2m9a0b1c2d3e4f5g6h7j8m", {
+  client_secret: newSecret,
+  secret_expires_at: "2029-01-01T00:00:00Z",
+});
+```
+
+Owners and admins are warned 14 days before `secret_expires_at`.
+
+## Removing an app
+
+An app can't be deleted while connections use it (`oauth_app_in_use`), since only it can refresh their access.
+[Disconnect them](/docs/scheduling/calendars) first, and new consents go back to coss.com's app. To move to a different
+client ID, hosts have to consent again.
+
+If your plan changes, a self-serve downgrade is refused until your apps are deleted. If a contract ends, your apps keep
+working, so no host loses their calendar, and you can still rotate a secret or delete an app, but not add one.

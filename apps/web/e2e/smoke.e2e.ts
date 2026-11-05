@@ -99,6 +99,16 @@ test("signed-out visitors are sent to sign in", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
 });
 
+test("a signed-out visit to an unknown path is a 404 that still lands on sign in", async ({
+  page,
+}) => {
+  const response = await page.request.get("/no-such-organization/page", { maxRedirects: 0 });
+  expect(response.status()).toBe(404);
+  await page.goto("/no-such-organization/page");
+  await page.waitForURL("**/sign-in?next=%2Fno-such-organization%2Fpage");
+  await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+});
+
 test("a wrong password stays on the sign-in page with an error", async ({ page }) => {
   await signIn(page, `e2e-${randomUUID().slice(0, 8)}@gmail.com`);
   await expect(page.getByText(/invalid|incorrect|wrong/i).first()).toBeVisible();

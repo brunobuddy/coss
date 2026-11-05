@@ -28,6 +28,9 @@ export type SchedulingErrorCode =
   | "calendar_managed"
   | "invalid_calendar_delegation"
   | "calendar_delegation_refused"
+  | "invalid_oauth_app"
+  | "oauth_app_refused"
+  | "oauth_app_in_use"
   | "scheduling_unavailable"
   | "account_suspended"
   | "billing_hold"
@@ -66,6 +69,9 @@ const STATUS_BY_CODE = {
   calendar_managed: 422,
   invalid_calendar_delegation: 422,
   calendar_delegation_refused: 422,
+  invalid_oauth_app: 422,
+  oauth_app_refused: 422,
+  oauth_app_in_use: 422,
   scheduling_unavailable: 503,
   account_suspended: 403,
   billing_hold: 402,

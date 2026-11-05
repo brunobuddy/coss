@@ -158,6 +158,7 @@ describe("reencryptSchedulingData", () => {
       "scheduling_calendar_connection.encrypted_credentials",
       "scheduling_holiday_calendar.encrypted_ics_url",
       "scheduling_calendar_delegation.encrypted_credentials",
+      "scheduling_oauth_app.encrypted_credentials",
       "scheduling_oauth_state.encrypted_code_verifier",
     ];
     expect(rows.map((row) => row.name)).toEqual(

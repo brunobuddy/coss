@@ -7,22 +7,28 @@ import { getOrganizationSsoProvider, hasScimConnection } from "@coss/tenancy";
 
 /** How much of each feature the organization uses now (what a downgrade would leave behind). */
 async function featureUsage(organizationId: string): Promise<Record<FeatureKey, number>> {
-  const [sso, scim, drain, tracking, subaccount, delegation, hostFilters] = await Promise.all([
-    getOrganizationSsoProvider({ organizationId }),
-    hasScimConnection({ organizationId }),
-    db.query.logDrain.findFirst({
-      columns: { id: true },
-      where: (row, { eq }) => eq(row.organizationId, organizationId),
-    }),
-    db.query.trackingDomain.findFirst({
-      columns: { id: true },
-      where: (row, { eq }) => eq(row.organizationId, organizationId),
-    }),
-    // Live sub-accounts (sandbox ones are free on every plan).
-    hasLiveSubaccounts(organizationId),
-    hasCalendarDelegations(organizationId),
-    hasLiveHostFilters(organizationId),
-  ]);
+  const [sso, scim, drain, tracking, subaccount, delegation, hostFilters, oauthApp] =
+    await Promise.all([
+      getOrganizationSsoProvider({ organizationId }),
+      hasScimConnection({ organizationId }),
+      db.query.logDrain.findFirst({
+        columns: { id: true },
+        where: (row, { eq }) => eq(row.organizationId, organizationId),
+      }),
+      db.query.trackingDomain.findFirst({
+        columns: { id: true },
+        where: (row, { eq }) => eq(row.organizationId, organizationId),
+      }),
+      // Live sub-accounts (sandbox ones are free on every plan).
+      hasLiveSubaccounts(organizationId),
+      hasCalendarDelegations(organizationId),
+      hasLiveHostFilters(organizationId),
+      // Any environment's: tokens only that app can refresh would be stranded just the same.
+      db.query.schedulingOauthApp.findFirst({
+        columns: { id: true },
+        where: (row, { eq }) => eq(row.organizationId, organizationId),
+      }),
+    ]);
   return {
     sso: sso ? 1 : 0,
     scim: scim ? 1 : 0,
@@ -39,6 +45,7 @@ async function featureUsage(organizationId: string): Promise<Record<FeatureKey, 
     schedulingHostPortal: 0,
     schedulingRouting: hostFilters ? 1 : 0,
     schedulingWhiteLabel: 0,
+    schedulingOauthApps: oauthApp ? 1 : 0,
   };
 }
 
@@ -55,6 +62,7 @@ const REMOVE: Record<FeatureKey, string> = {
   schedulingHostPortal: "",
   schedulingRouting: "Remove host filters from your live event types (Scheduling).",
   schedulingWhiteLabel: "",
+  schedulingOauthApps: "Delete your Scheduling OAuth apps.",
 };
 
 /**

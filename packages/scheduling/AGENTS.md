@@ -306,6 +306,48 @@ once, and every host on it gets their calendar with no consent screen.
   domain-wide delegation, Graph ids matching between `/me` and `/users/{id}`, app-only subscriptions and Teams links)
   needs checking against a real Workspace and tenant when any of this changes.
 
+### Customers' own OAuth apps
+
+`calendar/oauth-apps.ts` (managing them, plan-gated on `schedulingOauthApps` when created), `oauth-app-state.ts` (reading
+credentials, and refusals; imported by `connections.ts`, so it can't import that). One app per environment and provider, so
+consent screens show the customer's brand.
+
+- **A connection is pinned to the app that issued its tokens** (`oauth_app_id`, null for coss.com's), because only that
+  app can refresh or revoke them. Never look an app up by environment for an existing connection: adding an app would
+  knock out everyone connected before it. A re-consent moves the pin, and `client_id` never changes on a row, so a
+  different app means new consents.
+- **A consent is pinned when it starts** (`scheduling_oauth_state.oauth_app_id`, `redirect_uri`, `tenant_id`): a code is exchanged with
+  what it was issued for, whatever's been edited since.
+- **No fallback**: a failing app refuses new consents rather than using coss.com's, which would show the wrong brand and
+  pin the connection to it. With no app of its own, an environment uses `deps.apps` as before.
+- **A bad secret isn't a host's problem.** `invalid_client` and `deleted_client` become the `transient` `app_refused`, never
+  `auth`, so no host is marked or emailed, and `calendarVerdict` hides them when their data goes stale. One outage is one
+  compare-and-set on the app (`markOauthAppFailing`, only if it still holds the secret that was refused), so one webhook,
+  log line and owner email. The same refusal of coss.com's own app goes to Sentry. `unauthorized_client` stays `auth`:
+  Microsoft answers that for a single tenant that disallows the app, which says nothing about the secret.
+- **A new secret is tried first** (`checkOnConnections`): a real token through the refresh path, keeping what comes back,
+  since Zoom's work once. With no connections, `checkWithoutConnections` tries a token that can't exist: it only refuses on
+  `app_refused`, so passing doesn't prove the secret where a provider checks the token first. `verified_at`, set by the
+  first consent, does. Any successful refresh ends an outage too (`oauthAppAccepted`).
+- **Zoom's deauthorization events are per app** (`POST /scheduling/zoom/events/:appId`, its own Secret Token), and
+  `handleZoomDeauthorization` only reaches that app's connections, or with no id, coss.com's. A customer holds their token,
+  so an unscoped handler would let them delete other organizations' connections. Keep the filter. Zoom doesn't send these
+  events for unpublished apps.
+- **A forwarding page** (`redirect_uri`) is the customer's own, because Google verifies redirect domains as the app owner's,
+  and nobody else can verify `api.coss.com`. It sends `code` and `state` to the unchanged callback. Only the customer's own
+  app is ever sent there, so it isn't an open redirect. `completion_url` fills in a consent's `return_url`, and is stored on
+  the state like one.
+- **Deleting** is refused while connections reference the app (a foreign key with no cascade, and `FOR UPDATE` first). It's
+  NO ACTION rather than RESTRICT, so deleting an environment or organization still takes both in one statement.
+- **Plans** gate creating only, like every feature here: a lapsed contract keeps working, and rotating or deleting always
+  works, since refusing would take hosts' calendars out. `downgradeBlockers` refuses a self-serve downgrade while apps exist.
+- Provider behaviour the fakes can't prove needs a real app when this changes: which error each provider gives a bad secret,
+  whether Microsoft checks the app before the token, Google's verification with a forwarding page, and channels under a
+  customer's project.
+
+A Meet or Teams link becomes a `link` location on the booking, stored with `conference` (stripped from the wire), so a
+new host gets a meeting of their own (`locationForNewHost`). A browser only chooses among an event type's `locations`
+(`locationFromBrowser`): it can't supply its own link or address.
 ## Team pages
 
 `manager.ts`: a `manager` session reaches the hosts it names, or those matching `manager_host_filter` on every request

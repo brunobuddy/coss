@@ -32,6 +32,7 @@ import {
   getOutOfOffice,
   getReassignment,
   getSettingsRow,
+  hasOauthApp,
   listConnections,
   listEventTypeSlots,
   listManagedBookings,
@@ -65,6 +66,7 @@ import {
   updateHost,
   updateOutOfOffice,
   updateSchedule,
+  zoomConnectable,
 } from "@coss/scheduling";
 import {
   AuthorizeCalendarRequest,
@@ -366,13 +368,19 @@ export function createSchedulingClientRoutes(opts: {
       });
     }
     if (session.kind === "host") {
-      const host = await getHost(env, session.hostId as string);
-      const settings = await getSettingsRow(env);
+      const [host, zoomAvailable, ownOauthApp, settings] = await Promise.all([
+        getHost(env, session.hostId as string),
+        deps.calendars ? zoomConnectable(env, deps.calendars) : false,
+        hasOauthApp(env),
+        getSettingsRow(env),
+      ]);
       return c.json({
         ...base,
         host: { id: host.id, name: host.name, time_zone: host.time_zone },
-        zoom_available: Boolean(deps.calendars?.apps.zoom),
+        zoom_available: zoomAvailable,
         can_reassign: settings?.hostReassignment === "eligible",
+        own_oauth_app: ownOauthApp,
+        privacy_url: settings?.privacyUrl ?? null,
       });
     }
     return c.json(base);

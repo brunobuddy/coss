@@ -6,6 +6,7 @@ import { DASHBOARD_PATH } from "@coss/auth/slugs";
 import { sentryBuildOptions } from "@coss/observability/build";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
+import { LEGACY_REDIRECTS } from "./src/lib/legacy-redirects.ts";
 import {
   LOGO_CSP,
   LOGO_PATH,
@@ -83,8 +84,14 @@ const nextConfig: NextConfig = {
   async redirects() {
     // In production `/` is the site's landing page. Locally, the dashboard's port opens the dashboard.
     // The docs are the site's (`/docs` in ZONE_ROUTES); locally it runs on its own port.
-    if (!dev) return [];
+    const legacy = LEGACY_REDIRECTS.map(({ source, destination }) => ({
+      source,
+      destination: dev ? `${DEV_SITE_ORIGIN}${destination}` : destination,
+      permanent: true,
+    }));
+    if (!dev) return legacy;
     return [
+      ...legacy,
       { source: "/", destination: DASHBOARD_PATH, permanent: false },
       { source: "/docs/:path*", destination: `${DEV_SITE_ORIGIN}/docs/:path*`, permanent: false },
       // The site's legal pages (linked from sign-up), on its own port locally.

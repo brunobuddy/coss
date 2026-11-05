@@ -13,6 +13,7 @@ export const FEATURE_KEYS = [
   "schedulingHostPortal",
   "schedulingRouting",
   "schedulingWhiteLabel",
+  "schedulingOauthApps",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 
@@ -72,6 +73,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   schedulingHostPortal: "Scheduling host portal",
   schedulingRouting: "Scheduling attribute routing",
   schedulingWhiteLabel: "Scheduling pages without coss.com's name",
+  schedulingOauthApps: "Bring-your-own OAuth apps for Scheduling",
 };
 
 export const LIMIT_LABELS: Record<LimitKey, string> = {

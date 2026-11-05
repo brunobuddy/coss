@@ -660,6 +660,8 @@ async function connectHost(
       const upgraded = host.existing ? null : await connectionToUpgrade(tx, delegation, host);
       const fields = {
         delegationId: delegation.id,
+        // Taken over from a host's own consent, the delegation's credentials are all that matter.
+        oauthAppId: null,
         reachedAt: now,
         encryptedCredentials: encryptCredentials(tokens, deps.secretsKeys),
         status: "active" as const,

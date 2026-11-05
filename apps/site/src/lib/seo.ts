@@ -172,15 +172,20 @@ export function freeSoftwareSchema({
   };
 }
 
-/** The pricing page: coss.com with its self-serve plans. */
+/**
+ * The pricing page: coss.com with its self-serve plans. Not a schema.org `Product`: Google reads
+ * one as a shop's merchant listing, and refuses it for having no image.
+ */
 export function pricingSchema(description: string) {
   return {
     "@context": "https://schema.org",
-    "@type": "Product",
+    "@type": "SoftwareApplication",
     name: SITE_NAME,
     description,
     url: abs("/pricing"),
-    brand: { "@id": ORGANIZATION_ID },
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Any (HTTPS API)",
+    provider: { "@id": ORGANIZATION_ID },
     offers: offers(),
   };
 }

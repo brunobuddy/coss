@@ -25,6 +25,7 @@ import { recordCalendarEvent } from "./events.ts";
 import { googleCalendarClient } from "./google.ts";
 import { microsoftCalendarClient } from "./microsoft.ts";
 import {
+  APP_REFUSED,
   authorizationUrl,
   exchangeCode,
   type OAuthApp,
@@ -34,6 +35,14 @@ import {
   refreshTokens,
   revokeToken,
 } from "./oauth.ts";
+import {
+  environmentOauthApp,
+  markOauthAppFailing,
+  type OauthAppRow,
+  oauthAppOf,
+  pinnedOauthApp,
+  restoreOauthApp,
+} from "./oauth-app-state.ts";
 import { simulatedCalendarClient } from "./simulated.ts";
 import { ZOOM_CALENDAR_ID, zoomCalendarClient, zoomUserId } from "./zoom.ts";
 
@@ -59,7 +68,7 @@ type Env = Scope & { projectId: string; mode: "live" | "sandbox" };
 
 export type CalendarDeps = {
   secretsKeys: SecretsKeyRing;
-  /** Coss.com's OAuth apps. A provider without one can't be connected. */
+  /** Coss.com's OAuth apps. Without one, only an environment's own app can connect a provider. */
   apps: {
     google: OAuthApp | null;
     microsoft: OAuthApp | null;
@@ -86,7 +95,7 @@ const REQUEST_TIMEOUT_MS = 30_000;
 // Past a year: a weekly series of 52 has to fit, or its last occurrences couldn't be verified.
 export const SYNC_HORIZON_DAYS = 400;
 
-export const fetcherOf = (deps: CalendarDeps): HttpFetch => {
+export const fetcherOf = (deps: Pick<CalendarDeps, "fetcher" | "requestTimeoutMs">): HttpFetch => {
   const fetcher = deps.fetcher ?? fetch;
   const timeoutMs = deps.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
   return async (url, init) => {
@@ -101,7 +110,8 @@ export const fetcherOf = (deps: CalendarDeps): HttpFetch => {
     }
   };
 };
-export const nowMs = (deps: CalendarDeps): number => (deps.now?.() ?? new Date()).getTime();
+export const nowMs = (deps: Pick<CalendarDeps, "now">): number =>
+  (deps.now?.() ?? new Date()).getTime();
 
 export const oauthRedirectUri = (deps: Pick<CalendarDeps, "publicUrl">, provider: OAuthProvider) =>
   `${withoutTrailingSlashes(deps.publicUrl)}/scheduling/oauth/${provider}/callback`;
@@ -120,6 +130,19 @@ const appOf = (deps: CalendarDeps, provider: OAuthProvider): OAuthApp => {
   return app;
 };
 
+/** The app a connection's tokens came from: only that one can refresh or revoke them. */
+async function appOfConnection(
+  connection: Pick<ConnectionRow, "oauthAppId" | "organizationId">,
+  provider: OAuthProvider,
+  deps: CalendarDeps,
+): Promise<{ app: OAuthApp; own: OauthAppRow | null }> {
+  if (!connection.oauthAppId) return { app: appOf(deps, provider), own: null };
+  const own = await pinnedOauthApp(connection.oauthAppId, connection.organizationId);
+  // A foreign key keeps it while the connection exists, so this is a read of a row just deleted.
+  if (!own) throw new CalendarError("transient", "oauth_app_gone", "This OAuth app is gone.");
+  return { app: oauthAppOf(own, deps.secretsKeys), own };
+}
+
 const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 
 /** Starts a consent: the state is random, and only its hash is kept. It's never a credential. */
@@ -129,7 +152,16 @@ export async function startCalendarAuthorization(
   input: { provider: OAuthProvider; returnUrl: string | null },
   deps: CalendarDeps,
 ): Promise<{ url: string }> {
-  const app = appOf(deps, input.provider);
+  const own = await environmentOauthApp(scope, input.provider);
+  // Never coss.com's app instead: it would show the wrong brand, and stay pinned to it.
+  if (own?.status === "failing") {
+    throw new SchedulingError(
+      "calendar_unavailable",
+      `This environment's ${input.provider} OAuth app was refused by the provider. Update its client secret.`,
+    );
+  }
+  const app = own ? oauthAppOf(own, deps.secretsKeys) : appOf(deps, input.provider);
+  const redirectUri = own?.redirectUri ?? oauthRedirectUri(deps, input.provider);
   const host = await resolveHost(db, scope, hostRef);
   const state = randomBytes(32).toString("base64url");
   const { verifier, challenge } = pkcePair();
@@ -140,14 +172,17 @@ export async function startCalendarAuthorization(
     provider: input.provider,
     stateHash: sha256(state),
     encryptedCodeVerifier: encryptSecret(verifier, deps.secretsKeys),
-    returnUrl: input.returnUrl,
+    returnUrl: input.returnUrl ?? own?.completionUrl ?? null,
+    oauthAppId: own?.id ?? null,
+    redirectUri,
+    tenantId: own?.tenantId ?? null,
     expiresAt: new Date(nowMs(deps) + OAUTH_STATE_TTL_MS),
   });
   return {
     url: authorizationUrl({
       provider: input.provider,
       app,
-      redirectUri: oauthRedirectUri(deps, input.provider),
+      redirectUri,
       state,
       codeChallenge: challenge,
     }),
@@ -206,6 +241,7 @@ async function saveConnection(
     accountId: string;
     encryptedCredentials: string | null;
     client: CalendarClient;
+    oauthAppId?: string | null;
   },
   deps: Pick<CalendarDeps, "now">,
 ): Promise<ConnectionRow> {
@@ -246,6 +282,7 @@ async function saveConnection(
         provider: input.provider,
         accountId: input.accountId,
         encryptedCredentials: input.encryptedCredentials,
+        oauthAppId: input.oauthAppId ?? null,
       })
       .onConflictDoUpdate({
         target: [
@@ -255,6 +292,8 @@ async function saveConnection(
         ],
         set: {
           encryptedCredentials: input.encryptedCredentials,
+          // A new consent can come through a different app, and only that one can refresh these.
+          oauthAppId: input.oauthAppId ?? null,
           status: "active",
           lastErrorCode: null,
           lastErrorAt: null,
@@ -308,16 +347,26 @@ export async function completeCalendarAuthorization(
     return { returnUrl: state?.returnUrl ?? null, outcome: "invalid" };
   }
   if (input.error || !input.code) return { returnUrl: state.returnUrl, outcome: "denied" };
-  const app = appOf(deps, input.provider);
-  const tokens = await exchangeCode({
-    provider: input.provider,
-    app,
-    code: input.code,
-    codeVerifier: decryptSecret(state.encryptedCodeVerifier, deps.secretsKeys),
-    redirectUri: oauthRedirectUri(deps, input.provider),
-    fetcher: fetcherOf(deps),
-    nowMs: nowMs(deps),
-  });
+  // What the consent started with, never what the environment has now.
+  const { app, own } = await appOfConnection(state, input.provider, deps);
+  let tokens: OAuthTokens;
+  try {
+    tokens = await exchangeCode({
+      provider: input.provider,
+      // The authority that issued this code, whatever the app says now.
+      app: own ? { ...app, tenantId: state.tenantId } : app,
+      code: input.code,
+      codeVerifier: decryptSecret(state.encryptedCodeVerifier, deps.secretsKeys),
+      redirectUri: state.redirectUri ?? oauthRedirectUri(deps, input.provider),
+      fetcher: fetcherOf(deps),
+      nowMs: nowMs(deps),
+    });
+  } catch (error) {
+    if (own && error instanceof CalendarError && error.code === APP_REFUSED) {
+      await markOauthAppFailing(own, error.code, new Date(nowMs(deps)));
+    }
+    throw error;
+  }
   const client = oauthClient(input.provider, tokens.accessToken, deps);
   const accountId = await oauthAccountId(input.provider, tokens.accessToken, client, deps);
   await saveConnection(
@@ -331,9 +380,11 @@ export async function completeCalendarAuthorization(
       accountId,
       encryptedCredentials: encryptCredentials(tokens, deps.secretsKeys),
       client,
+      oauthAppId: own?.id ?? null,
     },
     deps,
   );
+  if (own) await oauthAppAccepted(own, deps);
   return { returnUrl: state.returnUrl, outcome: "connected", hostId: state.hostId };
 }
 
@@ -547,12 +598,31 @@ export async function setSimulatedBusy(
   });
 }
 
+/** The provider took this app's secret: the first proof it works, and the end of any outage. */
+async function oauthAppAccepted(own: OauthAppRow, deps: Pick<CalendarDeps, "now">): Promise<void> {
+  const now = deps.now?.() ?? new Date();
+  if (!own.verifiedAt) {
+    await db
+      .update(schema.schedulingOauthApp)
+      .set({ verifiedAt: now })
+      .where(
+        and(
+          eq(schema.schedulingOauthApp.id, own.id),
+          eq(schema.schedulingOauthApp.organizationId, own.organizationId),
+        ),
+      );
+  }
+  // Whatever it said when this began: another request may have been refused since, and this secret
+  // has just worked. The compare-and-set makes it a no-op on a healthy app.
+  await restoreOauthApp(own, now);
+}
+
 /** A re-encrypted row still holds the token used; any other value is newer, and stays. */
-async function saveRefreshedTokens(
+export async function saveRefreshedTokens(
   connection: ConnectionRow,
   usedRefreshToken: string,
   tokens: OAuthTokens,
-  deps: CalendarDeps,
+  deps: Pick<CalendarDeps, "secretsKeys">,
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const where = and(
@@ -601,15 +671,21 @@ export async function clientFor(
     if (!usedRefreshToken) {
       throw new CalendarError("auth", "no_refresh_token", "Calendar access has expired.");
     }
+    const { app, own } = await appOfConnection(connection, provider, deps);
     try {
       tokens = await refreshTokens({
         provider,
-        app: appOf(deps, provider),
+        app,
         refreshToken: usedRefreshToken,
         fetcher: fetcherOf(deps),
         nowMs: nowMs(deps),
       });
     } catch (error) {
+      // One outage of the app, not one per host. Coss.com's own is ours to hear about.
+      if (error instanceof CalendarError && error.code === APP_REFUSED) {
+        if (own) await markOauthAppFailing(own, error.code, new Date(nowMs(deps)));
+        else console.error(`[scheduling] ${provider} refused coss.com's OAuth app`, error);
+      }
       // Zoom's refresh tokens work once, so another worker may just have used this one.
       if (error instanceof CalendarError && error.kind === "auth") {
         const [current] = await db
@@ -626,6 +702,7 @@ export async function clientFor(
       throw error;
     }
     await saveRefreshedTokens(connection, usedRefreshToken, tokens, deps);
+    if (own) await oauthAppAccepted(own, deps);
   }
   return oauthClient(provider, tokens.accessToken, deps);
 }
@@ -713,6 +790,8 @@ export type ConnectionObject = {
   status: "active" | "needs_reauth";
   /** The delegation that manages it: the host can't disconnect or reconnect it. */
   delegation: string | null;
+  /** Your own OAuth app its access came through. Null: coss.com's, or there's no consent. */
+  oauth_app: string | null;
   calendars: {
     id: string;
     external_id: string;
@@ -747,6 +826,7 @@ async function toConnectionObjects(
     // A customer's code only needs to know the host's out; `delegation` says whose problem it is.
     status: row.status === "active" ? "active" : "needs_reauth",
     delegation: row.delegationId,
+    oauth_app: row.oauthAppId,
     calendars: calendars
       .filter(
         (calendar) =>
@@ -920,10 +1000,15 @@ export async function disconnectCalendar(
   return { id: connection.id };
 }
 
-/** Someone removed the app in Zoom: every connection of that Zoom user goes, in any organization. */
+/**
+ * Someone removed an app in Zoom: that Zoom user's connections through that app go, and nobody else's.
+ * Coss.com's app (`oauthAppId` null) covers any organization that used it. A customer's holds its own
+ * event token, so it must never reach a connection that came through another app.
+ */
 export async function handleZoomDeauthorization(
   zoomUser: string,
   deps: CalendarDeps,
+  oauthAppId: string | null = null,
 ): Promise<number> {
   const connections = await db
     .select()
@@ -932,6 +1017,9 @@ export async function handleZoomDeauthorization(
       and(
         eq(schedulingCalendarConnection.provider, "zoom"),
         eq(schedulingCalendarConnection.accountId, zoomUser),
+        oauthAppId
+          ? eq(schedulingCalendarConnection.oauthAppId, oauthAppId)
+          : isNull(schedulingCalendarConnection.oauthAppId),
       ),
     );
   for (const connection of connections) {
@@ -1082,16 +1170,21 @@ export async function releaseConnection(
     }
     // A delegation's tokens aren't this host's to revoke.
     if (connection.encryptedCredentials && !connection.delegationId) {
-      const tokens = JSON.parse(
-        decryptSecret(connection.encryptedCredentials, deps.secretsKeys),
-      ) as OAuthTokens;
-      if (tokens.refreshToken) {
-        await revokeToken(
-          connection.provider,
-          tokens.refreshToken,
-          fetcherOf(deps),
-          deps.apps[connection.provider],
+      // As it is now: `clientFor` may just have spent the refresh token this row was read with.
+      const [current] = await db
+        .select({ stored: schedulingCalendarConnection.encryptedCredentials })
+        .from(schedulingCalendarConnection)
+        .where(
+          and(
+            eq(schedulingCalendarConnection.id, connection.id),
+            eq(schedulingCalendarConnection.organizationId, connection.organizationId),
+          ),
         );
+      const stored = current?.stored ?? connection.encryptedCredentials;
+      const tokens = JSON.parse(decryptSecret(stored, deps.secretsKeys)) as OAuthTokens;
+      if (tokens.refreshToken) {
+        const { app } = await appOfConnection(connection, connection.provider, deps);
+        await revokeToken(connection.provider, tokens.refreshToken, fetcherOf(deps), app);
       }
     }
   } catch (error) {
