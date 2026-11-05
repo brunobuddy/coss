@@ -124,6 +124,10 @@ A new event type field goes in the dashboard's form too
 `calendar/delegation.ts`, `delegation-failures.ts`, `delegation-tokens.ts` (no database). An admin authorizes a domain
 once, and every host on it gets their calendar with no consent screen.
 
+- **It takes a plan with `calendarDelegation`** (Scale and above, through an injected `PlanGate`) to create, update or
+  verify one, in every environment, since a sandbox's delegation reaches real calendars. Deleting never does, a
+  self-serve downgrade is refused while one exists, and the worker doesn't check: an organization that loses the
+  feature through a contract keeps what's connected, as a log drain keeps delivering.
 - **Credentials are the customer's own**: a service account from their Cloud project, or a single-tenant Entra app. The
   provider confines either to that Workspace or tenant, so there's no domain ownership check. That argument only holds
   for customer-owned credentials: a coss.com-owned service account shared between customers would let any customer
@@ -283,12 +287,42 @@ attendee sees times, never other hosts.
 ## Notifications
 
 `notifications.ts` resolves policy once, into outbox rows in the deciding transaction: core code never branches on it.
-Rows hold no content; a row's rendered at send time and dropped if stale. A change that keeps a booking's time but
-bumps its version (a location, a meeting link) calls `carryReminders`, or its reminder would look stale. Booking emails use `@coss/email-layout` with
+Rows hold no content; a row's rendered at send time and dropped if stale. Booking emails use `@coss/email-layout` with
 no customer HTML and no links but the manage link, and pass `screeningExempt`: per-email screening would send patients'
 names to the AI Gateway. In exchange, text a customer controls is screened at setup (`screening.ts`) and can't hold a
 link. Never add a free-form field to these emails without screening it. SMS goes through `@coss/sms`, so it's sampled
 as usual: keep names out of it.
+
+`reminders.ts` is what a `reminders` list means, at the event type (which replaces the environment's) or the
+environment; `null` everywhere is the old one reminder a day before, on `notifications.reminder`'s channels, keyed
+`reminder`. Each rule makes rows, `started` and `ended` are rows every confirmed booking gets, and these rules hold:
+
+- A rule's row names its rule and is timed from `anchor_at`, the moment as it was when queued. That, not the booking's
+  `version`, is what makes it stale: a location or a no-show bumps the version and moves nothing. A row with no
+  `anchor_at` came from a task older than this, mid-deploy, and keeps the version check.
+- The dedupe key names the rule, timing and moment, so planning is safe to repeat (`reconcileReminders`, also run by
+  the `scheduling-reminder-sync` loop when a list changes). A conflict revives a row only if it was `superseded` or
+  `stale`: a booking moved away and back gets its reminder back, and nothing `sent` goes twice.
+- **A rule is read again when its row is due** (`ruleVerdict`, `addEditedTargets`), so a row takes its rule's current
+  words, timing and recipients and a removal needs no rebuild. Only a new rule needs rows made for existing bookings,
+  and only for ones that haven't ended. A row never assumes the walk has run: it may not have, and it reaches only some
+  bookings. The keys make the two safe together.
+- **Customer words never leave under coss.com's address.** `subject`, `message` and `button` need `email_from`, and
+  `coss*` on `SchedulingEmail` are always fixed copy, which is what the fallback sends. That also caps what coss.com
+  pays for: without `email_from`, at most two rules send email (`withinCossAllowance`, checked at save and when due).
+- `attendee_name` is what a booker typed, aimed at an address they chose: `safeName` renders one with a link in it as
+  nothing. Answers are never variables. `sms_message` can't use names. `reminder-copy.ts` is client-safe, so the
+  dashboard's preview runs the same code as the worker.
+- A reminder's standard words, labels and values follow the recipient's language like any other message's
+  (`standardSubject`, `standardLead`, `timeUntil`), and a fixed address takes the first host's. What a customer wrote
+  has one version, in whatever language they wrote it.
+- A `button` or `email_to` is checked against the injected `verifiedAddress` in live environments, and refused without
+  one. A button's URL takes only `{{booking_id}}`, so what's sent is what was checked.
+- A webhook row reports and finishes in one transaction, booking locked first like every other writer of these rows, so
+  two workers can't both report. A webhook is never dropped for being late; an email or text is (`too_late`).
+- `email_attendee` reaches guests too, on the same terms as other mail (`guestsAreTold`, `ownSenderOnly`): only from the customer's
+  own address, with no manage link, and not for what isn't about them (a request, a no-show).
+- What became of every row is public (`listBookingNotifications`) and never says who it went to.
 
 Branding only applies under the customer's own `email_from`: `renderMessage` puts their name or logo and accent in
 `html`, and `cossHtml`, what coss.com's address sends, has none of them. `scheduling_logo` holds a PNG or JPEG checked
@@ -301,6 +335,44 @@ text, and it can't hold a link.
 One `scheduling.bookings` unit per confirmed booking, series occurrence or group session, guarded by a compare-and-set
 on `usage_recorded_at` (`recordUsage` doesn't dedupe). `reserve` runs after a host has won. Holds and pending approvals
 aren't charged; reschedules are free; cancelled stays charged.
+
+`scheduling.hosts` is one unit per day a live host exists (`next_fee_at`, its presence is what makes a host live for
+the plan's count): on creation (reserved like a new inbox: past a capped plan's allowance it's refused), then
+`chargeDueHostFees` (the worker's `scheduling-host-fees`, which also gives a date to any live host without one, such as
+one an older task made during a rollout), and `deleteHost` charges what's due (those two only ever write
+off past the allowance). Nothing is recorded before `meterPricedFrom` (2027-01-01): hosts wait with `next_fee_at` at that date.
+
+## Plans and holds
+
+`plan.ts`. **Live only**: sandbox has everything on every plan, so a team builds first and meets the plan at go-live.
+Injected as `SchedulingDeps.plans`; without it nothing is enforced. What the plan decides:
+
+- `schedulingHosts` (`createHost`, across live environments, under an advisory lock). Free and Pro stop; Scale has no
+  limit and is charged past what it includes.
+- `schedulingHolds` (`createHold`), `schedulingHostPortal` (`createHostSession` from the API only: a dashboard member's
+  own look passes no gate, and host invitation emails stay on every plan), `schedulingRouting` (`host_filter`, and
+  `attributes` at the API's routes, never in `book()`: a session's were checked when it was made).
+- `schedulingGroupSeats` (growing a `capacity`) and `schedulingSearchHosts` (`maxHosts`: a search looks at that many and
+  says `has_more`, it never fails).
+- `schedulingWhiteLabel` (`coss_attribution` in the client API's `/session`).
+- `scheduling.slots.second` (`limitSchedulingSlots` in the API): live slot lists and searches per organization.
+
+Using a feature reads the plan in effect (`requireLiveFeature`, `currentLimit`): a scheduled downgrade changes nothing
+until it applies. Setting up something that outlives the request (`requireLiveFeatureToCreate`, `requireCapacity`) is also
+checked against the plan to come, like every creation in billing.
+
+Gates take a connection of their own, so they never run inside a transaction: holding one connection while waiting for
+another stalls the pool under load. They run before it, and `gateNewRequest` skips a retry of a key still in its window (an expired key makes something
+new, so it meets the plan).
+
+A person on a hosted page never meets a plan gate (Free's booking allowance aside): a session's attributes aren't
+checked again. Never gate the double-booking guarantee, calendars or series. A filter or a group size that exists keeps working whatever the plan; a downgrade is refused only for live
+`host_filter`s (the dashboard's preflight).
+
+`refuseNewBookingWhileHeld`, once the row is known to be new so a retry still answers with what it made: a billing hold
+or the project's budget stops new live bookings, holds and series (402; new hosts too, `refuseNewHostWhileHeld`), and
+the booker's page says only that the account can't take bookings. Confirming a hold and approving keep working: the
+customer may have taken payment for them.
 
 ## Testing
 

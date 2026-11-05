@@ -7,6 +7,8 @@ export type Branding = {
   brand_name: string | null;
   accent_color: string | null;
   logo: Logo | null;
+  /** The plan shows "Scheduling by coss.com" on its pages. */
+  coss_attribution?: boolean;
 };
 
 /** The customer's accent color, with text that reads on it. A white page would hide a pale one. */

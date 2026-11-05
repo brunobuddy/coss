@@ -291,6 +291,7 @@ describe("GET /openapi.json", () => {
       "/v1/scheduling/bookings/{id}/location",
       "/v1/scheduling/bookings/{id}/manage_sessions",
       "/v1/scheduling/bookings/{id}/no_show",
+      "/v1/scheduling/bookings/{id}/notifications",
       "/v1/scheduling/bookings/{id}/reschedule",
       "/v1/scheduling/calendar_delegations",
       "/v1/scheduling/calendar_delegations/{id}",

@@ -168,7 +168,7 @@ Weekly hours in the host's time zone, date overrides, buffers, minimum notice, b
 </Feature>
 
 <Feature title="Who gets told">
-Attendees and hosts get emails with calendar invitations, from your own domain or from coss.com on your behalf. Attendees get a reminder a day before, by SMS too from your own number if you turn it on, and you can turn off any of them. Google Meet and Microsoft Teams links come with the calendar event. Bookings and calendars send [webhooks](/docs/webhooks) and log lines. See [notifications](/docs/scheduling/notifications).
+Attendees and hosts get emails with calendar invitations, from your own domain or from coss.com on your behalf. Attendees get a reminder a day before, and one list changes that: any number of [reminders](/docs/scheduling/reminders), before or after a booking or any change to it, to attendees, hosts or your own team, by email or SMS, in your own words if you like. Google Meet and Microsoft Teams links come with the calendar event. Bookings and calendars send [webhooks](/docs/webhooks) and log lines, including when a booking starts and ends, and at any offset you choose. See [notifications](/docs/scheduling/notifications).
 </Feature>
 
 </Features>
@@ -195,9 +195,9 @@ Our [Terms](/legal/terms) don't allow special categories of personal data or pro
 <Spec label="Holds">10 minutes by default, 1 minute to 24 hours</Spec>
 <Spec label="Approval deadline">1 day by default, up to 30 days</Spec>
 <Spec label="Series">up to 52 occurrences, weekly or monthly</Spec>
-<Spec label="Group session">2 to 10,000 seats</Spec>
+<Spec label="Group session">2 to 10,000 seats, by plan</Spec>
 <Spec label="Slots per request">up to 62 days</Spec>
-<Spec label="Availability search">up to 500 hosts</Spec>
+<Spec label="Availability search">up to 500 hosts, by plan</Spec>
 <Spec label="Calendars read ahead">400 days</Spec>
 <Spec label="Questions per event type">25</Spec>
 <Spec label="Host session">1 hour by default, at most 24 hours</Spec>
@@ -209,11 +209,26 @@ Our [Terms](/legal/terms) don't allow special categories of personal data or pro
 
 </Section>
 
-<Section title="Pricing" lede="You pay per confirmed booking. Holds and pending approvals cost nothing until they're confirmed.">
+<Section title="Pricing" lede="You pay per confirmed booking, and for hosts beyond what your plan includes. Holds and pending approvals cost nothing until they're confirmed.">
 
-<UsageRates meters="scheduling.bookings" />
+<UsageRates meters="scheduling.bookings,scheduling.hosts" />
 
 The Free plan includes <Included meter="scheduling.bookings" />. A group session is one booking however many attend, and each occurrence of a series is one. Rescheduling is free, and a cancelled booking stays charged. Booking emails sent from your own domain are billed like any email, and SMS reminders like any text message. See [pricing](/pricing) for the plans.
+
+</Section>
+
+<Section title="Plans" lede="Everything works in a sandbox on every plan. In live environments, the plan sets how far it goes.">
+
+- **Hosts**: <Limit of="schedulingHosts" plan="free" /> on Free and <Limit of="schedulingHosts" plan="pro" /> on Pro. Scale includes <Included meter="scheduling.hosts" plan="scale" /> and charges for more by the day.
+- **Holds** for taking payment first: <PlansWith feature="schedulingHolds" />.
+- **The embedded host portal**: <PlansWith feature="schedulingHostPortal" />. On other plans, set hours and connect calendars through the API.
+- **Attribute routing** with `host_filter` and `attributes`: <PlansWith feature="schedulingRouting" />.
+- **Seats per group session**: <Limit of="schedulingGroupSeats" plan="free" /> on Free, <Limit of="schedulingGroupSeats" plan="pro" /> on Pro and <Limit of="schedulingGroupSeats" plan="scale" /> on Scale.
+- **Hosts per availability search**: <Limit of="schedulingSearchHosts" plan="free" /> on Free, <Limit of="schedulingSearchHosts" plan="pro" /> on Pro and <Limit of="schedulingSearchHosts" plan="scale" /> on Scale.
+- **Hosted pages without "Scheduling by coss.com"**: <PlansWith feature="schedulingWhiteLabel" />.
+- **Patient data**: a BAA and [HIPAA mode](/docs/hipaa), by Enterprise contract.
+
+What you already set up keeps working if you change plans. See [compare plans](/pricing#compare).
 
 </Section>
 

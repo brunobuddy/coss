@@ -66,6 +66,7 @@ import {
 import { RETENTION_DAYS } from "@coss/retention";
 import { refreshDueDatasets } from "@coss/risk";
 import {
+  chargeDueHostFees,
   checkHostEditedEvents,
   expireDueBookings,
   type NotificationDeps,
@@ -75,6 +76,7 @@ import {
   runDueCalendarDelegations,
   runDueCalendarSyncs,
   runDueCalendarWrites,
+  runDueReminderSyncs,
   runDueSchedulingNotifications,
   type SchedulingWorkerDeps,
   warnOfExpiringOauthAppSecrets,
@@ -255,7 +257,9 @@ export type WorkerDeps = {
  */
 export const WORKER_LOOP_NAMES = [
   "scheduling-expiry",
+  "scheduling-host-fees",
   "scheduling-notifications",
+  "scheduling-reminder-sync",
   "scheduling-calendar-sync",
   "scheduling-oauth-app-secrets",
   "scheduling-calendar-writes",
@@ -762,6 +766,20 @@ export function startJobs(deps: WorkerDeps): Loop[] {
         name: "scheduling-expiry",
         intervalMs: 30_000,
         run: async () => (await expireDueBookings(scheduling)) === SCHEDULING_BATCH,
+      }),
+      start({
+        // A changed `reminders` list reaching the bookings that already exist.
+        name: "scheduling-reminder-sync",
+        intervalMs: 5000,
+        run: async () => (await runDueReminderSyncs(scheduling)) > 0,
+      }),
+      start({
+        // A day of every live host (`scheduling.hosts`), charged when the day starts.
+        name: "scheduling-host-fees",
+        intervalMs: 10 * 60_000,
+        run: async () =>
+          (await chargeDueHostFees({ limit: INBOX_FEE_BATCH, billing: deps.billing.usage })) >=
+          INBOX_FEE_BATCH,
       }),
     );
     const notifications = deps.schedulingNotifications;

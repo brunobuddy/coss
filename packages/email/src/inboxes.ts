@@ -19,7 +19,13 @@
  */
 import { createHash, randomInt } from "node:crypto";
 import type { PlanGate, UsageGate } from "@coss/billing/gate";
-import { recordUsage } from "@coss/billing/metering";
+import {
+  BUDGET_EXCEEDED_MESSAGES,
+  budgetHoldFor,
+  countTowardAllowance,
+  isOnBillingHold,
+  recordUsage,
+} from "@coss/billing/metering";
 import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, newId } from "@coss/db/id";
 import { enqueueWebhookMessage } from "@coss/webhooks";
@@ -226,6 +232,21 @@ export async function createInbox(
     const existing = await findByClientId(env, input.clientId);
     if (existing) return { inbox: toInboxObject(existing, sandbox), created: false };
   }
+  // A new inbox is a new monthly charge. Those that exist keep receiving: mail is never lost to a hold.
+  if (!sandbox) {
+    if (await isOnBillingHold(env.organizationId)) {
+      throw new InboxError(
+        "billing_hold",
+        "New live inboxes are paused: your organization has an overdue invoice or reached its " +
+          "spend limit. Sandbox keys still work.",
+      );
+    }
+    const held = await budgetHoldFor({
+      organizationId: env.organizationId,
+      projectId: env.projectId,
+    });
+    if (held) throw new InboxError("budget_exceeded", BUDGET_EXCEEDED_MESSAGES[held]);
+  }
   const target = await resolveDomain(env, input.domain, deps.managedDomain);
 
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -350,31 +371,17 @@ export async function chargeDueInboxFees(
       byEnvironment.set(row.environmentId, entry);
     }
     for (const { source, days } of byEnvironment.values()) {
-      if (opts.billing) await countTowardAllowance(tx, opts.billing, source.organizationId, days);
+      if (opts.billing) {
+        await countTowardAllowance(tx, opts.billing, {
+          organizationId: source.organizationId,
+          meter: "email.inboxes",
+          days,
+        });
+      }
       await recordUsage(tx, { ...source, meter: "email.inboxes", quantity: days });
     }
     return charged.length;
   });
-}
-
-/** Reserves `days` inbox-days one by one (each in a savepoint) until the allowance refuses one. */
-async function countTowardAllowance(
-  tx: Transaction,
-  gate: UsageGate,
-  organizationId: string,
-  days: number,
-): Promise<void> {
-  for (let day = 0; day < days; day++) {
-    try {
-      await tx.transaction((savepoint) =>
-        gate.reserve(savepoint, { organizationId, meter: "email.inboxes", quantity: 1 }),
-      );
-    } catch (error) {
-      const code = (error as { code?: string } | null)?.code;
-      if (code === "usage_limit_exceeded" || code === "plan_feature_unavailable") return;
-      throw error;
-    }
-  }
 }
 
 export async function getInboxRow(scope: Scope & { id: string }): Promise<InboxRow | null> {
@@ -458,7 +465,11 @@ export async function deleteInbox(
     if (!row) return false;
     const { dueDays, ...source } = row;
     if (deps.billing && dueDays > 0) {
-      await countTowardAllowance(tx, deps.billing, source.organizationId, dueDays);
+      await countTowardAllowance(tx, deps.billing, {
+        organizationId: source.organizationId,
+        meter: "email.inboxes",
+        days: dueDays,
+      });
     }
     await recordUsage(tx, { ...source, meter: "email.inboxes", quantity: dueDays });
     return true;

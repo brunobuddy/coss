@@ -19,6 +19,7 @@ import {
   deleteCalendarDelegation,
   disconnectCalendar,
   getCalendarDelegation,
+  hasCalendarDelegations,
   listConnections,
   listEventTypeSlots,
   runDueCalendarDelegations,
@@ -156,6 +157,71 @@ const hostEmails = (hostId: string) =>
     .select()
     .from(schema.schedulingNotification)
     .where(eq(schema.schedulingNotification.hostId, hostId));
+
+describe("the plan", () => {
+  const refused = new Error("not on this plan");
+  const gate = (allowed: boolean) => {
+    const asked: [string, string][] = [];
+    return {
+      asked,
+      plans: {
+        requireFeature: async (organizationId: string, feature: string) => {
+          asked.push([organizationId, feature]);
+          if (!allowed) throw refused;
+        },
+        requireCapacity: async () => {},
+        limit: async () => null,
+        currentLimit: async () => null,
+        hasFeature: async () => allowed,
+      },
+    };
+  };
+
+  test("without the feature nothing can be created, changed or verified, but it can be deleted", async () => {
+    const env = await environment();
+    const deps = googleDeps(new FakeGoogleCalendarApi());
+    const created = await createCalendarDelegation(
+      env,
+      { provider: "google", domain: DOMAIN, service_account_key: account.key },
+      deps,
+    );
+    const { plans, asked } = gate(false);
+    const denied = { ...deps, plans };
+    const attempts = [
+      () =>
+        createCalendarDelegation(
+          env,
+          { provider: "google", domain: "other.example", service_account_key: account.key },
+          denied,
+        ),
+      () => verifyCalendarDelegation(env, created.id, { account: `ana@${DOMAIN}` }, denied),
+      () => updateCalendarDelegation(env, created.id, { match_host_email: false }, denied),
+    ];
+    for (const attempt of attempts) await expect(attempt()).rejects.toBe(refused);
+    expect(asked).toEqual(
+      Array.from({ length: 3 }, () => [env.organizationId, "calendarDelegation"]),
+    );
+    expect(await getCalendarDelegation(env, created.id)).toMatchObject({
+      status: "pending",
+      match_host_email: true,
+    });
+    expect(await hasCalendarDelegations(env.organizationId)).toBe(true);
+    await deleteCalendarDelegation(env, created.id, {});
+    expect(await hasCalendarDelegations(env.organizationId)).toBe(false);
+  });
+
+  test("with the feature it goes through", async () => {
+    const env = await environment();
+    const { plans, asked } = gate(true);
+    await createCalendarDelegation(
+      env,
+      { provider: "google", domain: DOMAIN, service_account_key: account.key },
+      { ...googleDeps(new FakeGoogleCalendarApi()), plans },
+    );
+    expect(asked).toHaveLength(1);
+    expect(await hasCalendarDelegations(env.organizationId)).toBe(true);
+  });
+});
 
 describe("setting up", () => {
   test("a key is refused unless it's a whole service account's, and never quoted back", async () => {

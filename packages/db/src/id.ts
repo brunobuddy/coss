@@ -167,6 +167,7 @@ export const ID_PREFIXES = {
   schedulingBookingEvent: "bevt",
   schedulingCalendarEvent: "calev",
   schedulingNotification: "sntf",
+  schedulingReminderSync: "srsync",
   schedulingSession: "schs",
   schedulingOauthState: "soauth",
   schedulingSettings: "schset",

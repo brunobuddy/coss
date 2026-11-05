@@ -1,7 +1,6 @@
 # AGENTS.md — coss.com monorepo
 
-coss.com is a unified developer platform: one API key + one SDK (`coss.email.send()`, `coss.sms.send()`, later
-video, scheduling…). This repo holds the dashboard, the public API, shared packages and the public SDK.
+coss.com is a unified developer platform: one API key + one SDK (`coss.email.send()`, `coss.sms.send()`, `coss.scheduling`…). This repo holds the dashboard, the public API, shared packages and the public SDK.
 Email delivery goes through the provider interface in `packages/email/src/provider.ts` (Amazon SES v2 with one SES
 tenant per organization, or the fake provider); sandbox environments always use the fake provider. Delivery events
 drive per-recipient status and signed customer webhooks. Environments also receive email (an SES receipt rule → S3 +
@@ -26,7 +25,7 @@ webhooks, notification emails and contacts, optionally after the submitter confi
 `AGPL-3.0-only` (root `LICENSE`), except `packages/sdk` (MIT, its own `LICENSE`: customers bundle it), `packages/mcp`
 and `packages/cli` (MIT, published with the SDK), the Claude Code plugin and Agent Skill in `plugins/coss` (MIT, its
 own `LICENSE`: installed into customers' agents), the framework drivers in `integrations/*` (MIT, each with its own
-`LICENSE`), the generated SDKs in `sdks/*` (MIT, each with its own `LICENSE`), `packages/kloq` (MIT, vendored) and
+`LICENSE`), the generated SDKs in `sdks/*` (MIT, each with its own `LICENSE`), `packages/kloq` (MIT, vendored), `packages/expo-kloq` (MIT, its own `LICENSE`: kloq's port) and
 the fonts (OFL). New code is AGPL unless it lives in one of those; never copy AGPL code into the SDK, the MCP server,
 the CLI, the plugin, the drivers or the generated SDKs. Outside contributors sign the CLA (`CLA.md`, enforced by cla-assistant.io on pull requests; the agreement
 text it shows is a gist that must match `CLA.md`: change both together, as a new version).
@@ -42,6 +41,7 @@ text it shows is a gist that must match `CLA.md`: change both together, as a new
 | `apps/sign` | `@coss/sign-app` | Sign's signing page (:3004) on its own domain (`cosssign.com`, CloudFront → ALB, `SIGN_HOST` in `infra/aws/routing.ts`): one signer, signed in by a session the customer's backend creates (token in the URL fragment, never a cookie), embedded with `coss/sign`'s `mountSigning` or opened on its own; consent, the documents (pdf.js), fields, a typed or drawn signature, decline; and the embedded template builder (`/b/<id>`). See `apps/sign/AGENTS.md`. |
 | `apps/scheduling` | `@coss/scheduling-app` | The hosted scheduling pages (:3005) on a domain of their own (production: `cossbook.com`, CloudFront → ALB, `SCHEDULING_HOST` in `infra/aws/routing.ts`): a host's page, the booker and the manage page, each signed in by a session (token in the URL fragment, never a cookie), embedded with `coss/scheduling`. A thin client of the API's `/scheduling/client/*`. See `apps/scheduling/AGENTS.md`. |
 | `apps/mobile` | `@coss/mobile` | Expo (SDK 57) iOS companion app, three native tabs (Home, Products, Organization), mirroring the dashboard's pages (organization: projects, reputation, domains with DMARC, dedicated IPs, SMS senders, members, spend and budgets, settings with SSO and SCIM, billing (read-only), audit log; environment: emails, templates, received, suppressions, tracking, content storage, SMS, broadcasts, contacts, audiences, segments, topics, marketing settings, risk with its rules, lists and settings, Hooks, Scheduling, API keys, webhooks, logs, log drains), mostly read-only, signed in through the dashboard (browser hand-off + PKCE) and using its `/api/mobile/v1/*`, with push notifications (APNs) for alerts, crash reporting (Sentry) and account deletion. Not deployed by `infra`. See `apps/mobile/AGENTS.md`. |
+| `apps/expo-kloq-example` | `@coss/expo-kloq-example` | Expo (SDK 57) development build showing `expo-kloq` with seeded calendars; its `plugins/with-scene-delegate.js` adopts the scene life cycle iOS 27 requires, and `maestro/demo.yaml` walks every interaction. Not deployed. See its `README.md`. |
 | `apps/smtp` | `@coss/smtp` | Bun SMTP relay (`smtp.coss.com`; locally :2465 implicit TLS, :2587 STARTTLS) on `smtp-server`: username `coss`, an API key as the password; each message becomes a `POST /v1/emails` request (`@coss/email/smtp`) stored through the same email service, rate limits and quotas. Behind an NLB; terminates TLS itself (exported ACM certificate). See `apps/smtp/AGENTS.md`. |
 | `apps/worker` | `@coss/worker` | Bun background worker: email dispatch (pg-boss), scheduled sends, broadcast fan-out, webhook deliveries, domain re-checks, dedicated IP pools, stale-claim/unclaimed sweeps, data retention purges, organization deletions, SES events and received emails from SQS (`EMAIL_PROVIDER=ses`). `scripts/ses-bootstrap.ts`. Safe to run several. |
 | `packages/db` | `@coss/db` | Drizzle schema (generated Better Auth tables + domain tables), pg client, TypeIDs, migrations, test guard; `./jobs` (pg-boss); `./idempotency` (`withIdempotencyKey`, request hashes); `./partitions` (daily range partitions: create ahead, drop expired). |
@@ -78,7 +78,8 @@ text it shows is a gist that must match `CLA.md`: change both together, as a new
 | `packages/mcp` | `coss-mcp` | **Public** MCP server (`npx coss-mcp`, stdio, Node; hosted at `api.coss.com/mcp` by `apps/api` through `coss-mcp/http`): tools for coding agents built only on the published `coss` SDK: docs search, per-product setup (`get_setup`) and diagnosis (`diagnose_*`), sends, suppressions, domains, webhooks, received mail, logs, log drains, marketing, sub-accounts, Verify, Sign, Forms, Scheduling, Hooks, Risk, account status, a read-only fallback for any `/v1/` path (`api_get`), plus prompts and resources; `COSS_MCP_TOOLSETS` offers fewer. See `packages/mcp/AGENTS.md`. |
 | `plugins/coss` | — | **Public** Claude Code plugin (marketplace: the root `.claude-plugin/marketplace.json`; `/plugin install coss --marketplace cosscom/coss`) with the `coss` Agent Skill (`skills/coss/SKILL.md`, also installed into other agents by `npx skills add cosscom/coss`) and the MCP server (`.mcp.json`, `npx -y coss-mcp`). Plain files, not a workspace; served from main. See "Coding agents" below. |
 | `packages/cli` | `coss-cli` | **Public** CLI (`npm i -g coss-cli`, command `coss`, Node): `login`, `init`, `emails`, `suppressions`, `subaccounts`, `sms`, `verify`, `contacts`, `audiences`, `segments`, `topics`, `broadcasts`, `marketing settings`, `sign`, `forms`, `scheduling`, `hooks`, `risk`, `domains`, `templates`, `webhooks`, `logs tail`, `log-drains`, `listen`, `api`, built only on the published `coss` SDK. See `packages/cli/AGENTS.md`. |
-| `packages/kloq` | `kloq` | The kloq library (the `cosscom/calendar` repository's `packages/kloq/src`, tests left out): the `<Kloq>` calendar, its themes, settings dialog, design mode and stylesheet. Vendored (excluded from Biome, `noUncheckedIndexedAccess` off); also what `/kloq/r/kloq.json` serves as source. Used only by `apps/site`. |
+| `packages/kloq` | `kloq` | The kloq library (the `cosscom/calendar` repository's `packages/kloq/src`, tests left out): the `<Kloq>` calendar, its themes, settings dialog, design mode and stylesheet. Vendored (excluded from Biome, `noUncheckedIndexedAccess` off); also what `/kloq/r/kloq.json` serves as source. Used by `apps/site`, and by `packages/expo-kloq` through `kloq/lib/*` (the model modules only). |
+| `packages/expo-kloq` | `expo-kloq` | kloq for Expo / React Native: `<KloqCalendar>` (day, 3-day, week with a multi-zone gutter, month, year, schedule, timeline; the event sheet with recurrence and its scope dialog, quick add, calendar and zone settings) on kloq's own model, drawn with native controls — SwiftUI via `@expo/ui` (Liquid Glass via `expo-glass-effect`) on iOS, Jetpack Compose on Android. MIT. See `packages/expo-kloq/AGENTS.md`. |
 | `tooling/typescript` | `@coss/tsconfig` | Shared tsconfig bases. |
 | `tooling/sdkgen` | `@coss/sdkgen` | Builds the generated SDKs: `SDK_METHODS` (every operation's SDK method, named as in the TypeScript SDK) and `NO_RETRY` (`src/methods.ts`), the derive step that turns `apps/api/openapi.json` into the spec Fern generates from (`src/derive.ts`), the post-processing of each generator's output (`src/languages.ts`), the API reference's code samples (`snippets.json`, from each SDK's `reference.md`); `scripts/generate.ts` (`bun run sdks:generate`, needs Docker). See `sdks/AGENTS.md`. |
 | `sdks/{python,go,ruby,php,java,dotnet}` | `cosscom` (PyPI, `import coss`), `github.com/cosscom/coss-go`, `coss` (gem), `coss/coss` (Composer), `com.coss:coss` (Maven), `Coss` (NuGet) | **Public** SDKs generated from the OpenAPI document by Fern's open-source generators (`sdks/fern/generators.yml`), each with a few hand-written files kept by its `.fernignore` (webhook verification, tests, metadata). Not workspaces. Regenerated on main by the "Regenerate SDKs" PR; released by `release-sdks.yml`. See `sdks/AGENTS.md`. |
@@ -96,7 +97,7 @@ billing enqueues `billing.*` events through it — and email imports only `./met
 `smtp → tenancy, email, ratelimit, logs, billing, observability, db`;
 `web → auth, tenancy, email, sms, sign, forms, support, hooks, reputation, screening, webhooks, ratelimit, versioning, retention, logs, billing, risk, push, migrate, companion, db, ui`; `mobile → companion` (types only; a dev dependency), `retention`, `observability`, `dashboard-routes` (bundled by Metro: keep them dependency-free); `portal → hooks, webhooks, ratelimit, logs, observability, db, ui`; `sign-app → sign, ratelimit, observability, db, ui`; `site → ui, auth, versioning, retention, billing, risk, reputation, ratelimit, sms, sdkgen` (only the client-safe `@coss/auth/{slugs,constants,api-key-permissions}`, the changelog, the retention policy, `@coss/billing/{catalog,money,engine}`, `@coss/risk/schemas`, `@coss/reputation/schemas` (the default policy), `@coss/ratelimit/buckets` (the bucket catalog, no imports), `@coss/sms/segments` (the segment calculator) and `@coss/sdkgen`'s `snippets.json` + `./methods`) +
 `@coss/api/openapi.json` (data only, never api code); `sdkgen → @coss/api/openapi.json` (data only); `infra → auth, email, sms, sign, hooks, ratelimit, screening, billing` (`slugs`, `env` only);
-`worker → auth (`./emails` only), email, sms, sign, verify, forms, support, hooks, reputation, screening, webhooks, ratelimit, logs, risk, push, migrate, tenancy, retention, billing, db` (from tenancy only `./retention`, `./deletion` and `./logos`, which import nothing but `db` and `signals`); `sdk`, `ui`, `kloq` and `companion` depend on no workspace (`site → kloq`); `mcp` and `cli` depend only on the published `coss` (a
+`worker → auth (`./emails` only), email, sms, sign, verify, forms, support, hooks, reputation, screening, webhooks, ratelimit, logs, risk, push, migrate, tenancy, retention, billing, db` (from tenancy only `./retention`, `./deletion` and `./logos`, which import nothing but `db` and `signals`); `sdk`, `ui`, `kloq` and `companion` depend on no workspace (`site → kloq`, `expo-kloq → kloq`, `expo-kloq-example → expo-kloq`); `mcp` and `cli` depend only on the published `coss` (a
 semver range, not `workspace:`).
 Dev-only: `email`/`sms`/`verify`/`forms`/`webhooks`/`hooks`/`reputation`/`screening`/`ratelimit`/`logs`/`billing`/`risk`/`push`/`notifications`/`migrate`/`worker → tenancy` (test fixtures — so tenancy and auth must never import email, webhooks, screening, ratelimit, logs, billing or notifications (the layout they share is the dependency-free `@coss/email-layout`) (plan limits reach Better Auth through `setMembershipLimitResolver` from `@coss/auth/limits`); Better Auth's own audit events reach the log through `setOrgAuditRecorder` from `@coss/auth/audit`) and
 `api`/`worker`/`site → coss` and `api → coss-cli` (SDK, MCP and CLI contract tests and the docs' Twoslash snippets — turbo builds the SDK before their
@@ -414,7 +415,7 @@ parent(id, organization_id)` and the `createdAt()`/`updatedAt()` helpers (histor
 Auth hard-deletes keys); `bun run db:generate`, review and commit the SQL + `migrations/meta/`, `bun run db:migrate`.
 Never edit an applied migration; do renames as a separate step (drizzle-kit prompts interactively).
 
-**Add a product** (e.g. `video`; `packages/scheduling` is the most recent one built this way):
+**Add a product** (`packages/scheduling` is the most recent one built this way):
 1. Tables + ID prefix (above).
 2. `packages/<product>`: `src/schemas.ts` (zod `strictObject`, snake_case, `.meta({ id })`, no DB imports, exported as
    `./schemas`), provider interface + fake provider, a service taking the authenticated environment, an error class with
@@ -442,8 +443,7 @@ Never edit an applied migration; do renames as a separate step (drizzle-kit prom
    (only for rows actually inserted, so deduplicated events aren't logged twice), and add a `LogSource` value
    (enum migration + `LOG_SOURCES` + SDK `LogSource`). Mutations of the product's settings record
    `recordAudit` (dashboard) / `recordApiAudit` (API) audit events.
-10. Billing: its meter is in `METERS` and priced in `RATE_CARDS` (`@coss/billing/catalog`; video and scheduling
-   already are). Call `recordUsage(tx, …)` from `@coss/billing/metering` once per billable event, in the transaction
+10. Billing: its meter goes in `METERS` and is priced in `RATE_CARDS` (`@coss/billing/catalog`). Call `recordUsage(tx, …)` from `@coss/billing/metering` once per billable event, in the transaction
    that makes it billable (guard it with a compare-and-set, like `email.usage_recorded_at`), and reserve capped usage
    at acceptance through an injected `UsageGate` (as `EmailServiceOptions.billing` does). Plan-gated creation takes an
    injected `PlanGate`.
@@ -533,8 +533,8 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
   `recordOpen`/`recordClick` (from the email's tracking token), `trackingBaseUrlFor` (dispatch; reads domain names
   across orgs like `authorizeLiveSender`), `receiveEmail`/`routeRecipients` (receiving; from the envelope recipients), `recordSmsEvent`/`ingestSmsEvents` (from the `sms_id` of the callback URL), `receiveSms` (from the receiving number), `handleStatusCallback`/`handleInboundCallback` (from the callback's subaccount), `authorizeLiveSmsSender`, `ingestDmarcReports` (from the report address's token), `reencryptWebhookSecrets`, `reencryptSchedulingData` (operator scripts), `authenticateHookPortalSession` (from the session), `ingestSupportEmails` (one environment, across senders) and the rest of `@coss/support`'s worker functions, `submitForm`/`getHostedForm` (from the form id of `/f/:id`), `confirmFormSubmission`/`findConfirmation` (from the verification token), and the worker scans `runDueWebhookDeliveries`, `runDueLogDrainDeliveries`, `runDueHookDeliveries`, `parkHeldHookDeliveries`, `runDueHookRecoveries`, the Hooks purges, `recheckDueDomains`,
   `recheckDueTrackingDomains`, `recheckDueReceivingDomains`, `reconcileDedicatedIpPools`, `sweepStaleClaims`, `sweepUnclaimedEmails`, `runDueReputationEvaluations`, `runDueSubaccountEvaluations`, `runDueOrganizationDeletions`, `runDueOrganizationLogos`, `runDueSubaccountDeletions`, `runDueDmarcNotifications`, `runDueMigrations`, `EmailService.dispatchDue`,
-  `unclaimedEmailBacklog`, `unclaimedSmsBacklog` (the `dispatch-backlog` loop: counts only), `SmsService.dispatchDue`, `sweepStaleSmsClaims`, `sweepUnclaimedSms`, `advanceDueSmsRegistrations`, `chargeDueSmsFees`, `chargeDueInboxFees`, `recordDueVerifySmsUsage` (bills each organization for its codes from coss.com's shared numbers, reading coss.com's messages),
-  `authenticateSchedulingSession` (from the token), `handleCalendarPush`, `completeCalendarAuthorization` (from the push's channel and the consent's state), `runDueCalendarDelegations`, `handleZoomDeauthorization` (from Zoom's signed event), `zoomOauthAppForEvents` (read only to check that signature), `warnOfExpiringOauthAppSecrets`, `refreshIdleZoomConnections`, `runDueCalendarSyncs`, `runDueCalendarWrites`, `renewDueCalendarChannels`, `checkHostEditedEvents`, `runDueSchedulingNotifications`, `expireDueBookings`,
+  `unclaimedEmailBacklog`, `unclaimedSmsBacklog` (the `dispatch-backlog` loop: counts only), `SmsService.dispatchDue`, `sweepStaleSmsClaims`, `sweepUnclaimedSms`, `advanceDueSmsRegistrations`, `chargeDueSmsFees`, `chargeDueInboxFees`, `chargeDueHostFees`, `recordDueVerifySmsUsage` (bills each organization for its codes from coss.com's shared numbers, reading coss.com's messages),
+  `authenticateSchedulingSession` (from the token), `handleCalendarPush`, `completeCalendarAuthorization` (from the push's channel and the consent's state), `runDueCalendarDelegations`, `handleZoomDeauthorization` (from Zoom's signed event), `zoomOauthAppForEvents` (read only to check that signature), `warnOfExpiringOauthAppSecrets`, `refreshIdleZoomConnections`, `runDueCalendarSyncs`, `runDueCalendarWrites`, `renewDueCalendarChannels`, `checkHostEditedEvents`, `runDueSchedulingNotifications`, `runDueReminderSyncs`, `expireDueBookings`,
   `runDueFormDeliveries`, `runDueFormStoreCleanup`
   (and the dispatch jobs, from the job's `organizationId`); `@coss/sms/admin` is platform-level like `@coss/email/admin`. Server actions take only slugs +
   target ids and derive the org from `requireOrgPermission`; every Better Auth organization call passes `organizationId`
@@ -703,14 +703,16 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
     published; `/f/*` is served only on `FORMS_PUBLIC_URL`'s host in production, never coss.com's.
   - **Scheduling** (`packages/scheduling/AGENTS.md`): only `claims.ts` writes claims, in the fixed lock order;
     slots are computed only in Bun, through `isBookable`; calendars contribute busy intervals and nothing else, and an
-    unreadable one never reads as free; answers never leave `getBooking`; coss.com never auto-cancels a booking.
+    unreadable one never reads as free; answers never leave `getBooking`; coss.com never auto-cancels a booking;
+    plan gates and billing holds apply to live environments only, and refuse new setup and new bookings, never what
+    already exists.
   - **Support** (`packages/support/AGENTS.md`): `From` proves nothing, so a match never grants access by
     itself: customers see only a confirmed organization's tickets, an unverified message stays rep-only, we
     always reply to `From` and never copy inbound Cc from unauthenticated mail; notes never leave
     `@coss/support/admin`; threads never match on a subject.
   - **HIPAA mode** (`packages/compliance/AGENTS.md`): a new vendor or a new path that sends customer content
     outside AWS needs a gate and an entry in `HIPAA_VENDORS`; a new sender that can fall back to coss.com's
-    environment passes `hipaaOrigin` for organizations in the mode; it is never a billing entitlement.
+    environment passes `hipaaOrigin` for organizations in the mode; it is contract-only (a sales contract to turn it on) but never a billing entitlement (billing never turns it off).
   - **Organization deletion** (`packages/tenancy/AGENTS.md`): a table with many rows per organization belongs in
     `deleteOrganizationData`, anything held outside Postgres in `releaseProviderResources`.
 
@@ -796,7 +798,7 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
 
 **Not built yet** (don't assume these exist; delete a line when it ships): OAuth for the hosted MCP server (it takes an API key in a header) and `COSS_MCP_TOOLSETS` there,
 these parts of Support: on-call paging (so 24x7 can't be sold yet), a holiday calendar, automatic SLA credits, a support role narrower than platform admin, satisfaction ratings, AI drafts, presence, iOS screens, a public API, MCP and CLI tools,
-these parts of Scheduling: public booking pages, built-in payments, routing forms, a workflow builder, waitlists, travel schedules, imports from Cal.com Platform,
+these parts of Scheduling: public booking pages, built-in payments, routing forms, a workflow builder, waitlists, travel schedules, imports from Cal.com Platform, reminders at a local time of day, reminder copy per locale, quiet hours, a built-in rating page, fixed SMS numbers as reminder recipients, sending a test reminder, undoing a no-show, a per-attendee opt-out of reminder emails, reminders in the iOS app,
 these parts of Scheduling's own OAuth apps: callback domains served by coss.com (a customer's own page forwards instead), more than one app per provider per environment, and managing them in the iOS app, MCP and CLI,
 these parts of calendar delegation: automatic Microsoft secret rotation, coss.com-owned or keyless (`signJwt`) service accounts, certificate credentials, account-level Zoom, excluding one host while `match_host_email` is on, and delegation in the iOS app, MCP and CLI,
 customers granting staff temporary access in HIPAA mode,
@@ -823,8 +825,7 @@ editing an API key's permissions (create a new key), API keys restricted to send
 uploading an organization logo (logos are only found automatically), uploading a profile picture, email change,
 email/SMS two-factor codes (through Verify), sign-in providers other than Google and GitHub, "trust this device" for 2FA, renaming passkeys, webhooks and notification emails for dedicated IP status changes, standard (manually
 warmed) dedicated IPs or more than one pool per organization, an automatic direct-debit policy (only per-account
-required payment methods), multi-currency, metering for video (its meter
-and rate exist; the product doesn't), SMS alphanumeric sender IDs, short codes, MMS, batch SMS, SMS templates,
+required payment methods), multi-currency, SMS alphanumeric sender IDs, short codes, MMS, batch SMS, SMS templates,
 sole-proprietor 10DLC brands, `sms.registration.*` webhooks and push notifications, Twilio usage reconciliation, and
 these Hooks features: channels, payload transformations, custom endpoint headers, sending one message to several
 applications, strict ordering, portal custom domains, per-destination rate-limit overrides, Hooks attempts in

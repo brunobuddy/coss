@@ -398,6 +398,12 @@ describe("coss-mcp against the API", () => {
       false,
     );
 
+    const reminders = await call("save_scheduling_reminders", {
+      reminders: [{ key: "soon", anchor: "start", before_minutes: 60, send: ["email_attendee"] }],
+    });
+    expect(reminders.data.reminders[0].key).toBe("soon");
+    expect((await call("get_scheduling_reminders", {})).data.reminders[0].skip_no_show).toBe(false);
+
     const host = await call("save_scheduling_host", {
       uid: "ada",
       name: "Ada",

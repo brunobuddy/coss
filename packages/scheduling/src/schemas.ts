@@ -6,6 +6,15 @@
 import { LATEST_API_VERSION } from "@coss/versioning";
 import { z } from "zod";
 import { LOGO_MAX_BYTES } from "./branding.ts";
+import {
+  REMINDER_NAME_VARIABLES,
+  REMINDER_URL_VARIABLES,
+  REMINDER_VARIABLES,
+  reminderCopyProblem,
+  reminderKeyOf,
+} from "./reminder-copy.ts";
+
+export { reminderKeyOf };
 
 export const SCHEDULING_BOOKING_EVENT_TYPES = [
   "scheduling.booking.created",
@@ -18,6 +27,9 @@ export const SCHEDULING_BOOKING_EVENT_TYPES = [
   "scheduling.booking.external_conflict",
   "scheduling.booking.calendar_write_failed",
   "scheduling.booking.location_ready",
+  "scheduling.booking.started",
+  "scheduling.booking.ended",
+  "scheduling.booking.reminder",
 ] as const;
 export const SCHEDULING_CALENDAR_EVENT_TYPES = [
   "scheduling.calendar.connected",
@@ -89,6 +101,7 @@ const HostUid = z
 
 export const HostStatus = z.enum(["active", "disabled"]);
 
+const E164 = z.string().regex(/^\+[1-9]\d{6,14}$/, "Use E.164.");
 /** A link attendees are given to open, so never a `javascript:` or other non-web address. */
 const HttpsUrl = z.url({ protocol: /^https$/, error: "Use an https:// link." }).max(2000);
 
@@ -137,6 +150,9 @@ export const CreateHostRequest = z
     email: z.email().max(320).optional().meta({
       description: "Where this host's notifications go. Not an identity, and need not be unique.",
     }),
+    phone: E164.optional().meta({
+      description: "Where this host's SMS reminders go, in E.164.",
+    }),
     calendar_account: z.email().max(320).nullable().optional().meta({
       description:
         "The mailbox a calendar delegation connects for this host, when it isn't `email` or the delegation doesn't match on email. In Microsoft 365, their user principal name.",
@@ -175,6 +191,9 @@ export const UpdateHostRequest = z
       .nullable()
       .optional()
       .meta({ description: "Where this host's notifications go. `null` removes it." }),
+    phone: E164.nullable().optional().meta({
+      description: "Where this host's SMS reminders go, in E.164. `null` removes it.",
+    }),
     calendar_account: z.email().max(320).nullable().optional().meta({
       description:
         "Moves the host's delegated calendar to this mailbox. Refused while they have upcoming bookings or holds.",
@@ -206,6 +225,7 @@ const HOST_EXAMPLE = {
   uid: "doctor_482",
   name: "Dr. Ana Reyes",
   email: "ana@example.com",
+  phone: null,
   calendar_account: null,
   time_zone: "America/New_York",
   locale: null,
@@ -229,6 +249,9 @@ export const HostObject = z
     email: z.string().nullable().meta({
       description:
         "Where this host's notifications go. `null` when none is set. Not an identity, and need not be unique.",
+    }),
+    phone: z.string().nullable().meta({
+      description: "Where this host's SMS reminders go, in E.164. `null` when none is set.",
     }),
     calendar_account: z.string().nullable().meta({
       description:
@@ -535,6 +558,295 @@ const EventTypeHostInput = z
   })
   .meta({ id: "SchedulingEventTypeHostInput" });
 
+export const REMINDER_ANCHORS = [
+  "start",
+  "end",
+  "confirmed",
+  "rescheduled",
+  "cancelled",
+  "declined",
+  "pending_approval",
+  "no_show",
+] as const;
+export const REMINDER_SENDS = [
+  "email_attendee",
+  "email_host",
+  "sms_attendee",
+  "sms_host",
+  "webhook",
+] as const;
+export const MAX_REMINDERS = 10;
+/** Without `email_from` these go out from coss.com's own address, at coss.com's cost. */
+export const MAX_REMINDER_EMAILS_FROM_COSS = 2;
+const MAX_BEFORE_MINUTES = 525600;
+// Inside the 90 days after which an attendee's details are erased.
+const MAX_AFTER_MINUTES = 60 * 24 * 60;
+const REMINDER_LOCATION_TYPES = [
+  "link",
+  "phone",
+  "in_person",
+  "google_meet",
+  "microsoft_teams",
+  "zoom",
+] as const;
+
+const SMS_VARIABLES = Object.keys(REMINDER_VARIABLES).filter(
+  (name) => !(REMINDER_NAME_VARIABLES as readonly string[]).includes(name),
+);
+const REMINDER_KEY = /^[a-z0-9_-]{1,64}$/;
+
+const ReminderButton = z
+  .strictObject({
+    label: z.string().min(1).max(40),
+    url: z
+      .string()
+      .min(1)
+      .max(500)
+      .meta({
+        description:
+          "https, on one of your verified domains (live environments). May use `{{booking_id}}` in its path or query.",
+        examples: ["https://example.com/feedback?booking={{booking_id}}"],
+      }),
+  })
+  .meta({ id: "SchedulingReminderButton" });
+
+const ReminderOnlyIf = z
+  .strictObject({
+    metadata: z.record(z.string().max(64), z.string().max(500)).nullable().optional().meta({
+      description: "The booking's metadata must have all of these.",
+    }),
+    location_types: z
+      .array(z.enum(REMINDER_LOCATION_TYPES))
+      .min(1)
+      .max(6)
+      .nullable()
+      .optional()
+      .meta({
+        description: "The booking's location must be one of these.",
+      }),
+  })
+  .meta({ id: "SchedulingReminderCondition" });
+
+/** Rules that hold whatever else is in the list. Who may send what is checked by `reminders.ts`. */
+const ReminderInput = z
+  .strictObject({
+    key: z.string().regex(REMINDER_KEY, "Use up to 64 of a-z, 0-9, _ and -.").optional().meta({
+      description:
+        "Names this reminder in webhooks and on the booking. Default: from its timing, like `start-1440`.",
+    }),
+    anchor: z.enum(REMINDER_ANCHORS).meta({ description: "The moment this is timed from." }),
+    before_minutes: z.number().int().min(0).max(MAX_BEFORE_MINUTES).nullable().optional().meta({
+      description: "How long before the anchor. Only for `start` and `end`.",
+    }),
+    after_minutes: z.number().int().min(0).max(MAX_AFTER_MINUTES).nullable().optional().meta({
+      description: "How long after the anchor, up to 60 days. Default for other anchors: 0.",
+    }),
+    send: z.array(z.enum(REMINDER_SENDS)).max(REMINDER_SENDS.length).optional().meta({
+      description: "Who hears about it. `webhook` fires `scheduling.booking.reminder`.",
+    }),
+    email_to: z.array(z.email().max(320)).max(5).optional().meta({
+      description:
+        "Fixed addresses to email as well: verified members of your organization, or addresses on your verified domains (live environments).",
+    }),
+    subject: z.string().min(1).max(200).nullable().optional().meta({
+      description: "Your own subject, with `{{variables}}`. Needs `email_from`.",
+    }),
+    message: z.string().min(1).max(2000).nullable().optional().meta({
+      description:
+        "Your own words in place of the standard first line, with `{{variables}}` and no links. The booking's details stay below it. Needs `email_from`.",
+    }),
+    sms_message: z.string().min(1).max(320).nullable().optional().meta({
+      description:
+        "Your own text, with `{{variables}}` other than names, and no links. `Reply STOP to opt out.` is always added.",
+    }),
+    button: ReminderButton.nullable().optional().meta({
+      description: "One button in the email. Needs `email_from`.",
+    }),
+    include_invite: z.boolean().optional().meta({
+      description: "Attach the calendar invitation to the emails.",
+    }),
+    send_if_late: z.boolean().optional().meta({
+      description:
+        "If it was booked after this reminder's moment, send it right away instead of skipping it, as long as the meeting is still ahead. Only for `before_minutes` on `start`.",
+    }),
+    skip_no_show: z.boolean().optional().meta({
+      description: "Don't send it once the booking is marked a no-show. Default: true on `end`.",
+    }),
+    only_if: ReminderOnlyIf.nullable().optional().meta({
+      description: "Only for bookings matching all of this, checked when it's due.",
+    }),
+  })
+  .superRefine((rule, ctx) => {
+    const issue = (path: string, message: string) =>
+      ctx.addIssue({ code: "custom", path: [path], message });
+    const timed = rule.anchor === "start" || rule.anchor === "end";
+    const before = rule.before_minutes != null;
+    const after = rule.after_minutes != null;
+    if (before && after) {
+      issue("before_minutes", "Set `before_minutes` or `after_minutes`, not both.");
+    }
+    if (timed && !before && !after) {
+      issue("before_minutes", `\`${rule.anchor}\` needs \`before_minutes\` or \`after_minutes\`.`);
+    }
+    if (!timed && before) {
+      issue("before_minutes", `\`${rule.anchor}\` has already happened: use \`after_minutes\`.`);
+    }
+    const send = rule.send ?? [];
+    if (new Set(send).size !== send.length) issue("send", "List each one once.");
+    const emails =
+      send.some((item) => item.startsWith("email_")) || (rule.email_to?.length ?? 0) > 0;
+    if (send.length === 0 && !rule.email_to?.length) {
+      issue("send", "Choose who this goes to, with `send` or `email_to`.");
+    }
+    if (!emails) {
+      for (const field of ["subject", "message", "button", "include_invite"] as const) {
+        if (rule[field]) issue(field, `\`${field}\` needs an email in \`send\` or \`email_to\`.`);
+      }
+    }
+    if (rule.sms_message && !send.some((item) => item.startsWith("sms_"))) {
+      issue("sms_message", "`sms_message` needs an SMS in `send`.");
+    }
+    if (rule.send_if_late && !(rule.anchor === "start" && before)) {
+      issue("send_if_late", "Only a reminder before `start` can be late.");
+    }
+    const inviteAnchors = ["confirmed", "rescheduled", "cancelled", "declined"];
+    if (
+      rule.include_invite &&
+      !inviteAnchors.includes(rule.anchor) &&
+      !(rule.anchor === "start" && before)
+    ) {
+      issue("include_invite", "An invitation goes with a reminder before `start`, or with news.");
+    }
+    for (const field of ["subject", "message"] as const) {
+      const problem = rule[field] ? reminderCopyProblem(rule[field] as string) : null;
+      if (problem) issue(field, problem);
+    }
+    const smsProblem = rule.sms_message
+      ? reminderCopyProblem(rule.sms_message, SMS_VARIABLES)
+      : null;
+    if (smsProblem) issue("sms_message", smsProblem);
+    if (rule.button) {
+      const problem = reminderCopyProblem(rule.button.label);
+      if (problem) issue("button", problem);
+      const urlProblem = reminderCopyProblem(rule.button.url, REMINDER_URL_VARIABLES);
+      if (urlProblem) issue("button", urlProblem);
+      else if (!reminderUrlHost(rule.button.url))
+        issue(
+          "button",
+          "The button's URL must be https, with `{{booking_id}}` only after its host.",
+        );
+    }
+  })
+  .meta({ id: "SchedulingReminderInput" });
+export type ReminderInputOutput = z.output<typeof ReminderInput>;
+
+/**
+ * The host a button's URL points at, or `null` if it isn't a plain https URL. The host has to be the
+ * same whichever booking it's for, or what was verified isn't what gets emailed.
+ */
+export function reminderUrlHost(url: string): string | null {
+  try {
+    const [first, second] = ["x", "y"].map(
+      (value) => new URL(url.replace(/\{\{\s*booking_id\s*\}\}/g, value)),
+    ) as [URL, URL];
+    if (first.protocol !== "https:" || first.username || first.password) return null;
+    if (first.host !== second.host) return null;
+    return first.hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+export const Reminders = z
+  .array(ReminderInput)
+  .max(MAX_REMINDERS)
+  .superRefine((rules, ctx) => {
+    const seen = new Set<string>();
+    for (const [index, rule] of rules.entries()) {
+      const key = reminderKeyOf(rule);
+      if (seen.has(key)) {
+        ctx.addIssue({
+          code: "custom",
+          path: [index, "key"],
+          message: `Two reminders are called "${key}". Give one a \`key\` of its own.`,
+        });
+      }
+      seen.add(key);
+    }
+  });
+
+const ReminderObject = z
+  .object({
+    key: z.string().meta({ description: "What webhooks and the booking call this reminder." }),
+    anchor: z.enum(REMINDER_ANCHORS).meta({ description: "The moment this is timed from." }),
+    before_minutes: z.number().nullable().meta({
+      description: "How long before the anchor. `null` when it's after.",
+    }),
+    after_minutes: z.number().nullable().meta({
+      description: "How long after the anchor. `null` when it's before.",
+    }),
+    send: z.array(z.enum(REMINDER_SENDS)).meta({
+      description: "Who hears about it. `webhook` fires `scheduling.booking.reminder`.",
+    }),
+    email_to: z
+      .array(z.string())
+      .meta({ description: "Fixed addresses that are emailed as well." }),
+    subject: z.string().nullable().meta({
+      description: "Your own subject. `null`: the standard one.",
+    }),
+    message: z.string().nullable().meta({
+      description: "Your own words in the email. `null`: the standard ones.",
+    }),
+    sms_message: z.string().nullable().meta({
+      description: "Your own text. `null`: the standard one.",
+    }),
+    button: z
+      .object({
+        label: z.string().meta({ description: "What the button says." }),
+        url: z.string().meta({ description: "Where it goes." }),
+      })
+      .nullable()
+      .meta({ description: "One button in the email. `null`: none." }),
+    include_invite: z.boolean().meta({ description: "Whether the emails carry the invitation." }),
+    send_if_late: z.boolean().meta({
+      description:
+        "Whether it goes right away if booked after its moment, instead of being skipped.",
+    }),
+    skip_no_show: z.boolean().meta({
+      description: "Whether it's dropped once the booking is marked a no-show.",
+    }),
+    only_if: z
+      .object({
+        metadata: z.record(z.string(), z.string()).nullable().meta({
+          description: "The booking's metadata must have all of these. `null`: any.",
+        }),
+        location_types: z.array(z.string()).nullable().meta({
+          description: "The booking's location must be one of these. `null`: any.",
+        }),
+      })
+      .nullable()
+      .meta({ description: "Only for bookings matching all of this. `null`: every booking." }),
+  })
+  .meta({ id: "SchedulingReminder" });
+export type ReminderObjectOutput = z.output<typeof ReminderObject>;
+
+const NotificationPolicy = z.record(
+  z.string().max(64),
+  z.strictObject({
+    email_attendee: z.boolean().optional(),
+    email_host: z.boolean().optional(),
+    sms_attendee: z.boolean().optional(),
+  }),
+);
+const NotificationPolicyOutput = z.record(
+  z.string(),
+  z.object({
+    email_attendee: z.boolean().optional(),
+    email_host: z.boolean().optional(),
+    sms_attendee: z.boolean().optional(),
+  }),
+);
+
 const eventTypeFields = {
   description: z.string().max(2000).nullable().optional().meta({
     description:
@@ -633,6 +945,13 @@ const eventTypeFields = {
   host_filter: Attributes.nullable().optional().meta({
     description: "Pool members also include active hosts matching all of these attributes.",
   }),
+  notifications: NotificationPolicy.nullable().optional().meta({
+    description: "Per event, overriding your settings for this event type.",
+  }),
+  reminders: Reminders.nullable().optional().meta({
+    description:
+      "Replaces your settings' `reminders` for this event type. `null` inherits them; an empty list means none.",
+  }),
   metadata: Metadata.optional().meta({ description: "Your own key-value pairs." }),
 };
 
@@ -719,6 +1038,8 @@ const EVENT_TYPE_EXAMPLE = {
   questions: [],
   locations: [],
   host_filter: null,
+  notifications: null,
+  reminders: null,
   hosts: [
     {
       host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
@@ -817,6 +1138,13 @@ export const EventTypeObject = z
         description:
           "Pool members also include active hosts matching all of these attributes. `null`: only `hosts`.",
       }),
+    notifications: NotificationPolicyOutput.nullable().meta({
+      description: "Per event, overriding your settings for this event type. `null`: only those.",
+    }),
+    reminders: z.array(ReminderObject).nullable().meta({
+      description:
+        "What goes out around a booking, in place of your settings' list. `null` inherits it; an empty list means none.",
+    }),
     hosts: z
       .array(
         z.object({
@@ -1278,6 +1606,11 @@ export const SettingsObject = z
       )
       .nullable()
       .meta({ description: "Per event, overriding the defaults." }),
+    email_reply_to: z.string().nullable(),
+    reminders: z.array(ReminderObject).nullable().meta({
+      description:
+        "What goes out around a booking, unless an event type has its own. `null`: a reminder a day before, on the channels `notifications.reminder` chooses.",
+    }),
   })
   .meta({
     id: "SchedulingSettings",
@@ -1293,6 +1626,8 @@ export const SettingsObject = z
         sms_from: null,
         calendar_failure_mode: "hide",
         notifications: { reminder: { sms_attendee: true } },
+        email_reply_to: null,
+        reminders: null,
       },
     ],
   });
@@ -1373,9 +1708,68 @@ export const UpdateSettingsRequest = z
         description:
           "Per event (`confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined`, `reminder`), overriding the defaults. `null` restores them.",
       }),
+    email_reply_to: z.email().max(320).nullable().optional().meta({
+      description: "Where replies go, for emails from `email_from`.",
+    }),
+    reminders: Reminders.nullable().optional().meta({
+      description:
+        "What goes out around a booking, unless an event type has its own. `null` goes back to a reminder a day before.",
+    }),
   })
   .meta({ id: "UpdateSchedulingSettingsRequest", examples: [{ brand_name: "Acme Health" }] });
 export type UpdateSettingsRequestOutput = z.output<typeof UpdateSettingsRequest>;
+
+export const BookingNotificationObject = z
+  .object({
+    object: z.literal("scheduling.booking_notification"),
+    id: z.string(),
+    kind: z.string().meta({
+      description:
+        "`reminder` for an entry of `reminders`; otherwise a standard notification, or `started`/`ended`.",
+    }),
+    reminder_key: z.string().nullable(),
+    channel: z.enum(["email", "sms", "webhook"]),
+    recipient: z.enum(["attendee", "host", "endpoint", "address"]),
+    due_at: z.string(),
+    finished_at: z.string().nullable(),
+    outcome: z.string().nullable().meta({
+      description:
+        "`null` while it's waiting. `sent`, or why not: `too_late`, `filtered`, `no_show`, `no_address`, `no_sender`, `stale`, `superseded`, `failed`.",
+    }),
+  })
+  .meta({
+    id: "SchedulingBookingNotification",
+    examples: [
+      {
+        object: "scheduling.booking_notification",
+        id: "sntf_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        kind: "reminder",
+        reminder_key: "start-1440",
+        channel: "email",
+        recipient: "attendee",
+        due_at: "2027-01-03T15:00:00.000Z",
+        finished_at: null,
+        outcome: null,
+      },
+    ],
+  });
+export type BookingNotificationObjectOutput = z.output<typeof BookingNotificationObject>;
+
+export const BookingNotificationList = listOf(
+  BookingNotificationObject,
+  "SchedulingBookingNotificationList",
+  {
+    object: "scheduling.booking_notification" as const,
+    id: "sntf_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    kind: "reminder",
+    reminder_key: "start-1440",
+    channel: "email" as const,
+    recipient: "attendee" as const,
+    due_at: "2027-01-03T15:00:00.000Z",
+    finished_at: null,
+    outcome: null,
+  },
+);
 
 export const ErasedAttendee = z
   .object({
@@ -1633,6 +2027,20 @@ export const SchedulingBookingWebhookData = z
       .string()
       .optional()
       .meta({ description: "`scheduling.booking.rescheduled`: when it used to start." }),
+    reminder: z
+      .object({
+        key: z.string().meta({ description: "Which reminder this is." }),
+        anchor: z.enum(REMINDER_ANCHORS).meta({ description: "The moment it's timed from." }),
+        before_minutes: z.number().nullable().meta({
+          description: "How long before the anchor. `null` when it's after.",
+        }),
+        after_minutes: z.number().nullable().meta({
+          description: "How long after the anchor. `null` when it's before.",
+        }),
+        scheduled_for: z.string().meta({ description: "When it was due." }),
+      })
+      .optional()
+      .meta({ description: "`scheduling.booking.reminder`: which reminder this is." }),
     occurred_at: z.string().meta({ description: "When this happened." }),
   })
   .meta({

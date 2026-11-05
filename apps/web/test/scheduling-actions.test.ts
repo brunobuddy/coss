@@ -28,6 +28,10 @@ mock.module("@coss/tenancy", () => ({
 }));
 const recordAudit = mock(async (_session: unknown, _input: unknown) => {});
 mock.module("@/lib/audit", () => ({ recordAudit }));
+mock.module("@/lib/billing", () => ({
+  planGate: () => ({}),
+  systemOrganizationId: async () => null,
+}));
 mock.module("@/lib/scheduling", () => ({
   schedulingDeps: () => ({
     dataKeys: [],
@@ -67,6 +71,8 @@ const CURRENT: EventTypeObjectOutput = {
   questions: [],
   locations: [],
   host_filter: null,
+  notifications: null,
+  reminders: null,
   hosts: [],
   metadata: {},
   created_at: "2027-01-01T10:00:00.000Z",

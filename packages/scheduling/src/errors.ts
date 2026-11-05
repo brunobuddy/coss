@@ -7,6 +7,7 @@ export type SchedulingErrorCode =
   | "invalid_answers"
   | "invalid_time"
   | "invalid_logo"
+  | "invalid_reminder"
   | "uid_taken"
   | "slot_unavailable"
   | "attendee_limit_reached"
@@ -25,6 +26,8 @@ export type SchedulingErrorCode =
   | "oauth_app_in_use"
   | "scheduling_unavailable"
   | "account_suspended"
+  | "billing_hold"
+  | "budget_exceeded"
   | "idempotency_in_progress"
   | "idempotency_key_reused";
 
@@ -34,6 +37,7 @@ const STATUS_BY_CODE = {
   invalid_time_zone: 422,
   invalid_schedule: 422,
   invalid_event_type: 422,
+  invalid_reminder: 422,
   invalid_attendee: 422,
   invalid_answers: 422,
   invalid_time: 422,
@@ -56,6 +60,8 @@ const STATUS_BY_CODE = {
   oauth_app_in_use: 422,
   scheduling_unavailable: 503,
   account_suspended: 403,
+  billing_hold: 402,
+  budget_exceeded: 402,
   idempotency_in_progress: 409,
   idempotency_key_reused: 422,
 } as const satisfies Record<SchedulingErrorCode, number>;

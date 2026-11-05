@@ -18,6 +18,7 @@ import {
   deleteOauthApp,
   getEventType,
   getHost,
+  markNoShow,
   SchedulingError,
   updateCalendarDelegation,
   updateEventType,
@@ -30,6 +31,7 @@ import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import {
   CreateOauthAppRequest,
   EVENT_TYPE_KINDS,
+  Reminders,
   UpdateEventTypeRequest,
   UpdateHostLocationsRequest,
   UpdateHostRequest,
@@ -42,6 +44,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { ActionError, formString, runAction } from "@/lib/actions";
 import { recordAudit } from "@/lib/audit";
 import { planGate } from "@/lib/billing";
+import { usageGate } from "@/lib/broadcasts";
 import { schedulingCalendarDeps, schedulingDeps, schedulingUrl } from "@/lib/scheduling";
 import { eventTypeChanges, issueLabel, parseJsonObject } from "@/lib/scheduling-edit";
 import { type OrgContext, requireOrgPermission } from "@/lib/session";
@@ -141,6 +144,7 @@ function secretExpiry(formData: FormData): string | undefined {
   return date.toISOString();
 }
 
+const delegationDeps = () => ({ ...schedulingCalendarDeps(), plans: planGate() });
 /** Environment-scoped like the API's, so the event reaches this environment's log drains. */
 function auditOauthApp(
   context: OrgContext,
@@ -254,7 +258,7 @@ export async function createDelegationAction(_prev: ActionResult | null, formDat
               match_host_email: matchHostEmail,
               service_account_key: formString(formData, "serviceAccountKey"),
             },
-        schedulingCalendarDeps(),
+        delegationDeps(),
       ),
     );
     await audit(context, "scheduling_calendar_delegation.created", {
@@ -275,7 +279,7 @@ export async function verifyDelegationAction(_prev: ActionResult | null, formDat
         env,
         formString(formData, "delegationId"),
         { account: formString(formData, "account") },
-        schedulingCalendarDeps(),
+        delegationDeps(),
       ),
     );
     await audit(context, "scheduling_calendar_delegation.verified", {
@@ -307,7 +311,7 @@ export async function updateDelegationAction(_prev: ActionResult | null, formDat
             ? { secret_expires_at: secretExpiresAt ?? null }
             : {}),
         },
-        schedulingCalendarDeps(),
+        delegationDeps(),
       ),
     );
     await audit(context, "scheduling_calendar_delegation.updated", {
@@ -342,6 +346,11 @@ export async function createHostAction(
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "create");
     const email = formString(formData, "email");
+    const phone = formString(formData, "phone");
+    if (phone && !/^\+[1-9]\d{6,14}$/.test(phone)) {
+      throw new ActionError("Enter the phone number with its country code, like +15551234567.");
+    }
+    const billing = await usageGate();
     const host = await friendly(() =>
       createHost(
         env,
@@ -349,8 +358,13 @@ export async function createHostAction(
           name: formString(formData, "name"),
           time_zone: formString(formData, "timeZone"),
           ...(email ? { email } : {}),
+          ...(phone ? { phone } : {}),
         },
-        { screen: configuredDeps().screenSetup },
+        {
+          screen: configuredDeps().screenSetup,
+          plans: configuredDeps().plans,
+          billing,
+        },
       ),
     );
     await friendly(() =>
@@ -418,7 +432,10 @@ export async function updateHostLocationsAction(_prev: ActionResult | null, form
 export async function deleteHostAction(_prev: ActionResult | null, formData: FormData) {
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "delete");
-    const { id } = await friendly(() => deleteHost(env, formString(formData, "hostId")));
+    const billing = await usageGate();
+    const { id } = await friendly(() =>
+      deleteHost(env, formString(formData, "hostId"), { billing }),
+    );
     await audit(context, "scheduling_host.deleted", { type: "scheduling_host", id });
     // From its own page, there's nothing left to come back to.
     if (formString(formData, "leavePage") === "on") {
@@ -437,6 +454,7 @@ export async function updateHostAction(_prev: ActionResult | null, formData: For
     const current = await friendly(() => getHost(env, id));
     const name = formString(formData, "name");
     const email = formString(formData, "email") || null;
+    const phone = formString(formData, "phone") || null;
     const uid = formString(formData, "uid") || null;
     const timeZone = formString(formData, "timeZone");
     // Only what changed: a name goes through screening. The schema is the API's, so a blank name or
@@ -445,6 +463,7 @@ export async function updateHostAction(_prev: ActionResult | null, formData: For
       UpdateHostRequest.safeParse({
         ...(name !== current.name.trim() ? { name } : {}),
         ...(email !== (current.email?.trim() || null) ? { email } : {}),
+        ...(phone !== (current.phone?.trim() || null) ? { phone } : {}),
         ...(uid !== (current.uid?.trim() || null) ? { uid } : {}),
         ...(timeZone !== current.time_zone ? { time_zone: timeZone } : {}),
         attributes: readJson(formString(formData, "attributes"), "Attributes") ?? {},
@@ -573,7 +592,7 @@ export async function createEventTypeAction(
                 ? { locations: [{ type: "phone" as const, number: null }] }
                 : {}),
         },
-        { screen: configuredDeps().screenSetup },
+        { screen: configuredDeps().screenSetup, plans: configuredDeps().plans },
       ),
     );
     await audit(context, "scheduling_event_type.created", {
@@ -611,7 +630,10 @@ export async function updateEventTypeAction(_prev: ActionResult | null, formData
     const changes = eventTypeChanges(current, update);
     if (Object.keys(changes).length === 0) return null;
     const eventType = await friendly(() =>
-      updateEventType(env, id, changes, { screen: configuredDeps().screenSetup }),
+      updateEventType(env, id, changes, {
+        screen: configuredDeps().screenSetup,
+        plans: configuredDeps().plans,
+      }),
     );
     await audit(context, "scheduling_event_type.updated", {
       type: "scheduling_event_type",
@@ -685,6 +707,55 @@ export async function declineBookingAction(_prev: ActionResult | null, formData:
   });
 }
 
+export async function markNoShowAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const booking = await friendly(() =>
+      markNoShow(env, formString(formData, "bookingId"), configuredDeps(), actorOf(context)),
+    );
+    await audit(context, "scheduling_booking.no_show", {
+      type: "scheduling_booking",
+      id: booking.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+/** A whole list at a time, for the environment or one event type; `null` goes back to inheriting. */
+export async function saveRemindersAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const eventTypeId = formString(formData, "eventTypeId");
+    const raw: unknown = JSON.parse(formString(formData, "reminders"));
+    const parsed = raw === null ? null : Reminders.safeParse(raw);
+    if (parsed && !parsed.success) {
+      throw new ActionError(parsed.error.issues[0]?.message ?? "This reminder isn't valid.");
+    }
+    const reminders = parsed ? parsed.data : null;
+    const deps = configuredDeps();
+    const checks = { screen: deps.screenSetup, verifiedAddress: deps.verifiedAddress };
+    if (eventTypeId) {
+      const eventType = await friendly(() =>
+        updateEventType(env, eventTypeId, { reminders }, checks),
+      );
+      await audit(context, "scheduling_event_type.updated", {
+        type: "scheduling_event_type",
+        id: eventType.id,
+        label: eventType.title,
+      });
+    } else {
+      await friendly(() => updateSettings(env, { reminders }, checks));
+      await audit(context, "scheduling_settings.updated", {
+        type: "scheduling_settings",
+        id: env.environmentId,
+      });
+    }
+    refresh();
+    return null;
+  });
+}
+
 export async function saveSettingsAction(_prev: ActionResult | null, formData: FormData) {
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "update");
@@ -694,6 +765,7 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
     const brandName = formString(formData, "brandName");
     const privacyUrl = formString(formData, "privacyUrl").trim();
     const emailFrom = formString(formData, "emailFrom");
+    const emailReplyTo = formString(formData, "emailReplyTo");
     const smsFrom = formString(formData, "smsFrom");
     const accentColor = formString(formData, "accentColor");
     const useAccent = formString(formData, "useAccentColor") === "on";
@@ -719,11 +791,15 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
               ? { logo: null }
               : {}),
           email_from: emailFrom || null,
+          email_reply_to: emailReplyTo || null,
           sms_from: smsFrom || null,
           calendar_failure_mode:
             formString(formData, "calendarFailureMode") === "last_known" ? "last_known" : "hide",
         },
-        { screen: configuredDeps().screenSetup },
+        {
+          screen: configuredDeps().screenSetup,
+          verifiedAddress: configuredDeps().verifiedAddress,
+        },
       ),
     );
     await audit(context, "scheduling_settings.updated", {

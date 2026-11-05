@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
+import { createPlanGate } from "@coss/billing";
+import { createTestContract } from "@coss/billing/testing";
 import { memoryLogWriter } from "@coss/logs/testing";
 import { runDueCalendarDelegations } from "@coss/scheduling";
 import {
@@ -13,7 +15,7 @@ import { createTestApp, errorOf, type TestApp, waitForLogLines } from "./helpers
 
 const DOMAIN = "acme.example";
 
-function setUp(logWriter = memoryLogWriter()) {
+function setUp(logWriter = memoryLogWriter(), plans?: ReturnType<typeof createPlanGate>) {
   const api = new FakeGoogleCalendarApi();
   const account = testServiceAccount();
   api.serviceAccountPublicKey = account.publicKey;
@@ -25,6 +27,7 @@ function setUp(logWriter = memoryLogWriter()) {
   };
   const { app } = createTestApp({
     logWriter,
+    ...(plans ? { plans } : {}),
     scheduling: testSchedulingDeps({ calendars }),
   });
   return { app, api, account, calendars, logWriter };
@@ -105,6 +108,28 @@ describe("calendar delegations", () => {
 
     const removed = await call(app, key, "DELETE", `/calendar_delegations/${delegation.id}`);
     expect(removed.status).toBe(200);
+  });
+
+  test("it takes the Scale plan or above, in every environment", async () => {
+    const tenant = await createTestTenant();
+    const { app, account } = setUp(memoryLogWriter(), createPlanGate());
+    const create = (key: string) =>
+      call(app, key, "POST", "/calendar_delegations", {
+        provider: "google",
+        domain: DOMAIN,
+        service_account_key: account.key,
+      });
+    for (const key of [tenant.liveKey, tenant.sandboxKey]) {
+      const refused = await create(key);
+      expect(refused.status).toBe(402);
+      expect((await errorOf(refused)).code).toBe("plan_feature_unavailable");
+    }
+    await createTestContract(
+      tenant.organization.id,
+      { version: 1, plan: "scale" },
+      { effectiveFrom: new Date("2026-01-01T00:00:00Z") },
+    );
+    expect((await create(tenant.liveKey)).status).toBe(201);
   });
 
   test("a read-only key can't add one", async () => {

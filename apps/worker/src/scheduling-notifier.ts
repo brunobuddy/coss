@@ -11,7 +11,7 @@ import { SendEmailRequest } from "@coss/email/schemas";
 import { oneLine } from "@coss/email-layout";
 import { emailSendQuota, type RateLimiter } from "@coss/ratelimit";
 import type { SchedulingEmail, SchedulingNotifier, SchedulingSms } from "@coss/scheduling";
-import type { SmsService } from "@coss/sms";
+import { SmsError, type SmsService } from "@coss/sms";
 import { SendSmsRequest } from "@coss/sms/schemas";
 import { and, eq, inArray } from "drizzle-orm";
 
@@ -52,7 +52,7 @@ export function schedulingNotifier(opts: {
     email: SchedulingEmail,
     environment: SendEnvironment,
     from: string,
-    html: string,
+    content: { subject: string; text: string; html: string; replyTo: string | null },
     logo: SchedulingEmail["logo"] = null,
     hipaaOrigin = false,
   ): Promise<void> {
@@ -81,9 +81,10 @@ export function schedulingNotifier(opts: {
     const params = SendEmailRequest.parse({
       from,
       to: email.to,
-      subject: email.subject,
-      text: email.text,
-      html,
+      subject: content.subject,
+      text: content.text,
+      html: content.html,
+      ...(content.replyTo ? { reply_to: content.replyTo } : {}),
       category: "scheduling",
       // Manage links are secrets: never through click redirects, and in live environments never
       // kept after sending.
@@ -116,6 +117,19 @@ export function schedulingNotifier(opts: {
 
   return {
     async email(email) {
+      const own = {
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+        replyTo: email.replyTo,
+      };
+      // What a customer wrote, and where replies go, never leave under coss.com's address.
+      const coss = {
+        subject: email.cossSubject,
+        text: email.cossText,
+        html: email.cossHtml,
+        replyTo: null,
+      };
       const routes = [email.environment, ...(opts.fallback ? [opts.fallback.environment] : [])];
       if (await alreadySent(routes, email.idempotencyKey)) return;
       if (email.environment.mode === "sandbox") {
@@ -125,7 +139,7 @@ export function schedulingNotifier(opts: {
           email,
           email.environment,
           named(name, address),
-          email.html,
+          email.from ? own : coss,
           email.from ? email.logo : null,
         );
         return;
@@ -136,7 +150,7 @@ export function schedulingNotifier(opts: {
             email,
             email.environment,
             named(email.senderName, email.from),
-            email.html,
+            own,
             email.logo,
           );
           return;
@@ -144,8 +158,9 @@ export function schedulingNotifier(opts: {
           if (!(error instanceof EmailError && error.code === "domain_not_verified")) throw error;
         }
       }
-      // A guest's address is only what someone typed: never on coss.com's sender or reputation.
-      if (email.ownSenderOnly) return;
+      // A guest's address is only what someone typed, and past its allowance a reminder is coss.com's
+      // to pay for: never on coss.com's sender or reputation.
+      if (email.ownSenderOnly) return "not_sent";
       if (!opts.fallback) {
         throw new Error(
           "Scheduling can't send without the environment's own sender: coss.com's sender " +
@@ -156,7 +171,7 @@ export function schedulingNotifier(opts: {
         email,
         opts.fallback.environment,
         named(`${email.senderName} via coss.com`, opts.fallback.address),
-        email.cossHtml,
+        coss,
         null,
         // The row is coss.com's, so the mode's own checks can't see whose patient this names.
         await isHipaaMode(email.environment.organizationId),
@@ -165,17 +180,24 @@ export function schedulingNotifier(opts: {
     ...(opts.sms
       ? {
           async sms(message: SchedulingSms) {
-            await (opts.sms as Pick<SmsService, "send">).send({
-              environment: message.environment,
-              apiKeyId: null,
-              params: SendSmsRequest.parse({
-                from: message.from,
-                to: message.to,
-                body: message.body,
-              }),
-              idempotencyKey: message.idempotencyKey,
-              discardBody: message.environment.mode === "live",
-            });
+            try {
+              await (opts.sms as Pick<SmsService, "send">).send({
+                environment: message.environment,
+                apiKeyId: null,
+                params: SendSmsRequest.parse({
+                  from: message.from,
+                  to: message.to,
+                  body: message.body,
+                }),
+                idempotencyKey: message.idempotencyKey,
+                discardBody: message.environment.mode === "live",
+              });
+            } catch (error) {
+              // Accepted on an earlier attempt: `{{time_until}}` or an edit changed the text since,
+              // and it mustn't stop the rest of this reminder's recipients being reached.
+              if (!(error instanceof SmsError && error.code === "idempotency_key_reused"))
+                throw error;
+            }
           },
         }
       : {}),

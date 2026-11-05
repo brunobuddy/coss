@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "kloq",
+    "slug": "expo-kloq-example",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "expokloq",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["ios", "android"],
+    "ios": {
+      "bundleIdentifier": "com.coss.kloq.example",
+      "supportsTablet": true,
+      "config": { "usesNonExemptEncryption": false }
+    },
+    "android": {
+      "package": "com.coss.kloq.example"
+    },
+    "plugins": ["./plugins/with-scene-delegate.js"]
+  }
+}

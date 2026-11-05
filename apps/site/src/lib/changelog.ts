@@ -15,10 +15,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
-    date: "2026-11-04",
+    date: "2026-11-05",
     title: "Your own OAuth apps for Scheduling",
     body: "Connect hosts' calendars through your own Google, Microsoft or Zoom app, so the consent screen shows your brand instead of ours.",
     href: "/docs/scheduling/oauth-apps",
+  },
+  {
+    date: "2026-11-04",
+    title: "Scheduling reminders",
+    body: "One list says what goes out around a booking: before or after it, or after any change to it, to attendees, hosts or your team, by email, SMS or webhook, in your own words if you like. Webhooks now fire when a booking starts and ends, and each booking shows why anything wasn't sent.",
+    href: "/docs/scheduling/reminders",
   },
   {
     date: "2026-11-03",

@@ -42,6 +42,7 @@ const ENVIRONMENT_PAGES: Record<string, string> = {
   scheduling: "/scheduling",
   "scheduling-hosts": "/scheduling/hosts",
   "scheduling-event-types": "/scheduling/event-types",
+  "scheduling-reminders": "/scheduling/reminders",
   "scheduling-calendar-delegation": "/scheduling/calendar-delegation",
   "scheduling-oauth-apps": "/scheduling/oauth-apps",
   "scheduling-settings": "/scheduling/settings",
