@@ -168,13 +168,17 @@ export async function markOauthAppFailing(
   });
 }
 
-/** The provider accepted it again. Calendars recover on their own next read. */
+/**
+ * The provider accepted it again, and calendars recover on their own next read. Only if the row still
+ * holds the secret that was accepted: it says nothing about one saved since.
+ */
 export async function restoreOauthApp(
-  app: Pick<OauthAppRow, "id" | "organizationId">,
+  app: Pick<OauthAppRow, "id" | "organizationId" | "encryptedCredentials">,
   now: Date,
+  tx?: Parameters<typeof appendLogEntries>[0],
 ): Promise<void> {
-  await db.transaction(async (tx) => {
-    const [changed] = await tx
+  const restore = async (executor: Parameters<typeof appendLogEntries>[0]) => {
+    const [changed] = await executor
       .update(schedulingOauthApp)
       .set({ status: "active", lastErrorCode: null, lastErrorAt: null })
       .where(
@@ -182,9 +186,12 @@ export async function restoreOauthApp(
           eq(schedulingOauthApp.id, app.id),
           eq(schedulingOauthApp.organizationId, app.organizationId),
           eq(schedulingOauthApp.status, "failing"),
+          eq(schedulingOauthApp.encryptedCredentials, app.encryptedCredentials),
         ),
       )
       .returning();
-    if (changed) await announce(tx, changed, "scheduling.oauth_app.restored", null, now);
-  });
+    if (changed) await announce(executor, changed, "scheduling.oauth_app.restored", null, now);
+  };
+  if (tx) await restore(tx);
+  else await db.transaction(restore);
 }

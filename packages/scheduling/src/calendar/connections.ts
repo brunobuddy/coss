@@ -610,7 +610,9 @@ async function oauthAppAccepted(own: OauthAppRow, deps: Pick<CalendarDeps, "now"
         ),
       );
   }
-  if (own.status === "failing") await restoreOauthApp(own, now);
+  // Whatever it said when this began: another request may have been refused since, and this secret
+  // has just worked. The compare-and-set makes it a no-op on a healthy app.
+  await restoreOauthApp(own, now);
 }
 
 /** A re-encrypted row still holds the token used; any other value is newer, and stays. */

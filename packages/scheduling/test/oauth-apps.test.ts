@@ -4,6 +4,7 @@ import { db, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { decryptSecret, reencryptWebhookSecrets, secretsKeyRing } from "@coss/webhooks";
 import { and, eq } from "drizzle-orm";
+import { markOauthAppFailing } from "../src/calendar/oauth-app-state.ts";
 import {
   APP_REFUSED,
   type CalendarDeps,
@@ -411,7 +412,6 @@ describe("when the provider refuses the app", () => {
       .where(eq(schema.schedulingOauthApp.id, app.id));
     const later = depsOf(api.fetch, () => LATER);
     await updateOauthApp(env, app.id, { client_secret: "new-secret" }, later);
-    const { markOauthAppFailing } = await import("../src/calendar/oauth-app-state.ts");
     await markOauthAppFailing(row as NonNullable<typeof row>, APP_REFUSED, LATER);
     expect((await getOauthApp(env, app.id, later)).status).toBe("active");
     expect(connection.status).toBe("active");
@@ -505,6 +505,23 @@ describe("when the provider refuses the app", () => {
     const [written] = await eventsOf();
     expect(written?.providerEventId).not.toBeNull();
     expect(written?.lastErrorCode).toBeNull();
+  });
+
+  test("a refresh that works ends an outage that began while it was on its way", async () => {
+    const { env, api, app, connection } = await connected();
+    const later = depsOf(api.fetch, () => LATER);
+    const [row] = await db
+      .select()
+      .from(schema.schedulingOauthApp)
+      .where(eq(schema.schedulingOauthApp.id, app.id));
+    const held = api.hold("POST", /\/token$/);
+    const refreshing = clientFor(connection, later);
+    await held.arrived;
+    // Read as active by the refresh above, then refused for someone else before it gets its answer.
+    await markOauthAppFailing(row as NonNullable<typeof row>, APP_REFUSED, LATER);
+    held.release();
+    await refreshing;
+    expect((await getOauthApp(env, app.id, later)).status).toBe("active");
   });
 
   test("refusing one host's token doesn't touch the app", async () => {
@@ -684,6 +701,71 @@ describe("managing an app", () => {
     expect(sent).toHaveLength(1);
     const rotated = await updateOauthApp(env, app.id, { client_secret: "new" }, deps);
     expect(rotated.secret_expires_at).toBeNull();
+  });
+
+  test("every app about to expire hears, however many there are", async () => {
+    const { env } = await setUp();
+    const other = await setUp();
+    const deps = depsOf(new FakeGoogleCalendarApi().fetch);
+    const soon = new Date(NOW.getTime() + 3 * 86_400_000).toISOString();
+    await createOauthApp(env, { ...googleApp, secret_expires_at: soon }, deps);
+    await createOauthApp(other.env, { ...googleApp, secret_expires_at: soon }, deps);
+    const scope = { organizationIds: [env.organizationId, other.env.organizationId] };
+    // A batch of one: the second app is only reached by going past the first.
+    expect(await warnOfExpiringOauthAppSecrets(deps, { scope, limit: 1 })).toBe(2);
+    for (const { organizationId } of [env, other.env]) {
+      const sent = await db
+        .select()
+        .from(schema.notification)
+        .where(
+          and(
+            eq(schema.notification.organizationId, organizationId),
+            eq(schema.notification.kind, "scheduling.oauth_app_secret_expiring"),
+          ),
+        );
+      expect(sent).toHaveLength(1);
+    }
+  });
+
+  test("a new secret doesn't lose a Secret Token saved while it was being tried", async () => {
+    const { env } = await setUp();
+    const api = new FakeZoomApi();
+    let arrive = () => {};
+    let release = () => {};
+    const arrived = new Promise<void>((resolve) => {
+      arrive = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let holding = false;
+    const deps = depsOf(async (url, init) => {
+      if (holding && String(url).includes("/oauth/token")) {
+        holding = false;
+        arrive();
+        await gate;
+      }
+      return api.fetch(url, init);
+    });
+    const app = await createOauthApp(
+      env,
+      { provider: "zoom", client_id: "c", client_secret: "old", webhook_secret: "old-token" },
+      deps,
+    );
+    holding = true;
+    const rotating = updateOauthApp(env, app.id, { client_secret: "new" }, deps);
+    await arrived;
+    await updateOauthApp(env, app.id, { webhook_secret: "new-token" }, deps);
+    release();
+    await rotating;
+    const [row] = await db
+      .select()
+      .from(schema.schedulingOauthApp)
+      .where(eq(schema.schedulingOauthApp.id, app.id));
+    expect(JSON.parse(decryptSecret(row?.encryptedCredentials as string, keys))).toEqual({
+      clientSecret: "new",
+      webhookSecret: "new-token",
+    });
   });
 
   test("re-encryption moves an app's credentials to the new key", async () => {

@@ -375,7 +375,6 @@ export async function updateOauthApp(
   const redirectUri = checkedUrl(params.redirect_uri, "redirect_uri", env.mode);
   const completionUrl = checkedUrl(params.completion_url, "completion_url", env.mode);
   const tenantId = params.tenant_id !== undefined ? params.tenant_id : row.tenantId;
-  const current = oauthAppCredentials(row, deps.secretsKeys);
   const rotating = params.client_secret !== undefined;
   if (params.client_secret !== undefined) {
     const app = { clientId: row.clientId, clientSecret: params.client_secret, tenantId };
@@ -384,44 +383,48 @@ export async function updateOauthApp(
     }
   }
   const credentialsChanged = rotating || params.webhook_secret !== undefined;
-  const [updated] = await db
-    .update(schedulingOauthApp)
-    .set({
-      ...(params.tenant_id !== undefined ? { tenantId } : {}),
-      ...(redirectUri !== undefined ? { redirectUri } : {}),
-      ...(completionUrl !== undefined ? { completionUrl } : {}),
-      // A new secret's expiry is what's asked for now: the old one's says nothing about it.
-      ...(params.secret_expires_at !== undefined || rotating
-        ? { secretExpiresAt: params.secret_expires_at ? new Date(params.secret_expires_at) : null }
-        : {}),
-      ...(credentialsChanged
-        ? {
-            encryptedCredentials: encryptOauthAppCredentials(
-              {
-                clientSecret: params.client_secret ?? current.clientSecret,
-                webhookSecret:
-                  params.webhook_secret !== undefined
-                    ? params.webhook_secret
-                    : (current.webhookSecret ?? null),
-              },
-              deps.secretsKeys,
-            ),
-          }
-        : {}),
-    })
-    .where(
-      and(
-        eq(schedulingOauthApp.id, row.id),
-        eq(schedulingOauthApp.organizationId, row.organizationId),
-      ),
-    )
-    .returning();
-  if (!updated) throw new SchedulingError("not_found", `No OAuth app "${id}" here.`);
-  if (rotating && updated.status === "failing") {
-    await restoreOauthApp(updated, new Date(nowMs(deps)));
-    return getOauthApp(env, id, deps);
-  }
-  return objectOf(updated, deps);
+  const thisRow = and(
+    eq(schedulingOauthApp.id, row.id),
+    eq(schedulingOauthApp.organizationId, row.organizationId),
+  );
+  await db.transaction(async (tx) => {
+    // Read again under the lock: trying that secret took a while, and whatever was saved meanwhile
+    // has to survive, like a Secret Token this request isn't changing.
+    const [locked] = await tx.select().from(schedulingOauthApp).where(thisRow).for("update");
+    if (!locked) throw new SchedulingError("not_found", `No OAuth app "${id}" here.`);
+    const current = oauthAppCredentials(locked, deps.secretsKeys);
+    const [updated] = await tx
+      .update(schedulingOauthApp)
+      .set({
+        ...(params.tenant_id !== undefined ? { tenantId } : {}),
+        ...(redirectUri !== undefined ? { redirectUri } : {}),
+        ...(completionUrl !== undefined ? { completionUrl } : {}),
+        // A new secret's expiry is what's asked for now: the old one's says nothing about it.
+        ...(params.secret_expires_at !== undefined || rotating
+          ? {
+              secretExpiresAt: params.secret_expires_at ? new Date(params.secret_expires_at) : null,
+            }
+          : {}),
+        ...(credentialsChanged
+          ? {
+              encryptedCredentials: encryptOauthAppCredentials(
+                {
+                  clientSecret: params.client_secret ?? current.clientSecret,
+                  webhookSecret:
+                    params.webhook_secret !== undefined
+                      ? params.webhook_secret
+                      : (current.webhookSecret ?? null),
+                },
+                deps.secretsKeys,
+              ),
+            }
+          : {}),
+      })
+      .where(thisRow)
+      .returning();
+    if (rotating && updated) await restoreOauthApp(updated, new Date(nowMs(deps)), tx);
+  });
+  return getOauthApp(env, id, deps);
 }
 
 /**
@@ -484,37 +487,51 @@ export async function failingOauthApps(scope: Scope): Promise<string[]> {
   return rows.map((row) => row.provider);
 }
 
-/** Owners and admins hear before a client secret expires. Once per secret (the dedupe key). */
+/**
+ * Owners and admins hear before a client secret expires. Once per secret (the dedupe key), and it
+ * walks every app in the window: those already told stay in it for two weeks, so a batch that always
+ * started at the beginning would never reach the ones behind them. `limit` is the batch's size.
+ */
 export async function warnOfExpiringOauthAppSecrets(
   deps: Pick<CalendarDeps, "now">,
   opts: Scan = {},
 ): Promise<number> {
   const now = deps.now?.() ?? new Date();
-  const rows = await db
-    .select({
-      id: schedulingOauthApp.id,
-      organizationId: schedulingOauthApp.organizationId,
-      expires: schedulingOauthApp.secretExpiresAt,
-    })
-    .from(schedulingOauthApp)
-    .where(
-      and(
-        gt(schedulingOauthApp.secretExpiresAt, now),
-        lte(schedulingOauthApp.secretExpiresAt, new Date(now.getTime() + SECRET_WARNING_MS)),
-        opts.scope
-          ? inArray(schedulingOauthApp.organizationId, [...opts.scope.organizationIds])
-          : undefined,
-      ),
-    )
-    .limit(opts.limit ?? 200);
-  for (const row of rows) {
-    await enqueueNotification(db, {
-      organizationId: row.organizationId,
-      kind: "scheduling.oauth_app_secret_expiring",
-      dedupeKey: `${row.id}:${(row.expires as Date).toISOString()}`,
-      payload: { oauthAppId: row.id },
-      now,
-    });
+  const batchSize = opts.limit ?? 200;
+  let checked = 0;
+  let after: string | null = null;
+  for (;;) {
+    const rows: { id: string; organizationId: string; expires: Date | null }[] = await db
+      .select({
+        id: schedulingOauthApp.id,
+        organizationId: schedulingOauthApp.organizationId,
+        expires: schedulingOauthApp.secretExpiresAt,
+      })
+      .from(schedulingOauthApp)
+      .where(
+        and(
+          gt(schedulingOauthApp.secretExpiresAt, now),
+          lte(schedulingOauthApp.secretExpiresAt, new Date(now.getTime() + SECRET_WARNING_MS)),
+          opts.scope
+            ? inArray(schedulingOauthApp.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+          after ? gt(schedulingOauthApp.id, after) : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingOauthApp.id))
+      .limit(batchSize);
+    for (const row of rows) {
+      await enqueueNotification(db, {
+        organizationId: row.organizationId,
+        kind: "scheduling.oauth_app_secret_expiring",
+        dedupeKey: `${row.id}:${(row.expires as Date).toISOString()}`,
+        payload: { oauthAppId: row.id },
+        now,
+      });
+    }
+    checked += rows.length;
+    const last = rows.at(-1);
+    if (!last || rows.length < batchSize) return checked;
+    after = last.id;
   }
-  return rows.length;
 }
