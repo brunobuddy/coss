@@ -5,6 +5,7 @@
  */
 import { sql } from "drizzle-orm";
 import { fromDrizzle, PgBoss } from "pg-boss";
+import { logPgBossError } from "./boss-errors.ts";
 import type { Transaction } from "./client.ts";
 
 export type { Job, SendOptions } from "pg-boss";
@@ -40,7 +41,7 @@ export async function startJobBoss(opts: JobBossOptions = {}): Promise<PgBoss> {
         max: 1,
         application_name: "coss-producer-jobs",
       });
-  boss.on("error", (error) => console.error("[jobs] pg-boss error:", error));
+  boss.on("error", logPgBossError);
   return boss.start();
 }
 

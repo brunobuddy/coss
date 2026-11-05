@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
 import { PgBoss } from "pg-boss";
+import { logPgBossError } from "./boss-errors.ts";
 import { aheadPartitionsSql, HOOK_PARTITIONS } from "./partition-specs.ts";
 
 const useTestDatabase = process.argv.includes("--test");
@@ -23,7 +24,7 @@ try {
   }
   // pg-boss installs or upgrades its own schema (`pgboss`) on start; app processes only check it.
   const boss = new PgBoss({ connectionString: url, max: 1, supervise: false, schedule: false });
-  boss.on("error", (error) => console.error("[jobs] pg-boss error:", error));
+  boss.on("error", logPgBossError);
   await boss.start();
   await boss.stop({ graceful: false });
   console.info(`Migrated ${new URL(url).pathname.slice(1)}`);
