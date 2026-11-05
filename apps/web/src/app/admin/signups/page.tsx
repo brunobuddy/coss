@@ -20,6 +20,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminActionDialog } from "@/components/admin/admin-action-dialog";
 import { listHref, stringParam } from "@/components/admin/list-controls";
+import { SignupSources } from "@/components/admin/signup-sources";
 import { UserStatusBadge } from "@/components/admin/status-badges";
 import { CursorPager } from "@/components/cursor-pager";
 import { EmptyState } from "@/components/empty-state";
@@ -77,6 +78,7 @@ export default async function AdminSignUpsPage({ searchParams }: PageProps<"/adm
     return (
       <div className="flex flex-col gap-6">
         <PageHeader description="The newest accounts." title="Sign-ups" />
+        <SignupSources />
         <Alert variant="warning">
           <AlertTitle>Sign-ups aren't assessed</AlertTitle>
           <AlertDescription>
@@ -148,6 +150,7 @@ export default async function AdminSignUpsPage({ searchParams }: PageProps<"/adm
         description="Every sign-up as coss.com Risk assessed it, newest first. Blocked sign-ups were refused and have no account; the address, IP and user agent are kept for 90 days. Report abuse here (or take the account down with it) so Risk flags the same mailbox, device and network next time; mark false positives legitimate."
         title="Sign-ups"
       />
+      <SignupSources />
       <FilterLinks
         options={VIEWS.map((option) => ({
           value: option.value,

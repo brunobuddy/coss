@@ -20,7 +20,8 @@
     "./risk": "./src/risk.ts",
     "./mobile": "./src/mobile.ts",
     "./cli": "./src/cli.ts",
-    "./org-access": "./src/org-access.ts"
+    "./org-access": "./src/org-access.ts",
+    "./first-touch": "./src/first-touch.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

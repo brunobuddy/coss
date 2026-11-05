@@ -115,6 +115,13 @@ export {
 } from "./scim.ts";
 export { touchHipaaSession } from "./session-activity.ts";
 export {
+  recordSignupAttribution,
+  type SignupAttributionInput,
+  type SignupSourceCount,
+  type SignupSources,
+  signupSourcesForAdmin,
+} from "./signup-attribution.ts";
+export {
   getOrganizationSsoProvider,
   listOrganizationsRequiringSso,
   listOwnersWithoutPassword,

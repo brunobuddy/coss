@@ -67,6 +67,32 @@ test("a new customer goes from sign-up to an API key and a domain", async ({ pag
   await expect(page.getByText(domain).first()).toBeVisible();
 });
 
+test("a new account remembers where it first came from", async ({ page }) => {
+  const id = randomUUID().slice(0, 8);
+  const email = `e2e-${id}@gmail.com`;
+
+  await page.goto(`/sign-up?utm_source=e2e-${id}`);
+  await signUp(page, email);
+  await markEmailVerified(email);
+  await signIn(page, email);
+  await page.waitForURL("**/onboarding**");
+
+  // Reported once, then forgotten.
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("coss.first-touch"))).toBeNull();
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const { rows } = await client.query(
+      `select a.utm_source as source, a.landing_path as path from signup_attribution a
+       join "user" u on u.id = a.user_id where u.email = $1`,
+      [email],
+    );
+    expect(rows).toEqual([{ source: `e2e-${id}`, path: "/sign-up" }]);
+  } finally {
+    await client.end();
+  }
+});
+
 test("signed-out visitors are sent to sign in", async ({ page }) => {
   await page.goto("/dashboard");
   await page.waitForURL("**/sign-in**");
