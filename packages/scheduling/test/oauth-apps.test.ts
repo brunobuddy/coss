@@ -200,6 +200,38 @@ describe("which app a consent uses", () => {
     expect(api.tokenRequests.at(-1)?.redirectUri).toBe("https://acme.example/before");
   });
 
+  test("a Microsoft consent is exchanged at the tenant it started with", async () => {
+    const { env, host } = await setUp();
+    const urls: string[] = [];
+    const deps = depsOf(async (url) => {
+      urls.push(url);
+      return new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400 });
+    });
+    const app = await createOauthApp(
+      env,
+      { provider: "microsoft", client_id: "c", client_secret: "s", tenant_id: "before.example" },
+      deps,
+    );
+    const { url } = await startCalendarAuthorization(
+      env,
+      host.id,
+      { provider: "microsoft", returnUrl: null },
+      deps,
+    );
+    await updateOauthApp(env, app.id, { tenant_id: "after.example" }, deps);
+    urls.length = 0;
+    await completeCalendarAuthorization(
+      {
+        provider: "microsoft",
+        state: new URL(url).searchParams.get("state") as string,
+        code: "code",
+        error: null,
+      },
+      deps,
+    ).catch(() => {});
+    expect(new URL(urls[0] as string).pathname).toBe("/before.example/oauth2/v2.0/token");
+  });
+
   test("an environment with no coss.com app can still connect through its own", async () => {
     const { env, host } = await setUp();
     const api = new FakeGoogleCalendarApi();

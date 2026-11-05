@@ -25,6 +25,7 @@ CREATE TABLE "scheduling_oauth_app" (
 ALTER TABLE "scheduling_calendar_connection" ADD COLUMN "oauth_app_id" text;--> statement-breakpoint
 ALTER TABLE "scheduling_oauth_state" ADD COLUMN "oauth_app_id" text;--> statement-breakpoint
 ALTER TABLE "scheduling_oauth_state" ADD COLUMN "redirect_uri" text;--> statement-breakpoint
+ALTER TABLE "scheduling_oauth_state" ADD COLUMN "tenant_id" text;--> statement-breakpoint
 ALTER TABLE "scheduling_settings" ADD COLUMN "privacy_url" text;--> statement-breakpoint
 ALTER TABLE "scheduling_oauth_app" ADD CONSTRAINT "scheduling_oauth_app_environment_fk" FOREIGN KEY ("environment_id","organization_id") REFERENCES "public"."environment"("id","organization_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scheduling_calendar_connection" ADD CONSTRAINT "scheduling_calendar_connection_oauth_app_fk" FOREIGN KEY ("oauth_app_id","organization_id") REFERENCES "public"."scheduling_oauth_app"("id","organization_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

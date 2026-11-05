@@ -1525,6 +1525,7 @@ export const schedulingOauthState = pgTable(
     // Fixed when the consent starts: a code can only be exchanged with what it was issued for.
     oauthAppId: text("oauth_app_id"),
     redirectUri: text("redirect_uri"),
+    tenantId: text("tenant_id"),
     expiresAt: instant("expires_at").notNull(),
     createdAt: createdAt(),
   },

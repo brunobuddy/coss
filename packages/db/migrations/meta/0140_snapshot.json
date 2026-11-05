@@ -1,5 +1,5 @@
 {
-  "id": "fc331de0-13ad-4baf-8195-d542a5496d23",
+  "id": "e51100c8-f180-430b-9ea7-30cd2b2521fb",
   "prevId": "3f39bc05-a004-4202-b808-76f92b10d3e5",
   "version": "7",
   "dialect": "postgresql",
@@ -24685,6 +24685,12 @@
         },
         "redirect_uri": {
           "name": "redirect_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tenant_id": {
+          "name": "tenant_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false

@@ -175,6 +175,7 @@ export async function startCalendarAuthorization(
     returnUrl: input.returnUrl ?? own?.completionUrl ?? null,
     oauthAppId: own?.id ?? null,
     redirectUri,
+    tenantId: own?.tenantId ?? null,
     expiresAt: new Date(nowMs(deps) + OAUTH_STATE_TTL_MS),
   });
   return {
@@ -352,7 +353,8 @@ export async function completeCalendarAuthorization(
   try {
     tokens = await exchangeCode({
       provider: input.provider,
-      app,
+      // The authority that issued this code, whatever the app says now.
+      app: own ? { ...app, tenantId: state.tenantId } : app,
       code: input.code,
       codeVerifier: decryptSecret(state.encryptedCodeVerifier, deps.secretsKeys),
       redirectUri: state.redirectUri ?? oauthRedirectUri(deps, input.provider),

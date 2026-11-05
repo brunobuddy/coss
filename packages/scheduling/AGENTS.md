@@ -316,7 +316,7 @@ consent screens show the customer's brand.
   app can refresh or revoke them. Never look an app up by environment for an existing connection: adding an app would
   knock out everyone connected before it. A re-consent moves the pin, and `client_id` never changes on a row, so a
   different app means new consents.
-- **A consent is pinned when it starts** (`scheduling_oauth_state.oauth_app_id`, `redirect_uri`): a code is exchanged with
+- **A consent is pinned when it starts** (`scheduling_oauth_state.oauth_app_id`, `redirect_uri`, `tenant_id`): a code is exchanged with
   what it was issued for, whatever's been edited since.
 - **No fallback**: a failing app refuses new consents rather than using coss.com's, which would show the wrong brand and
   pin the connection to it. With no app of its own, an environment uses `deps.apps` as before.
