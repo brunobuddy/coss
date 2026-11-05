@@ -33,7 +33,7 @@ export interface KloqCalendarProps extends KloqControllerOptions {
   timeZones?: string[];
   /** zones the settings sheet offers */
   zoneChoices?: string[];
-  /** 12-hour clock; defaults to true */
+  /** 12-hour clock; defaults to what the device's locale uses */
   hour12?: boolean;
 }
 
@@ -49,7 +49,7 @@ export function KloqCalendar(props: KloqCalendarProps) {
   const [quickAdd, setQuickAdd] = useState(false);
   const [settings, setSettings] = useState(false);
   const [zones, setZones] = useState<string[]>(props.timeZones ?? []);
-  const [hour12, setHour12] = useState(props.hour12 ?? true);
+  const [hour12, setHour12] = useState(() => props.hour12 ?? localeUses12Hour());
   const kind = viewKind(k.view);
   const zoneChoices = props.zoneChoices ?? DEFAULT_ZONE_CHOICES;
 
@@ -211,6 +211,10 @@ export function KloqCalendar(props: KloqCalendarProps) {
       />
     </View>
   );
+}
+
+function localeUses12Hour(): boolean {
+  return new Intl.DateTimeFormat(undefined, { hour: "numeric" }).resolvedOptions().hour12 ?? true;
 }
 
 function nextHalfHour(anchor: Date): Date {
