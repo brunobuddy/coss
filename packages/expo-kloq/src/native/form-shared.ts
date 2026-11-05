@@ -1,6 +1,7 @@
 import {
   addReminder,
   DEFAULT_REMINDER,
+  describeReminder,
   REMINDER_PRESETS,
   type Reminder,
   type RRuleFreq,
@@ -45,7 +46,20 @@ export const withReplacedAlert = (
   list: Reminder[],
   index: number,
   minutesBefore: number,
-): Reminder[] => replaceReminder(list, index, { minutesBefore }) ?? list;
+): Reminder[] => replaceReminder(list, index, { ...list[index], minutesBefore }) ?? list;
 
 export const withoutAlert = (list: Reminder[], reminder: Reminder): Reminder[] =>
   removeReminder(list, reminder);
+
+export const alertLabel = (reminder: Reminder): string =>
+  describeReminder(reminder, { withMethod: true });
+
+/** What one alert's menu offers: the presets plus its own offset, all in its own method. */
+export function alertChoices(reminder: Reminder): { minutesBefore: number; label: string }[] {
+  const offsets = REMINDER_PRESETS.map((p) => p.minutesBefore);
+  if (!offsets.includes(reminder.minutesBefore)) offsets.push(reminder.minutesBefore);
+  return offsets.map((minutesBefore) => ({
+    minutesBefore,
+    label: alertLabel({ ...reminder, minutesBefore }),
+  }));
+}

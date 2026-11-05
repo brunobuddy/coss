@@ -12,18 +12,13 @@ import {
 import { type ReactNode, useState } from "react";
 import { Text as RNText, ScrollView, StyleSheet, View } from "react-native";
 import { customFrom, ruleFrom, withAllDay, withEndDate, withStart } from "../editor/draft.ts";
-import {
-  describeRRule,
-  presetIdFor,
-  presetsFor,
-  REMINDER_PRESETS,
-  type RRuleFreq,
-  WEEKDAY_CODES,
-} from "../model.ts";
+import { describeRRule, presetIdFor, presetsFor, type RRuleFreq, WEEKDAY_CODES } from "../model.ts";
 import { usePalette } from "../theme.ts";
 import { ComposeMenu } from "./compose-menu.android.tsx";
 import {
   ALERT_LIMIT,
+  alertChoices,
+  alertLabel,
   FREQ_LABELS,
   FREQ_UNITS,
   WEEKDAY_LETTERS,
@@ -260,18 +255,15 @@ export function EventForm({
           i === 0 ? "Alert" : `Alert ${i + 1}`,
           <>
             <ComposeMenu
-              label={
-                REMINDER_PRESETS.find((x) => x.minutesBefore === r.minutesBefore)?.label ??
-                `${r.minutesBefore} min before`
-              }
-              items={REMINDER_PRESETS.map((preset) => ({
-                key: String(preset.minutesBefore),
-                label: preset.label,
-                selected: preset.minutesBefore === r.minutesBefore,
+              label={alertLabel(r)}
+              items={alertChoices(r).map((choice) => ({
+                key: String(choice.minutesBefore),
+                label: choice.label,
+                selected: choice.minutesBefore === r.minutesBefore,
                 onSelect: () =>
                   onChange({
                     ...draft,
-                    reminders: withReplacedAlert(draft.reminders, i, preset.minutesBefore),
+                    reminders: withReplacedAlert(draft.reminders, i, choice.minutesBefore),
                   }),
               }))}
             />

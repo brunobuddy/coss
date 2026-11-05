@@ -38,13 +38,13 @@ import {
   describeRRule,
   presetIdFor,
   presetsFor,
-  REMINDER_PRESETS,
   type RRuleFreq,
   type RRuleWeekday,
   WEEKDAY_CODES,
 } from "../model.ts";
 import {
   ALERT_LIMIT,
+  alertChoices,
   FREQ_LABELS,
   FREQ_UNITS,
   WEEKDAY_LETTERS,
@@ -163,9 +163,9 @@ export function EventForm({ draft, onChange, calendars, readOnly, onDelete }: Ev
                 }
                 modifiers={[pickerStyle("menu")]}
               >
-                {withCurrent(r.minutesBefore).map((p) => (
-                  <Text key={p.minutesBefore} modifiers={[tag(p.minutesBefore)]}>
-                    {p.label}
+                {alertChoices(r).map((choice) => (
+                  <Text key={choice.minutesBefore} modifiers={[tag(choice.minutesBefore)]}>
+                    {choice.label}
                   </Text>
                 ))}
               </Picker>
@@ -290,12 +290,6 @@ function CustomRuleRows({
       ) : null}
     </>
   );
-}
-
-/** The presets, plus the event's own offset when it isn't one of them. */
-function withCurrent(minutes: number) {
-  if (REMINDER_PRESETS.some((p) => p.minutesBefore === minutes)) return REMINDER_PRESETS;
-  return [...REMINDER_PRESETS, { minutesBefore: minutes, label: `${minutes} minutes before` }];
 }
 
 const styles = StyleSheet.create({
