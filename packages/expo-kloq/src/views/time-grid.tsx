@@ -2,16 +2,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   type CalEvent,
+  continuesAfter,
+  continuesBefore,
   eventTitle,
   formatMinutes,
+  formatRange,
   hourLabel,
   layoutDay,
   localZone,
+  minutesOfDate,
   type PlacedOccurrence,
+  parseInstant,
   projectEvents,
   sameDay,
   type ViewDescriptor,
   wallClockIn,
+  wallMinutesBetween,
   zoneCityLabel,
 } from "../model.ts";
 import { type Palette, usePalette } from "../theme.ts";
@@ -141,6 +147,7 @@ export function TimeGrid({
             <DayColumn
               key={day.toISOString()}
               day={day}
+              dayName={descriptor.namesLong[col]}
               placements={byColumn[col]}
               palette={p}
               hour12={hour12}
@@ -196,8 +203,21 @@ function Gutter({
   );
 }
 
+/** kloq's reading of a block: title, time, day. A piece of a cross-midnight event reads its whole span. */
+function blockLabel(e: PlacedOccurrence, dayName: string, hour12: boolean): string {
+  const split = e.segment.n > 1;
+  const start = split ? minutesOfDate(new Date(parseInstant(e.start))) : e.startMin;
+  const end = split ? start + wallMinutesBetween(e.start, e.end) : e.endMin;
+  return (
+    `${eventTitle(e)}, ${formatRange(start, end, { hour12 })}, ${dayName}` +
+    (continuesBefore(e) ? ", continued from the previous day" : "") +
+    (continuesAfter(e) ? ", continues" : "")
+  );
+}
+
 function DayColumn({
   day,
+  dayName,
   placements,
   palette: p,
   hour12,
@@ -208,6 +228,7 @@ function DayColumn({
 }: {
   colWidth: number;
   day: Date;
+  dayName: string;
   placements: PlacedOccurrence[];
   palette: Palette;
   hour12: boolean;
@@ -261,7 +282,7 @@ function DayColumn({
             key={e.id}
             onPress={() => onOpen(openTarget(e))}
             accessibilityRole="button"
-            accessibilityLabel={eventTitle(e)}
+            accessibilityLabel={blockLabel(e, dayName, hour12)}
             style={[
               styles.block,
               {

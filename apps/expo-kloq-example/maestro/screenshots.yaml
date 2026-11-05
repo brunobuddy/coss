@@ -32,7 +32,7 @@ appId: com.coss.kloq.example
 - waitForAnimationToEnd
 - takeScreenshot: 07-timeline
 - tapOn: "Week"
-- tapOn: "Design review"
+- tapOn: "Design review, .*"
 - waitForAnimationToEnd
 - takeScreenshot: 08-event-sheet
 - tapOn: "13:00"
@@ -57,7 +57,7 @@ appId: com.coss.kloq.example
 - tapOn: "Cancel"
 - waitForAnimationToEnd
 - tapOn:
-    text: "Standup"
+    text: "Standup, .*"
     index: 2
 - waitForAnimationToEnd
 - tapOn: "Save"

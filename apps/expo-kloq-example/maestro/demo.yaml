@@ -52,7 +52,7 @@ appId: com.coss.kloq.example
 - runFlow: pause.yaml
 
 # ── the event sheet: native pickers, all-day, calendar, recurrence, alerts ─
-- tapOn: "Design review"
+- tapOn: "Design review, .*"
 - runFlow: pause.yaml
 - tapOn: "13:00"
 - runFlow: pause.yaml
@@ -102,7 +102,7 @@ appId: com.coss.kloq.example
 
 # ── a repeating event: the "this / this and following / all" dialog ──────
 - tapOn:
-    text: "Standup"
+    text: "Standup, .*"
     index: 2
 - runFlow: pause.yaml
 - tapOn: "Standup"
@@ -112,7 +112,7 @@ appId: com.coss.kloq.example
 - tapOn: "This event"
 - runFlow: pause.yaml
 - tapOn:
-    text: "Standup"
+    text: "Standup, .*"
     index: 3
 - runFlow: pause.yaml
 - scroll

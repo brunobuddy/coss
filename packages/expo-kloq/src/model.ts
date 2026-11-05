@@ -30,6 +30,8 @@ export {
   addDays,
   type CalEvent,
   type CalEventPatch,
+  continuesAfter,
+  continuesBefore,
   DEFAULT_EVENT_COLOR,
   type EventColor,
   formatInstant,
@@ -38,6 +40,7 @@ export {
   type Instant,
   isDateOnly,
   type KloqView,
+  minutesOfDate,
   parseInstant,
   type Reminder,
   resolveView,
@@ -45,6 +48,7 @@ export {
   toDateOnlyString,
   type ViewDescriptor,
   viewKind,
+  wallMinutesBetween,
 } from "kloq/lib/calendar-types";
 export { sameDay } from "kloq/lib/date-math";
 export { eventTitle } from "kloq/lib/event-text";
