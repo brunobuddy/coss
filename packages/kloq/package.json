@@ -13,6 +13,7 @@
     "./themes": "./src/lib/themes.ts",
     "./design-mode": "./src/design-mode/index.ts",
     "./settings": "./src/settings.ts",
+    "./lib/*": "./src/lib/*.ts",
     "./styles.css": "./src/styles/kloq.css",
     "./tokens.css": "./src/styles/tokens.css"
   },

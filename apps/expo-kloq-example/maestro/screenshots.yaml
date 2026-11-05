@@ -1,0 +1,90 @@
+# One screenshot per main view and sheet (Release build; see demo.yaml). Maestro writes them under
+# its test output folder (`--test-output-dir`).
+appId: com.coss.kloq.example
+---
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Quick add"
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: 01-week
+- tapOn: "Day"
+- waitForAnimationToEnd
+- takeScreenshot: 02-day
+- tapOn: "More"
+- tapOn: "View"
+- tapOn: "3 days"
+- waitForAnimationToEnd
+- takeScreenshot: 03-three-days
+- tapOn: "Month"
+- waitForAnimationToEnd
+- takeScreenshot: 04-month
+- tapOn: "Year"
+- waitForAnimationToEnd
+- takeScreenshot: 05-year
+- tapOn: "Schedule"
+- waitForAnimationToEnd
+- takeScreenshot: 06-schedule
+- tapOn: "More"
+- tapOn: "View"
+- tapOn: "Timeline"
+- waitForAnimationToEnd
+- takeScreenshot: 07-timeline
+- tapOn: "Week"
+- tapOn: "Design review, .*"
+- waitForAnimationToEnd
+- takeScreenshot: 08-event-sheet
+- tapOn: "13:00"
+- waitForAnimationToEnd
+- takeScreenshot: 09-time-picker
+- tapOn:
+    point: "50%,12%"
+- tapOn:
+    point: "57%,45%"
+- waitForAnimationToEnd
+- takeScreenshot: 10-date-picker
+- tapOn:
+    point: "50%,12%"
+- tapOn: "Does not repeat"
+- waitForAnimationToEnd
+- takeScreenshot: 11-repeat-menu
+- tapOn: "Custom…"
+- tapOn: "Weekly"
+- tapOn: "Wednesday"
+- waitForAnimationToEnd
+- takeScreenshot: 12-custom-recurrence
+- tapOn: "Cancel"
+- waitForAnimationToEnd
+- tapOn:
+    text: "Standup, .*"
+    index: 2
+- waitForAnimationToEnd
+- tapOn: "Save"
+- waitForAnimationToEnd
+- takeScreenshot: 13-scope-dialog
+- tapOn:
+    point: "50%,95%"
+- waitForAnimationToEnd
+- tapOn: "Cancel"
+- waitForAnimationToEnd
+- tapOn: "Quick add"
+- inputText: "Coffee with Dana tomorrow 3pm at Monmouth"
+- waitForAnimationToEnd
+- takeScreenshot: 14-quick-add
+- tapOn: "Cancel"
+- waitForAnimationToEnd
+- tapOn: "More"
+- waitForAnimationToEnd
+- takeScreenshot: 15-menu
+- tapOn: "Calendars & time zones"
+- waitForAnimationToEnd
+- tapOn:
+    point: "84%,77%"
+- tapOn:
+    point: "84%,64%"
+- waitForAnimationToEnd
+- takeScreenshot: 16-calendars-and-zones
+- tapOn: "Done"
+- waitForAnimationToEnd
+- takeScreenshot: 17-multi-zone-gutter
