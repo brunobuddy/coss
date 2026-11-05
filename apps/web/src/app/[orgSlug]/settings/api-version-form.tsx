@@ -11,6 +11,8 @@ import {
   AlertDialogTrigger,
 } from "@coss/ui/components/alert-dialog";
 import { Button } from "@coss/ui/components/button";
+import { CalendarIcon } from "lucide-react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { upgradeApiVersionAction } from "./actions";
@@ -39,6 +41,7 @@ export function UpgradeApiVersionButton(props: {
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <input name="apiVersion" type="hidden" value={props.latest} />
           <AlertDialogHeader>
+            <DialogIcon icon={CalendarIcon} />
             <AlertDialogTitle>Upgrade to API version {props.latest}?</AlertDialogTitle>
             <AlertDialogDescription>
               Requests without a <code>Coss-Version</code> header will get the new behavior right

@@ -1,0 +1,59 @@
+---
+title: Privacy
+description: What's stored about attendees, for how long, and what to know about health data.
+---
+
+## What's stored
+
+- **From calendars:** when they're busy. No titles, attendees or descriptions. With a
+  [calendar delegation](/docs/scheduling/delegation), that's still all that's read, though your admin's
+  authorization covers every mailbox on the domain.
+- **About attendees:** only what you send. A booking needs just a `time_zone`: without a name or email, an
+  attendee simply isn't emailed. Contact details and answers are encrypted, and a `uid` of your own lets you
+  find and erase someone.
+- **Cancellation reasons:** what someone wrote when cancelling, if anything, encrypted the same way, and erased with the
+  attendee's details.
+- **About guests:** the email and optional name given when booking, encrypted the same way.
+- **About hosts:** what you or they set, including any [locations](/docs/scheduling/hosts#locations). A
+  booking keeps a copy of its location, shown to its attendees, until its details are erased.
+- **In logs and webhooks:** ids, times and statuses. Request bodies of bookings aren't logged.
+- **On hosts' calendars:** a neutral event, unless you ask for [more](/docs/scheduling/calendars#what-cosscom-reads-and-writes).
+
+## How long
+
+<RetentionTable />
+
+Erase someone sooner with their `uid`:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.attendees.erase("patient_77");
+```
+
+Guests have no `uid`, so erase them, or anyone else you only have an address for, by email:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.attendees.eraseByEmail("sam@example.com");
+```
+
+Either way the booking stands, and its other people keep hearing about it.
+
+Coss.com isn't a system of record. If you must keep a booking's details for longer, such as a clinical
+record, keep them in your own systems.
+
+## Health data
+
+<Callout type="warn">
+Our [Terms](/legal/terms) don't allow protected health information without a written agreement. A doctor, a
+patient and a time can be health data on their own, so please talk to us before using Scheduling for patients: we
+sign a Business Associate Agreement and turn on [HIPAA mode](/docs/hipaa) for your organization.
+</Callout>
+
+Scheduling is built so it can hold that data safely, and you can reduce what it holds today: use opaque `uid`s
+rather than names, avoid sensitive `questions` and `metadata`, turn off emails you'd rather send yourself, and
+choose neutral event type titles, since a title like "Oncology follow-up" appears in emails.

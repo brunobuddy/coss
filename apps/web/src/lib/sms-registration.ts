@@ -30,27 +30,26 @@ export function needsSenderRegistration(
 }
 
 /**
- * Where to register the number's sender, or `null` when there is nothing to register yet: local
- * numbers send under the organization's US A2P 10DLC registration, a toll-free number under its
- * own verification (which needs the purchase settled first).
+ * Where to register the number's sender (a path below the environment), or `null` when there is
+ * nothing to register yet: local numbers send under the organization's US A2P 10DLC registration,
+ * a toll-free number under its own verification (which needs the purchase settled first).
  */
 export function registerSenderHref(
-  orgSlug: string,
   number: NumberLike,
   registrationStatus: RegistrationStatus | null,
 ): string | null {
   if (!needsSenderRegistration(number, registrationStatus)) return null;
-  if (number.kind === "local") return `/${orgSlug}/sms/register?kind=us_10dlc`;
+  if (number.kind === "local") return `/sms/numbers/register?kind=us_10dlc`;
   if (number.providerSid === null) return null;
-  return `/${orgSlug}/sms/register?number=${encodeURIComponent(number.id)}`;
+  return `/sms/numbers/register?number=${encodeURIComponent(number.id)}`;
 }
 
 /** Where to register again after a registration was refused: the same sender it was for. */
-export function registerAgainHref(
-  orgSlug: string,
-  registration: { kind: "us_10dlc" | "toll_free"; numberId: string | null },
-): string {
+export function registerAgainHref(registration: {
+  kind: "us_10dlc" | "toll_free";
+  numberId: string | null;
+}): string {
   return registration.kind === "toll_free" && registration.numberId
-    ? `/${orgSlug}/sms/register?number=${encodeURIComponent(registration.numberId)}`
-    : `/${orgSlug}/sms/register?kind=us_10dlc`;
+    ? `/sms/numbers/register?number=${encodeURIComponent(registration.numberId)}`
+    : `/sms/numbers/register?kind=us_10dlc`;
 }

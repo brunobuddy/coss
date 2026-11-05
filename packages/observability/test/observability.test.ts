@@ -6,6 +6,32 @@ import { parseDsn, tunnelDestination } from "../src/tunnel.ts";
 
 const DSN = "https://abc123@o42.ingest.us.sentry.io/4507";
 
+describe("failed queries", () => {
+  const message =
+    'Failed query: insert into "email" ("subject", "html") values ($1, $2)\nparams: Your biopsy results,<p>Dear Ada</p>';
+
+  test("keep the statement and lose every bound value", () => {
+    const scrubbed = scrubUrl(message);
+    expect(scrubbed).toContain('insert into "email"');
+    expect(scrubbed).toContain("params: [removed]");
+    expect(scrubbed).not.toContain("biopsy");
+    expect(scrubbed).not.toContain("Ada");
+  });
+
+  test("in events, however the error reached Sentry", () => {
+    const event = scrubEvent({
+      message,
+      exception: { values: [{ type: "DrizzleQueryError", value: message }] },
+    } as Event);
+    expect(JSON.stringify(event)).not.toContain("biopsy");
+  });
+
+  test("in log lines and breadcrumbs", () => {
+    expect(scrubLog({ level: "error", message }).message).not.toContain("biopsy");
+    expect(scrubBreadcrumb({ message }).message).not.toContain("biopsy");
+  });
+});
+
 describe("sentryConfig", () => {
   test("off without a DSN", () => {
     expect(sentryConfig({})).toBeNull();
@@ -34,6 +60,42 @@ describe("sentryConfig", () => {
 });
 
 describe("scrubbing", () => {
+  test("masks email addresses and phone numbers in text", () => {
+    expect(scrubUrl("bounced for jane.doe+x@mail.example.co.uk today")).toBe(
+      "bounced for [email] today",
+    );
+    expect(scrubUrl("Twilio refused +14155550123: invalid")).toBe(
+      "Twilio refused [phone]: invalid",
+    );
+    expect(scrubUrl("call +1 (415) 555-0123 back")).toBe("call [phone] back");
+    const event = scrubEvent({
+      message: "no route for a@example.com",
+      exception: { values: [{ type: "Error", value: "send to b@example.com failed" }] },
+      breadcrumbs: [{ message: "retrying c@example.com" }],
+    } as Event);
+    expect(event.message).toBe("no route for [email]");
+    expect(event.exception?.values?.[0]?.value).toBe("send to [email] failed");
+    expect(event.breadcrumbs?.[0]?.message).toBe("retrying [email]");
+  });
+
+  test("keeps what only looks like an address or a number", () => {
+    for (const text of [
+      "react@18.3.1 failed to load",
+      "@coss/db@1.2.3",
+      "at 2026-11-03T23:17:22+00:00",
+      "email_01k8z0abc123 took 1234567 ms",
+    ]) {
+      expect(scrubUrl(text)).toBe(text);
+    }
+  });
+
+  test("stays fast on long lines without an address", () => {
+    const line = `${"a".repeat(200_000)}@`;
+    const started = performance.now();
+    scrubUrl(line);
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
   test("URLs lose query strings and secret path segments", () => {
     expect(scrubUrl("https://api.coss.com/t/o/tok_secret")).toBe(
       "https://api.coss.com/t/o/[token]",
@@ -58,6 +120,21 @@ describe("scrubbing", () => {
     expect(scrubUrl("[api] Unhandled error on GET /t/o/tok?x=1: why? boom")).toBe(
       "[api] Unhandled error on GET /t/o/[token] why? boom",
     );
+  });
+
+  test("coss.com's API keys are masked wherever text is scrubbed", () => {
+    // Built at runtime: key-shaped literals trip secret scanners.
+    const live = ["coss", "live", "a".repeat(64)].join("_");
+    const sandbox = ["coss", "test", "b".repeat(64)].join("_");
+    expect(scrubUrl(`refused ${live}`)).toBe("refused coss_live_[key]");
+    expect(scrubUrl(`refused ${sandbox}.`)).toBe("refused coss_test_[key].");
+    expect(scrubUrl("the coss_live_ prefix")).toBe("the coss_live_ prefix");
+    const event = scrubEvent({
+      message: `POST /mcp ${live}`,
+      exception: { values: [{ value: live }] },
+    });
+    expect(event.message).toBe("POST /mcp coss_live_[key]");
+    expect(event.exception?.values?.[0]?.value).toBe("coss_live_[key]");
   });
 
   test("other providers' API keys are masked wherever text is scrubbed", () => {

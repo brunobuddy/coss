@@ -5,14 +5,22 @@ import { Button } from "@coss/ui/components/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@coss/ui/components/card";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@coss/ui/components/input-group";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { FormError } from "@/components/form-error";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { toast } from "@/lib/toast";
+import { createFirstProjectAction } from "./actions";
 
-export function CreateOrganizationForm() {
+/** `next`: where to go once it exists (the CLI's approval page, the plans page), else its home. */
+export function CreateOrganizationForm({ next }: { next: string | null }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -37,7 +45,11 @@ export function CreateOrganizationForm() {
       return;
     }
     toast.success(`${name.trim()} created`);
-    router.push(`/${slug}`);
+    // A failure here isn't one for the user: `/<org>` offers to create the project instead.
+    const setup = new FormData();
+    setup.set("orgSlug", slug);
+    await createFirstProjectAction(null, setup).catch((failure) => console.error(failure));
+    router.push(next ?? `/${slug}`);
     router.refresh();
   }
 
@@ -45,7 +57,9 @@ export function CreateOrganizationForm() {
     <Card>
       <CardHeader>
         <CardTitle>Create an organization</CardTitle>
-        <CardDescription>Organizations own projects, API keys and members.</CardDescription>
+        <CardDescription>
+          Organizations own projects, API keys and members. Yours starts with a project.
+        </CardDescription>
       </CardHeader>
       <CardPanel>
         {/* method="post": a submit before hydration must never put credentials in the URL. */}
@@ -65,21 +79,24 @@ export function CreateOrganizationForm() {
             />
           </Field>
           <Field>
-            <FieldLabel>URL slug</FieldLabel>
-            <Input
-              maxLength={48}
-              name="slug"
-              onChange={(event) => {
-                setSlugEdited(true);
-                setSlug(event.target.value.toLowerCase());
-              }}
-              placeholder="acme"
-              required
-              value={slug}
-            />
-            <FieldDescription>
-              Lowercase letters, numbers and dashes. Your dashboard lives at /{slug || "acme"}.
-            </FieldDescription>
+            <FieldLabel>URL</FieldLabel>
+            <InputGroup>
+              <InputGroupAddon>
+                <InputGroupText>coss.com/</InputGroupText>
+              </InputGroupAddon>
+              <InputGroupInput
+                maxLength={48}
+                name="slug"
+                onChange={(event) => {
+                  setSlugEdited(true);
+                  setSlug(event.target.value.toLowerCase());
+                }}
+                placeholder="acme"
+                required
+                value={slug}
+              />
+            </InputGroup>
+            <FieldDescription>Lowercase letters, numbers and dashes.</FieldDescription>
           </Field>
           <FormError message={error} />
           <Button loading={pending} type="submit">

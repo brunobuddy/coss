@@ -1,6 +1,6 @@
 ---
 title: Webhooks
-description: Get told when something happens, instead of polling.
+description: "Get told when something happens instead of polling: webhook endpoints, event types, signature verification, retries and delivery logs."
 icon: Webhook
 ---
 
@@ -71,6 +71,21 @@ const secret = endpoint?.secret;
 | `verification.blocked`   | The fraud guard stopped it before a code was sent (`data.reasons`) |
 | `form.submission.received` | A [form](/docs/forms) submission was accepted (`data.data`: what was submitted) |
 | `form.submission.flagged` | Risk held a submission for review or refused it as spam (`data.spam_reason`) |
+| `scheduling.booking.confirmed` | A [booking](/docs/scheduling/bookings) was confirmed. Ids, times and statuses only: retrieve it for the attendee |
+| `scheduling.booking.pending_approval` | A booking is waiting for the host's approval |
+| `scheduling.booking.rescheduled` | A booking moved (`data.previous_start`) |
+| `scheduling.booking.cancelled` | A booking was cancelled |
+| `scheduling.booking.declined` | A booking was declined, or its approval deadline passed |
+| `scheduling.booking.no_show` | An attendee was marked as a no-show |
+| `scheduling.booking.external_conflict` | Something else landed on a booked time, or the host changed the event on their calendar |
+| `scheduling.booking.calendar_write_failed` | A booking couldn't be written to the host's calendar. It still stands |
+| `scheduling.booking.location_ready` | A booking's meeting link is ready |
+| `scheduling.booking.started` | A confirmed booking's start time arrived. It doesn't mean anyone joined |
+| `scheduling.booking.ended` | A confirmed booking's end time arrived |
+| `scheduling.booking.reminder` | A [reminder](/docs/scheduling/reminders#webhooks-at-any-moment) you timed came due (`data.reminder`) |
+| `scheduling.calendar.connected` | A host [connected a calendar](/docs/scheduling/calendars) |
+| `scheduling.calendar.needs_reauth` | A host's calendar lost access: they aren't offered until it's back |
+| `scheduling.calendar.disconnected` | A host disconnected a calendar |
 | `risk.assessment.review` | A [risk assessment](/docs/risk) decided `review`        |
 | `risk.assessment.reviewed` | Feedback resolved a `review`                          |
 | `hook_endpoint.disabled` | coss.com disabled one of your [Hooks](/docs/hooks/delivery#failing-endpoints-are-disabled) applications' endpoints after its deliveries failed for 5 days |
@@ -107,7 +122,7 @@ These concern the whole organization, so every **live** environment's endpoints 
 | `billing.invoice_voided`          | An open invoice was voided                                                              |
 | `billing.plan_changed`            | The plan changed or a change was scheduled or undone (`change`, `plan`, `effective_at`) |
 | `billing.usage_threshold_reached` | Usage reached an alert threshold of the month's credit or Free's allowance (`percent`)  |
-| `billing.hold_placed`             | Live sending was paused for billing (`reason`: `delinquent`, `spend_limit` or `admin`)  |
+| `billing.hold_placed`             | Live sending was paused for billing (`reason`: `delinquent`, `spend_limit`, `credit_limit` or `admin`) |
 | `billing.hold_lifted`             | That pause ended                                                                        |
 | `billing.credit_granted`          | A credit was added (`data.credit`)                                                      |
 | `billing.budget_threshold_reached` | A member's, project's or API key's spend reached an alert threshold of its monthly budget (`scope`, `target_id`, `percent`) |

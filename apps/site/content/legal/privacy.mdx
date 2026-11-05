@@ -1,7 +1,7 @@
 ---
 title: Privacy Policy
 description: What personal data Cal.com collects for coss.com, why, who we share it with, and your rights.
-lastUpdated: 2026-10-30
+lastUpdated: 2026-11-03
 ---
 
 This Privacy Policy explains how **Cal.com, Inc.** ("**Cal.com**", "**we**", "**us**") handles personal data in
@@ -36,14 +36,16 @@ Data**: message content, attachments, recipient addresses and phone numbers, del
 the like. Your
 organization is the controller of Customer Data, and we process it only on its instructions, under the Terms and our
 [Data Processing Addendum](/legal/dpa) (DPA). If you received a message sent through coss.com and want to exercise your privacy rights,
-please contact the sender: they control that data. If you contact us instead, we will forward your request to them
+please contact the sender: they control that data. The same goes for a booking made through a service that uses
+coss.com: please contact that service. If you contact us instead, we will forward your request to them
 where we can, and help them respond.
 
 ## 2. What we collect
 
 **Account and organization data.** Name, email address, password (stored only as a salted hash), two-factor
 authentication settings and backup codes, passkey public keys, and, if your organization uses single sign-on, the
-identity your identity provider returns. We also store organizations, projects, environments, memberships, roles and
+identity your identity provider returns. If you sign in with Google or GitHub, we receive your name, email address,
+profile picture and account identifier from that provider, and never store its access tokens. We also store organizations, projects, environments, memberships, roles and
 invitations. If you subscribe to a paid plan, we store billing contact details; payment card details are handled by our
 payment processor and never stored by us. If your organization sends SMS, we store the business details it registers
 with mobile carriers (legal name, company type, tax ID, address, website, a description of its messages and how people
@@ -100,6 +102,12 @@ used.
   the number or the answer (we hold the answer in memory for up to an hour, so a repeated check isn't sent again).
 - **Rate limiting for your service:** the keys you check against your own rate limit buckets (for example a user's
   email address) are kept only as keyed hashes, in our cache, until their bucket refills.
+- **Bookings (Scheduling):** the names, email addresses, time zones and hours of the people who can be booked, and the
+  attributes your organization gives them; the attendee's name, email address, phone number, time zone and language,
+  your id for them and their answers to your questions (contact details and answers encrypted); and each booking's time,
+  event type title, location, metadata, status and history. Text you set that appears in booking emails (host names,
+  event type titles and questions, brand names) is checked for abuse by AI models through Vercel's AI Gateway when you
+  set it, with zero data retention; the emails themselves aren't screened.
 - **Domains and webhooks:** the sending domains you verify and their DNS records; your webhook endpoint URLs and
   signing secrets (encrypted at rest), and a record of each delivery attempt, including up to 1 KB of your endpoint's
   response.
@@ -108,9 +116,35 @@ used.
 and content delivery network process technical data such as IP addresses, request URLs and user agents to serve and
 protect the site, and keep it in short-lived logs.
 
-**Communications.** If you contact us, we keep your message and our reply. We send service emails, such as
+**Communications.** If you contact us, we keep your message and our reply, with any attachments, your name and email
+address, the page you raised it from, and, when we can match you, your account and organization and its plan. Owners
+and administrators of your organization can read tickets raised for it. We send service emails, such as
 verification, security, and reputation warnings and suspension notices to organization owners and administrators. These
 are part of the Services and you can't opt out of them while you have an account.
+
+**Connected calendars (Scheduling).** If an organization uses Scheduling, the people who can be booked may connect a
+Google, Microsoft or CalDAV calendar. We store an identifier for the calendar account, identifiers for the calendars
+they select, access credentials (encrypted), the start and end of busy times, and the events we create for bookings.
+We don't store the titles, descriptions, attendees or locations of other events, or calendar names.
+
+**Connected Zoom accounts (Scheduling).** They may also connect a Zoom account, so that bookings get a Zoom meeting.
+We store the Zoom user identifier, access credentials (encrypted), and the identifier and link of each meeting we
+create. A meeting carries a neutral title and its time, and no attendee details.
+
+### Google user data
+
+When someone connects a Google Calendar, we use Google's APIs only to:
+
+- list their calendars, so they can choose which ones to use;
+- read when they are busy, so that nobody can book a time that conflicts with their calendar; and
+- create, update and delete the events for their bookings on the calendar they chose, and check whether they moved or
+  deleted those events.
+
+coss.com's use and transfer of information received from Google APIs adheres to the
+[Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including
+the Limited Use requirements. We don't use this data for advertising, don't sell it, don't use it to train AI models,
+and don't let people read it, except with the user's consent, for security or to comply with the law. We don't share it with anyone except the subprocessors that host the Services and the organization whose Scheduling the person connected it to, which can see the account and calendar identifiers and the times the person can be booked. Busy times are replaced as the calendar changes.
+Disconnecting a calendar, which can be done at any time, revokes our access and deletes its busy times and credentials.
 
 ## 3. Why we process it (legal bases)
 
@@ -136,13 +170,15 @@ To protect the people who receive messages, and the deliverability of every cust
 of messages sent from **live** environments before delivery. Sandbox messages are never screened.
 
 - **What is screened:** a sample of messages per organization, more frequently for new senders. We never tell
-  customers which messages will be sampled.
-- **What the model sees:** the sender address, the subject, up to 8,000 characters of the message's readable text, and
-  the host and path of its links (query strings removed); for SMS, the sending number, the text and the host and path
-  of its links. It does not see recipient addresses or phone numbers, or attachments.
+  customers which messages will be sampled. Short image-based emails and flagged senders receive additional screening.
+- **What the model sees:** the sender address, the subject, up to 8,000 characters of the message's readable text,
+  images displayed in an email (including inline image attachments), and the host and path of its links (query strings
+  removed); for SMS, the sending number, the text and the host and path of its links. We do not include recipient
+  envelope lists or unrelated attachments; message text and images may themselves contain personal data.
 - **Who processes it:** the classification runs through Vercel's AI Gateway on AI models from its providers, with
   zero data retention: they may not keep the content or use it to train models.
-- **What we keep:** the verdict and its scores, never the message content.
+- **What we keep:** the verdict and its scores, never the message content in screening records. Restricted sender
+  domains may be retained after domain or account deletion to prevent repeated abuse, until reviewed and released.
 - **What can happen:** a message judged highly likely to be spam, phishing, malware or fraud is not delivered and its
   organization's live sending is suspended. Lower-confidence results can trigger a review of the organization's
   sending reputation.
@@ -156,19 +192,25 @@ We share personal data only as described here:
 
 - **Subprocessors** that help us run the Services, under contracts that limit their use of the data to providing their
   services to us:
-  - **Amazon Web Services, Inc.** (United States): hosting, databases, caching, queues and email delivery (Amazon
-    SES).
-  - **Vercel, Inc.** (United States) and the model providers available through its AI Gateway: AI content screening
-    and the classification of content submitted for risk assessment, with zero data retention.
+  - **Amazon Web Services, Inc.** (United States): hosting, databases, caching, queues, content delivery and email
+    delivery (Amazon SES).
+  - **Vercel, Inc.** (United States) and the model providers available through its AI Gateway: AI content screening,
+    the classification of content submitted for risk assessment and the check of text set for booking emails, with zero
+    data retention. Vercel also hosts the coss ui, Origin UI and qnot pages under coss.com, and receives the IP address
+    of people visiting them.
   - **Twilio Inc.** (United States): SMS delivery and receiving, phone numbers, carrier registration of the
     business details organizations submit to send SMS, and lookups of phone numbers organizations check with Risk.
-  - **Cloudflare, Inc.** (United States): DNS for coss.com.
+  - **Cloudflare, Inc.** (United States): Turnstile, the captcha on dashboard sign-in, sign-up and password reset, which
+    receives the IP address and browser data of the person using those forms.
+  - **Google LLC** (United States): Google Workspace receives mail sent to our support address and passes it to us.
   - **Functional Software, Inc. (Sentry)** (United States, with data stored in the European Union): error and crash
-    reports from the dashboard, the API and the iOS app.
+    reports from the Services, including the iOS app.
+  - **Stripe, LLC** (United States): collecting payments, with billing contact details, invoice amounts and payment
+    card details.
 
-  The complete, current list of Cal.com subprocessors is in our Trust Center at
-  [trust.cal.com](https://trust.cal.com). We give customers 30 days' notice of new subprocessors of Customer Data, and
-  they may object on reasonable data protection grounds, as described in the [DPA](/legal/dpa#5-subprocessors).
+  The subprocessors of Customer Data are listed in [Annex 3 of the DPA](/legal/dpa#annex-3-subprocessors). We give
+  customers 30 days' notice of new ones, and they may object on reasonable data protection grounds, as described in the
+  [DPA](/legal/dpa#5-subprocessors).
 - **Message delivery.** Sending a message necessarily discloses its content to the recipients' mail servers or, for
   SMS, to the recipients' mobile carriers. To let an organization send SMS in the United States, its registration
   details go to mobile carriers and their registries.
@@ -180,7 +222,10 @@ We share personal data only as described here:
 - **Apple.** If you turn on notifications in the iOS app, Apple's push notification service delivers them. It receives
   your device's push token, each notification's text (organization, project and environment names and counts, never
   message content or addresses) and the path of the page it opens.
-- **Your webhook endpoints** receive event data about your messages (never message bodies, headers, cc or bcc).
+- **Google and GitHub.** If you choose to sign in with either, you do so on its own sign-in page, so it knows you
+  signed in to coss.com.
+- **Your webhook endpoints** receive event data about your messages (never message bodies, headers, cc or bcc) and your
+  bookings (ids, times and statuses).
 - **Your organization.** Organization owners and administrators can see the members of the organization and the data
   in it.
 - **Legal and safety.** We may disclose data if we believe in good faith that the law requires it, or to protect the
@@ -198,7 +243,7 @@ We share personal data only as described here:
   personal API keys. Organizations you are the only member of are deleted with it, and their data follows on our
   standard schedule; organizations you share with others keep their data, and their audit logs keep the record of what
   you did in them, with your email address. You can instead ask us to close your account at
-  [support@cal.com](mailto:support@cal.com): you then have at least 30 days to export your data, and we delete it on
+  [support@coss.com](mailto:support@coss.com): you then have at least 30 days to export your data, and we delete it on
   our standard schedule. Either way, we keep what we must by law.
 - **Messages and delivery events:** for the periods in our [data retention policy](/docs/data-retention), so that you
   can look them up in the dashboard and the API: emails for <RetentionPeriod of="emails" /> and text messages for
@@ -206,8 +251,14 @@ We share personal data only as described here:
   <RetentionPeriod of="received_emails" /> and received text messages for <RetentionPeriod of="received_sms" />. Your
   organization can delete them sooner, or ask us to by writing to [privacy@cal.com](mailto:privacy@cal.com). Attachment
   contents are deleted automatically once a message is sent, canceled or fails.
+- **Bookings:** an attendee's details and answers, with the booking's metadata and location, for
+  <RetentionPeriod of="scheduling_personal_data" />, and the rest of the booking for
+  <RetentionPeriod of="scheduling_bookings" />. Your organization can erase an attendee's details and answers sooner.
 - **Suppression lists, domains and webhook endpoints:** until your organization removes them, or its account is
   closed.
+- **Support conversations:** for <RetentionPeriod of="support_tickets" />, including after your account or organization
+  is deleted, and mail to our support address filtered as spam or automated for
+  <RetentionPeriod of="support_spam" />.
 - **Sessions:** until they expire or are revoked.
 - **Push notification tokens:** until you turn notifications off, sign out of the iOS app or its session ends.
 - **Crash reports:** up to 90 days, at our error monitoring provider.
@@ -335,4 +386,4 @@ United States
 - DPF inquiries: Felix Kolodziej, compliance lead, [felix@cal.com](mailto:felix@cal.com), +1 415 212 6667
 - EU representative (GDPR Article 27): Felix Kolodziej, [felix@cal.com](mailto:felix@cal.com); postal address on
   request
-- Support: [support@cal.com](mailto:support@cal.com)
+- Support: [support@coss.com](mailto:support@coss.com)

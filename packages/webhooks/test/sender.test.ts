@@ -97,7 +97,11 @@ describe("secret encryption", () => {
     const ring = secretsKeyRing([oldKey]);
     const stored = encryptSecret("whsec_abc", ring);
     const relabeled = stored.replace(ring.primary.id, secretsKeyId(newKey));
-    const lying = { primary: ring.primary, keys: [{ id: secretsKeyId(newKey), key: oldKey }] };
+    const lying = {
+      name: ring.name,
+      primary: ring.primary,
+      keys: [{ id: secretsKeyId(newKey), key: oldKey }],
+    };
     expect(() => decryptSecret(relabeled, lying)).toThrow();
   });
 

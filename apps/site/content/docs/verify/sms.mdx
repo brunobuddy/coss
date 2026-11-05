@@ -1,6 +1,6 @@
 ---
 title: SMS codes
-description: Where SMS codes come from, where they may go, and what they say.
+description: "Where SMS verification codes come from, which countries they may go to, how opt-outs work, what the message says and what coss.com keeps."
 ---
 
 A verification to a phone number (E.164, like `+14155550123`) sends an SMS:
@@ -14,14 +14,18 @@ wording is fixed, because carriers approve senders for exactly this kind of mess
 
 ## Which number sends it
 
-- **coss.com's shared numbers** (the default): numbers coss.com registered with carriers for
-  one-time codes. You register nothing. Each destination always gets its codes from the same
-  number. The messages are coss.com's, so they don't appear in your SMS list; their cost is
-  billed to you as `verify.sms`, by country, once a carrier takes the message.
-- **One of your own numbers**: choose it in Verify's settings. It must be registered and approved
-  ([SMS senders](/docs/sms/senders)); the messages appear under SMS in your environment and are billed as
-  SMS. Use it when your users should see your number, or for countries the shared numbers don't
-  reach.
+- **One of your own numbers**: choose it in Verify's settings (`sms_from`). It must be registered
+  and approved ([SMS senders](/docs/sms/senders)); the messages appear under SMS in your environment
+  and are billed as SMS. Live environments need this for now.
+- **coss.com's shared numbers**: being rolled out, and used when `sms_from` is empty once they're
+  available. They're registered with carriers for one-time codes, and each destination always gets
+  its codes from the same number. The messages are coss.com's, so they don't appear in your SMS
+  list; their cost is billed to you as `verify.sms`, by country, once a carrier takes the message.
+
+Until then, a live SMS code with no `sms_from` fails with `503 shared_sender_unavailable`. To fix it,
+set a number in Verify's settings, or with `coss verify settings set --sms-from +14155550100` or
+`coss.verify.settings.update({ sms_from: "+14155550100" })`. Sandbox keys need no number: their
+messages go through the [SMS simulator](/docs/sms/testing).
 
 ## Countries
 

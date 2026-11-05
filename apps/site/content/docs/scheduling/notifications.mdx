@@ -1,0 +1,101 @@
+---
+title: Notifications
+description: "Who hears about a booking and how: confirmation emails with calendar invitations, reminders, webhooks, your branding and meeting links."
+---
+
+By default, attendees and hosts get an email when a booking's confirmed, moved or cancelled, with a
+calendar invitation, and attendees get a reminder a day before. Webhooks always fire, whatever's on here.
+For reminders at other times, to other people or in your own words, see [reminders](/docs/scheduling/reminders).
+
+Turn each one on or off in your settings, or per event type:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({
+  email_from: "appointments@example.com",
+  brand_name: "Acme Health",
+  notifications: {
+    confirmed: { email_host: false },
+    reminder: { email_attendee: true, sms_attendee: true },
+  },
+});
+```
+
+The events are `confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined` and `reminder`.
+`reminder` is the one a day before, and doesn't apply once you have a `reminders` list. An event type's
+`notifications` take the same shape and win over these. To send everything yourself, turn them all off and use
+[webhooks](/docs/webhooks).
+
+Emails come from `email_from`, on one of your verified domains. Without one, they come from coss.com on
+your behalf, in coss.com's own layout. Set `email_reply_to` to say where replies to your own address go. They
+use fixed templates with your event type's title and your brand name, and the only link in them is the
+attendee's manage link, unless you [write your own](/docs/scheduling/reminders#your-own-words). Titles, host
+names and brand names can't contain links, and in live environments they're screened for abuse when you set
+them, rather than each email being screened.
+
+## Your branding
+
+From your own address, emails carry your brand name or logo at the top, and your accent color on their button.
+The hosted pages show them too.
+
+```ts twoslash
+import { readFile } from "node:fs/promises";
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const logo = await readFile("logo.png");
+
+await coss.scheduling.settings.update({
+  email_from: "appointments@example.com",
+  brand_name: "Acme Health",
+  accent_color: "#2563eb",
+  logo: { content: logo.toString("base64") },
+});
+```
+
+A logo is a PNG or JPEG of 200 KB at most, on a white background or a transparent one. It travels inside
+each email rather than being loaded from a server, so nobody learns when an email was opened and mail clients
+don't ask to show images. Text on your accent color is black or white, whichever reads better, and a color
+too pale to see on a white page is ignored. Set `logo` to `null` to remove it.
+
+An SMS reminder needs `sms_from`, one of your approved numbers, and the attendee's `phone`. Getting their
+consent is yours to do, and a STOP is always honored.
+
+## Meeting links
+
+An event type's `locations` say where it happens. `google_meet` and `microsoft_teams` create a link with the
+calendar event, so they need a connected calendar from that provider: the confirmation waits briefly for it,
+and it then appears on the booking with `scheduling.booking.location_ready`. Moving a booking to another host
+drops the old host's link, and the new host's meeting gets a new one.
+
+`zoom` creates a meeting on the host's own Zoom account, once they've [connected it](/docs/scheduling/zoom).
+
+A `link`, `phone` or `in_person` location left blank uses the [host's own](/docs/scheduling/hosts#locations),
+such as a personal meeting room.
+
+Links must be `https`. These details go in attendees' emails, so in live environments an event type's addresses and
+links are checked for phishing and spam, and an address can't contain a link: both answer `content_refused`.
+
+For your own video vendor, use `link` and set it after the `confirmed` webhook:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const bookingId = "book_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+await coss.scheduling.bookings.updateLocation(bookingId, {
+  location: { type: "link", url: "https://video.example.com/room/abc" },
+});
+```
+
+## Languages
+
+Emails and texts are written in the attendee's `locale`, set when booking (the hosted booking page sends the
+browser's), and guests get the same. Hosts' are written in the host's own `locale`. Dates follow it too. What's yours
+stays as you wrote it: an event type's title and your brand name aren't translated.
+
+English, Chinese (Simplified and Traditional), Dutch, French, German, Italian, Japanese, Korean, Polish, Portuguese
+(Portugal and Brazil), Russian, Spanish, Swedish and Turkish are covered. Any other locale gets English, with its
+date in English too. Texts in languages outside the GSM alphabet take more segments, so they cost more.

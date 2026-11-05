@@ -104,6 +104,9 @@ export const billingAccount = pgTable("billing_account", {
   taxId: text("tax_id"),
   // Usage beyond the period's credit stops live sending past this (set by owners; `null`: none).
   spendLimitCents: cents("spend_limit_cents"),
+  // An admin's credit limit, replacing the automatic one (`@coss/billing/catalog`'s `CREDIT_POLICY`);
+  // also what brings a contract or net-terms account under it. `null`: the policy decides.
+  creditLimitCents: cents("credit_limit_cents"),
   // Percentages of the period's usage credit that send an alert.
   alertThresholds: integer("alert_thresholds")
     .array()
@@ -271,13 +274,15 @@ export const billingQuota = pgTable(
 export const billingHoldReason = pgEnum("billing_hold_reason", [
   "delinquent",
   "spend_limit",
+  "credit_limit",
   "admin",
 ]);
 
 /**
  * A billing hold on live sending; the row's presence is the hold. Independent of reputation
  * suspensions (`organization_suspension`): paying lifts a `delinquent` hold, the next period or a
- * higher limit a `spend_limit` one, only an admin an `admin` one.
+ * higher limit a `spend_limit` one, payments aging or a higher limit a `credit_limit` one, only an
+ * admin an `admin` one.
  */
 export const billingHold = pgTable(
   "billing_hold",
@@ -302,6 +307,7 @@ export const billingGrantSource = pgEnum("billing_grant_source", [
   "promotion",
   "refund",
   "sla",
+  "threshold",
 ]);
 
 /**
@@ -409,6 +415,7 @@ export const billingInvoiceKind = pgEnum("billing_invoice_kind", [
   "plan_change",
   "one_off",
   "final",
+  "threshold",
 ]);
 export const billingInvoiceStatus = pgEnum("billing_invoice_status", [
   "draft",

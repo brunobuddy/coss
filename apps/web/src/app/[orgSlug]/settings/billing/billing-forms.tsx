@@ -19,7 +19,10 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@coss/ui/components/input-group";
+import { CreditCardIcon } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
+import { ThresholdPicker } from "@/components/fields/threshold-picker";
 import { FormError } from "@/components/form-error";
 import { SettingsFooter, SettingsRow } from "@/components/settings";
 import { useActionToast } from "@/lib/toast";
@@ -54,7 +57,9 @@ export function UpgradeButton(props: { orgSlug: string; plan: string; label: str
 
 /** Adds an add-on now (prorated); reports a payment that needs confirming or failed. */
 export function AddOnButton(props: { orgSlug: string; addOn: string; label: string }) {
-  const [state, formAction, pending] = useActionState(addAddOnAction, null);
+  const [state, formAction, pending] = useActionToast(addAddOnAction, {
+    success: (outcome) => (outcome.status === "active" ? "Add-on added" : null),
+  });
   return (
     <form action={formAction} className="flex flex-col gap-2">
       <input name="orgSlug" type="hidden" value={props.orgSlug} />
@@ -101,7 +106,9 @@ export function RemoveAddOnButton(props: {
   name: string;
   description: string;
 }) {
-  const [state, formAction, pending] = useActionState(removeAddOnAction, null);
+  const [state, formAction, pending] = useActionToast(removeAddOnAction, {
+    success: "Add-on removal scheduled",
+  });
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button size="sm" variant="outline" />}>
@@ -112,6 +119,7 @@ export function RemoveAddOnButton(props: {
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <input name="addOn" type="hidden" value={props.addOn} />
           <AlertDialogHeader>
+            <DialogIcon icon={CreditCardIcon} tone="danger" />
             <AlertDialogTitle>Remove {props.name}?</AlertDialogTitle>
             <AlertDialogDescription>{props.description}</AlertDialogDescription>
             {state?.ok ? (
@@ -183,6 +191,7 @@ function DowngradeForm(props: {
       <input name="orgSlug" type="hidden" value={props.orgSlug} />
       <input name="plan" type="hidden" value={props.plan} />
       <AlertDialogHeader>
+        <DialogIcon icon={CreditCardIcon} tone="danger" />
         <AlertDialogTitle>{props.title}</AlertDialogTitle>
         <AlertDialogDescription>{props.description}</AlertDialogDescription>
         {state && !state.ok ? <FormError message={state.error} /> : null}
@@ -286,20 +295,11 @@ export function SpendControlsForm(props: {
       </SettingsRow>
       <SettingsRow
         description="Percentages of your monthly credit or allowance."
-        label={<label htmlFor="billing-alerts">Usage alerts</label>}
+        label="Usage alerts"
       >
-        <InputGroup className="sm:w-72">
-          <InputGroupInput
-            defaultValue={props.alertThresholds}
-            disabled={props.disabled}
-            id="billing-alerts"
-            name="alertThresholds"
-            placeholder="80, 100"
-          />
-          <InputGroupAddon align="inline-end">
-            <InputGroupText>%</InputGroupText>
-          </InputGroupAddon>
-        </InputGroup>
+        <fieldset className="sm:w-80" disabled={props.disabled}>
+          <ThresholdPicker defaultValue={props.alertThresholds} name="alertThresholds" />
+        </fieldset>
       </SettingsRow>
       <SettingsRow
         description="Invoices, payment reminders and usage alerts go here."

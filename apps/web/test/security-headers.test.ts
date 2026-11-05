@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { clientIpFromForwardedFor } from "../src/lib/client-ip";
 import {
   contentSecurityPolicy,
+  LOGO_CSP,
+  LOGO_PATH,
   RECEIVED_CONTENT_CSP,
   RECEIVED_CONTENT_PATHS,
   securityHeaders,
@@ -69,4 +71,16 @@ test("received emails' download routes are the paths their sandboxing CSP covers
   );
   for (const route of routes) expect(existsSync(route)).toBe(true);
   expect(RECEIVED_CONTENT_CSP).toStartWith("sandbox;");
+});
+
+test("the organization logo route is the path its sandboxing CSP covers", () => {
+  const route = join(
+    import.meta.dir,
+    "../src/app",
+    LOGO_PATH.replace(/:(\w+)/g, (_, name: string) => `[${name}]`),
+    "route.ts",
+  );
+  expect(existsSync(route)).toBe(true);
+  expect(LOGO_CSP).toStartWith("sandbox;");
+  expect(LOGO_CSP).not.toContain("script-src");
 });

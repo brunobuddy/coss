@@ -103,7 +103,7 @@ export async function exchangeMobileAuthorizationCode(
     return null;
   }
 
-  // Better Auth's ban check runs only inside its endpoints, not for this direct session.
+  // Before `createSession`, whose own ban check would throw instead of refusing the code.
   const [account] = await db
     .select({ banned: userTable.banned, banExpires: userTable.banExpires })
     .from(userTable)

@@ -1,13 +1,15 @@
-import { ExternalLink } from "lucide-react-native";
-import { Pressable } from "react-native";
+import { Stack } from "expo-router";
 import { openOnWeb } from "../lib/web";
-import { Icon } from "./icon";
 
-/** A header button that opens the same page on coss.com. */
+/** A native bar button that opens the same page on coss.com. */
 export function WebButton({ path }: { path: string }) {
   return (
-    <Pressable accessibilityLabel="Open on coss.com" hitSlop={10} onPress={() => openOnWeb(path)}>
-      <Icon icon={ExternalLink} size={18} />
-    </Pressable>
+    <Stack.Toolbar placement="right">
+      <Stack.Toolbar.Button
+        accessibilityLabel="Open on coss.com"
+        icon="safari"
+        onPress={() => openOnWeb(path)}
+      />
+    </Stack.Toolbar>
   );
 }

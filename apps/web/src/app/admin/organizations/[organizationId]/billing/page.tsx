@@ -98,7 +98,7 @@ export default async function AdminOrganizationBillingPage({
     listBillingPeriods(organization.id),
     listCreditNotes(organization.id),
   ]);
-  const { account, state, estimate, holds } = overview;
+  const { account, state, estimate, holds, credit } = overview;
   const fields = { organizationId: organization.id };
   const adminHold = holds.some((hold) => hold.reason === "admin");
 
@@ -141,6 +141,9 @@ export default async function AdminOrganizationBillingPage({
               : " · no payment method"}
             . This month so far: {formatCents(estimate.usageCents)} of usage,{" "}
             {formatCents(estimate.totals.totalCents)} to invoice.
+            {credit
+              ? ` Credit limit ${formatCents(credit.limitCents)}${credit.customLimit ? " (set by an admin)" : ""}: ${formatCents(credit.usedCents)} at risk (${formatCents(credit.accruedCents)} unbilled, ${formatCents(credit.unpaidCents)} unpaid, ${formatCents(credit.unsettledChargesCents)} unsettled charges), ${formatCents(credit.settledPaidCents)} settled.`
+              : " No credit limit."}
             {state.scheduled
               ? ` Changes to ${PLANS[state.scheduled.terms.plan].name} on ${formatDate(state.scheduled.at)}.`
               : ""}
@@ -148,6 +151,7 @@ export default async function AdminOrganizationBillingPage({
         </PanelHeader>
         <PanelBody className="flex flex-row flex-wrap gap-2">
           <AdminActionDialog
+            icon="billing"
             action={setHoldAction}
             description={
               adminHold
@@ -190,6 +194,10 @@ export default async function AdminOrganizationBillingPage({
               taxId: account?.taxId ?? "",
               graceDays: account?.graceDays ?? 14,
               holdExemptUntil: account?.holdExemptUntil?.toISOString().slice(0, 10) ?? "",
+              creditLimit:
+                account?.creditLimitCents == null
+                  ? ""
+                  : (Number(account.creditLimitCents) / 100).toFixed(2),
               notes: account?.notes ?? "",
             }}
           />
@@ -259,6 +267,7 @@ export default async function AdminOrganizationBillingPage({
                       <TableCell>
                         {live ? (
                           <AdminActionDialog
+                            icon="contract"
                             action={endContractAction}
                             description="Ending it now bills nothing more for it; what follows is the Free plan unless another contract starts."
                             destructive
@@ -309,6 +318,7 @@ export default async function AdminOrganizationBillingPage({
         <PanelBody className="flex flex-col gap-4">
           <div>
             <AdminActionDialog
+              icon="credit"
               action={grantCreditAction}
               description="The customer sees the description; the reason stays internal."
               fields={fields}
@@ -423,6 +433,7 @@ export default async function AdminOrganizationBillingPage({
                     <TableCell>
                       {!grant.voidedAt && grant.remaining > 0n && grant.source !== "fee" ? (
                         <AdminActionDialog
+                          icon="credit"
                           action={voidCreditAction}
                           description="What's left of it can't be used any more; what invoices already used stays used."
                           destructive
@@ -450,6 +461,7 @@ export default async function AdminOrganizationBillingPage({
         <PanelBody className="flex flex-col gap-4">
           <div>
             <AdminActionDialog
+              icon="invoice"
               action={oneOffInvoiceAction}
               description="Finalized and collected like any invoice (charged or sent, per the account's settings)."
               fields={fields}
@@ -521,6 +533,7 @@ export default async function AdminOrganizationBillingPage({
                           {invoice.status === "open" ? (
                             <>
                               <AdminActionDialog
+                                icon="invoice"
                                 action={recordPaymentAction}
                                 description="A payment received outside the provider (wire, check)."
                                 fields={invoiceFields}
@@ -561,6 +574,7 @@ export default async function AdminOrganizationBillingPage({
                                 </Field>
                               </AdminActionDialog>
                               <AdminActionDialog
+                                icon="invoice"
                                 action={resyncInvoiceAction}
                                 description="Pushes it to the provider again, or tries the charge again."
                                 fields={invoiceFields}
@@ -572,6 +586,7 @@ export default async function AdminOrganizationBillingPage({
                               />
                               {invoice.amountPaidCents === 0n ? (
                                 <AdminActionDialog
+                                  icon="invoice"
                                   action={voidInvoiceAction}
                                   description="Its charges can be billed again and its credits are given back."
                                   destructive
@@ -584,6 +599,7 @@ export default async function AdminOrganizationBillingPage({
                                 />
                               ) : null}
                               <AdminActionDialog
+                                icon="invoice"
                                 action={markUncollectibleAction}
                                 description="It stops being collected and no longer counts as overdue."
                                 destructive
@@ -598,6 +614,7 @@ export default async function AdminOrganizationBillingPage({
                           ) : null}
                           {invoice.status === "open" || invoice.status === "paid" ? (
                             <AdminActionDialog
+                              icon="invoice"
                               action={creditNoteAction}
                               description="Reduces the invoice. On a paid one, the refund goes back to the payment method and the rest becomes credit."
                               fields={invoiceFields}

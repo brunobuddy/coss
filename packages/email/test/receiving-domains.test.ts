@@ -8,6 +8,7 @@ import {
   checkReceivingDomain,
   createReceivingDomain,
   deleteReceivingDomain,
+  normalizeReceivingHostname,
   recheckDueReceivingDomains,
 } from "../src/receiving-domains.ts";
 import { createVerifiedDomain, fakeDnsResolver } from "../src/testing.ts";
@@ -67,6 +68,19 @@ describe("createReceivingDomain", () => {
     await expect(attempt(`in.${parent.name}`)).rejects.toMatchObject({
       code: "receiving_domain_exists",
     });
+  });
+
+  test("a reserved name is only for the organization holding its parent domain", async () => {
+    const domain = (name: string) =>
+      ({ name, mailFromDomain: `send.${name}` }) as Parameters<
+        typeof normalizeReceivingHostname
+      >[1];
+    expect(normalizeReceivingHostname("reply.coss.com", domain("coss.com"), config)).toBe(
+      "reply.coss.com",
+    );
+    expect(() => normalizeReceivingHostname("reply.coss.com", domain("acme.com"), config)).toThrow(
+      "must be acme.com or a subdomain",
+    );
   });
 
   test("refuses an environment of another organization", async () => {

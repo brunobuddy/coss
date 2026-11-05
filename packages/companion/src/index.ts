@@ -4,8 +4,10 @@
 export type * from "./account.ts";
 export type * from "./broadcasts.ts";
 export type * from "./contacts.ts";
+export type * from "./home.ts";
 export type * from "./organization-settings.ts";
 export type * from "./risk-settings.ts";
+export type * from "./scheduling.ts";
 export type * from "./sms-senders.ts";
 export type * from "./spend.ts";
 export type * from "./templates.ts";
@@ -86,7 +88,7 @@ export type ReputationStanding = {
 };
 
 export type BillingAlerts = {
-  held: "delinquent" | "spend_limit" | "admin" | null;
+  held: "delinquent" | "spend_limit" | "credit_limit" | "admin" | null;
   past_due: boolean;
   allowance: { label: string; used: number; cap: number } | null;
 };
@@ -122,6 +124,8 @@ export type OrganizationResponse = {
     read_sms_sender: boolean;
     read_sso: boolean;
     read_scim: boolean;
+    read_scheduling: boolean;
+    update_scheduling: boolean;
   };
   projects: MobileProject[];
 };
@@ -376,7 +380,8 @@ export type LogSource =
   | "sms"
   | "sign"
   | "verify"
-  | "forms";
+  | "forms"
+  | "scheduling";
 export type LogLevel = "info" | "warning" | "error";
 export type LogRange = "1h" | "24h" | "7d";
 
@@ -730,6 +735,7 @@ export type LogDrainSource =
   | "sign"
   | "verify"
   | "forms"
+  | "scheduling"
   | "audit";
 
 export type LogDrain = {

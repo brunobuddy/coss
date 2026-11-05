@@ -3,6 +3,7 @@ export {
   configurationSetsFor,
   createSesApi,
   isSesError,
+  requiredTlsSetFor,
   type SesApi,
   type SesConfig,
   TENANT_SUPPRESSION,

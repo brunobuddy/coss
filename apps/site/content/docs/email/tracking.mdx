@@ -75,7 +75,7 @@ const { data: domain, error } = await coss.domains.tracking.create(domainId, {
 });
 
 const record = domain?.tracking?.record;
-console.log(record?.type, record?.name, record?.value); // CNAME links.acme.com track.cosslinks.com
+console.log(record?.type, record?.name, record?.value); // CNAME links.acme.com d111111abcdef8.cloudfront.net
 ```
 
 Then publish the `CNAME` record at your DNS provider. coss.com issues a certificate for the hostname once
@@ -88,3 +88,5 @@ minutes of the record propagating. Setup gives up after 72 hours; **Check now** 
   while it is `active`. While it isn't, they use coss.com's tracking host, so tracking keeps working.
 - Removing a tracking domain, or its `CNAME` record, breaks the links in emails already sent
   through it. Keep the record in place for as long as those emails matter.
+- Removing a tracking domain takes a few minutes. If you're asked to try again shortly, the removal
+  has started: try again in a few minutes to finish it.

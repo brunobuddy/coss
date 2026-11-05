@@ -1,53 +1,44 @@
 import type { LucideIcon } from "lucide-react-native";
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { colors, radius } from "../lib/theme";
-import { Icon } from "./icon";
+import Svg, { Circle, Defs, Pattern, Rect } from "react-native-svg";
+import { colors, type ProductTone, radius, space, usePalette } from "../lib/theme";
+import { ProductGlyph } from "./product-glyph";
 import { Text } from "./text";
 
 const SPACING = 24;
 
-function dots(columns: number, rows: number): { x: number; y: number }[] {
-  const points = [];
-  for (let y = 0; y < rows; y++) for (let x = 0; x < columns; x++) points.push({ x, y });
-  return points;
-}
-
 /** `.drafting-grid`: coss.com's dot grid, behind empty states and the sign-in panel. */
 export function DraftingGrid() {
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  const columns = Math.floor(size.width / SPACING);
-  const rows = Math.floor(size.height / SPACING);
-  const offsetX = (size.width - (columns - 1) * SPACING) / 2;
-  const offsetY = (size.height - (rows - 1) * SPACING) / 2;
+  const palette = usePalette();
   return (
-    <View
-      onLayout={(event) => setSize(event.nativeEvent.layout)}
-      pointerEvents="none"
-      style={StyleSheet.absoluteFill}
-    >
-      {dots(columns, rows).map(({ x, y }) => (
-        <View
-          key={`${x}:${y}`}
-          style={[styles.dot, { left: offsetX + x * SPACING - 1, top: offsetY + y * SPACING - 1 }]}
-        />
-      ))}
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <Svg height="100%" width="100%">
+        <Defs>
+          <Pattern height={SPACING} id="drafting" patternUnits="userSpaceOnUse" width={SPACING}>
+            <Circle cx={SPACING / 2} cy={SPACING / 2} fill={palette.grid} r={1} />
+          </Pattern>
+        </Defs>
+        <Rect fill="url(#drafting)" height="100%" width="100%" />
+      </Svg>
     </View>
   );
 }
 
-/** Nothing to show yet: an icon tile on the drafting grid, a title, what would appear here. */
+/** Nothing to show yet: a tile on the drafting grid, a title, what would appear here. */
 export function EmptyState(props: {
   icon: LucideIcon;
   title: string;
   description?: string;
   action?: ReactNode;
+  /** The product this page belongs to: colours the tile, like the dashboard's. */
+  tone?: ProductTone;
 }) {
   return (
     <View style={styles.empty}>
       <DraftingGrid />
-      <View style={styles.tile}>
-        <Icon icon={props.icon} size={20} />
+      <View style={styles.tilePlate}>
+        <ProductGlyph icon={props.icon} size={40} tone={props.tone ?? "neutral"} />
       </View>
       <Text style={styles.center} variant="heading">
         {props.title}
@@ -63,35 +54,19 @@ export function EmptyState(props: {
 }
 
 const styles = StyleSheet.create({
-  dot: {
-    position: "absolute",
-    width: 2,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: colors.grid,
-  },
   empty: {
     alignItems: "center",
-    gap: 6,
+    gap: space.sm,
+    paddingHorizontal: space.xxl,
     paddingVertical: 40,
-    paddingHorizontal: 24,
+    borderRadius: radius.frame,
     overflow: "hidden",
   },
-  tile: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+  tilePlate: {
+    marginBottom: space.xs,
+    borderRadius: radius.xl,
     backgroundColor: colors.card,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
   },
-  center: { textAlign: "center", maxWidth: 300 },
-  action: { marginTop: 10 },
+  center: { textAlign: "center" },
+  action: { marginTop: space.sm },
 });

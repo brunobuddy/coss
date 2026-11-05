@@ -899,7 +899,7 @@ function applyCredits(draft: Draft, grants: readonly GrantBalance[], period: Int
     if (applied <= 0n) continue;
     draft.lines.push({
       kind: "credit",
-      description: "Credit applied",
+      description: grant.lineDescription ?? "Credit applied",
       amountCents: -applied,
       period,
       contractId: null,

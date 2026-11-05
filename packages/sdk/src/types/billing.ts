@@ -8,7 +8,9 @@ export type PlanKey = "free" | "pro" | "scale" | "enterprise";
 export type Meter =
   | "email.recipients"
   | "email.dedicated_ip"
+  | "email.attachment_data"
   | "email.received"
+  | "email.received_data"
   | "email.inboxes"
   | "sms.segments"
   | "sms.received_segments"
@@ -16,14 +18,17 @@ export type Meter =
   | "sms.registrations"
   | "sign.completed_requests"
   | "risk.phone_checks"
+  | "risk.assessments"
+  | "risk.content_checks"
   | "verify.verifications"
   | "verify.sms"
   | "forms.submissions"
   | "forms.file_uploads"
-  | "video.participant_minutes"
-  | "scheduling.bookings";
+  | "scheduling.bookings"
+  | "scheduling.hosts"
+  | "hooks.messages";
 
-export type BillingHoldReason = "delinquent" | "spend_limit" | "admin";
+export type BillingHoldReason = "delinquent" | "spend_limit" | "credit_limit" | "admin";
 
 /** `GET /v1/billing`: the organization's plan, the current month so far, and its standing. */
 export interface Billing {
@@ -62,6 +67,15 @@ export interface Billing {
   credit_remaining: number;
   /** Usage beyond the credit past which live sending is held (cents); `null`: none. */
   spend_limit: number | null;
+  /** Where the organization stands against its credit limit (cents); `null`: it has none. */
+  credit_limit: {
+    /** What coss.com carries before live sending is held. It rises as payments settle. */
+    limit: number;
+    /** Usage not invoiced yet, unpaid invoices and recent usage charges. */
+    used: number;
+    /** Usage not invoiced yet is charged early at this amount; `null`: it isn't charged automatically. */
+    charge_threshold: number | null;
+  } | null;
   payment_method: { type: string; brand: string | null; last4: string | null } | null;
   /** Add-ons of the contract in effect, charged on top of the plan. */
   add_ons: {
@@ -163,7 +177,7 @@ export interface InvoiceSummary {
   object: "invoice";
   id: string;
   number: string | null;
-  kind: "period" | "plan_change" | "one_off" | "final";
+  kind: "period" | "plan_change" | "one_off" | "final" | "threshold";
   status: InvoiceStatus;
   currency: "usd";
   period: { start: string; end: string };
@@ -211,7 +225,7 @@ export interface Credit {
   meters: Meter[] | null;
   /** `any`: also fees and other charges. */
   applies_to: "usage" | "any";
-  source: "fee" | "commitment" | "support" | "promotion" | "refund" | "sla";
+  source: "fee" | "commitment" | "support" | "promotion" | "refund" | "sla" | "threshold";
   description: string;
   effective_at: string;
   expires_at: string | null;

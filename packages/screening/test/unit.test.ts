@@ -38,6 +38,7 @@ describe("shouldScreen", () => {
 describe("text", () => {
   test("collapses whitespace and truncates", () => {
     expect(prepareText("  a \t b\n\n\n\n c  ")).toBe("a b\n\nc");
+    expect(prepareText("P\u00ada\u00ady\u200b now\u2060")).toBe("Pay now");
     const long = prepareText("x".repeat(MAX_TEXT_CHARS + 10));
     expect(long).toHaveLength(MAX_TEXT_CHARS + 1);
     expect(long.endsWith("…")).toBe(true);
@@ -123,6 +124,55 @@ describe("fakeClassifier", () => {
 });
 
 describe("aiSdkClassifier", () => {
+  test("routes downloaded images to the vision model with untrusted-content instructions", async () => {
+    const calls: Parameters<Experimental_DecisionMockModelV4["doDecide"]>[0][] = [];
+    const imageModel = new Experimental_DecisionMockModelV4({
+      provider: "mock",
+      modelId: "vision",
+      doDecide: async (options) => {
+        calls.push(options);
+        return {
+          answers: Object.fromEntries(
+            ["spam", "phishing", "malware", "fraud"].map((key) => [
+              key,
+              { type: "boolean", probability: 0.97 },
+            ]),
+          ),
+          usage: { inputTokens: 123 },
+          warnings: [],
+        };
+      },
+    });
+    const bytes = new Uint8Array([137, 80, 78, 71]);
+    const classifier = aiSdkClassifier({
+      model: new Experimental_DecisionMockModelV4(),
+      imageModel,
+    });
+    await classifier.classify(
+      {
+        kind: "email",
+        from: "a@example.com",
+        subject: "hi",
+        text: "Unsubscribe",
+        links: [],
+        images: [{ data: bytes, mediaType: "image/png" }],
+      },
+      signal(),
+    );
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.state).toMatchObject([
+      {
+        type: "json",
+        value: {
+          message: { channel: "email", from: "a@example.com", subject: "hi", body: "Unsubscribe" },
+          links: [],
+        },
+      },
+      { type: "file", data: { type: "data", data: bytes }, mediaType: "image/png" },
+    ]);
+    expect(String(calls[0]?.questions.spam?.instructions)).toContain("not evidence of consent");
+    expect(calls[0]?.providerOptions).toEqual({ gateway: { zeroDataRetention: true } });
+  });
   test("asks one boolean question per category about structured state", async () => {
     const calls: Parameters<Experimental_DecisionMockModelV4["doDecide"]>[0][] = [];
     const model = new Experimental_DecisionMockModelV4({

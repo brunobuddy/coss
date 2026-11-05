@@ -1,4 +1,5 @@
 import { slugify } from "@coss/auth/slugs";
+import { RESERVED_PROJECT_SLUGS } from "@coss/dashboard-routes";
 import { db, schema } from "@coss/db";
 import { and, asc, eq, like, or } from "drizzle-orm";
 import { compareEnvironments, DEFAULT_ENVIRONMENTS } from "./environments.ts";
@@ -57,7 +58,8 @@ export async function createProject(input: {
             or(eq(project.slug, base), like(project.slug, `${base}-%`)),
           ),
         );
-      const taken = new Set(existing.map((row) => row.slug));
+      // `/<org>/settings` is the organization's own pages, so no project can be called that.
+      const taken = new Set([...RESERVED_PROJECT_SLUGS, ...existing.map((row) => row.slug)]);
 
       for (let attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
         const slug = firstFreeSlug(base, taken);
@@ -87,6 +89,18 @@ export async function createProject(input: {
     }
     throw error;
   }
+}
+
+/** The name of the project an organization starts with. */
+export const FIRST_PROJECT_NAME = "Default";
+
+/** An organization's first project: `null` (and nothing created) once it has any project. */
+export async function createFirstProject(input: {
+  organizationId: string;
+}): Promise<{ project: Project; environments: Environment[] } | null> {
+  const existing = await listProjects(input);
+  if (existing.length > 0) return null;
+  return createProject({ organizationId: input.organizationId, name: FIRST_PROJECT_NAME });
 }
 
 /** Projects of an organization, oldest first. */

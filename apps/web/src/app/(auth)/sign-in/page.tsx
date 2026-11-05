@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { env } from "@/env";
+import { publicPageMetadata } from "@/lib/public-metadata";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 import { getSession } from "@/lib/session";
 import { enabledSocialProviders } from "@/lib/social";
 import { socialErrorMessage } from "@/lib/social-errors";
 import { SignInForm } from "./sign-in-form";
 
-export const metadata: Metadata = { title: "Sign in" };
+export function generateMetadata(): Metadata {
+  return publicPageMetadata({
+    origin: env.BETTER_AUTH_URL,
+    path: "/sign-in",
+    title: "Sign in",
+    description: "Sign in to your coss.com account to manage API keys, domains, logs and billing.",
+  });
+}
 
 export default async function SignInPage({ searchParams }: PageProps<"/sign-in">) {
   const params = await searchParams;

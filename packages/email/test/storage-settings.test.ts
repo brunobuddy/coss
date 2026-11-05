@@ -39,10 +39,15 @@ describe("storage settings", () => {
     expect(await getStorageSettings(devEnv(tenant))).toEqual({
       contentStorage: "store",
       updatedAt: null,
+      lockedByHipaaMode: false,
     });
 
     const updated = await updateStorageSettings(devEnv(tenant), { contentStorage: "discard" });
-    expect(updated).toEqual({ contentStorage: "discard", updatedAt: expect.any(Date) });
+    expect(updated).toEqual({
+      contentStorage: "discard",
+      updatedAt: expect.any(Date),
+      lockedByHipaaMode: false,
+    });
     expect((await getStorageSettings(devEnv(tenant))).contentStorage).toBe("discard");
     expect(
       (

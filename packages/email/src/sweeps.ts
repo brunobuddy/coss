@@ -51,6 +51,31 @@ function unclaimedBefore(before: Date, limit: number, scope: Scope | undefined, 
     .limit(limit);
 }
 
+/**
+ * System-level: unclaimed `queued` emails due before `olderThan`. Nothing fails a health check when
+ * dispatch stalls, and these fail after `UNCLAIMED_FAIL_MS`, so the worker reports them first.
+ */
+export async function unclaimedEmailBacklog(opts: {
+  olderThan: Date;
+  scope?: Scope;
+}): Promise<{ count: number; oldest: Date | null }> {
+  const [row] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      oldest: sql<string | null>`min(${DUE_AT})`,
+    })
+    .from(email)
+    .where(
+      and(
+        eq(email.status, "queued"),
+        isNull(email.provider),
+        sql`${DUE_AT} < ${opts.olderThan.toISOString()}::timestamptz`,
+        opts.scope ? inArray(email.organizationId, opts.scope.organizationIds) : undefined,
+      ),
+    );
+  return { count: row?.count ?? 0, oldest: row?.oldest ? new Date(row.oldest) : null };
+}
+
 /** Why an email that was never handed over in time failed. */
 function dispatchFailure(errorCode: string | null) {
   return errorCode === "content_screening_unavailable"

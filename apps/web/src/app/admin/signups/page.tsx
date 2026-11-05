@@ -251,6 +251,7 @@ export default async function AdminSignUpsPage({ searchParams }: PageProps<"/adm
                       <span className="flex flex-col items-end gap-2">
                         {canMarkLegitimate ? (
                           <AdminActionDialog
+                            icon="signUp"
                             action={markSignUpLegitimateAction}
                             description="coss.com Risk takes back what reporting this sign-up remembered (its mailbox, device and network stop counting against later sign-ups) and resolves an open review. It doesn't unban anyone or lift a suspension."
                             fields={{ assessmentId: assessment.id }}

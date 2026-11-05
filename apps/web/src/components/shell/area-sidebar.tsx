@@ -29,6 +29,7 @@ export function AreaSidebar(props: {
   label?: ReactNode;
   back: { href: string; label: string };
   user: ShellUser;
+  badges?: Record<string, number>;
 }) {
   const pathname = usePathname();
   // Picked here, not passed in: the items' icons are components, which can't cross from a
@@ -45,6 +46,7 @@ export function AreaSidebar(props: {
       <SidebarContent>
         <NavGroup
           active={activeNavItem(pathname, base, items)}
+          badges={props.badges}
           base={base}
           items={items}
           label={groupLabel}

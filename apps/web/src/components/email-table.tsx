@@ -27,7 +27,7 @@ export function engagement({ tracking }: EmailListItem): string {
 /** An environment's emails as a table (for a `Panel`): status, recipients, subject, engagement. */
 export function EmailTable(props: {
   emails: EmailListItem[];
-  /** The environment's base path; rows link to `${base}/emails/${id}`. */
+  /** The environment's base path; rows link to `${base}/email/messages/${id}`. */
   base: string;
   /** Leave out the engagement column (narrow places). */
   compact?: boolean;
@@ -63,7 +63,7 @@ export function EmailTable(props: {
             <TableCell className="max-w-80 truncate">
               <Link
                 className="font-medium underline-offset-4 before:absolute before:inset-0 hover:underline"
-                href={`${props.base}/emails/${email.id}`}
+                href={`${props.base}/email/messages/${email.id}`}
               >
                 {email.content_storage.discarded_at ? (
                   <span className="text-muted-foreground italic">Content not stored</span>

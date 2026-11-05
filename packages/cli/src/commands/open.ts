@@ -4,39 +4,75 @@ import { type Credentials, clientFor, resolveCredentials } from "../context.ts";
 import { apiError, UsageError } from "../errors.ts";
 
 /**
- * Dashboard pages by name: the environment's (under `/<org>/projects/<project>/<env>`) and the
- * organization's (under `/<org>`), as in `apps/web/src/lib/navigation.ts`.
+ * Dashboard pages by name: the environment's (under `/<org>/<project>/<env>`) and the
+ * organization's (under `/<org>/settings`), as in `@coss/dashboard-routes`.
  */
 const ENVIRONMENT_PAGES: Record<string, string> = {
   overview: "",
-  emails: "/emails",
-  templates: "/templates",
-  received: "/received",
-  suppressions: "/suppressions",
-  tracking: "/tracking",
-  broadcasts: "/broadcasts",
-  contacts: "/contacts",
-  audiences: "/audiences",
-  segments: "/segments",
-  topics: "/topics",
-  marketing: "/marketing",
-  risk: "/risk",
+  home: "",
+  products: "/products",
+  email: "/email",
+  emails: "/email/messages",
+  templates: "/email/templates",
+  received: "/email/received",
+  suppressions: "/email/suppressions",
+  subaccounts: "/email/subaccounts",
+  tracking: "/email/tracking",
+  storage: "/email/storage",
+  domains: "/email/domains",
+  "dedicated-ips": "/email/dedicated-ips",
+  reputation: "/email/reputation",
+  broadcasts: "/marketing",
+  contacts: "/marketing/contacts",
+  audiences: "/marketing/audiences",
+  segments: "/marketing/segments",
+  topics: "/marketing/topics",
+  marketing: "/marketing/settings",
+  inboxes: "/inboxes",
+  sms: "/sms",
+  "sms-received": "/sms/received",
+  "sms-suppressions": "/sms/suppressions",
+  "sms-numbers": "/sms/numbers",
+  verify: "/verify",
+  "verify-settings": "/verify/settings",
+  sign: "/sign",
+  "sign-templates": "/sign/templates",
+  "sign-settings": "/sign/settings",
+  forms: "/forms",
+  scheduling: "/scheduling",
+  "scheduling-hosts": "/scheduling/hosts",
+  "scheduling-event-types": "/scheduling/event-types",
+  "scheduling-reminders": "/scheduling/reminders",
+  "scheduling-calendar-delegation": "/scheduling/calendar-delegation",
+  "scheduling-settings": "/scheduling/settings",
   hooks: "/hooks",
-  "api-keys": "/api-keys",
-  webhooks: "/webhooks",
-  logs: "/logs",
-  "log-drains": "/log-drains",
+  "hooks-event-types": "/hooks/event-types",
+  "hooks-settings": "/hooks/settings",
+  risk: "/risk",
+  "risk-rules": "/risk/rules",
+  "risk-lists": "/risk/lists",
+  "risk-limits": "/risk/limits",
+  "risk-calibration": "/risk/calibration",
+  "risk-settings": "/risk/settings",
+  developers: "/developers",
+  "api-keys": "/developers/api-keys",
+  webhooks: "/developers/webhooks",
+  logs: "/developers/logs",
+  "log-drains": "/developers/log-drains",
+  import: "/developers/import",
 };
 
 const ORGANIZATION_PAGES: Record<string, string> = {
-  projects: "",
-  domains: "/domains",
-  "dedicated-ips": "/dedicated-ips",
-  members: "/members",
-  reputation: "/reputation",
   settings: "/settings",
+  projects: "/settings/projects",
+  members: "/settings/members",
   billing: "/settings/billing",
+  spend: "/settings/spend",
+  budgets: "/settings/spend/budgets",
+  sso: "/settings/sso",
+  scim: "/settings/scim",
   "audit-log": "/settings/audit",
+  compliance: "/settings/compliance",
 };
 
 export const PAGES: readonly string[] = [
@@ -51,7 +87,7 @@ export function dashboardPageUrl(dashboardUrl: string, slugs: Slugs, page: strin
   const org = `${dashboardUrl}/${encodeURIComponent(slugs.organization)}`;
   const organizationPage = ORGANIZATION_PAGES[page];
   if (organizationPage !== undefined) return `${org}${organizationPage}`;
-  const environment = `${org}/projects/${encodeURIComponent(slugs.project)}/${encodeURIComponent(slugs.environment)}`;
+  const environment = `${org}/${encodeURIComponent(slugs.project)}/${encodeURIComponent(slugs.environment)}`;
   return `${environment}${ENVIRONMENT_PAGES[page] ?? ""}`;
 }
 
@@ -96,10 +132,9 @@ export const openCommand: Command = defineCommand({
   usage: "[page] [options]",
   description:
     "Opens a page of the dashboard for the API key's environment in your browser: overview (the " +
-    "default), emails, templates, received, suppressions, tracking, broadcasts, contacts, " +
-    "audiences, segments, topics, marketing, risk, hooks, api-keys, webhooks, logs, log-drains, " +
-    "or one of its organization's: projects, domains, dedicated-ips, members, reputation, " +
-    "settings, billing, audit-log.",
+    `default), ${Object.keys(ENVIRONMENT_PAGES)
+      .filter((page) => page !== "overview")
+      .join(", ")}, or one of its organization's: ${Object.keys(ORGANIZATION_PAGES).join(", ")}.`,
   flags: FLAGS,
   positionals: true,
   positionalChoices: PAGES,

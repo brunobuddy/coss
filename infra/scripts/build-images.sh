@@ -28,6 +28,9 @@ if ! aws ecr describe-images --repository-name coss/base/bun --image-ids "imageT
     || aws ecr describe-images --repository-name coss/base/bun --image-ids "imageTag=$bun_version-slim" >/dev/null
 fi
 docker buildx create --use --driver docker-container >/dev/null
+case " $* " in
+  *" site "*) infra/scripts/site-content-dates.sh ;;
+esac
 
 build() {
   local service="$1" image="$REGISTRY/coss/$1" release_arg deps cache cache_to=()
@@ -36,7 +39,7 @@ build() {
     return 0
   fi
   case "$service" in
-    web | site | portal | sign) release_arg="NEXT_DEPLOYMENT_ID=$TAG" ;;
+    web | site | portal | sign | scheduling) release_arg="NEXT_DEPLOYMENT_ID=$TAG" ;;
     *) release_arg="SENTRY_RELEASE=$TAG" ;;
   esac
   # Only the dependency layers are reusable (the build layer depends on the commit), so the layer
@@ -53,6 +56,7 @@ build() {
     --file "apps/$service/Dockerfile" \
     --platform linux/arm64 \
     --build-arg "$release_arg" \
+    --build-arg "BASE_PATCH_WEEK=$(date -u +%G-W%V)" \
     --build-arg "BUN_IMAGE=$bun_image" \
     --build-arg NODE_IMAGE=public.ecr.aws/docker/library/node \
     --secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \

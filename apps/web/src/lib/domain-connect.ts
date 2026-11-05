@@ -1,4 +1,5 @@
 import "server-only";
+import { orgLinkHref } from "@coss/dashboard-routes";
 import {
   type DomainRow,
   domainRecords,
@@ -96,7 +97,7 @@ export function domainConnectUrl(
   const key = signer();
   if (!key) throw new Error("Domain Connect is not configured.");
   const redirectUri = new URL(
-    `/${target.orgSlug}/domains/${target.domainId}?dns_connect=done`,
+    orgLinkHref(target.orgSlug, `/email/domains/${target.domainId}?dns_connect=done`),
     env.BETTER_AUTH_URL,
   );
   return domainConnectApplyUrl(

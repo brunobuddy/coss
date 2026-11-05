@@ -30,6 +30,17 @@ export function planWith(predicate: (entitlements: Entitlements) => boolean): Pl
   return PLAN_KEYS.find((key) => predicate(PLANS[key].entitlements)) ?? "enterprise";
 }
 
+/** Features whose label reads as a plural, for "are available" in refusals. */
+const PLURAL_FEATURES: ReadonlySet<FeatureKey> = new Set([
+  "trackingDomains",
+  "logDrains",
+  "dedicatedIps",
+  "subaccounts",
+  "calendarDelegation",
+  "schedulingHolds",
+  "schedulingWhiteLabel",
+]);
+
 export function featureUnavailable(feature: FeatureKey): BillingError {
   const addOn = addOnGranting(feature);
   if (addOn) {
@@ -40,9 +51,10 @@ export function featureUnavailable(feature: FeatureKey): BillingError {
     );
   }
   const plan = PLANS[planWith((e) => e.features[feature])].name;
+  const plural = PLURAL_FEATURES.has(feature);
   return new BillingError(
     "plan_feature_unavailable",
-    `${FEATURE_LABELS[feature]} ${feature === "auditLog" ? "is" : "are"} available on the ${plan} plan and above.`,
+    `${FEATURE_LABELS[feature]} ${plural ? "are" : "is"} available on the ${plan} plan and above.`,
   );
 }
 
@@ -70,6 +82,13 @@ export function createPlanGate(opts: { systemOrganizationId?: string | null } = 
       const entitlements = await entitlementsFor(organizationId);
       if (!entitlements.features[feature]) throw featureUnavailable(feature);
     },
+    async hasFeature(organizationId, feature) {
+      if (exempt(organizationId)) return true;
+      // The plan in effect: a scheduled downgrade only narrows what can be created.
+      return (await billingStateAt(organizationId, new Date())).terms.entitlements.features[
+        feature
+      ];
+    },
     async requireCapacity(organizationId, limit, current, count = 1) {
       if (exempt(organizationId)) return;
       const value = (await entitlementsFor(organizationId)).limits[limit];
@@ -78,6 +97,10 @@ export function createPlanGate(opts: { systemOrganizationId?: string | null } = 
     async limit(organizationId, limit) {
       if (exempt(organizationId)) return null;
       return (await entitlementsFor(organizationId)).limits[limit];
+    },
+    async currentLimit(organizationId, limit) {
+      if (exempt(organizationId)) return null;
+      return (await billingStateAt(organizationId, new Date())).terms.entitlements.limits[limit];
     },
   };
 }
@@ -130,6 +153,19 @@ export function createUsageGate(
         periodStart: periodOf(now).start,
         plan: state.terms.plan,
       });
+    },
+    async exhausted(organizationId, meter) {
+      if (organizationId === opts.systemOrganizationId) return false;
+      const cacheKey = `${organizationId}:${meter}:`;
+      const cached = cache.get(cacheKey);
+      if (cached && !cached.capped && cached.expiresAt > Date.now()) return false;
+      const now = new Date();
+      const { terms } = await billingStateAt(organizationId, now);
+      if (meterAvailability(terms, meter) !== "available") return true;
+      const cap = terms.usageCaps[meter];
+      cache.set(cacheKey, { capped: cap !== undefined, expiresAt: Date.now() + ttlMs });
+      if (cap === undefined) return false;
+      return (await reservedThisPeriod(organizationId, meter, now)) >= cap;
     },
     async release(tx, input) {
       if (input.quantity <= 0) return;
@@ -205,6 +241,21 @@ export async function reservedThisPeriod(
       ),
     );
   return row?.reserved ?? 0;
+}
+
+/**
+ * Whether a capped plan's allowance of a meter is used up this period, for pages that explain
+ * what follows. `false` without a cap.
+ */
+export async function allowanceUsedUp(
+  organizationId: string,
+  meter: MeterKey,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const { terms } = await billingStateAt(organizationId, now);
+  const cap = terms.usageCaps[meter];
+  if (cap === undefined) return false;
+  return (await reservedThisPeriod(organizationId, meter, now)) >= cap;
 }
 
 /**

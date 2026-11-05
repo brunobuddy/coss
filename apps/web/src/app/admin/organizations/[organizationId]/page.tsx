@@ -1,4 +1,6 @@
-import { usageByDay } from "@coss/billing";
+import { billingStateAt, usageByDay } from "@coss/billing";
+import { PLANS } from "@coss/billing/catalog";
+import { getHipaaImpact, getHipaaMode } from "@coss/compliance";
 import {
   dedicatedIpCapacity,
   dedicatedIpPoolObject,
@@ -45,6 +47,7 @@ import { AuditLogTable } from "@/components/admin/audit-log-table";
 import { listHref } from "@/components/admin/list-controls";
 import { AdminOrganizationTabs } from "@/components/admin/organization-tabs";
 import { OrganizationStatusBadge } from "@/components/admin/status-badges";
+import { SupportTicketsPanel } from "@/components/admin/support-tickets-panel";
 import { StackedBars } from "@/components/charts/stacked-bars";
 import { DomainStatusBadge } from "@/components/domain-badges";
 import { PageHeader } from "@/components/page-header";
@@ -59,14 +62,17 @@ import {
 import { SpecItem, SpecList } from "@/components/spec-list";
 import { Stat, StatRow } from "@/components/stat-row";
 import { abuseCategoryLabel } from "@/lib/abuse-categories";
+import { planHas } from "@/lib/billing";
 import { formatDateTime } from "@/lib/format";
 import { requirePlatformAdmin } from "@/lib/session";
 import { isSystemOrganization } from "@/lib/system-organization";
 import {
   deleteOrganizationAdminAction,
+  disableHipaaModeAction,
   disableOrganizationScimAction,
   disableOrganizationSsoAction,
   disableOrganizationSsoRequirementAction,
+  enableHipaaModeAction,
   resetRateLimitOverrideAction,
   revokeApiKeyAction,
   setRateLimitOverrideAction,
@@ -87,6 +93,7 @@ const BUCKET_LABELS: Partial<Record<BucketName, string>> = {
   "api.read": "API reads, per key",
   "api.write": "API writes, per key",
   "api.send": "API send requests, per key",
+  "api.mcp": "Hosted MCP server requests, per key",
   "risk.assess": "Risk assessments and lookups, per key",
   "risk.classify": "Risk content classifications per second, per organization",
   "risk.classify.day": "Risk content classifications per day, per organization",
@@ -96,6 +103,7 @@ const BUCKET_LABELS: Partial<Record<BucketName, string>> = {
   "email.recipients.second": "Live recipients per second, per organization",
   "email.recipients.day": "Live recipients per day, per organization",
   "email.sandbox_recipients.day": "Sandbox recipients per day, per environment",
+  "email.inbound.megabytes.day": "MB received per day past each email's first, per organization",
   "dashboard.invitations": "Member invitations per day, per organization",
   "dashboard.migration_connections": "Provider keys checked for imports per day, per organization",
   "hooks.messages.second": "Live Hooks messages per second, per organization",
@@ -134,6 +142,9 @@ export default async function AdminOrganizationPage({
     takedown,
     dedicatedIps,
     capacity,
+    hipaaMode,
+    hipaaImpact,
+    auditLogOnPlan,
   ] = await Promise.all([
     listOrganizationMembers({ organizationId: organization.id }),
     listOrganizationApiKeysForAdmin(organization.id),
@@ -148,7 +159,11 @@ export default async function AdminOrganizationPage({
     planOrganizationTakedown(organization.id),
     dedicatedIpPoolObject(organization.id),
     dedicatedIpCapacity(),
+    getHipaaMode(organization.id),
+    getHipaaImpact(organization.id),
+    planHas(organization.id, "auditLog"),
   ]);
+  const billing = await billingStateAt(organization.id, now);
   const isSystem = await isSystemOrganization(organization.id);
   const banned = takedown.members.filter((member) => member.keptBecause === null);
   const kept = takedown.members.filter((member) => member.keptBecause !== null);
@@ -172,6 +187,9 @@ export default async function AdminOrganizationPage({
                 deleting={deletion !== null}
                 suspended={suspension !== null}
               />
+              <Badge variant={billing.terms.plan === "free" ? "outline" : "secondary"}>
+                {PLANS[billing.terms.plan].name}
+              </Badge>
               <code className="font-mono text-xs">/{organization.slug}</code>
               <code className="font-mono text-xs">{organization.id}</code>
             </>
@@ -180,6 +198,90 @@ export default async function AdminOrganizationPage({
         />
         <AdminOrganizationTabs organizationId={organization.id} />
       </div>
+
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>HIPAA mode</PanelTitle>
+          <PanelDescription>
+            {hipaaMode
+              ? `On since ${formatDateTime(hipaaMode.enabledAt)}. Agreement ${hipaaMode.baaReference}, signed ${hipaaMode.baaSignedAt.toISOString().slice(0, 10)}. A contract ending doesn't turn it off.`
+              : "Turn this on once the organization's BAA is signed. Charge for it with a custom add-on on its contract."}
+          </PanelDescription>
+          <PanelAction>
+            {hipaaMode ? (
+              <AdminActionDialog
+                icon="organization"
+                action={disableHipaaModeAction}
+                description="AI screening, tracking and content storage go back to what the organization's settings say for new messages, and staff can view its content again. Its two-factor requirement stays on. The change appears in its audit log."
+                destructive
+                fields={fields}
+                reason="required"
+                reasonPlaceholder="e.g. BAA ended, ticket #1234"
+                submitLabel="Turn off HIPAA mode"
+                success="HIPAA mode turned off"
+                title={`Turn off HIPAA mode for ${organization.name}?`}
+                triggerLabel="Turn off"
+              />
+            ) : isSystem ? null : (
+              <AdminActionDialog
+                icon="organization"
+                action={enableHipaaModeAction}
+                description="This turns off AI screening and tracking, discards live email content, requires two-factor authentication, limits SMS to US numbers and stops staff from viewing the organization's content. The change appears in its audit log."
+                fields={fields}
+                reason="required"
+                reasonPlaceholder="e.g. Contract signed, ticket #1234"
+                submitLabel="Turn on HIPAA mode"
+                success="HIPAA mode turned on"
+                title={`Turn on HIPAA mode for ${organization.name}?`}
+                triggerLabel="Turn on"
+              >
+                <Field>
+                  <FieldLabel>Date the BAA was signed</FieldLabel>
+                  <Input name="baaSignedAt" required type="date" />
+                </Field>
+                <Field>
+                  <FieldLabel>BAA reference</FieldLabel>
+                  <Input name="baaReference" placeholder="e.g. BAA-2026-014" required />
+                </Field>
+                <div className="flex flex-col gap-2 text-sm">
+                  <p className="font-medium">What this organization will notice</p>
+                  <ul className="list-disc ps-5 text-muted-foreground">
+                    <li>
+                      {hipaaImpact.membersWithoutTwoFactor} of {members.length} members must set up
+                      two-factor authentication, or sign in through the organization's SSO
+                    </li>
+                    <li>
+                      {hipaaImpact.liveEnvironmentsTracking} live{" "}
+                      {hipaaImpact.liveEnvironmentsTracking === 1
+                        ? "environment loses"
+                        : "environments lose"}{" "}
+                      open and click tracking
+                    </li>
+                    <li>
+                      {hipaaImpact.smsOutsideUsLast30Days} live{" "}
+                      {hipaaImpact.smsOutsideUsLast30Days === 1 ? "SMS" : "SMS messages"} to numbers
+                      outside the US in the last 30 days, which will be refused
+                    </li>
+                    <li>Every member signs in again the next time they open the organization</li>
+                    {hipaaImpact.dedicatedPool ? (
+                      <li>
+                        Mail uses shared IPs until the dedicated pool requires TLS, usually within
+                        minutes
+                      </li>
+                    ) : null}
+                  </ul>
+                  {auditLogOnPlan ? null : (
+                    <p className="text-destructive-foreground">
+                      The plan doesn't include the audit log, so this will be refused until the
+                      contract grants it.
+                    </p>
+                  )}
+                </div>
+              </AdminActionDialog>
+            )}
+          </PanelAction>
+        </PanelHeader>
+      </Panel>
 
       <Panel>
         <PanelHeader>
@@ -193,6 +295,7 @@ export default async function AdminOrganizationPage({
           <PanelAction className="flex flex-wrap gap-2">
             {suspension ? (
               <AdminActionDialog
+                icon="organization"
                 action={unsuspendOrganizationAction}
                 description="API keys that weren't revoked work again immediately and held webhook deliveries resume. Members banned by a takedown stay banned, and revoked keys stay revoked."
                 fields={fields}
@@ -204,6 +307,7 @@ export default async function AdminOrganizationPage({
               />
             ) : isSystem ? null : (
               <AdminActionDialog
+                icon="organization"
                 action={suspendOrganizationAction}
                 description="Every API key is refused (403 organization_suspended), webhook deliveries are held, and members can only view the dashboard. Nothing is revoked or banned, and nothing is reported: use it while you investigate, or for a legal or billing hold."
                 destructive
@@ -218,6 +322,7 @@ export default async function AdminOrganizationPage({
             )}
             {isSystem || deletion ? null : (
               <AdminActionDialog
+                icon="organization"
                 action={takeDownOrganizationAction}
                 description={
                   <>
@@ -348,6 +453,8 @@ export default async function AdminOrganizationPage({
         </Alert>
       ) : null}
 
+      <SupportTicketsPanel organizationId={organization.id} />
+
       <Panel
         action={
           <Button
@@ -425,6 +532,7 @@ export default async function AdminOrganizationPage({
             <PanelAction className="flex flex-wrap gap-2">
               {sso.requireSso ? (
                 <AdminActionDialog
+                  icon="sso"
                   action={disableOrganizationSsoRequirementAction}
                   description="Members can open the organization with any sign-in method again. SSO keeps working for those who can use it; the organization's owners can require it again."
                   fields={fields}
@@ -438,6 +546,7 @@ export default async function AdminOrganizationPage({
               ) : null}
               {sso.domainVerified ? (
                 <AdminActionDialog
+                  icon="sso"
                   action={disableOrganizationSsoAction}
                   description="Nobody can sign in through this provider, and the SSO requirement is turned off. Its configuration is kept: saving it again in the organization's settings turns it back on."
                   destructive
@@ -473,6 +582,7 @@ export default async function AdminOrganizationPage({
           {scim ? (
             <PanelAction>
               <AdminActionDialog
+                icon="directory"
                 action={disableOrganizationScimAction}
                 description="Every token of the organization's directory stops working and SSO no longer requires an active directory user. Members it provisioned stay. The organization's admins can connect a directory again."
                 destructive
@@ -565,6 +675,7 @@ export default async function AdminOrganizationPage({
                   </TableCell>
                   <TableCell className="text-right">
                     <AdminActionDialog
+                      icon="apiKey"
                       action={revokeApiKeyAction}
                       description="Requests using this key are rejected immediately. This can't be undone; the organization can create a new key."
                       destructive
@@ -670,6 +781,7 @@ export default async function AdminOrganizationPage({
                   <TableCell className="text-right">
                     <span className="inline-flex gap-2">
                       <AdminActionDialog
+                        icon="rateLimit"
                         action={setRateLimitOverrideAction}
                         description={
                           bucket === "email.recipients.second"
@@ -718,6 +830,7 @@ export default async function AdminOrganizationPage({
                       </AdminActionDialog>
                       {override ? (
                         <AdminActionDialog
+                          icon="rateLimit"
                           action={resetRateLimitOverrideAction}
                           description={`Back to ${describeRule(BUCKETS[bucket])}, within a minute.`}
                           fields={{ ...fields, bucket }}
@@ -748,8 +861,9 @@ export default async function AdminOrganizationPage({
             </PanelDescription>
             <PanelAction>
               <AdminActionDialog
+                icon="organization"
                 action={deleteOrganizationAdminAction}
-                description="This can't be undone. Its domains become available to other organizations once they are released."
+                description="This can't be undone. Its domains become available to other organizations once they are released, and its phone numbers go back to the carrier, so port any it wants to keep first."
                 destructive
                 fields={fields}
                 reason="required"

@@ -5,6 +5,8 @@
  * environment as "<app name> via coss.com". Sandbox environments always send in their own
  * environment (the fake provider: nothing is delivered, and the code — zeros — is readable).
  */
+
+import { isHipaaMode } from "@coss/compliance";
 import {
   checkSuppression,
   EmailError,
@@ -33,6 +35,7 @@ export function verifyEmailSender(opts: {
     environment: SendEnvironment,
     from: string,
     category: string,
+    html: string,
   ) {
     // A suppressed address would only be skipped at dispatch, after the verification looked sent.
     // The customer's own list counts whichever environment sends: its bounces and complaints are
@@ -51,7 +54,7 @@ export function verifyEmailSender(opts: {
       to: [input.to],
       subject: input.subject,
       text: input.text,
-      html: input.html,
+      html,
       category,
       // The code is a secret: never through tracking, never kept after sending.
       tracking: { opens: false, clicks: false, unsubscribe: false },
@@ -65,6 +68,10 @@ export function verifyEmailSender(opts: {
         params,
         idempotencyKey: input.idempotencyKey,
         discardBody: input.environment.mode === "live",
+        // A row in coss.com's environment: the mode's own checks can't see whose code this is.
+        hipaaOrigin:
+          environment !== input.environment &&
+          (await isHipaaMode(input.environment.organizationId)),
       }));
     } catch (error) {
       // The send's key already made an email here (sent, its id lost before Verify saved it),
@@ -107,12 +114,13 @@ export function verifyEmailSender(opts: {
         input.environment,
         input.from ?? named(input.appName, SANDBOX_FROM),
         "verification",
+        input.html,
       );
       return { route: "email", ...sent };
     }
     if (input.from) {
       try {
-        const sent = await send(input, input.environment, input.from, "verification");
+        const sent = await send(input, input.environment, input.from, "verification", input.html);
         return { route: "email", ...sent };
       } catch (error) {
         // The domain stopped being verified: coss.com's sender takes over.
@@ -130,6 +138,7 @@ export function verifyEmailSender(opts: {
       opts.coss.environment,
       named(`${input.appName} via coss.com`, opts.coss.address),
       "account",
+      input.cossHtml,
     );
     return { route: "coss_email", ...sent };
   };

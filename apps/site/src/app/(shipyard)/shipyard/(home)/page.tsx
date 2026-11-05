@@ -3,6 +3,7 @@ import { ArrowRightIcon, DownloadIcon, PlayIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { JsonLd } from "@/components/json-ld";
 import { CopyLine } from "@/components/shipyard/copy-line";
 import {
   FleetDrawing,
@@ -15,20 +16,15 @@ import {
   WatchDrawing,
 } from "@/components/shipyard/drawings";
 import { Stage } from "@/components/shipyard/stage";
+import { freeSoftwareSchema, pageMetadata } from "@/lib/seo";
 import { SHIPYARD } from "@/lib/shipyard";
 
-export const metadata: Metadata = {
-  title: { absolute: SHIPYARD.title },
+export const metadata: Metadata = pageMetadata({
+  title: SHIPYARD.title,
   description: SHIPYARD.description,
-  alternates: { canonical: SHIPYARD.url },
-  openGraph: {
-    title: SHIPYARD.title,
-    description: SHIPYARD.description,
-    siteName: SHIPYARD.name,
-    type: "website",
-    url: SHIPYARD.url,
-  },
-};
+  path: SHIPYARD.path,
+  image: SHIPYARD.image,
+});
 
 const links = SHIPYARD.links;
 const guide = (name: string) => `${SHIPYARD.docs}/guides/${name}`;
@@ -40,6 +36,15 @@ const guide = (name: string) => `${SHIPYARD.docs}/guides/${name}`;
 export default function Page() {
   return (
     <main className="mx-auto w-full max-w-[1440px] flex-1">
+      <JsonLd
+        data={freeSoftwareSchema({
+          name: SHIPYARD.name,
+          description: SHIPYARD.description,
+          path: SHIPYARD.path,
+          operatingSystem: "macOS",
+          repository: SHIPYARD.github,
+        })}
+      />
       <Hero />
       <WorksWith />
       <Features />
@@ -431,16 +436,19 @@ function Install() {
         ))}
       </ol>
       <div className="flex flex-wrap gap-x-6 gap-y-2 border-t px-4 py-6 text-sm sm:px-8">
-        {ENDS.map((item) => (
-          <a
-            className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-            href={item.href}
-            key={item.label}
-          >
-            {item.label}
-            <ArrowRightIcon className="size-3.5" />
-          </a>
-        ))}
+        {ENDS.map((item) => {
+          const Anchor = item.href.startsWith("/") ? Link : "a";
+          return (
+            <Anchor
+              className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
+              href={item.href}
+              key={item.label}
+            >
+              {item.label}
+              <ArrowRightIcon className="size-3.5" />
+            </Anchor>
+          );
+        })}
       </div>
     </section>
   );

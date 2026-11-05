@@ -13,6 +13,11 @@ import type { InboxMessageReceivedWebhookEvent } from "./inbox.ts";
 import type { ReceivedEmailVerdicts } from "./received-email.ts";
 import type { MarketingStanding, ReputationCheck, ReputationStatus } from "./reputation.ts";
 import type { RiskDecision, RiskEvent, RiskOutcome, RiskReason } from "./risk.ts";
+import type {
+  SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
+  SchedulingCalendarWebhookEvent,
+} from "./scheduling.ts";
 import type { SignRequestWebhookEvent } from "./sign.ts";
 import type {
   ReceivedSmsEventType,
@@ -482,4 +487,7 @@ export type WebhookEvent =
   | ReceivedSmsWebhookEvent
   | SignRequestWebhookEvent
   | VerificationWebhookEvent
-  | FormSubmissionWebhookEvent;
+  | FormSubmissionWebhookEvent
+  | SchedulingBookingWebhookEvent
+  | SchedulingCalendarWebhookEvent
+  | SchedulingCalendarDelegationWebhookEvent;

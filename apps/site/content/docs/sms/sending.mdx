@@ -1,6 +1,6 @@
 ---
 title: Sending SMS
-description: Numbers, segments, statuses, scheduling, failures and suppressions.
+description: "Send SMS with coss.sms.send(): numbers, segments, statuses, failures, scheduling, suppressions, limits, content screening and billing."
 ---
 
 ```ts twoslash
@@ -38,7 +38,7 @@ Canada. Sandbox keys accept any `from` and simulate every message ([testing](/do
 | `sender_not_ready`     | `422`  | `from` can't send yet: its registration isn't approved                |
 | `country_not_allowed`  | `422`  | `to` is in a country your organization doesn't allow, or a toll-free number sends outside the US and Canada |
 | `account_suspended`    | `403`  | Live sending is suspended for your organization's [reputation](/docs/sms/receiving#opt-outs-and-reputation) |
-| `billing_hold`         | `402`  | An invoice is overdue or the spend limit was reached ([billing](/docs/billing#limits-and-paused-sending)) |
+| `billing_hold`         | `402`  | An invoice is overdue or the spend or credit limit was reached ([billing](/docs/billing#limits-and-paused-sending)) |
 | `plan_feature_unavailable` | `402` | Your plan doesn't include SMS, or the destination country isn't priced |
 
 ## Segments

@@ -148,7 +148,7 @@ function CredentialsStep(props: {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sign in to coss.com</CardTitle>
+        <CardTitle render={<h1>Sign in to coss.com</h1>} />
         <CardDescription>
           Use your email and password
           {props.providers.map((provider) => `, ${SOCIAL_PROVIDER_LABELS[provider]}`).join("")}, a
@@ -261,7 +261,7 @@ function TwoFactorStep(props: {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Two-factor authentication</CardTitle>
+        <CardTitle render={<h1>Two-factor authentication</h1>} />
         <CardDescription>
           {method === "totp"
             ? "Enter the 6-digit code from your authenticator app."

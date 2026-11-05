@@ -370,6 +370,16 @@ export async function reinstateSubaccount(input: {
       now,
       reinstated: true,
     });
+    if (moved) {
+      await tx
+        .delete(schema.emailSenderDomainBlock)
+        .where(
+          and(
+            eq(schema.emailSenderDomainBlock.organizationId, input.organizationId),
+            eq(schema.emailSenderDomainBlock.groupId, input.id),
+          ),
+        );
+    }
     return { row: moved ?? row, changed: Boolean(moved) };
   });
 }

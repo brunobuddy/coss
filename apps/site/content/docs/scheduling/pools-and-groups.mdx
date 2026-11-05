@@ -1,0 +1,88 @@
+---
+title: Pools and groups
+description: "Event types for more than one person: pools that pick any available host, collective bookings with several hosts, and group sessions with seats."
+---
+
+An event type's `kind` says who a booking needs.
+
+## Pools: any available host
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: eventType } = await coss.scheduling.eventTypes.create({
+  title: "See the next available doctor",
+  kind: "pool",
+  duration_minutes: 15,
+  hosts: [{ host: "doctor_482", weight: 200 }, { host: "doctor_483" }],
+  host_filter: { team: "urgent-care" },
+});
+```
+
+Hosts come from `hosts`, plus any active host matching all of `host_filter` right now. A slot is offered if anyone's
+free, and a booking goes to whoever's furthest behind their share (`weight`), then whoever's waited
+longest. If they've just been taken, it moves on to the next.
+
+Someone who joins an existing pool, or comes back to it, starts level with the others rather than
+owing a backlog, so they join the rotation instead of taking every booking until they've caught up.
+Changing a host's `weight` applies from then on, in the same way.
+
+Narrow one booking with `attributes`, such as who's licensed in the patient's state:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+await coss.scheduling.bookings.create({
+  event_type: eventTypeId,
+  start: "2027-01-04T15:00:00Z",
+  attributes: { licensed_in: "CA" },
+  attendee: { uid: "patient_77", time_zone: "America/Los_Angeles" },
+});
+```
+
+See [Routing](/docs/scheduling/routing) for sending each person to the right kind of host.
+
+## Who's free?
+
+For a marketplace's search page: each matching host's soonest slots, soonest first, across up to 500 hosts.
+In live environments your plan sets how many hosts one search covers
+(<Limit of="schedulingSearchHosts" plan="free" /> on Free, <Limit of="schedulingSearchHosts" plan="pro" /> on Pro,
+<Limit of="schedulingSearchHosts" plan="scale" /> on Scale). `has_more` is `true` when there were more than it looked at.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+const { data } = await coss.scheduling.availability.search({
+  event_type: eventTypeId,
+  start: "2027-01-04T00:00:00Z",
+  end: "2027-01-18T00:00:00Z",
+  attributes: { language: "es" },
+  slots_per_host: 3,
+});
+```
+
+## Collective: several hosts at once
+
+With `kind: "collective"`, every host with `role: "required"` must be free, such as a doctor and an
+interpreter. Add at most one `member`, and one of a pool is chosen alongside them.
+
+## Group sessions
+
+With `kind: "group"` and a `capacity`, each attendee books a seat in the same session, with a booking and
+manage link of their own. The host's time is taken once, by the first seat, and given back with the last.
+A full session answers `slot_unavailable`. A seat moves by cancelling it and booking another session.
+Slots of a group event type carry `seats_left`, and the hosted booking page shows it next to each time. In
+live environments your plan sets the largest `capacity`: <Limit of="schedulingGroupSeats" plan="free" /> on
+Free, <Limit of="schedulingGroupSeats" plan="pro" /> on Pro and <Limit of="schedulingGroupSeats" plan="scale" /> on Scale.
+
+A session is one meeting. The first seat's `location` is everyone's, so don't pass one attendee's own details in
+it: a `phone` location only ever shows the number on the event type, and a booking page's seat can't fill one in.
+A later seat asking for another type of location answers `invalid_event_type`, and changing a seat's location
+changes the session's. The host's calendar has one event, from the first confirmed seat until the last has left,
+and every confirmed seat gets its Meet or Teams link, `location_ready`, `external_conflict` and
+`calendar_write_failed` webhooks. A hold that expired confirms with `if_still_free` only while a seat is free.

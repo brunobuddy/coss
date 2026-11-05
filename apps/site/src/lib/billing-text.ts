@@ -3,10 +3,12 @@ import {
   ADD_ONS,
   type AddOnDefinition,
   addOnGranting,
+  CREDIT_POLICY,
   FEATURE_KEYS,
   FEATURE_LABELS,
   type FeatureKey,
   formatDimension,
+  formatSupportTarget,
   LIMIT_KEYS,
   LIMIT_LABELS,
   type LimitKey,
@@ -20,6 +22,8 @@ import {
   type Product,
   RATE_CARDS,
   type Rate,
+  SUPPORT_HOURS,
+  SUPPORT_TIERS,
 } from "@coss/billing/catalog";
 import { formatCents, formatUnitPrice } from "@coss/billing/money";
 import { emailTierCharges, formatPrice, METER_NOTES } from "./pricing";
@@ -27,8 +31,48 @@ import { emailTierCharges, formatPrice, METER_NOTES } from "./pricing";
 /** "3,000 email recipients a month"; inbox-days read as the inboxes they cover. */
 function includedText(meter: MeterKey, n: number): string {
   if (meter === "email.inboxes") return `${Math.floor(n / 31).toLocaleString("en-US")} inboxes`;
+  if (meter === "scheduling.hosts") {
+    return `${Math.floor(n / 31).toLocaleString("en-US")} Scheduling hosts`;
+  }
   if (meter === "email.received") return `${n.toLocaleString("en-US")} received emails a month`;
   return `${meterAmount(meter, n)} a month`;
+}
+
+/** What support each plan gets, as rows (`<SupportTable />`, and the first two in `planRows`). */
+export function supportRows(): { label: string; values: string[] }[] {
+  return [
+    {
+      label: "Support response target",
+      values: PLAN_KEYS.map((key) =>
+        formatSupportTarget(SUPPORT_TIERS[key].responseMinutes.normal),
+      ),
+    },
+    {
+      label: "Urgent issues",
+      values: PLAN_KEYS.map((key) => {
+        const urgent = SUPPORT_TIERS[key].responseMinutes.urgent;
+        return urgent === null ? "Not included" : formatSupportTarget(urgent);
+      }),
+    },
+    {
+      label: "Front of the queue",
+      values: PLAN_KEYS.map((key) => (SUPPORT_TIERS[key].frontOfQueue ? "Yes" : "No")),
+    },
+    {
+      label: "Channels",
+      values: PLAN_KEYS.map((key) => SUPPORT_TIERS[key].channels.join(", ")),
+    },
+    {
+      label: "Contractual SLA with credits",
+      values: PLAN_KEYS.map((key) => (key === "enterprise" ? "By contract" : "No")),
+    },
+    {
+      label: "Hours",
+      values: PLAN_KEYS.map((key) =>
+        key === "enterprise" ? `${SUPPORT_HOURS.label}; 24x7 by contract` : SUPPORT_HOURS.label,
+      ),
+    },
+  ];
 }
 
 /** The plans and their features, as rows (shared by the MDX table and the Markdown for /llms*.txt). */
@@ -55,6 +99,7 @@ export function planRows(): { label: string; values: string[] }[] {
       ),
     },
     { label: "Included", values: PLAN_KEYS.map(included) },
+    ...supportRows().slice(0, 2),
     {
       label: "Usage beyond it",
       values: plans.map((plan) =>
@@ -97,6 +142,14 @@ export function planRows(): { label: string; values: string[] }[] {
         return `${limit.toLocaleString("en-US")} marketing emails a second`;
       }),
     },
+    {
+      label: "Scheduling slot rate",
+      values: plans.map((plan) => {
+        if (plan.key === "enterprise") return "Custom";
+        const { limit } = plan.entitlements.rateLimits["scheduling.slots.second"];
+        return `${limit.toLocaleString("en-US")} slot lists or searches a second`;
+      }),
+    },
     ...LIMIT_KEYS.map((key) => ({
       label: LIMIT_LABELS[key],
       values: plans.map((plan) =>
@@ -115,6 +168,10 @@ export function planRows(): { label: string; values: string[] }[] {
             : "—",
       ),
     })),
+    {
+      label: "HIPAA mode with a BAA",
+      values: plans.map((plan) => (plan.key === "enterprise" ? "By contract" : "—")),
+    },
   ];
 }
 
@@ -240,6 +297,11 @@ export function renderBillingComponents(markdown: string): string {
       (row) => `| ${row.name} | ${row.price} | ${row.plans} | ${row.description} |`,
     ),
   ].join("\n");
+  const supportTable = [
+    `| | ${PLAN_KEYS.map((key) => PLANS[key].name).join(" | ")} |`,
+    `| --- | ${PLAN_KEYS.map(() => "---").join(" | ")} |`,
+    ...supportRows().map((row) => `| ${row.label} | ${row.values.join(" | ")} |`),
+  ].join("\n");
   return renderInlineBillingComponents(markdown)
     .replaceAll("<PlanTable />", planTable)
     .replaceAll("<UsageRates />", rateTable())
@@ -247,13 +309,27 @@ export function renderBillingComponents(markdown: string): string {
     .replace(/<UsageRates meters="([a-z_.,]+)" \/>/g, (_, meters: string) =>
       rateTable(meters.split(",") as MeterKey[]),
     )
-    .replaceAll("<AddOns />", addOnTable);
+    .replaceAll("<AddOns />", addOnTable)
+    .replaceAll("<SupportTable />", supportTable);
 }
 
 /*
  * Inline facts for prose (the product, solution and comparison pages, and their MDX components
  * in src/components/billing.tsx): a price or a limit is always read from the catalog, never typed.
  */
+
+const CREDIT_AMOUNTS = {
+  "new-limit": CREDIT_POLICY.newAccountLimitCents,
+  "max-limit": CREDIT_POLICY.maxAutomaticLimitCents,
+  "min-threshold": CREDIT_POLICY.minThresholdCents,
+  "max-threshold": CREDIT_POLICY.maxThresholdCents,
+} as const;
+export type CreditAmountKey = keyof typeof CREDIT_AMOUNTS;
+
+/** "$500": an amount of the credit policy. */
+export function creditAmountText(of: CreditAmountKey): string {
+  return formatCents(CREDIT_AMOUNTS[of]).replace(/\.00$/, "");
+}
 
 /** "Scale and Enterprise", or "Pro, Scale and Enterprise": the plans with a feature (or its add-on). */
 export function plansWithText(feature: FeatureKey): string {
@@ -366,6 +442,9 @@ export function renderInlineBillingComponents(markdown: string): string {
       limitText(limit as LimitKey, plan as PlanKey),
     )
     .replace(/<PlanPrice plan="([a-z]+)" \/>/g, (_, plan) => planPriceText(plan as PlanKey))
+    .replace(/<CreditAmount of="([a-z-]+)" \/>/g, (_, of) =>
+      creditAmountText(of as CreditAmountKey),
+    )
     .replaceAll("<GraduatedExample />", graduatedExampleText())
     .replaceAll("<BillingExample />", billingExampleMarkdown());
 }

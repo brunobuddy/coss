@@ -6,7 +6,7 @@
  */
 import { SITE_ASSET_PREFIX, ZONE_ROUTES, type ZoneRoute } from "@coss/auth/slugs";
 
-export type TargetGroup = "web" | "site" | "portal" | "sign" | "api";
+export type TargetGroup = "web" | "site" | "portal" | "sign" | "scheduling" | "api";
 
 /**
  * CloudFront origins of the coss.com distribution: the ALB (every app in ECS), and one per
@@ -35,23 +35,21 @@ export const DASHBOARD_HOST = "coss.com";
 export const API_HOST = "api.coss.com";
 
 /**
- * Tracking links live on their own domain, `cosslinks.com` (a self-serve Cloudflare account
- * separate from coss.com's), so a sender's abuse flagged by URL blocklists never lands on
- * coss.com. This host is both the default tracking URL (`TRACKING_PUBLIC_URL`) and the Cloudflare
- * for SaaS fallback origin customers CNAME their tracking domains (e.g. `links.acme.com`) to: a
- * proxied record pointing at the ALB, which gets every request with the caller's hostname as
- * `Host`. The default for `TRACKING_CNAME_TARGET`.
+ * Tracking links live on their own domain, `cosslinks.com` (a self-serve Cloudflare account for its
+ * DNS, separate from coss.com's), so a sender's abuse flagged by URL blocklists never lands on
+ * coss.com. This host is the default tracking URL (`TRACKING_PUBLIC_URL`). Customers' tracking
+ * domains (e.g. `links.acme.com`) are tenants of a CloudFront multi-tenant distribution instead, and
+ * CNAME to its connection group's routing endpoint (`TRACKING_CNAME_TARGET`), not to this host.
  */
 export const TRACKING_HOST = "track.cosslinks.com";
-/** Added to every request by a Cloudflare request header transform rule (its own secret). */
+/** Added to every origin request by the tracking distributions (its own secret). */
 export const TRACKING_ORIGIN_VERIFY_HEADER = "X-Tracking-Origin-Verify";
 export const TRACKING_ORIGIN_VERIFY_PLACEHOLDER = "<tracking-origin-verify-secret>";
 /**
  * The Hooks portal (apps/portal) lives on a registrable domain of its own, `cosshooks.com` (the
  * self-serve Cloudflare account, like cosslinks.com): under coss.com it would be same-site with the
- * dashboard, and customers embed it in their own pages. A proxied record points at the ALB, whose
- * certificate covers it (SSL mode Full (strict)); a request header transform rule adds the secret
- * below, without which the ALB forwards nothing to the portal. The apex redirects to coss.com.
+ * dashboard, and customers embed it in their own pages. A CloudFront distribution of its own adds
+ * the secret below, without which the ALB forwards nothing to the portal. The apex redirects to coss.com.
  */
 export const PORTAL_HOST = "portal.cosshooks.com";
 export const PORTAL_ORIGIN_VERIFY_HEADER = "X-Portal-Origin-Verify";
@@ -59,8 +57,7 @@ export const PORTAL_ORIGIN_VERIFY_PLACEHOLDER = "<portal-origin-verify-secret>";
 /**
  * Sign's signing app (apps/sign) lives on a registrable domain of its own too, `cosssign.com` (the
  * same self-serve Cloudflare account): signers open its links from emails and customers embed it.
- * Set up like the portal (proxied record, the ALB's certificate, a header transform rule with its
- * own secret), but on the apex, which signing links point at; `www` redirects to it.
+ * Set up like the portal, but on the apex, which signing links point at; `www` redirects to it.
  */
 export const SIGN_HOST = "cosssign.com";
 export const SIGN_ORIGIN_VERIFY_HEADER = "X-Sign-Origin-Verify";
@@ -68,15 +65,21 @@ export const SIGN_ORIGIN_VERIFY_PLACEHOLDER = "<sign-origin-verify-secret>";
 
 /**
  * Forms' public endpoint and hosted pages (`/f/*`, served by the api) live on a registrable domain
- * of their own, so phishing reports about a form never land on coss.com. The same self-serve
- * Cloudflare account and setup as Sign's (proxied apex record, the ALB's certificate for it, a
- * header transform rule with its own secret); only `/f/*` reaches the api.
+ * of their own, so phishing reports about a form never land on coss.com. Set up like Sign's; only
+ * `/f/*` reaches the api.
  */
 export const FORMS_HOST = "cossforms.com";
 export const FORMS_ORIGIN_VERIFY_HEADER = "X-Forms-Origin-Verify";
 export const FORMS_ORIGIN_VERIFY_PLACEHOLDER = "<forms-origin-verify-secret>";
 /** The only paths the forms host serves. */
 export const FORMS_PATH_PATTERN = "/f/*";
+
+/**
+ * Scheduling's hosted pages (`apps/scheduling`) on a registrable domain of their own, set up like Sign's.
+ */
+export const SCHEDULING_HOST = "cossbook.com";
+export const SCHEDULING_ORIGIN_VERIFY_HEADER = "X-Scheduling-Origin-Verify";
+export const SCHEDULING_ORIGIN_VERIFY_PLACEHOLDER = "<scheduling-origin-verify-secret>";
 
 /** The API's open pixel and click redirect routes, the only paths custom hostnames serve. */
 export const TRACKING_PATH_PATTERN = "/t/*";
@@ -93,6 +96,84 @@ export function albPathPatterns(route: ZoneRoute): string[] {
   return [route.path, `${route.path}/*`];
 }
 
+/**
+ * The registrable domains that keep apart from coss.com, each behind a CloudFront distribution of
+ * its own that adds its host's origin header. Only Next's hashed assets are cached.
+ */
+export type HostedDistribution = {
+  host: string;
+  originVerifyHeader: string;
+  originVerifySecret: string;
+  waf: "hosted" | "tracking";
+  cachedBehaviours: CacheBehaviour[];
+};
+
+const NEXT_ASSETS: CacheBehaviour[] = [
+  {
+    pathPattern: "/_next/static/*",
+    origin: "alb",
+    cache: "origin",
+    reason: "Hashed, immutable assets of the hosted Next apps.",
+  },
+];
+
+export function hostedDistributions(): Record<string, HostedDistribution> {
+  return {
+    portal: {
+      host: PORTAL_HOST,
+      originVerifyHeader: PORTAL_ORIGIN_VERIFY_HEADER,
+      originVerifySecret: PORTAL_ORIGIN_VERIFY_PLACEHOLDER,
+      waf: "hosted",
+      cachedBehaviours: NEXT_ASSETS,
+    },
+    sign: {
+      host: SIGN_HOST,
+      originVerifyHeader: SIGN_ORIGIN_VERIFY_HEADER,
+      originVerifySecret: SIGN_ORIGIN_VERIFY_PLACEHOLDER,
+      waf: "hosted",
+      cachedBehaviours: NEXT_ASSETS,
+    },
+    scheduling: {
+      host: SCHEDULING_HOST,
+      originVerifyHeader: SCHEDULING_ORIGIN_VERIFY_HEADER,
+      originVerifySecret: SCHEDULING_ORIGIN_VERIFY_PLACEHOLDER,
+      waf: "hosted",
+      cachedBehaviours: NEXT_ASSETS,
+    },
+    forms: {
+      host: FORMS_HOST,
+      originVerifyHeader: FORMS_ORIGIN_VERIFY_HEADER,
+      originVerifySecret: FORMS_ORIGIN_VERIFY_PLACEHOLDER,
+      waf: "hosted",
+      cachedBehaviours: [],
+    },
+    tracking: {
+      host: TRACKING_HOST,
+      originVerifyHeader: TRACKING_ORIGIN_VERIFY_HEADER,
+      originVerifySecret: TRACKING_ORIGIN_VERIFY_PLACEHOLDER,
+      waf: "tracking",
+      cachedBehaviours: [],
+    },
+  };
+}
+
+/** Hosts that only redirect. `keepPath` appends the request's path and query to `to`. */
+export const HOSTED_REDIRECTS: Record<string, { to: string; keepPath: boolean }> = {
+  "www.cosssign.com": { to: `https://${SIGN_HOST}`, keepPath: true },
+  "www.cossbook.com": { to: `https://${SCHEDULING_HOST}`, keepPath: true },
+  "www.cossforms.com": { to: `https://${FORMS_HOST}`, keepPath: true },
+  "cosshooks.com": { to: `https://${DASHBOARD_HOST}/`, keepPath: false },
+  "cosslinks.com": { to: `https://${DASHBOARD_HOST}/`, keepPath: false },
+  "www.coss.com": { to: `https://${DASHBOARD_HOST}`, keepPath: true },
+  "ui.coss.com": { to: `https://${DASHBOARD_HOST}/ui`, keepPath: true },
+  "mail.coss.com": { to: "https://mail.google.com/a/coss.com", keepPath: false },
+  "calendar.coss.com": { to: "https://www.google.com/calendar/hosted/coss.com", keepPath: false },
+  "drive.coss.com": { to: "https://drive.google.com/a/coss.com", keepPath: false },
+};
+
+/** Where anything on the forms host outside `/f/*` goes. */
+export const FORMS_OTHER_PATHS_REDIRECT = `https://${DASHBOARD_HOST}/docs/forms`;
+
 /** One listener rule in the shape of `aws elbv2 create-rule --conditions`. */
 export type ListenerRule = {
   priority: number;
@@ -106,11 +187,11 @@ export type ListenerRule = {
 
 /**
  * The HTTPS listener's rules, in priority order. The listener's default action is a fixed 403:
- * a request without CloudFront's (or, for tracking, Cloudflare's) origin header matches no rule.
+ * a request without one of CloudFront's origin headers matches no rule.
  * api.coss.com goes first, so the coss.com rules don't need a host condition; then the tracking
- * routes on any host (customer tracking domains, from Cloudflare), the Hooks portal and Sign's
- * signing app (also from Cloudflare, each with its own header); then the dashboard (default zone)
- * and, after it, Forms' host (from Cloudflare, with its own header).
+ * routes on any host (customer tracking domains, from CloudFront), the Hooks portal and Sign's
+ * signing app (each with its own header); then the dashboard (default zone) and, after it, Forms'
+ * and Scheduling's hosts (each with its own header).
  */
 export function albListenerRules(): ListenerRule[] {
   const verified = {
@@ -200,6 +281,19 @@ export function albListenerRules(): ListenerRule[] {
         HttpHeaderConfig: {
           HttpHeaderName: FORMS_ORIGIN_VERIFY_HEADER,
           Values: [FORMS_ORIGIN_VERIFY_PLACEHOLDER],
+        },
+      },
+    ],
+  });
+  tail.push({
+    targetGroup: "scheduling",
+    conditions: [
+      { Field: "host-header", HostHeaderConfig: { Values: [SCHEDULING_HOST] } },
+      {
+        Field: "http-header",
+        HttpHeaderConfig: {
+          HttpHeaderName: SCHEDULING_ORIGIN_VERIFY_HEADER,
+          Values: [SCHEDULING_ORIGIN_VERIFY_PLACEHOLDER],
         },
       },
     ],

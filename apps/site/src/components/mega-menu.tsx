@@ -5,18 +5,19 @@ import { buttonVariants } from "@coss/ui/components/button";
 import { cn } from "@coss/ui/lib/utils";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ChevronDown } from "lucide-react";
+import { ArrowRightIcon, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
-import { PartDrawing } from "@/components/home/part-drawing";
-import { PRODUCTS } from "@/components/home/parts";
+import { ProductTile } from "@/components/marketing/product-tile";
 import {
   DEVELOPER_COLUMNS,
   HEADER_BAR_ID,
   type MenuColumn,
   type MenuLink,
-  PRODUCT_COLUMNS,
+  PLATFORM_LINKS,
+  PRODUCT_LINKS,
+  type ProductLink,
   SITE_SHELL_ID,
 } from "@/lib/nav";
 import type { NavItem } from "@/lib/site";
@@ -27,7 +28,7 @@ const TRIGGER = cn(
 );
 
 /**
- * The header's mega menu: "Products" (every product by family, from `PRODUCT_COLUMNS`) and, on
+ * The header's mega menu: "Products" (every product, from `PRODUCT_LINKS`) and, on
  * the main site, "Developers" and Pricing. A section with its own links (Shipyard, kloq) passes
  * them as `links` instead of the developer menu.
  */
@@ -44,7 +45,7 @@ export function MegaMenu({ links }: { links?: readonly NavItem[] }) {
             <ChevronDown />
           </NavigationMenu.Trigger>
           <NavigationMenu.Content className={CONTENT}>
-            <Panel columns={PRODUCT_COLUMNS} feature={<AgentFeature />} />
+            <ProductsPanel />
           </NavigationMenu.Content>
         </NavigationMenu.Item>
         {links ? (
@@ -121,6 +122,88 @@ function TopLink({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
+/**
+ * The products panel: every product by name and tile, then the platform's links along the bottom.
+ * Its edges line up with the header's wordmark and account links (24px, 36px once the rails show).
+ */
+function ProductsPanel() {
+  return (
+    <div className="flex flex-col">
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_18rem] min-[90rem]:grid-cols-[minmax(0,1fr)_20rem]">
+        <ul className="grid grid-flow-col grid-cols-3 grid-rows-5 content-start gap-x-2 gap-y-0.5 px-3.5 py-3 xl:pe-2 min-[90rem]:ps-6.5">
+          {PRODUCT_LINKS.map((product) => (
+            <li className={product.items ? "row-span-5" : undefined} key={product.slug}>
+              <ProductEntry product={product} />
+              {product.items ? (
+                <ul className="ms-7 flex flex-col border-border/64 border-s ps-[1.1875rem]">
+                  {product.items.map((item) => (
+                    <li key={item.slug}>
+                      <ProductEntry product={item} sub />
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        <div className="flex p-3 max-xl:hidden min-[90rem]:pe-9">
+          <AgentFeature />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-border/64 border-t px-6 py-3 text-sm min-[90rem]:px-9">
+        {PLATFORM_LINKS.map((link) => (
+          <NavigationMenu.Link
+            className="rounded-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:underline"
+            closeOnClick
+            key={link.href}
+            render={<Link href={link.href} />}
+          >
+            {link.label}
+          </NavigationMenu.Link>
+        ))}
+        <NavigationMenu.Link
+          className="group ms-auto flex items-center gap-1 rounded-sm font-medium outline-none focus-visible:underline"
+          closeOnClick
+          render={<Link href="/products" />}
+        >
+          All products
+          <ArrowRightIcon
+            aria-hidden
+            className="size-3.5 transition-transform group-hover:translate-x-0.5"
+          />
+        </NavigationMenu.Link>
+      </div>
+    </div>
+  );
+}
+
+/** A product by tile and name. Under Email the rule stands in for the tile. */
+function ProductEntry({ product, sub }: { product: ProductLink; sub?: boolean }) {
+  return (
+    <NavigationMenu.Link
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-2.5 outline-none transition-colors hover:bg-accent focus-visible:bg-accent",
+        sub ? "py-1.5" : "py-2",
+      )}
+      closeOnClick
+      render={<Link href={product.href} />}
+    >
+      {sub ? null : <ProductTile slug={product.slug} />}
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex items-center gap-1.5 font-medium text-sm">
+          {product.label}
+          {product.badge && (
+            <Badge size="sm" variant="info">
+              {product.badge}
+            </Badge>
+          )}
+        </span>
+        <span className="text-muted-foreground text-xs leading-snug">{product.description}</span>
+      </span>
+    </NavigationMenu.Link>
+  );
+}
+
 /** A panel: one ruled column per group, then a featured cell. */
 function Panel({ columns, feature }: { columns: readonly MenuColumn[]; feature: ReactNode }) {
   return (
@@ -144,7 +227,7 @@ function Panel({ columns, feature }: { columns: readonly MenuColumn[]; feature: 
           </ul>
         </section>
       ))}
-      <div className="drafting-grid flex flex-col p-5">{feature}</div>
+      <div className="flex flex-col bg-muted/48 p-5">{feature}</div>
     </div>
   );
 }
@@ -156,14 +239,7 @@ function MenuEntry({ link }: { link: MenuLink }) {
         <HugeiconsIcon className="size-4" icon={link.icon} strokeWidth={1.75} />
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="flex items-center gap-1.5 font-medium text-sm">
-          {link.label}
-          {link.badge && (
-            <Badge size="sm" variant="info">
-              {link.badge}
-            </Badge>
-          )}
-        </span>
+        <span className="font-medium text-sm">{link.label}</span>
         <span className="text-muted-foreground text-xs leading-snug">{link.description}</span>
       </span>
     </>
@@ -176,24 +252,24 @@ function MenuEntry({ link }: { link: MenuLink }) {
         "outline-none transition-colors hover:bg-accent focus-visible:bg-accent",
       )}
       closeOnClick
-      // biome-ignore lint/a11y/useAnchorContent: the entry's content renders inside
-      render={link.zone ? <a href={link.href} /> : <Link href={link.href} />}
+      render={<Link href={link.href} />}
     >
       {body}
     </NavigationMenu.Link>
   );
 }
 
-/** The products panel's feature: the catalog's email part, and the agent setup. */
+/** The products panel's feature: the agent setup, and the one command it comes down to. */
 function AgentFeature() {
-  const email = PRODUCTS.find((product) => product.id === "email");
   return (
     <NavigationMenu.Link
-      className="group flex h-full flex-col justify-between gap-4 rounded-lg border bg-background p-4 outline-none transition-colors hover:border-foreground/24 focus-visible:border-foreground/24"
+      className="group flex w-full flex-col justify-between gap-4 rounded-lg border bg-muted/48 p-4 outline-none transition-colors hover:border-foreground/24 focus-visible:border-foreground/24"
       closeOnClick
       render={<Link href="/#agents" />}
     >
-      {email && <PartDrawing call={email.call} className="mx-auto w-28" part={email.id} />}
+      <code className="overflow-hidden whitespace-nowrap rounded-md border bg-background px-3 py-2.5 font-mono text-[0.6875rem]">
+        <span className="text-muted-foreground">$ </span>npx coss-cli init --agents
+      </code>
       <span className="flex flex-col gap-1">
         <span className="font-medium text-sm">Set up coss.com with your agent</span>
         <span className="text-muted-foreground text-xs leading-snug">

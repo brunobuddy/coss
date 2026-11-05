@@ -18,8 +18,10 @@ const LEGACY_VERSION = "v1";
 
 export type SecretsKey = { id: string; key: Buffer };
 
-/** The parsed `WEBHOOK_SECRETS_KEY`. */
+/** A parsed key ring: `WEBHOOK_SECRETS_KEY`, or another variable of the same form. */
 export type SecretsKeyRing = {
+  /** The variable it came from, for errors. */
+  name: string;
   /** Encrypts every new ciphertext. */
   primary: SecretsKey;
   /** Every key, primary first. */
@@ -37,14 +39,17 @@ export function secretsKeyId(key: Buffer): string {
 }
 
 /** A key ring from raw 32-byte keys, newest first. */
-export function secretsKeyRing(keys: readonly Buffer[]): SecretsKeyRing {
+export function secretsKeyRing(
+  keys: readonly Buffer[],
+  name = "WEBHOOK_SECRETS_KEY",
+): SecretsKeyRing {
   const ring = keys.map((key) => ({ id: secretsKeyId(key), key }));
   const [primary] = ring;
-  if (!primary) throw new Error("A webhook secrets key ring needs at least one key.");
+  if (!primary) throw new Error(`${name} needs at least one key.`);
   if (new Set(ring.map((entry) => entry.id)).size !== ring.length) {
-    throw new Error("WEBHOOK_SECRETS_KEY lists the same key twice.");
+    throw new Error(`${name} lists the same key twice.`);
   }
-  return { primary, keys: ring };
+  return { name, primary, keys: ring };
 }
 
 /** Parses `WEBHOOK_SECRETS_KEY`: comma-separated 32-byte base64 keys, newest first. */
@@ -85,9 +90,7 @@ export function decryptSecret(stored: string, keys: SecretsKeyRing): string {
     const [version, keyId, iv, ciphertext, tag] = parts as [string, string, string, string, string];
     const entry = keys.keys.find((candidate) => candidate.id === keyId);
     if (!entry) {
-      throw new Error(
-        `This webhook secret was encrypted with key ${keyId}, which is not in WEBHOOK_SECRETS_KEY.`,
-      );
+      throw new Error(`This value was encrypted with key ${keyId}, which is not in ${keys.name}.`);
     }
     return decryptWith(entry.key, { iv, ciphertext, tag }, `${version}:${keyId}`);
   }
@@ -100,9 +103,9 @@ export function decryptSecret(stored: string, keys: SecretsKeyRing): string {
         // GCM authenticates: a wrong key fails here, so try the next one.
       }
     }
-    throw new Error("No key in WEBHOOK_SECRETS_KEY decrypts this webhook secret.");
+    throw new Error(`No key in ${keys.name} decrypts this value.`);
   }
-  throw new Error("Unsupported webhook secret format.");
+  throw new Error("Unsupported encrypted value format.");
 }
 
 /** Whether `stored` is already encrypted with the ring's primary key. */

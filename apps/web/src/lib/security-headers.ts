@@ -56,8 +56,19 @@ export function securityHeaders({ dev }: { dev: boolean }): { key: string; value
  * so it is applied in `next.config.ts`, after the default policy.
  */
 export const RECEIVED_CONTENT_PATHS = [
-  "/:orgSlug/projects/:projectSlug/:envSlug/received/:receivedId/raw",
-  "/:orgSlug/projects/:projectSlug/:envSlug/received/:receivedId/attachments/:attachmentId",
+  "/:orgSlug/:projectSlug/:envSlug/email/received/:receivedId/raw",
+  "/:orgSlug/:projectSlug/:envSlug/email/received/:receivedId/attachments/:attachmentId",
+  "/:orgSlug/support/attachments/:attachmentId",
+  "/admin/support/attachments/:attachmentId",
 ];
 
 export const RECEIVED_CONTENT_CSP = "sandbox; default-src 'none'";
+
+/**
+ * Organization logos: images from the organization's own website (SVG included), served from the
+ * dashboard's origin. Sandboxed with no scripts should one be opened directly; inline styles stay,
+ * since many SVG logos style themselves (light and dark variants).
+ */
+export const LOGO_PATH = "/:orgSlug/settings/logo";
+
+export const LOGO_CSP = "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:";

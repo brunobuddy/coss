@@ -20,6 +20,8 @@ export interface Environment {
   organization: NamedResource & {
     /** The organization's pinned API version (for requests without `Coss-Version`). */
     api_version: string;
+    /** Whether the organization is in HIPAA mode, which refuses some requests. */
+    hipaa_mode: boolean;
   };
   /** The API key making the request. */
   api_key: {

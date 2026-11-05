@@ -1,13 +1,19 @@
-import type { Form, FormSubmission } from "coss";
+import type { CreateFormParams, Form, FormSubmission, UpdateFormParams } from "coss";
+import { fetchFormSubmissionDiagnosis } from "coss/diagnose";
 import { z } from "zod";
-import { ok, respond, run, truncate, unwrap } from "../result.ts";
+import { fail, failWith, ok, respond, run, truncate, unwrap } from "../result.ts";
+import { TOOL_REFERENCES } from "./diagnose-references.ts";
+import { FORM_DIAGNOSIS_OUTPUT } from "./output-schemas.ts";
 import {
   compact,
   cursorSchema,
+  given,
   limitSchema,
   nextCursor,
   READ_ONLY,
+  SENDS,
   type ToolContext,
+  WRITE,
 } from "./shared.ts";
 
 const UNTRUSTED =
@@ -74,6 +80,49 @@ export function registerFormTools(ctx: ToolContext): void {
   );
 
   server.registerTool(
+    "get_form",
+    {
+      title: "Get a form",
+      description: "One form with every setting: fields, spam, notifications, contacts, files.",
+      inputSchema: z.object({ id: formId }),
+      annotations: READ_ONLY,
+    },
+    ({ id }) => respond(coss.forms.get(id)),
+  );
+
+  server.registerTool(
+    "save_form",
+    {
+      title: "Create or update a form",
+      description:
+        "With an id it updates that form; without one it creates a form (name needed). `endpoint` " +
+        "in the answer is where a site posts to. `settings` takes the rest (spam, submitter, " +
+        "notifications, contacts, files, hosted): read_docs on /docs/forms has them.",
+      inputSchema: z.object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+        enabled: z.boolean().optional(),
+        fields: z
+          .array(z.record(z.string(), z.unknown()))
+          .nullable()
+          .optional()
+          .describe("{ name, type, label?, required? }; `null`: any field is accepted."),
+        strict_fields: z.boolean().optional(),
+        allowed_origins: z.array(z.string()).optional(),
+        redirect_url: z.string().nullable().optional(),
+        settings: z.record(z.string(), z.unknown()).optional(),
+      }),
+      annotations: WRITE,
+    },
+    ({ id, settings, ...fields }) => {
+      const body = { ...settings, ...given(fields) };
+      if (id) return respond(coss.forms.update(id, body as UpdateFormParams), formSummary);
+      if (!fields.name) return failWith("A new form needs a name.");
+      return respond(coss.forms.create(body as CreateFormParams), formSummary);
+    },
+  );
+
+  server.registerTool(
     "list_form_submissions",
     {
       title: "List a form's submissions",
@@ -123,5 +172,60 @@ export function registerFormTools(ctx: ToolContext): void {
           submission: { ...submission, data: values(submission.data, text_limit) },
         });
       }),
+  );
+
+  server.registerTool(
+    "diagnose_form_submission",
+    {
+      title: "Diagnose a form submission",
+      description:
+        'Answers "what happened to this submission?": accepted and sent on, held by Risk, marked ' +
+        "spam (and why), or waiting for the submitter to confirm; what the submitter saw, and " +
+        "where it goes from here. Spam is answered exactly like a success, so a submitter who saw " +
+        "a success proves nothing. Without `submission_id`, the form's newest. It leaves the " +
+        "submitted values out (get_form_submission has them).",
+      inputSchema: z.object({
+        form_id: z.string().describe("The form's id (form_…). list_forms finds it."),
+        submission_id: z.string().optional().describe("The submission's id (fsub_…)."),
+      }),
+      outputSchema: FORM_DIAGNOSIS_OUTPUT,
+      annotations: READ_ONLY,
+    },
+    ({ form_id, submission_id }) =>
+      run(async () => {
+        let target = submission_id;
+        if (!target) {
+          const [newest] = unwrap(await coss.forms.submissions.list(form_id, { limit: 1 })).data;
+          if (!newest) {
+            return failWith("This form has no submissions in this API key's environment.", {
+              hint:
+                "A refused post (a disallowed origin, a failed captcha, a disabled form) creates " +
+                'nothing; spam is kept, so it\'s listed. search_logs with source ["forms"] ' +
+                "shows what arrived.",
+            });
+          }
+          target = newest.id;
+        }
+        const { data, error } = await fetchFormSubmissionDiagnosis(coss, form_id, target, {
+          references: TOOL_REFERENCES,
+        });
+        return error ? fail(error) : ok(data);
+      }),
+  );
+
+  server.registerTool(
+    "release_form_submission",
+    {
+      title: "Release a held submission",
+      description:
+        "Accepts a submission Risk held for review: it then goes to the form's webhooks, " +
+        "notification emails and contacts. Look at it with get_form_submission first.",
+      inputSchema: z.object({
+        form_id: formId,
+        id: z.string().describe("The submission id (fsub_…)."),
+      }),
+      annotations: SENDS,
+    },
+    ({ form_id, id }) => respond(coss.forms.submissions.release(form_id, id), submissionSummary),
   );
 }

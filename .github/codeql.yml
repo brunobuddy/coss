@@ -1,0 +1,10 @@
+# Generated and vendored code: changes to it come from elsewhere, and findings there can't be fixed here.
+paths-ignore:
+  - sdks/**
+  - packages/kloq/src/**
+  - packages/ui/src/components/**
+  - packages/ui/src/hooks/**
+  - packages/ui/src/lib/**
+  - packages/db/migrations/**
+  - packages/signals/src/disposable-domains.generated.ts
+  - apps/api/openapi.json

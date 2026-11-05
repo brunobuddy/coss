@@ -1,0 +1,134 @@
+---
+title: HIPAA mode
+description: "HIPAA mode for organizations with a signed BAA: who turns it on, what it changes, what it refuses with hipaa_mode_restriction and what stays up to you."
+icon: ShieldCheck
+---
+
+HIPAA mode is one switch for your whole organization, for organizations that handle protected
+health information (PHI). It narrows where PHI can go and who at coss.com can reach it. The
+safeguards support your HIPAA compliance, which also depends on how you use coss.com.
+
+<Callout type="warn">
+Don't send PHI to coss.com without a signed Business Associate Agreement. Our
+[Terms](/legal/terms) don't allow it.
+</Callout>
+
+## Turning it on
+
+HIPAA mode is contract-only: it comes with an Enterprise contract and isn't available on self-serve
+plans. You can't turn it on yourself, by any key or role. Ask for it from **Settings → Compliance**
+in the dashboard. Then:
+
+1. **You sign a Business Associate Agreement (BAA)** with coss.com, and the mode becomes a line on
+   your contract.
+2. **Your contract must include the audit log**, as Enterprise does.
+3. **coss.com staff turn it on** and record the BAA's date and reference. It applies at once,
+   including to messages still waiting to go out.
+
+Only coss.com staff can turn it off. Billing never does: a contract ending or a downgrade leaves the
+mode on until someone decides otherwise. When it's turned off, requiring two-factor authentication
+stays on until an owner changes it.
+
+Every member can see the mode's status, your BAA and the vendors below on **Settings → Compliance**.
+Your code can read it too, and so can agents, through the MCP server's `get_account_status`:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: environment } = await coss.environment.get();
+console.log(environment?.organization.hipaa_mode);
+//                                     ^?
+```
+
+## What it changes
+
+| Control                                | What it does                                                                                     |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **AI screening off**                   | Your messages are never sampled or sent to an AI model ([content screening](/docs/content-screening)). |
+| **AI classification off**              | Risk, Forms and Scheduling never send text to an AI model. Form submissions and assessments continue without content scores. |
+| **Phone lookups off**                  | Live phone checks are refused, so numbers aren't sent to Twilio Lookup.                          |
+| **Push notifications off**             | Your organization's and projects' names don't pass through Apple.                                |
+| **SMS limited to US numbers**          | Live SMS goes to US numbers only, message bodies aren't kept after sending, and Verify codes need your own number. |
+| **Email content discarded**            | Subjects, bodies, headers and template variables of live emails are deleted as soon as each email is finished. |
+| **Open and click tracking off**        | Live emails have no tracking pixel or rewritten links, so link URLs aren't stored. Unsubscribe links still work. |
+| **Request bodies not logged**          | API logs and log drains keep metadata such as the path and status, with no request or response bodies or query strings. |
+| **Two-factor authentication required** | Every member needs two-factor authentication, or SSO through your own provider. Owners can't turn the requirement off. |
+| **Automatic logoff**                   | Dashboard sessions end after 15 minutes without activity. Activity in organizations outside HIPAA mode doesn't count. |
+| **coss.com staff can't view content**  | Staff can't reveal email content or impersonate your members, and internal email lists hide subjects and recipients. |
+| **Encrypted delivery required**        | Email is sent only over TLS. A message is dropped rather than delivered unencrypted if the receiving server doesn't support it. |
+| **Audit log kept**                     | Changes in your organization, including anything coss.com support does, are recorded and kept for as long as your account exists. |
+
+Sandbox environments reach no vendor and keep test messages for developers to read, so the limits
+on stored data, tracking and SMS apply to live environments only. Keep PHI out of them: they aren't
+covered.
+
+A few details:
+
+- **Mail coss.com sends for you.** When Forms, Sign, Verify or Scheduling send from coss.com's own
+  sender because you haven't set one, those emails get the same rules: no screening, no stored
+  content, required TLS and hidden from staff.
+- **Dropped email.** coss.com may not hear that a message was dropped for lack of TLS, so its
+  recipient can stay `sent`.
+- **Dedicated IPs.** Your mail uses shared IPs until your dedicated IPs require TLS, usually within
+  minutes of turning the mode on.
+
+## What it refuses
+
+A request the mode refuses fails with `403` `permission_error` and the code
+`hipaa_mode_restriction`, whatever the key's permissions. The [SMTP relay](/docs/email/smtp) answers
+`550`. Retrying won't help, and neither will another key.
+
+| Request in a live environment                                    | Result                                                                                |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| A send or broadcast that turns on `tracking`, or changing the tracking settings to turn it on | Refused. Without asking for it, emails simply go untracked.                           |
+| Setting [content storage](/docs/email/content-storage) to `store` | Refused                                                                               |
+| `coss.sms.send()` to a number outside the US                     | Refused. A message accepted before the mode was turned on fails with that code at dispatch. |
+| `coss.verify.start()` for SMS without an `sms_from` in Verify's settings, or to a number outside the US | Refused. See [SMS codes](/docs/verify/sms#which-number-sends-it).                     |
+| `coss.risk.checkPhone()`                                         | Refused                                                                               |
+| `coss.risk.classify()`                                           | Refused                                                                               |
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { error } = await coss.sms.send({
+  from: "+14155550123",
+  to: "+447700900123",
+  body: "Your appointment is confirmed.",
+});
+if (error?.code === "hipaa_mode_restriction") {
+  // Not retryable: reach this recipient another way.
+}
+```
+
+Other things stop quietly instead. `coss.risk.assess()` answers without content scores, and Forms and
+Scheduling skip their content checks. Scheduling skips SMS reminders to numbers it can't text.
+
+## What stays up to you
+
+- Only send PHI once your BAA is in place, and only from live environments. Sandbox environments keep
+  test emails and aren't covered by the controls above.
+- Discarding only covers sent email and SMS. Received email and SMS, broadcasts, contacts, form
+  submissions and bookings stay stored under your BAA for their normal
+  [retention periods](/docs/data-retention).
+- Keep PHI out of email subject lines and metadata such as tags and categories. Discarding removes a
+  subject only once the email is finished, and tags and categories are kept.
+- Webhook endpoints and log drains deliver to services you choose, so you need your own BAA with them
+  where they receive PHI. Form submission webhooks include what was submitted.
+- Calendars connected to Scheduling (Google, Microsoft, CalDAV) and Zoom receive event titles, under
+  your own agreements with those providers.
+- A captcha you configure on a form sends the submitter's address to that captcha provider.
+
+## Vendors
+
+| Vendor                          | Used for                                                  | In HIPAA mode                                                                 |
+| ------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Amazon Web Services             | Hosting, database, file storage and email delivery (SES)  | Under BAA                                                                     |
+| Twilio Programmable Messaging   | SMS delivery                                              | Under BAA, for US numbers only, which is what Twilio's BAA covers             |
+| Google Workspace                | Mail sent to support@coss.com                             | Under BAA                                                                     |
+| Vercel AI Gateway               | AI content screening and classification                   | Not used                                                                      |
+| Twilio Lookup                   | Phone number checks                                       | Not used                                                                      |
+| Apple Push Notification service | Notifications to the iOS app                              | Not used                                                                      |
+| Stripe                          | Payments                                                  | No PHI expected: it receives billing contacts and invoices only               |
+| Sentry                          | Error reports                                             | No BAA. Content, email addresses and phone numbers are removed from reports, but error text can't be guaranteed free of PHI. |

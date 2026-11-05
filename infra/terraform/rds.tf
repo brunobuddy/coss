@@ -11,6 +11,21 @@ resource "aws_db_parameter_group" "main" {
     value        = "1"
     apply_method = "pending-reboot"
   }
+  # Audits schema and role changes (no parameters or reads: those can hold customer data). Takes
+  # effect after a reboot, then `CREATE EXTENSION pgaudit` (infra/AGENTS.md, "Security monitoring").
+  parameter {
+    name         = "shared_preload_libraries"
+    value        = "pg_stat_statements,pg_tle,pgaudit"
+    apply_method = "pending-reboot"
+  }
+  parameter {
+    name  = "pgaudit.log"
+    value = "ddl,role"
+  }
+  parameter {
+    name  = "pgaudit.log_parameter"
+    value = "0"
+  }
   # Logs statements slower than 1 s (no parameters: they can hold customer data).
   parameter {
     name  = "log_min_duration_statement"
@@ -61,5 +76,21 @@ resource "aws_db_instance" "main" {
   allow_major_version_upgrade           = false
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
-  enabled_cloudwatch_logs_exports       = ["postgresql"]
+  enabled_cloudwatch_logs_exports       = ["postgresql", "upgrade"]
+}
+
+import {
+  to = aws_cloudwatch_log_group.database
+  id = "/aws/rds/instance/${local.name}/postgresql"
+}
+
+# Where pgaudit's lines land; a year, unlike the services' shorter application logs.
+resource "aws_cloudwatch_log_group" "database" {
+  name              = "/aws/rds/instance/${local.name}/postgresql"
+  retention_in_days = 365
+}
+
+resource "aws_cloudwatch_log_group" "database_upgrade" {
+  name              = "/aws/rds/instance/${local.name}/upgrade"
+  retention_in_days = 365
 }

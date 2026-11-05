@@ -15,15 +15,19 @@ import {
   ADMIN_REASON_MAX_LENGTH,
   type AdminActor,
   deleteOrganizationAsAdmin,
+  disableHipaaMode,
   disableOrganizationScim,
   disableOrganizationSso,
   disableOrganizationSsoRequirement,
+  enableHipaaMode,
   getUserForAdmin,
+  isMemberOfHipaaOrganization,
   listUserMembershipsForAdmin,
   planOrganizationTakedown,
   recordAdminAction,
   resetUserTwoFactor,
   revokeApiKeyAsAdmin,
+  setOwnedOrganizationLimit,
   suspendOrganization,
   unlinkUserSso,
   unsuspendOrganization,
@@ -36,6 +40,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { ActionError, formString, runAction } from "@/lib/actions";
 import { supportAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
+import { hasManagedContract, planHas } from "@/lib/billing";
 import { riskHasher, signUpRiskScope } from "@/lib/risk";
 import { requirePlatformAdminAction } from "@/lib/session";
 import { isSystemOrganization, SYSTEM_ORGANIZATION_MESSAGE } from "@/lib/system-organization";
@@ -220,6 +225,42 @@ export async function unlinkUserSsoAction(
   });
 }
 
+/** Lets a user own a different number of organizations than the default. */
+export async function setOwnedOrganizationLimitAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const { actor } = await requirePlatformAdminAction();
+    const userId = formUserId(formData);
+    assertNotSelf(actor, userId);
+    const limit = Number(formString(formData, "limit"));
+    await setOwnedOrganizationLimit({ userId, limit, reason: requiredReason(formData), actor });
+    refresh();
+    return null;
+  });
+}
+
+/** Puts a user back on the default limit of organizations. */
+export async function resetOwnedOrganizationLimitAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const { actor } = await requirePlatformAdminAction();
+    const userId = formUserId(formData);
+    assertNotSelf(actor, userId);
+    await setOwnedOrganizationLimit({
+      userId,
+      limit: null,
+      reason: optionalReason(formData),
+      actor,
+    });
+    refresh();
+    return null;
+  });
+}
+
 /** Signs out every session of the user. */
 export async function revokeUserSessionsAction(
   _previous: ActionResult | null,
@@ -293,6 +334,11 @@ export async function impersonateUserAction(
     const userId = formUserId(formData);
     assertNotSelf(actor, userId);
     const reason = requiredReason(formData);
+    if (await isMemberOfHipaaOrganization(userId)) {
+      throw new ActionError(
+        "This user belongs to an organization in HIPAA mode, so staff can't impersonate them.",
+      );
+    }
     const email = await targetEmail(userId);
     // Better Auth refuses admins and banned users; the response switches the session cookies.
     await auth.api.impersonateUser({ headers: await headers(), body: { userId } });
@@ -334,6 +380,54 @@ export async function unsuspendOrganizationAction(
     const organizationId = formOrganizationId(formData);
     await unsuspendOrganization({ organizationId, reason: optionalReason(formData), actor });
     await supportAudit(organizationId, "organization.unsuspended");
+    refresh();
+    return null;
+  });
+}
+
+export async function enableHipaaModeAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const { actor } = await requirePlatformAdminAction();
+    const organizationId = formOrganizationId(formData);
+    if (await isSystemOrganization(organizationId)) {
+      throw new ActionError(SYSTEM_ORGANIZATION_MESSAGE);
+    }
+    // Contract-only: a signed BAA goes with a contract, never a self-serve plan.
+    if (!(await hasManagedContract(organizationId))) {
+      throw new ActionError(
+        "HIPAA mode is contract-only: give this organization a sales contract first.",
+      );
+    }
+    if (!(await planHas(organizationId, "auditLog"))) {
+      throw new ActionError(
+        "HIPAA mode needs the audit log: put it on this organization's plan or contract first.",
+      );
+    }
+    await enableHipaaMode({
+      organizationId,
+      baaSignedAt: new Date(formString(formData, "baaSignedAt")),
+      baaReference: formString(formData, "baaReference"),
+      reason: requiredReason(formData),
+      actor,
+    });
+    await supportAudit(organizationId, "organization.hipaa_mode_enabled");
+    refresh();
+    return null;
+  });
+}
+
+export async function disableHipaaModeAction(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const { actor } = await requirePlatformAdminAction();
+    const organizationId = formOrganizationId(formData);
+    await disableHipaaMode({ organizationId, reason: requiredReason(formData), actor });
+    await supportAudit(organizationId, "organization.hipaa_mode_disabled");
     refresh();
     return null;
   });

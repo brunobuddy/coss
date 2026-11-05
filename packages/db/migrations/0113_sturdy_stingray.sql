@@ -1,0 +1,1 @@
+ALTER TYPE "public"."log_drain_source" ADD VALUE 'scheduling';

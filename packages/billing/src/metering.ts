@@ -2,9 +2,12 @@
  * Metering: what products call, in the transaction that makes their usage billable (an email
  * becoming `sent`). Imports only `@coss/db`, so any product package can depend on it.
  */
-import { db, type Executor, schema } from "@coss/db";
+import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { type AnyColumn, and, eq, exists, inArray, or, type SQL, sql } from "drizzle-orm";
 import type { MeterKey } from "./catalog/meters.ts";
+import type { UsageGate } from "./gate.ts";
+
+export { billableEmailMegabytes } from "./catalog/meters.ts";
 
 const { billingBudgetHold, billingHold, billingUsage, billingUsageAttribution } = schema;
 
@@ -85,6 +88,33 @@ export async function recordUsage(tx: Executor, input: UsageInput): Promise<void
       ],
       set: { quantity: sql`${billingUsageAttribution.quantity} + excluded.quantity` },
     });
+}
+
+/**
+ * Counts a resource's `days` toward a capped plan's allowance, one by one (each in a savepoint),
+ * until it refuses one. The resource already exists, so days past it are still recorded by the
+ * caller (and written off), never refused.
+ */
+export async function countTowardAllowance(
+  tx: Executor,
+  gate: UsageGate,
+  input: { organizationId: string; meter: MeterKey; days: number },
+): Promise<void> {
+  for (let day = 0; day < input.days; day++) {
+    try {
+      await (tx as Transaction).transaction((savepoint) =>
+        gate.reserve(savepoint, {
+          organizationId: input.organizationId,
+          meter: input.meter,
+          quantity: 1,
+        }),
+      );
+    } catch (error) {
+      const code = (error as { code?: string } | null)?.code;
+      if (code === "usage_limit_exceeded" || code === "plan_feature_unavailable") return;
+      throw error;
+    }
+  }
 }
 
 /** Whether live sending is held for billing (any reason). */

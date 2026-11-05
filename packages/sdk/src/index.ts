@@ -62,6 +62,22 @@ export type {
   RiskUsersResource,
 } from "./resources/risk.ts";
 export type {
+  SchedulingAttendeesResource,
+  SchedulingAvailabilityResource,
+  SchedulingBookingsResource,
+  SchedulingCalendarDelegationsResource,
+  SchedulingCalendarsResource,
+  SchedulingEventTypesResource,
+  SchedulingHoldsResource,
+  SchedulingHostsResource,
+  SchedulingResource,
+  SchedulingSchedulesResource,
+  SchedulingSeriesResource,
+  SchedulingSessionsResource,
+  SchedulingSettingsResource,
+  SchedulingSlotsResource,
+} from "./resources/scheduling.ts";
+export type {
   SignDocumentsResource,
   SignRequestsResource,
   SignResource,
@@ -80,7 +96,7 @@ export type { SubaccountsResource } from "./resources/subaccounts.ts";
 export type { SuppressionResource } from "./resources/suppressions.ts";
 export type { TrackingResource } from "./resources/tracking.ts";
 export type { TrackingDomainsResource } from "./resources/tracking-domains.ts";
-export type { VerifyResource } from "./resources/verify.ts";
+export type { VerifyResource, VerifySettingsResource } from "./resources/verify.ts";
 export type { WebhookDeliveriesResource } from "./resources/webhook-deliveries.ts";
 export type { WebhookEndpointsResource } from "./resources/webhook-endpoints.ts";
 export type { WebhookEventsResource } from "./resources/webhook-events.ts";
@@ -88,12 +104,17 @@ export type { WebhookListenersResource } from "./resources/webhook-listeners.ts"
 export {
   describeSetup,
   fetchSetupReport,
+  type ProductSetup,
   SANDBOX_FROM,
+  SETUP_PRODUCTS,
   type SetupClient,
   type SetupDnsRecord,
   type SetupDomain,
+  type SetupFacts,
   type SetupInput,
+  type SetupProduct,
   type SetupReport,
+  type SetupSmsNumber,
   type SetupWebhookEndpoint,
   SIMULATOR_TO,
 } from "./setup.ts";
@@ -434,6 +455,7 @@ export type {
   UpdateRiskRuleParams,
   UpdateRiskSettingsParams,
 } from "./types/risk.ts";
+export type * from "./types/scheduling.ts";
 export type {
   AnchoredSignFieldInput,
   CreateSignBuilderSessionParams,
@@ -543,6 +565,7 @@ export type {
   CheckVerificationParams,
   ListVerificationsParams,
   StartVerificationParams,
+  UpdateVerifySettingsParams,
   Verification,
   VerificationCheck,
   VerificationReason,
@@ -552,6 +575,7 @@ export type {
   VerificationWebhookEventData,
   VerifyChannel,
   VerifySendRoute,
+  VerifySettings,
   VerifyWebhookEventType,
 } from "./types/verify.ts";
 export type {

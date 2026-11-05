@@ -19,6 +19,8 @@ import type { LogEntryInput, LogWriter } from "@coss/logs";
 import type { ClientIpResolver, RateLimiter } from "@coss/ratelimit";
 import type { RiskDeps } from "@coss/risk";
 import { testRiskDeps } from "@coss/risk/testing";
+import type { SchedulingDeps } from "@coss/scheduling";
+import { testSchedulingDeps } from "@coss/scheduling/testing";
 import type { SignService } from "@coss/sign";
 import { createSmsService, FakeSmsProvider, type SmsService } from "@coss/sms";
 import { memorySmsDispatchQueue } from "@coss/sms/testing";
@@ -63,12 +65,16 @@ export function createTestApp(
     /** Defaults to the fake provider's receiving (managed domain `inbound.coss.test`). */
     inbound?: InboundRuntime | null;
     riskDeps?: RiskDeps;
+    /** `null`: Scheduling is off, as in production without its key. */
+    scheduling?: SchedulingDeps | null;
     /** Enforce plans (`createPlanGate`) and Free's allowance (`createUsageGate`). Off by default. */
     plans?: PlanGate;
     billing?: UsageGate;
     shutdownSignal?: AbortSignal;
     /** Waiting listener polls check this often (default 20 ms, so tests don't wait). */
     listenerPollIntervalMs?: number;
+    /** The hosted MCP server (`createHostedMcp`); not served otherwise. */
+    mcp?: CreateAppOptions["mcp"];
   } = {},
 ) {
   const liveProvider = new FakeEmailProvider({ log: false });
@@ -119,6 +125,7 @@ export function createTestApp(
     plans: opts.plans,
     billing: opts.billing,
     riskDeps: opts.riskDeps ?? testRiskDeps(),
+    scheduling: opts.scheduling === null ? null : (opts.scheduling ?? testSchedulingDeps()),
     rateLimiter: opts.rateLimiter,
     clientIp: opts.clientIp,
 
@@ -127,6 +134,7 @@ export function createTestApp(
     versioning: opts.versioning,
     shutdownSignal: opts.shutdownSignal,
     listenerPollIntervalMs: opts.listenerPollIntervalMs ?? 20,
+    mcp: opts.mcp,
   });
   const dispatch = () => queue.drain(emailService);
   const dispatchSms = () => smsQueue.drain(smsService);
@@ -316,6 +324,7 @@ export function authContext(overrides: Partial<ApiKeyContext> = {}): ApiKeyConte
     environmentId: "env_00000000000000000000000000",
     ownerUserId: null,
     mode: "sandbox",
+    hipaaMode: false,
     apiVersion: LATEST_API_VERSION,
     ...overrides,
   };

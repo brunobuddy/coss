@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet } from "react-native";
-import { colors } from "../lib/theme";
+import { colors, space } from "../lib/theme";
 import { Text } from "./text";
 
 /** Mono text (JSON, headers) that scrolls sideways instead of wrapping. */
@@ -15,6 +15,6 @@ export function CodeBlock({ children }: { children: string }) {
 
 const styles = StyleSheet.create({
   block: { backgroundColor: colors.muted },
-  content: { padding: 16 },
+  content: { padding: space.lg },
   text: { lineHeight: 18 },
 });

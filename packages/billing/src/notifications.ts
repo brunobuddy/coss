@@ -5,6 +5,8 @@
  * the account's billing email (and cc), else to the organization's owners and admins, and to the
  * member a notification is also for (`user_id`: their budget), while they are still a member.
  */
+
+import { settingsHref } from "@coss/dashboard-routes";
 import { db, type Executor, schema } from "@coss/db";
 import { type EmailBlock, oneLine, renderEmail } from "@coss/email-layout";
 import { enqueuePush, type PushKind } from "@coss/push";
@@ -23,6 +25,9 @@ const NOTIFIED_ROLES = ["owner", "admin"];
 export type BillingNotificationKind =
   | "usage_threshold"
   | "spend_limit_reached"
+  | "usage_charged"
+  | "credit_limit_warning"
+  | "credit_limit_reached"
   | "payment_failed"
   | "payment_action_required"
   | "invoice_issued"
@@ -120,6 +125,7 @@ const PUSHED: Partial<
   },
   hold_placed: { kind: "billing_hold_placed", subject: () => "delinquent" },
   spend_limit_reached: { kind: "billing_hold_placed", subject: () => "spend_limit" },
+  credit_limit_reached: { kind: "billing_hold_placed", subject: () => "credit_limit" },
   budget_paused: {
     kind: "billing_budget_paused",
     subject: (payload) => `${payload.scope}:${payload.targetId}`,
@@ -287,7 +293,7 @@ async function renderBillingNotification(
   const payload = row.payload as Record<string, string | number | undefined>;
   const name = org.name;
   const billingUrl = new URL(`/${org.slug}/settings/billing`, dashboardUrl).toString();
-  const spendUrl = new URL(`/${org.slug}/spend`, dashboardUrl).toString();
+  const spendUrl = new URL(settingsHref(org.slug, "/spend"), dashboardUrl).toString();
   let link = { label: "Open billing", url: billingUrl };
   const blocks: EmailBlock[] = [];
   let subject: string;
@@ -314,9 +320,11 @@ async function renderBillingNotification(
       });
       blocks.push({
         paragraph:
-          payload.blocked === "true"
-            ? "Usage stops at the limit until the next billing period. Upgrade to keep sending."
-            : "Usage beyond your plan's credit is billed at your plan's rates.",
+          typeof payload.atLimit === "string"
+            ? payload.atLimit
+            : payload.blocked === "true"
+              ? "Usage stops at the limit until the next billing period. Upgrade to keep sending."
+              : "Usage beyond your plan's credit is billed at your plan's rates.",
       });
       break;
     }
@@ -324,6 +332,33 @@ async function renderBillingNotification(
       subject = `Live sending is paused: ${name} reached its spend limit`;
       blocks.push({
         paragraph: `${name}'s usage beyond its plan credit reached its spend limit of ${payload.limit}. Live sending is paused until the next billing period, or until an owner raises the limit.`,
+      });
+      break;
+    case "usage_charged":
+      subject = `We charged ${payload.amount} for usage so far (${name})`;
+      blocks.push({
+        paragraph: `${name}'s usage this month reached its ${payload.threshold} billing threshold, so we're charging ${payload.amount} to your payment method on invoice ${invoiceLabel}. It comes off this month's invoice, so you only pay for it once.`,
+      });
+      break;
+    case "credit_limit_warning":
+      subject = `${name} is close to its credit limit`;
+      blocks.push({
+        paragraph: `${name} has ${payload.used} of its ${payload.limit} credit limit in use. The limit covers usage not yet invoiced, unpaid invoices and recent charges, and live sending pauses when it's reached.`,
+      });
+      blocks.push({
+        paragraph:
+          "It rises on its own as payments settle. If you expect to need more sooner, ask support to raise it.",
+      });
+      break;
+    case "credit_limit_reached":
+      subject = `Live sending is paused: ${name} ${payload.cause === "over_limit" ? "reached its credit limit" : "has a payment problem"}`;
+      blocks.push({
+        paragraph:
+          payload.cause === "fraud_dispute"
+            ? `A payment for ${name} was disputed as fraudulent, so live sending is paused until coss.com support has looked at it. Sandbox keys still work, and scheduled emails are held, not lost.`
+            : payload.cause === "charge_failed"
+              ? `We couldn't charge ${name}'s usage so far, so live sending is paused. Sandbox keys still work, and scheduled emails are held, not lost. Sending resumes once the charge is paid: check your payment method.`
+              : `${name} reached its ${payload.limit} credit limit, so live sending is paused. Sandbox keys still work, and scheduled emails are held, not lost. The limit rises as payments settle: pay anything open, or ask support to raise it.`,
       });
       break;
     case "payment_failed":
@@ -365,7 +400,10 @@ async function renderBillingNotification(
     case "hold_lifted":
       subject = `Live sending has resumed for ${name}`;
       blocks.push({
-        paragraph: `Thanks — nothing is overdue anymore, so live sending for ${name} has resumed.`,
+        paragraph:
+          payload.reason === "credit_limit"
+            ? `${name} is back within its credit limit, so live sending has resumed.`
+            : `Thanks — nothing is overdue anymore, so live sending for ${name} has resumed.`,
       });
       break;
     case "budget_threshold": {

@@ -4,7 +4,15 @@
  * infra/test checks it against the apps' env schemas, turbo.json and the Dockerfiles.
  */
 
-export type ServiceName = "web" | "site" | "portal" | "sign" | "api" | "worker" | "smtp";
+export type ServiceName =
+  | "web"
+  | "site"
+  | "portal"
+  | "sign"
+  | "scheduling"
+  | "api"
+  | "worker"
+  | "smtp";
 
 /**
  * - `plain`: a task-definition `environment` value (`value`: the production value, or how to get it).
@@ -24,6 +32,8 @@ export type Service = {
   dockerfile: string;
   /** Container port the ALB target group forwards to (absent: no load balancer). */
   port?: number;
+  /** Where the load balancer reaches it, over TLS (infra/runtime/tls-entry.mjs, set by the image). */
+  tlsPort?: number;
   /** ALB target group health check: HTTP 200 expected. Never touches the database. */
   healthCheckPath?: string;
   /**
@@ -68,29 +78,27 @@ const trackingDomains: EnvVar[] = [
     name: "TRACKING_DOMAIN_PROVIDER",
     kind: "plain",
     required: true,
-    value: "cloudflare",
-    description: "Custom tracking domains are Cloudflare for SaaS custom hostnames.",
+    value: "cloudfront",
+    description: "Custom tracking domains are CloudFront distribution tenants.",
   },
   {
-    name: "CLOUDFLARE_API_TOKEN",
-    kind: "secret",
-    required: true,
-    description:
-      "Cloudflare API token limited to the coss.com zone with SSL and Certificates: Edit " +
-      "(custom hostnames). Same value for web, api and worker.",
-  },
-  {
-    name: "CLOUDFLARE_ZONE_ID",
+    name: "TRACKING_DISTRIBUTION_ID",
     kind: "plain",
     required: true,
-    description: "The coss.com zone id (Cloudflare dashboard, zone overview).",
+    description: "The multi-tenant CloudFront distribution tracking domains are tenants of.",
+  },
+  {
+    name: "TRACKING_CONNECTION_GROUP_ID",
+    kind: "plain",
+    required: true,
+    description: "The connection group tracking domains' tenants are created in.",
   },
   {
     name: "TRACKING_CNAME_TARGET",
     kind: "plain",
-    required: false,
-    value: "track.cosslinks.com",
-    description: "The zone's fallback origin, which customers CNAME their tracking domain to.",
+    required: true,
+    description:
+      "The connection group's routing endpoint, which customers CNAME their tracking domain to.",
   },
 ];
 
@@ -157,6 +165,37 @@ const formsFilesBucket: EnvVar = {
     "Forms' bucket of uploaded files (Terraform output forms_files_bucket), with AWS_REGION. Unset: forms refuse uploads in production.",
 };
 
+const supportFilesBucket: EnvVar = {
+  name: "SUPPORT_FILES_BUCKET",
+  kind: "plain",
+  required: false,
+  description:
+    "Support's bucket of ticket attachments (Terraform output support_files_bucket), with AWS_REGION. Unset: tickets take no attachments in production.",
+};
+
+const supportMail: EnvVar[] = [
+  {
+    name: "SUPPORT_ENVIRONMENT_ID",
+    kind: "plain",
+    required: false,
+    description:
+      "A live environment of coss.com's own organization whose received mail becomes tickets. All three SUPPORT_* mail variables or none; unset, support emails wait.",
+  },
+  {
+    name: "SUPPORT_FROM_ADDRESS",
+    kind: "plain",
+    required: false,
+    description:
+      "The address customers see (support@coss.com), on a verified domain of that organization.",
+  },
+  {
+    name: "SUPPORT_REPLY_DOMAIN",
+    kind: "plain",
+    required: false,
+    description: "That environment's receiving domain (reply.coss.com), where replies go.",
+  },
+];
+
 const formsPublicUrl: EnvVar = {
   name: "FORMS_PUBLIC_URL",
   kind: "plain",
@@ -172,6 +211,71 @@ const awsRegion: EnvVar = {
   value: "us-east-2",
   description: "Region of Sign's documents bucket.",
 };
+
+const schedulingEnv: EnvVar[] = [
+  {
+    name: "SCHEDULING_DATA_KEYS",
+    kind: "secret",
+    required: false,
+    value:
+      "openssl rand -base64 32 (one per stage; losing it makes attendees' details unreadable). A comma-separated list while rotating: the first encrypts, every one decrypts",
+    description:
+      "Encrypts Scheduling's attendee details and answers. Same value for web, api and worker.",
+  },
+  {
+    name: "SCHEDULING_PUBLIC_URL",
+    kind: "plain",
+    required: false,
+    description:
+      "Origin of the hosted scheduling app (apps/scheduling, on a registrable domain of its own); session and manage links point there. Unset: sessions have no url, and emails have no manage link.",
+  },
+  {
+    name: "GOOGLE_CALENDAR_CLIENT_ID",
+    kind: "plain",
+    required: false,
+    description: "Scheduling's Google OAuth app for calendar access, not sign-in's.",
+  },
+  {
+    name: "GOOGLE_CALENDAR_CLIENT_SECRET",
+    kind: "secret",
+    required: false,
+    value: "From the Google Cloud console.",
+    description: "Scheduling's Google OAuth app for calendar access.",
+  },
+  {
+    name: "MICROSOFT_CALENDAR_CLIENT_ID",
+    kind: "plain",
+    required: false,
+    description: "Scheduling's Microsoft app for calendar access.",
+  },
+  {
+    name: "MICROSOFT_CALENDAR_CLIENT_SECRET",
+    kind: "secret",
+    required: false,
+    value: "From the Microsoft Entra admin center.",
+    description: "Scheduling's Microsoft app for calendar access.",
+  },
+  {
+    name: "ZOOM_CLIENT_ID",
+    kind: "plain",
+    required: false,
+    description: "Scheduling's Zoom app, which creates meetings on hosts' accounts.",
+  },
+  {
+    name: "ZOOM_CLIENT_SECRET",
+    kind: "secret",
+    required: false,
+    value: "From the Zoom App Marketplace.",
+    description: "Scheduling's Zoom app, which creates meetings on hosts' accounts.",
+  },
+  {
+    name: "ZOOM_WEBHOOK_SECRET_TOKEN",
+    kind: "secret",
+    required: false,
+    value: "The secret token on the Zoom app's Access page.",
+    description: "Verifies the Zoom app's deauthorization events.",
+  },
+];
 
 const signPublicUrl: EnvVar = {
   name: "SIGN_PUBLIC_URL",
@@ -521,7 +625,9 @@ const apiPublicUrl: EnvVar = {
  * Error and performance monitoring (Sentry organization `cosscom`, see @coss/observability). Each
  * runtime has its own project; DSNs aren't secrets (browsers receive the dashboard's).
  */
-function sentry(project: "web" | "portal" | "sign" | "api" | "worker" | "smtp"): EnvVar[] {
+function sentry(
+  project: "web" | "portal" | "sign" | "scheduling" | "api" | "worker" | "smtp",
+): EnvVar[] {
   return [
     {
       name: "SENTRY_DSN",
@@ -606,6 +712,7 @@ export const SERVICES: Service[] = [
     name: "web",
     dockerfile: "apps/web/Dockerfile",
     port: 3000,
+    tlsPort: 4000,
     healthCheckPath: "/api/health",
     stopTimeout: 30,
     cpu: 512,
@@ -621,10 +728,12 @@ export const SERVICES: Service[] = [
       ...email,
       webhookKey,
       portalPublicUrl,
+      ...schedulingEnv.filter((variable) => variable.name.startsWith("SCHEDULING_")),
       signPublicUrl,
       signDocumentsBucket,
       formsPublicUrl,
       formsFilesBucket,
+      supportFilesBucket,
       riskHashKey,
       // Screens live hosted form pages published from the dashboard.
       ...riskClassifier,
@@ -716,6 +825,35 @@ export const SERVICES: Service[] = [
         description: "Sign-in with GitHub (token exchange).",
       },
       {
+        name: "SECURITY_MANAGEMENT_ROLE_ARN",
+        kind: "plain",
+        required: false,
+        value: "the management account's coss-security-read role (infra/organization)",
+        description:
+          "The admin console's security page. It assumes this role for what only the management account knows: root MFA, the audit trail, outside access.",
+      },
+      {
+        name: "SECURITY_ALERTS_TOPIC_ARN",
+        kind: "plain",
+        required: false,
+        value: "the coss-alerts SNS topic",
+        description: "The security page checks a confirmed email subscribes to it.",
+      },
+      {
+        name: "SECURITY_ACCESS_LOGS_BUCKET",
+        kind: "plain",
+        required: false,
+        value: "the access logs bucket (Terraform output access_logs_bucket)",
+        description: "The security page checks load balancer and VPC flow logs still arrive.",
+      },
+      {
+        name: "SECURITY_DATABASE_LOG_GROUP",
+        kind: "plain",
+        required: false,
+        value: "the database's CloudWatch log group",
+        description: "The security page's database activity: pgaudit's lines and failed logins.",
+      },
+      {
         name: "DEPLOY_GITHUB_APP_ID",
         kind: "plain",
         required: false,
@@ -765,6 +903,7 @@ export const SERVICES: Service[] = [
     name: "site",
     dockerfile: "apps/site/Dockerfile",
     port: 3002,
+    tlsPort: 4002,
     healthCheckPath: "/api/health",
     stopTimeout: 30,
     cpu: 256,
@@ -786,10 +925,11 @@ export const SERVICES: Service[] = [
     ],
   },
   {
-    // The Hooks portal, on its own domain (PORTAL_HOST in routing.ts: Cloudflare → ALB).
+    // The Hooks portal, on its own domain (PORTAL_HOST in routing.ts: CloudFront → ALB).
     name: "portal",
     dockerfile: "apps/portal/Dockerfile",
     port: 3003,
+    tlsPort: 4003,
     healthCheckPath: "/api/health",
     stopTimeout: 30,
     cpu: 256,
@@ -814,11 +954,12 @@ export const SERVICES: Service[] = [
     ],
   },
   {
-    // Sign's signing app, on its own domain (SIGN_HOST in routing.ts: Cloudflare → ALB). It reads
+    // Sign's signing app, on its own domain (SIGN_HOST in routing.ts: CloudFront → ALB). It reads
     // documents and stores signatures in the documents bucket (Terraform's task policy, sign.tf).
     name: "sign",
     dockerfile: "apps/sign/Dockerfile",
     port: 3004,
+    tlsPort: 4004,
     healthCheckPath: "/api/health",
     stopTimeout: 30,
     cpu: 256,
@@ -844,9 +985,39 @@ export const SERVICES: Service[] = [
     ],
   },
   {
+    // Scheduling's hosted pages, on their own domain (SCHEDULING_HOST in routing.ts: CloudFront →
+    // ALB). A client of the API; the database only answers which origins may embed a session.
+    name: "scheduling",
+    dockerfile: "apps/scheduling/Dockerfile",
+    port: 3005,
+    tlsPort: 4005,
+    healthCheckPath: "/api/health",
+    stopTimeout: 30,
+    cpu: 256,
+    memory: 512,
+    minTasks: 2,
+    needsInternet: false,
+    env: [
+      ...db,
+      apiPublicUrl,
+      ...sentry("scheduling"),
+      { name: "NODE_ENV", kind: "image", required: true, value: "production", description: "" },
+      { name: "PORT", kind: "image", required: true, value: "3005", description: "" },
+      { name: "HOSTNAME", kind: "image", required: true, value: "0.0.0.0", description: "" },
+      {
+        name: "KEEP_ALIVE_TIMEOUT",
+        kind: "image",
+        required: true,
+        value: "75000",
+        description: "",
+      },
+    ],
+  },
+  {
     name: "api",
     dockerfile: "apps/api/Dockerfile",
     port: 3001,
+    tlsPort: 4001,
     healthCheckPath: "/health",
     stopTimeout: 30,
     cpu: 512,
@@ -873,6 +1044,7 @@ export const SERVICES: Service[] = [
       emailLinkKeys,
       portalPublicUrl,
       signDocumentsBucket,
+      ...schedulingEnv,
       signPublicUrl,
       notificationsEnvironment,
       notificationsFrom,
@@ -895,7 +1067,7 @@ export const SERVICES: Service[] = [
     // Lets each loop finish its current item: a webhook attempt (10 s), a domain check, an SQS batch.
     stopTimeout: 120,
     cpu: 256,
-    memory: 512,
+    memory: 1024,
     minTasks: 1,
     needsInternet: true,
     taskRolePolicy: "worker",
@@ -905,6 +1077,8 @@ export const SERVICES: Service[] = [
       apiPublicUrl,
       trackingPublicUrl,
       signDocumentsBucket,
+      supportFilesBucket,
+      ...supportMail,
       formsFilesBucket,
       formsPublicUrl,
       {
@@ -915,6 +1089,7 @@ export const SERVICES: Service[] = [
           "coss.com's sender of form notifications (\"<form name> via coss.com\"), on a verified domain of NOTIFICATIONS_ENVIRONMENT_ID's organization; default NOTIFICATIONS_FROM's address.",
       },
       ...signSeal,
+      ...schedulingEnv,
       signPublicUrl,
       {
         name: "SIGN_NOTIFICATIONS_FROM",

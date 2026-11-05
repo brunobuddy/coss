@@ -6,7 +6,10 @@
  * given up after `MAX_DELIVERY_ATTEMPTS`. A suspended organization's deliveries wait until it is
  * reinstated: coss.com's sender must never carry its mail.
  */
+
+import { environmentHref } from "@coss/dashboard-routes";
 import { db, schema } from "@coss/db";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { and, asc, eq, inArray, lte, notExists, sql } from "drizzle-orm";
 import {
   type FormContactSink,
@@ -167,8 +170,8 @@ async function notify(loaded: Loaded, deps: FormDeliveryDeps): Promise<Outcome> 
     );
   const { slugs } = loaded;
   const submissionUrl =
-    `${deps.dashboardUrl.replace(/\/+$/, "")}/${slugs.organization}/projects/${slugs.project}` +
-    `/${slugs.environment}/forms/${row.id}/submissions/${submission.id}`;
+    withoutTrailingSlashes(deps.dashboardUrl) +
+    environmentHref(slugs, `/forms/${row.id}/submissions/${submission.id}`);
   const content = notificationContent({
     formName: row.name,
     fields: row.fields,

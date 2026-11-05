@@ -203,7 +203,7 @@ const ORGANIZATION_PATHS: readonly string[] = [
   "/organization/update-team",
 ];
 
-/** Organizations one user may own (platform admins are exempt). */
+/** Organizations one user may own (platform admins are exempt; `user.ownedOrganizationLimit` overrides it). */
 export const MAX_OWNED_ORGANIZATIONS = 5;
 /** Pending invitations one organization may have at once. */
 export const MAX_PENDING_INVITATIONS = 50;
@@ -276,9 +276,9 @@ async function adoptProviderPicture(userId: string, picture: string): Promise<vo
 const dashboardUrl = process.env.BETTER_AUTH_URL ? new URL(process.env.BETTER_AUTH_URL) : undefined;
 
 /**
- * Better Auth's passkey plugin verifies assertions with `requireUserVerification: false`. A
- * passkey sign-in skips the TOTP challenge, so it must prove both possession and the user
- * (biometric or PIN) — reject any ceremony the authenticator didn't user-verify.
+ * A passkey sign-in skips the TOTP challenge, so it must prove both possession and the user
+ * (biometric or PIN). The plugin enforces this while `userVerification` is "required"; this keeps
+ * it true if that option ever changes.
  */
 function assertUserVerified(userVerified: boolean): void {
   if (!userVerified) {
@@ -421,6 +421,8 @@ export const authOptions = {
       // an address whose mailbox already has an account. Nullable: users from before the column
       // were backfilled by migration, and Better Auth tables never get NOT NULL columns.
       canonicalEmail: { type: "string", required: false, input: false, index: true },
+      // Written only by `setOwnedOrganizationLimit` (@coss/tenancy/admin). Null: the default.
+      ownedOrganizationLimit: { type: "number", required: false, input: false },
     },
   },
   session: {
@@ -710,7 +712,13 @@ function serializedOrganization() {
           { field: "role", value: "owner" },
         ],
       });
-      return owned >= MAX_OWNED_ORGANIZATIONS;
+      // Read here, not from `user`: the session's copy can predate an admin's change.
+      const account = await adapter.findOne<{ ownedOrganizationLimit: number | null }>({
+        model: "user",
+        where: [{ field: "id", value: user.id }],
+        select: ["ownedOrganizationLimit"],
+      });
+      return owned >= (account?.ownedOrganizationLimit ?? MAX_OWNED_ORGANIZATIONS);
     },
     sendInvitationEmail: async ({ id, email, organization: org, role, invitation, inviter }) => {
       await enqueueAuthEmail({

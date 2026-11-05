@@ -2,6 +2,7 @@
  * Sends due push notifications (the worker's `push-notifications` loop). System-level: the scan
  * spans organizations; every read and write is scoped by the notification's own organization.
  */
+import { isHipaaMode } from "@coss/compliance";
 import { db, schema } from "@coss/db";
 import { and, asc, desc, eq, inArray, isNotNull, lte, ne, sql } from "drizzle-orm";
 import { type PushContent, resolvePush } from "./content.ts";
@@ -203,6 +204,11 @@ async function deliver(row: PushNotificationRow, deps: PushDeps, clock: () => Da
   try {
     if (clock().getTime() - row.createdAt.getTime() > MAX_PUSH_AGE_MS) {
       await settle({ status: "skipped", lastError: "too_old" });
+      return;
+    }
+    // Also here: a notification can be queued while the mode is being turned on.
+    if (await isHipaaMode(row.organizationId)) {
+      await settle({ status: "skipped", lastError: "hipaa_mode" });
       return;
     }
     const resolved = await resolvePush(row);

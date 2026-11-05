@@ -98,10 +98,12 @@ describe("organization role hooks", () => {
         },
       });
 
-    for (const role of [" owner", "owner", "admin ", "superuser"]) {
+    for (const role of [" owner", "owner", "owner ", "admin, owner", "admin,member", "superuser"]) {
       await expect(invite(role)).rejects.toThrow();
     }
     expect((await invite("admin"))?.role).toBe("admin");
+    // Better Auth trims before the hook, so padding never reaches the stored role.
+    expect((await invite("admin "))?.role).toBe("admin");
     expect((await invite("member"))?.role).toBe("member");
   });
 });

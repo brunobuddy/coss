@@ -1,16 +1,35 @@
 import { describe, expect, test } from "bun:test";
 import { db, schema } from "@coss/db";
-import { getReputationStanding } from "@coss/reputation";
+import {
+  getReputationStanding,
+  reinstateOrganization,
+  updateReputationPolicy,
+} from "@coss/reputation";
 import { listScreenings, screenMessage } from "@coss/screening";
 import { fakeClassifier } from "@coss/screening/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { asc, eq } from "drizzle-orm";
+import sharp from "sharp";
+import { authorizeLiveSender } from "../src/domains.ts";
 import { FakeEmailProvider } from "../src/providers/fake.ts";
-import { emailScreeningContent, htmlTextAndLinks } from "../src/screening.ts";
+import {
+  clearScreeningDomainBlock,
+  emailScreeningContent,
+  htmlTextAndLinks,
+} from "../src/screening.ts";
+import { backfillScreeningDomainBlocks } from "../src/screening-domain-backfill.ts";
 import { createEmailService } from "../src/service.ts";
 import { sweepUnclaimedEmails } from "../src/sweeps.ts";
-import { dispatchingEmailService, memoryDispatchQueue } from "../src/testing.ts";
+import {
+  createVerifiedDomain,
+  dispatchingEmailService,
+  memoryDispatchQueue,
+} from "../src/testing.ts";
 import { params, sendEnvironment, verifiedFrom } from "./helpers.ts";
+
+const png = await sharp({ create: { width: 512, height: 512, channels: 3, background: "white" } })
+  .png()
+  .toBuffer();
 
 function screeningService(classifier = fakeClassifier()) {
   const liveProvider = new FakeEmailProvider({ log: false });
@@ -91,6 +110,261 @@ describe("emailScreeningContent", () => {
 });
 
 describe("dispatch with content screening", () => {
+  test("backfill respects an audited domain release even while the source organization is suspended", async () => {
+    const tenant = await createTestTenant();
+    const domain = await createVerifiedDomain(tenant.organization.id);
+    const { service } = screeningService();
+    await service.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({ from: `hello@${domain.name}`, subject: "[coss-test:phishing]" }),
+    });
+    await db.update(schema.user).set({ role: "admin" }).where(eq(schema.user.id, tenant.owner.id));
+    await clearScreeningDomainBlock({
+      domain: domain.name,
+      adminUserId: tenant.owner.id,
+      note: "Reviewed new domain owner",
+    });
+    expect(
+      await backfillScreeningDomainBlocks({
+        apply: true,
+        scope: { organizationIds: [tenant.organization.id] },
+      }),
+    ).toMatchObject({ inserted: 0 });
+    expect(
+      await db
+        .select()
+        .from(schema.emailSenderDomainBlock)
+        .where(eq(schema.emailSenderDomainBlock.domain, domain.name)),
+    ).toHaveLength(0);
+  });
+  test("historical domain backfill is dry-run by default, idempotent and respects reinstatement", async () => {
+    const tenant = await createTestTenant();
+    const domain = await createVerifiedDomain(tenant.organization.id);
+    const { service } = screeningService();
+    await service.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({ from: `hello@${domain.name}`, subject: "[coss-test:phishing]" }),
+    });
+    // Simulate a pre-upgrade screening, after its domain was deleted or transferred.
+    await db
+      .delete(schema.emailSenderDomainBlock)
+      .where(eq(schema.emailSenderDomainBlock.domain, domain.name));
+    await db.delete(schema.domain).where(eq(schema.domain.id, domain.id));
+    const scope = { organizationIds: [tenant.organization.id] };
+    expect(await backfillScreeningDomainBlocks({ scope })).toEqual({ candidates: 1, inserted: 0 });
+    expect(await backfillScreeningDomainBlocks({ scope, apply: true })).toEqual({
+      candidates: 1,
+      inserted: 1,
+    });
+    expect(await backfillScreeningDomainBlocks({ scope, apply: true })).toEqual({
+      candidates: 1,
+      inserted: 0,
+    });
+    await reinstateOrganization({
+      organizationId: tenant.organization.id,
+      adminUserId: tenant.owner.id,
+      note: "Reviewed",
+    });
+    expect(await backfillScreeningDomainBlocks({ scope, apply: true })).toEqual({
+      candidates: 0,
+      inserted: 0,
+    });
+    const later = await createVerifiedDomain(tenant.organization.id);
+    await service.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({ from: `hello@${later.name}`, subject: "[coss-test:phishing]" }),
+    });
+    // A later suspension must not revive restrictions that support previously cleared.
+    expect(await backfillScreeningDomainBlocks({ scope, apply: true })).toEqual({
+      candidates: 1,
+      inserted: 0,
+    });
+  });
+
+  test("screens CID images before attachment bytes are purged", async () => {
+    const tenant = await createTestTenant();
+    const { service, classifier } = screeningService();
+    const bytes = png;
+    const { email } = await service.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({
+        from: await verifiedFrom(tenant.organization.id),
+        text: undefined,
+        html: '<img src="cid:logo">',
+        attachments: [
+          { filename: "logo.png", content: bytes.toString("base64"), content_id: "logo" },
+        ],
+      }),
+    });
+    expect(email.status).toBe("sent");
+    expect(classifier.calls[0]).toMatchObject({
+      images: [{ data: bytes, mediaType: "image/png" }],
+    });
+    expect(
+      (
+        await db
+          .select()
+          .from(schema.emailAttachment)
+          .where(eq(schema.emailAttachment.emailId, email.id))
+      )[0]?.content,
+    ).toBeNull();
+  });
+  test("image-only mail is screened beyond sampling and passes bytes to the classifier", async () => {
+    const tenant = await createTestTenant();
+    await updateReputationPolicy({
+      organizationId: tenant.organization.id,
+      adminUserId: tenant.owner.id,
+      overrides: { contentScreening: { alwaysFirst: 0, milestones: [], sampleRate: 0 } },
+    });
+    const classifier = fakeClassifier({ scores: { phishing: 0.97 } });
+    const provider = new FakeEmailProvider({ log: false });
+    const service = dispatchingEmailService({
+      liveProvider: provider,
+      sandboxProvider: provider,
+      screeningImages: async () => ({
+        data: png,
+        mediaType: "image/png",
+      }),
+      screen: (input) => screenMessage(input, { classifier, random: () => 1 }),
+    });
+    const { email } = await service.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({
+        from: await verifiedFrom(tenant.organization.id),
+        subject: "hi",
+        text: undefined,
+        html: '<img src="https://img.example/payload.png" alt="Account Notification"><p>Unsubscribe</p>',
+      }),
+    });
+    expect(email.status).toBe("failed");
+    expect(email.failure?.code).toBe("content_rejected");
+    expect(provider.sent).toHaveLength(0);
+    expect(classifier.calls[0]).toMatchObject({
+      kind: "email",
+      images: [{ mediaType: "image/png" }],
+    });
+  });
+
+  test("unreadable images hold live mail instead of sending without inspection", async () => {
+    const tenant = await createTestTenant();
+    const provider = new FakeEmailProvider({ log: false });
+    const classifier = fakeClassifier();
+    const service = dispatchingEmailService({
+      liveProvider: provider,
+      sandboxProvider: provider,
+      screeningImages: async () => {
+        throw new Error("Image unavailable");
+      },
+      screen: (input) => screenMessage(input, { classifier }),
+    });
+    const { email } = await service.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({
+        from: await verifiedFrom(tenant.organization.id),
+        text: undefined,
+        html: '<img src="https://img.example/payload.png">',
+      }),
+    });
+    expect(email.status).toBe("queued");
+    expect(provider.sent).toHaveLength(0);
+    expect(classifier.calls).toHaveLength(0);
+    expect((await listScreenings(tenant.organization.id))[0]?.verdict).toBe("error");
+  });
+
+  test("sender-domain blocks survive transfer and organization deletion", async () => {
+    const source = await createTestTenant();
+    const next = await createTestTenant();
+    const domain = await createVerifiedDomain(source.organization.id);
+    const from = `hello@${domain.name}`;
+    const { service } = screeningService();
+    await service.send({
+      environment: sendEnvironment(source.production),
+      apiKeyId: null,
+      params: params({ from, subject: "[coss-test:phishing]" }),
+    });
+    await db.delete(schema.domain).where(eq(schema.domain.id, domain.id));
+    await createVerifiedDomain(next.organization.id, { name: domain.name });
+    await expect(
+      authorizeLiveSender({ organizationId: next.organization.id, from, provider: "fake" }),
+    ).rejects.toMatchObject({ code: "sending_paused" });
+    await db.delete(schema.organization).where(eq(schema.organization.id, source.organization.id));
+    await expect(
+      authorizeLiveSender({
+        organizationId: next.organization.id,
+        from: `hello@child.${domain.name}`,
+        provider: "fake",
+      }),
+    ).rejects.toMatchObject({ code: "sending_paused" });
+    await expect(
+      clearScreeningDomainBlock({
+        domain: domain.name,
+        adminUserId: next.owner.id,
+        note: "Reviewed transfer",
+      }),
+    ).rejects.toThrow("platform admin");
+    await db.update(schema.user).set({ role: "admin" }).where(eq(schema.user.id, next.owner.id));
+    expect(
+      await clearScreeningDomainBlock({
+        domain: domain.name,
+        adminUserId: next.owner.id,
+        note: "Reviewed transfer",
+      }),
+    ).toBe(true);
+    await expect(
+      authorizeLiveSender({ organizationId: next.organization.id, from, provider: "fake" }),
+    ).resolves.toBeUndefined();
+    const [audit] = await db
+      .select()
+      .from(schema.adminAuditEvent)
+      .where(eq(schema.adminAuditEvent.targetId, domain.name));
+    expect(audit).toMatchObject({
+      action: "email.domain_screening_released",
+      actorUserId: next.owner.id,
+      reason: "Reviewed transfer",
+    });
+  });
+
+  test("support reinstatement clears a domain restriction and queued sends recheck restrictions", async () => {
+    const tenant = await createTestTenant();
+    const domain = await createVerifiedDomain(tenant.organization.id);
+    const from = `hello@${domain.name}`;
+    const { service } = screeningService();
+    await service.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({ from, subject: "[coss-test:phishing]" }),
+    });
+    await reinstateOrganization({
+      organizationId: tenant.organization.id,
+      adminUserId: tenant.owner.id,
+      note: "Reviewed sender",
+    });
+    await expect(
+      authorizeLiveSender({ organizationId: tenant.organization.id, from, provider: "fake" }),
+    ).resolves.toBeUndefined();
+    const provider = new FakeEmailProvider({ log: false });
+    const queue = memoryDispatchQueue();
+    const queued = createEmailService({ liveProvider: provider, sandboxProvider: provider, queue });
+    const { email } = await queued.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({ from }),
+    });
+    await db
+      .insert(schema.emailSenderDomainBlock)
+      .values({ domain: domain.name, organizationId: tenant.organization.id, subjectId: email.id });
+    await queue.drain(queued);
+    expect(provider.sent).toHaveLength(0);
+    expect(
+      (await db.select().from(schema.email).where(eq(schema.email.id, email.id)))[0]?.errorCode,
+    ).toBe("sending_paused");
+  });
   test("blocks a confidently malicious live email before the provider and suspends", async () => {
     const tenant = await createTestTenant();
     const { service, liveProvider } = screeningService();

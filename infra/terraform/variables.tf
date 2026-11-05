@@ -55,6 +55,11 @@ variable "forms_host" {
   description = "Forms' host, the api's `/f/*` (FORMS_HOST in infra/aws/routing.ts)."
 }
 
+variable "scheduling_host" {
+  type        = string
+  description = "Scheduling's hosted pages' host (SCHEDULING_HOST in infra/aws/routing.ts)."
+}
+
 variable "external_origin_hosts" {
   type        = map(string)
   description = "Production hostname of each external zone (spec.json cloudFront.origins other than alb): the coss ui and qnot repositories' Vercel projects."
@@ -98,13 +103,8 @@ variable "db_password_version" {
   description = "Bump after changing the password in the stage secret's DATABASE_URL to apply it to RDS."
 }
 
-variable "cloudflare_ipv4_ranges" {
-  type        = list(string)
-  description = "https://www.cloudflare.com/ips-v4: Cloudflare for SaaS reaches the ALB from these (tracking domains)."
-}
-
 variable "waf_rate_limits" {
-  type        = object({ dashboard = number, api = number })
+  type        = object({ dashboard = number, api = number, hosted = number, tracking = number })
   description = "Requests per IP per 5 minutes before WAF blocks (flood protection; the apps rate-limit precisely)."
 }
 
@@ -125,4 +125,15 @@ variable "alert_email" {
 variable "monthly_budget_usd" {
   type        = number
   description = "Monthly AWS spend that triggers budget alerts (80% actual, 100% forecasted)."
+}
+
+variable "ses_monthly_budget_usd" {
+  type        = number
+  description = "Monthly SES spend that triggers budget alerts (80% actual, 100% forecasted)."
+  default     = 100
+}
+
+variable "management_account_id" {
+  description = "The AWS Organization's management account (infra/organization)."
+  type        = string
 }

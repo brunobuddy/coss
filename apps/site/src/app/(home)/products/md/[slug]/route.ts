@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { markdownText, marketingMarkdown, productBySlug, productPages } from "@/lib/marketing";
+import { marketingMarkdown, productBySlug, productPages } from "@/lib/marketing";
+import { markdownResponse } from "@/lib/site";
 
 // `/products/<slug>.md` is rewritten here (next.config.ts).
 export const revalidate = false;
@@ -8,7 +9,7 @@ export const dynamicParams = false;
 export async function GET(_request: Request, { params }: RouteContext<"/products/md/[slug]">) {
   const page = productBySlug((await params).slug);
   if (!page) notFound();
-  return markdownText(await marketingMarkdown(page));
+  return markdownResponse(await marketingMarkdown(page), page.url);
 }
 
 export function generateStaticParams() {

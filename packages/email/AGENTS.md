@@ -109,10 +109,18 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
 - **Custom tracking domains** (`packages/email/src/tracking-domains.ts`, table `tracking_domain`, ids `tdom_`):
   at most one per sending domain, a strict subdomain of it outside its MAIL FROM subdomain, and the hostname's most
   specific domain across orgs must be that domain. Served by a `TrackingHostnameProvider` (`DomainDeps.tracking`):
-  Cloudflare for SaaS custom hostnames (`cloudflare/custom-hostnames.ts`, plain `fetch`) or the fake. The provider
-  alone decides `active` (hostname and certificate live); the CNAME check (`checkTrackingRecord`) is only shown to
-  the customer. Never adopt a hostname already registered in the zone (`TrackingHostnameTakenError` →
-  `tracking_domain_taken`). Lifecycle mirrors domains (`pending` → `active`; an active one that stops →
+  tenants of a CloudFront multi-tenant distribution (`cloudfront/tenants.ts`: one per hostname, with a managed
+  certificate, through the injectable `CloudFrontTenantsApi`) or the fake. The provider alone decides `active`
+  (tenant enabled, domain active, certificate issued); the CNAME check (`checkTrackingRecord`) is only shown to
+  the customer. Never adopt a hostname already registered at CloudFront (`TrackingHostnameTakenError` →
+  `tracking_domain_taken`), except what the same claim created: tenant names are bound to the tracking domain's id
+  (`tenantName(hostname, claim)`), so after a lost answer or a crash the claim stays, and asking again or the worker
+  (`resumeProvisioning`, after 2 minutes) finds the tenant under that name. A claim still without an id after an hour
+  is released (its tenant removed, status `failed`, restartable). An issued managed certificate serves nothing until it is attached to the tenant
+  (`Customizations.Certificate`), so the provider's `get` attaches it, and a stale ETag just waits for the next check.
+  Removing a tenant takes two passes: CloudFront refuses to delete it until the disable
+  has deployed (minutes), so the first `delete` disables it and throws; `checkTrackingDomain` retries in 10 minutes
+  and `deleteTrackingDomain`/`deleteDomain` ask the user to try again shortly. Lifecycle mirrors domains (`pending` → `active`; an active one that stops →
   `temporary_failure`; never active within 72 h, or given up/unknown at the provider → `failed`, hostname released;
   restart via the domain's verify). The worker's `domains` loop re-checks them. `deleteDomain` releases the hostname
   first (the row cascades). The URL is resolved **at dispatch** in `instrument` (`trackingBaseUrlFor`, only when
@@ -121,9 +129,10 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   email, and the `/t/*` routes ignore `Host`. Removing one breaks links in emails already sent through it. API:
   `POST`/`DELETE /v1/domains/{id}/tracking` (`domain:create`/`domain:delete`, no new permission), `Domain.tracking`
   (a `z.union([…, z.null()])`: `.nullable()` loses `null` in the OpenAPI document). Edge: `track.cosslinks.com`
-  (the default tracking host, `TRACKING_PUBLIC_URL`, and Cloudflare's fallback origin; zone `cosslinks.com` in a
-  self-serve Cloudflare account, never the coss.com zone) → ALB rule `/t/*` + `X-Tracking-Origin-Verify` → api
-  (`infra/aws/routing.ts`).
+  (the default tracking host, `TRACKING_PUBLIC_URL`) and customer domains (a CNAME to the connection group's routing
+  endpoint, `TRACKING_CNAME_TARGET`) → CloudFront → ALB rule `/t/*` + `X-Tracking-Origin-Verify` → api
+  (`infra/aws/routing.ts`). Domain Connect's template fixes the target at `track.cosslinks.com`, so it skips the
+  tracking record for any other target and customers publish that CNAME by hand.
 - **Domain Connect** (`packages/email/src/domain-connect.ts`, `@coss/email/domain-connect`; the dashboard's
   `apps/web/src/lib/domain-connect.ts`): one-click DNS setup through the customer's DNS provider, synchronous flow
   only and always signed (`DOMAIN_CONNECT_PRIVATE_KEY`; providers check `sig` against the TXT records at
@@ -231,7 +240,9 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   email is `scheduled` or `queued` — cancellation, sender rejection, delivery, provider-event ingestion and
   the worker sweeps null them in the transaction that moves it to a terminal status. Reads select metadata columns only; API/SDK/dashboard and webhook payloads never
   expose content. A queued email whose content is gone fails with `attachments_unavailable` rather than sending without
-  it. The parsed request omits `attachments` when empty (request hashes). SES gets them as `Simple.Attachments`
+  it. The parsed request omits `attachments` when empty (request hashes). Past the first MB combined they bill
+  `email.attachment_data` per recipient (`recordEmailUsage`, sizes kept after the content is purged), reserved at
+  acceptance on capped plans, so Free's data allowance refuses only large sends. SES gets them as `Simple.Attachments`
   (`content_id` → `INLINE`); the fake provider keeps sha256 digests, not bytes.
 - **Content storage** (`packages/email/src/storage-settings.ts`, table `email_storage_settings` keyed by environment,
   `/v1/storage_settings`, `coss.email.storage`, the dashboard's `[envSlug]/content-storage`): `store` (default, no
@@ -248,6 +259,9 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   fake provider never logs subjects. `discard_body` (internal auth emails and Verify's codes) stays a separate, body-only flag; with it,
   `hashSendRequest` leaves `html`/`text` out of the stored request hash (a code's hash would
   confirm guesses).
+- **HIPAA mode** (`packages/compliance/AGENTS.md`): live environments of an organization in the mode
+  always `discard`, never track opens or clicks (asking is a 403) and send through configuration sets
+  that require TLS (`email.require_tls`, `requiredTlsSetFor`).
 - **Generated text parts** (`packages/email/src/html-text.ts`, `htmlToText`): an email sent with `html` and no
   `text` gets a plain-text part built from the original HTML in `toOutbound`, for the provider's copy only (like
   tracking: `email.text` stays `null`, so API reads, request hashes and webhooks are unchanged). It is built before
@@ -279,7 +293,12 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   transaction, any environment: sandbox ones receive real mail) unless its provider is `fake` (the dashboard's test
   emails) or it has a spam or virus verdict (`isBillableReceipt`); `InboundDeps.billing` (the worker's `UsageGate`)
   reserves Free's allowance in the transaction that stores the copy (a failed attempt reserves nothing), and past it
-  the copy and its written content are dropped and counted like one over the daily limit (`over_limit`). The `email.received` payload is metadata only (no bodies, headers or cc).
+  the copy and its written content are dropped and counted like one over the daily limit (`over_limit`). A billed
+  copy past the first MB of its raw size also bills `email.received_data`, and `InboundDeps.dataQuota` (the worker's
+  `email.inbound.megabytes.day`, plan-set, fails open) drops copies over a daily data limit before writing content,
+  spam included. Both charge nothing for a message of 1 MB or less, so a stranger's large mail never stops the rest:
+  anyone can mail an address, and a spending limit doesn't stop receiving. SES has already charged us for all of it
+  (README, "Abusive inbound mail"). The `email.received` payload is metadata only (no bodies, headers or cc).
   `received_email.text`/`html` are cut at 2 MB and headers at 64 KB (`truncated`); the raw message is whole. The
   dashboard previews received HTML with `UNTRUSTED_PREVIEW_HEAD` (`apps/web/src/lib/email-preview.ts`; `img-src data:` only — no remote images, they are
   tracking pixels) and serves raw/attachment downloads as `attachment` + `nosniff` + `CSP: sandbox`; the API
@@ -462,3 +481,25 @@ Sending (SES, suppressions, tracking, unsubscribe, scheduled and batch sends, at
   backing off) runs `releaseSubaccountEmailResources` (identities, domain rows, tenant) and deletes the row (cascading
   its suppressions); organization deletion releases sub-accounts' identities and tenants with the rest. A downgrade
   to a plan without sub-accounts is refused while live ones exist (`hasLiveSubaccounts`).
+
+- **Screening images and sender-domain memory** (`screening.ts`, `screening-images.ts`): short HTML
+  bodies (<200 visible body characters, excluding alt text and hidden padding) with images are always screened, even beyond
+  the normal sample. Sampled emails and broadcasts load image sources, CSS backgrounds, data images
+  and CID attachments (before attachment purging). Inspect every discovered image or hold the email;
+  never silently truncate: at most 16 images/animation frames, 2 MiB each, 8 MiB total.
+  Sharp validates raster metadata under a 16-megapixel cap, enlarges/pads small images to at least
+  512×512 for the pinned endpoint, and extracts every animation frame (or holds over-limit animations). Remote HTTP(S) fetches use
+  `publicAddressLookup`, check IP literals, forbid credentials and nonstandard ports, and follow no
+  redirects. Unsupported, unavailable or oversized images enter the existing screening-error retry path.
+  `recordScreeningDomainBlock` records an enforced block's verified sender domain in
+  `email_sender_domain_block` in the screening transaction. No domain/org FK: deletion or transfer
+  must not erase it. A sub-account can restrict only its own domain, never a shared platform domain.
+  `authorizeLiveSender` refuses that domain and descendants across organizations (`sending_paused`);
+  immediate queued sends now recheck live authorization at dispatch, as scheduled sends already do.
+  Org/sub-account reinstatement clears only its own restrictions. After deploying the schema, use
+  `scripts/backfill-screening-domains.ts` (dry-run; `--apply` to write) to seed still-active historical
+  org screening suspensions, including From domains whose identity has since been deleted.
+
+  The operator-only `scripts/release-screening-domain.ts --domain <name> --admin <user id> --note <reason>`
+  clears a restriction after a transfer or deletion of the source organization; it requires an active
+  platform admin and records `email.domain_screening_released` in the admin audit log.

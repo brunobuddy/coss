@@ -6,6 +6,13 @@ import { BILLING_EVENT_TYPES } from "@coss/billing/wire";
 import { FORM_WEBHOOK_EVENT_TYPES, FormSubmissionWebhookEvent } from "@coss/forms/schemas";
 import { ACCOUNT_EVENT_TYPES } from "@coss/reputation/schemas";
 import { RISK_EVENT_TYPES, RiskWebhookEvent } from "@coss/risk/schemas";
+import {
+  SCHEDULING_BOOKING_EVENT_TYPES,
+  SCHEDULING_WEBHOOK_EVENT_TYPES,
+  SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
+  SchedulingCalendarWebhookEvent,
+} from "@coss/scheduling/schemas";
 import { SIGN_WEBHOOK_EVENT_TYPES, SignRequestWebhookEvent } from "@coss/sign/schemas";
 import {
   RECEIVED_SMS_EVENT_TYPES,
@@ -57,6 +64,7 @@ export const TEST_WEBHOOK_EVENT_TYPES = [
   ...SIGN_WEBHOOK_EVENT_TYPES,
   ...VERIFY_WEBHOOK_EVENT_TYPES,
   ...FORM_WEBHOOK_EVENT_TYPES,
+  ...SCHEDULING_WEBHOOK_EVENT_TYPES,
 ] as const;
 
 export type TestWebhookEventType = (typeof TEST_WEBHOOK_EVENT_TYPES)[number];
@@ -64,6 +72,13 @@ export type TestWebhookEventType = (typeof TEST_WEBHOOK_EVENT_TYPES)[number];
 /** The schema of each event type's body (the one its webhook requests are documented with). */
 export function webhookEventSchema(type: TestWebhookEventType): z.ZodType {
   if (type === "email.received") return ReceivedEmailWebhookEvent;
+  if ((SCHEDULING_BOOKING_EVENT_TYPES as readonly string[]).includes(type)) {
+    return SchedulingBookingWebhookEvent;
+  }
+  if (type.startsWith("scheduling.calendar_delegation.")) {
+    return SchedulingCalendarDelegationWebhookEvent;
+  }
+  if (type.startsWith("scheduling.")) return SchedulingCalendarWebhookEvent;
   if (type.startsWith("email.")) return EmailWebhookEvent;
   if (type.startsWith("hook_endpoint.")) return HookEndpointWebhookEvent;
   if (type.startsWith("risk.")) return RiskWebhookEvent;
@@ -144,6 +159,10 @@ export const WebhookTestEventObject = z
         SignRequestWebhookEvent,
         VerificationWebhookEvent,
         FormSubmissionWebhookEvent,
+        SchedulingBookingWebhookEvent,
+        SchedulingCalendarWebhookEvent,
+        SchedulingCalendarDelegationWebhookEvent,
+        SchedulingCalendarDelegationWebhookEvent,
       ])
       .meta({
         description:

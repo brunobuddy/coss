@@ -28,6 +28,7 @@ import { Input } from "@coss/ui/components/input";
 import { FingerprintIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { EmptyState } from "@/components/empty-state";
 import { FormError } from "@/components/form-error";
 import { SettingsNote, SettingsRow, SettingsSection } from "@/components/settings";
@@ -121,6 +122,7 @@ function AddPasskeyForm({ onAdded }: { onAdded: () => void }) {
   return (
     <form className="contents" onSubmit={onSubmit}>
       <DialogHeader>
+        <DialogIcon icon={FingerprintIcon} />
         <DialogTitle>Add a passkey</DialogTitle>
         <DialogDescription>
           Your browser will ask you to create a passkey with your device or password manager.
@@ -175,6 +177,7 @@ function DeletePasskeyButton({ id, name }: { id: string; name: string }) {
       </AlertDialogTrigger>
       <AlertDialogPopup>
         <AlertDialogHeader>
+          <DialogIcon icon={FingerprintIcon} tone="danger" />
           <AlertDialogTitle>Remove “{name}”?</AlertDialogTitle>
           <AlertDialogDescription>
             You won't be able to sign in with it anymore. Also delete it from your device or

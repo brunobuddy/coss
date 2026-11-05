@@ -1,6 +1,7 @@
 import { Children, isValidElement, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { colors, radius } from "../lib/theme";
+import { colors, radius, space, useFinish } from "../lib/theme";
+import { CountUp } from "./count-up";
 import { Text } from "./text";
 
 /** The dashboard's `StatRow`: measured values ruled into cells, two to a row. */
@@ -9,10 +10,11 @@ export function StatGrid(props: { children: ReactNode }) {
     key: isValidElement(cell) ? String(cell.key) : String(cell),
     cell,
   }));
+  const finish = useFinish();
   const rows: (typeof cells)[] = [];
   for (let i = 0; i < cells.length; i += 2) rows.push(cells.slice(i, i + 2));
   return (
-    <View style={styles.grid}>
+    <View style={[styles.grid, { boxShadow: finish.panel }]}>
       {rows.map((row) => (
         <View key={row[0]?.key} style={[styles.row, row !== rows[0] && styles.rowRule]}>
           {row.map(({ key, cell }) => (
@@ -34,15 +36,14 @@ export function Stat(props: { label: string; value: string; unit?: string; detai
         {props.label}
       </Text>
       <View style={styles.value}>
-        <Text
-          adjustsFontSizeToFit
+        <CountUp
+          adjustsFontSizeToFit={props.value.length > 8}
           minimumFontScale={0.6}
           numberOfLines={1}
           style={styles.number}
+          value={props.value}
           variant="value"
-        >
-          {props.value}
-        </Text>
+        />
         {props.unit ? (
           <Text muted style={styles.unit} variant="body">
             {props.unit}
@@ -70,8 +71,8 @@ const styles = StyleSheet.create({
   rowRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   cell: { flex: 1 },
   cellRule: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.border },
-  stat: { gap: 4, paddingHorizontal: 16, paddingVertical: 14 },
-  value: { flexDirection: "row", alignItems: "baseline", gap: 4 },
+  stat: { gap: space.xs, paddingHorizontal: space.lg, paddingVertical: 14 },
+  value: { flexDirection: "row", alignItems: "baseline", gap: space.xs },
   unit: { fontSize: 17 },
   number: { flexShrink: 1 },
 });

@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 
 mock.module("server-only", () => ({}));
 mock.module("@coss/email", () => ({
@@ -64,6 +64,45 @@ describe("discoverOidcEndpoints", () => {
     await expect(discoverOidcEndpoints("https://169.254.169.254")).rejects.toThrow(
       "The issuer must be a public https:// URL.",
     );
+  });
+
+  describe("issuers", () => {
+    const realFetch = globalThis.fetch;
+    afterEach(() => {
+      globalThis.fetch = realFetch;
+    });
+
+    const servingIssuer = (issuer: string) => {
+      const base = issuer.replace(/\/$/, "");
+      globalThis.fetch = (async () =>
+        Response.json({
+          issuer,
+          authorization_endpoint: `${base}/authorize`,
+          token_endpoint: `${base}/token`,
+          jwks_uri: `${base}/jwks`,
+          userinfo_endpoint: `${base}/userinfo`,
+        })) as unknown as typeof fetch;
+    };
+
+    test("a bare origin with the slash `httpsUrl` adds keeps the IdP's own issuer", async () => {
+      servingIssuer("https://1.1.1.1");
+      const endpoints = await discoverOidcEndpoints("https://1.1.1.1/");
+      expect(endpoints.issuer).toBe("https://1.1.1.1");
+      expect(endpoints.tokenEndpoint).toBe("https://1.1.1.1/token");
+    });
+
+    test("a missing slash keeps the IdP's own issuer", async () => {
+      servingIssuer("https://1.1.1.1/tenant/");
+      const endpoints = await discoverOidcEndpoints("https://1.1.1.1/tenant");
+      expect(endpoints.issuer).toBe("https://1.1.1.1/tenant/");
+    });
+
+    test("any other difference is refused", async () => {
+      servingIssuer("https://1.1.1.1/other");
+      await expect(discoverOidcEndpoints("https://1.1.1.1/tenant")).rejects.toThrow(
+        "does not match configured issuer",
+      );
+    });
   });
 });
 

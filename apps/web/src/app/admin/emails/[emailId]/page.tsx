@@ -42,6 +42,44 @@ export default async function AdminEmailPage({ params }: PageProps<"/admin/email
   const { emailId } = await params;
   const context = await getEmailForAdmin(emailId);
   if (!context) notFound();
+  if (context.hipaaMode) {
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          description="This organization is in HIPAA mode, so staff can't see this email's subject, recipients, events or content."
+          meta={
+            <>
+              <ModeBadge mode={context.mode} />
+              <code className="font-mono text-xs">{emailId}</code>
+            </>
+          }
+          title="Hidden (HIPAA mode)"
+        />
+        <Panel title="Envelope">
+          <PanelBody flush>
+            <SpecList>
+              <SpecItem label="Organization">
+                <Link
+                  className="font-medium hover:underline"
+                  href={`/admin/organizations/${context.organizationId}`}
+                >
+                  {context.organizationName}
+                </Link>
+              </SpecItem>
+              <SpecItem label="Environment">
+                {context.projectName} / {context.environmentName}
+              </SpecItem>
+              {context.errorCode ? (
+                <SpecItem label="Error" mono>
+                  {context.errorCode}
+                </SpecItem>
+              ) : null}
+            </SpecList>
+          </PanelBody>
+        </Panel>
+      </div>
+    );
+  }
   const scope = { organizationId: context.organizationId, environmentId: context.environmentId };
   const [email, events, screenings] = await Promise.all([
     getEmail({ ...scope, id: emailId }),

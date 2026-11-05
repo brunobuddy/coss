@@ -93,6 +93,9 @@ describe("listSendersForAdmin", () => {
       topCategory: "phishing",
       topScore: 0.9,
       latencyMs: 1,
+      // The admin range ends at JS millisecond precision; avoid a DB submillisecond timestamp
+      // just beyond it when the insert and read happen within the same millisecond.
+      createdAt: new Date(Date.now() - 1000),
     });
 
     const senders = await listSendersForAdmin({ since, now, scope });

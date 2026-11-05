@@ -1,13 +1,17 @@
 ---
 title: Verify
-description: Prove someone has a phone number or a mailbox with a one-time code.
+description: "Prove someone has a phone number or a mailbox with a one-time code: how a verification goes, how it's priced and what's included."
 icon: Otp
 ---
 
 `coss.verify` sends a one-time code to a phone number (SMS) or an email address and checks the
 code the person typed. coss.com makes the code, sends it, keeps only a keyed hash of it, counts
-the attempts and expires it; your backend makes two calls. SMS codes go from coss.com's own
-numbers unless you choose one of yours, so there is nothing to register first.
+the attempts and expires it; your backend makes two calls.
+
+Sandbox keys and email codes work right away. Live SMS codes need a
+[sender](/docs/verify/sms#which-number-sends-it): while coss.com's shared numbers roll out, set one of
+your registered numbers in Verify's settings, or the call fails with
+`503 shared_sender_unavailable`.
 
 ```ts twoslash
 import { Coss } from "coss";
@@ -45,20 +49,36 @@ browser, and treat the API key as you would any secret.
 Starting again for the same destination while a verification is pending **sends a new code**
 (the earlier one stops working, and the expiry restarts), up to 5 times; cancel one with
 `coss.verify.cancel(id)`. Code length, lifetime, attempts, senders and the countries SMS codes
-may go to are the environment's Verify settings in the dashboard.
+may go to are the environment's Verify settings, in the dashboard or through
+`coss.verify.settings.update()`:
+
+```ts twoslash
+import { Coss } from "coss";
+
+const coss = new Coss({ apiKey: "coss_test_…" });
+// ---cut---
+const { data: settings } = await coss.verify.settings.update({
+  app_name: "Acme",
+  sms_from: "+14155550100",
+  allowed_countries: ["CA", "GB", "US"],
+});
+```
+
+`sms_from` must be one of your organization's numbers, and a live key's `email_from` must be on one
+of its verified domains; restricted keys need the `verify:update` permission.
 
 ## Pricing
 
-You pay per **approved** verification, plus the channel: an SMS from coss.com's numbers is billed
-at the SMS price of its country (`verify.sms`), one from your own number as any SMS, and email
-costs nothing extra. Verifications that are blocked, fail or expire cost only the messages
+You pay per **approved** verification, plus the channel: an SMS from your own number is billed as
+any SMS, one from coss.com's shared numbers at the SMS price of its country (`verify.sms`), and
+email costs nothing extra. Verifications that are blocked, fail or expire cost only the messages
 actually sent. See [pricing](/pricing).
 
 ## What's in it
 
 <Cards>
   <Card title="SMS codes" href="/docs/verify/sms">
-    coss.com's shared numbers or your own, countries and opt-outs.
+    Your own number or coss.com's shared numbers, countries and opt-outs.
   </Card>
   <Card title="Email codes" href="/docs/verify/email">
     Your own sender or coss.com's, and what the email says.
@@ -70,3 +90,11 @@ actually sent. See [pricing](/pricing).
     Sandbox codes are always zeros.
   </Card>
 </Cards>
+
+## Tools
+
+- **CLI**: [`coss verify`](/docs/cli#verify) `start`, `check`, `list`, `get`, `cancel` and `settings`.
+- **MCP server**: [coding agents](/docs/mcp#tools) get `start_verification`, `check_verification`, `list_verifications`,
+  `get_verification`, `cancel_verification`, `get_verify_settings` and `update_verify_settings`.
+- **Other languages**: the [API reference](/docs/api-reference) shows every operation in Python, Go, Ruby,
+  PHP, Java and .NET.

@@ -52,6 +52,7 @@ export const getLogRoute = createRoute({
   operationId: "getLog",
   tags: ["Logs"],
   summary: "Retrieve a log line",
+  description: "One line of the API key's environment log.",
   security: [{ bearerAuth: [] }],
   middleware: [requireApiKey({ log: ["read"] }), rateLimit("api.read")],
   request: { params: LogIdParams },

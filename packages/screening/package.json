@@ -17,6 +17,7 @@
     "test": "bun --env-file=../../.env test"
   },
   "dependencies": {
+    "@coss/compliance": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/reputation": "workspace:*",
     "@coss/retention": "workspace:*",

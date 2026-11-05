@@ -1,0 +1,106 @@
+---
+title: Hosts and availability
+description: "The people who can be booked and when: create hosts with your own user ids, and give them schedules of availability."
+---
+
+A **host** is someone who can be booked, usually one of your users. Give each your own id as `uid`,
+and use it wherever an id goes.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.hosts.create({
+  uid: "doctor_482",
+  name: "Dr. Ana Reyes",
+  time_zone: "America/New_York",
+  attributes: { licensed_in: ["NY", "NJ"], language: "es" },
+});
+```
+
+Your plan sets how many live hosts your organization can have: <Limit of="schedulingHosts" plan="free" /> on
+Free and <Limit of="schedulingHosts" plan="pro" /> on Pro. Scale includes <Included meter="scheduling.hosts" plan="scale" />
+and charges <Rate meter="scheduling.hosts" /> for more. Delete a host to stop counting them.
+
+An `email` is where their notifications go, not an identity: two hosts can share one, and a host
+needs none. `attributes` are what [pools](/docs/scheduling/pools-and-groups) choose hosts by.
+
+## Schedules
+
+A schedule is weekly hours in local time, with Sunday as day `0`. A host's first schedule is their
+default.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.schedules.create("doctor_482", {
+  rules: [
+    { days: [1, 2, 3, 4], start: "09:00", end: "17:00" },
+    { days: [5], start: "09:00", end: "12:00" },
+  ],
+  overrides: [
+    { date: "2027-12-24", ranges: [] },
+    { date: "2027-12-31", ranges: [{ start: "09:00", end: "11:00" }] },
+  ],
+});
+```
+
+An override replaces that whole day: no ranges means unavailable. Hours stay put across daylight
+saving, so 09:00 is 09:00 on both sides of a clock change. A range can't cross midnight: use two, and
+`24:00` for the end of a day.
+
+Changing a schedule only changes what's offered next. Existing bookings stay.
+
+## Locations
+
+A host can have their own office, meeting link and phone number, at most one of each. Links must be
+`https`, and numbers in E.164 format.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.hosts.update("doctor_482", {
+  locations: [
+    { type: "in_person", address: "12 Main St, New York, NY" },
+    { type: "link", url: "https://meet.example.com/dr-reyes" },
+  ],
+});
+```
+
+An event type uses them when it offers a location and leaves the value blank, so each booking gets the
+office of the host it landed on:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.eventTypes.create({
+  title: "Office visit",
+  kind: "pool",
+  duration_minutes: 30,
+  hosts: [{ host: "doctor_482" }, { host: "doctor_517" }],
+  locations: [{ type: "in_person", address: null }],
+});
+```
+
+- A value on the event type or the booking wins over the host's, and so does a phone number the
+  attendee gave. A blank `phone` location with no number from the attendee uses the host's.
+- A host without that type of location still gets the booking, with the location blank. You can
+  [set it yourself](/docs/scheduling/notifications#meeting-links).
+- A booking keeps the location it was given. Changing a host's locations only affects new bookings.
+- Moving a booking to another host swaps in their location, or leaves it blank if they have none. The
+  old host's address never stays. A location you set with `updateLocation` stays through a move.
+- With several hosts, the booking uses the first by id who has one.
+
+Attendees only see a host's location once they've booked. That includes a request waiting for approval,
+so don't use an address you'd only share after approving someone. Hosts can edit their own on
+[their page](/docs/scheduling/embedding). In live environments, addresses and links are checked for
+phishing and spam, and an address can't contain a link: both answer `content_refused`.
+
+## Hosts leaving
+
+A `disabled` host keeps their bookings but isn't offered. A host with bookings still to come, holds or
+requests awaiting approval can't be deleted (`host_has_live_bookings`): cancel them or disable the host. An
+expired hold counts until it's tidied up, within about a minute, since it can still be confirmed until then.

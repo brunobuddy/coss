@@ -3,24 +3,31 @@ resource "aws_lb" "main" {
   load_balancer_type         = "application"
   internal                   = false
   subnets                    = [for subnet in aws_subnet.public : subnet.id]
-  security_groups            = [aws_security_group.alb_cloudfront.id, aws_security_group.alb_cloudflare.id]
+  security_groups            = [aws_security_group.alb_cloudfront.id]
   idle_timeout               = local.spec.alb.idleTimeoutSeconds
   drop_invalid_header_fields = true
   enable_deletion_protection = true
+
+  depends_on = [aws_s3_bucket_policy.access_logs]
+  access_logs {
+    bucket  = aws_s3_bucket.access_logs.id
+    prefix  = "alb"
+    enabled = true
+  }
 }
 
-resource "aws_lb_target_group" "service" {
+# The load balancer doesn't validate target certificates; each task makes its own.
+resource "aws_lb_target_group" "tls" {
   for_each             = local.lb_services
-  name                 = "${local.name}-${each.key}"
+  name                 = "${local.name}-${each.key}-tls"
   vpc_id               = aws_vpc.main.id
   target_type          = "ip"
-  protocol             = "HTTP"
-  port                 = each.value.port
+  protocol             = "HTTPS"
+  port                 = each.value.tlsPort
   deregistration_delay = 30
 
-  # A new task serves after two passing checks (~10 s instead of ~30 s: rollouts wait for it); it
-  # still takes ~30 s of failing checks to take one out (the health routes touch no database).
   health_check {
+    protocol            = "HTTPS"
     path                = each.value.healthCheckPath
     matcher             = "200"
     interval            = 5
@@ -30,7 +37,7 @@ resource "aws_lb_target_group" "service" {
   }
 }
 
-# A request without CloudFront's (or Cloudflare's, for tracking) origin header matches no rule.
+# A request without a CloudFront distribution's origin header matches no rule.
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.main.arn
   port              = 443
@@ -49,11 +56,12 @@ resource "aws_lb_listener" "https" {
 
 locals {
   header_secrets = {
-    "<origin-verify-secret>"          = random_password.origin_verify.result
-    "<tracking-origin-verify-secret>" = random_password.tracking_origin_verify.result
-    "<portal-origin-verify-secret>"   = random_password.portal_origin_verify.result
-    "<sign-origin-verify-secret>"     = random_password.sign_origin_verify.result
-    "<forms-origin-verify-secret>"    = random_password.forms_origin_verify.result
+    "<origin-verify-secret>"            = random_password.origin_verify.result
+    "<tracking-origin-verify-secret>"   = random_password.tracking_origin_verify.result
+    "<portal-origin-verify-secret>"     = random_password.portal_origin_verify.result
+    "<sign-origin-verify-secret>"       = random_password.sign_origin_verify.result
+    "<forms-origin-verify-secret>"      = random_password.forms_origin_verify.result
+    "<scheduling-origin-verify-secret>" = random_password.scheduling_origin_verify.result
   }
 }
 
@@ -65,7 +73,7 @@ resource "aws_lb_listener_rule" "spec" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.service[each.value.targetGroup].arn
+    target_group_arn = aws_lb_target_group.tls[each.value.targetGroup].arn
   }
 
   dynamic "condition" {
@@ -97,8 +105,8 @@ resource "aws_lb_listener_rule" "spec" {
   }
 }
 
-# The Hooks portal's host, served by the same listener (SNI): Cloudflare connects with it and
-# validates this certificate (SSL mode Full (strict)).
+# The Hooks portal's host, served by the same listener (SNI): CloudFront connects with it and
+# validates this certificate.
 resource "aws_lb_listener_certificate" "portal" {
   listener_arn    = aws_lb_listener.https.arn
   certificate_arn = aws_acm_certificate_validation.portal.certificate_arn
@@ -114,4 +122,10 @@ resource "aws_lb_listener_certificate" "sign" {
 resource "aws_lb_listener_certificate" "forms" {
   listener_arn    = aws_lb_listener.https.arn
   certificate_arn = aws_acm_certificate_validation.forms.certificate_arn
+}
+
+# Scheduling's hosted pages' host, on the same listener (SNI) too.
+resource "aws_lb_listener_certificate" "scheduling" {
+  listener_arn    = aws_lb_listener.https.arn
+  certificate_arn = aws_acm_certificate_validation.scheduling.certificate_arn
 }

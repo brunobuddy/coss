@@ -31,13 +31,16 @@ resource "aws_subnet" "private" {
   tags              = { Name = "${local.name}-private-${each.key}" }
 }
 
+# Routes are their own resources: GuardDuty adds some to every table, and inline ones would delete them.
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.main.id
-  }
-  tags = { Name = "${local.name}-public" }
+  tags   = { Name = "${local.name}-public" }
+}
+
+resource "aws_route" "public_internet" {
+  route_table_id         = aws_route_table.public.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.main.id
 }
 
 resource "aws_route_table_association" "public" {
@@ -63,11 +66,14 @@ resource "aws_nat_gateway" "main" {
 resource "aws_route_table" "private" {
   for_each = aws_subnet.private
   vpc_id   = aws_vpc.main.id
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[each.key].id
-  }
-  tags = { Name = "${local.name}-private-${each.key}" }
+  tags     = { Name = "${local.name}-private-${each.key}" }
+}
+
+resource "aws_route" "private_internet" {
+  for_each               = aws_subnet.private
+  route_table_id         = aws_route_table.private[each.key].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.main[each.key].id
 }
 
 resource "aws_route_table_association" "private" {
@@ -119,7 +125,7 @@ data "aws_ec2_managed_prefix_list" "cloudfront" {
   name = "com.amazonaws.global.cloudfront.origin-facing"
 }
 
-# The CloudFront prefix list weighs ~55 rules of a group's 60, so Cloudflare gets its own group.
+# The CloudFront prefix list weighs ~55 rules of a group's 60, so it gets a group of its own.
 resource "aws_security_group" "alb_cloudfront" {
   name        = "${local.name}-alb-cloudfront"
   description = "ALB: HTTPS from CloudFront only"
@@ -135,29 +141,13 @@ resource "aws_vpc_security_group_ingress_rule" "alb_cloudfront" {
   to_port           = 443
 }
 
-resource "aws_security_group" "alb_cloudflare" {
-  name        = "${local.name}-alb-cloudflare"
-  description = "ALB: HTTPS from Cloudflare (custom tracking domains)"
-  vpc_id      = aws_vpc.main.id
-  tags        = { Name = "${local.name}-alb-cloudflare" }
-}
-
-resource "aws_vpc_security_group_ingress_rule" "alb_cloudflare" {
-  for_each          = toset(var.cloudflare_ipv4_ranges)
-  security_group_id = aws_security_group.alb_cloudflare.id
-  cidr_ipv4         = each.key
-  ip_protocol       = "tcp"
-  from_port         = 443
-  to_port           = 443
-}
-
-resource "aws_vpc_security_group_egress_rule" "alb_to_tasks" {
+resource "aws_vpc_security_group_egress_rule" "alb_to_tasks_tls" {
   for_each                     = local.lb_services
   security_group_id            = aws_security_group.alb_cloudfront.id
   referenced_security_group_id = aws_security_group.task[each.key].id
   ip_protocol                  = "tcp"
-  from_port                    = each.value.port
-  to_port                      = each.value.port
+  from_port                    = each.value.tlsPort
+  to_port                      = each.value.tlsPort
 }
 
 resource "aws_security_group" "task" {
@@ -168,13 +158,13 @@ resource "aws_security_group" "task" {
   tags        = { Name = "${local.name}-${each.key}" }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "task_from_alb" {
+resource "aws_vpc_security_group_ingress_rule" "task_from_alb_tls" {
   for_each                     = local.lb_services
   security_group_id            = aws_security_group.task[each.key].id
   referenced_security_group_id = aws_security_group.alb_cloudfront.id
   ip_protocol                  = "tcp"
-  from_port                    = each.value.port
-  to_port                      = each.value.port
+  from_port                    = each.value.tlsPort
+  to_port                      = each.value.tlsPort
 }
 
 # Plain-TCP services (the SMTP relay) behind the NLB, which preserves client addresses: their
@@ -207,7 +197,7 @@ resource "aws_security_group" "db" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "db" {
-  for_each                     = toset(["web", "portal", "sign", "api", "worker", "smtp"])
+  for_each                     = toset(["web", "portal", "sign", "scheduling", "api", "worker", "smtp"])
   security_group_id            = aws_security_group.db.id
   referenced_security_group_id = aws_security_group.task[each.key].id
   ip_protocol                  = "tcp"

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { colors, radius, TONE_TOKENS, type Tone } from "../lib/theme";
+import { colors, space, TONE_TOKENS, type Tone } from "../lib/theme";
 import { Text } from "./text";
 
 /** coss ui's `Badge`: tinted for a status, or plain (`outline`, `secondary`). */
@@ -53,9 +53,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    borderRadius: radius.sm - 2,
-    paddingHorizontal: 5,
-    minHeight: 20,
+    borderRadius: 999,
+    paddingHorizontal: space.sm,
+    minHeight: 22,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "transparent",
   },

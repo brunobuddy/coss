@@ -12,6 +12,13 @@ import {
   budgetHoldExists,
   budgetHoldFor,
 } from "@coss/billing/metering";
+import {
+  HIPAA_MODE_RESTRICTION,
+  HIPAA_SMS_COUNTRIES,
+  HipaaModeError,
+  hipaaModeSql,
+  isHipaaMode,
+} from "@coss/compliance";
 import { db, schema, type Transaction } from "@coss/db";
 import { isId } from "@coss/db/id";
 import {
@@ -21,8 +28,9 @@ import {
   isReplayOf,
   withIdempotencyKey,
 } from "@coss/db/idempotency";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import type { ScreenInput, ScreenOutcome } from "@coss/screening";
-import { and, asc, eq, inArray, isNull, lte, not, notExists, or } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, not, notExists, or, sql } from "drizzle-orm";
 import type { SmsDispatchQueue } from "./dispatch.ts";
 import { SmsError } from "./errors.ts";
 import { COSS_SMS_EVENT_SOURCE, discardSmsBody, recordSmsEvent } from "./events.ts";
@@ -227,8 +235,16 @@ function failedEvent(
   });
 }
 
+/** HIPAA mode may have been turned on while a message waited: its body still isn't kept. */
+function hipaaAtClaim(sandbox: boolean, organizationId: string) {
+  if (sandbox) return {};
+  return {
+    discardBody: sql<boolean>`(${smsMessage.discardBody} or ${hipaaModeSql(organizationId)})`,
+  };
+}
+
 export function createSmsService(opts: SmsServiceOptions): SmsService {
-  const callbackBaseUrl = opts.callbackBaseUrl?.replace(/\/+$/, "");
+  const callbackBaseUrl = opts.callbackBaseUrl && withoutTrailingSlashes(opts.callbackBaseUrl);
   // Sandbox environments never reach a real provider, whatever `liveProvider` is.
   const providerFor = (sandbox: boolean) => (sandbox ? opts.sandboxProvider : opts.liveProvider);
 
@@ -334,6 +350,24 @@ export function createSmsService(opts: SmsServiceOptions): SmsService {
 
   /** Sends a message this process claimed for `provider` and records the outcome. */
   async function complete(row: SmsRow, provider: SmsProvider, sandbox: boolean): Promise<void> {
+    // A message accepted before the organization turned HIPAA mode on.
+    if (
+      !sandbox &&
+      !HIPAA_SMS_COUNTRIES.includes(row.toCountry) &&
+      (await isHipaaMode(row.organizationId))
+    ) {
+      const failure = {
+        code: HIPAA_MODE_RESTRICTION,
+        message: `HIPAA mode only sends SMS to ${HIPAA_SMS_COUNTRIES.join(", ")} numbers.`,
+      };
+      await finish(
+        row,
+        { status: "failed", errorCode: failure.code, errorMessage: failure.message },
+        [failedEvent(row, failure)],
+        sandbox,
+      );
+      return;
+    }
     const screening = await screeningFailure(row, sandbox);
     if (screening === SCREENING_UNAVAILABLE) {
       await holdForScreening(row, provider);
@@ -446,7 +480,7 @@ export function createSmsService(opts: SmsServiceOptions): SmsService {
     const claimed = await db.transaction(async (tx) => {
       const [claimedRow] = await tx
         .update(smsMessage)
-        .set({ provider: provider.name })
+        .set({ provider: provider.name, ...hipaaAtClaim(sandbox, row.organizationId) })
         .where(
           and(
             eq(smsMessage.id, row.id),
@@ -545,7 +579,11 @@ export function createSmsService(opts: SmsServiceOptions): SmsService {
     const claimed = await db.transaction(async (tx) => {
       const [claimedRow] = await tx
         .update(smsMessage)
-        .set({ status: "queued", provider: provider.name })
+        .set({
+          status: "queued",
+          provider: provider.name,
+          ...hipaaAtClaim(sandbox, row.organizationId),
+        })
         .where(stillDue)
         .returning();
       if (!claimedRow) return undefined;
@@ -617,9 +655,9 @@ export function createSmsService(opts: SmsServiceOptions): SmsService {
     const { environment: env, params } = input;
     const sandbox = env.mode === "sandbox";
     const idempotencyKey = input.idempotencyKey || null;
-    const requestHash = idempotencyKey
-      ? hashSendSmsRequest(params, { discardBody: input.discardBody })
-      : null;
+    const hipaaMode = !sandbox && (await isHipaaMode(env.organizationId));
+    const discardBody = input.discardBody || hipaaMode;
+    const requestHash = idempotencyKey ? hashSendSmsRequest(params, { discardBody }) : null;
     const replayOnError = async (error: unknown) => {
       // A retry of a request that already succeeded still replays, even if its sender changed since.
       const replay =
@@ -636,6 +674,11 @@ export function createSmsService(opts: SmsServiceOptions): SmsService {
         new SmsError("invalid_phone_number", `${params.to} isn't a valid phone number.`, {
           param: "to",
         }),
+      );
+    }
+    if (hipaaMode && !HIPAA_SMS_COUNTRIES.includes(to.country)) {
+      throw new HipaaModeError(
+        `HIPAA mode only sends SMS to ${HIPAA_SMS_COUNTRIES.join(", ")} numbers, which is what the BAA with Twilio covers.`,
       );
     }
     let numberId: string | null = null;
@@ -680,7 +723,7 @@ export function createSmsService(opts: SmsServiceOptions): SmsService {
           toCountry: to.country,
           numberId,
           body: params.body,
-          discardBody: input.discardBody ?? false,
+          discardBody: discardBody ?? false,
           encoding: segmentation.encoding,
           segments: segmentation.segments,
           tags: params.tags ?? [],
@@ -763,10 +806,12 @@ export function createSmsService(opts: SmsServiceOptions): SmsService {
 
   async function replay(input: SendSmsInput): Promise<SmsObjectOutput | null> {
     if (!input.idempotencyKey) return null;
+    const hipaaMode =
+      input.environment.mode !== "sandbox" && (await isHipaaMode(input.environment.organizationId));
     return findReplay(
       input.environment,
       input.idempotencyKey,
-      hashSendSmsRequest(input.params, { discardBody: input.discardBody }),
+      hashSendSmsRequest(input.params, { discardBody: input.discardBody || hipaaMode }),
     );
   }
 

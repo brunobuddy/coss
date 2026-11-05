@@ -1,6 +1,7 @@
 /** List prices. A price change is a new dated card: periods before it keep the old prices. */
 import { dimensionKey, type MeterKey } from "./meters.ts";
 import { SMS_PRICES_2026_11_01 } from "./sms-prices-2026-11-01.generated.ts";
+import { SMS_PRICES_2027_01_01 } from "./sms-prices-2027-01-01.generated.ts";
 
 /** Units up to and including `upTo` (cumulative; `null` = no limit) cost `unitNanos` each. */
 export type Tier = { upTo: number | null; unitNanos: bigint };
@@ -95,8 +96,6 @@ const LAUNCH: RateCard = {
     // meters were added; no organization had used them).
     "forms.submissions": { default: flatRate(1_000_000n) },
     "forms.file_uploads": { default: flatRate(250_000n) },
-    // $1.50 per 1,000 participant-minutes.
-    "video.participant_minutes": { default: flatRate(1_500_000n) },
     // $0.10 per booking.
     "scheduling.bookings": { default: flatRate(100_000_000n) },
   },
@@ -131,11 +130,50 @@ const NOVEMBER_2026: RateCard = {
         campaign_monthly_low_volume: 1_500_000_000n,
       }),
     },
+    // $0.10 per 1,000 Hooks messages (first priced when the meter was added; it had no usage before).
+    "hooks.messages": { default: flatRate(100_000n) },
+    // Past each email's first MB: $0.25 per 1,000 MB of attachments sent (SES: $0.12 per GB) and
+    // $0.75 per 1,000 MB received (SES: about $0.37 per GB, plus keeping the content). First
+    // priced when the meters were added; they had no usage before.
+    "email.attachment_data": { default: flatRate(250_000n) },
+    "email.received_data": { default: flatRate(750_000n) },
+    // Risk (first priced when the meters were added; they had no usage before). $1 per 1,000
+    // assessments; $0.50 from the 1,000,001st; $0.25 from the 10,000,001st. Blocked decisions are
+    // never metered.
+    "risk.assessments": {
+      default: {
+        mode: "graduated",
+        tiers: [
+          { upTo: 1_000_000, unitNanos: 1_000_000n },
+          { upTo: 10_000_000, unitNanos: 500_000n },
+          { upTo: null, unitNanos: 250_000n },
+        ],
+      },
+    },
+    // $0.25 per 1,000 content checks. Jev costs about $0.042 per million input tokens, so at most
+    // about $0.10 per 1,000 for the longest text classified (8,000 characters).
+    "risk.content_checks": { default: flatRate(250_000n) },
+  },
+};
+
+const JANUARY_2027: RateCard = {
+  // Twilio's price changes: SMS to Canada and SMS received in the US. Also the first prices of SMS
+  // received on Canadian numbers and of Scheduling hosts (the Terms' 30 days' notice).
+  effectiveFrom: new Date("2027-01-01T00:00:00Z"),
+  rates: {
+    ...NOVEMBER_2026.rates,
+    "sms.segments": { byDimension: flatRates("country", SMS_PRICES_2027_01_01.outbound) },
+    "sms.received_segments": {
+      byDimension: flatRates("country", SMS_PRICES_2027_01_01.inbound),
+    },
+    "verify.sms": { byDimension: flatRates("country", SMS_PRICES_2027_01_01.outbound) },
+    // A host for 30 days: $0.99 beyond what the plan includes. Per day: $0.033.
+    "scheduling.hosts": { default: flatRate(33_000_000n) },
   },
 };
 
 /** In ascending `effectiveFrom` order. */
-export const RATE_CARDS: readonly RateCard[] = [LAUNCH, NOVEMBER_2026];
+export const RATE_CARDS: readonly RateCard[] = [LAUNCH, NOVEMBER_2026, JANUARY_2027];
 
 /** The list prices in effect at `at` (the first card for earlier dates). */
 export function rateCardAt(at: Date, cards: readonly RateCard[] = RATE_CARDS): RateCard {
@@ -143,6 +181,14 @@ export function rateCardAt(at: Date, cards: readonly RateCard[] = RATE_CARDS): R
   if (!current) throw new Error("No rate card is defined.");
   for (const card of cards) if (card.effectiveFrom <= at) current = card;
   return current;
+}
+
+/** When list prices first price `meter`: until then its usage must not be recorded as charged. */
+export function meterPricedFrom(
+  meter: MeterKey,
+  cards: readonly RateCard[] = RATE_CARDS,
+): Date | null {
+  return cards.find((card) => card.rates[meter])?.effectiveFrom ?? null;
 }
 
 /** The rate for one dimension value: its own, else the meter's default. */

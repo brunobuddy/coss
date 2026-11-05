@@ -4,8 +4,8 @@
 # Registers a revision of each service's latest task definition (so environment changes made by
 # Terraform ship too) with the new image, updates every service, then waits for them together: the
 # deployment circuit breaker rolls failed rollouts back. A service behind the load balancer is done
-# once every new task passed its health checks and ECS scaled the old ones to zero (they're only
-# draining then). One without (the worker: a running process is all ECS checks) once the old tasks
+# once every new task passed its health checks and ECS scaled the old ones to zero (they can answer
+# requests for a little longer: ecs-wait-drained.sh waits for them to go). One without (the worker: a running process is all ECS checks) once the old tasks
 # are gone and the new ones have run for STABLE_SECONDS without a failure, so a crash on start
 # can't pass for a deploy. Either way that's minutes before ECS calls the rollout COMPLETED.
 source "$(dirname "$0")/lib.sh"
@@ -78,7 +78,7 @@ for service in "$@"; do
     fi
     case "$state" in
       done) echo "$service is running $tag"; break ;;
-      serving) echo "$service is serving $tag (old tasks draining)"; break ;;
+      serving) echo "$service is serving $tag (old tasks stopping)"; break ;;
       stable) echo "$service is running $tag (stable for ${STABLE_SECONDS}s)"; break ;;
       failed)
         echo "$service: the rollout to $tag failed (rolled back). Recent events:" >&2

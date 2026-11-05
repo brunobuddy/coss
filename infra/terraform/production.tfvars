@@ -11,6 +11,7 @@ api_host           = "api.coss.com"
 portal_host        = "portal.cosshooks.com"
 sign_host          = "cosssign.com"
 forms_host         = "cossforms.com"
+scheduling_host    = "cossbook.com"
 smtp_host          = "smtp.coss.com"
 external_origin_hosts = {
   ui     = "coss-com-ui.vercel.app"
@@ -41,54 +42,58 @@ db_engine_version   = "18.6"
 db_password_version = 1
 
 autoscaling = {
-  web    = { max = 6, cpu_target = 60 }
-  site   = { max = 4, cpu_target = 60 }
-  portal = { max = 4, cpu_target = 60 }
-  sign   = { max = 4, cpu_target = 60 }
-  api    = { max = 6, cpu_target = 60 }
-  worker = { max = 2, cpu_target = 70 }
-  smtp   = { max = 4, cpu_target = 60 }
+  web        = { max = 6, cpu_target = 60 }
+  site       = { max = 4, cpu_target = 60 }
+  portal     = { max = 4, cpu_target = 60 }
+  sign       = { max = 4, cpu_target = 60 }
+  scheduling = { max = 4, cpu_target = 60 }
+  api        = { max = 6, cpu_target = 60 }
+  worker     = { max = 2, cpu_target = 70 }
+  smtp       = { max = 4, cpu_target = 60 }
 }
 
-waf_rate_limits = { dashboard = 5000, api = 20000 }
+waf_rate_limits = { dashboard = 5000, api = 20000, hosted = 5000, tracking = 20000 }
 
-cloudflare_ipv4_ranges = [
-  "173.245.48.0/20", "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "141.101.64.0/18",
-  "108.162.192.0/18", "190.93.240.0/20", "188.114.96.0/20", "197.234.240.0/22", "198.41.128.0/17",
-  "162.158.0.0/15", "104.16.0.0/13", "104.24.0.0/14", "172.64.0.0/13", "131.0.72.0/22",
-]
+management_account_id = "456651119109"
 
 plain_env = {
   web = {
-    BETTER_AUTH_URL          = "https://coss.com"
-    API_PUBLIC_URL           = "https://api.coss.com"
-    SMTP_PUBLIC_HOST         = "smtp.coss.com"
-    TRUSTED_PROXY_HOPS       = "2"
-    TURNSTILE_SITE_KEY       = "0x4AAAAAAFU8QY0DX4ZJGoSK"
-    PORTAL_PUBLIC_URL        = "https://portal.cosshooks.com"
-    SIGN_PUBLIC_URL          = "https://cosssign.com"
+    SECURITY_MANAGEMENT_ROLE_ARN = "arn:aws:iam::456651119109:role/coss-security-read"
+    SECURITY_ALERTS_TOPIC_ARN    = "arn:aws:sns:us-east-2:294417174674:coss-alerts"
+    SECURITY_ACCESS_LOGS_BUCKET  = "coss-production-access-logs-294417174674"
+    SECURITY_DATABASE_LOG_GROUP  = "/aws/rds/instance/coss-production/postgresql"
+    BETTER_AUTH_URL              = "https://coss.com"
+    API_PUBLIC_URL               = "https://api.coss.com"
+    SMTP_PUBLIC_HOST             = "smtp.coss.com"
+    TRUSTED_PROXY_HOPS           = "2"
+    TURNSTILE_SITE_KEY           = "0x4AAAAAAFU8QY0DX4ZJGoSK"
+    PORTAL_PUBLIC_URL            = "https://portal.cosshooks.com"
+    SIGN_PUBLIC_URL              = "https://cosssign.com"
+    SCHEDULING_PUBLIC_URL        = "https://cossbook.com"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
-    FORMS_PUBLIC_URL = "https://cossforms.com"
-    FORMS_FILES_BUCKET = "coss-production-forms-files-294417174674"
-    GOOGLE_CLIENT_ID         = "204721091156-k33omqkstijuaari06eidtlefif81p9m.apps.googleusercontent.com"
-    GITHUB_CLIENT_ID         = "Ov23liYEf7MwkA26M9Ul"
-    DEPLOY_GITHUB_APP_ID     = "5340076"
-    DOMAIN_CONNECT_KEY_ID    = "_dck1"
-    EMAIL_PROVIDER           = "ses"
-    AWS_REGION               = "us-east-2"
-    SES_CONFIGURATION_SET    = "coss"
-    SES_TENANT_PREFIX        = "coss"
-    INBOUND_MANAGED_DOMAIN   = "inbound.coss.com"
-    SES_INBOUND_BUCKET       = "coss-inbound-294417174674"
-    TRACKING_DOMAIN_PROVIDER = "cloudflare"
-    CLOUDFLARE_ZONE_ID       = "2e3adbb52b68d57dfa5d71a0b7cfa3cc"
-    TRACKING_CNAME_TARGET    = "track.cosslinks.com"
-    DATABASE_POOL_MAX        = "10"
-    VALKEY_CLUSTER           = "true"
-    RATE_LIMIT_KEY_PREFIX    = "coss"
-    CLIENT_IP_HEADER         = "x-forwarded-for"
-    TRUSTED_PROXY_COUNT      = "2"
-    BILLING_PROVIDER         = "stripe"
+    FORMS_PUBLIC_URL             = "https://cossforms.com"
+    FORMS_FILES_BUCKET           = "coss-production-forms-files-294417174674"
+    SUPPORT_FILES_BUCKET         = "coss-production-support-files-294417174674"
+    GOOGLE_CLIENT_ID             = "204721091156-k33omqkstijuaari06eidtlefif81p9m.apps.googleusercontent.com"
+    GITHUB_CLIENT_ID             = "Ov23liYEf7MwkA26M9Ul"
+    DEPLOY_GITHUB_APP_ID         = "5340076"
+    DOMAIN_CONNECT_KEY_ID        = "_dck1"
+    EMAIL_PROVIDER               = "ses"
+    AWS_REGION                   = "us-east-2"
+    SES_CONFIGURATION_SET        = "coss"
+    SES_TENANT_PREFIX            = "coss"
+    INBOUND_MANAGED_DOMAIN       = "inbound.coss.com"
+    SES_INBOUND_BUCKET           = "coss-inbound-294417174674"
+    TRACKING_DOMAIN_PROVIDER     = "cloudfront"
+    TRACKING_DISTRIBUTION_ID     = "E16MKXISCNTK89"
+    TRACKING_CONNECTION_GROUP_ID = "cg_3LbkzYhqed9vwdrIFFu4hRBODwv"
+    TRACKING_CNAME_TARGET        = "d3h4w32sznt20a.cloudfront.net"
+    DATABASE_POOL_MAX            = "10"
+    VALKEY_CLUSTER               = "true"
+    RATE_LIMIT_KEY_PREFIX        = "coss"
+    CLIENT_IP_HEADER             = "x-forwarded-for"
+    TRUSTED_PROXY_COUNT          = "2"
+    BILLING_PROVIDER             = "stripe"
     # Screens live hosted form pages published here, like the api (AI_GATEWAY_API_KEY is in the
     # secret).
     RISK_CLASSIFIER = "ai"
@@ -117,6 +122,13 @@ plain_env = {
     SENTRY_ENVIRONMENT        = "production"
     SENTRY_TRACES_SAMPLE_RATE = "0.1"
   }
+  scheduling = {
+    DATABASE_POOL_MAX         = "5"
+    API_PUBLIC_URL            = "https://api.coss.com"
+    SENTRY_DSN                = "https://5ec65d2d11dbe023040d38909af656b7@o4512237982711808.ingest.de.sentry.io/4512364862242896"
+    SENTRY_ENVIRONMENT        = "production"
+    SENTRY_TRACES_SAMPLE_RATE = "0.1"
+  }
   sign = {
     DATABASE_POOL_MAX         = "5"
     AWS_REGION                = "us-east-2"
@@ -129,32 +141,37 @@ plain_env = {
     SENTRY_TRACES_SAMPLE_RATE = "0.1"
   }
   api = {
-    BETTER_AUTH_URL     = "https://coss.com"
-    API_PUBLIC_URL      = "https://api.coss.com"
-    TRACKING_PUBLIC_URL = "https://track.cosslinks.com"
-    PORTAL_PUBLIC_URL   = "https://portal.cosshooks.com"
-    SIGN_PUBLIC_URL     = "https://cosssign.com"
+    BETTER_AUTH_URL              = "https://coss.com"
+    API_PUBLIC_URL               = "https://api.coss.com"
+    TRACKING_PUBLIC_URL          = "https://track.cosslinks.com"
+    PORTAL_PUBLIC_URL            = "https://portal.cosshooks.com"
+    SIGN_PUBLIC_URL              = "https://cosssign.com"
+    SCHEDULING_PUBLIC_URL        = "https://cossbook.com"
+    GOOGLE_CALENDAR_CLIENT_ID    = "776019028945-dnuug57hi1tsjfdbu93evm8ggp1ge00q.apps.googleusercontent.com"
+    MICROSOFT_CALENDAR_CLIENT_ID = "e58a0c0d-e1bb-4aef-a861-43c755d96761"
+    ZOOM_CLIENT_ID               = "o2o2uQQ0TqqHQSKrcHybEg"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
-    FORMS_PUBLIC_URL = "https://cossforms.com"
+    FORMS_PUBLIC_URL   = "https://cossforms.com"
     FORMS_FILES_BUCKET = "coss-production-forms-files-294417174674"
-    API_CORS_ORIGINS    = "https://coss.com"
-    EMAIL_PROVIDER      = "ses"
+    API_CORS_ORIGINS   = "https://coss.com"
+    EMAIL_PROVIDER     = "ses"
     # Twilio's callbacks are verified with each organization's subaccount token (in the database);
     # the parent account's credentials (in the secret) are risk's phone checks'.
-    SMS_PROVIDER             = "twilio"
-    AWS_REGION               = "us-east-2"
-    SES_CONFIGURATION_SET    = "coss"
-    SES_TENANT_PREFIX        = "coss"
-    INBOUND_MANAGED_DOMAIN   = "inbound.coss.com"
-    SES_INBOUND_BUCKET       = "coss-inbound-294417174674"
-    TRACKING_DOMAIN_PROVIDER = "cloudflare"
-    CLOUDFLARE_ZONE_ID       = "2e3adbb52b68d57dfa5d71a0b7cfa3cc"
-    TRACKING_CNAME_TARGET    = "track.cosslinks.com"
-    DATABASE_POOL_MAX        = "10"
-    VALKEY_CLUSTER           = "true"
-    RATE_LIMIT_KEY_PREFIX    = "coss"
-    CLIENT_IP_HEADER         = "x-forwarded-for"
-    TRUSTED_PROXY_COUNT      = "2"
+    SMS_PROVIDER                 = "twilio"
+    AWS_REGION                   = "us-east-2"
+    SES_CONFIGURATION_SET        = "coss"
+    SES_TENANT_PREFIX            = "coss"
+    INBOUND_MANAGED_DOMAIN       = "inbound.coss.com"
+    SES_INBOUND_BUCKET           = "coss-inbound-294417174674"
+    TRACKING_DOMAIN_PROVIDER     = "cloudfront"
+    TRACKING_DISTRIBUTION_ID     = "E16MKXISCNTK89"
+    TRACKING_CONNECTION_GROUP_ID = "cg_3LbkzYhqed9vwdrIFFu4hRBODwv"
+    TRACKING_CNAME_TARGET        = "d3h4w32sznt20a.cloudfront.net"
+    DATABASE_POOL_MAX            = "10"
+    VALKEY_CLUSTER               = "true"
+    RATE_LIMIT_KEY_PREFIX        = "coss"
+    CLIENT_IP_HEADER             = "x-forwarded-for"
+    TRUSTED_PROXY_COUNT          = "2"
     # Risk's content classification: the worker's screening model through the AI Gateway
     # (AI_GATEWAY_API_KEY is in the secret). Per-address VPN data stays off (IPinfo isn't a subprocessor).
     RISK_CLASSIFIER = "ai"
@@ -180,29 +197,38 @@ plain_env = {
     API_PUBLIC_URL                      = "https://api.coss.com"
     TRACKING_PUBLIC_URL                 = "https://track.cosslinks.com"
     SIGN_PUBLIC_URL                     = "https://cosssign.com"
+    SCHEDULING_PUBLIC_URL               = "https://cossbook.com"
+    GOOGLE_CALENDAR_CLIENT_ID           = "776019028945-dnuug57hi1tsjfdbu93evm8ggp1ge00q.apps.googleusercontent.com"
+    MICROSOFT_CALENDAR_CLIENT_ID        = "e58a0c0d-e1bb-4aef-a861-43c755d96761"
+    ZOOM_CLIENT_ID                      = "o2o2uQQ0TqqHQSKrcHybEg"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
-    FORMS_PUBLIC_URL = "https://cossforms.com"
-    FORMS_FILES_BUCKET = "coss-production-forms-files-294417174674"
-    EMAIL_PROVIDER                      = "ses"
-    AWS_REGION                          = "us-east-2"
-    SES_CONFIGURATION_SET               = "coss"
-    SES_TENANT_PREFIX                   = "coss"
-    SES_EVENTS_QUEUE_URL                = "https://sqs.us-east-2.amazonaws.com/294417174674/coss-events"
+    FORMS_PUBLIC_URL       = "https://cossforms.com"
+    FORMS_FILES_BUCKET     = "coss-production-forms-files-294417174674"
+    SUPPORT_FILES_BUCKET   = "coss-production-support-files-294417174674"
+    SUPPORT_ENVIRONMENT_ID = "env_01m6h5n6jyf2cvkvbyf4209wqn"
+    SUPPORT_FROM_ADDRESS   = "support@coss.com"
+    SUPPORT_REPLY_DOMAIN   = "reply.coss.com"
+    EMAIL_PROVIDER         = "ses"
+    AWS_REGION             = "us-east-2"
+    SES_CONFIGURATION_SET  = "coss"
+    SES_TENANT_PREFIX      = "coss"
+    SES_EVENTS_QUEUE_URL   = "https://sqs.us-east-2.amazonaws.com/294417174674/coss-events"
     # Receiving (ses:bootstrap --managed-domain inbound.coss.com).
     INBOUND_MANAGED_DOMAIN = "inbound.coss.com"
     SES_INBOUND_BUCKET     = "coss-inbound-294417174674"
     SES_INBOUND_QUEUE_URL  = "https://sqs.us-east-2.amazonaws.com/294417174674/coss-inbound"
     # The daily inbound limit per organization is counted in Valkey (VALKEY_URL is in the secret).
-    VALKEY_CLUSTER           = "true"
-    RATE_LIMIT_KEY_PREFIX    = "coss"
-    TRACKING_DOMAIN_PROVIDER = "cloudflare"
-    CLOUDFLARE_ZONE_ID       = "2e3adbb52b68d57dfa5d71a0b7cfa3cc"
-    TRACKING_CNAME_TARGET    = "track.cosslinks.com"
-    DATABASE_POOL_MAX        = "10"
-    LOG_RETENTION_DAYS       = "30"
-    SCREENING_CLASSIFIER     = "ai"
-    SCREENING_MODEL          = "typesafe-ai/jev"
-    BILLING_PROVIDER         = "stripe"
+    VALKEY_CLUSTER               = "true"
+    RATE_LIMIT_KEY_PREFIX        = "coss"
+    TRACKING_DOMAIN_PROVIDER     = "cloudfront"
+    TRACKING_DISTRIBUTION_ID     = "E16MKXISCNTK89"
+    TRACKING_CONNECTION_GROUP_ID = "cg_3LbkzYhqed9vwdrIFFu4hRBODwv"
+    TRACKING_CNAME_TARGET        = "d3h4w32sznt20a.cloudfront.net"
+    DATABASE_POOL_MAX            = "10"
+    LOG_RETENTION_DAYS           = "30"
+    SCREENING_CLASSIFIER         = "ai"
+    SCREENING_MODEL              = "typesafe-ai/jev"
+    BILLING_PROVIDER             = "stripe"
     # Account and reputation emails go out through coss.com itself, from its own organization.
     NOTIFICATIONS_ENVIRONMENT_ID = "env_01m4s0af5zent8fzxwmtkergw5"
     NOTIFICATIONS_FROM           = "coss.com <notifications@coss.com>"
@@ -219,23 +245,24 @@ plain_env = {
     SENTRY_TRACES_SAMPLE_RATE = "0.1"
   }
   smtp = {
-    BETTER_AUTH_URL           = "https://coss.com"
-    SMTP_HOSTNAME             = "smtp.coss.com"
-    TRACKING_PUBLIC_URL       = "https://track.cosslinks.com"
-    EMAIL_PROVIDER            = "ses"
-    AWS_REGION                = "us-east-2"
-    SES_CONFIGURATION_SET     = "coss"
-    SES_TENANT_PREFIX         = "coss"
-    INBOUND_MANAGED_DOMAIN    = "inbound.coss.com"
-    SES_INBOUND_BUCKET        = "coss-inbound-294417174674"
-    TRACKING_DOMAIN_PROVIDER  = "cloudflare"
-    CLOUDFLARE_ZONE_ID        = "2e3adbb52b68d57dfa5d71a0b7cfa3cc"
-    TRACKING_CNAME_TARGET     = "track.cosslinks.com"
-    DATABASE_POOL_MAX         = "10"
-    VALKEY_CLUSTER            = "true"
-    RATE_LIMIT_KEY_PREFIX     = "coss"
-    SENTRY_DSN                = "https://868b2bf2f705696c061f86be6597eb68@o4512237982711808.ingest.de.sentry.io/4512262232604752"
-    SENTRY_ENVIRONMENT        = "production"
-    SENTRY_TRACES_SAMPLE_RATE = "0.1"
+    BETTER_AUTH_URL              = "https://coss.com"
+    SMTP_HOSTNAME                = "smtp.coss.com"
+    TRACKING_PUBLIC_URL          = "https://track.cosslinks.com"
+    EMAIL_PROVIDER               = "ses"
+    AWS_REGION                   = "us-east-2"
+    SES_CONFIGURATION_SET        = "coss"
+    SES_TENANT_PREFIX            = "coss"
+    INBOUND_MANAGED_DOMAIN       = "inbound.coss.com"
+    SES_INBOUND_BUCKET           = "coss-inbound-294417174674"
+    TRACKING_DOMAIN_PROVIDER     = "cloudfront"
+    TRACKING_DISTRIBUTION_ID     = "E16MKXISCNTK89"
+    TRACKING_CONNECTION_GROUP_ID = "cg_3LbkzYhqed9vwdrIFFu4hRBODwv"
+    TRACKING_CNAME_TARGET        = "d3h4w32sznt20a.cloudfront.net"
+    DATABASE_POOL_MAX            = "10"
+    VALKEY_CLUSTER               = "true"
+    RATE_LIMIT_KEY_PREFIX        = "coss"
+    SENTRY_DSN                   = "https://868b2bf2f705696c061f86be6597eb68@o4512237982711808.ingest.de.sentry.io/4512262232604752"
+    SENTRY_ENVIRONMENT           = "production"
+    SENTRY_TRACES_SAMPLE_RATE    = "0.1"
   }
 }

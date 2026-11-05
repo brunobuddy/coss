@@ -1,5 +1,6 @@
 "use client";
 
+import { settingsHref } from "@coss/dashboard-routes";
 import { Button } from "@coss/ui/components/button";
 import {
   Command,
@@ -21,6 +22,9 @@ import {
   BuildingIcon,
   CornerDownLeftIcon,
   FolderIcon,
+  HouseIcon,
+  LayoutGridIcon,
+  LifeBuoyIcon,
   type LucideIcon,
   SearchIcon,
   SettingsIcon,
@@ -30,10 +34,10 @@ import { useParams, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ENVIRONMENT_NAV,
+  ENVIRONMENT_PAGES,
   environmentPath,
   type NavItem,
-  ORGANIZATION_NAV,
+  ORGANIZATION_ICON,
   ORGANIZATION_SETTINGS_NAV,
 } from "@/lib/navigation";
 import { THEME_OPTIONS } from "./theme-options";
@@ -56,15 +60,25 @@ export type CommandMenuData = {
   organization?: ShellOrganization;
   organizations?: ShellOrganization[];
   projects?: ShellProject[];
+  /** The environment to use outside one (organization settings): the last one opened. */
+  fallback?: { project: string; environment: string } | null;
+  /** The organization settings pages the member may open. */
+  settingsPaths?: string[];
   isAdmin: boolean;
 };
 
-function navEntries(group: string, base: string, items: NavItem[]): CommandEntry[] {
+function navEntries(
+  group: string,
+  base: string,
+  items: NavItem[],
+  icon: LucideIcon,
+): CommandEntry[] {
   return items.map((item) => ({
     value: `${group} ${base}${item.path}`,
-    label: item.label,
+    // A product's first page is named by the product ("Email", not "Overview").
+    label: item.label === "Overview" ? group : `${group} · ${item.label}`,
     keywords: group,
-    icon: item.icon,
+    icon,
     href: base + item.path,
   }));
 }
@@ -90,23 +104,51 @@ export function CommandMenu({ data }: { data: CommandMenuData }) {
   const sections = useMemo<CommandSection[]>(() => {
     const result: CommandSection[] = [];
     const org = data.organization;
-    const project = data.projects?.find((item) => item.slug === params.projectSlug);
-    const environment = project?.environments.find((item) => item.slug === params.envSlug);
+    const projectSlug = params.projectSlug ?? data.fallback?.project;
+    const envSlug = params.projectSlug ? params.envSlug : data.fallback?.environment;
+    const project = data.projects?.find((item) => item.slug === projectSlug);
+    const environment = project?.environments.find((item) => item.slug === envSlug);
     if (org && project && environment) {
       const base = environmentPath(org.slug, project.slug, environment.slug);
       result.push({
         value: `${project.name} · ${environment.name}`,
-        items: ENVIRONMENT_NAV.flatMap((group) =>
-          navEntries(group.label ?? project.name, base, group.items),
-        ),
+        items: [
+          { value: `home ${base}`, label: "Home", icon: HouseIcon, href: base },
+          {
+            value: `products ${base}`,
+            label: "All products",
+            keywords: "catalog",
+            icon: LayoutGridIcon,
+            href: `${base}/products`,
+          },
+          ...ENVIRONMENT_PAGES.flatMap((section) =>
+            navEntries(section.section, base, section.items, section.icon),
+          ),
+        ],
       });
     }
     if (org) {
+      const settings = ORGANIZATION_SETTINGS_NAV.filter(
+        (item) => !data.settingsPaths || data.settingsPaths.includes(item.path),
+      );
       result.push({
         value: org.name,
         items: [
-          ...navEntries("Organization", `/${org.slug}`, ORGANIZATION_NAV),
-          ...navEntries("Settings", `/${org.slug}/settings`, ORGANIZATION_SETTINGS_NAV.slice(1)),
+          {
+            value: "support help contact",
+            label: "Support",
+            keywords: "help ticket contact",
+            icon: LifeBuoyIcon,
+            href: `/${org.slug}/support`,
+          },
+          {
+            value: "new support ticket",
+            label: "New support ticket",
+            keywords: "help contact",
+            icon: LifeBuoyIcon,
+            href: `/${org.slug}/support/new`,
+          },
+          ...navEntries("Organization", settingsHref(org.slug), settings, ORGANIZATION_ICON),
         ],
       });
     }

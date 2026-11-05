@@ -16,6 +16,7 @@ function loggedApp(response: () => Response) {
       apiKeyId: "key_test",
       ownerUserId: null,
       mode: "sandbox",
+      hipaaMode: false,
     });
     c.set("requestId", "req_test");
     c.set("clientIp", null);
@@ -83,6 +84,25 @@ describe("response log byte limit", () => {
   });
 });
 
+for (const status of [201, 422]) {
+  test(`booker sessions never log the attendee's details (status ${status})`, async () => {
+    const { app, writer } = loggedApp(() => Response.json({}));
+    const path = "/v1/scheduling/booker_sessions";
+    app.post(path, async (c) => {
+      await c.req.json();
+      return Response.json({ object: "scheduling.session", id: "schs_1" }, { status });
+    });
+    await app.request(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ attendee: { name: "Sam Lee", email: "sam@example.com" } }),
+    });
+    const [line] = await waitForLogLines(writer, 1);
+    expect(line?.attributes?.request).not.toHaveProperty("body");
+    expect(JSON.stringify(line)).not.toContain("sam@example.com");
+  });
+}
+
 for (const path of ["/v1/risk/email/check", "/v1/risk/ip/check", "/v1/risk/content/classify"]) {
   for (const status of [200, 422, 500]) {
     test(`${path} omits both bodies at status ${status}`, async () => {
@@ -141,6 +161,7 @@ describe("email content", () => {
         apiKeyId: "key_test",
         ownerUserId: null,
         mode: "sandbox",
+        hipaaMode: false,
       });
       c.set("requestId", "req_test");
       c.set("clientIp", null);

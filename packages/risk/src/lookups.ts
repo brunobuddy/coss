@@ -4,7 +4,8 @@
  * nothing about the person looked up. Each one is best-effort and bounded in time, except
  * classification, which a caller asked for explicitly and is told about when it fails.
  */
-import { isOnBillingHold, recordUsage } from "@coss/billing/metering";
+import { budgetHoldFor, isOnBillingHold, recordUsage } from "@coss/billing/metering";
+import { HipaaModeError, hipaaVendorCovered, isHipaaMode } from "@coss/compliance";
 import { db, type Executor } from "@coss/db";
 import type { ContentClassifier } from "@coss/screening/classifier";
 import { MAX_TEXT_CHARS, prepareLinks, prepareText, urlsInText } from "@coss/screening/text";
@@ -16,6 +17,7 @@ import {
   normalizeIp,
 } from "@coss/signals/ip";
 import type { RiskDeps } from "./assess.ts";
+import { CONTENT_METER } from "./billing.ts";
 import { domainAge } from "./domain-age.ts";
 import { RiskError } from "./errors.ts";
 import { normalizePhone, type PhoneData } from "./phone.ts";
@@ -249,6 +251,11 @@ export async function checkPhone(
     const fixture = sandboxPhoneData(phone);
     return fixture ? phoneCheck(phone, fixture) : unknown;
   }
+  if (!hipaaVendorCovered("twilio_lookup") && (await isHipaaMode(environment.organizationId))) {
+    throw new HipaaModeError(
+      "Phone checks aren't available in HIPAA mode: they would send the number to a provider outside your BAA.",
+    );
+  }
   if (!deps.phoneLookup) {
     throw new RiskError(
       "phone_lookup_unavailable",
@@ -259,8 +266,8 @@ export async function checkPhone(
   if (await isOnBillingHold(organizationId)) {
     throw new RiskError(
       "billing_hold",
-      "Live phone checks are paused for this organization: an invoice is overdue or its spend " +
-        "limit was reached. Sandbox keys still work. See the organization's billing settings.",
+      "Live phone checks are paused for this organization: an invoice is overdue or its spend or " +
+        "credit limit was reached. Sandbox keys still work. See the organization's billing settings.",
     );
   }
   const usage = { organizationId, meter: PHONE_METER, quantity: 1 } as const;
@@ -334,6 +341,11 @@ export async function classifyContent(
   if (environment.mode === "sandbox") {
     return { object: "risk_content_classification", scores: sandboxContentScores(text), truncated };
   }
+  if (await isHipaaMode(environment.organizationId)) {
+    throw new HipaaModeError(
+      "Content classification isn't available in HIPAA mode: it would send the text to an AI model.",
+    );
+  }
   const scores = await modelScores(deps.classifier, text, deps.classifyTimeoutMs);
   return { object: "risk_content_classification", scores, truncated };
 }
@@ -374,6 +386,54 @@ async function modelScores(
 }
 
 /**
+ * `POST /v1/risk/content/classify`, billed per check the model answered: refused on a billing hold
+ * or over a budget, the plan's cap reserved before asking the model
+ * (`BillingError("usage_limit_exceeded")` beyond it) and given back when it fails. Content inside
+ * an assessment is part of the assessment's price, and sandbox classifications are free.
+ */
+export async function classifyContentForCustomer(
+  deps: RiskDeps,
+  environment: PhoneCheckEnvironment,
+  text: string,
+): Promise<RiskContentClassificationOutput> {
+  if (environment.mode === "sandbox") return classifyContent(deps, environment, text);
+  const { organizationId, environmentId, projectId, apiKeyId, userId } = environment;
+  const usage = { organizationId, meter: CONTENT_METER, quantity: 1 } as const;
+  const gate = deps.usage;
+  if (await isOnBillingHold(organizationId)) {
+    throw new RiskError(
+      "billing_hold",
+      "Live content checks are paused for this organization: an invoice is overdue or its " +
+        "spend limit was reached. Sandbox keys still work. See the organization's billing settings.",
+    );
+  }
+  if (await budgetHoldFor({ organizationId, projectId, apiKeyId, userId })) {
+    throw new RiskError(
+      "budget_exceeded",
+      "Live content checks are paused: this API key, its member or its project reached a " +
+        "monthly budget. An owner can raise it on the organization's Spend page; it resets next month.",
+    );
+  }
+  // A release goes back to the month the reservation was made in, even after midnight.
+  const reservedAt = new Date();
+  if (gate) await db.transaction((tx) => gate.reserve(tx, usage));
+  let result: RiskContentClassificationOutput;
+  try {
+    result = await classifyContent(deps, environment, text);
+  } catch (error) {
+    if (gate?.release) {
+      const release = gate.release.bind(gate);
+      await db.transaction((tx) => release(tx, { ...usage, reservedAt }));
+    }
+    throw error;
+  }
+  await db.transaction((tx) =>
+    recordUsage(tx, { ...usage, environmentId, projectId, apiKeyId, userId }),
+  );
+  return result;
+}
+
+/**
  * Content scores for an assessment: `null` and degraded when classification is unavailable or the
  * organization's classification budget is spent, so the assessment never fails because of it.
  */
@@ -383,6 +443,9 @@ export async function assessmentContentScores(
   text: string | undefined,
 ): Promise<{ scores: ContentScores | null; degraded: boolean }> {
   if (text === undefined) return { scores: null, degraded: false };
+  if (environment.mode === "live" && (await isHipaaMode(environment.organizationId))) {
+    return { scores: null, degraded: false };
+  }
   try {
     if (environment.mode === "live" && deps.chargeClassification) {
       const allowed = await deps.chargeClassification(environment.organizationId);

@@ -18,6 +18,9 @@ messages are sampled is never announced and can't be predicted, so a sender can'
 for the messages it expects to be unscreened. A [sub-account](/docs/email/subaccounts) is sampled
 on its own too, so its first messages are always screened.
 
+Short image-based emails are always screened. A flagged sender receives increased screening, and
+repeated strongly suspicious messages can be blocked before the sender reaches the normal blocking threshold.
+
 ## Verdicts
 
 An AI model scores the message for each category, and the highest score decides:
@@ -35,6 +38,10 @@ it, as for any [suspension](/docs/reputation#when-live-sending-is-suspended). Wh
 belongs to a sub-account, only that sub-account is paused (`subaccount.paused`, with
 `data.trigger` `content_screening`), not your organization.
 
+An enforced block also restricts the verified sender domain, including after a domain or organization
+is deleted or transferred. Contact support to have that restriction reviewed. A sub-account using a
+shared platform domain does not restrict the platform domain.
+
 Flags expire with the reputation window: once no flagged message is left in it, the warning clears
 by itself.
 
@@ -45,12 +52,17 @@ message is held: it stays `queued`, and coss.com tries again a minute later, and
 a verdict. A message still not screened an hour after it was due fails with
 `content_screening_unavailable`. Messages that weren't sampled are sent as usual.
 
+Image inspection has limits: at most 16 images or animation frames, 2 MiB per image and 8 MiB total.
+Unsupported formats, unavailable images and over-limit content hold the message for the same retry
+path. Images are fetched only from public HTTP(S) addresses; redirects are refused.
+
 ## Privacy
 
-- **What the model sees**: for an email, the sender address, the subject, up to 8,000 characters of
-  its readable text and the host and path of its links (query strings removed); for an SMS, the
-  sending number, the text and its links' hosts and paths. Never recipients' addresses or numbers,
-  and never attachments.
+- **What the model sees**: for an email, the sender address, subject, up to 8,000 characters of
+  readable text, images displayed by the email (including inline image attachments), and link
+  hosts and paths without query strings; for an SMS, the sending number, text, and link hosts
+  and paths. Recipient envelope lists and unrelated attachments are not included. The body or
+  images may themselves contain personal data.
 - **Who processes it**: the model runs through Vercel's AI Gateway with zero data retention: the
   model providers may not keep the content or train on it.
 - **What coss.com keeps**: the verdict, never the message's content. Verdicts are kept for

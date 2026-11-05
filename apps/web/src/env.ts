@@ -5,9 +5,11 @@ import { hookEnvShape } from "@coss/hooks/env";
 import { sentryEnvShape } from "@coss/observability/env";
 import { rateLimitEnvShape } from "@coss/ratelimit/env";
 import { riskEnvShape } from "@coss/risk/env";
+import { schedulingEnvShape } from "@coss/scheduling/env";
 import { screeningEnvShape } from "@coss/screening/env";
 import { signStoreEnvShape } from "@coss/sign/env";
 import { smsEnvShape } from "@coss/sms/env";
+import { supportStoreEnvShape } from "@coss/support/env";
 import { webhookEnvShape } from "@coss/webhooks/env";
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
@@ -43,6 +45,9 @@ export const env = createEnv({
     ...emailEnvShape,
     ...rateLimitEnvShape,
     ...webhookEnvShape,
+    // Reads attendees' details on the bookings pages; session links go to the hosted app.
+    SCHEDULING_DATA_KEYS: schedulingEnvShape.SCHEDULING_DATA_KEYS,
+    SCHEDULING_PUBLIC_URL: schedulingEnvShape.SCHEDULING_PUBLIC_URL,
     // Where the Hooks portal is served ("Open portal" links).
     ...hookEnvShape,
     // Sign: where signing and builder links point, and its documents (S3, with AWS_REGION).
@@ -55,6 +60,8 @@ export const env = createEnv({
     // and their uploads (S3, with AWS_REGION).
     ...formsPublicEnvShape,
     FORMS_FILES_BUCKET: formsStoreEnvShape.FORMS_FILES_BUCKET,
+    // Support: attachments of tickets (S3, with AWS_REGION).
+    ...supportStoreEnvShape,
     // Keys risk's memory; the dashboard hashes identifiers when it records feedback. Required in
     // production (src/instrumentation.ts).
     ...riskEnvShape,
@@ -88,6 +95,11 @@ export const env = createEnv({
     GITHUB_CLIENT_SECRET: z.string().optional(),
     // The admin console's deploys page (src/lib/deploys.ts): the coss.com Deploy GitHub App's id and
     // private key (both or neither, src/instrumentation.ts). Unset: the page explains the setup.
+    // The admin console's security page (src/lib/security-posture.ts). Unset: it explains the setup.
+    SECURITY_MANAGEMENT_ROLE_ARN: z.string().startsWith("arn:aws:iam::").optional(),
+    SECURITY_ALERTS_TOPIC_ARN: z.string().startsWith("arn:aws:sns:").optional(),
+    SECURITY_ACCESS_LOGS_BUCKET: z.string().optional(),
+    SECURITY_DATABASE_LOG_GROUP: z.string().optional(),
     DEPLOY_GITHUB_APP_ID: z.string().regex(/^\d+$/, "The app's numeric id.").optional(),
     DEPLOY_GITHUB_APP_PRIVATE_KEY: z.string().includes("PRIVATE KEY").optional(),
     // Domain Connect (src/lib/domain-connect.ts): the RSA key apply links are signed with, and the

@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { newId } from "@coss/db/id";
 import {
+  createFirstProject,
   createProject,
+  FIRST_PROJECT_NAME,
   getEnvironment,
   getEnvironmentById,
   getProject,
@@ -13,7 +15,35 @@ import {
 } from "../src/index.ts";
 import { createTestOrganization } from "./helpers.ts";
 
+describe("createFirstProject", () => {
+  test("starts an organization with a project and its two environments", async () => {
+    const { organization } = await createTestOrganization();
+    const created = await createFirstProject({ organizationId: organization.id });
+
+    expect(created?.project.name).toBe(FIRST_PROJECT_NAME);
+    expect(created?.environments.map((environment) => environment.mode).sort()).toEqual([
+      "live",
+      "sandbox",
+    ]);
+  });
+
+  test("does nothing once the organization has a project", async () => {
+    const { organization } = await createTestOrganization();
+    await createProject({ organizationId: organization.id, name: "Web app" });
+
+    expect(await createFirstProject({ organizationId: organization.id })).toBeNull();
+    const projects = await listProjects({ organizationId: organization.id });
+    expect(projects.map((project) => project.name)).toEqual(["Web app"]);
+  });
+});
+
 describe("createProject", () => {
+  test("never takes a slug the organization's own pages use", async () => {
+    const { organization } = await createTestOrganization();
+    const { project } = await createProject({ organizationId: organization.id, name: "Settings" });
+    expect(project.slug).toBe("settings-2");
+  });
+
   test("creates production (live) and development (sandbox) environments", async () => {
     const { organization } = await createTestOrganization();
     const { project, environments } = await createProject({

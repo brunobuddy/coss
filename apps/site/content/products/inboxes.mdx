@@ -34,6 +34,30 @@ faq:
     answer: A live inbox is billed per day it exists, mail it receives like any received email, and mail it sends like any email. Every plan includes a few inboxes, and inboxes in sandbox environments are free. The pricing page lists the current rates.
 ---
 
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const inboxId: string;
+declare const messageId: string;
+// ---cut---
+// [!code word:coss.inboxes.create]
+const { data: inbox } = await coss.inboxes.create({
+  username: "support-agent",
+  client_id: "agent-42",
+});
+
+await coss.inboxes.messages.reply(
+  inboxId,
+  messageId,
+  { text: "Sorry about that, Jane! A new one is on its way." },
+  { idempotencyKey: `reply-${messageId}` },
+);
+```
+
+</HeroSample>
+
 <Section title="How it works" lede="Create an address, get a webhook when mail arrives, reply from the same address. The thread keeps the whole conversation.">
 
 ```ts twoslash
@@ -116,7 +140,7 @@ Without DNS, an inbox receives at your environment's subdomain of coss.com's inb
 
 <Section title="Pricing" lede="Inboxes are billed per day they exist, mail by the message. Sandbox inboxes are free.">
 
-<UsageRates meters="email.inboxes,email.received" />
+<UsageRates meters="email.inboxes,email.received,email.received_data" />
 
 Every plan includes <Included meter="email.inboxes" /> a month. Mail an inbox sends is billed like any email. See [pricing](/pricing) for the plans.
 

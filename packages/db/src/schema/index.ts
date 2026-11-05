@@ -5,6 +5,8 @@ export * from "./forms.ts";
 export * from "./inboxes.ts";
 export * from "./notifications.ts";
 export * from "./push.ts";
+export * from "./scheduling.ts";
 export * from "./sign.ts";
 export * from "./sms.ts";
+export * from "./support.ts";
 export * from "./verify.ts";

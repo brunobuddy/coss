@@ -211,6 +211,54 @@ import type {
   UpdateRiskRuleRequest,
   UpdateRiskSettingsRequest,
 } from "@coss/risk/schemas";
+import type {
+  AuthorizeCalendarRequest,
+  AvailabilitySearchRequest,
+  AvailabilitySearchResult,
+  BookingEventObject,
+  BookingNotificationObject,
+  BookingObject,
+  CalendarAuthorization,
+  CalendarConnectionObject,
+  CalendarDelegationObject,
+  CancelBookingRequest,
+  CancelledSeries,
+  CancelSeriesRequest,
+  ConfirmHoldRequest,
+  CreateBookingRequest,
+  CreateCalendarConnectionRequest,
+  CreateCalendarDelegationRequest,
+  CreateEventTypeRequest,
+  CreateHoldRequest,
+  CreateHostRequest,
+  CreateSeriesRequest,
+  EraseAttendeeByEmailRequest,
+  ErasedAttendee,
+  ErasedAttendeeByEmail,
+  EventTypeObject,
+  ExplainSlotQuery,
+  HostObject,
+  RescheduleBookingRequest,
+  ScheduleObject,
+  SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
+  SchedulingCalendarWebhookEvent,
+  SeriesPreview,
+  SeriesResult,
+  SetSimulatedBusyRequest,
+  SettingsObject,
+  SlotExplanation,
+  SlotList,
+  SlotsQuery,
+  UpdateBookingLocationRequest,
+  UpdateCalendarDelegationRequest,
+  UpdateCalendarRequest,
+  UpdateEventTypeRequest,
+  UpdateHostRequest,
+  UpdateSettingsRequest,
+  UpsertScheduleRequest,
+  VerifyCalendarDelegationRequest,
+} from "@coss/scheduling/schemas";
 import type { SignRequestWebhookEvent } from "@coss/sign/schemas";
 import type { ReceivedSmsWebhookEvent, SmsWebhookEvent } from "@coss/sms/schemas";
 import type { VerificationWebhookEvent } from "@coss/verify/schemas";
@@ -248,8 +296,12 @@ import type {
   AddAudienceContactsParams,
   AssessRiskParams,
   AudienceParams,
+  AuthorizeSchedulingCalendarParams,
+  CancelSchedulingBookingParams,
+  CancelSchedulingSeriesParams,
   CheckRiskLimitParams,
   CheckSuppressionParams,
+  ConfirmSchedulingHoldParams,
   CossErrorIssue,
   CossErrorType,
   CreateBroadcastParams,
@@ -262,6 +314,13 @@ import type {
   CreateRiskLimitBucketParams,
   CreateRiskListEntryParams,
   CreateRiskRuleParams,
+  CreateSchedulingBookingParams,
+  CreateSchedulingCalendarConnectionParams,
+  CreateSchedulingCalendarDelegationParams,
+  CreateSchedulingEventTypeParams,
+  CreateSchedulingHoldParams,
+  CreateSchedulingHostParams,
+  CreateSchedulingSeriesParams,
   CreateSegmentParams,
   CreateSubaccountParams,
   CreateSuppressionParams,
@@ -272,6 +331,7 @@ import type {
   Email,
   EmailBatch,
   EmailSummary,
+  ExplainSchedulingSlotParams,
   ExportContactsParams,
   ExportSuppressionsParams,
   ImportContactsParams,
@@ -293,6 +353,7 @@ import type {
   ListReceivedEmailsParams,
   ListRiskAssessmentsParams,
   ListRiskListEntriesParams,
+  ListSchedulingSlotsParams,
   ListSubaccountsParams,
   ListSuppressionsParams,
   ListUsageParams,
@@ -308,8 +369,27 @@ import type {
   RecoverWebhookEndpointParams,
   RenderEmailTemplateParams,
   RescheduleEmailParams,
+  RescheduleSchedulingBookingParams,
   RiskFeedbackParams,
   RollWebhookEndpointSecretParams,
+  SchedulingAttendeeEmailErasure,
+  SchedulingAttendeeErasure,
+  SchedulingAvailabilitySearchResult,
+  SchedulingBooking,
+  SchedulingBookingEvent,
+  SchedulingBookingNotification,
+  SchedulingCalendarAuthorization,
+  SchedulingCalendarConnection,
+  SchedulingCalendarDelegation,
+  SchedulingCancelledSeries,
+  SchedulingEventType,
+  SchedulingHost,
+  SchedulingSchedule,
+  SchedulingSeries,
+  SchedulingSeriesPreview,
+  SchedulingSettings,
+  SchedulingSlotExplanation,
+  SchedulingSlotList,
   AccountWebhookEvent as SdkAccountWebhookEvent,
   ApiVersion as SdkApiVersion,
   Audience as SdkAudience,
@@ -413,10 +493,12 @@ import type {
   WebhookDelivery as SdkWebhookDelivery,
   WebhookListener as SdkWebhookListener,
   WebhookListenerPoll as SdkWebhookListenerPoll,
+  SearchSchedulingAvailabilityParams,
   SendBroadcastParams,
   SendEmailContentParams,
   SendEmailTemplateParams,
   SendTestWebhookEventParams,
+  SetSchedulingSimulatedBusyParams,
   SubaccountStatsParams,
   TestBroadcastParams,
   TrackingOptions,
@@ -432,6 +514,12 @@ import type {
   UpdateRiskLimitBucketParams,
   UpdateRiskRuleParams,
   UpdateRiskSettingsParams,
+  UpdateSchedulingBookingLocationParams,
+  UpdateSchedulingCalendarDelegationParams,
+  UpdateSchedulingCalendarParams,
+  UpdateSchedulingEventTypeParams,
+  UpdateSchedulingHostParams,
+  UpdateSchedulingSettingsParams,
   UpdateSegmentParams,
   UpdateStorageSettingsParams,
   UpdateSubaccountParams,
@@ -439,6 +527,8 @@ import type {
   UpdateTrackingRuleParams,
   UpdateWebhookEndpointParams,
   UpsertContactParams,
+  UpsertSchedulingScheduleParams,
+  VerifySchedulingCalendarDelegationParams,
   WebhookEndpoint,
   WebhookEndpointRecovery,
   WebhookEvent,
@@ -687,7 +777,10 @@ export type Contract = [
       | z.output<typeof ReceivedSmsWebhookEvent>
       | z.output<typeof SignRequestWebhookEvent>
       | z.output<typeof VerificationWebhookEvent>
-      | z.output<typeof FormSubmissionWebhookEvent>,
+      | z.output<typeof FormSubmissionWebhookEvent>
+      | z.output<typeof SchedulingBookingWebhookEvent>
+      | z.output<typeof SchedulingCalendarWebhookEvent>
+      | z.output<typeof SchedulingCalendarDelegationWebhookEvent>,
       WebhookEvent
     >
   >,
@@ -983,5 +1076,115 @@ export type SubaccountContract = [
       Omit<z.output<typeof ListSubaccountsQuery>, "limit">,
       Omit<ListSubaccountsParams, "limit">
     >
+  >,
+  // Scheduling.
+  Assert<MutuallyAssignable<z.input<typeof CreateHostRequest>, CreateSchedulingHostParams>>,
+  Assert<MutuallyAssignable<z.input<typeof UpdateHostRequest>, UpdateSchedulingHostParams>>,
+  Assert<MutuallyAssignable<z.output<typeof HostObject>, SchedulingHost>>,
+  Assert<MutuallyAssignable<z.input<typeof UpsertScheduleRequest>, UpsertSchedulingScheduleParams>>,
+  Assert<MutuallyAssignable<z.output<typeof ScheduleObject>, SchedulingSchedule>>,
+  Assert<
+    MutuallyAssignable<z.input<typeof CreateEventTypeRequest>, CreateSchedulingEventTypeParams>
+  >,
+  Assert<
+    MutuallyAssignable<z.input<typeof UpdateEventTypeRequest>, UpdateSchedulingEventTypeParams>
+  >,
+  Assert<MutuallyAssignable<z.output<typeof EventTypeObject>, SchedulingEventType>>,
+  // `duration_minutes` is coerced from the query string; the SDK sends a number.
+  Assert<
+    MutuallyAssignable<
+      Omit<z.output<typeof SlotsQuery>, "duration_minutes">,
+      Omit<ListSchedulingSlotsParams, "duration_minutes">
+    >
+  >,
+  Assert<MutuallyAssignable<z.output<typeof SlotList>, SchedulingSlotList>>,
+  Assert<MutuallyAssignable<z.output<typeof CancelBookingRequest>, CancelSchedulingBookingParams>>,
+  Assert<MutuallyAssignable<z.output<typeof BookingEventObject>, SchedulingBookingEvent>>,
+  Assert<
+    MutuallyAssignable<
+      Omit<z.output<typeof ExplainSlotQuery>, "duration_minutes">,
+      Omit<ExplainSchedulingSlotParams, "duration_minutes">
+    >
+  >,
+  Assert<MutuallyAssignable<z.output<typeof SlotExplanation>, SchedulingSlotExplanation>>,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof AvailabilitySearchRequest>,
+      SearchSchedulingAvailabilityParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.output<typeof AvailabilitySearchResult>,
+      SchedulingAvailabilitySearchResult
+    >
+  >,
+  Assert<MutuallyAssignable<z.input<typeof CreateBookingRequest>, CreateSchedulingBookingParams>>,
+  Assert<MutuallyAssignable<z.input<typeof CreateHoldRequest>, CreateSchedulingHoldParams>>,
+  Assert<MutuallyAssignable<z.input<typeof ConfirmHoldRequest>, ConfirmSchedulingHoldParams>>,
+  Assert<
+    MutuallyAssignable<z.input<typeof RescheduleBookingRequest>, RescheduleSchedulingBookingParams>
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof UpdateBookingLocationRequest>,
+      UpdateSchedulingBookingLocationParams
+    >
+  >,
+  Assert<MutuallyAssignable<z.output<typeof BookingObject>, SchedulingBooking>>,
+  Assert<MutuallyAssignable<z.input<typeof CreateSeriesRequest>, CreateSchedulingSeriesParams>>,
+  Assert<MutuallyAssignable<z.output<typeof SeriesResult>, SchedulingSeries>>,
+  Assert<MutuallyAssignable<z.output<typeof SeriesPreview>, SchedulingSeriesPreview>>,
+  Assert<MutuallyAssignable<z.input<typeof CancelSeriesRequest>, CancelSchedulingSeriesParams>>,
+  Assert<MutuallyAssignable<z.output<typeof CancelledSeries>, SchedulingCancelledSeries>>,
+  Assert<MutuallyAssignable<z.output<typeof ErasedAttendee>, SchedulingAttendeeErasure>>,
+  Assert<
+    MutuallyAssignable<z.output<typeof ErasedAttendeeByEmail>, SchedulingAttendeeEmailErasure>
+  >,
+  Assert<MutuallyAssignable<z.input<typeof EraseAttendeeByEmailRequest>, { email: string }>>,
+  Assert<MutuallyAssignable<z.output<typeof SettingsObject>, SchedulingSettings>>,
+  Assert<
+    MutuallyAssignable<z.output<typeof BookingNotificationObject>, SchedulingBookingNotification>
+  >,
+  Assert<MutuallyAssignable<z.input<typeof UpdateSettingsRequest>, UpdateSchedulingSettingsParams>>,
+  Assert<
+    MutuallyAssignable<z.input<typeof AuthorizeCalendarRequest>, AuthorizeSchedulingCalendarParams>
+  >,
+  Assert<
+    MutuallyAssignable<z.output<typeof CalendarAuthorization>, SchedulingCalendarAuthorization>
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof CreateCalendarConnectionRequest>,
+      CreateSchedulingCalendarConnectionParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<z.output<typeof CalendarConnectionObject>, SchedulingCalendarConnection>
+  >,
+  Assert<MutuallyAssignable<z.input<typeof UpdateCalendarRequest>, UpdateSchedulingCalendarParams>>,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof CreateCalendarDelegationRequest>,
+      CreateSchedulingCalendarDelegationParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof UpdateCalendarDelegationRequest>,
+      UpdateSchedulingCalendarDelegationParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof VerifyCalendarDelegationRequest>,
+      VerifySchedulingCalendarDelegationParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<z.output<typeof CalendarDelegationObject>, SchedulingCalendarDelegation>
+  >,
+  Assert<
+    MutuallyAssignable<z.input<typeof SetSimulatedBusyRequest>, SetSchedulingSimulatedBusyParams>
   >,
 ];

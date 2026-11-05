@@ -1,7 +1,21 @@
 {
   "name": "coss",
-  "version": "0.10.0",
-  "description": "The official TypeScript SDK for coss.com: email, SMS, video, scheduling and more behind one API key.",
+  "version": "0.11.0",
+  "description": "The official TypeScript SDK for coss.com: email, marketing, inboxes, SMS, Verify, Sign, Forms, Scheduling, Hooks and Risk behind one API key.",
+  "keywords": [
+    "coss",
+    "email",
+    "marketing",
+    "inboxes",
+    "sms",
+    "otp",
+    "verify",
+    "e-signature",
+    "forms",
+    "scheduling",
+    "webhooks",
+    "risk"
+  ],
   "license": "MIT",
   "homepage": "https://coss.com/docs",
   "repository": {
@@ -29,6 +43,7 @@
     "./diagnose": "./dist/diagnose.js",
     "./forms": "./dist/forms.js",
     "./nodemailer": "./dist/nodemailer.js",
+    "./scheduling": "./dist/scheduling.js",
     "./sign": "./dist/sign.js",
     "./package.json": "./package.json"
   },
@@ -69,8 +84,8 @@
     "@react-email/render": "2.1.0",
     "@types/bun": "1.4.2",
     "@types/react": "19.3.0",
-    "better-auth": "1.7.7",
-    "nodemailer": "10.0.13",
+    "better-auth": "1.7.16",
+    "nodemailer": "10.3.1",
     "publint": "0.3.25",
     "react": "19.3.0",
     "react-dom": "19.3.0",

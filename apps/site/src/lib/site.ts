@@ -1,7 +1,8 @@
 export const SITE_NAME = "coss.com";
 export const SITE_URL = "https://coss.com";
+/** What coss.com is, in one line: the site's description, its schema and search results. */
 export const SITE_DESCRIPTION =
-  "One API key and one SDK for email, SMS, video, scheduling and more.";
+  "One API key and one SDK for email, AI agent inboxes, SMS, one-time codes, e-signatures, forms, scheduling, webhooks and risk checks.";
 export const DOCS_ROUTE = "/docs";
 
 /**
@@ -32,9 +33,21 @@ export const SALES_EMAIL = "sales@coss.com";
 export const PRODUCTS = [
   { key: "email", name: "Email", description: "Transactional email from your own domains." },
   { key: "sms", name: "SMS", description: "Text messages worldwide." },
-  { key: "video", name: "Video", description: "Rooms and recordings." },
   { key: "scheduling", name: "Scheduling", description: "Availability and bookings." },
 ] as const;
+/**
+ * A page's Markdown twin. Answer engines fetch these and search engines list them, so the header
+ * names the HTML page as the one to rank; a noindex would hide them from the first.
+ */
+export function markdownResponse(markdown: string, path: string): Response {
+  return new Response(markdown, {
+    headers: {
+      "Content-Type": "text/markdown; charset=utf-8",
+      Link: `<${SITE_URL}${path}>; rel="canonical"`,
+    },
+  });
+}
+
 /** The docs' search endpoint. Under /docs: on coss.com, `/api/*` belongs to the dashboard. */
 export const SEARCH_API = `${DOCS_ROUTE}/search.json`;
 

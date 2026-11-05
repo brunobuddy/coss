@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { UsageGate } from "@coss/billing/gate";
-import { billingHoldExists, budgetHoldExists } from "@coss/billing/metering";
+import {
+  billableEmailMegabytes,
+  billingHoldExists,
+  budgetHoldExists,
+} from "@coss/billing/metering";
+import { hipaaModeSql } from "@coss/compliance";
 import { db, schema, type Transaction } from "@coss/db";
 import { isId } from "@coss/db/id";
 import {
@@ -9,6 +14,7 @@ import {
   isReplayOf,
   withIdempotencyKey,
 } from "@coss/db/idempotency";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { isMarketingPaused } from "@coss/reputation";
 import type { ScreenInput, ScreenOutcome } from "@coss/screening";
 import { and, asc, eq, inArray, isNull, lt, lte, not, notExists, or, sql } from "drizzle-orm";
@@ -56,7 +62,12 @@ import {
   type SendEmailRequestOutput,
   uniqueRecipientCount,
 } from "./schemas.ts";
-import { emailScreeningContent } from "./screening.ts";
+import {
+  imageDominantEmail,
+  loadEmailScreeningContent,
+  recordScreeningDomainBlock,
+} from "./screening.ts";
+import type { ScreeningImageLoader } from "./screening-images.ts";
 import { type Skip, skippedRecipients } from "./send-eligibility.ts";
 import { resolveStoreContent } from "./storage-settings.ts";
 import { pauseSubaccount } from "./subaccount-reputation.ts";
@@ -96,6 +107,18 @@ export type SendEmailInput = {
    * email is sent, failed or canceled. Its history keeps everything else.
    */
   discardBody?: boolean;
+  /**
+   * Internal callers only, never reachable from the public API or SMTP: skips per-email content
+   * screening. For fixed templates whose variable text was screened when it was set up (Scheduling's
+   * booking emails, which name a patient and a doctor: sampling would send them to the AI Gateway).
+   */
+  screeningExempt?: boolean;
+  /**
+   * Internal callers only: a message in coss.com's own environment on behalf of an organization in
+   * HIPAA mode. It gets that mode's rules: no screening, no stored content, required TLS, hidden
+   * from staff.
+   */
+  hipaaOrigin?: boolean;
   /**
    * Internal callers only (the dashboard's test sends): render the template's draft, refused
    * (`template_revision_mismatch`) unless it is still at the revision the caller checked.
@@ -260,8 +283,11 @@ function bareAddress(value: string): string {
  * mail (a domain it shares included), with its dedicated IP pool when it has one.
  */
 function claimRouting(row: EmailRow, provider: string, sandbox: boolean) {
-  if (sandbox) return { dedicatedPool: false, subaccountTenant: false };
+  if (sandbox) return { dedicatedPool: false, subaccountTenant: false, requireTls: false };
   const pool = dedicatedPoolSql(row.organizationId, provider, row.stream);
+  // Decided here, not only at acceptance: the mode may have been turned on while this waited, or
+  // between this send resolving its settings and storing the row.
+  const hipaa = sql<boolean>`(${email.hipaaOrigin} or ${hipaaModeSql(row.organizationId)})`;
   const subaccountTenant = subaccountTenantSql({
     organizationId: row.organizationId,
     subaccountId: row.subaccountId,
@@ -269,9 +295,17 @@ function claimRouting(row: EmailRow, provider: string, sandbox: boolean) {
     provider,
   });
   return {
-    dedicatedPool:
-      subaccountTenant === false ? pool : sql<boolean>`(not (${subaccountTenant}) and ${pool})`,
+    // Sent for another organization, so coss.com's own pool (which needn't require TLS) won't do.
+    dedicatedPool: row.hipaaOrigin
+      ? false
+      : subaccountTenant === false
+        ? pool
+        : sql<boolean>`(not (${subaccountTenant}) and ${pool})`,
     subaccountTenant,
+    requireTls: hipaa,
+    storeContent: sql<boolean>`(${email.storeContent} and not ${hipaa})`,
+    trackOpens: sql<boolean>`(${email.trackOpens} and not ${hipaa})`,
+    trackClicks: sql<boolean>`(${email.trackClicks} and not ${hipaa})`,
   };
 }
 
@@ -297,6 +331,7 @@ function toOutbound(
     tags: row.tags,
     attachments,
     dedicatedPool: row.dedicatedPool,
+    requireTls: row.requireTls,
     tenantSubaccountId: row.subaccountTenant ? row.subaccountId : null,
   };
 }
@@ -423,6 +458,8 @@ export type EmailServiceOptions = {
    * `screenMessage` from `@coss/screening`). A `block` fails the email with the verdict's safe code.
    */
   screen?: (input: ScreenInput) => Promise<ScreenOutcome>;
+  /** Public, size-bounded image fetcher by default; injectable for network-free tests. */
+  screeningImages?: ScreeningImageLoader;
   /** Organizations whose mail must survive an unexpected screening-system failure. */
   screeningFailureAllowlist?: ReadonlySet<string>;
   /**
@@ -464,7 +501,7 @@ export const SCREENING_RETRY_DELAY_S = 60;
 export const THROTTLE_RETRY_DELAY_S = 30;
 
 export function createEmailService(opts: EmailServiceOptions): EmailService {
-  const trackingBaseUrl = opts.trackingBaseUrl?.replace(/\/+$/, "");
+  const trackingBaseUrl = opts.trackingBaseUrl && withoutTrailingSlashes(opts.trackingBaseUrl);
   // Sandbox environments never reach a real provider, whatever `liveProvider` is.
   const providerFor = (sandbox: boolean) => (sandbox ? opts.sandboxProvider : opts.liveProvider);
   const broadcastContent = broadcastContentCache();
@@ -493,6 +530,25 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
       eq(email.status, "queued"),
       isNull(email.provider),
     );
+    if (!sandbox) {
+      try {
+        // A domain restriction or suspension may have arrived after acceptance. This also
+        // covers unsampled messages and broadcasts whose content was screened earlier.
+        await authorizeLiveSender({
+          provider: provider.name,
+          organizationId: row.organizationId,
+          from: row.from,
+          stream: row.stream,
+          subaccountId: row.subaccountId,
+        });
+      } catch (error) {
+        if (!(error instanceof EmailError)) throw error;
+        // The broadcast worker owns pausing and dropping these queued rows for Resume.
+        if (error.code === "marketing_paused" && row.broadcastId) return currentEmail(row);
+        if (error.code !== "billing_hold") await failUnclaimed(row, error);
+        return currentEmail(row);
+      }
+    }
     if (row.stream === "marketing") {
       if (!sandbox && (await isMarketingPaused(row.organizationId))) {
         // Paused since it was accepted. A broadcast's email is left to its worker, which pauses
@@ -539,13 +595,13 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         id: email.id,
         dedicatedPool: email.dedicatedPool,
         subaccountTenant: email.subaccountTenant,
+        requireTls: email.requireTls,
+        storeContent: email.storeContent,
+        trackOpens: email.trackOpens,
+        trackClicks: email.trackClicks,
       });
     if (!claimed) return currentEmail(row);
-    await complete(
-      { ...row, dedicatedPool: claimed.dedicatedPool, subaccountTenant: claimed.subaccountTenant },
-      provider,
-      sandbox,
-    );
+    await complete({ ...row, ...claimed }, provider, sandbox);
     return currentEmail(row);
   }
 
@@ -612,7 +668,9 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
     // A broadcast's content was screened once, before its emails were made; one personalized
     // with contact values (which could carry any text or link) is sampled like any send.
     const personalized = Object.keys(row.variables ?? {}).length > 0;
-    if (sandbox || !opts.screen || (row.broadcastId && !personalized)) return null;
+    if (sandbox || !opts.screen || row.screeningExempt || (row.broadcastId && !personalized)) {
+      return null;
+    }
     const { subaccountId } = row;
     try {
       const outcome = await opts.screen({
@@ -620,13 +678,28 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         environmentId: row.environmentId,
         product: "email",
         subjectId: row.id,
-        content: () => emailScreeningContent(row),
+        content: (signal) => loadEmailScreeningContent(row, signal, opts.screeningImages),
+        force: imageDominantEmail(row),
+        onBlock: (tx, now) => recordScreeningDomainBlock(tx, row, now),
         retry: row.errorCode === SCREENING_UNAVAILABLE.code,
         // A sub-account is screened on its own: a block pauses it, never the organization.
         ...(subaccountId
           ? {
               group: {
                 id: subaccountId,
+                reinstatedAt: async (tx) => {
+                  const [group] = await tx
+                    .select({ reinstatedAt: schema.emailSubaccount.reinstatedAt })
+                    .from(schema.emailSubaccount)
+                    .where(
+                      and(
+                        eq(schema.emailSubaccount.id, subaccountId),
+                        eq(schema.emailSubaccount.organizationId, row.organizationId),
+                      ),
+                    )
+                    .for("update");
+                  return group?.reinstatedAt ?? null;
+                },
                 onBlock: (tx, block) =>
                   pauseSubaccount(tx, {
                     organizationId: row.organizationId,
@@ -1249,6 +1322,8 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
     },
     opts: {
       discardBody?: boolean;
+      screeningExempt?: boolean;
+      hipaaOrigin?: boolean;
       templateDraft?: { revision: number };
       paramPrefix?: string;
     } = {},
@@ -1340,7 +1415,9 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         html: content ? content.html : params.html,
         text: content ? content.text : params.text,
         discardBody: opts.discardBody ?? false,
-        storeContent,
+        screeningExempt: Boolean(opts.screeningExempt || opts.hipaaOrigin),
+        hipaaOrigin: opts.hipaaOrigin ?? false,
+        storeContent: storeContent && !opts.hipaaOrigin,
         headers: params.headers,
         tags: params.tags,
         category: params.category ?? null,
@@ -1373,7 +1450,7 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
       typeof email.$inferInsert,
       "idempotencyKey" | "requestHash" | "batchId" | "batchIndex" | "traceparent"
     >,
-  ): Promise<{ row: EmailRow; billable: number } | undefined> {
+  ): Promise<{ row: EmailRow; usage: SendUsage } | undefined> {
     const tracked =
       prepared.values.trackOpens || prepared.values.trackClicks || prepared.values.unsubscribe;
     const [row] = await tx
@@ -1416,17 +1493,32 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         stream: row.stream,
       });
     }
-    return { row, billable: recipients.length - suppressed.size };
+    const billable = recipients.length - suppressed.size;
+    const attachmentBytes = prepared.attachments.reduce((total, file) => total + file.size, 0);
+    return {
+      row,
+      usage: {
+        recipients: billable,
+        attachmentMegabytes: billableEmailMegabytes(attachmentBytes) * billable,
+      },
+    };
   }
 
-  /** Reserves capped usage (Free's allowance) as the transaction's last statement. */
-  async function reserveUsage(tx: Transaction, environment: SendEnvironment, recipients: number) {
+  /** Reserves capped usage (Free's allowance) as the transaction's last statements. */
+  async function reserveUsage(tx: Transaction, environment: SendEnvironment, usage: SendUsage) {
     if (environment.mode !== "live" || !opts.billing) return;
     await opts.billing.reserve(tx, {
       organizationId: environment.organizationId,
       meter: "email.recipients",
-      quantity: recipients,
+      quantity: usage.recipients,
     });
+    if (usage.attachmentMegabytes > 0) {
+      await opts.billing.reserve(tx, {
+        organizationId: environment.organizationId,
+        meter: "email.attachment_data",
+        quantity: usage.attachmentMegabytes,
+      });
+    }
   }
 
   async function send(
@@ -1446,7 +1538,12 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         input,
         params,
         { tracking: new Map(), templates: new Map() },
-        { discardBody: input.discardBody, templateDraft: input.templateDraft },
+        {
+          discardBody: input.discardBody,
+          screeningExempt: input.screeningExempt,
+          hipaaOrigin: input.hipaaOrigin,
+          templateDraft: input.templateDraft,
+        },
       );
     } catch (error) {
       // A retry of a request that already succeeded still replays, even if its template changed
@@ -1492,7 +1589,7 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
       });
       if (!inserted) return undefined;
       await input.afterInsert?.(tx, inserted.row);
-      await reserveUsage(tx, environment, inserted.billable);
+      await reserveUsage(tx, environment, inserted.usage);
       return inserted.row;
     };
     const stored = async (row: EmailRow, replayed: boolean) => {
@@ -1616,7 +1713,7 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
         .onConflictDoNothing({ target: [emailBatch.environmentId, emailBatch.idempotencyKey] })
         .returning();
       if (!batch) return batch;
-      let billable = 0;
+      const usage: SendUsage = { recipients: 0, attachmentMegabytes: 0 };
       for (const [batchIndex, item] of prepared.entries()) {
         const inserted = await insertPrepared(tx, environment, item, {
           batchId: batch.id,
@@ -1624,10 +1721,11 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
           traceparent: input.traceparent ?? null,
         });
         if (!inserted) throw new Error("Batch email insert returned no row.");
-        billable += inserted.billable;
+        usage.recipients += inserted.usage.recipients;
+        usage.attachmentMegabytes += inserted.usage.attachmentMegabytes;
       }
       // One reservation for the whole batch: it is accepted or refused as a whole.
-      await reserveUsage(tx, environment, billable);
+      await reserveUsage(tx, environment, usage);
       return batch;
     };
 
@@ -1699,6 +1797,9 @@ export function createEmailService(opts: EmailServiceOptions): EmailService {
 }
 
 type EmailBatchRow = typeof emailBatch.$inferSelect;
+
+/** What an accepted send reserves of capped meters. */
+type SendUsage = { recipients: number; attachmentMegabytes: number };
 
 type PreparedSend = {
   values: Omit<

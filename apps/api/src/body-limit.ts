@@ -2,6 +2,9 @@ import type { Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { errorResponse, payloadTooLarge } from "./errors.ts";
 
+/** Where the hosted MCP server is served. */
+export const MCP_PATH = "/mcp";
+
 /** Every route except the send and upload routes (`hasOwnBodyLimit`). */
 export const BODY_LIMIT_BYTES = 5 * 1024 * 1024;
 /**
@@ -32,10 +35,12 @@ const OWN_LIMIT_POST = /^\/v1\/inboxes\/[^/]+\/messages(\/[^/]+\/reply)?$/;
 
 /**
  * The send and upload routes enforce their own, larger limit after authenticating the caller;
- * Forms' public endpoint (`/f/*`) its own too, answered with text rather than the envelope.
+ * Forms' public endpoint (`/f/*`) its own too, answered with text rather than the envelope, and the
+ * hosted MCP server (`/mcp`) a smaller one, answered in JSON-RPC.
  */
 export function hasOwnBodyLimit(c: Context): boolean {
   return (
+    c.req.path === MCP_PATH ||
     (c.req.method === "POST" &&
       (OWN_LIMIT_PATHS.has(c.req.path) || OWN_LIMIT_POST.test(c.req.path))) ||
     c.req.path.startsWith("/f/") ||

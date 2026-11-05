@@ -8,9 +8,11 @@ import {
 import { sentryEnvShape } from "@coss/observability/env";
 import { rateLimitEnvShape } from "@coss/ratelimit/env";
 import { riskDatasetEnvShape } from "@coss/risk/env";
+import { schedulingEnvShape } from "@coss/scheduling/env";
 import { screeningEnvShape } from "@coss/screening/env";
 import { signSealEnvShape, signStoreEnvShape } from "@coss/sign/env";
 import { smsEnvShape } from "@coss/sms/env";
+import { supportMailEnvShape, supportStoreEnvShape } from "@coss/support/env";
 import { webhookEnvShape } from "@coss/webhooks/env";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
@@ -52,6 +54,9 @@ export const env = createEnv({
     // coss.com's own sender of form notifications ("<form name> via coss.com"), an address on a
     // verified domain of NOTIFICATIONS_ENVIRONMENT_ID's organization; default: NOTIFICATIONS_FROM's.
     FORMS_NOTIFICATIONS_FROM: formsNotificationsEnvShape.FORMS_NOTIFICATIONS_FROM,
+    // coss.com's support desk: attachments and mail (all three or none; see @coss/support/env).
+    ...supportStoreEnvShape,
+    ...supportMailEnvShape,
     // Comma-separated loops this worker runs (`WORKER_LOOP_NAMES` in src/jobs.ts), e.g. `hooks` for
     // tasks dedicated to Hooks deliveries; unset runs every loop.
     WORKER_LOOPS: z
@@ -67,6 +72,8 @@ export const env = createEnv({
             )
           : undefined,
       ),
+    // Scheduling: attendee data, and coss.com's OAuth apps for calendars.
+    ...schedulingEnvShape,
     // IPinfo Lite (ASN and country for risk assessments); without it those signals are missing.
     ...riskDatasetEnvShape,
     // Days of environment logs kept (@coss/logs); expired days are dropped hourly.

@@ -8,7 +8,8 @@
     "./admin": "./src/admin.ts",
     "./deletion": "./src/deletion.ts",
     "./retention": "./src/retention.ts",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./logos": "./src/logos.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -19,8 +20,11 @@
   "dependencies": {
     "@better-auth/api-key": "catalog:",
     "@coss/auth": "workspace:*",
+    "@coss/dashboard-routes": "workspace:*",
+    "@coss/compliance": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/retention": "workspace:*",
+    "@coss/signals": "workspace:*",
     "@coss/versioning": "workspace:*",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:"

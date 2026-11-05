@@ -1,43 +1,17 @@
 import {
   ApiIcon,
   BookOpen02Icon,
-  Building03Icon,
-  Calendar03Icon,
-  CalendarCheckIn01Icon,
-  ClipboardPenLineIcon,
   CommandLineIcon,
-  DashboardSpeed01Icon,
-  DashboardSquare01Icon,
   File01Icon,
-  FilterIcon,
   GitBranchIcon,
-  Globe02Icon,
-  InboxDownloadIcon,
-  InboxIcon,
-  Layers01Icon,
   LicenseIcon,
-  Mail01Icon,
   McpServerIcon,
-  Megaphone01Icon,
-  Message01Icon,
-  Notification03Icon,
-  PasswordValidationIcon,
   Plug01Icon,
   Robot01Icon,
   RocketIcon,
-  SecurityCheckIcon,
-  ServerStack01Icon,
-  Shield01Icon,
-  ShipIcon,
-  SignatureIcon,
   SourceCodeIcon,
   TextIcon,
-  Video01Icon,
-  WebhookIcon,
-  WorkHistoryIcon,
 } from "@hugeicons/core-free-icons";
-import { CALENDAR } from "./calendar";
-import { SHIPYARD } from "./shipyard";
 import { DOCS_ROUTE, PRODUCTS } from "./site";
 
 /*
@@ -58,16 +32,13 @@ export const SITE_SHELL_ID = "site-shell";
  */
 export const DOCS_SIDEBAR_WIDTH = "16rem";
 
-type Icon = typeof Mail01Icon;
+type Icon = typeof RocketIcon;
 
 export interface MenuLink {
   label: string;
   description: string;
   icon: Icon;
   href: string;
-  badge?: "New";
-  /** Served by another app of coss.com (a plain link rather than `next/link`). */
-  zone?: boolean;
 }
 
 export interface MenuColumn {
@@ -75,183 +46,69 @@ export interface MenuColumn {
   links: readonly MenuLink[];
 }
 
-/** An API product of `coss`, named from `PRODUCTS`. */
-function api(key: (typeof PRODUCTS)[number]["key"], link: Omit<MenuLink, "label">): MenuLink {
-  return { ...link, label: PRODUCTS.find((p) => p.key === key)?.name ?? key };
+/** A product in the header: its tile comes from `PRODUCT_VISUALS`, by slug. */
+export interface ProductLink {
+  slug: string;
+  label: string;
+  description: string;
+  href: string;
+  badge?: "New";
+  /** What builds on this product, listed under it. */
+  items?: readonly ProductLink[];
 }
 
-export const PRODUCT_COLUMNS: readonly MenuColumn[] = [
+/** The name of an API product of `coss`, from `PRODUCTS`. */
+function apiName(key: (typeof PRODUCTS)[number]["key"]): string {
+  return PRODUCTS.find((p) => p.key === key)?.name ?? key;
+}
+
+function product(
+  slug: string,
+  label: string,
+  description: string,
+  badge?: ProductLink["badge"],
+): ProductLink {
+  return { slug, label, description, href: `/products/${slug}`, badge };
+}
+
+/**
+ * Every product, with no families to guess between, and the rest of email under Email. The menu
+ * reads down its columns, in the home page's order.
+ */
+export const PRODUCT_LINKS: readonly ProductLink[] = [
   {
-    title: "Email",
-    links: [
-      api("email", {
-        description: "Transactional email from your own domains.",
-        icon: Mail01Icon,
-        href: "/products/email",
-      }),
-      {
-        label: "Marketing email",
-        description: "Contacts, segments and broadcasts.",
-        icon: Megaphone01Icon,
-        href: "/products/marketing-email",
-      },
-      {
-        label: "Inboxes",
-        description: "Email addresses for AI agents.",
-        icon: InboxIcon,
-        href: "/products/inboxes",
-        badge: "New",
-      },
-      {
-        label: "Inbound email",
-        description: "Receive mail on your domains.",
-        icon: InboxDownloadIcon,
-        href: "/products/inbound-email",
-      },
-      {
-        label: "Email for platforms",
-        description: "Sub-accounts for your customers.",
-        icon: Building03Icon,
-        href: "/products/subaccounts",
-        badge: "New",
-      },
-      {
-        label: "SMTP relay",
-        description: "Send from any app that speaks SMTP.",
-        icon: ServerStack01Icon,
-        href: "/products/smtp",
-      },
+    ...product("email", apiName("email"), "Transactional email from your own domains."),
+    items: [
+      product("marketing-email", "Marketing email", "Contacts, segments and broadcasts."),
+      product("inbound-email", "Inbound email", "Receive mail on your domains."),
+      product("subaccounts", "Email for platforms", "Sub-accounts for your customers.", "New"),
+      product("smtp", "SMTP relay", "Send from any app that speaks SMTP."),
     ],
   },
-  {
-    title: "Messaging and identity",
-    links: [
-      api("sms", {
-        description: "Text messages worldwide.",
-        icon: Message01Icon,
-        href: "/products/sms",
-      }),
-      {
-        label: "Verify",
-        description: "One-time codes by SMS or email.",
-        icon: PasswordValidationIcon,
-        href: "/products/verify",
-        badge: "New",
-      },
-      {
-        label: "Sign",
-        description: "E-signatures in your app.",
-        icon: SignatureIcon,
-        href: "/products/sign",
-        badge: "New",
-      },
-      {
-        label: "Forms",
-        description: "Form endpoints and hosted forms.",
-        icon: ClipboardPenLineIcon,
-        href: "/products/forms",
-        badge: "New",
-      },
-      api("video", { description: "Rooms and recordings.", icon: Video01Icon, href: "/#video" }),
-    ],
-  },
-  {
-    title: "Events and trust",
-    links: [
-      {
-        label: "Hooks",
-        description: "Webhooks you send to your customers.",
-        icon: WebhookIcon,
-        href: "/products/hooks",
-      },
-      {
-        label: "Risk",
-        description: "Abuse checks for sign-ups and payments.",
-        icon: Shield01Icon,
-        href: "/products/risk",
-      },
-      {
-        label: "Rate limiting",
-        description: "Limits for your own endpoints.",
-        icon: DashboardSpeed01Icon,
-        href: "/products/rate-limiting",
-      },
-    ],
-  },
-  {
-    title: "Platform",
-    links: [
-      {
-        label: "Platform",
-        description: "Webhooks, logs, keys and billing.",
-        icon: Layers01Icon,
-        href: "/products/platform",
-      },
-      {
-        label: "Security",
-        description: "SSO, SCIM, audit log, reputation.",
-        icon: SecurityCheckIcon,
-        href: "/products/security",
-      },
-      {
-        label: "Logs and drains",
-        description: "Every request and event.",
-        icon: WorkHistoryIcon,
-        href: `${DOCS_ROUTE}/logs`,
-      },
-      {
-        label: "Domains",
-        description: "Verified sending domains.",
-        icon: Globe02Icon,
-        href: `${DOCS_ROUTE}/email/domains`,
-      },
-      {
-        label: "Solutions",
-        description: "Agents, platforms, sign-ups.",
-        icon: Notification03Icon,
-        href: "/solutions",
-      },
-    ],
-  },
-  {
-    title: "More from coss.com",
-    links: [
-      api("scheduling", {
-        description: "Availability and bookings.",
-        icon: CalendarCheckIn01Icon,
-        href: "/#scheduling",
-      }),
-      {
-        label: CALENDAR.name,
-        description: "A React calendar component.",
-        icon: Calendar03Icon,
-        href: CALENDAR.path,
-        badge: "New",
-      },
-      {
-        label: "coss.com ui",
-        description: "React components built on Base UI.",
-        icon: DashboardSquare01Icon,
-        href: "/ui",
-        zone: true,
-      },
-      {
-        label: SHIPYARD.name,
-        description: "Coding agents on your own dev boxes.",
-        icon: ShipIcon,
-        href: SHIPYARD.path,
-        badge: "New",
-      },
-      {
-        label: "qnot",
-        description: "A typed query builder for any framework.",
-        icon: FilterIcon,
-        href: "/qnot",
-        badge: "New",
-        zone: true,
-      },
-    ],
-  },
+  product("sms", apiName("sms"), "Text messages, US and Canada first."),
+  product("scheduling", apiName("scheduling"), "Bookings and calendars in your app.", "New"),
+  product("risk", "Risk", "Abuse checks for sign-ups and payments."),
+  product("verify", "Verify", "One-time codes by SMS or email.", "New"),
+  product("sign", "Sign", "E-signatures in your app.", "New"),
+  product("inboxes", "Inboxes", "Email addresses for AI agents.", "New"),
+  product("forms", "Forms", "Form endpoints and hosted forms.", "New"),
+  product("hooks", "Hooks", "Webhooks you send to your customers."),
+  product("rate-limiting", "Rate limiting", "Limits for your own endpoints."),
+];
+
+/** Every product in the menu, sub-items too. */
+export const ALL_PRODUCT_LINKS: readonly ProductLink[] = PRODUCT_LINKS.flatMap((link) => [
+  link,
+  ...(link.items ?? []),
+]);
+
+/** What every product shares, and the ways in that aren't a product: plain links under the list. */
+export const PLATFORM_LINKS: readonly { label: string; href: string }[] = [
+  { label: "Platform", href: "/products/platform" },
+  { label: "Security", href: "/products/security" },
+  { label: "Logs and drains", href: `${DOCS_ROUTE}/logs` },
+  { label: "Domains", href: `${DOCS_ROUTE}/email/domains` },
+  { label: "Solutions", href: "/solutions" },
 ];
 
 export const DEVELOPER_COLUMNS: readonly MenuColumn[] = [
@@ -336,7 +193,7 @@ export const DEVELOPER_COLUMNS: readonly MenuColumn[] = [
       },
       {
         label: "llms.txt",
-        description: "Every docs page, indexed.",
+        description: "Where to start, and where everything is.",
         icon: TextIcon,
         href: "/llms.txt",
       },
@@ -365,6 +222,7 @@ export const FOOTER_COLUMNS: readonly { title: string; links: readonly [string, 
       ["Verify", "/products/verify"],
       ["Sign", "/products/sign"],
       ["Forms", "/products/forms"],
+      ["Scheduling", "/products/scheduling"],
       ["Hooks", "/products/hooks"],
       ["Risk", "/products/risk"],
       ["Rate limiting", "/products/rate-limiting"],
@@ -378,6 +236,9 @@ export const FOOTER_COLUMNS: readonly { title: string; links: readonly [string, 
       ["Platforms", "/solutions/platforms"],
       ["Authentication", "/solutions/authentication"],
       ["Notifications", "/solutions/notifications"],
+      ["In-app booking", "/solutions/booking"],
+      ["Phone verification", "/solutions/phone-verification"],
+      ["Contact forms", "/solutions/contact-forms"],
       ["All solutions", "/solutions"],
     ],
   },
@@ -390,7 +251,18 @@ export const FOOTER_COLUMNS: readonly { title: string; links: readonly [string, 
       ["vs Mailgun", "/compare/mailgun"],
       ["vs Amazon SES", "/compare/amazon-ses"],
       ["vs Twilio", "/compare/twilio"],
+      ["vs Twilio Verify", "/compare/twilio-verify"],
       ["vs Svix", "/compare/svix"],
+      ["vs AgentMail", "/compare/agentmail"],
+      ["vs DocuSign", "/compare/docusign"],
+      ["vs Formspree", "/compare/formspree"],
+      ["vs Brevo", "/compare/brevo"],
+      ["vs MailerSend", "/compare/mailersend"],
+      ["vs Loops", "/compare/loops"],
+      ["vs Plivo", "/compare/plivo"],
+      ["vs Nylas Scheduler", "/compare/nylas-scheduler"],
+      ["vs Castle", "/compare/castle"],
+      ["vs Unkey", "/compare/unkey"],
       ["All comparisons", "/compare"],
     ],
   },
@@ -405,6 +277,7 @@ export const FOOTER_COLUMNS: readonly { title: string; links: readonly [string, 
       ["CLI", `${DOCS_ROUTE}/cli`],
       ["MCP server", `${DOCS_ROUTE}/mcp`],
       ["llms.txt", "/llms.txt"],
+      ["Free tools", "/products/tools"],
     ],
   },
   {
@@ -412,8 +285,24 @@ export const FOOTER_COLUMNS: readonly { title: string; links: readonly [string, 
     links: [
       ["Pricing", "/pricing"],
       ["About", "/about"],
+      ["Changelog", "/changelog"],
       ["Platform", "/products/platform"],
       ["Security", "/products/security"],
+      ["Status", "/status"],
+      ["Contact", "/contact"],
+      ["GitHub", "https://github.com/cosscom/coss"],
+      ["X", "https://x.com/coss_com"],
+      ["LinkedIn", "https://www.linkedin.com/company/cosscom"],
+    ],
+  },
+  {
+    title: "More from coss.com",
+    links: [
+      ["Shipyard", "/shipyard"],
+      ["kloq", "/kloq"],
+      ["coss ui", "/ui"],
+      ["Origin UI", "/origin"],
+      ["qnot", "/qnot"],
     ],
   },
 ];

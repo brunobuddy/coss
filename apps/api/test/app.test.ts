@@ -37,6 +37,14 @@ describe("app", () => {
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
   });
 
+  test("GET /health/ready needs no API key and reads the database", async () => {
+    const { app } = createTestApp();
+    const res = await app.request("/health/ready");
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+
   test("unknown routes are a 404 not_found_error envelope", async () => {
     const { app } = createTestApp();
     const res = await app.request("/v1/nothing-here", { method: "POST" });
@@ -270,6 +278,45 @@ describe("GET /openapi.json", () => {
       "/v1/risk/rules/{id}",
       "/v1/risk/settings",
       "/v1/risk/users/{user_id}",
+      "/v1/scheduling/attendees/erase",
+      "/v1/scheduling/attendees/{uid}",
+      "/v1/scheduling/availability/search",
+      "/v1/scheduling/booker_sessions",
+      "/v1/scheduling/bookings",
+      "/v1/scheduling/bookings/{id}",
+      "/v1/scheduling/bookings/{id}/approve",
+      "/v1/scheduling/bookings/{id}/cancel",
+      "/v1/scheduling/bookings/{id}/decline",
+      "/v1/scheduling/bookings/{id}/events",
+      "/v1/scheduling/bookings/{id}/location",
+      "/v1/scheduling/bookings/{id}/manage_sessions",
+      "/v1/scheduling/bookings/{id}/no_show",
+      "/v1/scheduling/bookings/{id}/notifications",
+      "/v1/scheduling/bookings/{id}/reschedule",
+      "/v1/scheduling/calendar_delegations",
+      "/v1/scheduling/calendar_delegations/{id}",
+      "/v1/scheduling/calendar_delegations/{id}/verify",
+      "/v1/scheduling/event_types",
+      "/v1/scheduling/event_types/{event_type}",
+      "/v1/scheduling/event_types/{event_type}/slots",
+      "/v1/scheduling/event_types/{event_type}/slots/explain",
+      "/v1/scheduling/holds",
+      "/v1/scheduling/holds/{id}",
+      "/v1/scheduling/holds/{id}/confirm",
+      "/v1/scheduling/hosts",
+      "/v1/scheduling/hosts/{host}",
+      "/v1/scheduling/hosts/{host}/calendar_connections",
+      "/v1/scheduling/hosts/{host}/calendar_connections/authorize",
+      "/v1/scheduling/hosts/{host}/calendar_connections/{id}",
+      "/v1/scheduling/hosts/{host}/calendars/{calendar_id}",
+      "/v1/scheduling/hosts/{host}/schedules",
+      "/v1/scheduling/hosts/{host}/schedules/{schedule_id}",
+      "/v1/scheduling/hosts/{host}/sessions",
+      "/v1/scheduling/hosts/{host}/simulated_busy",
+      "/v1/scheduling/series",
+      "/v1/scheduling/series/preview",
+      "/v1/scheduling/series/{id}/cancel",
+      "/v1/scheduling/settings",
       "/v1/segments",
       "/v1/segments/{id}",
       "/v1/segments/{id}/contacts",
@@ -317,6 +364,7 @@ describe("GET /openapi.json", () => {
       "/v1/verifications/check",
       "/v1/verifications/{id}",
       "/v1/verifications/{id}/cancel",
+      "/v1/verify/settings",
       "/v1/webhook_endpoints",
       "/v1/webhook_endpoints/{id}",
       "/v1/webhook_endpoints/{id}/deliveries",

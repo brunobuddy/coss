@@ -36,6 +36,7 @@ import {
   type ListResourceTenantsCommandOutput,
   ListTagsForResourceCommand,
   type ListTagsForResourceCommandOutput,
+  PutConfigurationSetDeliveryOptionsCommand,
   PutEmailIdentityMailFromAttributesCommand,
   type PutEmailIdentityMailFromAttributesCommandInput,
   PutTenantSuppressionAttributesCommand,
@@ -62,6 +63,14 @@ export type SesConfig = {
 /** Each stream's configuration set, derived from the transactional one (`SES_CONFIGURATION_SET`). */
 export function configurationSetsFor(name: string): Record<EmailStream, string> {
   return { transactional: name, marketing: `${name}-marketing` };
+}
+
+/**
+ * A shared set's twin that refuses unencrypted delivery (`TlsPolicy: REQUIRE`), for organizations
+ * in HIPAA mode. `ses:bootstrap` creates these and associates every tenant with its stream's.
+ */
+export function requiredTlsSetFor(configurationSet: string): string {
+  return `${configurationSet}-tls`;
 }
 
 /**
@@ -106,6 +115,11 @@ export interface SesApi {
     PageSize?: number;
   }): Promise<GetDedicatedIpsCommandOutput>;
   createConfigurationSet(input: CreateConfigurationSetCommandInput): Promise<unknown>;
+  putConfigurationSetDeliveryOptions(input: {
+    ConfigurationSetName: string;
+    SendingPoolName?: string;
+    TlsPolicy: "REQUIRE" | "OPTIONAL";
+  }): Promise<unknown>;
   deleteConfigurationSet(input: { ConfigurationSetName: string }): Promise<unknown>;
   getConfigurationSetEventDestinations(input: {
     ConfigurationSetName: string;
@@ -143,6 +157,8 @@ export function createSesApi(region: string): SesApi {
     deleteDedicatedIpPool: (input) => client.send(new DeleteDedicatedIpPoolCommand(input)),
     getDedicatedIps: (input) => client.send(new GetDedicatedIpsCommand(input)),
     createConfigurationSet: (input) => client.send(new CreateConfigurationSetCommand(input)),
+    putConfigurationSetDeliveryOptions: (input) =>
+      client.send(new PutConfigurationSetDeliveryOptionsCommand(input)),
     deleteConfigurationSet: (input) => client.send(new DeleteConfigurationSetCommand(input)),
     getConfigurationSetEventDestinations: (input) =>
       client.send(new GetConfigurationSetEventDestinationsCommand(input)),

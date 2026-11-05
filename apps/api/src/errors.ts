@@ -1,11 +1,12 @@
 /**
  * The public error envelope. Every non-2xx response is
  * `{ "error": { type, code, message, param?, issues?, hint?, request_id } }`, built only here.
- * `hint` is optional and additive: it names a fix (often with a docs URL) for the errors an
- * agent hits first. Compute it here so every constructor does not have to.
+ * `hint` is optional and additive: it names a fix (often with a docs URL), from the table in
+ * `error-hints.ts`, so every constructor does not have to.
  */
 
 import { BillingError } from "@coss/billing";
+import { HipaaModeError } from "@coss/compliance";
 import {
   BroadcastError,
   ContactError,
@@ -17,6 +18,7 @@ import {
 import { FormError } from "@coss/forms";
 import { HookError } from "@coss/hooks";
 import { RiskError } from "@coss/risk";
+import { SchedulingError } from "@coss/scheduling";
 import { SignError } from "@coss/sign";
 import { SmsError } from "@coss/sms";
 import { VerifyError } from "@coss/verify";
@@ -25,6 +27,7 @@ import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
+import { DOCS, type HintProduct, hintForCode } from "./error-hints.ts";
 import type { AppEnv } from "./types.ts";
 
 export const ERROR_TYPES = [
@@ -95,6 +98,8 @@ export class ApiError extends Error {
   readonly issues?: ApiErrorIssue[];
   readonly hint?: string;
   readonly headers?: Record<string, string>;
+  /** Which product's error this came from, for hints of codes products share (`error-hints.ts`). */
+  product?: HintProduct;
 
   constructor(
     status: ContentfulStatusCode,
@@ -113,49 +118,24 @@ export class ApiError extends Error {
   }
 }
 
-const DOCS = {
-  domains: "https://coss.com/docs/email/domains.md",
-  environments: "https://coss.com/docs/environments.md",
-  delivery: "https://coss.com/docs/email/delivery.md",
-  sdk: "https://coss.com/docs/sdk.md",
-  sending: "https://coss.com/docs/email/sending.md",
-} as const;
-
 /**
- * The fix for an error an agent can act on, derived from the code (and, for reserved headers,
- * from the issue text — those share `validation_error` with every other bad field).
+ * The fix for an error an agent can act on, from the table in `error-hints.ts` (and, for reserved
+ * headers, from the issue text: those share `validation_error` with every other bad field).
  */
 export function hintFor(error: {
   code: string;
+  product?: HintProduct;
   issues?: { message: string }[];
   hint?: string;
 }): string | undefined {
   if (error.hint) return error.hint;
-  switch (error.code) {
-    case "domain_not_verified":
-      return (
-        "A live key can only send from a verified domain. A sandbox key accepts any from " +
-        `address. ${DOCS.domains}`
-      );
-    case "sandbox_only":
-      return `This only works with a sandbox key. ${DOCS.environments}`;
-    case "organization_suspended":
-    case "account_suspended":
-      return (
-        "This organization is suspended, so sending and changes are refused until it is " +
-        `reinstated. ${DOCS.delivery}`
-      );
-    case "idempotency_key_reused":
-    case "request_in_progress":
-      return `Reuse an Idempotency-Key only for the same request. ${DOCS.sdk}`;
-    case "validation_error":
-      if (error.issues?.some((issue) => issue.message.includes("set by coss.com"))) {
-        return `Those headers are set by coss.com and cannot be overridden. ${DOCS.sending}`;
-      }
-      return undefined;
-    default:
-      return undefined;
+  if (
+    error.code === "validation_error" &&
+    error.issues?.some((issue) => issue.message.includes("set by coss.com"))
+  ) {
+    return `Those headers are set by coss.com and cannot be overridden. ${DOCS.sending}`;
   }
+  return hintForCode(error.code, error.product);
 }
 
 export function errorResponse(c: Context<AppEnv>, error: ApiError): Response {
@@ -328,6 +308,9 @@ function fromSmsError(error: SmsError): ApiError {
 
 function fromSignError(error: SignError): ApiError {
   switch (error.code) {
+    case "billing_hold":
+    case "budget_exceeded":
+      return new ApiError(402, { type: "billing_error", code: error.code, message: error.message });
     case "request_in_progress":
     case "idempotency_key_reused":
       return fromIdempotencyError({ code: error.code, message: error.message });
@@ -416,6 +399,37 @@ function fromFormError(error: FormError): ApiError {
   }
 }
 
+function fromSchedulingError(error: SchedulingError): ApiError {
+  switch (error.code) {
+    case "billing_hold":
+    case "budget_exceeded":
+      // Paying or raising the budget is the fix: 402, never retried by the SDK.
+      return new ApiError(402, { type: "billing_error", code: error.code, message: error.message });
+    case "not_found":
+      return new ApiError(404, {
+        type: "not_found_error",
+        code: error.code,
+        message: error.message,
+      });
+    case "account_suspended":
+      return new ApiError(403, {
+        type: "permission_error",
+        code: error.code,
+        message: error.message,
+      });
+    case "idempotency_in_progress":
+      return new ApiError(
+        409,
+        { type: "api_error", code: error.code, message: error.message },
+        { "Retry-After": "1" },
+      );
+    case "scheduling_unavailable":
+      return new ApiError(503, { type: "api_error", code: error.code, message: error.message });
+    default:
+      return invalidRequest(error.code, error.message, error.param);
+  }
+}
+
 function invalidRequest(code: string, message: string, param?: string): ApiError {
   return new ApiError(422, {
     type: "invalid_request_error",
@@ -473,6 +487,9 @@ function fromContactError(error: ContactError): ApiError {
 }
 
 function fromInboxError(error: InboxError): ApiError {
+  if (error.code === "billing_hold" || error.code === "budget_exceeded") {
+    return new ApiError(402, { type: "billing_error", code: error.code, message: error.message });
+  }
   if (error.code.endsWith("not_found")) {
     return new ApiError(404, {
       type: "not_found_error",
@@ -547,6 +564,7 @@ function fromRiskError(error: RiskError): ApiError {
     case "limit_bucket_name_taken":
       return invalidRequest(error.code, error.message, error.param);
     case "billing_hold":
+    case "budget_exceeded":
       // As billing's own holds: 402, never retried by the SDK.
       return new ApiError(402, { type: "billing_error", code: error.code, message: error.message });
     case "classification_unavailable":
@@ -589,6 +607,9 @@ function fromHookError(error: HookError): ApiError {
   if (error.code === "request_in_progress" || error.code === "idempotency_key_reused") {
     return fromIdempotencyError({ code: error.code, message: error.message });
   }
+  if (error.status === 402) {
+    return new ApiError(402, { type: "billing_error", code: error.code, message: error.message });
+  }
   if (error.status === 404) {
     return new ApiError(404, { type: "not_found_error", code: error.code, message: error.message });
   }
@@ -614,23 +635,36 @@ function fromSubaccountError(error: SubaccountError): ApiError {
   return invalidRequest(error.code, error.message, error.param);
 }
 
+function fromProduct(product: HintProduct, error: ApiError): ApiError {
+  error.product = product;
+  return error;
+}
+
 /** Maps known error classes to their envelope; `null` means unexpected (a bug or an outage). */
 export function toApiError(error: unknown): ApiError | null {
   if (error instanceof ApiError) return error;
+  if (error instanceof HipaaModeError) {
+    return new ApiError(403, {
+      type: "permission_error",
+      code: error.code,
+      message: error.message,
+    });
+  }
   if (error instanceof BillingError) return fromBillingError(error);
   if (error instanceof EmailError) return fromEmailError(error);
-  if (error instanceof HookError) return fromHookError(error);
+  if (error instanceof HookError) return fromProduct("hooks", fromHookError(error));
   if (error instanceof SubaccountError) return fromSubaccountError(error);
   if (error instanceof DomainError) return fromDomainError(error);
   if (error instanceof ContactError) return fromContactError(error);
   if (error instanceof BroadcastError) return fromBroadcastError(error);
-  if (error instanceof InboxError) return fromInboxError(error);
-  if (error instanceof WebhookError) return fromWebhookError(error);
+  if (error instanceof InboxError) return fromProduct("inboxes", fromInboxError(error));
+  if (error instanceof WebhookError) return fromProduct("webhooks", fromWebhookError(error));
   if (error instanceof RiskError) return fromRiskError(error);
-  if (error instanceof SmsError) return fromSmsError(error);
-  if (error instanceof SignError) return fromSignError(error);
-  if (error instanceof VerifyError) return fromVerifyError(error);
+  if (error instanceof SmsError) return fromProduct("sms", fromSmsError(error));
+  if (error instanceof SignError) return fromProduct("sign", fromSignError(error));
+  if (error instanceof VerifyError) return fromProduct("verify", fromVerifyError(error));
   if (error instanceof FormError) return fromFormError(error);
+  if (error instanceof SchedulingError) return fromSchedulingError(error);
   // A 5xx exception is a server fault: left to the caller to log and answer with a generic 500.
   if (error instanceof HTTPException && error.status < 500) return fromHttpException(error);
   return null;

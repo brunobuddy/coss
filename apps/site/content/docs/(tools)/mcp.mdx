@@ -1,6 +1,6 @@
 ---
 title: MCP server
-description: Let your coding agent look up emails, explain why one wasn't delivered, and fix your setup.
+description: Let your coding agent search the docs, diagnose deliveries and use email, marketing, inboxes, SMS, Verify, Sign, Forms, Scheduling, Hooks and Risk.
 ---
 
 `coss-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server for coss.com. Add it
@@ -13,10 +13,13 @@ to your coding agent (Claude Code, Cursor, VS Code, Codex, or any MCP client), t
 - "Why did my send request fail with a 422?"
 - "What DNS records does acme.com still need?"
 - "Was the verification code to +14155550199 delivered, and if not, why?"
+- "Why hasn't this contract been signed yet?"
+- "Why does this booking page show no slots?"
 
 The server runs locally on Node.js 22+ through `npx` and calls the coss.com API with your API key.
 It can also search and read these docs, with or without a key. In Claude Code, the
-[coss.com plugin](/docs/agents#claude-code-plugin) sets it up for you.
+[coss.com plugin](/docs/agents#claude-code-plugin) sets it up for you. For a client that can't start
+a local process, there is a [hosted server](#hosted-server).
 
 ## Set it up
 
@@ -90,12 +93,105 @@ The server reads its configuration from the environment only:
 | --- | --- |
 | `COSS_API_KEY` | The key every tool calls the API with. Without it, the server reads a development (`coss_test_`) key from the project's `.env.local` or `.env`. A `coss_live_` key in that file is never loaded. With no key at all, only the docs tools are available. |
 | `COSS_BASE_URL` | Another API origin, e.g. `http://localhost:3001` when you run coss.com yourself. Defaults to `https://api.coss.com`. |
+| `COSS_MCP_TOOLSETS` | Fewer tools, for a client that struggles with this many: a comma-separated list of `email`, `marketing`, `inboxes`, `sms`, `verify`, `sign`, `forms`, `scheduling`, `webhooks`, `hooks`, `risk`, `subaccounts` and `log_drains`. The docs, `get_setup`, logs, `get_account_status` and `api_get` are always there. Default: every tool. |
 
 <Callout type="warn">
 API keys can do everything the API can, so the agent can also send email and SMS and change
 suppressions and domains through this server. Tools that change something are marked as such, and most clients
 ask before calling them. Give the server a development key unless you need production data.
 </Callout>
+
+## Hosted server
+
+The same tools, prompts and resources at `https://api.coss.com/mcp`, for clients that can't run
+`npx`: Streamable HTTP, with nothing to install. Authenticate with your API key in a header, `Authorization: Bearer coss_test_…`.
+There is no OAuth sign-in, so the client has to let you set a custom header: web apps whose
+connectors only offer OAuth can't use it yet.
+
+<Tabs items={["Claude Code", "Cursor", "VS Code", "Codex", "Others"]}>
+<Tab value="Claude Code">
+
+```sh
+claude mcp add --transport http coss https://api.coss.com/mcp \
+  --header "Authorization: Bearer coss_test_…"
+```
+
+</Tab>
+<Tab value="Cursor">
+
+In `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "coss": {
+      "url": "https://api.coss.com/mcp",
+      "headers": { "Authorization": "Bearer coss_test_…" }
+    }
+  }
+}
+```
+
+</Tab>
+<Tab value="VS Code">
+
+In `.vscode/mcp.json`; VS Code asks for the key once and stores it securely:
+
+```json
+{
+  "inputs": [
+    { "type": "promptString", "id": "coss-api-key", "description": "coss.com API key", "password": true }
+  ],
+  "servers": {
+    "coss": {
+      "type": "http",
+      "url": "https://api.coss.com/mcp",
+      "headers": { "Authorization": "Bearer ${input:coss-api-key}" }
+    }
+  }
+}
+```
+
+</Tab>
+<Tab value="Codex">
+
+In `~/.codex/config.toml`, with the key in your environment as `COSS_API_KEY`:
+
+```toml
+[mcp_servers.coss]
+url = "https://api.coss.com/mcp"
+bearer_token_env_var = "COSS_API_KEY"
+```
+
+</Tab>
+<Tab value="Others">
+
+Any client that speaks Streamable HTTP and can send a custom header works. Give it the URL and the
+header above.
+
+</Tab>
+</Tabs>
+
+Use a development key (`coss_test_…`) here too, unless you need production data: the key sits in the
+client's configuration, so keep that file out of your repository.
+
+It acts exactly as the API does with that key. Each tool calls the public API, so a restricted key's
+permissions, rate limits, quotas, a suspended organization and your environment's logs all apply as
+usual. coss.com keeps nothing about a request once it's answered: the server is stateless, with no
+sessions.
+
+What's different from the local server:
+
+- **It can't touch your files.** It has no project: it doesn't read `.env` or `.env.local`, so the key
+  must be in the header, and there is no `upload_sign_document` (upload the PDF with the
+  [API](/docs/api-reference/sign-documents/upload-sign-document) or an SDK, then use its id).
+- **`create_webhook_endpoint` returns the signing secret** instead of writing it to a file. Store it as
+  `COSS_WEBHOOK_SECRET` yourself; it isn't shown again.
+- **Environment variables don't apply.** `COSS_MCP_TOOLSETS` isn't available, so a client gets every
+  tool, and `COSS_BASE_URL` can't be set: it only talks to coss.com.
+- **Answers come whole.** Requests take at most 50 seconds and 1 MB, and an API call's answer at most
+  8 MB of JSON, so a tool can't read a CSV export; requests from browsers are refused. [Rate limits](/docs/api-reference/rate-limits) count requests to `/mcp` per key, on top of the API
+  calls each tool makes.
 
 ## Tools
 
@@ -145,27 +241,107 @@ number can send live messages now) and `check_sms_suppression`, `add_sms_suppres
 **Logs**: `search_logs` and `get_log`: every API request made with the environment's keys (with
 redacted request and response bodies), email events and webhook attempts. See [Logs](/docs/logs).
 
-**Setup**: `get_setup` is the first call before writing send code. It returns the key's mode, a
-from address that will succeed, DNS records still missing, webhook endpoints, and one `next` step.
+**Setup**: `get_setup` is the first call before writing code against a product. Pass `product`
+(`email`, `sms`, `verify`, `sign`, `forms`, `scheduling`, `inboxes`, `hooks`, `risk` or `marketing`)
+and its `next` is that product's one step: what it still needs in this environment (an approved
+number for SMS and Verify, a host, schedule and event type for Scheduling) or, with a development
+key, how to try it. `products` says whether each is `ready`, `needs_setup` or `unknown`. Without
+`product` it answers for email (the key's mode, a from address that will succeed, DNS records still
+missing, webhook endpoints) and lists `products_in_use`. A read that fails comes back as `warning`.
 
-**Templates**: `pull_email_template` reads a draft; `push_email_template` updates one locale of it
+**Templates**: `list_email_templates` lists them with their aliases; `pull_email_template` reads a draft; `push_email_template` updates one locale of it
 (an unknown alias is created). `publish_email_template` publishes the draft at the revision you
 read, which sends use from then on. A save does not publish by itself.
 
-**Hooks**: `list_hook_applications`, `send_hook_message` (delivers to the application's endpoints),
-`list_hook_deliveries`. See [Hooks](/docs/hooks).
+**Marketing**: `list_contacts`, `upsert_contact`, `list_audiences`, `save_audience`, `list_segments`,
+`save_segment`, `list_topics`, `save_topic`, `list_broadcasts`, `get_broadcast`, `save_broadcast`
+(always a draft), `send_test_broadcast`, `send_broadcast`, `cancel_broadcast`,
+`get_marketing_settings` and `update_marketing_settings`. A `save_` tool updates with an `id` and
+creates without one. See [Broadcasts](/docs/email/broadcasts).
 
-**Forms**: `list_forms`, `list_form_submissions` (by status: `held` is Risk's review queue),
-`get_form_submission` (the values, labelled as untrusted: someone typed them into a form). See
+**Verify**: `start_verification` sends a code, `check_verification` compares one, then
+`list_verifications`, `get_verification`, `cancel_verification`, `get_verify_settings` and
+`update_verify_settings` (a sender must be the organization's). `diagnose_verification` (by id, or
+by destination) says why no code arrived or a check failed: the fraud guard's reasons, expiry and
+attempts, the route each code took and what happened to the latest code's SMS or email. It never
+shows a code. See [Verify](/docs/verify).
+
+**Sign**: `upload_sign_document` reads a PDF from the project (a path inside it, nothing else),
+`create_sign_request` and `create_sign_request_from_template` make drafts, and `send_sign_request`
+sends one. `list_sign_requests`, `get_sign_request`, `get_sign_audit_trail`, `remind_sign_request`,
+`cancel_sign_request`, `create_sign_session` (a signing link for an embedded signer),
+`list_sign_templates`, `create_sign_template`, `get_sign_settings` and `update_sign_settings`.
+`diagnose_sign_request` says where a request stands: a draft never sent, each signer's state and
+whose turn it is, declined, expired, or signed and still being sealed. See [Sign](/docs/sign).
+
+**Hooks**: `list_hook_applications`, `create_hook_application`, `list_hook_event_types`,
+`create_hook_event_type`, `list_hook_endpoints`, `create_hook_endpoint` (the answer holds its signing
+secret), `send_hook_message` (delivers to the application's endpoints), `send_hook_test_message`
+(to one endpoint), `list_hook_deliveries`, `list_hook_attempts` (each request's status and response),
+`retry_hook_delivery` and `create_hook_portal_session`. `diagnose_hook_delivery` (by delivery, by a
+message's worst delivery, or by an endpoint's latest failure) gives what the endpoint answered on
+each attempt, the next retry, and whether the endpoint is disabled or failing. See [Hooks](/docs/hooks).
+
+**Forms**: `list_forms`, `get_form`, `save_form` (the answer has the endpoint a site posts to),
+`list_form_submissions` (by status: `held` is Risk's review queue), `get_form_submission` (the
+values, labelled as untrusted: someone typed them into a form) and `release_form_submission`
+(accepts a held one, which sends it on). `diagnose_form_submission` says what happened to one: held
+by Risk, spam and why, waiting for the submitter to confirm, or accepted, and where it goes from
+there. Spam is answered exactly like a success, so a submitter who saw a success proves nothing. See
 [Forms](/docs/forms).
 
+**Scheduling**: `list_scheduling_hosts`, `save_scheduling_host`, `list_scheduling_schedules`,
+`save_scheduling_schedule`, `list_scheduling_calendars` (a calendar that `needs_reauth` is the usual
+reason for having no slots), `authorize_scheduling_calendar`, `list_scheduling_event_types`,
+`save_scheduling_event_type`, `list_scheduling_booking_events`, `list_scheduling_slots`, `explain_scheduling_slot`, `search_scheduling_availability`,
+`list_scheduling_bookings`, `get_scheduling_booking`, `create_scheduling_booking`,
+`reschedule_scheduling_booking`, `cancel_scheduling_booking`, `mark_scheduling_no_show`,
+`get_scheduling_reminders`, `save_scheduling_reminders`, `list_scheduling_booking_notifications` (why
+someone did or didn't get a reminder) and `create_scheduling_session` (a link to a hosted page).
+`diagnose_scheduling_slots` explains an empty list, each finding `certain`, `likely` or `possible`: no
+host or schedule, a calendar to reauthorize, minimum notice, the booking window, limits, bookings and
+buffers. A calendar's busy times aren't readable through the API, so they can only be `possible`. See
+[Scheduling](/docs/scheduling).
+
 **Risk**: `assess_risk` records a decision for a sign-up, login, message, checkout or custom event.
-`list_risk_assessments`, `list_risk_rules` and `list_risk_list_entries` read what the environment
-already decided and the rules and lists behind it. See [Risk](/docs/risk).
+`list_risk_assessments`, `get_risk_assessment`, `list_risk_rules`, `list_risk_list_entries` and
+`get_risk_settings` read what the environment already decided and the rules and lists behind it.
+`record_risk_feedback` resolves a review, `add_risk_list_entry` and `remove_risk_list_entry` change
+the lists, and `check_email_risk`, `check_ip_risk` and `check_phone_risk` look at one identifier
+without recording a decision (a live key's phone checks are billed). See [Risk](/docs/risk).
+
+**Sub-accounts** (email for platforms): `list_subaccounts`, `get_subaccount`, `create_subaccount`,
+`update_subaccount`, `delete_subaccount`, `reinstate_subaccount` (lifts a paused reputation) and
+`get_subaccount_stats`. See [Sub-accounts](/docs/email/subaccounts).
+
+**Log drains**: `list_log_drains`, `get_log_drain`, `create_log_drain` (the answer holds its signing
+secret, once), `update_log_drain`, `delete_log_drain` and `list_log_drain_batches` (with `batch_id`,
+one batch's attempts and what the receiver answered). See [Log drains](/docs/log-drains).
+
+**Anything else you need to read**: `api_get` GETs any `/v1/` path, for operations no other tool
+covers. It refuses anything else, signing secrets and files (CSV exports, attachments). There is no
+write equivalent, so changes always go through tools that say what they change. Its answers are cut
+and labelled as untrusted.
 
 **Account**: `get_account_status`: whether the key is live or sandbox, the
 [sending reputation](/docs/email/delivery) and its checks, billing status and holds, and tracking
 settings.
+
+## Prompts and resources
+
+Clients that support them show these too. They only tell the agent what to do; the tools still ask
+before changing anything.
+
+| Prompt | |
+| --- | --- |
+| `add_product` | Set up, write and test one product in this codebase (`product`, optional `goal`). |
+| `debug_delivery` | Find out why something wasn't delivered (`product`, optional `what`). |
+| `prepare_go_live` | Check what's left before going live (optional `products`). |
+
+| Resource | |
+| --- | --- |
+| `coss://docs/index` | The guides, and a link to each product's API operations. Needs no API key. |
+| `coss://setup` | `get_setup`'s answer for this project. |
 
 ## How it answers
 
@@ -179,6 +355,7 @@ unverified domain): `search_logs` finds those requests and the errors they got.
 SMS works the same way: sandbox messages are simulated, and the [SMS simulator's
 numbers](/docs/sms/testing) produce each outcome.
 
-Email content, SMS text, received messages, bounce messages and webhook responses are written by
-other people.
+Email content, SMS text, received messages, form submissions, booking answers, signers' details,
+bounce messages, webhook and log drain responses, and whatever `api_get` reads are written by other
+people.
 The server tells the agent to treat them as data, never as instructions.

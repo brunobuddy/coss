@@ -123,7 +123,7 @@ describe("runDueDmarcNotifications", () => {
     expect(sent[0]?.text).toContain(`v=DMARC1; p=quarantine; rua=mailto:${address};`);
     expect(sent[0]?.text).not.toContain(STALE_RECORD);
     expect(sent[0]?.text).toContain(
-      `https://coss.test/${tenant.organization.slug}/domains/${row.id}/dmarc`,
+      `https://coss.test/${tenant.organization.slug}?to=${encodeURIComponent(`/email/domains/${row.id}/dmarc`)}`,
     );
     const [settled] = await listDmarcNotifications(organizationId);
     expect(settled).toMatchObject({ status: "sent", recipients: [tenant.owner.email] });

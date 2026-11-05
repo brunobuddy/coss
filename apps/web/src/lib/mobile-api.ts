@@ -6,7 +6,7 @@ import { mobileSessionHeaders } from "@coss/auth/mobile";
 import { orgAccess } from "@coss/auth/org-access";
 import { type OrgPermissions, orgRoleCan } from "@coss/auth/permissions";
 import type { MobileErrorBody, MobileErrorCode } from "@coss/companion";
-import { getEnvironment, getMembership, type Membership } from "@coss/tenancy";
+import { getEnvironment, getMembership, type Membership, touchHipaaSession } from "@coss/tenancy";
 import { setTag, setUser } from "@sentry/nextjs";
 import { memberCan } from "./member-can";
 import { rateLimitRuntime } from "./rate-limit-runtime";
@@ -105,6 +105,9 @@ export async function requireMobileOrgMember(
   const membership = await getMembership({ userId: session.user.id, organizationSlug: orgSlug });
   if (!membership) throw new MobileApiError(404, "not_found", "Organization not found.");
   setTag("organization_id", membership.organization.id);
+  if (membership.hipaaMode && (await touchHipaaSession(session.session)) === "idle") {
+    throw new MobileApiError(401, "unauthorized", "Your session has ended. Sign in again.");
+  }
   const access = orgAccess(membership, session);
   if (access.kind === "redirect") {
     throw access.to.startsWith("/sso")

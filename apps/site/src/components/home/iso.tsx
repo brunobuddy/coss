@@ -173,13 +173,6 @@ function Engraving({ part }: { part: Mark }): ReactNode {
           <circle cx={58} cy={41} r={2.5} {...LINE} />
         </>
       );
-    case "video":
-      return (
-        <>
-          <rect height={40} rx={4} width={50} x={12} y={26} {...LINE} />
-          <path d="M62 40 L80 29 V63 L62 52 Z" {...LINE} />
-        </>
-      );
     case "scheduling":
       return (
         <>

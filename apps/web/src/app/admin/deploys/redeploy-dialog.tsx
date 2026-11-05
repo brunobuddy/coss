@@ -6,6 +6,7 @@ import { redeployAction } from "./actions";
 export function RedeployDialog(props: { commit: string }) {
   return (
     <AdminActionDialog
+      icon="deploy"
       action={redeployAction}
       description={`Production goes back to ${shortSha(props.commit)}'s images (already built) until main is deployed again: the next push or Deploy now. Push runs waiting for their batch are canceled. Database migrations aren't undone, so the older code must work with today's schema.`}
       destructive

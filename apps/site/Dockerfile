@@ -33,6 +33,9 @@ WORKDIR /repo
 COPY --from=prune /pruned/json/ .
 RUN bun install --frozen-lockfile
 COPY --from=prune /pruned/full/ .
+# The day each page last changed, when the build has it (infra/scripts/site-content-dates.sh): the
+# glob lets the file be missing, which a COPY of that file alone would not.
+COPY apps/site/package.json apps/site/content-dates.jso[n] apps/site/
 # The commit: Next's build id and version-skew protection (deploymentId). Not stage-specific.
 ARG NEXT_DEPLOYMENT_ID=""
 ENV NEXT_DEPLOYMENT_ID=${NEXT_DEPLOYMENT_ID} SKIP_ENV_VALIDATION=1
@@ -44,19 +47,27 @@ RUN --mount=type=secret,id=sentry_auth_token,required=false \
 # Only the traced server (.next/standalone keeps Bun's isolated node_modules as relative symlinks)
 # and the static assets. No package manager, no sources.
 FROM ${NODE_IMAGE}:${NODE_VERSION}-slim AS runtime
+# Debian's security fixes, refreshed weekly by BASE_PATCH_WEEK; nothing here runs Perl.
+ARG BASE_PATCH_WEEK=""
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -qq \
+  && DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade \
+  && dpkg --purge --force-remove-essential --force-depends perl-base \
+  && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \
     PORT=3002 \
+    TLS_PORT=4002 \
     KEEP_ALIVE_TIMEOUT=75000
 WORKDIR /app
 COPY --from=build /repo/apps/site/.next/standalone ./
+COPY infra/runtime/tls-entry.mjs ./tls-entry.mjs
 COPY --from=build /repo/apps/site/.next/static ./apps/site/.next/static
 # The standalone output leaves public/ out (Shipyard's harbour and docs screenshots, under /shipyard).
 COPY --from=build /repo/apps/site/public ./apps/site/public
 # Next writes its cache under .next at runtime; everything else stays root-owned and read-only.
 RUN mkdir -p apps/site/.next/cache && chown node:node apps/site/.next/cache
 USER node
-EXPOSE 3002
+EXPOSE 3002 4002
 # SIGTERM: Next stops accepting connections and finishes in-flight requests before exiting.
-CMD ["node", "apps/site/server.js"]
+CMD ["node", "tls-entry.mjs", "apps/site/server.js"]

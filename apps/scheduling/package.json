@@ -1,0 +1,38 @@
+{
+  "name": "@coss/scheduling-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3005",
+    "build": "next build",
+    "start": "next start --port 3005",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "bun --env-file=../../.env test"
+  },
+  "dependencies": {
+    "@coss/db": "workspace:*",
+    "@coss/observability": "workspace:*",
+    "@coss/scheduling": "workspace:*",
+    "@coss/ui": "workspace:*",
+    "@sentry/nextjs": "catalog:",
+    "@t3-oss/env-nextjs": "catalog:",
+    "lucide-react": "catalog:",
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@coss/tenancy": "workspace:*",
+    "@coss/tsconfig": "workspace:*",
+    "@tailwindcss/postcss": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "postcss": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  }
+}

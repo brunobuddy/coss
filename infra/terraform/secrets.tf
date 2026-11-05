@@ -28,6 +28,11 @@ resource "random_password" "sign_origin_verify" {
   special = false
 }
 
+resource "random_password" "scheduling_origin_verify" {
+  length  = 48
+  special = false
+}
+
 resource "random_password" "forms_origin_verify" {
   length  = 48
   special = false
@@ -55,7 +60,7 @@ resource "aws_secretsmanager_secret_version" "tracking_origin_verify" {
 
 resource "aws_secretsmanager_secret" "portal_origin_verify" {
   name        = "coss/${var.stage}/portal-origin-verify"
-  description = "X-Portal-Origin-Verify: set by Cloudflare's transform rule on the Hooks portal's zone"
+  description = "X-Portal-Origin-Verify: sent by the Hooks portal's CloudFront distribution"
 }
 
 resource "aws_secretsmanager_secret_version" "portal_origin_verify" {
@@ -65,7 +70,7 @@ resource "aws_secretsmanager_secret_version" "portal_origin_verify" {
 
 resource "aws_secretsmanager_secret" "sign_origin_verify" {
   name        = "coss/${var.stage}/sign-origin-verify"
-  description = "X-Sign-Origin-Verify: set by Cloudflare's transform rule on Sign's zone"
+  description = "X-Sign-Origin-Verify: sent by Sign's CloudFront distribution"
 }
 
 resource "aws_secretsmanager_secret_version" "sign_origin_verify" {
@@ -73,9 +78,19 @@ resource "aws_secretsmanager_secret_version" "sign_origin_verify" {
   secret_string = random_password.sign_origin_verify.result
 }
 
+resource "aws_secretsmanager_secret" "scheduling_origin_verify" {
+  name        = "coss/${var.stage}/scheduling-origin-verify"
+  description = "X-Scheduling-Origin-Verify: sent by Scheduling's CloudFront distribution"
+}
+
+resource "aws_secretsmanager_secret_version" "scheduling_origin_verify" {
+  secret_id     = aws_secretsmanager_secret.scheduling_origin_verify.id
+  secret_string = random_password.scheduling_origin_verify.result
+}
+
 resource "aws_secretsmanager_secret" "forms_origin_verify" {
   name        = "coss/${var.stage}/forms-origin-verify"
-  description = "X-Forms-Origin-Verify: set by Cloudflare's transform rule on Forms' zone"
+  description = "X-Forms-Origin-Verify: sent by Forms' CloudFront distribution"
 }
 
 resource "aws_secretsmanager_secret_version" "forms_origin_verify" {

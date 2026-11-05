@@ -61,7 +61,13 @@ async function upsert(env: ReturnType<typeof envOf>, input: Record<string, unkno
 function limitedTo(limit: number): PlanGate {
   return {
     async requireFeature() {},
+    async hasFeature() {
+      return true;
+    },
     async limit() {
+      return limit;
+    },
+    async currentLimit() {
       return limit;
     },
     async requireCapacity(_organizationId, _key, current, count = 1) {

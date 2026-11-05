@@ -21,7 +21,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { ID_PREFIXES, newId } from "../id.ts";
-import { apikey, organization, user } from "./auth.ts";
+import { apikey, organization, session, user } from "./auth.ts";
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () =>
@@ -265,6 +265,8 @@ export const email = pgTable(
     // Internal sends whose body holds a secret (sign-in links in auth emails): `html`/`text` are
     // cleared when the email leaves `queued`/`scheduled`, like attachment content.
     discardBody: boolean("discard_body").notNull().default(false),
+    // Internal senders only (fixed templates whose variable text was screened at setup).
+    screeningExempt: boolean("screening_exempt").notNull().default(false),
     // The environment's content storage when the email was sent (`email_storage_settings`): when
     // false, the subject, body, headers, template variables and attachment filenames are cleared
     // once the email leaves `queued`/`scheduled` (`content_discarded_at` records when).
@@ -323,6 +325,11 @@ export const email = pgTable(
     // Handed to the provider through the organization's dedicated IP pool (set at claim): metered
     // as `email.dedicated_ip` too, and its deliveries counted per sending IP.
     dedicatedPool: boolean("dedicated_pool").notNull().default(false),
+    // Decided at the claim, with `dedicated_pool`: its organization is in HIPAA mode.
+    requireTls: boolean("require_tls").notNull().default(false),
+    // Sent from coss.com's own environment for an organization in HIPAA mode (Forms, Sign, Verify
+    // and Scheduling fall back to it): the row is coss.com's, but the mode's rules still apply.
+    hipaaOrigin: boolean("hipaa_origin").notNull().default(false),
     // Email for platforms: the sub-account it was sent for (its quotas, suppressions and
     // reputation). No FK, like `api_key_id`: emails outlive a deleted sub-account.
     subaccountId: text("subaccount_id"),
@@ -1283,6 +1290,9 @@ export const dedicatedIpPool = pgTable(
     // Set before the provider resources are deleted: from then on a returning entitlement no
     // longer restores this row (it gets a new pool once the release has finished).
     releaseStartedAt: timestamp("release_started_at", { withTimezone: true }),
+    // When the pool's configuration sets were set to require TLS (HIPAA mode). Until then the
+    // organization's mail takes the shared TLS sets instead of the pool.
+    tlsRequiredAt: timestamp("tls_required_at", { withTimezone: true }),
     // When the marketing stream's configuration set on the pool was set up (null: marketing
     // sends stay on shared IPs). Pools made before the streams split, or while the organization
     // had no marketing tenant yet, get it at a later check.
@@ -1475,7 +1485,7 @@ export type TrackingDomainRecord = {
 /**
  * The custom tracking hostname of a sending domain (e.g. `links.acme.com`, a CNAME to coss.com's
  * tracking host): open pixels and click redirects of emails sent from that domain use it once the
- * provider (Cloudflare for SaaS) serves it with a certificate. At most one per domain; hostnames
+ * provider (CloudFront) serves it with a certificate. At most one per domain; hostnames
  * are unique across organizations while not `failed`.
  */
 export const trackingDomain = pgTable(
@@ -1490,7 +1500,7 @@ export const trackingDomain = pgTable(
     hostname: text("hostname").notNull(),
     status: trackingDomainStatus("status").notNull().default("pending"),
     provider: text("provider").notNull(),
-    // The provider's id for the hostname (a Cloudflare custom hostname id); null until created.
+    // The provider's id for the hostname (a CloudFront distribution tenant id); null until created.
     providerHostnameId: text("provider_hostname_id"),
     record: jsonb("record").$type<TrackingDomainRecord>().notNull(),
     // The latest problem the provider reported (certificate validation, blocked hostname…).
@@ -2300,6 +2310,22 @@ export const contentScreeningVerdict = pgEnum("content_screening_verdict", [
 ]);
 
 /**
+ * Verified sending domains blocked by enforced content screening. No organization/domain FK:
+ * deleting an identity or account must not erase abuse memory. Support reinstatement clears it.
+ */
+export const emailSenderDomainBlock = pgTable(
+  "email_sender_domain_block",
+  {
+    domain: text("domain").primaryKey(),
+    organizationId: text("organization_id").notNull(),
+    groupId: text("group_id"),
+    subjectId: text("subject_id").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("email_sender_domain_block_organization_idx").on(t.organizationId)],
+);
+
+/**
  * One AI content screening of an outgoing message (`@coss/screening`). Product-agnostic: the
  * message is named by `product` + `subject_id` (no FK), and its content is never copied here.
  */
@@ -2384,6 +2410,37 @@ export const organizationSuspension = pgTable("organization_suspension", {
     onDelete: "set null",
   }),
   createdAt: createdAt(),
+});
+
+/**
+ * An organization's HIPAA mode (`@coss/compliance`); the row's presence is the mode. Turned on and
+ * off only by platform admins, once a BAA is signed. Never derived from billing: a contract ending
+ * must not lift safeguards without anyone deciding to. History lives in `admin_audit_event` and the
+ * organization's own audit log.
+ */
+export const organizationHipaaMode = pgTable("organization_hipaa_mode", {
+  organizationId: text("organization_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  baaSignedAt: timestamp("baa_signed_at", { withTimezone: true }).notNull(),
+  // The agreement's reference, shown on the customer's compliance page.
+  baaReference: text("baa_reference").notNull(),
+  enabledByUserId: text("enabled_by_user_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  createdAt: createdAt(),
+});
+
+/**
+ * When a session was last active in an organization in HIPAA mode, for its idle logoff. Not
+ * `session.updated_at`: Better Auth moves that when it extends a session, which is just what a
+ * browser left open overnight triggers on its next request.
+ */
+export const hipaaSessionActivity = pgTable("hipaa_session_activity", {
+  sessionId: text("session_id")
+    .primaryKey()
+    .references(() => session.id, { onDelete: "cascade" }),
+  lastActiveAt: timestamp("last_active_at", { withTimezone: true }).notNull(),
 });
 
 /**
@@ -2497,6 +2554,7 @@ export const logSource = pgEnum("log_source", [
   "sign",
   "verify",
   "forms",
+  "scheduling",
 ]);
 export type LogSource = (typeof logSource.enumValues)[number];
 
@@ -2626,6 +2684,7 @@ export const logDrainSource = pgEnum("log_drain_source", [
   "sign",
   "verify",
   "forms",
+  "scheduling",
 ]);
 export type LogDrainSource = (typeof logDrainSource.enumValues)[number];
 
@@ -3829,3 +3888,53 @@ export const migrationItem = pgTable(
     unique("migration_item_source_unique").on(t.migrationId, t.kind, t.sourceId),
   ],
 );
+
+// A member's pinned (true) or hidden (false) dashboard product; no row: shown while in use.
+export const productPreference = pgTable(
+  "product_preference",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.productPreference)),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    product: text("product").notNull(),
+    pinned: boolean("pinned").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [unique("product_preference_member_unique").on(t.organizationId, t.userId, t.product)],
+);
+
+const logoBytes = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+
+export const organizationLogoStatus = pgEnum("organization_logo_status", [
+  "found",
+  "not_found",
+  "hidden",
+]);
+
+// The organization's logo, found on its own website by the worker (`@coss/tenancy/logos`).
+export const organizationLogo = pgTable("organization_logo", {
+  organizationId: text("organization_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  status: organizationLogoStatus("status").notNull(),
+  domain: text("domain"),
+  sourceUrl: text("source_url"),
+  contentType: text("content_type"),
+  image: logoBytes("image"),
+  sha256: text("sha256"),
+  width: integer("width"),
+  height: integer("height"),
+  failures: integer("failures").notNull().default(0),
+  checkedAt: timestamp("checked_at", { withTimezone: true }),
+  // Null: never again (hidden by the organization).
+  nextCheckAt: timestamp("next_check_at", { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});

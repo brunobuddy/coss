@@ -5,6 +5,8 @@
  * it, so one whose news is stale by then (the number registered meanwhile, a review already
  * decided) is skipped.
  */
+
+import { orgLinkHref } from "@coss/dashboard-routes";
 import { db, type Executor, schema } from "@coss/db";
 import { type EmailBlock, type EmailStep, oneLine } from "@coss/email-layout";
 import {
@@ -109,8 +111,8 @@ function numbersLabel(numbers: string[], kind: RegistrationRow["kind"]): string 
 
 function registerPath(slug: string, registration: Pick<RegistrationRow, "kind" | "numberId">) {
   return registration.kind === "toll_free" && registration.numberId
-    ? `/${slug}/sms/register?number=${encodeURIComponent(registration.numberId)}`
-    : `/${slug}/sms/register?kind=us_10dlc`;
+    ? orgLinkHref(slug, `/sms/numbers/register?number=${encodeURIComponent(registration.numberId)}`)
+    : orgLinkHref(slug, "/sms/numbers/register?kind=us_10dlc");
 }
 
 function details(registration: RegistrationRow, numbers: string[]): EmailBlock {
@@ -187,8 +189,11 @@ export const SMS_NOTIFICATION_KINDS: NotificationKinds = {
               label: local ? "Register your business" : "Verify the number",
               url: context.url(
                 local
-                  ? `/${slug}/sms/register?kind=us_10dlc`
-                  : `/${slug}/sms/register?number=${encodeURIComponent(number.id)}`,
+                  ? orgLinkHref(slug, "/sms/numbers/register?kind=us_10dlc")
+                  : orgLinkHref(
+                      slug,
+                      `/sms/numbers/register?number=${encodeURIComponent(number.id)}`,
+                    ),
               ),
             },
           },
@@ -237,7 +242,10 @@ export const SMS_NOTIFICATION_KINDS: NotificationKinds = {
             button: {
               label: "View the registration",
               url: context.url(
-                `/${context.organization.slug}/sms?registered=${encodeURIComponent(registration.id)}`,
+                orgLinkHref(
+                  context.organization.slug,
+                  `/sms/numbers?registered=${encodeURIComponent(registration.id)}`,
+                ),
               ),
             },
           },
@@ -287,7 +295,7 @@ export const SMS_NOTIFICATION_KINDS: NotificationKinds = {
           {
             button: {
               label: "Open SMS",
-              url: context.url(`/${context.organization.slug}/sms`),
+              url: context.url(orgLinkHref(context.organization.slug, "/sms/numbers")),
             },
           },
           { link: { label: "Read the guide to sending SMS", url: DOCS_URL } },

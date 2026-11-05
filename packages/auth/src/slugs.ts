@@ -33,8 +33,7 @@ export const SITE_ASSET_PREFIX = "/site-assets";
  * entry here (unless an existing prefix covers it) + the route in apps/site.
  */
 export const ZONE_ROUTES = [
-  // apps/site: landing page, pricing, about, the crowd opinionated source software page, the
-  // product, comparison and solution pages, Shipyard's landing page (and its assets), kloq
+  // apps/site: landing page, pricing, about, the product, comparison and solution pages, Shipyard's landing page (and its assets), kloq
   // kit's pages (landing page, demo, tools, comparisons, docs and its shadcn registry), docs (incl.
   // their search at /docs/search.json), legal pages, LLM text files. Each page route costs one of
   // the deploy's 15 wildcard invalidations (`infra/aws/routing.ts`): group new pages under a prefix,
@@ -42,7 +41,6 @@ export const ZONE_ROUTES = [
   { zone: "site", path: "/", prefix: false },
   { zone: "site", path: "/pricing", prefix: false },
   { zone: "site", path: "/about", prefix: false },
-  { zone: "site", path: "/crowd-opinionated-source-software", prefix: false },
   { zone: "site", path: "/shipyard", prefix: true },
   { zone: "site", path: "/kloq", prefix: true },
   { zone: "site", path: "/docs", prefix: true },
@@ -62,6 +60,11 @@ export const ZONE_ROUTES = [
   { zone: "site", path: "/compare", prefix: true },
   { zone: "site", path: "/solutions", prefix: true },
   { zone: "site", path: "/opengraph-image", prefix: false },
+  { zone: "site", path: "/pricing.md", prefix: false },
+  { zone: "site", path: "/about.md", prefix: false },
+  { zone: "site", path: "/changelog", prefix: true },
+  { zone: "site", path: "/status", prefix: false },
+  { zone: "site", path: "/contact", prefix: false },
   // The coss ui repository's apps, deployed outside AWS (Vercel): coss ui and Origin UI.
   { zone: "ui", path: "/ui", prefix: true },
   { zone: "origin", path: "/origin", prefix: true },
@@ -161,7 +164,6 @@ const FUTURE_SITE_SEGMENTS = [
   "pricing",
   "plans",
   "blog",
-  "changelog",
   "roadmap",
   "about",
   "company",
@@ -172,7 +174,6 @@ const FUTURE_SITE_SEGMENTS = [
   "case-studies",
   "stories",
   "showcase",
-  "contact",
   "contact-sales",
   "sales",
   "demo",
@@ -183,6 +184,8 @@ const FUTURE_SITE_SEGMENTS = [
   "open-source",
   "opensource",
   "oss",
+  // Once a site page: its old links must never land on an organization.
+  "crowd-opinionated-source-software",
   "features",
   "product",
   "products",
@@ -224,7 +227,6 @@ const FUTURE_SITE_SEGMENTS = [
   "sdk",
   "sdks",
   "cli",
-  "status",
   "uptime",
   // Legal and trust
   "legal",
@@ -304,7 +306,7 @@ export function slugify(input: string): string {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replace(/^-|-$/g, "")
     .slice(0, 48)
-    .replace(/-+$/g, "");
+    .replace(/-$/, "");
 }

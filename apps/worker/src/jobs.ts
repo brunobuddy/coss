@@ -15,6 +15,7 @@ import {
   runDueBillingNotifications,
   runDueBillingPeriods,
   runDueBillingSync,
+  runDueCreditChecks,
   runDueCreditNoteSync,
 } from "@coss/billing";
 import type { UsageGate } from "@coss/billing/gate";
@@ -64,6 +65,21 @@ import {
 } from "@coss/reputation";
 import { RETENTION_DAYS } from "@coss/retention";
 import { refreshDueDatasets } from "@coss/risk";
+import {
+  chargeDueHostFees,
+  checkHostEditedEvents,
+  expireDueBookings,
+  type NotificationDeps,
+  refreshIdleZoomConnections,
+  releaseOrganizationCalendars,
+  renewDueCalendarChannels,
+  runDueCalendarDelegations,
+  runDueCalendarSyncs,
+  runDueCalendarWrites,
+  runDueReminderSyncs,
+  runDueSchedulingNotifications,
+  type SchedulingWorkerDeps,
+} from "@coss/scheduling";
 import { contentScreeningCheck } from "@coss/screening";
 import {
   type DocumentStore,
@@ -87,16 +103,32 @@ import {
   sweepStaleSmsClaims,
   sweepUnclaimedSms,
 } from "@coss/sms";
+import {
+  autoResolveQuietTickets,
+  copySupportAttachments,
+  enqueueSupportAlerts,
+  ingestSupportEmails,
+  purgeExpiredSupportTickets,
+  purgeSupportLeftovers,
+  runDueSupportDeliveries,
+  type SupportDeliveryDeps,
+  type SupportFileStore,
+  type SupportIntakeDeps,
+  syncSupportDeliveries,
+  wakeSnoozedTickets,
+} from "@coss/support";
 import { runDueOrganizationDeletions } from "@coss/tenancy/deletion";
+import { publicLogoHttp, runDueOrganizationLogos } from "@coss/tenancy/logos";
 import { recordDueVerifySmsUsage } from "@coss/verify";
 import {
   runDueLogDrainDeliveries,
   runDueWebhookDeliveries,
   type WebhookDeliveryDeps,
 } from "@coss/webhooks";
+import { reportDispatchBacklog } from "./backlog.ts";
 import { pollSesInbound, type SesInboundDeps } from "./inbound.ts";
 import type { Loop } from "./loop.ts";
-import { startLoop } from "./loop.ts";
+import { startLoop, watchLoops } from "./loop.ts";
 import { NOTIFICATION_KINDS } from "./notification-kinds.ts";
 import { runRetention } from "./retention.ts";
 import { pollSesEvents, type SqsApi } from "./sqs.ts";
@@ -120,8 +152,10 @@ const SCHEDULED_BATCH = 50;
 const BROADCAST_BATCH = 10;
 const MIGRATION_BATCH = 2;
 const DELETION_BATCH = 5;
+const LOGO_BATCH = 5;
 const RETENTION_BATCH = 1000;
 const BILLING_BATCH = 20;
+const SCHEDULING_BATCH = 50;
 const SIGN_COMPLETION_BATCH = 5;
 const SIGN_NOTIFICATION_BATCH = 50;
 const SIGN_CLEANUP_BATCH = 500;
@@ -172,10 +206,16 @@ export type WorkerDeps = {
   signCompletion?: SignCompletionDeps | null;
   /** Sign's document store: an organization's objects go when it is deleted. */
   signStore?: DocumentStore | null;
+  /** Scheduling's attendee data keys, and calendars; `null`: its loops are off. */
+  scheduling?: SchedulingWorkerDeps | null;
+  /** Scheduling's emails and texts; `null`: held. */
+  schedulingNotifications?: NotificationDeps | null;
   /** Forms' file store: deletions of removed submissions' files, and organization deletion. */
   formsStore?: FormFileStore | null;
   /** Forms' notifications, contacts and verification emails; `null`: off (no forms host yet). */
   formDeliveries?: FormDeliveryDeps | null;
+  /** coss.com's support desk; `null`: off. */
+  support?: SupportWorkerDeps | null;
   /** Sign's emails, reminders and expiry; `null`: off (no document store or signing app yet). */
   signNotifications?: SignNotificationDeps | null;
   /** Push notifications to the iOS app; `null`: held until APNs is configured. */
@@ -210,11 +250,20 @@ export type WorkerDeps = {
 /**
  * Every loop (and pg-boss's email dispatch, one queue per stream), by name, for `WORKER_LOOPS`. The
  * conditional ones (`billing-notifications`, `auth-emails`, `reputation-notifications`,
- * `dmarc-notifications`, `notifications`, `push-notifications`, `sign-completions`, `sign-notifications`, `sign-cleanup`, `forms`, `ses-events`,
+ * `dmarc-notifications`, `notifications`, `push-notifications`, `sign-completions`, `sign-notifications`, `sign-cleanup`, `forms`, `support`, `ses-events`,
  * `ses-inbound`) also need their
  * configuration.
  */
 export const WORKER_LOOP_NAMES = [
+  "scheduling-expiry",
+  "scheduling-host-fees",
+  "scheduling-notifications",
+  "scheduling-reminder-sync",
+  "scheduling-calendar-sync",
+  "scheduling-calendar-writes",
+  "scheduling-calendar-channels",
+  "scheduling-calendar-delegations",
+  "scheduling-calendar-host-edits",
   "email-dispatch",
   "email-dispatch-marketing",
   "webhooks",
@@ -236,8 +285,10 @@ export const WORKER_LOOP_NAMES = [
   "stale-claims",
   "reputation",
   "organization-deletions",
+  "organization-logos",
   "subaccount-deletions",
   "unclaimed",
+  "dispatch-backlog",
   "retention",
   "partitions",
   "risk-datasets",
@@ -246,6 +297,7 @@ export const WORKER_LOOP_NAMES = [
   "billing-collection",
   "billing-events",
   "billing-usage",
+  "billing-credit",
   "billing-reconcile",
   "billing-notifications",
   "auth-emails",
@@ -257,11 +309,26 @@ export const WORKER_LOOP_NAMES = [
   "sign-notifications",
   "sign-cleanup",
   "forms",
+  "support",
   "ses-events",
   "ses-inbound",
 ] as const;
 
+export type SupportWorkerDeps = {
+  /** Mail received in the support environment; `null`: only dashboard tickets. */
+  intake: SupportIntakeDeps | null;
+  /** `null`: customers' emails wait until the mailer is configured. */
+  delivery: SupportDeliveryDeps | null;
+  inbound: { get(key: string): Promise<Uint8Array | null> } | null;
+  store: SupportFileStore | null;
+  /** Reps' alerts are this organization's notifications; `null`: none. */
+  alertsOrganizationId: string | null;
+};
+
+const SUPPORT_BATCH = 25;
+
 export function startJobs(deps: WorkerDeps): Loop[] {
+  const logoHttp = publicLogoHttp();
   // Only the loops this worker runs (`WORKER_LOOPS`), e.g. a fleet dedicated to Hooks deliveries.
   const start = (options: Parameters<typeof startLoop>[0]): Loop | null =>
     !deps.loops || deps.loops.has(options.name) ? startLoop(options) : null;
@@ -430,6 +497,16 @@ export function startJobs(deps: WorkerDeps): Loop[] {
       },
     }),
     start({
+      // Each organization's logo, from its own website (new organizations within a minute).
+      name: "organization-logos",
+      intervalMs: 60_000,
+      run: async () =>
+        (await runDueOrganizationLogos(
+          { limit: LOGO_BATCH, signal: deps.signal },
+          { http: logoHttp },
+        )) === LOGO_BATCH,
+    }),
+    start({
       // Organization deletions: releases domains and the SES tenant, then deletes the data.
       name: "organization-deletions",
       intervalMs: 10_000,
@@ -452,6 +529,14 @@ export function startJobs(deps: WorkerDeps): Loop[] {
               if (deps.formsStore) {
                 await assertLease();
                 await deps.formsStore.deleteOrganization(organizationId);
+              }
+              // Calendar channels stop, and coss.com's access to hosts' calendars is revoked.
+              if (deps.scheduling?.calendars) {
+                await releaseOrganizationCalendars(
+                  organizationId,
+                  deps.scheduling.calendars,
+                  assertLease,
+                );
               }
               // Numbers stop sending and the Twilio subaccount is closed.
               await releaseOrganizationSmsResources(organizationId, deps.sms.senders, assertLease);
@@ -479,6 +564,11 @@ export function startJobs(deps: WorkerDeps): Loop[] {
       run: async () =>
         (await sweepUnclaimedEmails(deps.dispatchQueue, { limit: SWEEP_BATCH })).failed ===
         SWEEP_BATCH,
+    }),
+    start({
+      name: "dispatch-backlog",
+      intervalMs: 5 * 60_000,
+      run: () => reportDispatchBacklog(),
     }),
     start({
       // Deletes data past its published retention (`@coss/retention`); catches up in full batches.
@@ -588,6 +678,15 @@ export function startJobs(deps: WorkerDeps): Loop[] {
       },
     }),
     start({
+      // Charges usage over its threshold and holds live sending over the credit limit. Every
+      // minute, not with the usage checks: minutes of expensive SMS can outrun a new account's limit.
+      name: "billing-credit",
+      intervalMs: 60_000,
+      run: async () => {
+        await runDueCreditChecks({ systemOrganizationId: system });
+      },
+    }),
+    start({
       // Open invoices the provider may have settled without us hearing (a lost webhook).
       name: "billing-reconcile",
       intervalMs: 60 * 60_000,
@@ -657,6 +756,88 @@ export function startJobs(deps: WorkerDeps): Loop[] {
       }),
     );
   }
+  const scheduling = deps.scheduling;
+  if (scheduling) {
+    loops.push(
+      start({
+        // Tidies up and tells customers: an expired hold blocks nobody even if this never ran.
+        name: "scheduling-expiry",
+        intervalMs: 30_000,
+        run: async () => (await expireDueBookings(scheduling)) === SCHEDULING_BATCH,
+      }),
+      start({
+        // A changed `reminders` list reaching the bookings that already exist.
+        name: "scheduling-reminder-sync",
+        intervalMs: 5000,
+        run: async () => (await runDueReminderSyncs(scheduling)) > 0,
+      }),
+      start({
+        // A day of every live host (`scheduling.hosts`), charged when the day starts.
+        name: "scheduling-host-fees",
+        intervalMs: 10 * 60_000,
+        run: async () =>
+          (await chargeDueHostFees({ limit: INBOX_FEE_BATCH, billing: deps.billing.usage })) >=
+          INBOX_FEE_BATCH,
+      }),
+    );
+    const notifications = deps.schedulingNotifications;
+    if (notifications) {
+      loops.push(
+        start({
+          name: "scheduling-notifications",
+          intervalMs: 5000,
+          run: async () =>
+            (await runDueSchedulingNotifications(notifications, { limit: SCHEDULING_BATCH })) ===
+            SCHEDULING_BATCH,
+        }),
+      );
+    }
+    const calendars = scheduling.calendars;
+    if (calendars) {
+      loops.push(
+        start({
+          // A push marks a calendar due straight away, so this keeps availability close to live.
+          name: "scheduling-calendar-sync",
+          intervalMs: 2000,
+          run: async () =>
+            (await runDueCalendarSyncs(calendars, { limit: SCHEDULING_BATCH })) ===
+            SCHEDULING_BATCH,
+        }),
+        start({
+          name: "scheduling-calendar-writes",
+          intervalMs: 2000,
+          run: async () =>
+            (await runDueCalendarWrites(
+              { ...calendars, dataKeys: scheduling.dataKeys },
+              { limit: SCHEDULING_BATCH },
+            )) === SCHEDULING_BATCH,
+        }),
+        start({
+          // Until a new calendar has its channel, changes to it wait for the 5 minute poll.
+          name: "scheduling-calendar-channels",
+          intervalMs: 15_000,
+          run: async () =>
+            (await renewDueCalendarChannels(calendars, { limit: SCHEDULING_BATCH })) ===
+            SCHEDULING_BATCH,
+        }),
+        start({
+          // A new host nudges its delegation, so this is how soon they're connected.
+          name: "scheduling-calendar-delegations",
+          intervalMs: 15_000,
+          run: async () => (await runDueCalendarDelegations(calendars, { limit: 5 })) === 5,
+        }),
+        start({
+          name: "scheduling-calendar-host-edits",
+          intervalMs: 5 * 60_000,
+          run: async () => {
+            await checkHostEditedEvents(calendars, { limit: SCHEDULING_BATCH });
+            await refreshIdleZoomConnections(calendars, { limit: SCHEDULING_BATCH });
+            return false;
+          },
+        }),
+      );
+    }
+  }
   const signCompletion = deps.signCompletion;
   if (signCompletion) {
     loops.push(
@@ -700,6 +881,44 @@ export function startJobs(deps: WorkerDeps): Loop[] {
             ? await runDueFormStoreCleanup({ limit: FORMS_CLEANUP_BATCH }, formsStore)
             : 0;
           return delivered === FORMS_DELIVERY_BATCH || cleaned === FORMS_CLEANUP_BATCH;
+        },
+      }),
+    );
+  }
+  const support = deps.support;
+  if (support) {
+    let nextHousekeeping = 0;
+    loops.push(
+      start({
+        // A rep's reply or a customer's email should land within seconds.
+        name: "support",
+        intervalMs: 3000,
+        run: async () => {
+          const filed = support.intake
+            ? await ingestSupportEmails({ limit: SUPPORT_BATCH }, support.intake)
+            : 0;
+          const copied = await copySupportAttachments(
+            { limit: SUPPORT_BATCH },
+            { inbound: support.inbound, store: support.store },
+          );
+          const sent = support.delivery
+            ? await runDueSupportDeliveries({ limit: SUPPORT_BATCH }, support.delivery)
+            : 0;
+          if (support.alertsOrganizationId) {
+            await enqueueSupportAlerts({
+              organizationId: support.alertsOrganizationId,
+              limit: SUPPORT_BATCH,
+            });
+          }
+          if (Date.now() >= nextHousekeeping) {
+            nextHousekeeping = Date.now() + 60_000;
+            if (support.delivery) await syncSupportDeliveries({}, support.delivery);
+            await wakeSnoozedTickets({});
+            await autoResolveQuietTickets({});
+            await purgeExpiredSupportTickets({ store: support.store });
+            await purgeSupportLeftovers({ store: support.store });
+          }
+          return filed === SUPPORT_BATCH || copied === SUPPORT_BATCH || sent === SUPPORT_BATCH;
         },
       }),
     );
@@ -767,5 +986,6 @@ export function startJobs(deps: WorkerDeps): Loop[] {
       }),
     );
   }
-  return loops.filter((loop): loop is Loop => loop !== null);
+  const running = loops.filter((loop): loop is Loop => loop !== null);
+  return running.length > 0 ? [...running, watchLoops(running)] : [];
 }

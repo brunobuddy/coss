@@ -52,6 +52,7 @@ type Membership = {
 let membership: Membership | null = null;
 let environmentFound: { project: { id: string }; environment: { id: string } } | null = null;
 mock.module("@coss/tenancy", () => ({
+  touchHipaaSession: async () => "active",
   getMembership: async () => membership,
   getEnvironment: async () => environmentFound,
   listUserOrganizations: async () => [{ name: "Acme", slug: "acme", role: "owner" }],
@@ -154,7 +155,7 @@ mock.module("@coss/sms", () => ({
   }),
 }));
 const billingBannerState = mock(async () => ({ held: null, pastDue: true, allowance: null }));
-mock.module("@/lib/billing", () => ({ billingBannerState }));
+mock.module("@/lib/billing", () => ({ billingBannerState, planGate: () => ({}) }));
 let budgetHolds: { scope: string; targetId: string }[] = [];
 const billingModule = await import("@coss/billing");
 mock.module("@coss/billing", () => ({
@@ -334,6 +335,8 @@ describe("mobile organization access", () => {
       read_sms_sender: true,
       read_sso: false,
       read_scim: false,
+      read_scheduling: true,
+      update_scheduling: false,
     });
     expect(body.projects[0].environments[0]).toEqual({
       id: "env_1",

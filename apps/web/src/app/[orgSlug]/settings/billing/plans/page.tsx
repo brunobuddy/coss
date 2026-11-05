@@ -226,7 +226,7 @@ export default async function PlansPage({
           description="Billed monthly beyond your plan's credit. Volume tiers apply to each month's usage."
           title="Usage prices"
         >
-          {METER_KEYS.map((meter) => (
+          {METER_KEYS.filter((meter) => rates[meter]).map((meter) => (
             <SettingsRow
               description={
                 <span className="font-mono text-xs">

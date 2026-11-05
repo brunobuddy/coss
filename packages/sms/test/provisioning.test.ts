@@ -38,7 +38,13 @@ function testTollFreeNumber(): string {
 function plansAllowing(numbers: number | null): PlanGate {
   return {
     async requireFeature() {},
+    async hasFeature() {
+      return true;
+    },
     async limit() {
+      return numbers;
+    },
+    async currentLimit() {
       return numbers;
     },
     async requireCapacity(_org, _limit, current) {
@@ -353,7 +359,13 @@ test("plans cap numbers; released numbers stop sending; deletion closes the suba
     ...deps(),
     plans: {
       async requireFeature() {},
+      async hasFeature() {
+        return true;
+      },
       async limit() {
+        return 1;
+      },
+      async currentLimit() {
         return 1;
       },
       async requireCapacity(_org, _limit, current) {

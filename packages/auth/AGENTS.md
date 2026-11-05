@@ -60,7 +60,8 @@ Better Auth (`packages/auth`) and the dashboard actions, mobile API routes, tena
     `isOrgRole`), only cancel `pending` invitations (Better Auth would rewrite accepted ones) and refuse invitations,
     accepting/canceling them, organization updates and member changes while the org is suspended;
     a before middleware also guards invitation resends and leaving (Better Auth skips the hooks for these); `orgRoleCan` matches
-    role names exactly, like Better Auth (no trimming). `assignableOrgRoles` mirrors Better Auth's update-member-role
+    role names exactly. Better Auth trims and normalizes roles before these hooks and on every write, so stored
+    roles are canonical; a padded value it never wrote gains nothing in the dashboard. `assignableOrgRoles` mirrors Better Auth's update-member-role
     rules (only owners change owners or grant owner; Better Auth alone enforces "the last owner can't step down").
   - **Abuse prevention.** Turnstile: Better Auth's `captcha` plugin (only when `TURNSTILE_SECRET_KEY` is set) checks
     `/sign-up/email`, `/sign-in/email` and `/request-password-reset` (HTTP only; `auth.api.*` skips it); the forms
@@ -76,7 +77,8 @@ Better Auth (`packages/auth`) and the dashboard actions, mobile API routes, tena
     the organization and membership transaction (`serialized-endpoint.ts`). Invitations: inviter must have a verified email, no disposable
     invitees (both checked in middleware, including resends), at most `MAX_PENDING_INVITATIONS` pending per org, and the dashboard action charges the org's
     `dashboard.invitations` bucket (refunded when Better Auth refuses). Organizations: a user owns at most
-    `MAX_OWNED_ORGANIZATIONS` (platform admins exempt; memberships don't count), and `/organization/create` is
+    `MAX_OWNED_ORGANIZATIONS` (platform admins exempt; memberships don't count; `user.owned_organization_limit`
+    overrides it, set only by `setOwnedOrganizationLimit` from the admin console's user page), and `/organization/create` is
     limited per IP (`auth.org_create.ip`).
   - Password reset: `sendResetPassword` emails Better Auth's `/api/auth/reset-password/:token` link, which redirects to
     the dashboard's `/reset-password?token=…` (the client passes `redirectTo`); `revokeSessionsOnPasswordReset: true`.
@@ -85,8 +87,8 @@ Better Auth (`packages/auth`) and the dashboard actions, mobile API routes, tena
   - Never add NOT NULL columns to Better Auth tables (runtime schema validation rejects every auth request).
   - **Two-factor / passkeys:** TOTP + backup codes only (no email/SMS OTP). The challenge only guards password sign-in
     (`/sign-in/email`), so nothing else may create a session for a password user: `autoSignInAfterVerification` stays
-    `false`. Passkey sign-in skips TOTP, so `assertUserVerified` (both `afterVerification` hooks) rejects ceremonies
-    without user verification — the plugin itself passes `requireUserVerification: false`. Passkey `rpID`/`origin`
+    `false`. Passkey sign-in skips TOTP, so `authenticatorSelection.userVerification` stays `"required"`, which the plugin
+    enforces on registration and authentication; `assertUserVerified` (both `afterVerification` hooks) checks it again. Passkey `rpID`/`origin`
     come from `BETTER_AUTH_URL` (changing its host invalidates every passkey). The `hooks.before` guard refuses
     `FACTOR_MANAGEMENT_PATHS` to impersonation sessions; add new factor-changing endpoints there. Code and passkey
     verification are limited per IP in `auth-rate-limit.ts` (Better Auth also locks an account for 15 min after 10
@@ -176,7 +178,7 @@ Better Auth (`packages/auth`) and the dashboard actions, mobile API routes, tena
   `/api/mobile/*` (public in `proxy.ts`): `requireMobileSession` verifies it, signs the session cookie server-side
   and reads it with the base `@coss/auth` instance (the
   dashboard's `nextCookies()` would set cookies on the app's responses); request cookies never authenticate there.
-  `createSession` outside an endpoint skips Better Auth's ban check, so the exchange checks bans itself.
+  The exchange checks bans itself before `createSession`, whose own ban check would throw instead of refusing the code.
   `requireMobileOrgMember` applies `getMembership` + `orgAccess` + `memberCan` like `requireOrgMember`, as JSON:
   404 for non-members, 403 `sso_required`/`two_factor_required` with the dashboard page to fix it, and a `mobile.api`
   bucket per user. Responses are `@coss/companion` types built from the public objects (webhook rows only through
@@ -184,7 +186,7 @@ Better Auth (`packages/auth`) and the dashboard actions, mobile API routes, tena
   notes (like the customer page), sent/received email detail never includes the HTML body, and Hooks endpoints
   and log drains never include secrets. The app's only changes (POST: retry a webhook delivery, recover an
   endpoint's failed deliveries, enable or disable an endpoint, cancel or reschedule a scheduled email,
-  report a risk outcome, also from the review queue) repeat the dashboard action's
+  report a risk outcome, also from the review queue, approve, decline or cancel a booking) repeat the dashboard action's
   checks (`requireMobileWrite`: role, then suspension; the environment owns the endpoint) and record the same audit
   event with `recordAudit`; a new one must too. Deleting the account (`POST /api/mobile/v1/account/deletion`) is
   `deleteAccountAction`'s twin: the typed address, a session younger than Better Auth's `freshAge` (else 403

@@ -10,7 +10,9 @@
     "test": "bun --env-file=../../.env test",
     "ses:bootstrap": "bun --env-file=../../.env scripts/ses-bootstrap.ts",
     "webhooks:reencrypt": "bun --env-file=../../.env scripts/webhooks-reencrypt.ts",
-    "hooks:load": "bun --env-file=../../.env scripts/hooks-load.ts"
+    "hooks:load": "bun --env-file=../../.env scripts/hooks-load.ts",
+    "scheduling:load": "bun --env-file=../../.env scripts/scheduling-load.ts",
+    "scheduling:reencrypt": "bun --env-file=../../.env scripts/scheduling-reencrypt.ts"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "catalog:",
@@ -23,9 +25,12 @@
     "@aws-sdk/client-sqs": "catalog:",
     "@coss/auth": "workspace:*",
     "@coss/billing": "workspace:*",
+    "@coss/compliance": "workspace:*",
     "@coss/db": "workspace:*",
     "@coss/email": "workspace:*",
+    "@coss/email-layout": "workspace:*",
     "@coss/forms": "workspace:*",
+    "@coss/support": "workspace:*",
     "@coss/hooks": "workspace:*",
     "@coss/logs": "workspace:*",
     "@coss/migrate": "workspace:*",
@@ -36,6 +41,7 @@
     "@coss/reputation": "workspace:*",
     "@coss/retention": "workspace:*",
     "@coss/risk": "workspace:*",
+    "@coss/scheduling": "workspace:*",
     "@coss/screening": "workspace:*",
     "@coss/sign": "workspace:*",
     "@coss/sms": "workspace:*",

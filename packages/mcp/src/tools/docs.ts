@@ -44,8 +44,16 @@ export function docsPath(page: string, origin: string): string | null {
   return url.pathname;
 }
 
+/** The docs' origin, without trailing slashes. */
+export function docsOrigin(options: DocsOptions = {}): string {
+  const baseUrl = options.baseUrl ?? DEFAULT_DOCS_URL;
+  let end = baseUrl.length;
+  while (end > 0 && baseUrl[end - 1] === "/") end--;
+  return baseUrl.slice(0, end);
+}
+
 export function registerDocsTools(server: McpServer, options: DocsOptions = {}): void {
-  const origin = (options.baseUrl ?? DEFAULT_DOCS_URL).replace(/\/+$/, "");
+  const origin = docsOrigin(options);
   const request = options.fetch ?? fetch;
 
   const get = async (path: string): Promise<Response | string> => {
@@ -102,7 +110,9 @@ export function registerDocsTools(server: McpServer, options: DocsOptions = {}):
         query,
         results,
         ...(results.length === 0
-          ? { hint: `Nothing matched: try other words, or read ${origin}/llms.txt for every page.` }
+          ? {
+              hint: `Nothing matched: try other words, or read ${origin}/llms.txt for the guides and each product's API operations.`,
+            }
           : {}),
       });
     },

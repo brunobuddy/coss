@@ -1,5 +1,6 @@
-import type { Competitor } from "@/lib/calendar/compare";
+import { CHECKED, type Competitor } from "@/lib/calendar/compare";
 import { abs } from "@/lib/calendar/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 /**
  * The schema.org payloads. They exist for two audiences now: crawlers building
@@ -9,8 +10,9 @@ import { abs } from "@/lib/calendar/site";
 
 const ORGANIZATION = {
   "@type": "Organization",
-  name: "kloq",
-  url: abs("/kloq"),
+  "@id": `${SITE_URL}/#organization`,
+  name: SITE_NAME,
+  url: SITE_URL,
 };
 
 export const websiteSchema = {
@@ -100,6 +102,7 @@ export const compareSchema = (c: Competitor) => ({
       headline: `kloq vs ${c.name}`,
       description: c.verdict,
       url: abs(`/kloq/compare/${c.slug}`),
+      dateModified: CHECKED,
       author: ORGANIZATION,
       publisher: ORGANIZATION,
       about: [

@@ -24,6 +24,7 @@ export type ApiKeyPermissionGroup =
   | "Sign"
   | "Verify"
   | "Forms"
+  | "Scheduling"
   | "Platform"
   | "Risk"
   | "Hooks"
@@ -127,7 +128,7 @@ export const API_KEY_RESOURCES: readonly ApiKeyResourceInfo[] = [
     label: "Verifications",
     group: "Verify",
     description:
-      "Start, check and cancel verifications (one-time codes by SMS or email); read them.",
+      "Start, check and cancel verifications (one-time codes by SMS or email); read them; change Verify's settings.",
   },
   {
     resource: "form",
@@ -135,6 +136,13 @@ export const API_KEY_RESOURCES: readonly ApiKeyResourceInfo[] = [
     group: "Forms",
     description:
       "Create and change forms; read their submissions and files, release submissions held as spam and delete them.",
+  },
+  {
+    resource: "scheduling",
+    label: "Scheduling",
+    group: "Scheduling",
+    description:
+      "Manage hosts, event types and settings; read availability; create, change and cancel bookings.",
   },
   {
     resource: "webhook",
@@ -199,6 +207,7 @@ export const API_KEY_PERMISSION_GROUPS: readonly ApiKeyPermissionGroup[] = [
   "Sign",
   "Verify",
   "Forms",
+  "Scheduling",
   "Platform",
   "Risk",
   "Hooks",

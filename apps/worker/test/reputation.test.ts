@@ -136,7 +136,9 @@ describe("live bounces → automatic suspension → webhook", () => {
         to: [tenant.owner.email],
         subject: `Live sending is suspended for ${tenant.organization.name}`,
       });
-      expect(notice?.text).toContain(`https://coss.test/${tenant.organization.slug}/reputation`);
+      expect(notice?.text).toContain(
+        `https://coss.test/${tenant.organization.slug}?to=${encodeURIComponent("/email/reputation")}`,
+      );
     } finally {
       receiver.stop();
     }

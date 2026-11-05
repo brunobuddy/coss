@@ -2,70 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Client } from "@modelcontextprotocol/client";
-import { InMemoryTransport } from "@modelcontextprotocol/server";
-import { Coss } from "coss";
-import { createCossMcpServer } from "../src/index.ts";
+import { connect, type Route } from "./connect.ts";
 import { email, event, NOW, recipient, sms, smsEvent } from "./fixtures.ts";
-
-type Route = (url: URL, init: RequestInit) => { status?: number; body: unknown };
-
-/** A `fetch` answering `METHOD /path` from a table, recording every request. */
-function fakeApi(routes: Record<string, Route | unknown>) {
-  const requests: { method: string; url: URL }[] = [];
-  const fetch = async (input: string | URL | Request, init: RequestInit = {}) => {
-    const url = new URL(input instanceof Request ? input.url : String(input));
-    const method = init.method ?? "GET";
-    requests.push({ method, url });
-    const route = routes[`${method} ${url.pathname}`];
-    if (route === undefined) {
-      return Response.json(
-        {
-          error: {
-            type: "not_found_error",
-            code: "not_found",
-            message: "Not found.",
-            request_id: "req_test",
-          },
-        },
-        { status: 404 },
-      );
-    }
-    const { status = 200, body } =
-      typeof route === "function" ? (route as Route)(url, init) : { body: route };
-    return Response.json(body, { status });
-  };
-  return { fetch, requests };
-}
-
-async function connect(
-  routes: Record<string, Route | unknown>,
-  apiKey = "coss_live_test",
-  projectDir?: string,
-) {
-  const api = fakeApi(routes);
-  const coss = new Coss({ apiKey, baseUrl: "http://api.test", fetch: api.fetch, maxRetries: 0 });
-  const server = createCossMcpServer({
-    coss,
-    apiKey,
-    now: () => NOW,
-    ...(projectDir ? { projectDir } : {}),
-  });
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  await server.connect(serverTransport);
-  const client = new Client({ name: "test", version: "0.0.0" });
-  await client.connect(clientTransport);
-  const call = async (name: string, args: Record<string, unknown> = {}) => {
-    const result = await client.callTool({ name, arguments: args });
-    const content = result.content as { type: string; text: string }[];
-    return {
-      isError: result.isError === true,
-      // biome-ignore lint/suspicious/noExplicitAny: test assertions read arbitrary JSON.
-      data: JSON.parse(content[0]?.text ?? "null") as any,
-    };
-  };
-  return { client, call, requests: api.requests };
-}
 
 const list = (data: unknown[], has_more = false) => ({ object: "list", data, has_more });
 
@@ -75,61 +13,160 @@ describe("coss-mcp server", () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
       "add_domain",
+      "add_risk_list_entry",
       "add_sms_suppression",
       "add_suppression",
+      "api_get",
       "assess_risk",
+      "authorize_scheduling_calendar",
+      "cancel_broadcast",
       "cancel_email",
+      "cancel_scheduling_booking",
+      "cancel_sign_request",
       "cancel_sms",
+      "cancel_verification",
+      "check_email_risk",
+      "check_ip_risk",
+      "check_phone_risk",
       "check_sms_suppression",
       "check_suppression",
+      "check_verification",
+      "create_hook_application",
+      "create_hook_endpoint",
+      "create_hook_event_type",
+      "create_hook_portal_session",
       "create_inbox",
+      "create_log_drain",
+      "create_scheduling_booking",
+      "create_scheduling_session",
+      "create_sign_request",
+      "create_sign_request_from_template",
+      "create_sign_session",
+      "create_sign_template",
+      "create_subaccount",
       "create_webhook_endpoint",
+      "delete_log_drain",
+      "delete_subaccount",
       "diagnose_email",
+      "diagnose_form_submission",
+      "diagnose_hook_delivery",
+      "diagnose_scheduling_slots",
+      "diagnose_sign_request",
       "diagnose_sms",
+      "diagnose_verification",
+      "explain_scheduling_slot",
       "find_emails",
       "find_sms",
       "get_account_status",
+      "get_broadcast",
       "get_domain",
       "get_email",
+      "get_form",
       "get_form_submission",
       "get_inbound_address",
       "get_inbox_thread",
       "get_log",
+      "get_log_drain",
+      "get_marketing_settings",
       "get_received_email",
+      "get_risk_assessment",
+      "get_risk_settings",
+      "get_scheduling_booking",
+      "get_scheduling_reminders",
       "get_setup",
+      "get_sign_audit_trail",
+      "get_sign_request",
+      "get_sign_settings",
       "get_sms",
+      "get_subaccount",
+      "get_subaccount_stats",
+      "get_verification",
+      "get_verify_settings",
       "get_webhook_delivery",
+      "list_audiences",
+      "list_broadcasts",
+      "list_contacts",
       "list_domains",
+      "list_email_templates",
       "list_form_submissions",
       "list_forms",
       "list_hook_applications",
+      "list_hook_attempts",
       "list_hook_deliveries",
+      "list_hook_endpoints",
+      "list_hook_event_types",
       "list_inbox_threads",
       "list_inboxes",
+      "list_log_drain_batches",
+      "list_log_drains",
       "list_received_emails",
       "list_received_sms",
       "list_risk_assessments",
       "list_risk_list_entries",
       "list_risk_rules",
+      "list_scheduling_booking_events",
+      "list_scheduling_booking_notifications",
+      "list_scheduling_bookings",
+      "list_scheduling_calendars",
+      "list_scheduling_event_types",
+      "list_scheduling_hosts",
+      "list_scheduling_schedules",
+      "list_scheduling_slots",
+      "list_segments",
+      "list_sign_requests",
+      "list_sign_templates",
       "list_sms_numbers",
+      "list_subaccounts",
       "list_suppressions",
+      "list_topics",
+      "list_verifications",
       "list_webhook_deliveries",
       "list_webhook_endpoints",
+      "mark_scheduling_no_show",
       "publish_email_template",
       "pull_email_template",
       "push_email_template",
       "read_docs",
+      "record_risk_feedback",
+      "reinstate_subaccount",
+      "release_form_submission",
+      "remind_sign_request",
+      "remove_risk_list_entry",
       "remove_sms_suppression",
       "remove_suppression",
       "reply_to_inbox_message",
       "reschedule_email",
+      "reschedule_scheduling_booking",
+      "retry_hook_delivery",
       "retry_webhook_delivery",
+      "save_audience",
+      "save_broadcast",
+      "save_form",
+      "save_scheduling_event_type",
+      "save_scheduling_host",
+      "save_scheduling_reminders",
+      "save_scheduling_schedule",
+      "save_segment",
+      "save_topic",
       "search_docs",
       "search_logs",
+      "search_scheduling_availability",
+      "send_broadcast",
       "send_email",
       "send_hook_message",
+      "send_hook_test_message",
       "send_inbox_message",
+      "send_sign_request",
       "send_sms",
+      "send_test_broadcast",
+      "start_verification",
+      "update_log_drain",
+      "update_marketing_settings",
+      "update_sign_settings",
+      "update_subaccount",
+      "update_verify_settings",
+      "upload_sign_document",
+      "upsert_contact",
       "verify_domain",
     ]);
     for (const tool of tools) {
@@ -407,6 +444,7 @@ describe("coss-mcp server", () => {
     const { call } = await connect({
       "GET /v1/environment": {
         object: "environment",
+        organization: { id: "org_1", hipaa_mode: true },
         api_key: { id: "key_1", access: "restricted", permissions: ["email:send"] },
       },
       "GET /v1/reputation": { object: "reputation", status: "warning", reason: "bounce_rate" },
@@ -418,6 +456,7 @@ describe("coss-mcp server", () => {
       access: "restricted",
       permissions: ["email:send"],
     });
+    expect(data.hipaa_mode).toBe(true);
     expect(data.reputation.status).toBe("warning");
     expect(data.billing).toBeNull();
     expect(data.errors.billing.type).toBe("not_found_error");

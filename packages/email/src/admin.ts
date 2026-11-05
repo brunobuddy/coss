@@ -3,6 +3,7 @@
  * have checked `requirePlatformAdmin*` first. Nothing here is scoped by a caller's organization;
  * `scope` narrows the scans in tests (the test database is shared and never truncated).
  */
+import { hipaaModeSql } from "@coss/compliance";
 import { db, schema } from "@coss/db";
 import { isId } from "@coss/db/id";
 import { and, desc, eq, gte, inArray, lt, type SQL, sql } from "drizzle-orm";
@@ -260,6 +261,13 @@ export type AdminEmailFilters = {
   before?: string;
 };
 
+const HIPAA_HIDDEN_SUBJECT = "Hidden (HIPAA mode)";
+
+/** Its organization is in HIPAA mode, or coss.com sent it on behalf of one that is. */
+function hiddenFromStaff() {
+  return sql<boolean>`(${email.hipaaOrigin} or ${hipaaModeSql(email.organizationId)})`;
+}
+
 /** `%`, `_` and `\` match themselves in an ILIKE pattern. */
 function likePattern(text: string): string {
   return `%${text.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
@@ -283,7 +291,7 @@ export async function listEmailsForAdmin(
       organizationSlug: organization.slug,
       mode: environment.mode,
       from: email.from,
-      subject: email.subject,
+      subject: sql<string>`case when ${hiddenFromStaff()} then ${HIPAA_HIDDEN_SUBJECT} else ${email.subject} end`,
       recipients: sql<number>`(cardinality(${email.to}) + cardinality(${email.cc}) + cardinality(${email.bcc}))::int`,
       status: email.status,
       errorCode: email.errorCode,
@@ -346,6 +354,8 @@ export type AdminEmailContext = {
   environmentId: string;
   environmentName: string;
   mode: EnvironmentMode;
+  /** Staff see nothing that identifies a recipient or says what the email was about. */
+  hipaaMode: boolean;
   apiKeyId: string | null;
   /** The key's name; null once the key is deleted. */
   apiKeyName: string | null;
@@ -368,6 +378,7 @@ export async function getEmailForAdmin(emailId: string): Promise<AdminEmailConte
       environmentId: email.environmentId,
       environmentName: environment.name,
       mode: environment.mode,
+      hipaaMode: hiddenFromStaff(),
       apiKeyId: email.apiKeyId,
       apiKeyName: apikey.name,
       errorCode: email.errorCode,

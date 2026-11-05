@@ -205,6 +205,8 @@ export const contractTermsSchema = z
     usageCaps: z
       .partialRecord(meterKeySchema, z.number().int().nonnegative().nullable())
       .optional(),
+    /** `allHours`: the support clock runs 24x7. Parsing is strict: deploy before a contract sets it. */
+    support: z.strictObject({ allHours: z.boolean() }).optional(),
   })
   .superRefine((terms, ctx) => {
     const ids = new Set<string>();

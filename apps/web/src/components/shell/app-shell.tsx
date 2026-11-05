@@ -1,9 +1,9 @@
 import { SidebarInset, SidebarProvider } from "@coss/ui/components/sidebar";
 import { cookies } from "next/headers";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { Session } from "@/lib/auth";
 import { ImpersonationBanner } from "../impersonation-banner";
-import { AppHeader } from "./app-header";
+import { AppHeader, type HeaderContext } from "./app-header";
 import type { CommandMenuData } from "./command-menu";
 
 /**
@@ -18,6 +18,8 @@ export async function AppShell(props: {
   names: Record<string, string>;
   command: CommandMenuData;
   banners?: ReactNode;
+  /** The organization's projects: the header starts with the project and environment. */
+  context?: HeaderContext;
   children: ReactNode;
 }) {
   // coss ui's Sidebar remembers whether it was collapsed in this cookie.
@@ -25,7 +27,11 @@ export async function AppShell(props: {
   const impersonating = props.session.session.impersonatedBy;
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider
+      defaultOpen={defaultOpen}
+      // The console's rail and panel side by side are wider than one sidebar.
+      style={props.context ? ({ "--sidebar-width": "17rem" } as CSSProperties) : undefined}
+    >
       {props.sidebar}
       <SidebarInset className="min-w-0 md:border md:shadow-lg/5 dark:bg-background">
         {impersonating ? (
@@ -33,7 +39,7 @@ export async function AppShell(props: {
             <ImpersonationBanner email={props.session.user.email} />
           </div>
         ) : null}
-        <AppHeader command={props.command} names={props.names} />
+        <AppHeader command={props.command} context={props.context} names={props.names} />
         <div className="flex flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 has-data-[page-width=full]:max-w-none">
             {props.banners}

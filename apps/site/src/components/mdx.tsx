@@ -22,6 +22,7 @@ import { ApiKeyPermissionsTable } from "./api-key-permissions";
 import {
   AddOns,
   BillingExample,
+  CreditAmount,
   GraduatedExample,
   Included,
   Limit,
@@ -29,6 +30,7 @@ import {
   PlansWith,
   PlanTable,
   Rate,
+  SupportTable,
   UsageRates,
 } from "./billing";
 import { DocsTable, DocsTd, DocsTh, DocsTr } from "./docs-table";
@@ -156,10 +158,12 @@ export function getMDXComponents(components?: MDXComponents) {
     BillingExample,
     GraduatedExample,
     Included,
+    CreditAmount,
     Limit,
     PlanPrice,
     PlansWith,
     PlanTable,
+    SupportTable,
     Rate,
     ReputationThresholds,
     ReputationWindow,

@@ -14,5 +14,8 @@ export const siteLabel = (path: string): string => {
   return `${url.host.replace(/^www\./, "")}${url.pathname === "/" ? "" : url.pathname}`;
 };
 
+/** kloq's card (`/kloq/og.png`). A page's `openGraph` drops its parents' image, so each names it. */
+export const OG_IMAGE = "/kloq/og.png";
+
 /** The `alternates` block every indexable page carries. */
 export const canonical = (path: string): { canonical: string } => ({ canonical: abs(path) });

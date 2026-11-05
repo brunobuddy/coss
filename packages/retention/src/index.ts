@@ -38,8 +38,14 @@ export const RETENTION_DAYS = {
   reputationNotifications: 90,
   /** Standing changes (an organization's latest one is always kept). */
   reputationHistory: 730,
+  /** Support conversations, counted from when the ticket was resolved. */
+  supportTickets: 730,
+  /** Mail filed as spam or automated, never answered. */
+  supportSpam: 30,
   /** Platform admin actions. */
   adminAuditLog: 730,
+  /** Load balancer, CDN and network flow logs, expired by their bucket's lifecycle rule. */
+  accessLogs: 90,
   /** Sessions, verification tokens and invitations, counted from their expiry. */
   expiredAuth: 7,
   /** Risk assessments with their reasons, signals and feedback. */
@@ -84,10 +90,14 @@ export const RETENTION_DAYS = {
   formSubmissions: 90,
   /** Form submissions flagged as spam, held, or never confirmed by the submitter. */
   formSpam: 14,
+  /** Attendees' details and answers on a booking, counted from when the booking ended. */
+  schedulingPersonalData: 90,
+  /** What's left of a booking once redacted (time, host, status), counted from when it ended. */
+  schedulingBookings: 395,
 } as const satisfies Record<string, number>;
 
 export type RetentionPeriod =
-  | { days: number; after: "creation" | "expiry" }
+  | { days: number; after: "creation" | "expiry" | "booking_end" | "resolved" }
   | { until: "sent" | "deleted" | "closed" };
 
 export type RetentionRule = {
@@ -263,6 +273,13 @@ export const RETENTION_POLICY: readonly RetentionRule[] = [
     period: { days: RETENTION_DAYS.adminAuditLog, after: "creation" },
   },
   {
+    id: "access_logs",
+    label: "Network and access logs",
+    description:
+      "Our load balancer, CDN and network flow logs: IP addresses, requested URLs, user agents and connection details, kept to investigate abuse and security incidents.",
+    period: { days: RETENTION_DAYS.accessLogs, after: "creation" },
+  },
+  {
     id: "expired_auth",
     label: "Expired sessions and invitations",
     description:
@@ -288,6 +305,19 @@ export const RETENTION_POLICY: readonly RetentionRule[] = [
     label: "Billing notification emails",
     description: "Records of usage alerts and payment reminders sent to your billing contacts.",
     period: { days: RETENTION_DAYS.billingNotifications, after: "creation" },
+  },
+  {
+    id: "support_tickets",
+    label: "Support conversations",
+    description:
+      "Your support tickets: what you and our team wrote, attachments, and who wrote them. They're kept after your account or organization is deleted, until this period ends.",
+    period: { days: RETENTION_DAYS.supportTickets, after: "resolved" },
+  },
+  {
+    id: "support_spam",
+    label: "Filtered support mail",
+    description: "Mail to our support address that was spam or automated, and never answered.",
+    period: { days: RETENTION_DAYS.supportSpam, after: "creation" },
   },
   {
     id: "notifications",
@@ -373,6 +403,20 @@ export const RETENTION_POLICY: readonly RetentionRule[] = [
     period: { days: RETENTION_DAYS.formSpam, after: "creation" },
   },
   {
+    id: "scheduling_personal_data",
+    label: "Booking attendee details",
+    description:
+      "The attendee's name, email address and phone number, their answers to booking questions and the booking's metadata. You can also erase an attendee right away.",
+    period: { days: RETENTION_DAYS.schedulingPersonalData, after: "booking_end" },
+  },
+  {
+    id: "scheduling_bookings",
+    label: "Bookings",
+    description:
+      "A booking's time, host, event type, status and history, without its attendee's details. Calendars contribute only busy times, which are replaced as calendars change and deleted when a calendar is disconnected.",
+    period: { days: RETENTION_DAYS.schedulingBookings, after: "booking_end" },
+  },
+  {
     id: "migrations",
     label: "Imports from other providers",
     description: `Reports of imports from Resend, SendGrid or Postmark: what was found, what was imported and what needs attention. The provider's API key is deleted as soon as an import finishes or is canceled, and an import that is never started is deleted after ${formatRetentionDays(RETENTION_DAYS.migrationDrafts)}. What it imported is kept like anything you create yourself.`,
@@ -382,7 +426,7 @@ export const RETENTION_POLICY: readonly RetentionRule[] = [
     id: "account",
     label: "Account and configuration",
     description:
-      "Users, organizations, projects, environments, API keys, domains, SMS phone numbers and carrier registrations (with the business details they were registered with), email templates (with every published version), webhook endpoints, log drains, Hooks applications, event types and endpoints, risk allow and block lists, forms, contact properties, audiences, segments, topics, settings, and billing details (plan, contracts and credits). Items you delete (a key, a domain, a template, an endpoint, a drain, an application) are removed right away.",
+      "Users, organizations, projects, environments, API keys, domains, SMS phone numbers and carrier registrations (with the business details they were registered with), email templates (with every published version), webhook endpoints, log drains, Hooks applications, event types and endpoints, risk allow and block lists, forms, scheduling hosts, schedules, event types and connected calendars, contact properties, audiences, segments, topics, settings, and billing details (plan, contracts and credits). Items you delete (a key, a domain, a template, an endpoint, a drain, an application) are removed right away.",
     period: { until: "closed" },
   },
 ];
@@ -406,5 +450,7 @@ export function formatRetentionPeriod(period: RetentionPeriod): string {
     return period.until === "deleted" ? "Until you delete it" : "While your account exists";
   }
   const duration = formatRetentionDays(period.days);
+  if (period.after === "booking_end") return `${duration} after the booking ends`;
+  if (period.after === "resolved") return `${duration} after it's resolved`;
   return period.after === "expiry" ? `${duration} after expiry` : duration;
 }

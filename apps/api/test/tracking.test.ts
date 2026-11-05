@@ -198,7 +198,7 @@ describe("custom tracking domains", () => {
     expect(urls.open).toStartWith(`https://${hostname}/t/o/`);
     expect(urls.clicks[0]).toStartWith(`https://${hostname}/t/c/`);
 
-    // Cloudflare forwards the customer's hostname as `Host`.
+    // The routes ignore `Host`, so customers' hostnames work like the default one.
     const open = await app.request(urls.open ?? "");
     expect(open.headers.get("content-type")).toBe("image/gif");
     const click = await app.request(urls.clicks[0] ?? "");

@@ -151,9 +151,36 @@ export const ID_PREFIXES = {
   formSubmission: "fsub",
   formSubmissionFile: "ffile",
   formDelivery: "fdlv",
+  // Scheduling (`@coss/scheduling`).
+  schedulingHost: "host",
+  schedulingSchedule: "sched",
+  schedulingEventType: "evtype",
+  schedulingCalendarConnection: "calconn",
+  schedulingCalendarDelegation: "caldlg",
+  schedulingCalendar: "cal",
+  schedulingClaim: "claim",
+  schedulingBooking: "book",
+  schedulingGroupSession: "gsess",
+  schedulingAttendee: "attn",
+  schedulingSeries: "series",
+  schedulingBookingEvent: "bevt",
+  schedulingCalendarEvent: "calev",
+  schedulingNotification: "sntf",
+  schedulingReminderSync: "srsync",
+  schedulingSession: "schs",
+  schedulingOauthState: "soauth",
+  schedulingSettings: "schset",
+  schedulingLogo: "schlogo",
   // Imports from another email provider (Resend, SendGrid, Postmark), `@coss/migrate`.
   migration: "mig",
   migrationItem: "migitem",
+  // coss.com's support desk (`@coss/support`).
+  supportTicket: "ticket",
+  supportMessage: "tmsg",
+  supportAttachment: "tatt",
+  supportSavedReply: "tsaved",
+  // A member's pinned or hidden dashboard products.
+  productPreference: "prodpref",
 } as const;
 
 export type IdPrefix = (typeof ID_PREFIXES)[keyof typeof ID_PREFIXES];

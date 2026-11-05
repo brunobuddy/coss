@@ -1,0 +1,1123 @@
+/**
+ * What coss.com tells people about a booking. Decided once, into outbox rows in the deciding
+ * transaction: the core never branches on policy. Rows hold no content, so an email is rendered
+ * when it's sent, and news that's gone stale (the booking moved or was cancelled) is dropped.
+ *
+ * Emails use fixed templates, with no customer HTML and no links but the manage link. That's what
+ * lets them skip per-email content screening, which would send a patient's name to the AI Gateway:
+ * what a customer can put in them is screened when it's set up instead (`screening.ts`). A reminder
+ * can carry the customer's own words and one button on their verified domain (`reminders.ts`), but
+ * never under coss.com's address: `cossHtml`, `cossSubject` and `cossText` are always fixed copy.
+ */
+import { createHash } from "node:crypto";
+import { HipaaModeError } from "@coss/compliance";
+import { db, type Executor, schema } from "@coss/db";
+import { type EmailBlock, type EmailContent, oneLine, renderEmail } from "@coss/email-layout";
+import { and, asc, desc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { decryptContact } from "./attendees.ts";
+import { recordChange } from "./booking-record.ts";
+import { accentColors } from "./branding.ts";
+import { buildIcs } from "./calendar/ical.ts";
+import { SchedulingError } from "./errors.ts";
+import { chosenLocation, withSessionLocation } from "./group-sessions.ts";
+import { dateLocale, messageLanguage, type Translate, translator } from "./i18n.ts";
+import { getLogoRow, LOGO_CONTENT_ID, type SchedulingLogoRow } from "./logo.ts";
+import { type NotificationEvent, policiesOf, resolvePolicy } from "./notification-policy.ts";
+import {
+  type CopyAudience,
+  type CopyKind,
+  firstNameOf,
+  type ReminderValues,
+  reminderCopyKind,
+  renderReminderCopy,
+  safeName,
+  standardLead,
+  standardSubject,
+  timeUntil,
+} from "./reminder-copy.ts";
+import {
+  addEditedTargets,
+  effectiveRules,
+  hasCustomEmail,
+  isRuleRowStale,
+  offsetOf,
+  queueRulesOfAnchor,
+  type ReminderRule,
+  reconcileReminders,
+  ruleVerdict,
+  supersedeOnEnd,
+  withinCossAllowance,
+} from "./reminders.ts";
+import type { BookingNotificationObjectOutput } from "./schemas.ts";
+import { createHostInvitationSession, createManageSession } from "./sessions.ts";
+import type { SchedulingDeps, SchedulingEnvironment } from "./types.ts";
+
+export { type NotificationEvent, resolvePolicy } from "./notification-policy.ts";
+
+const {
+  environment,
+  schedulingAttendee,
+  schedulingBooking,
+  schedulingBookingEvent,
+  schedulingBookingHost,
+  schedulingHost,
+  schedulingNotification,
+  schedulingSettings,
+} = schema;
+
+type BookingRow = typeof schedulingBooking.$inferSelect;
+type NotificationRow = typeof schedulingNotification.$inferSelect;
+type Branding = {
+  settings: typeof schedulingSettings.$inferSelect | undefined;
+  logo: SchedulingLogoRow | null;
+};
+
+/**
+ * The customer's branding only under their own address; coss.com's sends the `coss*` fields, and
+ * `fixed` if there is one: what a customer wrote stays out of them.
+ */
+function renderMessage(
+  branding: Branding,
+  senderName: string,
+  content: EmailContent,
+  fixed: EmailContent = content,
+) {
+  const { settings, logo } = branding;
+  const plain = renderEmail(content);
+  const coss = renderEmail(fixed);
+  const cossFields = { cossHtml: coss.html, cossSubject: coss.subject, cossText: coss.text };
+  if (!settings?.emailFrom) return { ...plain, ...cossFields, logo: null };
+  const accent = settings.accentColor ? accentColors(settings.accentColor) : null;
+  const branded = renderEmail({
+    ...content,
+    brand: oneLine(settings.brandName ?? "") || senderName,
+    ...(logo
+      ? { logo: { src: `cid:${LOGO_CONTENT_ID}`, width: logo.width, height: logo.height } }
+      : {}),
+    ...(accent ? { accent } : {}),
+  });
+  return { ...plain, ...cossFields, html: branded.html, logo: logo && emailLogo(logo) };
+}
+
+/** Inside the message, not a remote image: opening an email tells neither us nor the customer. */
+function emailLogo(logo: SchedulingLogoRow): NonNullable<SchedulingEmail["logo"]> {
+  return {
+    filename: logo.contentType === "image/png" ? "logo.png" : "logo.jpg",
+    content: logo.image.toString("base64"),
+    contentType: logo.contentType,
+    contentId: LOGO_CONTENT_ID,
+  };
+}
+
+/**
+ * Whether an attendee will be emailed once this event type's booking is confirmed: what the booker
+ * promises them. An approval's outcome is the same `confirmed` email, so it covers requests too.
+ */
+export async function attendeeEmailedOnConfirm(
+  env: { organizationId: string; environmentId: string },
+  eventTypeId: string,
+): Promise<boolean> {
+  const policies = await policiesOf(db, { ...env, eventTypeId });
+  return (
+    resolvePolicy("confirmed", policies.environment, policies.eventType).emailAttendee === true
+  );
+}
+
+/** Queues what this change owes, in the transaction that decided it. A held booking owes nothing. */
+export async function enqueueBookingNotifications(
+  tx: Executor,
+  booking: BookingRow,
+  event: Exclude<NotificationEvent, "reminder">,
+  now: Date,
+): Promise<void> {
+  const policies = await policiesOf(tx, booking);
+  const rows: (typeof schedulingNotification.$inferInsert)[] = [];
+  const add = (channel: "email" | "sms", recipient: "attendee" | "host") => {
+    rows.push({
+      organizationId: booking.organizationId,
+      environmentId: booking.environmentId,
+      bookingId: booking.id,
+      kind: event,
+      channel,
+      recipient,
+      bookingVersion: booking.version,
+      dedupeKey: `${event}:${channel}:${recipient}:${booking.id}:${booking.version}`,
+      dueAt: now,
+    });
+  };
+  if (event === "rescheduled") {
+    // Only the latest move is news: an unsent notice of an earlier one would say the same thing.
+    await tx
+      .update(schedulingNotification)
+      .set({ finishedAt: now, outcome: "superseded", leaseUntil: null })
+      .where(
+        and(
+          eq(schedulingNotification.bookingId, booking.id),
+          eq(schedulingNotification.organizationId, booking.organizationId),
+          or(
+            eq(schedulingNotification.kind, "rescheduled"),
+            eq(schedulingNotification.reminderAnchor, "rescheduled"),
+          ),
+          isNull(schedulingNotification.finishedAt),
+          lt(schedulingNotification.bookingVersion, booking.version),
+        ),
+      );
+  }
+  const policy = resolvePolicy(event, policies.environment, policies.eventType);
+  if (policy.emailAttendee) add("email", "attendee");
+  if (policy.emailHost) add("email", "host");
+  if (policy.smsAttendee) add("sms", "attendee");
+  if (rows.length > 0) await tx.insert(schedulingNotification).values(rows).onConflictDoNothing();
+  const rules = effectiveRules(policies);
+  await queueRulesOfAnchor(tx, booking, rules, event, now);
+  if (event === "cancelled" || event === "declined") await supersedeOnEnd(tx, booking, now);
+  if ((event === "confirmed" || event === "rescheduled") && booking.status === "confirmed") {
+    await reconcileReminders(tx, booking, rules, now, { newBooking: true });
+  }
+}
+
+/**
+ * A reminder an older task queued during a deploy is only as good as its version, so a change that
+ * keeps the time carries it forward. Rows made by this code don't need it: they're timed from
+ * `anchor_at`. Remove once a deploy of this has finished.
+ */
+export async function carryAnchorlessReminders(
+  tx: Executor,
+  booking: Pick<BookingRow, "id" | "organizationId" | "version">,
+): Promise<void> {
+  await tx
+    .update(schedulingNotification)
+    .set({ bookingVersion: booking.version })
+    .where(
+      and(
+        eq(schedulingNotification.bookingId, booking.id),
+        eq(schedulingNotification.organizationId, booking.organizationId),
+        eq(schedulingNotification.kind, "reminder"),
+        isNull(schedulingNotification.anchorAt),
+        isNull(schedulingNotification.finishedAt),
+        eq(schedulingNotification.bookingVersion, booking.version - 1),
+      ),
+    );
+}
+
+/** What marking a no-show owes: its own rules, whatever else the booking has queued. */
+export async function enqueueNoShowReminders(
+  tx: Executor,
+  booking: BookingRow,
+  now: Date,
+): Promise<void> {
+  await queueRulesOfAnchor(
+    tx,
+    booking,
+    effectiveRules(await policiesOf(tx, booking)),
+    "no_show",
+    now,
+  );
+}
+
+export type SchedulingEmail = {
+  environment: {
+    organizationId: string;
+    projectId: string;
+    environmentId: string;
+    mode: "live" | "sandbox";
+  };
+  from: string | null;
+  senderName: string;
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+  /** What coss.com's address sends, including when the customer's stops being verified. */
+  cossSubject: string;
+  cossText: string;
+  cossHtml: string;
+  /** Only under the customer's own address. */
+  replyTo: string | null;
+  ics: { filename: string; content: string; method: "REQUEST" | "CANCEL" } | null;
+  /** Inline in `html`, so it goes only with that, never with `cossHtml`. */
+  logo: { filename: string; content: string; contentType: string; contentId: string } | null;
+  idempotencyKey: string;
+  /**
+   * Goes from the customer's own address or not at all: to someone who asked for nothing, or past
+   * what coss.com's address sends for free.
+   */
+  ownSenderOnly: boolean;
+};
+
+export type SchedulingSms = {
+  environment: SchedulingEmail["environment"];
+  from: string;
+  to: string;
+  body: string;
+  idempotencyKey: string;
+};
+
+/** Sending goes through the email and SMS products, which this package can't import. */
+export type SchedulingNotifier = {
+  /** `"not_sent"`: it was only for the customer's own address, and that couldn't send it. */
+  email(message: SchedulingEmail): Promise<"not_sent" | undefined>;
+  /** Absent without SMS. Throws if refused; an opted-out number is the product's to skip. */
+  sms?(message: SchedulingSms): Promise<void>;
+};
+
+export type NotificationDeps = Pick<SchedulingDeps, "dataKeys" | "now"> & {
+  notifier: SchedulingNotifier;
+  /** `SCHEDULING_PUBLIC_URL`: where manage links go. Without it, emails have none. */
+  publicUrl: string | null;
+};
+
+const LEASE_MS = 60_000;
+const MAX_ATTEMPTS = 6;
+// How long a confirmation waits for a Meet or Teams link from the calendar write.
+const MEETING_LINK_WAIT_MS = 2 * 60_000;
+const MEETING_LINK_RETRY_MS = 15_000;
+
+const formatWhen = (at: Date, timeZone: string, locale: string | null): string => {
+  try {
+    return new Intl.DateTimeFormat(dateLocale(locale), {
+      timeZone,
+      dateStyle: "full",
+      timeStyle: "short",
+    }).format(at);
+  } catch {
+    return `${at.toISOString()} UTC`;
+  }
+};
+
+const titleOf = (booking: BookingRow) => oneLine(booking.title);
+
+function locationLine(booking: BookingRow): string | null {
+  const location = booking.location;
+  if (!location) return null;
+  if (location.type === "link" || location.type === "zoom") return location.url;
+  if (location.type === "phone") return location.number;
+  if (location.type === "in_person") return location.address;
+  return null;
+}
+
+function copyKindOf(
+  row: Claimed,
+  rule: ReminderRule | null,
+  booking: BookingRow,
+  now: Date,
+): CopyKind {
+  if (!rule) return row.kind as CopyKind;
+  return reminderCopyKind(rule, {
+    nowMs: now.getTime(),
+    startMs: booking.startAt.getTime(),
+    endMs: booking.endAt.getTime(),
+  });
+}
+
+const isEnded = (booking: Pick<BookingRow, "status">) =>
+  booking.status === "cancelled" || booking.status === "declined";
+
+const formatDate = (at: Date, timeZone: string, locale: string | null): string => {
+  try {
+    return new Intl.DateTimeFormat(dateLocale(locale), { timeZone, dateStyle: "full" }).format(at);
+  } catch {
+    return at.toISOString().slice(0, 10);
+  }
+};
+
+const formatTime = (at: Date, timeZone: string, locale: string | null): string => {
+  try {
+    return new Intl.DateTimeFormat(dateLocale(locale), { timeZone, timeStyle: "short" }).format(at);
+  } catch {
+    return `${at.toISOString().slice(11, 16)} UTC`;
+  }
+};
+
+/** The names in the copy are only what the email's recipient may already see of the booking. */
+function reminderValues(input: {
+  booking: BookingRow;
+  brand: string;
+  timeZone: string;
+  locale: string | null;
+  attendeeName: string | null;
+  hostName: string | null;
+  now: Date;
+}): ReminderValues {
+  const { booking, timeZone, locale } = input;
+  const attendeeName = safeName(input.attendeeName);
+  const t = translator(locale);
+  return {
+    event_title: titleOf(booking),
+    brand: input.brand,
+    booking_id: booking.id,
+    location: locationLine(booking) ?? "",
+    time_until: timeUntil(booking.startAt.getTime(), input.now.getTime(), locale),
+    date: formatDate(booking.startAt, timeZone, locale),
+    time: formatTime(booking.startAt, timeZone, locale),
+    end_time: formatTime(booking.endAt, timeZone, locale),
+    time_zone: timeZone,
+    attendee_name: attendeeName || t("name_attendee"),
+    attendee_first_name: firstNameOf(attendeeName) || t("name_attendee"),
+    host_name: oneLine(input.hostName ?? "") || t("name_host"),
+  };
+}
+
+const paragraphsOf = (text: string): EmailBlock[] =>
+  text
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => ({ paragraph }));
+
+/** Whether a guest has heard of this booking, or has any reason to hear about it now. */
+async function guestsAreTold(booking: BookingRow, kind: CopyKind): Promise<boolean> {
+  // A no-show is about the attendee: their guests may well have come.
+  if (kind === "pending_approval" || kind === "declined" || kind === "no_show") return false;
+  if (kind !== "cancelled") return booking.status === "confirmed";
+  const [confirmed] = await db
+    .select({ id: schedulingBookingEvent.bookingId })
+    .from(schedulingBookingEvent)
+    .where(
+      and(
+        eq(schedulingBookingEvent.bookingId, booking.id),
+        eq(schedulingBookingEvent.organizationId, booking.organizationId),
+        eq(schedulingBookingEvent.type, "scheduling.booking.confirmed"),
+      ),
+    )
+    .limit(1);
+  return Boolean(confirmed);
+}
+
+type Claimed = NotificationRow;
+
+async function claimDue(now: Date, opts: Scan): Promise<Claimed[]> {
+  return db.transaction(async (tx) => {
+    const due = await tx
+      .select()
+      .from(schedulingNotification)
+      .where(
+        and(
+          isNull(schedulingNotification.finishedAt),
+          lte(schedulingNotification.dueAt, now),
+          or(isNull(schedulingNotification.leaseUntil), lt(schedulingNotification.leaseUntil, now)),
+          opts.scope
+            ? inArray(schedulingNotification.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingNotification.dueAt))
+      .limit(opts.limit ?? 50)
+      .for("update", { skipLocked: true });
+    if (due.length === 0) return [];
+    await tx
+      .update(schedulingNotification)
+      .set({
+        leaseUntil: new Date(now.getTime() + LEASE_MS),
+        attempts: sql`${schedulingNotification.attempts} + 1`,
+      })
+      .where(
+        inArray(
+          schedulingNotification.id,
+          due.map((row) => row.id),
+        ),
+      );
+    return due;
+  });
+}
+
+type Scan = { limit?: number; scope?: { organizationIds: readonly string[] } };
+
+async function finish(row: Claimed, outcome: string, now: Date): Promise<void> {
+  await db
+    .update(schedulingNotification)
+    .set({ finishedAt: now, outcome, leaseUntil: null })
+    .where(eq(schedulingNotification.id, row.id));
+}
+
+/** Whether this is old news: the booking changed since, or was cancelled before its reminder. */
+function isStale(row: Claimed, booking: BookingRow): boolean {
+  if (row.kind === "reminder" || row.kind === "started" || row.kind === "ended") {
+    return isRuleRowStale(row, booking);
+  }
+  const ended = isEnded(booking);
+  if (row.kind === "cancelled" || row.kind === "declined") return !ended;
+  if (ended) return true;
+  if (row.kind === "pending_approval") return booking.status !== "pending_approval";
+  return false;
+}
+
+async function environmentOf(row: Claimed): Promise<SchedulingEmail["environment"] | null> {
+  const [found] = await db
+    .select({ projectId: environment.projectId, mode: environment.mode })
+    .from(environment)
+    .where(
+      and(
+        eq(environment.id, row.environmentId),
+        eq(environment.organizationId, row.organizationId),
+      ),
+    );
+  if (!found) return null;
+  return {
+    organizationId: row.organizationId,
+    projectId: found.projectId,
+    environmentId: row.environmentId,
+    mode: found.mode,
+  };
+}
+
+async function settingsOf(row: Claimed) {
+  const [settings] = await db
+    .select()
+    .from(schedulingSettings)
+    .where(
+      and(
+        eq(schedulingSettings.organizationId, row.organizationId),
+        eq(schedulingSettings.environmentId, row.environmentId),
+      ),
+    );
+  return settings;
+}
+
+async function brandingOf(row: Claimed): Promise<Branding> {
+  const settings = await settingsOf(row);
+  return { settings, logo: settings?.emailFrom ? await getLogoRow(row) : null };
+}
+
+async function bookingHosts(booking: BookingRow) {
+  return db
+    .select({
+      email: schedulingHost.email,
+      phone: schedulingHost.phone,
+      name: schedulingHost.name,
+      timeZone: schedulingHost.timeZone,
+      locale: schedulingHost.locale,
+      id: schedulingHost.id,
+    })
+    .from(schedulingBookingHost)
+    .innerJoin(schedulingHost, eq(schedulingHost.id, schedulingBookingHost.hostId))
+    .where(
+      and(
+        eq(schedulingBookingHost.bookingId, booking.id),
+        eq(schedulingBookingHost.organizationId, booking.organizationId),
+      ),
+    );
+}
+
+async function bookingAttendees(booking: BookingRow) {
+  return db
+    .select()
+    .from(schedulingAttendee)
+    .where(
+      and(
+        eq(schedulingAttendee.bookingId, booking.id),
+        eq(schedulingAttendee.organizationId, booking.organizationId),
+      ),
+    )
+    .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id));
+}
+
+const hostNamesOf = (hosts: readonly { name: string }[]) =>
+  hosts.map((host) => host.name).join(", ");
+
+async function sendBookingEmail(
+  row: Claimed,
+  booking: BookingRow,
+  deps: NotificationDeps,
+  now: Date,
+  rule: ReminderRule | null,
+  ownSenderOnly: boolean,
+): Promise<"sent" | "no_address" | "no_sender"> {
+  const env = await environmentOf(row);
+  if (!env) return "no_address";
+  const branding = await brandingOf(row);
+  const { settings } = branding;
+  const copyKind = copyKindOf(row, rule, booking, now);
+  const senderName = oneLine(settings?.brandName ?? titleOf(booking));
+  const uid = `${booking.id}@coss.com`;
+  const icsMethod = isEnded(booking) ? ("CANCEL" as const) : ("REQUEST" as const);
+  const ics = (to: { name: string | null; email: string }) => ({
+    filename: "booking.ics",
+    method: icsMethod,
+    content: buildIcs({
+      uid,
+      title: titleOf(booking),
+      startMs: booking.startAt.getTime(),
+      endMs: booking.endAt.getTime(),
+      stampMs: now.getTime(),
+      sequence: booking.version,
+      method: icsMethod,
+      location: locationLine(booking),
+      attendee: to,
+    }),
+  });
+  // Nothing goes on a calendar until it's approved, even if it moved while waiting.
+  const withIcs = rule
+    ? rule.include_invite && (isEnded(booking) || booking.status === "confirmed")
+    : copyKind === "cancelled" ||
+      copyKind === "declined" ||
+      ((copyKind === "confirmed" || copyKind === "rescheduled") && booking.status === "confirmed");
+  const key = `scheduling:${row.id}`;
+  const custom = rule && hasCustomEmail(rule) && settings?.emailFrom ? rule : null;
+  const replyTo = settings?.emailFrom ? (settings.emailReplyTo ?? null) : null;
+  const where = locationLine(booking);
+  const details = (t: Translate, whenText: string): EmailBlock => ({
+    details: [
+      { label: t("label_what"), value: titleOf(booking) },
+      { label: t("label_when"), value: whenText },
+      ...(where ? [{ label: t("label_where"), value: where }] : []),
+    ],
+  });
+
+  /** The customer's words if they wrote any, and the standard ones for coss.com's address. */
+  const content = (input: {
+    audience: CopyAudience;
+    locale: string | null;
+    values: ReminderValues;
+    whenText: string;
+    manageUrl: string | null;
+    reason: string;
+  }): { content: EmailContent; fixed: EmailContent } => {
+    const t = translator(input.locale);
+    const lang = messageLanguage(input.locale);
+    const manageLabel = t("button_manage");
+    const manageButton: EmailBlock[] = input.manageUrl
+      ? [{ button: { label: manageLabel, url: input.manageUrl } }]
+      : [];
+    const standard = standardLead(copyKind, input.audience, input.locale);
+    const subject = standardSubject(copyKind, titleOf(booking), input.locale);
+    const fixed: EmailContent = {
+      lang,
+      subject,
+      blocks: [{ paragraph: standard }, details(t, input.whenText), ...manageButton],
+      reason: input.reason,
+    };
+    if (!custom) return { content: fixed, fixed };
+    const render = (text: string) => renderReminderCopy(text, input.values);
+    return {
+      fixed,
+      content: {
+        lang,
+        subject: custom.subject ? render(custom.subject) : subject,
+        blocks: [
+          ...(custom.message ? paragraphsOf(render(custom.message)) : [{ paragraph: standard }]),
+          details(t, input.whenText),
+          ...(custom.button
+            ? [
+                {
+                  button: {
+                    label: render(custom.button.label),
+                    url: render(custom.button.url),
+                  },
+                } as EmailBlock,
+                // One button to an email: the manage link becomes the secondary one.
+                ...(input.manageUrl
+                  ? [
+                      {
+                        link: { label: manageLabel, url: input.manageUrl },
+                      } as EmailBlock,
+                    ]
+                  : []),
+              ]
+            : manageButton),
+        ],
+        reason: input.reason,
+      },
+    };
+  };
+
+  const hosts = await bookingHosts(booking);
+
+  if (row.recipient === "attendee") {
+    // A guest is an address someone typed, who asked for nothing: never coss.com's own sender.
+    const toldGuests =
+      (env.mode === "sandbox" || Boolean(settings?.emailFrom)) &&
+      (await guestsAreTold(booking, copyKind));
+    let sent = false;
+    let refused = false;
+    for (const attendee of await bookingAttendees(booking)) {
+      const guest = attendee.role === "guest";
+      if (guest && !toldGuests) continue;
+      const contact = decryptContact(attendee.encryptedContact, deps);
+      if (!contact.email) continue;
+      // Only while it can still be changed, and it's the attendee's to change, so a guest gets
+      // none. A fresh link per email: its token can't be recovered, and a body isn't kept.
+      const changeable = !guest && !isEnded(booking) && (!rule || booking.startAt > now);
+      const manage =
+        deps.publicUrl && changeable
+          ? await createManageSession(env, {
+              bookingId: booking.id,
+              publicUrl: deps.publicUrl,
+              now,
+            })
+          : null;
+      const message = content({
+        audience: guest ? "guest" : "attendee",
+        locale: attendee.locale,
+        whenText: formatWhen(booking.startAt, attendee.timeZone, attendee.locale),
+        manageUrl: manage?.url ?? null,
+        reason: translator(attendee.locale)(guest ? "reason_guest" : "reason_attendee", {
+          sender: senderName,
+        }),
+        values: reminderValues({
+          booking,
+          brand: senderName,
+          timeZone: attendee.timeZone,
+          locale: attendee.locale,
+          attendeeName: contact.name,
+          hostName: hostNamesOf(hosts),
+          now,
+        }),
+      });
+      const rendered = renderMessage(branding, senderName, message.content, message.fixed);
+      const result = await deps.notifier.email({
+        environment: env,
+        from: settings?.emailFrom ?? null,
+        senderName,
+        to: contact.email,
+        subject: rendered.subject,
+        text: rendered.text,
+        html: rendered.html,
+        cossSubject: rendered.cossSubject,
+        cossText: rendered.cossText,
+        cossHtml: rendered.cossHtml,
+        replyTo,
+        ics: withIcs ? ics({ name: contact.name, email: contact.email }) : null,
+        logo: rendered.logo,
+        idempotencyKey: `${key}:${attendee.id}`,
+        ownSenderOnly: guest || ownSenderOnly,
+      });
+      // A guest not reached isn't why the row didn't send: that's the attendee's to say.
+      if (result !== "not_sent") sent = true;
+      else if (!guest) refused = true;
+    }
+    return sent ? "sent" : refused ? "no_sender" : "no_address";
+  }
+
+  // Hosts and fixed addresses read about the booking's first attendee. A fixed address has no zone or
+  // language of its own, so it gets the first host's.
+  const attendees = custom ? await bookingAttendees(booking) : [];
+  const firstAttendee = attendees[0];
+  const attendeeName = firstAttendee
+    ? decryptContact(firstAttendee.encryptedContact, deps).name
+    : null;
+  const staffRecipients =
+    row.recipient === "host"
+      ? hosts.flatMap((host) =>
+          host.email
+            ? [
+                {
+                  id: host.id,
+                  email: host.email,
+                  name: host.name,
+                  timeZone: host.timeZone,
+                  locale: host.locale,
+                },
+              ]
+            : [],
+        )
+      : (rule?.email_to ?? []).map((email) => ({
+          // From the address, not its place: a list reordered before a retry mustn't swap who's done.
+          id: createHash("sha256").update(email).digest("hex").slice(0, 32),
+          email,
+          name: null,
+          timeZone: hosts[0]?.timeZone ?? "UTC",
+          locale: hosts[0]?.locale ?? null,
+        }));
+  let sent = false;
+  let refused = false;
+  for (const recipient of staffRecipients) {
+    const message = content({
+      audience: "host",
+      locale: recipient.locale,
+      whenText: formatWhen(booking.startAt, recipient.timeZone, recipient.locale),
+      manageUrl: null,
+      reason: translator(recipient.locale)(
+        row.recipient === "host" ? "reason_host" : "reason_address",
+        { sender: senderName },
+      ),
+      values: reminderValues({
+        booking,
+        brand: senderName,
+        timeZone: recipient.timeZone,
+        locale: recipient.locale,
+        attendeeName,
+        hostName: recipient.name ?? hostNamesOf(hosts),
+        now,
+      }),
+    });
+    const rendered = renderMessage(branding, senderName, message.content, message.fixed);
+    const result = await deps.notifier.email({
+      environment: env,
+      from: settings?.emailFrom ?? null,
+      senderName,
+      to: recipient.email,
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
+      cossSubject: rendered.cossSubject,
+      cossText: rendered.cossText,
+      cossHtml: rendered.cossHtml,
+      replyTo,
+      ics: withIcs ? ics({ name: recipient.name, email: recipient.email }) : null,
+      logo: rendered.logo,
+      idempotencyKey: `${key}:${recipient.id}`,
+      ownSenderOnly,
+    });
+    if (result !== "not_sent") sent = true;
+    else refused = true;
+  }
+  return sent ? "sent" : refused ? "no_sender" : "no_address";
+}
+
+async function sendBookingSms(
+  row: Claimed,
+  booking: BookingRow,
+  deps: NotificationDeps,
+  now: Date,
+  rule: ReminderRule | null,
+): Promise<"sent" | "no_address" | "no_sender"> {
+  const env = await environmentOf(row);
+  const settings = await settingsOf(row);
+  if (!env) return "no_address";
+  if (!settings?.smsFrom || !deps.notifier.sms) return "no_sender";
+  const send = deps.notifier.sms;
+  const smsFrom = settings.smsFrom;
+  const copyKind = copyKindOf(row, rule, booking, now);
+  const recipients =
+    row.recipient === "host"
+      ? (await bookingHosts(booking)).flatMap((host) =>
+          host.phone
+            ? [{ id: host.id, phone: host.phone, timeZone: host.timeZone, locale: host.locale }]
+            : [],
+        )
+      : (await bookingAttendees(booking)).flatMap((attendee) => {
+          const { phone } = decryptContact(attendee.encryptedContact, deps);
+          return phone
+            ? [{ id: attendee.id, phone, timeZone: attendee.timeZone, locale: attendee.locale }]
+            : [];
+        });
+  let sent = false;
+  for (const recipient of recipients) {
+    const t = translator(recipient.locale);
+    const brand = oneLine(settings.brandName ?? t("sms_brand_fallback"));
+    // `sms_message` can't name anyone: refused when it's saved, and empty here.
+    const words = rule?.sms_message
+      ? renderReminderCopy(
+          rule.sms_message,
+          reminderValues({
+            booking,
+            brand,
+            timeZone: recipient.timeZone,
+            locale: recipient.locale,
+            attendeeName: null,
+            hostName: null,
+            now,
+          }),
+        )
+      : `${standardSubject(copyKind, titleOf(booking), recipient.locale)}, ${formatWhen(booking.startAt, recipient.timeZone, recipient.locale)}.`;
+    try {
+      await send({
+        environment: env,
+        from: smsFrom,
+        to: recipient.phone,
+        body: `${brand}: ${oneLine(words)} ${t("sms_opt_out")}`,
+        idempotencyKey: `scheduling:${row.id}:${recipient.id}`,
+      });
+    } catch (error) {
+      // A number HIPAA mode can't text won't become one on a retry.
+      if (error instanceof HipaaModeError) continue;
+      throw error;
+    }
+    sent = true;
+  }
+  return sent ? "sent" : "no_address";
+}
+
+/** Its rule's timing changed: it's due at the new moment, and this claim wasn't an attempt. */
+async function moveRow(
+  executor: Executor,
+  row: Pick<Claimed, "id">,
+  move: { moveTo: Date; offsetMinutes: number },
+): Promise<void> {
+  await executor
+    .update(schedulingNotification)
+    .set({
+      dueAt: move.moveTo,
+      reminderOffsetMinutes: move.offsetMinutes,
+      leaseUntil: null,
+      attempts: sql`${schedulingNotification.attempts} - 1`,
+    })
+    .where(eq(schedulingNotification.id, row.id));
+}
+
+/**
+ * A webhook row reports in one transaction with finishing the row: two workers holding it can't both
+ * report. The booking's locked first, like everything else that touches these rows.
+ */
+export async function sendTimedWebhook(
+  row: { id: string; bookingId: string | null; organizationId: string },
+  now: Date,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [booking] = await tx
+      .select()
+      .from(schedulingBooking)
+      .where(
+        and(
+          eq(schedulingBooking.id, row.bookingId as string),
+          eq(schedulingBooking.organizationId, row.organizationId),
+        ),
+      )
+      .for("update");
+    const [current] = await tx
+      .select()
+      .from(schedulingNotification)
+      .where(eq(schedulingNotification.id, row.id))
+      .for("update");
+    // Another worker holding this row may have finished it, or moved it to a later moment.
+    if (!current || current.finishedAt || current.dueAt > now) return;
+    const finish = async (outcome: string) => {
+      await tx
+        .update(schedulingNotification)
+        .set({ finishedAt: now, outcome, leaseUntil: null })
+        .where(eq(schedulingNotification.id, row.id));
+    };
+    if (!booking || isStale(current, booking)) return finish("stale");
+    const actor = { kind: "system" } as const;
+    if (current.kind === "started" || current.kind === "ended") {
+      await recordChange(tx, booking, {
+        type: `scheduling.booking.${current.kind}`,
+        webhook: `scheduling.booking.${current.kind}`,
+        actor,
+        occurredAt: now,
+        momentAt: current.anchorAt ?? now,
+        message: current.kind === "started" ? "Booking started" : "Booking ended",
+      });
+      return finish("sent");
+    }
+    const location = await chosenLocation(tx, booking);
+    const rules = effectiveRules(await policiesOf(tx, booking));
+    await addEditedTargets(tx, current, booking, rules);
+    const verdict = ruleVerdict(current, { ...booking, location }, rules, now);
+    if ("moveTo" in verdict) return moveRow(tx, current, verdict);
+    if ("outcome" in verdict) return finish(verdict.outcome);
+    const { rule } = verdict;
+    const scheduledFor = new Date((current.anchorAt ?? now).getTime() + offsetOf(rule) * 60_000);
+    await recordChange(tx, booking, {
+      type: "scheduling.booking.reminder",
+      webhook: "scheduling.booking.reminder",
+      actor,
+      occurredAt: now,
+      momentAt: scheduledFor,
+      reminder: {
+        key: rule.key,
+        anchor: rule.anchor,
+        before_minutes: rule.before_minutes,
+        after_minutes: rule.after_minutes,
+        scheduled_for: scheduledFor.toISOString(),
+      },
+      details: { key: rule.key },
+      message: `Reminder "${rule.key}" due`,
+    });
+    return finish("sent");
+  });
+}
+
+/** What's been queued for a booking and what became of it. Never who it went to. */
+export async function listBookingNotifications(
+  env: Pick<SchedulingEnvironment, "organizationId" | "environmentId">,
+  bookingId: string,
+  query: { limit: number; after?: string | undefined },
+): Promise<{ data: BookingNotificationObjectOutput[]; hasMore: boolean }> {
+  const [booking] = await db
+    .select({ id: schedulingBooking.id })
+    .from(schedulingBooking)
+    .where(
+      and(
+        eq(schedulingBooking.id, bookingId),
+        eq(schedulingBooking.organizationId, env.organizationId),
+        eq(schedulingBooking.environmentId, env.environmentId),
+      ),
+    );
+  if (!booking)
+    throw new SchedulingError("not_found", `No booking "${bookingId}" in this environment.`);
+  const rows = await db
+    .select()
+    .from(schedulingNotification)
+    .where(
+      and(
+        eq(schedulingNotification.bookingId, bookingId),
+        eq(schedulingNotification.organizationId, env.organizationId),
+        query.after ? lt(schedulingNotification.id, query.after) : undefined,
+      ),
+    )
+    .orderBy(desc(schedulingNotification.id))
+    .limit(query.limit + 1);
+  const data = rows.slice(0, query.limit).map((row) => ({
+    object: "scheduling.booking_notification" as const,
+    id: row.id,
+    kind: row.kind,
+    reminder_key: row.reminderKey,
+    channel: row.channel,
+    recipient: row.recipient,
+    due_at: row.dueAt.toISOString(),
+    finished_at: row.finishedAt?.toISOString() ?? null,
+    outcome: row.outcome,
+  }));
+  return { data, hasMore: rows.length > query.limit };
+}
+
+async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Promise<string> {
+  const env = await environmentOf(row);
+  if (!env || !row.hostId) return "no_address";
+  const [host] = await db
+    .select()
+    .from(schedulingHost)
+    .where(
+      and(eq(schedulingHost.id, row.hostId), eq(schedulingHost.organizationId, row.organizationId)),
+    );
+  if (!host?.email) return "no_address";
+  const branding = await brandingOf(row);
+  const { settings } = branding;
+  const t = translator(host.locale);
+  const senderName = oneLine(settings?.brandName ?? t("sender_fallback"));
+  const session = deps.publicUrl
+    ? await createHostInvitationSession(env, host.id, deps.publicUrl, now)
+    : null;
+  const zoom = row.kind === "zoom_needs_reauth";
+  const message = renderMessage(branding, senderName, {
+    lang: messageLanguage(host.locale),
+    subject: t(zoom ? "zoom_subject" : "calendar_subject"),
+    blocks: [
+      { paragraph: t(zoom ? "zoom_body" : "calendar_body") },
+      ...(session?.url
+        ? [
+            {
+              button: {
+                label: t(zoom ? "zoom_button" : "calendar_button"),
+                url: session.url,
+              },
+            } as EmailBlock,
+          ]
+        : [{ paragraph: t("reconnect_through", { sender: senderName }) } as EmailBlock]),
+    ],
+    reason: t("reason_host", { sender: senderName }),
+  });
+  await deps.notifier.email({
+    environment: env,
+    from: settings?.emailFrom ?? null,
+    senderName,
+    to: host.email,
+    subject: message.subject,
+    text: message.text,
+    html: message.html,
+    cossSubject: message.cossSubject,
+    cossText: message.cossText,
+    cossHtml: message.cossHtml,
+    replyTo: settings?.emailFrom ? (settings.emailReplyTo ?? null) : null,
+    ics: null,
+    logo: message.logo,
+    idempotencyKey: `scheduling:${row.id}`,
+    ownSenderOnly: false,
+  });
+  return "sent";
+}
+
+/** Sends what's due. Returns how many were claimed, so a full batch runs again at once. */
+export async function runDueSchedulingNotifications(
+  deps: NotificationDeps,
+  opts: Scan = {},
+): Promise<number> {
+  const now = deps.now?.() ?? new Date();
+  const due = await claimDue(now, opts);
+  for (const row of due) {
+    try {
+      if (!row.bookingId) {
+        await finish(row, await sendHostNews(row, deps, now), now);
+        continue;
+      }
+      const [found] = await db
+        .select()
+        .from(schedulingBooking)
+        .where(
+          and(
+            eq(schedulingBooking.id, row.bookingId),
+            eq(schedulingBooking.organizationId, row.organizationId),
+          ),
+        );
+      // Claimed a while ago, maybe: carried forward or superseded since.
+      const [current] = await db
+        .select({
+          bookingVersion: schedulingNotification.bookingVersion,
+          finishedAt: schedulingNotification.finishedAt,
+          dueAt: schedulingNotification.dueAt,
+        })
+        .from(schedulingNotification)
+        .where(eq(schedulingNotification.id, row.id));
+      if (!current || current.finishedAt || current.dueAt > now) continue;
+      if (!found || isStale({ ...row, bookingVersion: current.bookingVersion }, found)) {
+        await finish(row, "stale", now);
+        continue;
+      }
+      if (row.channel === "webhook") {
+        await sendTimedWebhook(row, now);
+        continue;
+      }
+      const booking = await withSessionLocation(db, found);
+      let rule: ReminderRule | null = null;
+      let ownSenderOnly = false;
+      if (row.kind === "reminder" && row.reminderKey) {
+        const rules = effectiveRules(await policiesOf(db, found));
+        await addEditedTargets(db, row, found, rules);
+        const location = await chosenLocation(db, found);
+        const verdict = ruleVerdict(row, { ...found, location }, rules, now);
+        if ("moveTo" in verdict) {
+          await moveRow(db, row, verdict);
+          continue;
+        }
+        if ("outcome" in verdict) {
+          await finish(row, verdict.outcome, now);
+          continue;
+        }
+        rule = verdict.rule;
+        // Whether coss.com's address ends up sending it is only known when the customer's is tried:
+        // `email_from` may be set and not verified.
+        ownSenderOnly = !withinCossAllowance(rules, rule);
+      }
+      // A Meet, Teams or Zoom link appears only after the write: a confirmation gives it a moment,
+      // then goes without. The manage page always shows the link once it exists.
+      const waitingForLink =
+        (booking.location?.type === "google_meet" ||
+          booking.location?.type === "microsoft_teams" ||
+          (booking.location?.type === "zoom" && !booking.location.url)) &&
+        row.kind !== "cancelled" &&
+        now.getTime() - booking.updatedAt.getTime() < MEETING_LINK_WAIT_MS;
+      if (waitingForLink) {
+        await db
+          .update(schedulingNotification)
+          .set({
+            dueAt: new Date(now.getTime() + MEETING_LINK_RETRY_MS),
+            leaseUntil: null,
+            attempts: sql`${schedulingNotification.attempts} - 1`,
+          })
+          .where(eq(schedulingNotification.id, row.id));
+        continue;
+      }
+      const outcome =
+        row.channel === "email"
+          ? await sendBookingEmail(row, booking, deps, now, rule, ownSenderOnly)
+          : await sendBookingSms(row, booking, deps, now, rule);
+      await finish(row, outcome, now);
+    } catch (error) {
+      console.error("[scheduling] a notification failed:", error);
+      if (row.attempts + 1 >= MAX_ATTEMPTS) {
+        await finish(row, "failed", now);
+      } else {
+        await db
+          .update(schedulingNotification)
+          .set({
+            dueAt: new Date(now.getTime() + 30_000 * 2 ** row.attempts),
+            leaseUntil: null,
+          })
+          .where(eq(schedulingNotification.id, row.id));
+      }
+    }
+  }
+  return due.length;
+}

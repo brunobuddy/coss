@@ -10,6 +10,9 @@ import {
   deployInvalidationPaths,
   EXTERNAL_ORIGIN_REQUEST_POLICY,
   EXTERNAL_ZONES,
+  FORMS_OTHER_PATHS_REDIRECT,
+  HOSTED_REDIRECTS,
+  hostedDistributions,
   NEXT_CACHE_KEY_HEADERS,
   ORIGIN_VERIFY_HEADER,
   ORIGIN_VERIFY_PLACEHOLDER,
@@ -30,7 +33,7 @@ export function awsSpec() {
       },
       placeholders: {
         [ORIGIN_VERIFY_PLACEHOLDER]: "the origin-verify secret (CloudFront's custom header)",
-        [TRACKING_ORIGIN_VERIFY_PLACEHOLDER]: `the ${TRACKING_ORIGIN_VERIFY_HEADER} secret (Cloudflare's transform rule)`,
+        [TRACKING_ORIGIN_VERIFY_PLACEHOLDER]: `the ${TRACKING_ORIGIN_VERIFY_HEADER} secret (the tracking distributions' custom header)`,
       },
     },
     cloudFront: {
@@ -69,6 +72,9 @@ export function awsSpec() {
         "coss.com": { cachedBehaviours: cossComCacheBehaviours() },
         "api.coss.com": { cachedBehaviours: [] },
       },
+      hostedDistributions: hostedDistributions(),
+      hostedRedirects: HOSTED_REDIRECTS,
+      formsOtherPathsRedirect: FORMS_OTHER_PATHS_REDIRECT,
       invalidateAfterDeploy: deployInvalidationPaths(),
     },
   };

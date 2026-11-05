@@ -6,6 +6,7 @@ import {
   ListSuppressionsQuery,
   MAX_ATTACHMENTS_BYTES,
   MAX_SCHEDULE_AHEAD_MS,
+  parseEmailAddress,
   SendEmailRequest,
   type SendEmailRequestInput,
 } from "../src/schemas.ts";
@@ -560,5 +561,26 @@ describe("CreateEmailTemplateRequest", () => {
       "contents.1.locale": 'Duplicate locale "en".',
       default_locale: "The default locale needs an entry in `contents`.",
     });
+  });
+});
+
+describe("parseEmailAddress", () => {
+  test("splits Name <address>", () => {
+    expect(parseEmailAddress("Acme <hi@acme.com>")).toEqual({
+      name: "Acme",
+      address: "hi@acme.com",
+    });
+    expect(parseEmailAddress(" <hi@acme.com> ")).toEqual({ name: null, address: "hi@acme.com" });
+    expect(parseEmailAddress("hi@acme.com")).toEqual({ name: null, address: "hi@acme.com" });
+    expect(parseEmailAddress("Acme   < hi@acme.com >")).toEqual({
+      name: "Acme",
+      address: "hi@acme.com",
+    });
+  });
+
+  test("anything else stays whole, so the address check refuses it", () => {
+    for (const value of ["Acme\r\nBcc: x <hi@acme.com>", "<a>b>", "Acme <hi@acme.com> x"]) {
+      expect(parseEmailAddress(value)).toEqual({ name: null, address: value });
+    }
   });
 });

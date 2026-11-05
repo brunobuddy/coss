@@ -1,0 +1,80 @@
+---
+title: Zoom
+description: "Give each booking a Zoom meeting on the host's own account: connect the app, and coss.com creates and moves the meeting with the booking."
+---
+
+A host can connect their Zoom account, so that bookings with them get a Zoom meeting. coss.com creates the
+meeting when a booking is confirmed, moves it when the booking is rescheduled, and deletes it when the booking
+is cancelled. The join link goes to the attendee and the host, and onto the host's calendar event.
+
+Zoom has to approve coss.com's app before hosts outside Cal.com's own Zoom account can connect. Until then, a host
+elsewhere who tries to connect sees an error from Zoom.
+
+## Adding the app
+
+Hosts add the app from the page you give them, not from the Zoom App Marketplace.
+
+1. Open your hosted page from your product. If you've embedded it, it's in your own settings.
+2. Under **Calendars**, choose **Connect Zoom**.
+3. Sign in to Zoom if you're asked, read what coss.com is asking for, and choose **Allow**.
+4. You're back on the page, with Zoom listed as connected.
+
+If you build your own page, ask for a consent URL and open it in a new window:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data } = await coss.scheduling.calendars.authorize("doctor_482", {
+  provider: "zoom",
+});
+// Send the host to data?.url.
+```
+
+## Using it
+
+Offer Zoom on an event type with a `zoom` location:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.eventTypes.create({
+  title: "Consultation",
+  duration_minutes: 30,
+  locations: [{ type: "zoom" }],
+  hosts: [{ host: "doctor_482" }],
+});
+```
+
+The link appears on the booking moments after it's confirmed, with a `scheduling.booking.location_ready` webhook. A
+booking whose host has no Zoom connected still stands, with no link and a
+`scheduling.booking.calendar_write_failed` webhook. Group event types can't use Zoom yet.
+
+In a sandbox, a host with a `simulated` calendar gets a pretend link, so you can build this without a Zoom account.
+
+## What Zoom receives, and what coss.com keeps
+
+Meetings have the title "Appointment", a time and a description holding only an opaque reference, which is how coss.com
+recognizes its own meetings. They use a waiting room and aren't recorded automatically. No attendee details are sent to
+Zoom, and a host who edits that description may end up with a second meeting if a create was being retried. coss.com stores the Zoom user ID, access tokens (encrypted) and each meeting's ID and
+link. To find its own meetings it lists the host's meetings and compares their descriptions, keeping nothing from any
+other meeting. See the [Privacy Policy](/legal/privacy).
+
+Zoom is the host's own account. If a booking involves health data, check that it's covered by their agreement with
+Zoom.
+
+## Removing the app
+
+A host can remove it in either place:
+
+- **On your hosted page:** under **Calendars**, choose **Disconnect** next to Zoom. This also revokes coss.com's
+  access at Zoom.
+- **In Zoom:** in the Zoom App Marketplace, go to **Manage**, then **Added Apps**, and remove coss.com.
+
+Either way, coss.com deletes the tokens it holds, and new bookings no longer get a Zoom link. Meetings already
+created stay on the host's Zoom account until the host deletes them, and their links keep working.
+
+## Support
+
+Write to [support@coss.com](mailto:support@coss.com).

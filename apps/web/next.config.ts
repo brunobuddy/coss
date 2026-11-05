@@ -7,6 +7,8 @@ import { sentryBuildOptions } from "@coss/observability/build";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import {
+  LOGO_CSP,
+  LOGO_PATH,
   RECEIVED_CONTENT_CSP,
   RECEIVED_CONTENT_PATHS,
   securityHeaders,
@@ -40,12 +42,16 @@ const nextConfig: NextConfig = {
     "@coss/observability",
     "@coss/billing",
     "@coss/companion",
+    "@coss/compliance",
+    "@coss/dashboard-routes",
     "@coss/push",
     "@coss/sms",
     "@coss/migrate",
     "@coss/sign",
     "@coss/verify",
     "@coss/forms",
+    "@coss/support",
+    "@coss/scheduling",
     "@coss/notifications",
     "@coss/email-layout",
   ],
@@ -71,6 +77,7 @@ const nextConfig: NextConfig = {
         source,
         headers: [{ key: "Content-Security-Policy", value: RECEIVED_CONTENT_CSP }],
       })),
+      { source: LOGO_PATH, headers: [{ key: "Content-Security-Policy", value: LOGO_CSP }] },
     ];
   },
   async redirects() {
@@ -92,6 +99,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Suppression CSV imports upload up to 2 MB (`import-limits.ts`) plus multipart overhead.
     serverActions: { bodySizeLimit: "3mb" },
+    // Support uploads are up to 10 MB plus multipart overhead; past this the proxy cuts the body.
+    proxyClientMaxBodySize: "11mb",
   },
 };
 

@@ -9,6 +9,7 @@ import {
 import { cn } from "@coss/ui/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { ToneTile } from "./tone-tile";
 
 /**
  * Nothing to show yet: an icon tile on the drafting grid, a title, what would appear here, and
@@ -33,7 +34,9 @@ export function EmptyState(props: {
     >
       <EmptyHeader>
         <EmptyMedia className={props.compact ? "mb-4" : undefined} variant="icon">
-          <Icon strokeWidth={1.75} />
+          <ToneTile className="size-full rounded-[calc(var(--radius-md)-1px)]">
+            <Icon className="size-4" strokeWidth={1.75} />
+          </ToneTile>
         </EmptyMedia>
         <EmptyTitle className={props.compact ? "text-base" : "text-lg"}>{props.title}</EmptyTitle>
         {props.description ? <EmptyDescription>{props.description}</EmptyDescription> : null}

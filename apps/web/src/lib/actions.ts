@@ -1,5 +1,6 @@
 import "server-only";
 import { BillingError } from "@coss/billing";
+import { HipaaModeError } from "@coss/compliance";
 import {
   BroadcastError,
   ContactError,
@@ -11,6 +12,7 @@ import {
 import { FormError } from "@coss/forms";
 import { HookError } from "@coss/hooks";
 import { ReputationError } from "@coss/reputation";
+import { SupportError } from "@coss/support";
 import { TenancyError } from "@coss/tenancy";
 import { isAPIError } from "better-auth/api";
 import { unstable_rethrow } from "next/navigation";
@@ -47,6 +49,7 @@ export async function runAction<T>(body: () => Promise<T>): Promise<ActionResult
 function userFacingMessage(error: unknown): string {
   if (
     error instanceof ActionError ||
+    error instanceof HipaaModeError ||
     error instanceof TenancyError ||
     error instanceof DomainError ||
     error instanceof ContactError ||
@@ -57,7 +60,8 @@ function userFacingMessage(error: unknown): string {
     error instanceof SubaccountError ||
     error instanceof BillingError ||
     error instanceof HookError ||
-    error instanceof FormError
+    error instanceof FormError ||
+    error instanceof SupportError
   ) {
     return error.message;
   }

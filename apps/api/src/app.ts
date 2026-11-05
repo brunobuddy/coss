@@ -1,7 +1,13 @@
 import type { PlanGate, UsageGate } from "@coss/billing/gate";
-import type { DomainDeps, EmailService, LinkKeyRing } from "@coss/email";
+import { db } from "@coss/db";
+import {
+  authorizeLiveSender,
+  type DomainDeps,
+  type EmailService,
+  type LinkKeyRing,
+} from "@coss/email";
 import type { InboundRuntime } from "@coss/email/runtime";
-import { FakeFormFileStore, type FormFileStore } from "@coss/forms";
+import { FakeFormFileStore, type FormFileStore, hostedPageScreening } from "@coss/forms";
 import { type LogWriter, noopLogWriter } from "@coss/logs";
 import {
   type ClientIpResolver,
@@ -10,6 +16,7 @@ import {
   type RateLimiter,
 } from "@coss/ratelimit";
 import { DEVELOPMENT_HASH_KEY, type RiskDeps } from "@coss/risk";
+import type { SchedulingDeps } from "@coss/scheduling";
 import { createSignService, FakeDocumentStore, type SignService } from "@coss/sign";
 import type { SmsService } from "@coss/sms";
 import { createVerifyService, type SharedSmsSender, verifyCodeKey } from "@coss/verify";
@@ -17,18 +24,28 @@ import { versioning as apiVersioning, type Versioning } from "@coss/versioning";
 import type { WebhookManagementDeps } from "@coss/webhooks";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { honoMiddleware } from "@sentry/bun";
+import type { HostedMcp } from "coss-mcp/http";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
-import { BODY_LIMIT_BYTES, hasOwnBodyLimit, limitBody } from "./body-limit.ts";
+import { BODY_LIMIT_BYTES, hasOwnBodyLimit, limitBody, MCP_PATH } from "./body-limit.ts";
 import { errorResponse, internalError, notFound, toApiError } from "./errors.ts";
+import { accessLog } from "./middleware/access-log.ts";
 import { apiVersion } from "./middleware/api-version.ts";
 import { requestId } from "./middleware/request-id.ts";
 import { requestLog } from "./middleware/request-log.ts";
 import { traceContext } from "./middleware/trace-context.ts";
 import { withApiVersionDocs } from "./openapi-versions.ts";
 import { createFormEndpointRoutes, FORMS_PATH_PREFIX } from "./routes/forms-public.ts";
+import { createMcpRoutes } from "./routes/mcp.ts";
 import { createPreferenceRoutes } from "./routes/preferences.ts";
+import {
+  createSchedulingCallbackRoutes,
+  SCHEDULING_CALLBACK_PATH,
+} from "./routes/scheduling-callbacks.ts";
+import {
+  createSchedulingClientRoutes,
+  SCHEDULING_CLIENT_PATH,
+} from "./routes/scheduling-client.ts";
 import { createSmsCallbackRoutes, SMS_CALLBACK_PATH } from "./routes/sms-callbacks.ts";
 import { createTrackingRoutes, TRACKING_PATH_PREFIX } from "./routes/tracking.ts";
 import { createV1Router } from "./routes/v1.ts";
@@ -58,6 +75,12 @@ export type CreateAppOptions = {
     sharedSms?: SharedSmsSender | null;
     cossEmail?: CossVerifySender | null;
   };
+  /**
+   * Scheduling's attendee data key ring and lookup key (`SCHEDULING_DATA_KEYS`, `RISK_HASH_KEY`).
+   * Required, as a throwaway key would make every stored attendee unreadable; `null` turns the
+   * product off (`scheduling_unavailable`), as production does until it's configured.
+   */
+  scheduling: SchedulingDeps | null;
   /** Identity provider and DNS resolver for domain management. Defaults to the fake provider. */
   domainDeps?: DomainDeps;
   /**
@@ -134,6 +157,11 @@ export type CreateAppOptions = {
   shutdownSignal?: AbortSignal;
   /** How often a waiting listener poll checks for deliveries (tests shorten it). Default 1 s. */
   listenerPollIntervalMs?: number;
+  /**
+   * The hosted MCP server (`createHostedMcp` from `coss-mcp/http`, which is built output, so only
+   * `src/index.ts` and the tests that need it import it). Not given: `/mcp` isn't served.
+   */
+  mcp?: HostedMcp;
 };
 
 /** Request headers a browser may send, and response headers it may read, cross-origin. */
@@ -153,6 +181,8 @@ const CORS_EXPOSE_HEADERS = ["X-Request-Id", "Idempotent-Replayed", "Retry-After
  * Builds the public API. Free of side effects (no env validation, no server), so tests can
  * create as many instances as they need and call `app.request()`.
  */
+const READINESS_TIMEOUT_MS = 3000;
+
 export function createApp(opts: CreateAppOptions) {
   const { emailService } = opts;
   // Cheap (in-memory fakes), and only used when no domain or inbound dependencies were injected.
@@ -170,6 +200,9 @@ export function createApp(opts: CreateAppOptions) {
   const formsStore = opts.forms?.store === undefined ? new FakeFormFileStore() : opts.forms.store;
   // Sub-routers inherit this hook: every validation failure becomes the 422 envelope.
   const app = new OpenAPIHono<AppEnv>({ defaultHook: validationHook });
+  // The hosted MCP server's own API calls run here without a socket: whose address they are can't
+  // come from a header, and nothing from outside can reach this map.
+  const inProcessClientIps = new WeakMap<Request, { ip: string | null }>();
 
   // Sentry (when src/instrument.ts initialized it): names each request's transaction after its
   // route (`GET /v1/emails/:id`) and traces middleware. Unhandled errors are reported by the
@@ -181,7 +214,8 @@ export function createApp(opts: CreateAppOptions) {
   app.use(async (c, next) => {
     c.set("rateLimiter", rateLimiter);
     c.set("plans", opts.plans ?? null);
-    c.set("clientIp", clientIp(c.req.raw.headers));
+    const inProcess = inProcessClientIps.get(c.req.raw);
+    c.set("clientIp", inProcess ? inProcess.ip : clientIp(c.req.raw.headers));
     c.set("versioning", versioning);
     await next();
   });
@@ -213,13 +247,13 @@ export function createApp(opts: CreateAppOptions) {
   app.use((c, next) =>
     (c.req.path.startsWith(TRACKING_PATH_PREFIX)
       ? trackingHeaders
-      : c.req.path.startsWith(FORMS_PATH_PREFIX)
+      : c.req.path.startsWith(FORMS_PATH_PREFIX) || c.req.path.startsWith(SCHEDULING_CLIENT_PATH)
         ? formHeaders
         : strictHeaders)(c, next),
   );
   const defaultBodyLimit = limitBody(BODY_LIMIT_BYTES);
   app.use((c, next) => (hasOwnBodyLimit(c) ? next() : defaultBodyLimit(c, next)));
-  if (process.env.NODE_ENV !== "test") app.use(logger());
+  if (process.env.NODE_ENV !== "test") app.use(accessLog);
 
   app.onError((error, c) => {
     const apiError = toApiError(error);
@@ -237,6 +271,19 @@ export function createApp(opts: CreateAppOptions) {
 
   app.get("/health", (c) => c.json({ ok: true }));
 
+  // For uptime monitors only: load balancer health checks stay on `/health`, so a database outage
+  // never takes every task out of service.
+  app.get("/health/ready", async (c) => {
+    const ready = await Promise.race([
+      db.execute("select 1").then(
+        () => true,
+        () => false,
+      ),
+      Bun.sleep(READINESS_TIMEOUT_MS).then(() => false),
+    ]);
+    return c.json({ ok: ready }, ready ? 200 : 503);
+  });
+
   // Public and unauthenticated (fetched by mail clients); not part of the OpenAPI document. The
   // preference center first: `/t` would otherwise answer its paths with a 404.
   app.route("/t/u", createPreferenceRoutes(opts.links.keys));
@@ -246,6 +293,25 @@ export function createApp(opts: CreateAppOptions) {
     SMS_CALLBACK_PATH,
     createSmsCallbackRoutes({ keys: opts.webhookDeps.secretsKeys, publicUrl: opts.publicUrl }),
   );
+
+  // Google's and Microsoft's calendars: consent coming back, and push notifications.
+  if (opts.scheduling?.calendars) {
+    app.route(
+      SCHEDULING_CALLBACK_PATH,
+      createSchedulingCallbackRoutes({ calendars: opts.scheduling.calendars }),
+    );
+  }
+
+  // What browsers call with a session: the hosted pages, and customers' own UIs.
+  if (opts.scheduling) {
+    app.route(
+      SCHEDULING_CLIENT_PATH,
+      createSchedulingClientRoutes({
+        deps: { ...opts.scheduling, billing: opts.billing, plans: opts.plans },
+        hostedUrl: opts.scheduling.publicUrl ?? null,
+      }),
+    );
+  }
 
   // Forms' public endpoint, where customers' sites post (its own host in production).
   if (formsUrl) {
@@ -257,6 +323,21 @@ export function createApp(opts: CreateAppOptions) {
         links: { publicUrl: formsUrl },
         hostOnly: opts.forms?.hostOnly ? new URL(formsUrl).host.toLowerCase() : null,
         billing: opts.billing,
+      }),
+    );
+  }
+
+  // Streamable HTTP, for MCP clients that can't start a local process. Not in the OpenAPI document.
+  if (opts.mcp) {
+    app.route(
+      MCP_PATH,
+      createMcpRoutes({
+        mcp: opts.mcp,
+        shutdownSignal: opts.shutdownSignal ?? new AbortController().signal,
+        apiFetch: (request, callerIp) => {
+          inProcessClientIps.set(request, { ip: callerIp });
+          return app.fetch(request);
+        },
       }),
     );
   }
@@ -288,6 +369,26 @@ export function createApp(opts: CreateAppOptions) {
       signUrl: opts.signUrl === undefined ? "http://localhost:3004" : opts.signUrl,
       formsUrl,
       formsStore,
+      scheduling: opts.scheduling && {
+        ...opts.scheduling,
+        billing: opts.billing,
+        plans: opts.plans,
+        screenSetup: opts.scheduling.screenSetup ?? hostedPageScreening(opts.riskDeps),
+        verifiedAddress:
+          opts.scheduling.verifiedAddress ??
+          (async ({ organizationId, address }) => {
+            try {
+              await authorizeLiveSender({
+                organizationId,
+                from: address,
+                provider: domainDeps.identity.name,
+              });
+              return true;
+            } catch {
+              return false;
+            }
+          }),
+      },
       riskDeps: opts.riskDeps,
       inbound,
       shutdownSignal: opts.shutdownSignal ?? new AbortController().signal,
@@ -401,6 +502,38 @@ export function openApiDocumentConfig(serverUrl: string) {
         name: "Form submissions",
         description:
           "What people submitted to a form, with uploaded files; release spam, or delete.",
+      },
+      {
+        name: "Scheduling hosts",
+        description: "The people who can be booked: your doctors, tutors or consultants.",
+      },
+      {
+        name: "Scheduling schedules",
+        description: "A host's weekly hours and date overrides, in their local time.",
+      },
+      {
+        name: "Scheduling event types",
+        description: "What can be booked: one-on-one, a pool, collective or a group session.",
+      },
+      {
+        name: "Scheduling availability",
+        description: "Which times can be booked, for one event type or across many hosts.",
+      },
+      {
+        name: "Scheduling bookings",
+        description: "Bookings and holds: create, reschedule, cancel, approve and erase.",
+      },
+      {
+        name: "Scheduling series",
+        description: "Recurring bookings, whose occurrences can each move on their own.",
+      },
+      {
+        name: "Scheduling calendars",
+        description: "Connect a host's calendars, and choose which of them count.",
+      },
+      {
+        name: "Scheduling settings",
+        description: "Embedding origins, branding, notifications and calendar failure behaviour.",
       },
       {
         name: "Receiving",

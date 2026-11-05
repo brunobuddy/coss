@@ -23,8 +23,15 @@ import { carriedKeys } from "./carried.ts";
 import type { MeterKey } from "./catalog/meters.ts";
 import { contractAt, contractsOverlapping } from "./contracts.ts";
 import { composePeriodInvoice } from "./engine/compose.ts";
-import type { Composition, Segment, SpendHistory, TermQuantity } from "./engine/types.ts";
-import { existingGrantKeys, grantsFor, toGrantBalance } from "./grants.ts";
+import type {
+  Composition,
+  GrantApplication,
+  GrantBalance,
+  Segment,
+  SpendHistory,
+  TermQuantity,
+} from "./engine/types.ts";
+import { existingGrantKeys, type Grant, grantsFor, toGrantBalance } from "./grants.ts";
 import { createInvoice, existingChargeKeys, finalizeInvoice, spendHistory } from "./invoices.ts";
 import { stringifyWithBigInt } from "./money.ts";
 import { contractSegment, segmentsFor } from "./resolve.ts";
@@ -36,7 +43,7 @@ const { billingAccount, billingContract, billingPeriod } = schema;
 /** How long after a month ends it is closed: longer than any transaction that meters usage. */
 export const USAGE_SETTLE_MS = 15 * 60 * 1000;
 /** Months the close scan looks back (it catches up after an outage). */
-const CATCH_UP_MONTHS = 3;
+export const CATCH_UP_MONTHS = 3;
 
 type ComposeInput = {
   organizationId: string;
@@ -45,7 +52,17 @@ type ComposeInput = {
   withAdvance: boolean;
   /** Only usage before this instant (an estimate of the running month). */
   usageUntil?: Date;
+  /** What an estimate of an earlier month drew down: that credit can't pay for this one too. */
+  drawnDown?: readonly GrantApplication[];
 };
+
+function balanceAfter(grant: Grant, drawnDown: readonly GrantApplication[]): GrantBalance {
+  const drawn = drawnDown
+    .filter((application) => application.grantId === grant.id)
+    .reduce((sum, application) => sum + application.amount, 0n);
+  const balance = toGrantBalance(grant);
+  return { ...balance, remaining: balance.remaining - drawn };
+}
 
 /** Everything the engine needs for an account's month, read in `executor`. */
 export async function composeMonth(
@@ -115,7 +132,9 @@ export async function composeMonth(
     }
   }
 
-  const grants = await grantsFor(organizationId, { start: period.start, end: next.end }, executor);
+  const grants = (
+    await grantsFor(organizationId, { start: period.start, end: next.end }, executor)
+  ).map((grant) => balanceAfter(grant, input.drawnDown ?? []));
 
   // Charges and grants an earlier invoice made (a mid-month contract start, a re-run).
   const draft = composePeriodInvoice({
@@ -127,7 +146,7 @@ export async function composeMonth(
       termQuantities: [...termQuantities.values()],
     },
     next: nextSegment ? { period: next, segment: nextSegment } : null,
-    grants: grants.map(toGrantBalance),
+    grants,
   });
   const billed = {
     chargeKeys: await existingChargeKeys(
@@ -156,7 +175,7 @@ export async function composeMonth(
             termQuantities: [...termQuantities.values()],
           },
           next: nextSegment ? { period: next, segment: nextSegment } : null,
-          grants: grants.map(toGrantBalance),
+          grants,
           billed,
         })
       : draft;
@@ -287,6 +306,56 @@ export function snapshot(segments: readonly Segment[]): Record<string, unknown> 
   );
 }
 
+/** Accounts with a contract around the month whose close hasn't happened. */
+function accountsDue(
+  period: Interval,
+  opts: { scope?: { organizationIds: string[] }; except: string[]; limit: number },
+) {
+  const next = nextPeriod(period);
+  return db
+    .select({
+      organizationId: billingAccount.organizationId,
+      provider: billingAccount.provider,
+    })
+    .from(billingAccount)
+    .where(
+      and(
+        opts.scope ? inArray(billingAccount.organizationId, opts.scope.organizationIds) : undefined,
+        opts.except.length ? notInArray(billingAccount.organizationId, opts.except) : undefined,
+        // A contract around the month (or starting the next one, for its advance charges).
+        exists(
+          db
+            .select({ id: billingContract.id })
+            .from(billingContract)
+            .where(
+              and(
+                sql`${billingContract.accountId} = ${billingAccount.id}`,
+                sql`${billingContract.status} = 'confirmed'`,
+                lt(billingContract.effectiveFrom, next.end),
+                or(
+                  isNull(billingContract.effectiveUntil),
+                  gt(billingContract.effectiveUntil, period.start),
+                ),
+              ),
+            ),
+        ),
+        notExists(
+          db
+            .select({ id: billingPeriod.id })
+            .from(billingPeriod)
+            .where(
+              and(
+                sql`${billingPeriod.accountId} = ${billingAccount.id}`,
+                sql`${billingPeriod.periodStart} = ${period.start}`,
+              ),
+            ),
+        ),
+      ),
+    )
+    .orderBy(asc(billingAccount.id))
+    .limit(opts.limit);
+}
+
 /**
  * Closes every ended month that is due (oldest first, up to `CATCH_UP_MONTHS` back) for accounts
  * with a contract around it. System-level: spans organizations. Returns how many were closed.
@@ -307,53 +376,13 @@ export async function runDueBillingPeriods(opts: {
   // order), and doesn't keep the others from closing.
   const failed: string[] = [];
   for (const period of periods) {
-    const next = nextPeriod(period);
     for (;;) {
       if (closed >= limit) return closed;
-      const due = await db
-        .select({
-          organizationId: billingAccount.organizationId,
-          provider: billingAccount.provider,
-        })
-        .from(billingAccount)
-        .where(
-          and(
-            opts.scope
-              ? inArray(billingAccount.organizationId, opts.scope.organizationIds)
-              : undefined,
-            failed.length ? notInArray(billingAccount.organizationId, failed) : undefined,
-            // A contract around the month (or starting the next one, for its advance charges).
-            exists(
-              db
-                .select({ id: billingContract.id })
-                .from(billingContract)
-                .where(
-                  and(
-                    sql`${billingContract.accountId} = ${billingAccount.id}`,
-                    sql`${billingContract.status} = 'confirmed'`,
-                    lt(billingContract.effectiveFrom, next.end),
-                    or(
-                      isNull(billingContract.effectiveUntil),
-                      gt(billingContract.effectiveUntil, period.start),
-                    ),
-                  ),
-                ),
-            ),
-            notExists(
-              db
-                .select({ id: billingPeriod.id })
-                .from(billingPeriod)
-                .where(
-                  and(
-                    sql`${billingPeriod.accountId} = ${billingAccount.id}`,
-                    sql`${billingPeriod.periodStart} = ${period.start}`,
-                  ),
-                ),
-            ),
-          ),
-        )
-        .orderBy(asc(billingAccount.id))
-        .limit(Math.min(limit - closed, 50));
+      const due = await accountsDue(period, {
+        scope: opts.scope,
+        except: failed,
+        limit: Math.min(limit - closed, 50),
+      });
       if (!due.length) break;
       let progressed = false;
       for (const account of due) {
@@ -381,6 +410,15 @@ export async function runDueBillingPeriods(opts: {
         }
       }
       if (!progressed && due.every((account) => failed.includes(account.organizationId))) continue;
+    }
+  }
+  // After `CATCH_UP_MONTHS` a month is skipped for good and its usage goes unbilled: say so first.
+  for (const period of periods.slice(0, -1)) {
+    const late = await accountsDue(period, { scope: opts.scope, except: [], limit: 20 });
+    if (late.length > 0) {
+      console.error(
+        `[billing] ${period.start.toISOString()} is still open for ${late.map((account) => account.organizationId).join(", ")}: after ${CATCH_UP_MONTHS} months it can't be closed.`,
+      );
     }
   }
   return closed;

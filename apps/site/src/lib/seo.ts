@@ -20,6 +20,20 @@ export function abs(path: string): string {
  */
 export const DEFAULT_IMAGE = "/opengraph-image";
 
+/** A description for search results: plain text, cut at a sentence or word within 160 characters. */
+export function metaDescription(text: string): string {
+  const plain = text
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/`|\*\*/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (plain.length <= 160) return plain;
+  const head = plain.slice(0, 160);
+  const sentence = Math.max(head.lastIndexOf(". "), head.endsWith(".") ? 159 : -1);
+  if (sentence >= 70) return head.slice(0, sentence + 1);
+  return `${head.slice(0, head.lastIndexOf(" ", 159)).replace(/[,;:]$/, "")}…`;
+}
+
 /**
  * A page's metadata: an absolute title (pages here are written for their search query, so the
  * root layout's `· coss.com` template would only repeat it), the description, the canonical URL,
@@ -33,6 +47,7 @@ export function pageMetadata({
   type = "website",
   markdown,
   ownImage = false,
+  image = DEFAULT_IMAGE,
 }: {
   title: string;
   description: string;
@@ -40,8 +55,10 @@ export function pageMetadata({
   type?: "website" | "article";
   markdown?: string;
   ownImage?: boolean;
+  /** The card, when it isn't the default and its URL is known. */
+  image?: string;
 }): Metadata {
-  const images = ownImage ? {} : { images: [DEFAULT_IMAGE] };
+  const images = ownImage ? {} : { images: [image] };
   return {
     title: { absolute: title },
     description,
@@ -60,11 +77,17 @@ const ORGANIZATION = {
   "@type": "Organization",
   "@id": ORGANIZATION_ID,
   name: SITE_NAME,
+  alternateName: "coss",
   url: SITE_URL,
-  logo: abs("/icon.svg"),
+  logo: abs("/site-assets/logo-512.png"),
   description: SITE_DESCRIPTION,
   parentOrganization: { "@type": "Organization", name: "Cal.com, Inc.", url: "https://cal.com" },
-  sameAs: ["https://github.com/cosscom/coss", "https://www.npmjs.com/package/coss"],
+  sameAs: [
+    "https://github.com/cosscom/coss",
+    "https://www.npmjs.com/package/coss",
+    "https://x.com/coss_com",
+    "https://www.linkedin.com/company/cosscom",
+  ],
 };
 
 export function organizationSchema() {
@@ -76,6 +99,7 @@ export function websiteSchema() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: SITE_NAME,
+    alternateName: "coss",
     url: SITE_URL,
     description: SITE_DESCRIPTION,
     publisher: { "@id": ORGANIZATION_ID },
@@ -117,6 +141,72 @@ export function productSchema({
     ...(features?.length ? { featureList: [...features] } : {}),
     offers: offers(),
     provider: { "@id": ORGANIZATION_ID },
+  };
+}
+
+/** Free software of ours with its own pages (Shipyard): not priced by the plans. */
+export function freeSoftwareSchema({
+  name,
+  description,
+  path,
+  operatingSystem,
+  repository,
+}: {
+  name: string;
+  description: string;
+  path: string;
+  operatingSystem: string;
+  repository: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name,
+    url: abs(path),
+    description,
+    applicationCategory: "DeveloperApplication",
+    operatingSystem,
+    offers: { "@type": "Offer", price: "0.00", priceCurrency: "USD" },
+    provider: { "@id": ORGANIZATION_ID },
+    sameAs: [repository],
+  };
+}
+
+/** The pricing page: coss.com with its self-serve plans. */
+export function pricingSchema(description: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: SITE_NAME,
+    description,
+    url: abs("/pricing"),
+    brand: { "@id": ORGANIZATION_ID },
+    offers: offers(),
+  };
+}
+
+export function aboutPageSchema(description: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: `About ${SITE_NAME}`,
+    url: abs("/about"),
+    description,
+    mainEntity: ORGANIZATION,
+  };
+}
+
+/** A hub page's list of what it links to. */
+export function itemListSchema(items: readonly (readonly [name: string, path: string])[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: items.map(([name, path], index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name,
+      url: abs(path),
+    })),
   };
 }
 

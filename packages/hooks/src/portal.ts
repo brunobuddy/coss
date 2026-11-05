@@ -8,6 +8,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { db, schema } from "@coss/db";
 import { ID_PREFIXES, isId } from "@coss/db/id";
+import { withoutTrailingSlashes } from "@coss/db/url";
 import { RETENTION_DAYS, retentionCutoff } from "@coss/retention";
 import { and, eq, lt, sql } from "drizzle-orm";
 import type { HookApplicationRow } from "./applications.ts";
@@ -41,7 +42,7 @@ function hashToken(token: string): string {
 
 /** The portal link for a session: the id in the path, the token in the fragment. */
 export function portalSessionUrl(portalUrl: string, sessionId: string, token: string): string {
-  return `${portalUrl.replace(/\/+$/, "")}/s/${sessionId}#${token}`;
+  return `${withoutTrailingSlashes(portalUrl)}/s/${sessionId}#${token}`;
 }
 
 /** Mints a session for the application; the token is returned only here. */

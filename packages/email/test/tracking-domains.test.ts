@@ -1,22 +1,24 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { db, schema } from "@coss/db";
 import { uniqueSuffix } from "@coss/db/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { eq } from "drizzle-orm";
 import {
-  CloudflareTrackingHostnameProvider,
-  customHostnameState,
-} from "../src/cloudflare/custom-hostnames.ts";
+  CloudFrontTrackingHostnameProvider,
+  tenantName,
+  tenantState,
+} from "../src/cloudfront/tenants.ts";
 import { createDomain, type DomainDeps, deleteDomain } from "../src/domains.ts";
 import { DomainError } from "../src/errors.ts";
 import { FakeEmailProvider } from "../src/providers/fake.ts";
 import { FakeIdentityProvider } from "../src/providers/fake-identity.ts";
 import { FakeTrackingHostnameProvider } from "../src/providers/fake-tracking-hostnames.ts";
+import { emailRuntimeConfig } from "../src/runtime.ts";
 import { DomainObject } from "../src/schemas.ts";
 import { createEmailService } from "../src/service.ts";
 import {
   createVerifiedDomain,
-  FakeCloudflareApi,
+  FakeCloudFrontTenantsApi,
   fakeDnsResolver,
   memoryDispatchQueue,
   trackingUrls,
@@ -42,11 +44,11 @@ function fakeDeps(tracking = new FakeTrackingHostnameProvider({ cnameTarget: CNA
   return { identity: new FakeIdentityProvider(), dns: null, tracking } satisfies DomainDeps;
 }
 
-function cloudflareDeps(dns: DomainDeps["dns"] = null) {
-  const api = new FakeCloudflareApi();
-  const tracking = new CloudflareTrackingHostnameProvider(
-    { apiToken: "token", zoneId: "zone", cnameTarget: CNAME_TARGET },
-    { fetch: api.fetch, baseUrl: "https://cf.test/client/v4" },
+function cloudFrontDeps(dns: DomainDeps["dns"] = null) {
+  const api = new FakeCloudFrontTenantsApi();
+  const tracking = new CloudFrontTrackingHostnameProvider(
+    { distributionId: "dist", connectionGroupId: "group", cnameTarget: CNAME_TARGET },
+    api,
   );
   return { api, deps: { identity: new FakeIdentityProvider(), dns, tracking } };
 }
@@ -162,7 +164,7 @@ describe("lifecycle with the fake provider", () => {
     expect((await domainObject(domain)).tracking).toBeNull();
   });
 
-  test("a provider failure on create releases the claim", async () => {
+  test("a refused hostname releases the claim", async () => {
     const { organizationId, domain } = await setup();
     const tracking = new FakeTrackingHostnameProvider();
     tracking.create = async (hostname) => {
@@ -174,16 +176,6 @@ describe("lifecycle with the fake provider", () => {
         fakeDeps(tracking),
       ),
       "tracking_domain_taken",
-    );
-    tracking.create = async () => {
-      throw new Error("boom");
-    };
-    await expectDomainError(
-      createTrackingDomain(
-        { organizationId, domainId: domain.id, hostname: `links.${domain.name}` },
-        fakeDeps(tracking),
-      ),
-      "provider_error",
     );
     expect((await domainObject(domain)).tracking).toBeNull();
   });
@@ -229,20 +221,25 @@ describe("lifecycle with the fake provider", () => {
   });
 });
 
-describe("lifecycle with Cloudflare", () => {
-  test("pending until Cloudflare serves it; the CNAME check is reported", async () => {
+describe("lifecycle with CloudFront", () => {
+  test("pending until CloudFront serves it; the CNAME check is reported", async () => {
     const { organizationId, domain } = await setup();
     const hostname = `links.${domain.name}`;
     const dns = fakeDnsResolver({ [`CNAME ${hostname}`]: ["other.example.net"] });
-    const { api, deps } = cloudflareDeps(dns);
+    const { api, deps } = cloudFrontDeps(dns);
 
     const row = await createTrackingDomain({ organizationId, domainId: domain.id, hostname }, deps);
     expect(row.status).toBe("pending");
     expect(row.record).toMatchObject({ status: "mismatch", found: ["other.example.net"] });
-    expect(api.calls[0]).toMatchObject({
-      method: "POST",
-      path: "/client/v4/zones/zone/custom_hostnames",
-      body: { hostname, ssl: { method: "http", type: "dv" } },
+    expect(row.providerMessage).toContain(CNAME_TARGET);
+    expect(api.calls[0]).toEqual({
+      operation: "create",
+      input: {
+        distributionId: "dist",
+        connectionGroupId: "group",
+        name: tenantName(hostname, row.id),
+        hostname,
+      },
     });
 
     api.activate(hostname);
@@ -251,7 +248,7 @@ describe("lifecycle with Cloudflare", () => {
     expect(active.activatedAt).not.toBeNull();
 
     // The CNAME was removed: links fall back to the default host until it is back.
-    api.set(hostname, { status: "moved" });
+    api.set(hostname, { domainStatus: "inactive" });
     const moved = await checkTrackingDomain({ organizationId, domainId: domain.id }, deps);
     expect(moved.status).toBe("temporary_failure");
     expect(moved.providerMessage).toContain(CNAME_TARGET);
@@ -262,11 +259,75 @@ describe("lifecycle with Cloudflare", () => {
     );
   });
 
+  test("an issued certificate is attached once, and it stays pending until the domain is active", async () => {
+    const { organizationId, domain } = await setup();
+    const hostname = `links.${domain.name}`;
+    const { api, deps } = cloudFrontDeps();
+    const input = { organizationId, domainId: domain.id };
+    await createTrackingDomain({ ...input, hostname }, deps);
+    const attaches = () => api.calls.filter((call) => call.operation === "attachCertificate");
+
+    expect((await checkTrackingDomain(input, deps)).status).toBe("pending");
+    expect(attaches()).toHaveLength(0);
+
+    api.issueCertificate(hostname);
+    expect((await checkTrackingDomain(input, deps)).status).toBe("pending");
+    expect(attaches()).toHaveLength(1);
+    const tenant = api.find(hostname);
+    expect(tenant?.attachedCertificateArn).not.toBeNull();
+    expect(tenant?.attachedCertificateArn).toBe(tenant?.issuedCertificateArn ?? "");
+
+    expect((await checkTrackingDomain(input, deps)).status).toBe("pending");
+    expect(attaches()).toHaveLength(1);
+
+    api.activate(hostname);
+    expect((await checkTrackingDomain(input, deps)).status).toBe("active");
+    expect(attaches()).toHaveLength(1);
+  });
+
+  test("an already active domain never has a certificate attached", async () => {
+    const { organizationId, domain } = await setup();
+    const hostname = `links.${domain.name}`;
+    const { api, deps } = cloudFrontDeps();
+    const input = { organizationId, domainId: domain.id };
+    await createTrackingDomain({ ...input, hostname }, deps);
+    api.issueCertificate(hostname);
+    api.set(hostname, { domainStatus: "active" });
+    expect((await checkTrackingDomain(input, deps)).status).toBe("active");
+    expect(api.calls.filter((call) => call.operation === "attachCertificate")).toHaveLength(0);
+  });
+
+  test("a stale ETag on attaching leaves it pending for the next check", async () => {
+    const { organizationId, domain } = await setup();
+    const hostname = `links.${domain.name}`;
+    const { api, deps } = cloudFrontDeps();
+    const input = { organizationId, domainId: domain.id };
+    await createTrackingDomain({ ...input, hostname }, deps);
+    api.issueCertificate(hostname);
+
+    const read = api.get.bind(api);
+    api.get = async (id) => {
+      const tenant = await read(id);
+      return tenant && { ...tenant, etag: "stale" };
+    };
+    const stale = await checkTrackingDomain(input, deps);
+    expect(stale.status).toBe("pending");
+    expect(stale.providerHostnameId).not.toBeNull();
+    expect(api.find(hostname)?.attachedCertificateArn).toBeNull();
+
+    api.get = read;
+    await checkTrackingDomain(input, deps);
+    expect(api.find(hostname)?.attachedCertificateArn).not.toBeNull();
+  });
+
   test("never activated within 72 hours: fails, releases the hostname, and can restart", async () => {
     const { organizationId, domain } = await setup();
     const hostname = `links.${domain.name}`;
-    const { api, deps } = cloudflareDeps();
-    await createTrackingDomain({ organizationId, domainId: domain.id, hostname }, deps);
+    const { api, deps } = cloudFrontDeps();
+    const created = await createTrackingDomain(
+      { organizationId, domainId: domain.id, hostname },
+      deps,
+    );
 
     const later = new Date(Date.now() + 73 * HOUR);
     const failed = await checkTrackingDomain(
@@ -274,12 +335,16 @@ describe("lifecycle with Cloudflare", () => {
       deps,
     );
     expect(failed.status).toBe("failed");
-    expect(failed.providerHostnameId).toBeNull();
-    expect(api.find(hostname)).toBeUndefined();
+    // Refused until the disable deploys, so the id stays for the retry.
+    expect(failed.providerHostnameId).toBe(created.providerHostnameId);
+    expect(failed.nextCheckAt).toEqual(new Date(later.getTime() + 10 * 60 * 1000));
+    expect(api.find(hostname)?.enabled).toBe(false);
 
+    api.deployDisable(hostname);
     const restarted = await restartTrackingDomain({ organizationId, domainId: domain.id }, deps);
     expect(restarted.status).toBe("pending");
-    expect(api.find(hostname)).toBeDefined();
+    expect(restarted.providerHostnameId).not.toBe(created.providerHostnameId);
+    expect(api.find(hostname)?.enabled).toBe(true);
 
     api.activate(hostname);
     expect(
@@ -287,56 +352,137 @@ describe("lifecycle with Cloudflare", () => {
     ).toBe("active");
   });
 
-  test("a hostname Cloudflare gave up on, or no longer knows, fails", async () => {
+  test("a hostname CloudFront gave up on, or no longer knows, fails", async () => {
     const { organizationId, domain } = await setup();
     const hostname = `links.${domain.name}`;
-    const { api, deps } = cloudflareDeps();
+    const { api, deps } = cloudFrontDeps();
     await createTrackingDomain({ organizationId, domainId: domain.id, hostname }, deps);
-    api.set(hostname, {
-      ssl: { status: "validation_timed_out", validation_errors: [{ message: "No CNAME" }] },
-    });
+    api.set(hostname, { certificateStatus: "validation-timed-out" });
     const failed = await checkTrackingDomain({ organizationId, domainId: domain.id }, deps);
-    expect(failed).toMatchObject({ status: "failed", providerMessage: "No CNAME" });
+    expect(failed.status).toBe("failed");
+    expect(failed.providerMessage).toContain("could not be validated");
 
+    api.deployDisable(hostname);
     await restartTrackingDomain({ organizationId, domainId: domain.id }, deps);
-    api.hostnames.clear();
+    api.tenants.clear();
     const gone = await checkTrackingDomain({ organizationId, domainId: domain.id }, deps);
     expect(gone.status).toBe("failed");
+    expect(gone.providerHostnameId).toBeNull();
   });
 
-  test("a hostname registered elsewhere in the zone is never adopted", async () => {
+  test("a hostname registered elsewhere at CloudFront is never adopted", async () => {
     const { organizationId, domain } = await setup();
     const hostname = `links.${domain.name}`;
-    const { api, deps } = cloudflareDeps();
-    await api.fetch("https://cf.test/client/v4/zones/zone/custom_hostnames", {
-      method: "POST",
-      body: JSON.stringify({ hostname }),
+    const { api, deps } = cloudFrontDeps();
+    const other = { distributionId: "other", connectionGroupId: "other" };
+    await api.create({ ...other, name: "another-tenant", hostname });
+    await expectDomainError(
+      createTrackingDomain({ organizationId, domainId: domain.id, hostname }, deps),
+      "tracking_domain_taken",
+    );
+    expect(api.tenants.size).toBe(1);
+  });
+
+  test("a tenant another claim left behind is never adopted", async () => {
+    const { organizationId, domain } = await setup();
+    const hostname = `links.${domain.name}`;
+    const { api, deps } = cloudFrontDeps();
+    await api.create({
+      distributionId: "dist",
+      connectionGroupId: "group",
+      name: tenantName(hostname, "tdom_someone_else"),
+      hostname,
     });
     await expectDomainError(
       createTrackingDomain({ organizationId, domainId: domain.id, hostname }, deps),
       "tracking_domain_taken",
     );
+    expect(await getTrackingDomain({ organizationId, domainId: domain.id })).toBeNull();
+    expect(api.tenants.size).toBe(1);
   });
 
-  test("a Cloudflare error on delete keeps the tracking domain", async () => {
+  test("a CloudFront error on delete keeps the tracking domain", async () => {
     const { organizationId, domain } = await setup();
     const hostname = `links.${domain.name}`;
-    const { api, deps } = cloudflareDeps();
+    const { api, deps } = cloudFrontDeps();
     await createTrackingDomain({ organizationId, domainId: domain.id, hostname }, deps);
-    api.failNext = 500;
+    api.failNext = "InternalError";
     await expectDomainError(
       deleteTrackingDomain({ organizationId, domainId: domain.id }, deps),
       "provider_error",
     );
     expect((await domainObject(domain)).tracking?.status).toBe("pending");
-    await deleteTrackingDomain({ organizationId, domainId: domain.id }, deps);
+    expect(api.find(hostname)?.enabled).toBe(true);
+  });
+
+  test("a delete is refused until the disable deploys, then succeeds on retry", async () => {
+    const { organizationId, domain } = await setup();
+    const hostname = `links.${domain.name}`;
+    const { api, deps } = cloudFrontDeps();
+    const input = { organizationId, domainId: domain.id };
+    await createTrackingDomain({ ...input, hostname }, deps);
+    api.activate(hostname);
+    await checkTrackingDomain(input, deps);
+
+    const error = await expectDomainError(deleteTrackingDomain(input, deps), "provider_error");
+    expect(error.message).toContain("Try again shortly");
+    expect((await domainObject(domain)).tracking?.status).toBe("temporary_failure");
+    expect(api.find(hostname)?.enabled).toBe(false);
+
+    // Still deploying: refused again, without disabling twice.
+    await expectDomainError(deleteTrackingDomain(input, deps), "provider_error");
+    expect(api.calls.filter((call) => call.operation === "disable")).toHaveLength(1);
+
+    api.deployDisable(hostname);
+    await deleteTrackingDomain(input, deps);
     expect(api.find(hostname)).toBeUndefined();
+    expect((await domainObject(domain)).tracking).toBeNull();
+  });
+
+  test("a disabled tenant stops counting as active at the next check", async () => {
+    const { organizationId, domain } = await setup();
+    const hostname = `links.${domain.name}`;
+    const { api, deps } = cloudFrontDeps();
+    const input = { organizationId, domainId: domain.id };
+    await createTrackingDomain({ ...input, hostname }, deps);
+    api.activate(hostname);
+    await checkTrackingDomain(input, deps);
+    await expectDomainError(deleteTrackingDomain(input, deps), "provider_error");
+
+    const checked = await checkTrackingDomain(input, deps);
+    expect(checked.status).toBe("temporary_failure");
+    expect(checked.providerMessage).toContain("being removed");
+  });
+
+  test("deleting the domain is refused until the disable deploys too", async () => {
+    const tenant = await createTestTenant();
+    const organizationId = tenant.organization.id;
+    const { api, deps } = cloudFrontDeps();
+    const domain = await createDomain(
+      { organizationId, name: `t-${uniqueSuffix()}.coss.test`, userId: null },
+      deps,
+    );
+    const hostname = `links.${domain.name}`;
+    await createTrackingDomain({ organizationId, domainId: domain.id, hostname }, deps);
+
+    await expectDomainError(
+      deleteDomain({ organizationId, id: domain.id }, deps),
+      "provider_error",
+    );
+    api.deployDisable(hostname);
+    await deleteDomain({ organizationId, id: domain.id }, deps);
+    expect(api.find(hostname)).toBeUndefined();
+  });
+
+  test("deleting a tenant CloudFront no longer knows succeeds", async () => {
+    const { deps } = cloudFrontDeps();
+    await deps.tracking.delete("dt-unknown");
   });
 
   test("the worker re-checks due tracking domains of its provider", async () => {
     const { organizationId, domain } = await setup();
     const hostname = `links.${domain.name}`;
-    const { api, deps } = cloudflareDeps();
+    const { api, deps } = cloudFrontDeps();
     await createTrackingDomain({ organizationId, domainId: domain.id, hostname }, deps);
     api.activate(hostname);
     const scope = { organizationIds: [organizationId] };
@@ -351,15 +497,80 @@ describe("lifecycle with Cloudflare", () => {
   });
 });
 
-describe("customHostnameState", () => {
-  test("active needs both the hostname and its certificate", () => {
-    const state = (status: string, ssl: string) =>
-      customHostnameState({ id: "x", hostname: "h", status, ssl: { status: ssl } }, "t").status;
-    expect(state("active", "active")).toBe("active");
-    expect(state("active", "pending_validation")).toBe("pending");
-    expect(state("pending", "active")).toBe("pending");
-    expect(state("blocked", "active")).toBe("failed");
-    expect(state("active", "expired")).toBe("failed");
+describe("tenantState", () => {
+  const state = (domain: string | null, certificate: string | null) =>
+    tenantState(domain, certificate, CNAME_TARGET);
+
+  test("active needs both the domain and its certificate", () => {
+    expect(state("active", "issued")).toEqual({ status: "active", message: null });
+    expect(state("inactive", "issued").status).toBe("pending");
+    expect(state(null, "issued").status).toBe("pending");
+    expect(state("active", "pending-validation").status).toBe("pending");
+    expect(state("active", null).status).toBe("pending");
+    expect(state("active", "inactive").status).toBe("pending");
+  });
+
+  test.each(["failed", "revoked", "expired", "validation-timed-out"])(
+    "a %s certificate fails, whatever the domain says",
+    (certificate) => {
+      const result = state("active", certificate);
+      expect(result.status).toBe("failed");
+      expect(result.message).toContain("certificate");
+    },
+  );
+
+  test("names the CNAME target while waiting for validation", () => {
+    expect(state("inactive", "pending-validation").message).toContain(CNAME_TARGET);
+    expect(state("inactive", "issued").message).toContain(CNAME_TARGET);
+    expect(state(null, null).message).toBeNull();
+  });
+});
+
+describe("emailRuntimeConfig", () => {
+  const CLOUDFRONT = {
+    EMAIL_PROVIDER: "fake",
+    TRACKING_DOMAIN_PROVIDER: "cloudfront",
+    TRACKING_DISTRIBUTION_ID: "dist",
+    TRACKING_CONNECTION_GROUP_ID: "group",
+    TRACKING_CNAME_TARGET: CNAME_TARGET,
+  } as const;
+
+  test("cloudfront needs both ids and the CNAME target", () => {
+    expect(emailRuntimeConfig(CLOUDFRONT).tracking).toEqual({
+      provider: "cloudfront",
+      distributionId: "dist",
+      connectionGroupId: "group",
+      cnameTarget: CNAME_TARGET,
+    });
+    for (const missing of [
+      "TRACKING_DISTRIBUTION_ID",
+      "TRACKING_CONNECTION_GROUP_ID",
+      "TRACKING_CNAME_TARGET",
+    ]) {
+      expect(() => emailRuntimeConfig({ ...CLOUDFRONT, [missing]: undefined })).toThrow(missing);
+    }
+  });
+
+  test("the fake never points customers at the real tracking host", () => {
+    expect(emailRuntimeConfig({ EMAIL_PROVIDER: "fake" }).tracking).toEqual({
+      provider: "fake",
+      cnameTarget: "track.coss.test",
+    });
+  });
+});
+
+describe("tenantName", () => {
+  test("is bound to the claim", () => {
+    expect(tenantName("links.acme.test", "tdom_1")).not.toBe(
+      tenantName("links.acme.test", "tdom_2"),
+    );
+  });
+
+  test("stable, valid and short whatever the hostname", () => {
+    const long = `${"a".repeat(63)}.${"b".repeat(63)}.${"c".repeat(63)}.example.com`;
+    expect(tenantName(long, "tdom_1")).toBe(tenantName(long, "tdom_1"));
+    expect(tenantName(long, "tdom_1")).toMatch(/^trk-[0-9a-f]{32}$/);
+    expect(tenantName("links.acme.com", "tdom_1")).not.toBe(tenantName("links.acme.org", "tdom_1"));
   });
 });
 
@@ -453,7 +664,7 @@ describe("sending through a tracking domain", () => {
     );
     // Another provider's tracking domain, or no provider configured.
     expect(
-      (await sendFrom(other.tenant, `hi@${other.domain.name}`, "cloudflare")).open,
+      (await sendFrom(other.tenant, `hi@${other.domain.name}`, "cloudfront")).open,
     ).toStartWith("https://api.coss.test/t/o/");
     expect((await sendFrom(other.tenant, `hi@${other.domain.name}`, null)).open).toStartWith(
       "https://api.coss.test/t/o/",
@@ -476,16 +687,103 @@ describe("sending through a tracking domain", () => {
   });
 });
 
+describe("a lost answer from CloudFront", () => {
+  async function lostCreate() {
+    const { organizationId, domain } = await setup();
+    const { api, deps } = cloudFrontDeps();
+    const input = { organizationId, domainId: domain.id };
+    const hostname = `links.${domain.name}`;
+    api.loseNextCreateAnswer = true;
+    await expectDomainError(createTrackingDomain({ ...input, hostname }, deps), "provider_error");
+    const claim = await getTrackingDomain(input);
+    expect(claim).toMatchObject({ status: "pending", providerHostnameId: null });
+    expect(api.find(hostname)).toBeDefined();
+    return { api, deps, input, hostname, organizationId };
+  }
+
+  test("asking again picks up the tenant the claim created", async () => {
+    const { api, deps, input, hostname } = await lostCreate();
+    const row = await createTrackingDomain({ ...input, hostname }, deps);
+    expect(row.status).toBe("pending");
+    expect(row.providerHostnameId).toBe(api.find(hostname)?.id ?? "");
+    expect(api.tenants.size).toBe(1);
+  });
+
+  test("another hostname is still refused while the claim stands", async () => {
+    const { deps, input, hostname } = await lostCreate();
+    await expectDomainError(
+      createTrackingDomain(
+        { ...input, hostname: `other.${hostname.split(".").slice(1).join(".")}` },
+        deps,
+      ),
+      "tracking_domain_exists",
+    );
+  });
+
+  test("the worker picks it up too, after the lease", async () => {
+    const { api, deps, input, hostname, organizationId } = await lostCreate();
+    const scope = { organizationIds: [organizationId] };
+    const soon = new Date(Date.now() + 30_000);
+    expect(await checkTrackingDomain({ ...input, now: soon }, deps)).toMatchObject({
+      providerHostnameId: null,
+    });
+    expect(api.calls.filter((call) => call.operation === "create")).toHaveLength(1);
+    const now = new Date(Date.now() + 10 * 60_000);
+    expect(await recheckDueTrackingDomains({ scope, now }, deps)).toBe(1);
+    expect((await getTrackingDomain(input))?.providerHostnameId).toBe(api.find(hostname)?.id ?? "");
+  });
+
+  test("a claim that never gets an id expires, removing its tenant in two passes", async () => {
+    const { api, deps, input, hostname } = await lostCreate();
+    const later = new Date(Date.now() + 2 * HOUR);
+    const spy = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const waiting = await checkTrackingDomain({ ...input, now: later }, deps);
+      expect(waiting.status).toBe("pending");
+      expect(api.find(hostname)?.enabled).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
+    api.deployDisable(hostname);
+    const failed = await checkTrackingDomain({ ...input, now: later }, deps);
+    expect(failed).toMatchObject({ status: "failed", providerHostnameId: null, nextCheckAt: null });
+    expect(api.find(hostname)).toBeUndefined();
+    const restarted = await restartTrackingDomain(input, deps);
+    expect(restarted.status).toBe("pending");
+    expect(restarted.providerHostnameId).toBe(api.find(hostname)?.id ?? "");
+  });
+
+  test("deleting the claim removes the tenant it may have created", async () => {
+    const { api, deps, input, hostname } = await lostCreate();
+    api.deployDisable(hostname);
+    const tenant = api.find(hostname);
+    if (!tenant) throw new Error("no tenant");
+    tenant.enabled = false;
+    await deleteTrackingDomain(input, deps);
+    expect(await getTrackingDomain(input)).toBeNull();
+    expect(api.find(hostname)).toBeUndefined();
+  });
+
+  test("a disabled tenant isn't picked up: the claim waits", async () => {
+    const { api, deps, input, hostname } = await lostCreate();
+    const tenant = api.find(hostname);
+    if (!tenant) throw new Error("no tenant");
+    tenant.enabled = false;
+    await expectDomainError(createTrackingDomain({ ...input, hostname }, deps), "provider_error");
+    expect((await getTrackingDomain(input))?.providerHostnameId).toBeNull();
+  });
+});
+
 describe("tracking lifecycle recovery", () => {
   test.each(["expired", "failed"])(
     "retries cleanup after %s without losing the provider ID",
     async (reason) => {
       const { organizationId, domain } = await setup();
-      const { api, deps } = cloudflareDeps();
+      const { api, deps } = cloudFrontDeps();
       const input = { organizationId, domainId: domain.id };
       const hostname = `links.${domain.name}`;
       const created = await createTrackingDomain({ ...input, hostname }, deps);
-      if (reason === "failed") api.set(hostname, { status: "blocked" });
+      if (reason === "failed") api.set(hostname, { certificateStatus: "failed" });
       const remove = deps.tracking.delete.bind(deps.tracking);
       let fail = true;
       deps.tracking.delete = async (id) => {
@@ -500,13 +798,19 @@ describe("tracking lifecycle recovery", () => {
       const restarted = await restartTrackingDomain(input, deps);
       expect(restarted.status).toBe("failed");
       expect(restarted.providerHostnameId).toBe(created.providerHostnameId);
-      expect(api.calls.filter((call) => call.method === "POST")).toHaveLength(1);
+      expect(api.calls.filter((call) => call.operation === "create")).toHaveLength(1);
       const scope = { organizationIds: [organizationId] };
       expect(await recheckDueTrackingDomains({ scope, now }, deps)).toBe(1);
       expect((await getTrackingDomain(input))?.providerHostnameId).toBe(created.providerHostnameId);
       fail = false;
+      // Disabling takes minutes to deploy: refused once more, with the id kept.
       expect(
         await recheckDueTrackingDomains({ scope, now: new Date(now.getTime() + HOUR) }, deps),
+      ).toBe(1);
+      expect((await getTrackingDomain(input))?.providerHostnameId).toBe(created.providerHostnameId);
+      api.deployDisable(hostname);
+      expect(
+        await recheckDueTrackingDomains({ scope, now: new Date(now.getTime() + 2 * HOUR) }, deps),
       ).toBe(1);
       expect(await getTrackingDomain(input)).toMatchObject({
         status: "failed",
@@ -526,10 +830,10 @@ describe("tracking lifecycle recovery", () => {
     for (const restarting of [false, true]) {
       const entered = Promise.withResolvers<void>();
       const release = Promise.withResolvers<void>();
-      deps.tracking.create = async (hostname) => {
+      deps.tracking.create = async (hostname, claim) => {
         entered.resolve();
         await release.promise;
-        return create(hostname);
+        return create(hostname, claim);
       };
       const provisioning = restarting
         ? restartTrackingDomain(input, deps)

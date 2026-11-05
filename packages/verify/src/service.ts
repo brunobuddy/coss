@@ -15,6 +15,7 @@ import {
   isOnBillingHold,
   recordUsage,
 } from "@coss/billing/metering";
+import { HIPAA_SMS_COUNTRIES, HipaaModeError, isHipaaMode } from "@coss/compliance";
 import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
 import { requestHash as hashRequest } from "@coss/db/idempotency";
@@ -149,6 +150,7 @@ export type VerifyEmailSender = (input: {
   subject: string;
   text: string;
   html: string;
+  cossHtml: string;
   idempotencyKey: string;
   /** `suppressed`: nothing was sent (`emailId` is then `null`). */
 }) => Promise<{ route: "email" | "coss_email"; emailId: string | null; suppressed: boolean }>;
@@ -414,7 +416,9 @@ export function createVerifyService(opts: VerifyServiceOptions): VerifyService {
         if (!opts.sendEmail) {
           throw new VerifyError("send_failed", "Email codes aren't available.");
         }
-        const content = verifyEmailContent(settings.appName, code, settings.ttlSeconds);
+        const content = verifyEmailContent(settings.appName, code, settings.ttlSeconds, {
+          ownSender: Boolean(settings.emailFrom),
+        });
         const email = await opts.sendEmail({
           environment: env,
           apiKeyId: source.apiKeyId,
@@ -638,7 +642,7 @@ export function createVerifyService(opts: VerifyServiceOptions): VerifyService {
     if (await isOnBillingHold(env.organizationId)) {
       throw new VerifyError(
         "billing_hold",
-        "Live sending is paused: your organization has an overdue invoice or reached its spend limit.",
+        "Live sending is paused: your organization has an overdue invoice or reached its spend or credit limit.",
       );
     }
     const held = await budgetHoldFor({
@@ -676,6 +680,18 @@ export function createVerifyService(opts: VerifyServiceOptions): VerifyService {
     const settings = await getVerifySettings(env);
     if (!settings) throw new VerifyError("not_found", "Environment not found.");
     const { destination, route } = destinationOf(env, params, settings);
+    if (!sandbox && destination.channel === "sms" && (await isHipaaMode(env.organizationId))) {
+      if (route === "shared_number") {
+        throw new HipaaModeError(
+          "HIPAA mode needs your own number for SMS codes: set an SMS sender in Verify's settings.",
+        );
+      }
+      if (!HIPAA_SMS_COUNTRIES.includes(destination.country)) {
+        throw new HipaaModeError(
+          `HIPAA mode only sends SMS to ${HIPAA_SMS_COUNTRIES.join(", ")} numbers, which is what the BAA with Twilio covers.`,
+        );
+      }
+    }
 
     // A pending verification to the same destination is sent again, with a new code.
     const pending = await pendingFor(db, env, destination);

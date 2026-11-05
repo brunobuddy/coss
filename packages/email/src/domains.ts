@@ -860,9 +860,11 @@ async function releaseTrackingHostname(
       ),
     )
     .limit(1);
-  if (!tracked?.providerHostnameId || tracked.provider !== deps.tracking.name) return;
+  if (!tracked || tracked.provider !== deps.tracking.name) return;
+  if (!tracked.providerHostnameId && tracked.status !== "pending") return;
   try {
-    await deps.tracking.delete(tracked.providerHostnameId);
+    if (tracked.providerHostnameId) await deps.tracking.delete(tracked.providerHostnameId);
+    else await deps.tracking.release(tracked.hostname, tracked.id);
   } catch (error) {
     console.error(`[email:domains] releasing ${tracked.hostname} failed:`, error);
     throw new DomainError("provider_error", "The domain could not be removed. Try again shortly.");
@@ -1218,8 +1220,8 @@ export async function authorizeLiveSender(input: {
   if (await isOnBillingHold(input.organizationId)) {
     throw new EmailError(
       "billing_hold",
-      "Live sending is paused for this organization: an invoice is overdue or its spend limit " +
-        "was reached. Sandbox keys still work. See the organization's billing settings.",
+      "Live sending is paused for this organization: an invoice is overdue or its spend or " +
+        "credit limit was reached. Sandbox keys still work. See the organization's billing settings.",
     );
   }
   const address = parseEmailAddress(input.from).address.toLowerCase();
@@ -1252,6 +1254,18 @@ export async function authorizeLiveSender(input: {
       "domain_not_verified",
       `${fromDomain} is not a verified domain of this organization. Add and verify it under ` +
         "Domains in the dashboard, or use a sandbox key to test.",
+    );
+  }
+  const [blockedDomain] = await db
+    .select({ domain: schema.emailSenderDomainBlock.domain })
+    .from(schema.emailSenderDomainBlock)
+    .where(inArray(schema.emailSenderDomainBlock.domain, domainSuffixes(fromDomain)))
+    .limit(1);
+  if (blockedDomain) {
+    throw new EmailError(
+      "sending_paused",
+      "Live sending from this domain is restricted because of its sending history. " +
+        "Contact support to resume.",
     );
   }
   // A sub-account's domain is its own; the organization's domains are for sub-accounts only when

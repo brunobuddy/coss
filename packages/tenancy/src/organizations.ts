@@ -3,8 +3,10 @@
  * reading them directly keeps lookups explicit (by slug or id) instead of relying on the
  * session's active organization.
  */
+import { hipaaModeSql, isHipaaMode } from "@coss/compliance";
 import { db, schema } from "@coss/db";
 import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
+import { TenancyError } from "./errors.ts";
 
 const { invitation, member, organization, organizationSuspension, ssoProvider, user } = schema;
 
@@ -25,6 +27,8 @@ export type Membership = {
   member: { id: string; organizationId: string; userId: string; role: string; createdAt: Date };
   /** A platform admin suspended the organization: its dashboard is read-only. */
   suspended: boolean;
+  /** The organization is in HIPAA mode (`@coss/compliance`). */
+  hipaaMode: boolean;
   /**
    * `providerId` of the organization's SSO provider, or null. A session whose `ssoProviderId`
    * equals it was signed in through the organization's IdP.
@@ -96,6 +100,7 @@ export async function getMembership(input: {
         createdAt: member.createdAt,
       },
       suspendedAt: organizationSuspension.createdAt,
+      hipaaMode: hipaaModeSql(organization.id),
       ssoProviderId: sql<string | null>`(
         select ${ssoProvider.providerId} from ${ssoProvider}
         where ${ssoProvider.organizationId} = ${organization.id}
@@ -212,18 +217,34 @@ export async function setOrganizationTwoFactorRequired(input: {
   organizationId: string;
   required: boolean;
 }): Promise<void> {
-  await db
-    .update(organization)
-    .set({ requireTwoFactor: input.required })
-    .where(eq(organization.id, input.organizationId));
+  await db.transaction(async (tx) => {
+    // The row lock orders this with `enableHipaaMode`, which also writes the column.
+    await tx
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.id, input.organizationId))
+      .for("update");
+    if (!input.required && (await isHipaaMode(input.organizationId, tx))) {
+      throw new TenancyError("conflict", "HIPAA mode requires two-factor authentication.");
+    }
+    await tx
+      .update(organization)
+      .set({ requireTwoFactor: input.required })
+      .where(eq(organization.id, input.organizationId));
+  });
 }
 
 /** The user's organizations, by name (the org switcher; one query, unlike Better Auth's list). */
 export async function listUserOrganizations(input: {
   userId: string;
-}): Promise<{ name: string; slug: string; role: string }[]> {
+}): Promise<{ id: string; name: string; slug: string; role: string }[]> {
   return db
-    .select({ name: organization.name, slug: organization.slug, role: member.role })
+    .select({
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      role: member.role,
+    })
     .from(member)
     .innerJoin(organization, eq(organization.id, member.organizationId))
     .where(eq(member.userId, input.userId))

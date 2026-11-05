@@ -1,11 +1,5 @@
 import { PLANS } from "@coss/billing/catalog";
 import { formatCents } from "@coss/billing/money";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionPanel,
-  AccordionTrigger,
-} from "@coss/ui/components/accordion";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { estimateEmailMonth, formatPrice } from "@/lib/pricing";
@@ -62,7 +56,22 @@ function questions(): { question: string; answer: ReactNode; text?: string }[] {
         "Yes. Owners can set a spend limit: when usage beyond your credit reaches it, live sending pauses until the next month or until the limit is raised. Usage alerts go out at 80% and 100% of your credit, and owners can change those thresholds.",
     },
     {
-      question: "Can I send SMS? What about video and scheduling?",
+      question: "Do you sign a BAA?",
+      answer: (
+        <>
+          Yes, on an {PLANS.enterprise.name} contract: coss.com signs a Business Associate Agreement
+          and turns on{" "}
+          <Link className="text-foreground underline underline-offset-4" href="/docs/hipaa">
+            HIPAA mode
+          </Link>
+          , which narrows where protected health information can go and who at coss.com can reach
+          it. It isn't available on self-serve plans.
+        </>
+      ),
+      text: `Yes, on an ${PLANS.enterprise.name} contract: coss.com signs a Business Associate Agreement and turns on HIPAA mode, which narrows where protected health information can go and who at coss.com can reach it. It isn't available on self-serve plans.`,
+    },
+    {
+      question: "Can I send SMS?",
       answer: (
         <>
           SMS is available now on every paid plan: it's priced per segment by destination country,
@@ -71,10 +80,10 @@ function questions(): { question: string; answer: ReactNode; text?: string }[] {
           <Link className="text-foreground underline underline-offset-4" href="/docs/sms">
             SMS docs
           </Link>
-          ). Video and scheduling are on the way; their rates are listed above.
+          ).
         </>
       ),
-      text: "SMS is available now on every paid plan: it's priced per segment by destination country, with phone numbers and US carrier registration fees passed through at cost, and sandbox environments simulate it for free on any plan. Video and scheduling are on the way; their rates are listed above.",
+      text: "SMS is available now on every paid plan: it's priced per segment by destination country, with phone numbers and US carrier registration fees passed through at cost, and sandbox environments simulate it for free on any plan.",
     },
   ];
 }
@@ -85,29 +94,4 @@ export function pricingFaq(): { question: string; answer: string }[] {
     question,
     answer: text ?? (typeof answer === "string" ? answer : ""),
   }));
-}
-
-/** Billing questions; the details live in the billing guide. */
-export function PricingFaq() {
-  return (
-    <div className="flex flex-col gap-4">
-      <Accordion>
-        {questions().map((item) => (
-          <AccordionItem key={item.question} value={item.question}>
-            <AccordionTrigger className="text-base">{item.question}</AccordionTrigger>
-            <AccordionPanel className="max-w-2xl text-pretty leading-relaxed">
-              {item.answer}
-            </AccordionPanel>
-          </AccordionItem>
-        ))}
-      </Accordion>
-      <p className="text-muted-foreground text-sm">
-        More in the{" "}
-        <Link className="text-foreground underline underline-offset-4" href="/docs/billing">
-          billing guide
-        </Link>
-        .
-      </p>
-    </div>
-  );
 }

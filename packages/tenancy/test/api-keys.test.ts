@@ -145,6 +145,7 @@ describe("authenticateApiKey", () => {
         environmentId: tenant.production.id,
         ownerUserId: null,
         mode: "live",
+        hipaaMode: false,
         apiVersion: versioning.latest,
       },
     });
@@ -157,6 +158,7 @@ describe("authenticateApiKey", () => {
         environmentId: tenant.development.id,
         ownerUserId: null,
         mode: "sandbox",
+        hipaaMode: false,
         apiVersion: versioning.latest,
       },
     });
@@ -205,15 +207,16 @@ describe("authenticateApiKey", () => {
     const keyId = await keyIdOf(tenant.sandboxKey);
     await db
       .update(schema.apikey)
-      .set({ expiresAt: new Date(Date.now() - 60_000) })
-      .where(eq(schema.apikey.id, keyId));
-    expect(await authenticateApiKey(tenant.sandboxKey)).toEqual({ ok: false, reason: "invalid" });
-
-    await db
-      .update(schema.apikey)
       .set({ expiresAt: new Date(Date.now() + 60_000) })
       .where(eq(schema.apikey.id, keyId));
     expect((await authenticateApiKey(tenant.sandboxKey)).ok).toBe(true);
+
+    // Last: any key created elsewhere on this database makes Better Auth delete expired rows.
+    await db
+      .update(schema.apikey)
+      .set({ expiresAt: new Date(Date.now() - 60_000) })
+      .where(eq(schema.apikey.id, keyId));
+    expect(await authenticateApiKey(tenant.sandboxKey)).toEqual({ ok: false, reason: "invalid" });
   });
 
   test("rejects keys with a usage quota (not supported by the read-only check)", async () => {

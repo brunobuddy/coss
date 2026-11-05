@@ -1,7 +1,7 @@
 name: Deploy
 
-# Production deploys (README, "Deploying to AWS"): builds the seven images, migrates once the Bun
-# images are built (while the Next.js apps still build), rolls out all seven services at once and
+# Production deploys (README, "Deploying to AWS"): builds the eight images, migrates once the Bun
+# images are built (while the Next.js apps still build), rolls out all eight services at once and
 # invalidates the coss.com CDN. Jobs that touch AWS run on CodeBuild-hosted
 # runners whose role holds the credentials (infra/terraform/deploy.tf); nothing AWS-related is stored
 # in GitHub. Pushes to main ship in batches (the `gate` job); run it by hand to deploy main at once,
@@ -127,11 +127,13 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        images: [web, site, portal, sign]
+        images: [web, site, portal, sign, scheduling]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.prepare.outputs.tag }}
+          # The site's pages carry the day they last changed (infra/scripts/site-content-dates.sh).
+          fetch-depth: ${{ matrix.images == 'site' && '0' || '1' }}
       - name: Build and push ${{ matrix.images }}
         env:
           TAG: ${{ needs.prepare.outputs.tag }}
@@ -221,10 +223,14 @@ jobs:
         run: infra/scripts/newer-deployed.sh
       - name: Roll out
         if: steps.latest.outputs.deploy == 'true'
-        run: infra/scripts/ecs-deploy.sh "$TAG" api worker web site portal sign smtp
+        run: infra/scripts/ecs-deploy.sh "$TAG" api worker web site portal sign scheduling smtp
       - name: Record the deployed commit
         if: steps.latest.outputs.deploy == 'true'
         run: aws ssm put-parameter --name "/coss/$STAGE/image-tag" --value "$TAG" --overwrite >/dev/null
+      # An old task answering after the invalidation would put its page back in the cache for a year.
+      - name: Wait for the old site tasks to go
+        if: steps.latest.outputs.deploy == 'true'
+        run: infra/scripts/ecs-wait-drained.sh site
       # Docs pages are cached for a year at the edge. Only our apps' cached paths, never the hashed
       # assets: tabs opened before this deploy still load their old chunks from the cache.
       - name: Invalidate the coss.com CDN

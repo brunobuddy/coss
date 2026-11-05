@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SpringEasing } from "@/components/calendar/tools/spring-easing";
 import { ToolShell } from "@/components/calendar/tools/tool-shell";
 import { JsonLd } from "@/components/json-ld";
-import { abs, canonical } from "@/lib/calendar/site";
+import { abs, canonical, OG_IMAGE } from "@/lib/calendar/site";
 import { toolSchema } from "@/lib/calendar/structured-data";
 import { toolOf } from "@/lib/calendar/tools";
 
@@ -13,12 +13,18 @@ export const metadata: Metadata = {
   description: tool.description,
   alternates: canonical(`/kloq/tools/${tool.slug}`),
   openGraph: {
+    images: [OG_IMAGE],
     type: "website",
     title: tool.title,
     description: tool.description,
     url: abs(`/kloq/tools/${tool.slug}`),
   },
-  twitter: { card: "summary_large_image", title: tool.title, description: tool.description },
+  twitter: {
+    card: "summary_large_image",
+    images: [OG_IMAGE],
+    title: tool.title,
+    description: tool.description,
+  },
 };
 
 export default function Page() {

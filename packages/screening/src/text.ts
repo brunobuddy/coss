@@ -9,6 +9,8 @@ export const MAX_LINK_TOTAL_CHARS = 4000;
 /** Collapses whitespace and truncates to `max` characters. */
 export function prepareText(text: string, max: number = MAX_TEXT_CHARS): string {
   const collapsed = text
+    // Common text-filter evasion: invisible separators between every letter of an invoice.
+    .replace(/[\u00ad\u200b\u2060\ufeff]/g, "")
     .replace(/[ \t\f\v ]+/g, " ")
     .replace(/ ?\r?\n ?/g, "\n")
     .replace(/\n{3,}/g, "\n\n")

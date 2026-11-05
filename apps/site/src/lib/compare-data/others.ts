@@ -179,7 +179,7 @@ const TWILIO_VERIFY: Competitor = {
     },
     {
       label: "SMS channel",
-      coss: "From coss.com's shared numbers, billed at the country's SMS price; or from your own number, billed as any SMS",
+      coss: "From your own number, billed as any SMS; or, as they roll out, coss.com's shared numbers, billed at the country's SMS price",
       them: "Plus the channel fee: $0.0083 per SMS in the US",
     },
     {
@@ -231,7 +231,7 @@ const TWILIO_VERIFY: Competitor = {
     },
     {
       title: "You want your own message text",
-      body: "Twilio Verify lets you bring your own one-time code. coss.com makes the code itself, and its messages are fixed text, which is what carriers approve the shared numbers for.",
+      body: "Twilio Verify lets you bring your own one-time code. coss.com makes the code itself, and its messages are fixed text.",
     },
   ],
   chooseCoss: [
@@ -304,12 +304,12 @@ const SVIX: Competitor = {
   query: "Svix alternative",
   verdict:
     "Svix is the more complete webhooks service. coss.com Hooks covers the core, with a portal, on the API key you use for everything else.",
-  lede: "Svix and coss.com Hooks work the same way: applications for your customers, event types, endpoints with their own secrets, a portal, and the same retry schedule. Svix goes further, with channels, transformations, FIFO endpoints, receiving webhooks (Ingest) and a self-hostable MIT server. coss.com Hooks sits next to email, SMS and the rest of coss.com, with no per-message price.",
+  lede: "Svix and coss.com Hooks work the same way: applications for your customers, event types, endpoints with their own secrets, a portal, and the same retry schedule. Svix goes further, with channels, transformations, FIFO endpoints, receiving webhooks (Ingest) and a self-hostable MIT server. coss.com Hooks sits next to email, SMS and the rest of coss.com, priced per message with no platform fee.",
   checked: CHECKED,
   rows: [
     {
       label: "Price",
-      coss: "No per-message price: included in every coss.com plan, within the limits below",
+      coss: `${rateText("hooks.messages")}, once whatever the fan-out; ${includedUnitsText("hooks.messages")} on Free; no platform fee`,
       them: "Free; Basic from $20 a month; Professional from $490 a month; 50,000 messages included, then $0.0001 a message",
     },
     {
@@ -392,8 +392,8 @@ const SVIX: Competitor = {
   ],
   chooseCoss: [
     {
-      title: "No per-message bill",
-      body: "Hooks has no meter: it comes with every coss.com plan, sandbox included.",
+      title: "No platform fee to start",
+      body: `${includedUnitsText("hooks.messages")} on Free, then per message on any paid plan, with sandbox environments free.`,
     },
     {
       title: "It's on the account you already have",
@@ -428,8 +428,7 @@ const SVIX: Competitor = {
   faq: [
     {
       question: "What does coss.com Hooks cost?",
-      answer:
-        "Hooks has no per-message price: it is part of every coss.com plan, within its send and delivery limits. See coss.com/pricing for the plans.",
+      answer: `${rateText("hooks.messages")}. A live message is charged once, whatever its fan-out; retries, recoveries, test sends and sandbox environments are free. Free includes ${includedUnitsText("hooks.messages")}. The current rates are on coss.com/pricing.`,
     },
     {
       question: "Is the retry schedule the same as Svix's?",

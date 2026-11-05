@@ -5,7 +5,7 @@ import type {
 } from "@coss/companion";
 import { ExternalLink } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
-import { colors } from "../lib/theme";
+import { colors, space } from "../lib/theme";
 import { openOnWeb } from "../lib/web";
 import { Alert } from "./alert";
 import { Button } from "./button";
@@ -168,7 +168,7 @@ export function TemplateVariablesPanel(props: {
 }
 
 const styles = StyleSheet.create({
-  field: { gap: 4 },
-  button: { alignSelf: "flex-start", marginTop: 4 },
+  field: { gap: space.xs },
+  button: { alignSelf: "flex-start", marginTop: space.xs },
   error: { color: colors.destructiveForeground },
 });

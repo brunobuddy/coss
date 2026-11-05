@@ -1,0 +1,162 @@
+"use client";
+
+import { Button } from "@coss/ui/components/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogPanel,
+  DialogPopup,
+  DialogTitle,
+  DialogTrigger,
+} from "@coss/ui/components/dialog";
+import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
+import { Input } from "@coss/ui/components/input";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "@coss/ui/components/select";
+import { ListIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
+import { countryName, isCountryCode } from "@/components/fields/countries";
+import { Segmented } from "@/components/fields/segmented";
+import { FormError } from "@/components/form-error";
+import { useActionToast } from "@/lib/toast";
+import { addRiskListEntryAction } from "../actions";
+
+type Target = { orgSlug: string; projectSlug: string; envSlug: string };
+
+const LISTS = [
+  { value: "block", label: "Block list" },
+  { value: "allow", label: "Allow list" },
+];
+
+const TYPES = [
+  { value: "email", label: "Email address", placeholder: "jane@example.com" },
+  { value: "domain", label: "Email domain", placeholder: "example.com" },
+  { value: "ip", label: "IP address or range", placeholder: "203.0.113.0/24" },
+  { value: "asn", label: "Network (AS number)", placeholder: "AS64500" },
+  { value: "country", label: "Country", placeholder: "DE" },
+  { value: "user", label: "User id", placeholder: "u_42" },
+];
+
+export function AddRiskListEntryDialog(props: Target) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button size="sm" />}>Add entry</DialogTrigger>
+      <DialogPopup>
+        {/* The popup unmounts when closed, which also resets the form. */}
+        <AddRiskListEntryForm {...props} onDone={() => setOpen(false)} />
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+function AddRiskListEntryForm(props: Target & { onDone: () => void }) {
+  const [state, formAction, pending] = useActionToast(addRiskListEntryAction, {
+    success: ({ created }) =>
+      created
+        ? {
+            title: "Entry added",
+            description: "Matching assessments are decided by it from now on.",
+          }
+        : { title: "Already listed", description: "Nothing changed." },
+  });
+  const [type, setType] = useState("domain");
+  const [value, setValue] = useState("");
+  const country = type === "country";
+  const { onDone } = props;
+  useEffect(() => {
+    if (state?.ok) onDone();
+  }, [state, onDone]);
+
+  return (
+    // `contents` keeps header/panel/footer as direct flex children of the popup (coss ui pattern).
+    <form action={formAction} className="contents">
+      <input name="orgSlug" type="hidden" value={props.orgSlug} />
+      <input name="projectSlug" type="hidden" value={props.projectSlug} />
+      <input name="envSlug" type="hidden" value={props.envSlug} />
+      <DialogHeader>
+        <DialogIcon icon={ListIcon} />
+        <DialogTitle>Add a list entry</DialogTitle>
+        <DialogDescription>
+          An allow-list match makes the decision <code>allow</code> whatever else fired; a
+          block-list match makes it <code>block</code>.
+        </DialogDescription>
+      </DialogHeader>
+      <DialogPanel className="flex flex-col gap-4">
+        <Field>
+          <FieldLabel>List</FieldLabel>
+          <div>
+            <Segmented aria-label="List" defaultValue="block" name="list" options={LISTS} />
+          </div>
+        </Field>
+        <Field>
+          <FieldLabel>Match on</FieldLabel>
+          <Select
+            items={TYPES}
+            name="type"
+            onValueChange={(next) => {
+              setType(String(next));
+              if (next === "country") setValue((current) => current.toUpperCase());
+            }}
+            value={type}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectPopup>
+              {TYPES.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectPopup>
+          </Select>
+        </Field>
+        <Field>
+          <FieldLabel>Value</FieldLabel>
+          <div className="flex items-center gap-2">
+            <Input
+              autoFocus
+              className={country ? "w-20 font-mono uppercase" : undefined}
+              maxLength={country ? 2 : 320}
+              name="value"
+              onChange={(event) =>
+                setValue(country ? event.target.value.toUpperCase() : event.target.value)
+              }
+              placeholder={TYPES.find((item) => item.value === type)?.placeholder}
+              required
+              value={value}
+            />
+            {country && isCountryCode(value) ? (
+              <span className="text-muted-foreground text-sm">{countryName(value)}</span>
+            ) : null}
+          </div>
+          <FieldDescription>
+            Email addresses match their mailbox (dots and +tags folded at Gmail and similar),
+            domains include their subdomains, IP ranges use CIDR notation.
+          </FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel>Note</FieldLabel>
+          <Input maxLength={500} name="note" placeholder="Optional, e.g. why" />
+        </Field>
+        {state && !state.ok ? <FormError message={state.error} /> : null}
+      </DialogPanel>
+      <DialogFooter>
+        <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
+        <Button loading={pending} type="submit">
+          Add entry
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}

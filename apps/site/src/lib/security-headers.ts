@@ -18,10 +18,7 @@ export function contentSecurityPolicy({ dev }: { dev: boolean }): string {
     // `next dev` evaluates modules for fast refresh.
     "script-src": ["'self'", "'unsafe-inline'", ...(dev ? ["'unsafe-eval'"] : [])],
     "style-src": ["'self'", "'unsafe-inline'"],
-    // The click-to-play YouTube embed (`src/components/youtube-embed.tsx`): its poster, then the
-    // privacy-enhanced player. A framed origin can't script this one.
-    "img-src": ["'self'", "data:", "blob:", "https://i.ytimg.com"],
-    "frame-src": ["https://www.youtube-nocookie.com"],
+    "img-src": ["'self'", "data:", "blob:"],
     "font-src": ["'self'", "data:"],
     // The API reference's playground calls the API from the browser.
     "connect-src": ["'self'", ...apiOrigins({ dev }), ...(dev ? ["ws:"] : [])],

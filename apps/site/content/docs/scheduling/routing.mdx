@@ -1,0 +1,143 @@
+---
+title: Routing
+description: Send each person to the right host, such as a specialist or someone licensed in their state.
+---
+
+Describe your hosts with attributes, then ask for what each person needs. Coss.com only offers times, and only
+books, among the hosts who match. In live environments, `host_filter` and `attributes` need
+<PlansWith feature="schedulingRouting" />; sandbox environments have them on every plan.
+
+## Describe your hosts
+
+Attributes are your own. Use whatever your routing depends on:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.hosts.create({
+  uid: "doctor_482",
+  name: "Dr. Priya Raman",
+  time_zone: "America/New_York",
+  attributes: {
+    specialty: "dermatology",
+    licensed_in: ["NY", "NJ", "CA"],
+    language: ["en", "es"],
+  },
+});
+```
+
+Then create one pool for all of them. With `host_filter`, a new host who matches joins by themselves:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: eventType } = await coss.scheduling.eventTypes.create({
+  title: "See a specialist",
+  kind: "pool",
+  duration_minutes: 30,
+  host_filter: { accepting_patients: "yes" },
+});
+```
+
+## Route in the hosted booker
+
+Add `attributes` to the session. Your server decides them, and the browser can't see or change them:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+const { data: session } = await coss.scheduling.sessions.createForBooker({
+  event_type: eventTypeId,
+  attributes: { specialty: "dermatology", licensed_in: "CA" },
+  attendee: { uid: "patient_77", name: "Sam Lee", time_zone: "America/Los_Angeles" },
+});
+```
+
+The patient sees the times a matching doctor can take, and books one. They're never shown who else could have taken it.
+
+## Route from your own UI
+
+Pass the same `attributes` when you list times and when you book:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+const attributes = { specialty: "dermatology", licensed_in: "CA" };
+
+const { data: slots } = await coss.scheduling.slots.list(eventTypeId, {
+  start: "2027-01-04T00:00:00Z",
+  end: "2027-01-18T00:00:00Z",
+  attributes: JSON.stringify(attributes),
+});
+
+await coss.scheduling.bookings.create({
+  event_type: eventTypeId,
+  start: "2027-01-04T15:00:00Z",
+  attributes,
+  attendee: { uid: "patient_77", time_zone: "America/Los_Angeles" },
+});
+```
+
+## Choose the host yourself
+
+When "best" depends on something only you know, such as ratings, past visits or insurance, search first, apply your
+own ranking, then book that host:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+const yourBestMatch = <T,>(hosts: T[]): T | undefined => hosts[0];
+// ---cut---
+const { data: found } = await coss.scheduling.availability.search({
+  event_type: eventTypeId,
+  start: "2027-01-04T00:00:00Z",
+  end: "2027-01-18T00:00:00Z",
+  attributes: { specialty: "dermatology", licensed_in: "CA" },
+  slots_per_host: 3,
+});
+
+const best = yourBestMatch(found?.data ?? []);
+const start = best?.slots[0]?.start;
+if (best && start) {
+  await coss.scheduling.bookings.create({
+    event_type: eventTypeId,
+    start,
+    host: best.host,
+    attendee: { uid: "patient_77", time_zone: "America/Los_Angeles" },
+  });
+}
+```
+
+If that host has just been taken, you get `slot_unavailable`: book your next choice.
+
+## How a host is chosen
+
+- **Every key must match.** `{ specialty: "dermatology", licensed_in: "CA" }` needs both.
+- **A list means any of them.** `{ licensed_in: ["CA", "NV"] }` matches a host licensed in either. A host's own list
+  matches if it contains the value.
+- **Values are exact.** `Dermatology` doesn't match `dermatology`, so keep them consistent.
+- **Among matches, it's fair.** A booking goes to whoever's furthest behind their share (`weight`), then whoever's
+  waited longest.
+- **It never falls back.** If every match is taken, the time isn't offered, even if another host is free. A patient is
+  never booked with someone who doesn't match.
+
+If a pool also has `required` hosts, they're booked with a matching member, never alone in place of one.
+
+If nobody matches, there are no times to offer, and a booking answers `slot_unavailable` with the reason `no_hosts`.
+
+## When things change
+
+- **Attributes count from the moment they change.** A doctor who's no longer licensed in a state stops being offered
+  for it. Bookings they already have stay theirs, so find those with `coss.scheduling.bookings.list` and move them if
+  you need to.
+- **Rescheduling stays with the same host.** A patient's manage link only offers that host's times.
+- **You can move a booking to another host** with `host`, if they could have taken it. Attributes aren't checked again,
+  since you chose them.
+- **Taking a host off `hosts` keeps them out,** even if they match `host_filter`. Add them back to undo it.

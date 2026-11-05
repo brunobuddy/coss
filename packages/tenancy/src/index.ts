@@ -50,6 +50,15 @@ export {
 } from "./environments.ts";
 export { TenancyError, type TenancyErrorCode } from "./errors.ts";
 export {
+  getOrganizationLogo,
+  getOrganizationLogoState,
+  hideOrganizationLogo,
+  type OrganizationLogo,
+  type OrganizationLogoState,
+  organizationLogoVersions,
+  refreshOrganizationLogo,
+} from "./logos.ts";
+export {
   getMembership,
   getOrganizationMember,
   getPendingInvitation,
@@ -65,7 +74,16 @@ export {
   setOrganizationTwoFactorRequired,
 } from "./organizations.ts";
 export {
+  listProductPreferences,
+  productActivityByEnvironment,
+  productDailyActivity,
+  productFigures,
+  setProductPreference,
+} from "./products.ts";
+export {
+  createFirstProject,
   createProject,
+  FIRST_PROJECT_NAME,
   getProject,
   listProjects,
   listProjectsWithEnvironments,
@@ -94,6 +112,7 @@ export {
   type ScimTokenLifetimeDays,
   setScimGroupRoles,
 } from "./scim.ts";
+export { touchHipaaSession } from "./session-activity.ts";
 export {
   getOrganizationSsoProvider,
   listOrganizationsRequiringSso,

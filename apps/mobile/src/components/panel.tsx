@@ -3,8 +3,9 @@ import { type Href, Link } from "expo-router";
 import { ChevronRight, type LucideIcon } from "lucide-react-native";
 import { Children, Fragment, type ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { colors, radius } from "../lib/theme";
+import { colors, type ProductTone, radius, space, useFinish } from "../lib/theme";
 import { Icon } from "./icon";
+import { ProductGlyph } from "./product-glyph";
 import { Text } from "./text";
 
 /**
@@ -18,6 +19,8 @@ export function Panel(props: {
   descriptionMono?: boolean;
   /** An icon tile before the title, like the dashboard's project cards. */
   icon?: LucideIcon;
+  /** The product that icon belongs to: its tile takes the product's colour. */
+  tone?: ProductTone;
   /** Right of the title: a mono measure ("last 14 days · UTC") or a count. */
   meta?: string;
   action?: ReactNode;
@@ -25,14 +28,13 @@ export function Panel(props: {
   children?: ReactNode;
 }) {
   const header = props.title || props.description || props.meta || props.action;
+  const finish = useFinish();
   return (
-    <View style={styles.frame}>
+    <View style={[styles.frame, { boxShadow: finish.panel }]}>
       {header ? (
         <View style={styles.header}>
           {props.icon ? (
-            <View style={styles.iconTile}>
-              <Icon icon={props.icon} size={16} />
-            </View>
+            <ProductGlyph icon={props.icon} size={32} tone={props.tone ?? "neutral"} />
           ) : null}
           <View style={styles.headerText}>
             {props.title ? <Text variant="heading">{props.title}</Text> : null}
@@ -97,6 +99,8 @@ export function ListRow(props: {
   href?: Href;
   onPress?: () => void;
   titleLines?: number;
+  /** It leaves the app: the trailing mark says so instead of a chevron. */
+  external?: boolean;
 }) {
   // With a subtitle and a detail, the detail sits beside the title and the trailing mark beside
   // the subtitle, so neither line gives up its width to both.
@@ -127,7 +131,7 @@ export function ListRow(props: {
       </View>
       {twoLines ? null : detail}
       {twoLines ? null : props.trailing}
-      {props.href || props.onPress ? (
+      {(props.href || props.onPress) && !props.external ? (
         <Icon color="mutedForeground" icon={ChevronRight} size={16} />
       ) : null}
     </View>
@@ -140,7 +144,16 @@ export function ListRow(props: {
     );
   }
   if (props.onPress) {
-    return <Pressable onPress={props.onPress}>{({ pressed }) => content(pressed)}</Pressable>;
+    return (
+      <Pressable
+        onPress={() => {
+          void Haptics.selectionAsync();
+          props.onPress?.();
+        }}
+      >
+        {({ pressed }) => content(pressed)}
+      </Pressable>
+    );
   }
   return content(false);
 }
@@ -201,29 +214,15 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.tray,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 1,
-    shadowOffset: { width: 0, height: 1 },
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
   },
-  headerText: { flex: 1, gap: 2 },
-  iconTile: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  headerText: { flex: 1, gap: space.xxs },
   card: {
     backgroundColor: colors.card,
     borderRadius: radius.xl,
@@ -242,26 +241,26 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: radius.frame,
     borderBottomRightRadius: radius.frame,
   },
-  footer: { paddingHorizontal: 16, paddingVertical: 12 },
-  body: { padding: 16 },
+  footer: { paddingHorizontal: space.lg, paddingVertical: space.md },
+  body: { padding: space.lg },
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
     minHeight: 50,
   },
   rowPressed: { backgroundColor: colors.muted },
-  rowText: { flex: 1, gap: 2 },
-  rowLine: { flexDirection: "row", alignItems: "center", gap: 8 },
+  rowText: { flex: 1, gap: space.xxs },
+  rowLine: { flexDirection: "row", alignItems: "center", gap: space.sm },
   rowFill: { flex: 1 },
   rowDetail: { flexShrink: 1, maxWidth: "50%" },
-  specList: { paddingHorizontal: 16 },
-  spec: { flexDirection: "row", alignItems: "baseline", gap: 10, paddingVertical: 12 },
+  specList: { paddingHorizontal: space.lg },
+  spec: { flexDirection: "row", alignItems: "baseline", gap: 10, paddingVertical: space.md },
   specValue: { flexShrink: 1, alignItems: "flex-end" },
   specValueText: { textAlign: "right" },
-  specStacked: { gap: 6, paddingVertical: 12 },
+  specStacked: { gap: 6, paddingVertical: space.md },
   specGap: { flex: 1, minWidth: 16 },
 });

@@ -308,6 +308,212 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
   "GET /v1/sms/received": { method: "sms.received.list", args: (r) => [queryParams(r)] },
   "GET /v1/sms/received/{id}": { method: "sms.received.get", args: (r) => [pathId(r)] },
   "GET /v1/sms/numbers": { method: "sms.numbers.list", args: () => [] },
+  "POST /v1/scheduling/hosts": {
+    method: "scheduling.hosts.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/hosts": { method: "scheduling.hosts.list", args: (r) => [queryParams(r)] },
+  "GET /v1/scheduling/hosts/{host}": {
+    method: "scheduling.hosts.get",
+    args: (r) => [tsValue(r.path.host)],
+  },
+  "PATCH /v1/scheduling/hosts/{host}": {
+    method: "scheduling.hosts.update",
+    args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/hosts/{host}": {
+    method: "scheduling.hosts.remove",
+    args: (r) => [tsValue(r.path.host)],
+  },
+  "POST /v1/scheduling/hosts/{host}/schedules": {
+    method: "scheduling.schedules.create",
+    args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/hosts/{host}/schedules": {
+    method: "scheduling.schedules.list",
+    args: (r) => [tsValue(r.path.host)],
+  },
+  "GET /v1/scheduling/hosts/{host}/schedules/{schedule_id}": {
+    method: "scheduling.schedules.get",
+    args: (r) => [tsValue(r.path.host), tsValue(r.path.schedule_id)],
+  },
+  "PUT /v1/scheduling/hosts/{host}/schedules/{schedule_id}": {
+    method: "scheduling.schedules.update",
+    args: (r) => [tsValue(r.path.host), tsValue(r.path.schedule_id), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/hosts/{host}/schedules/{schedule_id}": {
+    method: "scheduling.schedules.remove",
+    args: (r) => [tsValue(r.path.host), tsValue(r.path.schedule_id)],
+  },
+  "POST /v1/scheduling/event_types": {
+    method: "scheduling.eventTypes.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/event_types": {
+    method: "scheduling.eventTypes.list",
+    args: (r) => [queryParams(r)],
+  },
+  "GET /v1/scheduling/event_types/{event_type}": {
+    method: "scheduling.eventTypes.get",
+    args: (r) => [tsValue(r.path.event_type)],
+  },
+  "PATCH /v1/scheduling/event_types/{event_type}": {
+    method: "scheduling.eventTypes.update",
+    args: (r) => [tsValue(r.path.event_type), tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/event_types/{event_type}/slots": {
+    method: "scheduling.slots.list",
+    args: (r) => [tsValue(r.path.event_type), queryParams(r)],
+  },
+  "GET /v1/scheduling/event_types/{event_type}/slots/explain": {
+    method: "scheduling.slots.explain",
+    args: (r) => [tsValue(r.path.event_type), queryParams(r)],
+  },
+  "POST /v1/scheduling/availability/search": {
+    method: "scheduling.availability.search",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/bookings": {
+    method: "scheduling.bookings.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/bookings": {
+    method: "scheduling.bookings.list",
+    args: (r) => [queryParams(r)],
+  },
+  "GET /v1/scheduling/bookings/{id}": {
+    method: "scheduling.bookings.get",
+    args: (r) => [pathId(r)],
+  },
+  "GET /v1/scheduling/bookings/{id}/events": {
+    method: "scheduling.bookings.events",
+    args: (r) => [pathId(r), queryParams(r)],
+  },
+  "POST /v1/scheduling/bookings/{id}/reschedule": {
+    method: "scheduling.bookings.reschedule",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/bookings/{id}/cancel": {
+    method: "scheduling.bookings.cancel",
+    args: (r) => [pathId(r), ...(r.body ? [tsValue(r.body)] : [])],
+  },
+  "POST /v1/scheduling/bookings/{id}/approve": {
+    method: "scheduling.bookings.approve",
+    args: (r) => [pathId(r)],
+  },
+  "POST /v1/scheduling/bookings/{id}/decline": {
+    method: "scheduling.bookings.decline",
+    args: (r) => [pathId(r)],
+  },
+  "POST /v1/scheduling/bookings/{id}/no_show": {
+    method: "scheduling.bookings.markNoShow",
+    args: (r) => [pathId(r)],
+  },
+  "GET /v1/scheduling/bookings/{id}/notifications": {
+    method: "scheduling.bookings.notifications",
+    args: (r) => [pathId(r)],
+  },
+  "PATCH /v1/scheduling/bookings/{id}/location": {
+    method: "scheduling.bookings.updateLocation",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/holds": {
+    method: "scheduling.holds.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/holds/{id}/confirm": {
+    method: "scheduling.holds.confirm",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/holds/{id}": {
+    method: "scheduling.holds.release",
+    args: (r) => [pathId(r)],
+  },
+  "POST /v1/scheduling/series": {
+    method: "scheduling.series.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/series/preview": {
+    method: "scheduling.series.preview",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/series/{id}/cancel": {
+    method: "scheduling.series.cancel",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/attendees/{uid}": {
+    method: "scheduling.attendees.erase",
+    args: (r) => [tsValue(r.path.uid)],
+  },
+  "POST /v1/scheduling/attendees/erase": {
+    method: "scheduling.attendees.eraseByEmail",
+    args: (r) => [tsValue((r.body as { email: string }).email)],
+  },
+  "POST /v1/scheduling/hosts/{host}/calendar_connections/authorize": {
+    method: "scheduling.calendars.authorize",
+    args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/hosts/{host}/calendar_connections": {
+    method: "scheduling.calendars.connect",
+    args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/hosts/{host}/calendar_connections": {
+    method: "scheduling.calendars.list",
+    args: (r) => [tsValue(r.path.host)],
+  },
+  "DELETE /v1/scheduling/hosts/{host}/calendar_connections/{id}": {
+    method: "scheduling.calendars.disconnect",
+    args: (r) => [tsValue(r.path.host), pathId(r)],
+  },
+  "PATCH /v1/scheduling/hosts/{host}/calendars/{calendar_id}": {
+    method: "scheduling.calendars.update",
+    args: (r) => [tsValue(r.path.host), tsValue(r.path.calendar_id), tsValue(r.body ?? {})],
+  },
+  "PUT /v1/scheduling/hosts/{host}/simulated_busy": {
+    method: "scheduling.calendars.setSimulatedBusy",
+    args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/calendar_delegations": {
+    method: "scheduling.calendarDelegations.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/calendar_delegations": {
+    method: "scheduling.calendarDelegations.list",
+    args: () => [],
+  },
+  "GET /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.get",
+    args: (r) => [pathId(r)],
+  },
+  "PATCH /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.update",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/calendar_delegations/{id}/verify": {
+    method: "scheduling.calendarDelegations.verify",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/calendar_delegations/{id}": {
+    method: "scheduling.calendarDelegations.delete",
+    args: (r) => [pathId(r)],
+  },
+  "POST /v1/scheduling/hosts/{host}/sessions": {
+    method: "scheduling.sessions.createForHost",
+    args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/booker_sessions": {
+    method: "scheduling.sessions.createForBooker",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/bookings/{id}/manage_sessions": {
+    method: "scheduling.sessions.createForBooking",
+    args: (r) => [pathId(r)],
+  },
+  "GET /v1/scheduling/settings": { method: "scheduling.settings.get", args: () => [] },
+  "PATCH /v1/scheduling/settings": {
+    method: "scheduling.settings.update",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
   "POST /v1/forms": { method: "forms.create", args: (r) => [tsValue(r.body ?? {})] },
   "GET /v1/forms": { method: "forms.list", args: (r) => [queryParams(r)] },
   "GET /v1/forms/{id}": { method: "forms.get", args: (r) => [pathId(r)] },
@@ -407,6 +613,11 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
   "GET /v1/verifications": { method: "verify.list", args: (r) => [queryParams(r)] },
   "GET /v1/verifications/{id}": { method: "verify.get", args: (r) => [pathId(r)] },
   "POST /v1/verifications/{id}/cancel": { method: "verify.cancel", args: (r) => [pathId(r)] },
+  "GET /v1/verify/settings": { method: "verify.settings.get", args: () => [] },
+  "PATCH /v1/verify/settings": {
+    method: "verify.settings.update",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
   "GET /v1/sms/{id}": { method: "sms.get", args: (r) => [pathId(r)] },
   "GET /v1/sms/{id}/events": { method: "sms.listEvents", args: (r) => [pathId(r)] },
   "POST /v1/sms/{id}/cancel": { method: "sms.cancel", args: (r) => [pathId(r)] },

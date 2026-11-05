@@ -1,0 +1,1 @@
+ALTER TABLE "email" ADD COLUMN "screening_exempt" boolean DEFAULT false NOT NULL;

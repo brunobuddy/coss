@@ -1,6 +1,9 @@
+import { listSmsNumbers } from "@coss/sms";
 import {
+  getOrganizationLogoState,
   hasScimConnection,
   listOrganizationMembers,
+  organizationLogoVersions,
   readOrganizationApiVersion,
 } from "@coss/tenancy";
 import { Badge } from "@coss/ui/components/badge";
@@ -9,13 +12,16 @@ import { versioning } from "@coss/versioning";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CopyValue } from "@/components/copy-value";
+import { OrganizationAvatar } from "@/components/organization-avatar";
 import { RetentionPolicySection } from "@/components/retention-policy";
 import { SettingsPage, SettingsRow, SettingsSection } from "@/components/settings";
 import { StatusDot } from "@/components/status-dot";
+import { SupportLink } from "@/components/support/support-link";
 import { requireOrgMember } from "@/lib/session";
 import { UpgradeApiVersionButton } from "./api-version-form";
 import { DeleteOrganizationButton } from "./delete-organization-button";
 import { LeaveOrganizationButton } from "./leave-organization-button";
+import { LogoActions } from "./logo-row";
 import { OrganizationForm } from "./organization-form";
 import { TwoFactorRequirementRow } from "./two-factor-requirement";
 
@@ -25,7 +31,8 @@ export default async function OrganizationSettingsPage({
   params,
 }: PageProps<"/[orgSlug]/settings">) {
   const { orgSlug } = await params;
-  const { organization, member, can, suspended, session } = await requireOrgMember(orgSlug);
+  const { organization, member, can, suspended, session, hipaaMode } =
+    await requireOrgMember(orgSlug);
   const canUpdate = can({ organization: ["update"] });
   const canDelete = can({ organization: ["delete"] });
   const canReadSso = can({ sso: ["read"] });
@@ -37,10 +44,18 @@ export default async function OrganizationSettingsPage({
   const lastOwner = isOwner && owners <= 1;
   const withoutTwoFactor = members.filter((row) => !row.user.twoFactorEnabled).length;
   const hasTwoFactor = Boolean(session.user.twoFactorEnabled);
-  const [pinnedApiVersion, scimConnected] = await Promise.all([
+  const [pinnedApiVersion, scimConnected, logoState, logoVersions, smsNumbers] = await Promise.all([
     readOrganizationApiVersion({ organizationId: organization.id }),
     canReadScim ? hasScimConnection({ organizationId: organization.id }) : false,
+    getOrganizationLogoState(organization.id),
+    organizationLogoVersions([organization.id]),
+    canDelete ? listSmsNumbers(organization.id) : [],
   ]);
+  const phoneNumbers = smsNumbers
+    .filter(({ number }) => number.status !== "releasing")
+    .map(({ number }) => number.phoneNumber);
+  const logoVersion = logoVersions.get(organization.id);
+  const logo = logoVersion ? `/${organization.slug}/settings/logo?v=${logoVersion}` : null;
   const apiVersionChanges = pinnedApiVersion
     ? versioning
         .changesBetween(pinnedApiVersion, versioning.latest)
@@ -58,6 +73,48 @@ export default async function OrganizationSettingsPage({
           name={organization.name}
           orgSlug={organization.slug}
         />
+      </SettingsSection>
+
+      <SettingsSection
+        description="Found on your website: your verified sending domains first, then members' work email domains."
+        title="Logo"
+      >
+        <SettingsRow
+          description={
+            logoState.status === "found" && logoState.sourceUrl ? (
+              <>
+                From{" "}
+                <a
+                  className="text-foreground underline underline-offset-4"
+                  href={logoState.sourceUrl}
+                  rel="noreferrer noopener"
+                  target="_blank"
+                >
+                  {logoState.domain}
+                </a>
+                . Checked again every month.
+              </>
+            ) : logoState.status === "hidden" ? (
+              "Your organization's initials are shown instead of a logo."
+            ) : logoState.status === "pending" ? (
+              "Looking for your logo. It shows up within a minute."
+            ) : (
+              "No logo found yet. Verify a sending domain, or have a member join with a work email address, and it's looked for again."
+            )
+          }
+          label={logo ? "Logo" : "Initials"}
+          media={
+            <OrganizationAvatar className="size-11 shrink-0" logo={logo} name={organization.name} />
+          }
+        >
+          {canUpdate ? (
+            <LogoActions
+              found={logoState.status === "found"}
+              hidden={logoState.status === "hidden"}
+              orgSlug={organization.slug}
+            />
+          ) : null}
+        </SettingsRow>
       </SettingsSection>
 
       <SettingsSection title="Security">
@@ -84,7 +141,7 @@ export default async function OrganizationSettingsPage({
               )}
             </>
           }
-          disabled={!canUpdate}
+          disabled={!canUpdate || hipaaMode}
           orgSlug={organization.slug}
           required={organization.requireTwoFactor}
         />
@@ -179,14 +236,23 @@ export default async function OrganizationSettingsPage({
         {isOwner ? (
           <SettingsRow
             description={
-              suspended
-                ? "A suspended organization can't be deleted. Contact support."
-                : "Permanently delete its projects, emails, domains, suppression lists and webhooks. Members lose access and API keys stop working at once."
+              suspended ? (
+                <>
+                  A suspended organization can't be deleted.{" "}
+                  <SupportLink orgSlug={organization.slug} topic="account" />.
+                </>
+              ) : (
+                "Permanently delete its projects, emails, domains, phone numbers, suppression lists and webhooks. Members lose access and API keys stop working at once."
+              )
             }
             label="Delete organization"
           >
             {canDelete ? (
-              <DeleteOrganizationButton orgName={organization.name} orgSlug={organization.slug} />
+              <DeleteOrganizationButton
+                orgName={organization.name}
+                orgSlug={organization.slug}
+                phoneNumbers={phoneNumbers}
+              />
             ) : null}
           </SettingsRow>
         ) : null}

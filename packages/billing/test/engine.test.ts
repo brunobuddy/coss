@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import type { MeterKey } from "../src/catalog/meters.ts";
-import { RATE_CARDS, rateCardAt } from "../src/catalog/rates.ts";
+import { dimensionKey, type MeterKey } from "../src/catalog/meters.ts";
+import { PLANS } from "../src/catalog/plans.ts";
+import { meterPricedFrom, RATE_CARDS, rateCardAt, rateFor } from "../src/catalog/rates.ts";
 import {
   chargeRange,
   composeContractChange,
@@ -127,8 +128,13 @@ describe("terms", () => {
       "verify.sms": 0,
       "forms.submissions": 1_000,
       "forms.file_uploads": 1_000,
-      "video.participant_minutes": 0,
-      "scheduling.bookings": 0,
+      "email.attachment_data": 1_000,
+      "email.received_data": 1_000,
+      "scheduling.bookings": 100,
+      "scheduling.hosts": 93,
+      "hooks.messages": 50_000,
+      "risk.assessments": 10_000,
+      "risk.content_checks": 10_000,
     });
     expect(free.fee).toBeNull();
   });
@@ -148,9 +154,9 @@ describe("terms", () => {
     expect(meterAvailability(pro, "sms.segments", "country=GB")).toBe("not_priced");
     expect(meterAvailability(terms({ version: 1, plan: "free" }), "sms.segments")).toBe("blocked");
     expect(meterAvailability(pro, "email.recipients")).toBe("available");
-    expect(
-      meterAvailability(terms({ version: 1, plan: "free" }), "video.participant_minutes"),
-    ).toBe("blocked");
+    expect(meterAvailability(terms({ version: 1, plan: "free" }), "email.dedicated_ip")).toBe(
+      "blocked",
+    );
   });
 
   test("a contract's rates for some dimension values keep the list price of the others", () => {
@@ -194,6 +200,22 @@ describe("terms", () => {
     expect(tiers("sms.numbers", "type=local")).toEqual([{ upTo: null, unitNanos: 1_150_000_000n }]);
     expect(november.rates["email.recipients"]).toBe(card.rates["email.recipients"]);
     expect(rateCardAt(new Date("2026-10-31T23:59:59Z"))).toBe(card);
+  });
+
+  test("the January 2027 card raises SMS to Canada and received in the US, nothing else", () => {
+    const december = rateCardAt(new Date("2026-12-31T23:59:59Z"));
+    const january = rateCardAt(new Date("2027-01-01T00:00:00Z"));
+    const unit = (at: typeof january, meter: MeterKey, dimension: string) =>
+      at.rates[meter]?.byDimension?.[dimension]?.tiers[0]?.unitNanos;
+    expect(unit(december, "sms.segments", "country=CA")).toBe(20_800_000n);
+    expect(unit(january, "sms.segments", "country=CA")).toBe(22_000_000n);
+    expect(unit(january, "verify.sms", "country=CA")).toBe(22_000_000n);
+    expect(unit(december, "sms.received_segments", "country=US")).toBe(14_800_000n);
+    expect(unit(january, "sms.received_segments", "country=US")).toBe(16_000_000n);
+    expect(unit(january, "sms.segments", "country=US")).toBe(14_200_000n);
+    expect(unit(january, "sms.segments", "country=GB")).toBe(66_500_000n);
+    expect(january.rates["sms.numbers"]).toBe(december.rates["sms.numbers"]);
+    expect(january.rates["email.recipients"]).toBe(december.rates["email.recipients"]);
   });
 
   test("entitlement overrides merge over the plan's", () => {
@@ -1007,5 +1029,38 @@ describe("internal contracts", () => {
     });
     expect(invoice.totalCents).toBe(0n);
     expect(invoice.lines.map((line) => line.kind)).toEqual(["usage", "write_off"]);
+  });
+});
+
+describe("the catalog", () => {
+  test("every country numbers are sold in has an inbound SMS price from January 2027", () => {
+    const january = rateCardAt(new Date("2027-01-01T00:00:00Z"));
+    for (const country of ["US", "CA"]) {
+      expect(
+        rateFor(january.rates["sms.received_segments"], dimensionKey({ country })),
+      ).not.toBeNull();
+    }
+    // Starting a charge takes the Terms' 30 days' notice: until then Canada stays uncharged.
+    const november = rateCardAt(new Date("2026-12-31T23:59:59Z"));
+    expect(
+      rateFor(november.rates["sms.received_segments"], dimensionKey({ country: "CA" })),
+    ).toBeNull();
+  });
+
+  test("Scheduling hosts are first priced in January 2027", () => {
+    expect(meterPricedFrom("scheduling.hosts")).toEqual(new Date("2027-01-01T00:00:00Z"));
+    expect(rateCardAt(new Date("2026-12-31T00:00:00Z")).rates["scheduling.hosts"]).toBeUndefined();
+    expect(meterPricedFrom("email.recipients")).toEqual(new Date("2026-01-01T00:00:00Z"));
+  });
+
+  test("plans include hosts up to their limit, and Scale meters beyond its allowance", () => {
+    expect(PLANS.free.includedUnits["scheduling.hosts"]).toBe(
+      (PLANS.free.entitlements.limits.schedulingHosts as number) * 31,
+    );
+    expect(PLANS.pro.includedUnits["scheduling.hosts"]).toBe(
+      (PLANS.pro.entitlements.limits.schedulingHosts as number) * 31,
+    );
+    expect(PLANS.scale.entitlements.limits.schedulingHosts).toBeNull();
+    expect(PLANS.scale.includedUnits["scheduling.hosts"]).toBe(100 * 31);
   });
 });

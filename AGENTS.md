@@ -1,7 +1,6 @@
 # AGENTS.md — coss.com monorepo
 
-coss.com is a unified developer platform: one API key + one SDK (`coss.email.send()`, `coss.sms.send()`, later
-video, scheduling…). This repo holds the dashboard, the public API, shared packages and the public SDK.
+coss.com is a unified developer platform: one API key + one SDK (`coss.email.send()`, `coss.sms.send()`, `coss.scheduling`…). This repo holds the dashboard, the public API, shared packages and the public SDK.
 Email delivery goes through the provider interface in `packages/email/src/provider.ts` (Amazon SES v2 with one SES
 tenant per organization, or the fake provider); sandbox environments always use the fake provider. Delivery events
 drive per-recipient status and signed customer webhooks. Environments also receive email (an SES receipt rule → S3 +
@@ -19,7 +18,7 @@ signals are also building blocks of their own, next to rate limiting as a servic
 (`@coss/forms`, `coss.forms`) are hosted form endpoints on a domain of their own (`/f/<id>`, served by the API):
 every submission is screened by Risk (honeypot, assessment, content check, captcha) and accepted ones go to
 webhooks, notification emails and contacts, optionally after the submitter confirms by email; see
-`packages/forms/AGENTS.md`. Human setup docs (incl. running on SES): [README.md](./README.md).
+`packages/forms/AGENTS.md`. Scheduling (`@coss/scheduling`, `coss.scheduling`) lets customers' users be booked: hosts, weekly hours, Google, Microsoft and CalDAV calendars (each host's own, or a whole domain's through a calendar delegation), and bookings, enforced by a Postgres exclusion constraint; see `packages/scheduling/AGENTS.md`. Support (`@coss/support`) is coss.com's own desk: customers email `support@coss.com` or raise a ticket in the dashboard, reps answer from the admin console, with per-plan targets; see `packages/support/AGENTS.md`. Human setup docs (incl. running on SES): [README.md](./README.md).
 
 ## License
 
@@ -35,24 +34,25 @@ text it shows is a gist that must match `CLA.md`: change both together, as a new
 
 | Path | Package | What |
 |---|---|---|
-| `apps/web` | `@coss/web` | Next.js 16 dashboard (:3000). Hosts Better Auth at `/api/auth/*`. |
-| `apps/api` | `@coss/api` | Hono on Bun public API (:3001): `/v1/*`, `/openapi.json`, `/health`. Commits its OpenAPI document as `openapi.json`. |
-| `apps/site` | `@coss/site` | coss.com (:3002): placeholder landing page, Shipyard's landing page and docs at `/shipyard`, kloq's pages at `/kloq` (landing page, demo, tools, comparisons, docs, shadcn registry) + Fumadocs docs at `/docs` (guides, Twoslash-checked SDK docs, API reference generated from `apps/api/openapi.json`). See `apps/site/AGENTS.md`. |
-| `apps/portal` | `@coss/portal` | The Hooks portal (:3003) on its own domain (production: `portal.cosshooks.com`, Cloudflare → ALB, `PORTAL_HOST` in `infra/aws/routing.ts`): customers' users manage one application's endpoints and see its deliveries, signed in by a session the customer's backend creates (token in the URL fragment, never a cookie). See `apps/portal/AGENTS.md`. |
-| `apps/sign` | `@coss/sign-app` | Sign's signing page (:3004) on its own domain (`cosssign.com`, Cloudflare → ALB, `SIGN_HOST` in `infra/aws/routing.ts`): one signer, signed in by a session the customer's backend creates (token in the URL fragment, never a cookie), embedded with `coss/sign`'s `mountSigning` or opened on its own; consent, the documents (pdf.js), fields, a typed or drawn signature, decline; and the embedded template builder (`/b/<id>`). See `apps/sign/AGENTS.md`. |
-| `apps/mobile` | `@coss/mobile` | Expo (SDK 57) iOS companion app mirroring the dashboard's pages (organization: projects, reputation, domains with DMARC, dedicated IPs, SMS senders, members, spend and budgets, settings with SSO and SCIM, billing (read-only), audit log; environment: emails, templates, received, suppressions, tracking, content storage, SMS, broadcasts, contacts, audiences, segments, topics, marketing settings, risk with its rules, lists and settings, Hooks, API keys, webhooks, logs, log drains), mostly read-only, signed in through the dashboard (browser hand-off + PKCE) and using its `/api/mobile/v1/*`, with push notifications (APNs) for alerts, crash reporting (Sentry) and account deletion. Not deployed by `infra`. See `apps/mobile/AGENTS.md`. |
+| `apps/web` | `@coss/web` | Next.js 16 dashboard (:3000). Hosts Better Auth at `/api/auth/*`. See `apps/web/AGENTS.md`. |
+| `apps/api` | `@coss/api` | Hono on Bun public API (:3001): `/v1/*`, `/openapi.json`, `/health`. Commits its OpenAPI document as `openapi.json`. See `apps/api/AGENTS.md`. |
+| `apps/site` | `@coss/site` | coss.com (:3002): landing page, pricing, about, product, solution and comparison pages, `/status` (dynamic health checks, no history), `/contact`, Shipyard's landing page and docs at `/shipyard`, kloq's pages at `/kloq` (landing page, demo, tools, comparisons, docs, shadcn registry) + Fumadocs docs at `/docs` (guides, Twoslash-checked SDK docs, API reference generated from `apps/api/openapi.json`). See `apps/site/AGENTS.md`. |
+| `apps/portal` | `@coss/portal` | The Hooks portal (:3003) on its own domain (production: `portal.cosshooks.com`, CloudFront → ALB, `PORTAL_HOST` in `infra/aws/routing.ts`): customers' users manage one application's endpoints and see its deliveries, signed in by a session the customer's backend creates (token in the URL fragment, never a cookie). See `apps/portal/AGENTS.md`. |
+| `apps/sign` | `@coss/sign-app` | Sign's signing page (:3004) on its own domain (`cosssign.com`, CloudFront → ALB, `SIGN_HOST` in `infra/aws/routing.ts`): one signer, signed in by a session the customer's backend creates (token in the URL fragment, never a cookie), embedded with `coss/sign`'s `mountSigning` or opened on its own; consent, the documents (pdf.js), fields, a typed or drawn signature, decline; and the embedded template builder (`/b/<id>`). See `apps/sign/AGENTS.md`. |
+| `apps/scheduling` | `@coss/scheduling-app` | The hosted scheduling pages (:3005) on a domain of their own (production: `cossbook.com`, CloudFront → ALB, `SCHEDULING_HOST` in `infra/aws/routing.ts`): a host's page, the booker and the manage page, each signed in by a session (token in the URL fragment, never a cookie), embedded with `coss/scheduling`. A thin client of the API's `/scheduling/client/*`. See `apps/scheduling/AGENTS.md`. |
+| `apps/mobile` | `@coss/mobile` | Expo (SDK 57) iOS companion app, three native tabs (Home, Products, Organization), mirroring the dashboard's pages (organization: projects, reputation, domains with DMARC, dedicated IPs, SMS senders, members, spend and budgets, settings with SSO and SCIM, billing (read-only), audit log; environment: emails, templates, received, suppressions, tracking, content storage, SMS, broadcasts, contacts, audiences, segments, topics, marketing settings, risk with its rules, lists and settings, Hooks, Scheduling, API keys, webhooks, logs, log drains), mostly read-only, signed in through the dashboard (browser hand-off + PKCE) and using its `/api/mobile/v1/*`, with push notifications (APNs) for alerts, crash reporting (Sentry) and account deletion. Not deployed by `infra`. See `apps/mobile/AGENTS.md`. |
 | `apps/expo-kloq-example` | `@coss/expo-kloq-example` | Expo (SDK 57) development build showing `expo-kloq` with seeded calendars; its `plugins/with-scene-delegate.js` adopts the scene life cycle iOS 27 requires, and `maestro/demo.yaml` walks every interaction. Not deployed. See its `README.md`. |
 | `apps/smtp` | `@coss/smtp` | Bun SMTP relay (`smtp.coss.com`; locally :2465 implicit TLS, :2587 STARTTLS) on `smtp-server`: username `coss`, an API key as the password; each message becomes a `POST /v1/emails` request (`@coss/email/smtp`) stored through the same email service, rate limits and quotas. Behind an NLB; terminates TLS itself (exported ACM certificate). See `apps/smtp/AGENTS.md`. |
 | `apps/worker` | `@coss/worker` | Bun background worker: email dispatch (pg-boss), scheduled sends, broadcast fan-out, webhook deliveries, domain re-checks, dedicated IP pools, stale-claim/unclaimed sweeps, data retention purges, organization deletions, SES events and received emails from SQS (`EMAIL_PROVIDER=ses`). `scripts/ses-bootstrap.ts`. Safe to run several. |
 | `packages/db` | `@coss/db` | Drizzle schema (generated Better Auth tables + domain tables), pg client, TypeIDs, migrations, test guard; `./jobs` (pg-boss); `./idempotency` (`withIdempotencyKey`, request hashes); `./partitions` (daily range partitions: create ahead, drop expired). |
 | `packages/signals` | `@coss/signals` | Stateless abuse signals shared by coss.com's sign-up and risk: `./email` (syntax, disposable domains, MX/null-MX/NXDOMAIN with a cache, canonical mailbox, role accounts, free providers, typo suggestions), `./ip` (bogons, subnets, CIDR range sets, `IpIntelligence`: Tor, cloud/hosting networks, ASN, country), `./datasets` (parsers for the public IP feeds and IPinfo Lite's MMDB), `./testing` (`buildTestMmdb`). No workspace deps, no database; server-only. |
 | `packages/auth` | `@coss/auth` | Better Auth options/instance (organization, admin, api-key, two-factor, passkey, sso, scim, captcha plugins), org permissions, slug rules, API key permissions (`./api-key-permissions`: the labelled catalog, access presets, validation; client-safe), the sign-up email guard (`src/email-guard.ts`, built on `@coss/signals/email`); `./social`: Google/GitHub sign-in (server-only); `./risk`: the injected sign-up risk assessor (coss.com Risk on coss.com's own sign-ups); `./sso`: SSO trust rules; `./scim`: directory sync rules (both server-only); `./emails`: the account email outbox; `./mobile`: the iOS app's sign-in (PKCE codes, bearer sessions; server-only). See `packages/auth/AGENTS.md`. |
-| `packages/tenancy` | `@coss/tenancy` | Projects, environments, environment-bound API keys (create/authenticate), memberships, organization SSO settings, directory sync (SCIM) connections and group roles, seed/admin scripts, test fixtures; `./admin`: suspensions, SSO/SCIM recovery, organization deletion, audit log and cross-org reads; `./deletion`: organization teardown (imports only `@coss/db`). See `packages/tenancy/AGENTS.md`. |
-| `packages/email` | `@coss/email` | Email product: wire schemas, providers (fake, SES under `./ses`), send/dispatch/read, recipients + event ingestion, domains/DNS (with the BIMI check), custom tracking domains (Cloudflare for SaaS), dedicated IP pools (SES managed dedicated IPs, `dedicated-ips.ts`), receiving (received emails, receiving domains, managed inbound addresses, the content store), inboxes for agents (`inboxes.ts`, `inbox-send.ts`: threads, sends and replies; wire schemas in `./inbox-schemas`), DMARC reports (ingestion, guidance to `p=reject`, owner notifications), templates (drafts, versions, locales, rendering at send), tenants, sweeps, contacts (custom properties, audiences, segments, topics, marketing settings; wire schemas in `./contact-schemas`), broadcasts (wire schemas in `./broadcast-schemas`), sub-accounts (email for platforms: a customer's end users with their own domains and SES tenant, suppressions, quotas, reputation and screening; wire schemas in `./subaccount-schemas`); `./templates` (the template language: parse, check, render, variable validation; client-safe, no imports), `./domain-connect` (one-click DNS setup: discovery, the signed apply link, `domain-connect/coss.com.email.json`), `./dispatch` (pg-boss queue + worker handler), `./runtime` builds providers from env, `./admin` (the admin console's cross-org reads), `./env` (zod only), `./testing`. See `packages/email/AGENTS.md`. |
+| `packages/tenancy` | `@coss/tenancy` | Projects (`createFirstProject`: a new organization's, made by the dashboard's onboarding), environments, environment-bound API keys (create/authenticate), memberships, organization SSO settings, directory sync (SCIM) connections and group roles, seed/admin scripts, test fixtures; `./logos`: organization logos found on the organization's own website (verified sending domains, then members' work email domains; SSRF-safe HTTPS, sniffed and size-checked images, kept in `organization_logo` and served by the dashboard at `/<org>/settings/logo` under a sandboxing CSP), run by the worker's `organization-logos` loop; `./admin`: suspensions, SSO/SCIM recovery, organization deletion, audit log and cross-org reads; `./deletion`: organization teardown (imports only `@coss/db`). See `packages/tenancy/AGENTS.md`. |
+| `packages/email` | `@coss/email` | Email product: wire schemas, providers (fake, SES under `./ses`), send/dispatch/read, recipients + event ingestion, domains/DNS (with the BIMI check), custom tracking domains (CloudFront distribution tenants), dedicated IP pools (SES managed dedicated IPs, `dedicated-ips.ts`), receiving (received emails, receiving domains, managed inbound addresses, the content store), inboxes for agents (`inboxes.ts`, `inbox-send.ts`: threads, sends and replies; wire schemas in `./inbox-schemas`), DMARC reports (ingestion, guidance to `p=reject`, owner notifications), templates (drafts, versions, locales, rendering at send), tenants, sweeps, contacts (custom properties, audiences, segments, topics, marketing settings; wire schemas in `./contact-schemas`), broadcasts (wire schemas in `./broadcast-schemas`), sub-accounts (email for platforms: a customer's end users with their own domains and SES tenant, suppressions, quotas, reputation and screening; wire schemas in `./subaccount-schemas`); `./templates` (the template language: parse, check, render, variable validation; client-safe, no imports), `./domain-connect` (one-click DNS setup: discovery, the signed apply link, `domain-connect/coss.com.email.json`), `./dispatch` (pg-boss queue + worker handler), `./runtime` builds providers from env, `./admin` (the admin console's cross-org reads), `./env` (zod only), `./testing`. See `packages/email/AGENTS.md`. |
 | `packages/ratelimit` | `@coss/ratelimit` | Rate limits: bucket catalog, GCRA in Valkey (Lua) or memory, per-org overrides (`rate_limit_override`), client IP resolution; `./env` (zod only), `./testing`. `scripts/valkey-bootstrap.ts`, `scripts/set-override.ts`. |
 | `packages/webhooks` | `@coss/webhooks` | Product-agnostic webhooks: endpoints (secrets encrypted with a key ring, secret rolls), outbox, SSRF-safe signed delivery with retries, secret re-encryption, endpoint auto-disable and recovery; log drains (management, signed batch delivery as NDJSON, Loki, Datadog or OTLP with an optional encrypted auth header, retention); `./engine` (the delivery engine shared by every product: holds, lease fencing, retry outcomes, the HTTP attempt, endpoint health, a bounded runner); `./schemas`, `./env` (zod only). See `packages/webhooks/AGENTS.md`. |
 | `packages/reputation` | `@coss/reputation` | Reputation guard: per-org standing (`good`/`warning`/`suspended`), history, pluggable checks, the worker's evaluation scan, admin reinstatement, `account.*` webhooks, notification emails to owners/admins (outbox + `ReputationNotifier`); `./schemas` (zod only: policy, wire schemas, trigger labels). See `packages/reputation/AGENTS.md`. |
-| `packages/hooks` | `@coss/hooks` | Hooks, webhooks as a service: applications (one per customer's end user, by id or `uid`), event types, endpoints (own secrets, filters, rate limits, auto-disable), messages fanned out to deliveries (day-partitioned, idempotent sends), the delivery worker on the shared engine, endpoint recovery, portal sessions and settings; `./schemas`, `./env` (zod only), `./testing`. See `packages/hooks/AGENTS.md`. |
+| `packages/hooks` | `@coss/hooks` | Hooks, webhooks as a service: applications (one per customer's end user, by id or `uid`), event types, endpoints (own secrets, filters, rate limits, auto-disable), messages fanned out to deliveries (day-partitioned, idempotent sends; metered as `hooks.messages`), the delivery worker on the shared engine, endpoint recovery, portal sessions and settings; `./schemas`, `./env` (zod only), `./testing`. See `packages/hooks/AGENTS.md`. |
 | `packages/screening` | `@coss/screening` | Product-agnostic AI content screening: sampling per org + product, the `ContentClassifier` interface (`./classifier`; content kinds `email`, `sms` and `text`, the last for risk's user content; Vercel AI SDK `experimental_decide` adapter under `./ai`, `fakeClassifier` in `./testing`), `prepareText`/`prepareLinks` (`./text`), verdict history, the `content_screening` reputation check; `./env` (zod only), `./runtime`. `./classifier`, `./text`, `./ai`, `./runtime` and `./testing` import no workspace package. See `packages/screening/AGENTS.md`. |
 | `packages/risk` | `@coss/risk` | Risk assessments: `assessRisk` (signals under a time budget, scoring, decision, one transaction with the log line, mailbox identity and `risk.assessment.review` webhook), velocity (`VELOCITY_SCRIPT` in Valkey or memory), lists, feedback + fraud memory, forgetting users, IP datasets (`refreshDueDatasets` in the worker, `createIpIntelligenceSource` in the API), the building blocks (`checkEmail`, `checkIp`, `checkPhone`, `classifyContent` in `lookups.ts`; phone data from Twilio Lookup in `phone.ts`), customers' rate limit buckets (`checkRiskLimit` in `limits.ts`), device tokens (`device.ts`), IP privacy data (`privacy.ts`, `ipinfoPrivacyLookup`), calibration from feedback (`calibration.ts`), sandbox fixtures, purges; `./schemas` (zod only: wire schemas, `REASONS`, `VELOCITY_RULES`, `RISK_EVENT_TYPES`), `./env` (zod only), `./runtime`, `./datasets`, `./testing`. See `packages/risk/AGENTS.md`. |
 | `packages/billing` | `@coss/billing` | Plans and billing: the price catalog (`./catalog`: meters, list rates, plans, entitlements, add-ons) and contract terms (`./schemas`), both client-safe; the pure rating engine (`./engine`); accounts, contracts (self-serve and sales), hourly metered usage (`./metering`, the only module products import), credit grants and their ledger, month closes, invoices, payments, credit notes, dunning and holds, usage alerts, plan enforcement (`PlanGate`/`UsageGate` types in `./gate`), providers (fake, manual, Stripe under `./stripe`), the public API's read models and `billing.*` webhook events (wire schemas in `./wire`, client-safe); `./env` (zod only), `./runtime`, `./testing`. `scripts/seed.ts`, `scripts/close-period.ts`. See `packages/billing/AGENTS.md`. |
@@ -64,38 +64,43 @@ text it shows is a gist that must match `CLA.md`: change both together, as a new
 | `packages/sign` | `@coss/sign` | Sign (e-signatures): uploaded PDFs (`pdf.ts`: pdf-lib + pdf.js, page sizes and text anchors), signature requests with signers and fields placed by position or anchor, the hash-chained audit trail (`events.ts`) with its webhooks and log lines (`record.ts`), signing sessions (`sessions.ts`), the signer's actions (`signing.ts`: view, consent, sign, decline), email delivery (`notifications.ts`: invitations in signing order, reminders, expiry, signed copies through an injected `SignMailer`), completion (`complete.ts`: the completed document with its certificate pages, `completed-pdf.ts`, sealed as PAdES B-LT by `seal/`: KMS, a CA's CSC API or a local key, RFC 3161 timestamps, OCSP/CRLs in a DSS), templates (`templates.ts`: roles, merge fields, requests from a template) and builder sessions (`builder.ts`), settings (`settings.ts`: embedding origins, branding, consent text), the document store (`store.ts`: `DocumentStore`, `FakeDocumentStore`); `./schemas` (zod only, also `SIGN_WEBHOOK_EVENT_TYPES`), `./env` (zod only), `./runtime` (`sealerFromEnv`), `./testing` (`buildTestPdf`, `TEST_SIGNATURE_PNG`). See `packages/sign/AGENTS.md`. |
 | `packages/verify` | `@coss/verify` | Verify (one-time codes): `createVerifyService` (`start`: the fraud guard — `@coss/risk`'s `checkVerificationRisk` — before anything is paid for, then a code by SMS from the environment's own number or coss.com's shared numbers, or by email through an injected sender; `check` against an HMAC, never the code; `cancel`), settings (`settings.ts`), reads, shared-number metering (`recordDueVerifySmsUsage`), purges; `./schemas` (zod only, also `VERIFY_WEBHOOK_EVENT_TYPES`), `./testing`. Never imports `@coss/email` (email imports its schemas). See `packages/verify/AGENTS.md`. |
 | `packages/forms` | `@coss/forms` | Forms (hosted form endpoints): forms and their settings (`forms.ts`: field definitions, origins, spam, submitter verification, notifications, contacts mapping, uploads, hosted pages), taking a submission (`submit.ts`, `parse.ts`: origin, fields, honeypot, a Risk assessment, the content check, files, then `record.ts`: usage, `form.submission.*` webhooks, log lines, deliveries), the worker's deliveries (`deliveries.ts`: notification emails, contacts, verification links through an injected `FormMailer`/`FormContactSink`), release and confirmation (`release.ts`), reads (`submissions.ts`), hosted pages and their CSP (`hosted.ts`, `pages.ts`), the file store (`store.ts`, S3 under `./runtime`, cleanup), purges; `./schemas` (zod only, also `FORM_WEBHOOK_EVENT_TYPES`), `./env` (zod only), `./runtime`, `./testing`. See `packages/forms/AGENTS.md`. |
+| `packages/scheduling` | `@coss/scheduling` | Scheduling: hosts, schedules, event types (`one_on_one`, `pool`, `collective`, `group`), availability, the booking path (`claims.ts`: the only writer of `scheduling_claim`, whose exclusion constraint prevents double-booking), holds, approval, recurring series, sessions, the notification outbox with injected `SchedulingNotifier`, purges; `./engine` (pure: time zones, `isBookable`, ranking, recurrence), `calendar/` (`fetch`-based clients for Google, Microsoft and CalDAV, sync, write-back); `./schemas` (zod only, also `SCHEDULING_WEBHOOK_EVENT_TYPES`), `./env` (zod only), `./runtime`, `./testing`. See `packages/scheduling/AGENTS.md`. |
+| `packages/support` | `@coss/support` | coss.com's support desk: tickets from email (`intake.ts`, reading `received_email` of `SUPPORT_ENVIRONMENT_ID`) and the dashboard, sender matching and trust (`matching.ts`, `sender.ts`: a match never grants access by itself), the SLA clock (`sla.ts`, targets in `@coss/billing/catalog`'s `SUPPORT_TIERS`), delivery through an injected `SupportMailer` (`delivery.ts`), the worker's housekeeping and rep alerts (`sweep.ts`), attachments (`store.ts`); `./admin` (reps' queue and actions, platform-level), `./format` and `./schemas` (client-safe), `./env` (zod only), `./testing`. See `packages/support/AGENTS.md`. |
 | `packages/push` | `@coss/push` | Push notifications to the iOS app: devices (one per app session), the outbox products enqueue into (`enqueuePush`, in the deciding transaction), recipients (role + `orgAccess`) and content resolved at send time, the worker's send loop; `./apns` (APNs over `node:http2`, ES256 provider tokens), `./schemas` (zod only: categories, kinds, registration), `./testing` (`FakePushSender`, `createTestPushDevice`). See `packages/push/AGENTS.md`. |
 | `packages/notifications` | `@coss/notifications` | coss.com's notification emails to organizations: the outbox products enqueue into (`enqueueNotification`, in the deciding transaction; once per dedupe key, optionally delayed), kinds rendered at send time (stale news is skipped), the worker's `notifications` loop, owner/admin recipients, retention; `./testing` (`recordingNotifier`). See `packages/notifications/AGENTS.md`. |
-| `packages/email-layout` | `@coss/email-layout` | The layout of every coss.com email (account emails, notifications): `renderEmail` from typed blocks (heading, paragraph, list, button, link, code, details, steps, note) to matching text and HTML parts. Zero deps, client-safe. |
+| `packages/email-layout` | `@coss/email-layout` | The layout of every coss.com email (account emails, notifications): `renderEmail` from typed blocks (heading, paragraph, list, button, link, code, details, fields, passcode, quote, steps, note) to matching text and HTML parts; `brand` (with an optional inline `logo` and `accent`) replaces coss.com's plate and wordmark, only for mail from the customer's own address (assets: `apps/site/public/site-assets/email`, cached, so a changed file needs a new name). Zero deps, client-safe. |
+| `packages/dashboard-routes` | `@coss/dashboard-routes` | The dashboard's products (`PRODUCTS`: pages, categories, docs), Developers, organization settings and the paths to them (`environmentHref`, `settingsHref`, `orgLinkHref`/`parseOrgLink`), `RESERVED_PROJECT_SLUGS`, `visibleProducts`. Zero deps, client-safe. |
 | `packages/companion` | `@coss/companion` | Wire types of the dashboard's iOS app API (`/api/mobile/v1/*`): plain TypeScript types, zero deps, client-safe. |
+| `packages/compliance` | `@coss/compliance` | HIPAA mode, one per-organization switch platform admins turn on once a BAA is signed: `isHipaaMode`/`hipaaModeApplies`, `HipaaModeError`, status for the customer's compliance page; `./catalog` (controls, vendors and their BAA status, responsibilities; client-safe, no imports), `./testing`. Imports only `@coss/db`, so anything may import it. See `packages/compliance/AGENTS.md`. |
 | `packages/retention` | `@coss/retention` | The data retention policy: `RETENTION_POLICY` (published by the docs and the dashboard) and `RETENTION_DAYS` (enforced by each package's purge, run by the worker). Zero deps, client-safe. |
-| `packages/ui` | `@coss/ui` | coss ui components (shadcn `@coss` registry, Base UI) + `theme.css` (tokens), `globals.css` (the dashboard's stylesheet) and `./fonts` (`next/font/local`: Cal Sans as `fontSans`/`fontHeading` and, upright only, `fontCalSans`; Paper Mono as `fontMono`). |
-| `packages/sdk` | `coss` | **Public** SDK. Zero deps, ESM-only, built with tsdown. `coss/device` is its browser-only entry (risk's device tokens) and `coss/sign` another (`mountSigning`: Sign's signing page in an iframe); `coss/diagnose` explains an email's delivery (used by the MCP server and the CLI); `coss/nodemailer`, `coss/better-auth` and `coss/authjs` are the integrations (docs: `/docs/integrations`). |
-| `packages/mcp` | `coss-mcp` | **Public** MCP server (`npx coss-mcp`, stdio, Node): tools for coding agents built only on the published `coss` SDK — search and read the docs (no key needed), find emails and diagnose delivery (the SDK's `coss/diagnose`), send, suppressions, domains, webhook deliveries, received emails, logs, account status. See "MCP server" below. |
+| `packages/ui` | `@coss/ui` | coss ui components (shadcn `@coss` registry, Base UI) + `theme.css` (tokens), `finish.css` (the tactile finish over them, shared by the dashboard and the site), `globals.css` (the dashboard's stylesheet) and `./fonts` (`next/font/local`: Cal Sans as `fontSans`/`fontHeading` and, upright only, `fontCalSans`; Paper Mono as `fontMono`). |
+| `packages/sdk` | `coss` | **Public** SDK. Zero deps, ESM-only, built with tsdown. `coss/device` is its browser-only entry (risk's device tokens) and `coss/sign` another (`mountSigning`: Sign's signing page in an iframe); `coss/diagnose` explains what happened to an email, SMS, verification, signature request, form submission, Hooks delivery or empty Scheduling slot list (used by the MCP server and the CLI); `coss/nodemailer`, `coss/better-auth` and `coss/authjs` are the integrations (docs: `/docs/integrations`). See `packages/sdk/AGENTS.md`. |
+| `packages/mcp` | `coss-mcp` | **Public** MCP server (`npx coss-mcp`, stdio, Node; hosted at `api.coss.com/mcp` by `apps/api` through `coss-mcp/http`): tools for coding agents built only on the published `coss` SDK: docs search, per-product setup (`get_setup`) and diagnosis (`diagnose_*`), sends, suppressions, domains, webhooks, received mail, logs, log drains, marketing, sub-accounts, Verify, Sign, Forms, Scheduling, Hooks, Risk, account status, a read-only fallback for any `/v1/` path (`api_get`), plus prompts and resources; `COSS_MCP_TOOLSETS` offers fewer. See `packages/mcp/AGENTS.md`. |
 | `plugins/coss` | — | **Public** Claude Code plugin (marketplace: the root `.claude-plugin/marketplace.json`; `/plugin install coss --marketplace cosscom/coss`) with the `coss` Agent Skill (`skills/coss/SKILL.md`, also installed into other agents by `npx skills add cosscom/coss`) and the MCP server (`.mcp.json`, `npx -y coss-mcp`). Plain files, not a workspace; served from main. See "Coding agents" below. |
-| `packages/cli` | `coss-cli` | **Public** CLI (`npm i -g coss-cli`, command `coss`, Node): `login` (browser PKCE or `--manual`), `logout`, `whoami`, `emails send`, `logs tail`, `listen` (forwards webhook events to localhost), built only on the published `coss` SDK. See "CLI" below. |
+| `packages/cli` | `coss-cli` | **Public** CLI (`npm i -g coss-cli`, command `coss`, Node): `login`, `init`, `emails`, `suppressions`, `subaccounts`, `sms`, `verify`, `contacts`, `audiences`, `segments`, `topics`, `broadcasts`, `marketing settings`, `sign`, `forms`, `scheduling`, `hooks`, `risk`, `domains`, `templates`, `webhooks`, `logs tail`, `log-drains`, `listen`, `api`, built only on the published `coss` SDK. See `packages/cli/AGENTS.md`. |
 | `packages/kloq` | `kloq` | The kloq library (the `cosscom/calendar` repository's `packages/kloq/src`, tests left out): the `<Kloq>` calendar, its themes, settings dialog, design mode and stylesheet. Vendored (excluded from Biome, `noUncheckedIndexedAccess` off); also what `/kloq/r/kloq.json` serves as source. Used by `apps/site`, and by `packages/expo-kloq` through `kloq/lib/*` (the model modules only). |
 | `packages/expo-kloq` | `expo-kloq` | kloq for Expo / React Native: `<KloqCalendar>` (day, 3-day, week with a multi-zone gutter, month, year, schedule, timeline; the event sheet with recurrence and its scope dialog, quick add, calendar and zone settings) on kloq's own model, drawn with native controls — SwiftUI via `@expo/ui` (Liquid Glass via `expo-glass-effect`) on iOS, Jetpack Compose on Android. MIT. See `packages/expo-kloq/AGENTS.md`. |
 | `tooling/typescript` | `@coss/tsconfig` | Shared tsconfig bases. |
 | `tooling/sdkgen` | `@coss/sdkgen` | Builds the generated SDKs: `SDK_METHODS` (every operation's SDK method, named as in the TypeScript SDK) and `NO_RETRY` (`src/methods.ts`), the derive step that turns `apps/api/openapi.json` into the spec Fern generates from (`src/derive.ts`), the post-processing of each generator's output (`src/languages.ts`), the API reference's code samples (`snippets.json`, from each SDK's `reference.md`); `scripts/generate.ts` (`bun run sdks:generate`, needs Docker). See `sdks/AGENTS.md`. |
 | `sdks/{python,go,ruby,php,java,dotnet}` | `cosscom` (PyPI, `import coss`), `github.com/cosscom/coss-go`, `coss` (gem), `coss/coss` (Composer), `com.coss:coss` (Maven), `Coss` (NuGet) | **Public** SDKs generated from the OpenAPI document by Fern's open-source generators (`sdks/fern/generators.yml`), each with a few hand-written files kept by its `.fernignore` (webhook verification, tests, metadata). Not workspaces. Regenerated on main by the "Regenerate SDKs" PR; released by `release-sdks.yml`. See `sdks/AGENTS.md`. |
-| `integrations/{laravel,rails,django}` | `coss/laravel`, `coss-rails`, `coss-django` | **Public** framework mail drivers (PHP/Composer, Ruby gem, Python/PyPI), each sending its framework's messages to `POST /v1/emails` with a small HTTP client of its own. Not Bun workspaces (turbo, Biome and the images never see them). Shared rules in `integrations/README.md`, shared test scenarios in `integrations/conformance/*.json`. |
-| `infra` | `@coss/infra` | AWS deployment spec (ECS services, env vars, ALB rules, CloudFront behaviours), checked by tests, and the production Terraform + deploy scripts that apply it. See `infra/AGENTS.md`. |
+| `integrations/{laravel,rails,django}` | `coss/laravel`, `coss-rails`, `coss-django` | **Public** framework mail drivers (PHP/Composer, Ruby gem, Python/PyPI), each sending its framework's messages to `POST /v1/emails` with a small HTTP client of its own. Not Bun workspaces (turbo, Biome and the images never see them). Shared rules in `integrations/README.md`, shared test scenarios in `integrations/conformance/*.json`. See `integrations/AGENTS.md`. |
+| `infra` | `@coss/infra` | AWS deployment spec (ECS services, env vars, ALB rules, CloudFront behaviours), checked by tests, the production Terraform + deploy scripts that apply it, and the management account's Terraform (`infra/organization`). See `infra/AGENTS.md`. |
 
-Runtime dependencies: `observability` (no workspace deps) ← `api`, `worker`, `web`, `site`, `portal`, `smtp`, `infra`, `mobile` (only `./scrub`, bundled by Metro: keep it dependency-free); `signals` (no workspace deps) ← `auth`, `webhooks`, `risk`; `db ← auth ← tenancy`,
-`db ← logs ← webhooks ← risk` (`risk` also `→ signals, ratelimit, retention, screening` — only screening's DB-free `./classifier`, `./text`, `./runtime`, `./testing` — and `billing` — only `./metering` and `./gate` types, for phone checks; `email` imports only `@coss/risk/schemas`, for `WEBHOOK_EVENT_TYPES`), `db ← logs ← webhooks ← reputation ← screening ← email`, `webhooks ← sms → billing, reputation, retention, versioning` (`email` imports only `@coss/sms/schemas`, for `WEBHOOK_EVENT_TYPES`; screening is injected), `reputation ← hooks`, `db ← ratelimit`, `db ← push ← webhooks, hooks, reputation, billing, risk, worker, web` (`push` also `→ retention` and only `@coss/auth/{permissions,org-access}`), `db ← notifications ← sms, worker` (`notifications` also `→ email-layout, retention`); `email-layout` (no deps) ← `auth`, `reputation`, `email`, `billing`, `sms`, `notifications`, `email, webhooks, logs, retention ← migrate` (`billing` only `./gate` types), `webhooks ← billing ← email` (packages take
+Runtime dependencies: `db ← compliance ← tenancy, email, sms, verify, risk, screening, forms, scheduling, sign, push, api, worker, web, smtp` (read directly, never injected); `observability` (no workspace deps) ← `api`, `worker`, `web`, `site`, `portal`, `smtp`, `infra`, `mobile` (only `./scrub`, bundled by Metro: keep it dependency-free); `signals` (no workspace deps) ← `auth`, `tenancy` (logos), `webhooks`, `risk`; `db ← auth ← tenancy`,
+`db ← logs ← webhooks ← risk` (`risk` also `→ signals, ratelimit, retention, screening` — only screening's DB-free `./classifier`, `./text`, `./runtime`, `./testing` — and `billing` — only `./metering` and `./gate` types, for its meters; `email` imports only `@coss/risk/schemas`, for `WEBHOOK_EVENT_TYPES`), `db ← logs ← webhooks ← reputation ← screening ← email`, `webhooks ← sms → billing, reputation, retention, versioning` (`email` imports only `@coss/sms/schemas`, for `WEBHOOK_EVENT_TYPES`; screening is injected), `reputation ← hooks` (`hooks` also `→` only `@coss/billing/{metering,gate}`: one `hooks.messages` unit per live message accepted, Free's cap injected), `db ← ratelimit`, `db ← push ← webhooks, hooks, reputation, billing, risk, worker, web` (`push` also `→ retention` and only `@coss/auth/{permissions,org-access}`), `db ← notifications ← sms, scheduling, worker` (`notifications` also `→ email-layout, retention`); `email-layout` (no deps) ← `auth`, `reputation`, `email`, `billing`, `sms`, `notifications`, `scheduling`, `support`, `forms`, `sign`, `verify`, `email, webhooks, logs, retention ← migrate` (`billing` only `./gate` types), `webhooks ← billing ← email` (packages take
 `billing`'s plan checks injected — `PlanGate`, `UsageGate`, and in webhooks the structural `WebhookPlanLimits`, since
 billing enqueues `billing.*` events through it — and email imports only `./metering`, `./gate` and `./wire`); `versioning` (no deps) ← `tenancy`, `webhooks`, `email`, `billing` (`schemas`/`wire` examples);
+`dashboard-routes` (no deps) ← `web`, `tenancy`, `email`, `sms`, `reputation`, `billing`, `forms`, `scheduling`, `mobile` (paths of dashboard pages);
 `retention` (no deps) ← `tenancy`, `webhooks`, `reputation`, `screening`, `email`, `hooks`, `billing`, `push`, `notifications`, `sign`, `verify`, `forms`, `worker`, `web`, `site`, `mobile`;
 `db ← logs ← webhooks ← verify` (`verify` also `→ sms, risk, reputation, ratelimit, signals, retention, versioning` and only `@coss/billing/{metering,gate,catalog}`; `email` imports only `@coss/verify/schemas`, for `WEBHOOK_EVENT_TYPES`);
-`db ← logs ← webhooks ← sign` (`sign` also `→ versioning, retention` and only `@coss/billing/metering`; `email` imports only `@coss/sign/schemas`, for `WEBHOOK_EVENT_TYPES`); `db ← logs ← webhooks ← risk ← forms` (`forms` also `→ versioning, retention` and only `@coss/billing/metering`; never `@coss/email`: mail and contacts are injected; `email` imports only `@coss/forms/schemas`, for `WEBHOOK_EVENT_TYPES`); `api → tenancy, email, sms, sign, verify, forms, hooks, reputation, webhooks, ratelimit, versioning, logs, billing, risk, screening (`./env` only), db`;
+`db ← logs ← webhooks ← sign` (`sign` also `→ versioning, retention` and only `@coss/billing/metering`; `email` imports only `@coss/sign/schemas`, for `WEBHOOK_EVENT_TYPES`); `db ← logs ← webhooks ← scheduling` (`scheduling` also `→ notifications, dashboard-routes, email-layout, versioning, retention` and only `@coss/billing/{metering,gate}`; never `@coss/email` or `@coss/sms`: sending is injected; `email` imports only `@coss/scheduling/schemas`, for `WEBHOOK_EVENT_TYPES`); `db ← notifications ← support` (`support` also `→ signals, email-layout, retention` and only `@coss/billing/catalog`; never `@coss/email`: mail, reply text and the plan lookup are injected); `db ← logs ← webhooks ← risk ← forms` (`forms` also `→ versioning, retention` and only `@coss/billing/metering`; never `@coss/email`: mail and contacts are injected; `email` imports only `@coss/forms/schemas`, for `WEBHOOK_EVENT_TYPES`); `api → coss-mcp (its `./http`; `coss` comes with it), tenancy, email, sms, sign, verify, forms, hooks, reputation, webhooks, ratelimit, versioning, logs, billing, risk, screening (`./env` only), db`;
 `smtp → tenancy, email, ratelimit, logs, billing, observability, db`;
-`web → auth, tenancy, email, sms, sign, forms, hooks, reputation, screening, webhooks, ratelimit, versioning, retention, logs, billing, risk, push, migrate, companion, db, ui`; `mobile → companion` (types only; a dev dependency), `retention`, `observability` (both bundled by Metro: keep them dependency-free); `portal → hooks, webhooks, ratelimit, logs, observability, db, ui`; `sign-app → sign, ratelimit, observability, db, ui`; `site → ui, auth, versioning, retention, billing, risk, reputation, ratelimit, sdkgen` (only the client-safe `@coss/auth/{slugs,constants,api-key-permissions}`, the changelog, the retention policy, `@coss/billing/{catalog,money,engine}`, `@coss/risk/schemas`, `@coss/reputation/schemas` (the default policy), `@coss/ratelimit/buckets` (the bucket catalog, no imports) and `@coss/sdkgen`'s `snippets.json` + `./methods`) +
+`web → auth, tenancy, email, sms, sign, forms, support, hooks, reputation, screening, webhooks, ratelimit, versioning, retention, logs, billing, risk, push, migrate, companion, db, ui`; `mobile → companion` (types only; a dev dependency), `retention`, `observability`, `dashboard-routes` (bundled by Metro: keep them dependency-free); `portal → hooks, webhooks, ratelimit, logs, observability, db, ui`; `sign-app → sign, ratelimit, observability, db, ui`; `site → ui, auth, versioning, retention, billing, risk, reputation, ratelimit, sms, sdkgen` (only the client-safe `@coss/auth/{slugs,constants,api-key-permissions}`, the changelog, the retention policy, `@coss/billing/{catalog,money,engine}`, `@coss/risk/schemas`, `@coss/reputation/schemas` (the default policy), `@coss/ratelimit/buckets` (the bucket catalog, no imports), `@coss/sms/segments` (the segment calculator) and `@coss/sdkgen`'s `snippets.json` + `./methods`) +
 `@coss/api/openapi.json` (data only, never api code); `sdkgen → @coss/api/openapi.json` (data only); `infra → auth, email, sms, sign, hooks, ratelimit, screening, billing` (`slugs`, `env` only);
-`worker → auth (`./emails` only), email, sms, sign, verify, forms, hooks, reputation, screening, webhooks, ratelimit, logs, risk, push, migrate, tenancy, retention, billing, db` (from tenancy only `./retention` and `./deletion`, which import nothing but `db`); `sdk`, `ui`, `kloq` and `companion` depend on no workspace (`site → kloq`, `expo-kloq → kloq`, `expo-kloq-example → expo-kloq`); `mcp` and `cli` depend only on the published `coss` (a
+`worker → auth (`./emails` only), email, sms, sign, verify, forms, support, hooks, reputation, screening, webhooks, ratelimit, logs, risk, push, migrate, tenancy, retention, billing, db` (from tenancy only `./retention`, `./deletion` and `./logos`, which import nothing but `db` and `signals`); `sdk`, `ui`, `kloq` and `companion` depend on no workspace (`site → kloq`, `expo-kloq → kloq`, `expo-kloq-example → expo-kloq`); `mcp` and `cli` depend only on the published `coss` (a
 semver range, not `workspace:`).
 Dev-only: `email`/`sms`/`verify`/`forms`/`webhooks`/`hooks`/`reputation`/`screening`/`ratelimit`/`logs`/`billing`/`risk`/`push`/`notifications`/`migrate`/`worker → tenancy` (test fixtures — so tenancy and auth must never import email, webhooks, screening, ratelimit, logs, billing or notifications (the layout they share is the dependency-free `@coss/email-layout`) (plan limits reach Better Auth through `setMembershipLimitResolver` from `@coss/auth/limits`); Better Auth's own audit events reach the log through `setOrgAuditRecorder` from `@coss/auth/audit`) and
-`api`/`worker`/`site → coss` and `api → coss-mcp`, `coss-cli` (SDK, MCP and CLI contract tests and the docs' Twoslash snippets — turbo builds the SDK before their
+`api`/`worker`/`site → coss` and `api → coss-cli` (SDK, MCP and CLI contract tests and the docs' Twoslash snippets — turbo builds the SDK before their
 `typecheck`/`test`, and before the site's `dev`/`build`). `web → coss` is a runtime dependency: the sign-up form sends
 `coss/device`'s token (turbo builds the SDK before the dashboard's `dev`/`build` too).
 
@@ -106,11 +111,12 @@ Valkey (or Redis) at `TEST_VALKEY_URL` for the ratelimit/api tests.
 
 ```sh
 bun install                 # never npm/pnpm/yarn
-bun run dev                 # web :3000 + api :3001 + site :3002 + portal :3003 + sign :3004 + smtp :2465/:2587 + worker (turbo TUI; agents: bunx turbo run dev --ui=stream)
+bun run dev                 # web :3000 + api :3001 + site :3002 + portal :3003 + sign :3004 + scheduling :3005 + smtp :2465/:2587 + worker (turbo TUI; agents: bunx turbo run dev --ui=stream)
 bun run --cwd apps/mobile ios  # the iOS app on the Simulator (Xcode; needs `bun run dev` for the dashboard)
 bun run lint                # biome ci .            bun run format → biome check --write .
 bun run typecheck           # tsc --noEmit per workspace (TS 7); web runs `next typegen` first; builds the SDK first
 bun run test                # migrates TEST_DATABASE_URL, then `bun test` in every workspace (uncached; SDK built first)
+bun run --cwd apps/web e2e   # browser smoke tests of the dashboard (Playwright; `bun run --cwd apps/web playwright install chromium` once); the merge queue runs them
 bun run build               # next build + SDK build (tsdown, publint, attw)
 bun run db:generate         # drizzle-kit generate after editing packages/db/src/schema/*.ts (or after auth:generate)
 bun run db:migrate          # apply migrations + install/upgrade the pg-boss schema on DATABASE_URL
@@ -143,6 +149,11 @@ bun run ratelimit:set --org acme [--bucket api.read --limit 100 [--period 1s] [-
 bun run --cwd apps/worker hooks:load [--applications 20 --endpoints 3 --messages 2000]
                                                # Hooks load test on the test database: send and
                                                #   delivery throughput, the claim query's plan
+bun run --cwd apps/worker scheduling:load [--hosts 500 --days 14 --concurrency 32 --bookings 500]
+                                               # Scheduling load test on the test database: search, slots,
+                                               #   booking races, plans of the hot queries
+bun run scheduling:reencrypt [--dry-run]       # re-encrypt attendee details and booker sessions with the first
+                                               #   SCHEDULING_DATA_KEYS (step 3 of a rotation, README)
 bun run webhooks:reencrypt [--dry-run]         # re-encrypt webhook endpoint secrets with the first
                                                #   WEBHOOK_SECRETS_KEY (step 3 of a key rotation, README)
 bun run billing:close-period --org acme [--at 2026-11-01T00:20:00Z]
@@ -167,6 +178,11 @@ again. After changing `integrations/<driver>` also run its own lint and tests (C
 lint && composer test` (Laravel), `bundle exec rubocop && bundle exec rake test` (Rails), `uv run ruff check && uv
 run ruff format --check && uv run pytest` (Django); their end-to-end tests run when `COSS_E2E` holds the line `bun
 run --cwd apps/api serve:test` prints.
+
+**Security scanning** (`.github/workflows/security.yml`): CodeQL analyzes the TypeScript and the workflows, and `bun
+audit` checks dependencies for high-severity advisories, on pull requests, on main and weekly. CodeQL's findings are
+in the repository's Security tab. Neither is a required check. Cal.com's SDLC policy (Drata) asks for this. The advisories
+`bun audit` ignores are listed with their reasons in the workflow: only the iOS app's toolchain.
 
 **Remote cache** (README, "Remote cache"): `typecheck` and `build` results are uploaded to Turbo's Vercel Remote Cache
 (team `cal`, signed) and the merge queue replays any task whose hash it finds (pull request runs get no cache
@@ -224,11 +240,13 @@ variables (`infra/test` enforces the list): a hash that differs between laptops 
 | `FORMS_PUBLIC_URL` | api, worker, web: the origin forms are served on (`<it>/f/<id>`; a registrable domain of its own in production, routed to the api service, which then serves `/f/*` only for that host). Default `http://localhost:3001` outside production; unset in production → Forms is off (503 `forms_unavailable`) |
 | `FORMS_FILES_BUCKET` | api, worker, web: Forms' uploads (S3, with `AWS_REGION`). Unset: the fake store (Postgres) outside production; in production forms refuse files |
 | `FORMS_NOTIFICATIONS_FROM` | worker: coss.com's sender of form notifications ("<form name> via coss.com") for forms without their own `notifications.from`, on a verified domain of `NOTIFICATIONS_ENVIRONMENT_ID`'s organization; default `NOTIFICATIONS_FROM`'s address. Verification emails never use it |
+| `SUPPORT_FILES_BUCKET` | web, worker: Support's ticket attachments (S3, with `AWS_REGION`; Terraform output `support_files_bucket`). Unset: the fake store (Postgres) outside production; in production tickets take no attachments |
+| `SUPPORT_ENVIRONMENT_ID`, `SUPPORT_FROM_ADDRESS`, `SUPPORT_REPLY_DOMAIN` | worker: Support's mail, all three or none: a live environment of coss.com's own organization (never `NOTIFICATIONS_ENVIRONMENT_ID`'s: suppressions are per environment) whose received mail becomes tickets, the address customers see, and that environment's receiving domain replies go to. Unset: emails are printed outside production and wait in production. See `packages/support/AGENTS.md` |
 | `API_PORT`, `API_PUBLIC_URL` | `apps/api` (port; OpenAPI `servers` and email tracking URLs, falls back to the request origin outside production); `API_PUBLIC_URL` also `apps/worker` (email tracking) and `apps/web` (quick-start snippets, read at runtime) |
 | `API_CORS_ORIGINS` | `apps/api`: comma-separated browser origins allowed on `/v1/*` (the docs' playground); default `https://coss.com`, locally `http://localhost:3002` |
 | `EMAIL_PROVIDER` | api, web, worker: provider for live environments (`fake` or `ses`); shape in `@coss/email/env` |
 | `AWS_REGION`, `SES_CONFIGURATION_SET`, `SES_TENANT_PREFIX` | required with `EMAIL_PROVIDER=ses` (api, web, worker); printed by `ses:bootstrap`. The marketing stream's configuration set is derived (`<SES_CONFIGURATION_SET>-marketing`); the prefix is at most 23 characters. AWS credentials come from the default chain (`globalPassThroughEnv` in `turbo.json`) |
-| `TRACKING_DOMAIN_PROVIDER`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, `TRACKING_CNAME_TARGET` | api, web, worker: custom tracking domains (`fake` default, or `cloudflare`: Cloudflare for SaaS custom hostnames on the cosslinks.com zone, which needs the token and zone id); customers CNAME to `TRACKING_CNAME_TARGET` (default `track.cosslinks.com`); shape in `@coss/email/env` |
+| `TRACKING_DOMAIN_PROVIDER`, `TRACKING_DISTRIBUTION_ID`, `TRACKING_CONNECTION_GROUP_ID`, `TRACKING_CNAME_TARGET` | api, web, worker, smtp: custom tracking domains (`fake` default, or `cloudfront`: tenants of a CloudFront multi-tenant distribution, which needs all three others); customers CNAME to `TRACKING_CNAME_TARGET`, the connection group's routing endpoint; shape in `@coss/email/env` |
 | `TRACKING_PUBLIC_URL` | api + worker + smtp: origin of the open/click tracking links in emails (default `API_PUBLIC_URL`; smtp: required in production, locally `http://localhost:3001`); production `https://track.cosslinks.com`, a domain of its own so senders' abuse never lands on coss.com |
 | `SES_EVENTS_QUEUE_URL` | worker with `EMAIL_PROVIDER=ses`: the SQS queue of SES events |
 | `INBOUND_MANAGED_DOMAIN`, `SES_INBOUND_BUCKET` | api, web, worker: receiving. The managed inbound domain (`<label>.<domain>` addresses per environment; default `inbound.coss.test` with the fake provider) and, with SES, the bucket received content lives in (both or neither with SES; unset → receiving off). Printed by `ses:bootstrap --managed-domain` |
@@ -250,8 +268,12 @@ variables (`infra/test` enforces the list): a hash that differs between laptops 
 | `WEBHOOK_SECRETS_KEY` | api + web + worker: comma-separated 32-byte base64 keys, newest first (the first encrypts, all decrypt); encrypts endpoint signing secrets (and the provider keys imports hold) (losing it makes them unreadable). Shape in `@coss/webhooks/env` |
 | `WORKER_LOOPS` | worker: comma-separated loops to run (`WORKER_LOOP_NAMES` in `apps/worker/src/jobs.ts`, including the `email-dispatch` and `email-dispatch-marketing` queues); unset runs all. A second worker service with `hooks` scales Hooks deliveries on their own |
 | `LOG_RETENTION_DAYS` | worker: days of environment logs kept (1-31, default 30); whole expired day partitions are dropped hourly |
+| `SCHEDULING_DATA_KEYS` | api, web, worker: comma-separated 32-byte base64 keys, newest first, encrypting attendees' details and answers. Unset in production → Scheduling is off (503 `scheduling_unavailable`); a fixed development key otherwise |
+| `SCHEDULING_PUBLIC_URL` | api, web, worker: origin of the hosted scheduling pages (`apps/scheduling`). Default `http://localhost:3005` outside production; unset in production → sessions have no `url` and emails no manage link |
+| `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET`, `MICROSOFT_CALENDAR_CLIENT_ID`, `MICROSOFT_CALENDAR_CLIENT_SECRET` | api, worker: Scheduling's OAuth apps for calendar access, separate from sign-in's. Redirect URIs `${API_PUBLIC_URL}/scheduling/oauth/{google,microsoft}/callback`. Each pair together, or that provider can't be connected |
+| `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET`, `ZOOM_WEBHOOK_SECRET_TOKEN` | api, worker: Scheduling's Zoom app, for meetings on hosts' accounts. Redirect URI `${API_PUBLIC_URL}/scheduling/oauth/zoom/callback`, deauthorization events at `${API_PUBLIC_URL}/scheduling/zoom/events`, verified with the token. The pair together, or Zoom can't be connected |
 | `SMS_PROVIDER` | api, web, worker: provider of live environments' SMS and of new numbers (`fake` default, or `twilio`). Production with `fake` refuses to buy numbers or submit registrations, so nothing live is sent; the api only needs the name (callbacks are verified with each subaccount's token). Shape in `@coss/sms/env` |
-| `RISK_PHONE_LOOKUP`, `RISK_PHONE_SIM_SWAP` | api: risk's phone checks in live environments (`off` default: live checks answer 503; `twilio`: Twilio Lookup's line type and carrier with the parent account's `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`, paid per lookup — Twilio's DPA purpose must cover it first). `RISK_PHONE_SIM_SWAP=true` also asks for SIM swaps (only after Twilio's carrier approval). Sandbox environments use fixtures |
+| `RISK_PHONE_LOOKUP`, `RISK_PHONE_SIM_SWAP` | api: risk's phone checks in live environments (`off` default: live checks answer 503; `twilio`: Twilio Lookup's line type and carrier with the parent account's `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`, paid per lookup — Twilio's DPA purpose must cover it first). `RISK_PHONE_SIM_SWAP=true` also asks for SIM swaps (only after Twilio's carrier approval and adding them back to the DPA: the phone check data and Annex 3's Twilio row). Sandbox environments use fixtures |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PRIMARY_CUSTOMER_PROFILE_SID`, `SMS_SUBACCOUNT_PREFIX` | web + worker with `SMS_PROVIDER=twilio` (the first two also api, with `RISK_PHONE_LOOKUP=twilio`): Cal.com's parent Twilio account (shared ISV), the approved primary customer profile organizations' 10DLC brands are registered under, and the prefix of the subaccounts coss.com creates (`<prefix>-<organization id>`). Twilio calls back `${API_PUBLIC_URL}/sms/twilio/*` |
 | `SMS_NEGOTIATED_COSTS` | `bun run sms:update-prices` only (never deployed or committed): Twilio's negotiated per-segment costs by country, JSON in dollars |
 | `BILLING_PROVIDER`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | web + worker: the payment provider of new billing accounts (`fake` default, or `stripe`, which needs the key); the webhook secret only the dashboard (`/api/billing/webhook`). Shape in `@coss/billing/env` |
@@ -269,6 +291,7 @@ variables (`infra/test` enforces the list): a hash that differs between laptops 
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `apps/web` (read by `packages/auth/src/social.ts`): sign-in with Google / GitHub, each on when both of its values are set (`src/instrumentation.ts` refuses half a pair). Callbacks `${BETTER_AUTH_URL}/api/auth/callback/{google,github}`. Production: ids plain (tfvars), secrets in the stage secret — put the secrets there **before** the `terraform apply` that adds them, or web tasks can't start |
 | `DOMAIN_CONNECT_KEY_ID`, `DOMAIN_CONNECT_PRIVATE_KEY` | `apps/web`: Domain Connect, one-click DNS setup on domain pages (`src/lib/domain-connect.ts`, `@coss/email/domain-connect`): the RSA key apply links are signed with and the TXT host its public half is published at under coss.com (`bun run domain-connect:key`; README, "Domain Connect"). Both or neither (`src/instrumentation.ts`); unset → no button. The key may be one line with `\n` escapes |
 | `DEPLOY_GITHUB_APP_ID`, `DEPLOY_GITHUB_APP_PRIVATE_KEY` | `apps/web`: the admin console's Deploys page (`src/lib/deploys.ts`), through the coss.com Deploy GitHub App (Actions read/write, Contents read on `cosscom/coss`; README, "Deploying from the admin console"). Both or neither (`src/instrumentation.ts`); unset → the page explains the setup. The key may be one line with `\n` escapes. The app's bot is on `deploy_actor_ids` |
+| `SECURITY_MANAGEMENT_ROLE_ARN`, `SECURITY_ALERTS_TOPIC_ARN`, `SECURITY_ACCESS_LOGS_BUCKET`, `SECURITY_DATABASE_LOG_GROUP` | `apps/web`: the admin console's security page (`src/lib/security-posture.ts`; `infra/AGENTS.md`, "Security monitoring"): the management account's read-only role, the alert topic, the access logs bucket and the database's log group. Unset: the page explains the setup |
 | `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | `apps/web`: Cloudflare Turnstile (both or neither; required in production, checked in `src/instrumentation.ts`). Pages pass the site key to the auth forms; `packages/auth/src/options.ts` adds the `captcha` plugin when the secret is set |
 | `TRUSTED_PROXY_HOPS` | `apps/web`: proxies that append to `X-Forwarded-For` (CloudFront → ALB: `2`; default `0`). `src/proxy.ts` replaces the header with the one client address they vouch for, which Better Auth then uses (it ignores multi-value headers) |
 | `NEXT_DEPLOYMENT_ID` | Next builds (`apps/web`, `apps/site`): the commit, passed by the Dockerfiles; build id + version-skew protection |
@@ -284,292 +307,36 @@ instead (today `NODE_ENV`, `NEXT_DEPLOYMENT_ID`; `infra/test` pins the list): th
 and laptops and CI must compute the same hashes to share the remote cache (README, "Remote cache"). Runtime values
 are never inlined into builds (no `NEXT_PUBLIC_*`), which is what makes pass-through safe.
 
-## Public API (`apps/api`)
+## Rules next to the code
 
-- `createApp(opts)` (`src/app.ts`) is side-effect free; services are injected via `CreateAppOptions` and `src/index.ts`
-  wires env (`webhookDeps` is required — a throwaway secrets key would make the endpoints it creates
-  undeliverable; `emailService` is required — `src/index.ts` builds it on the pg-boss queue; `domainDeps` defaults to
-  the fake provider). Middleware order: request id → `secureHeaders` → `bodyLimit` (5 MB; `POST /v1/emails` uses its own 40 MB limit after authentication) → `logger` (off under test). Every
-  response carries a server-generated `X-Request-Id: req_…` (client values are ignored).
-- The only unauthenticated routes are `/health`, `/openapi.json` and the tracking endpoints `GET /t/o/:token`
-  (open pixel, always a GIF) and `GET /t/c/:token/:position` (302 to the stored link, else a plain-text 404)
-  (`src/routes/tracking.ts`). They are plain Hono routes outside `/v1` and the OpenAPI document, never return the
-  error envelope, record nothing for HEAD, and get `Cross-Origin-Resource-Policy: cross-origin` (everything else keeps
-  `same-origin`).
-- Errors are always the envelope `{ error: { type, code, message, param?, issues?, hint?, request_id } }`, built only by
-  `errorResponse` (`src/errors.ts`). Throw `new ApiError(status, { type, code, message, param? })` with `type` from
-  `ERROR_TYPES`, or a product error mapped in `toApiError`; anything else is logged and returned as a generic 500. Never
-  hand-build error JSON.
-- New endpoint: `createRoute({ …, security: [{ bearerAuth: [] }], middleware: [requireApiKey({ <product>: ["<action>"] }), rateLimit("api.read" | "api.write" | "api.send")] })`
-  + `router.openapi(route, handler)`, mounted in `createV1Router` (`src/routes/v1.ts`). Auth goes in `middleware` so it
-  runs before validation (401 beats 422). Tenancy comes only from `c.var.auth` — environment-scoped resources filter by
-  `environmentId`, organization-scoped ones (domains, audit events, billing) only by `organizationId`. Document responses with
-  `jsonDoc`/`errorDoc`/`commonErrors` (`src/routes/docs.ts`, includes 429). The root `validationHook` turns zod failures into 422 + `issues`;
-  a per-route hook must end with `validationHook(result)`. `test/app.test.ts` asserts the exact OpenAPI path list.
-- Every operation needs an `operationId` (it names its docs page). Wire schemas carry a whole-object
-  `.meta({ examples: [...] })` (OpenAPI 3.1 form; the singular `example` is ignored by the docs), checked by
-  `packages/{email,webhooks}/test/schema-examples.test.ts`; they feed the reference's samples and playground. After route changes
-  run `bun run openapi:generate`, add the operation's SDK sample in `apps/site/src/lib/sdk-samples.ts` and its method
-  to `SDK_METHODS` in `tooling/sdkgen/src/methods.ts` (the same name; to `NO_RETRY` too when the API doesn't
-  deduplicate it, like the TypeScript SDK's `retry: false`) — tests enforce all three. The generated SDKs
-  (`sdks/*`) and their docs samples (`tooling/sdkgen/snippets.json`) follow in main's "Regenerate SDKs" PR.
-  Webhook event schemas no route returns are listed in `src/webhook-events.ts` (components of the document, so the
-  generated SDKs type them).
-- **Versions** (`Coss-Version: YYYY-MM-DD`, `@coss/versioning`): handlers always build the latest shape. The
-  `apiVersion` middleware (`src/middleware/api-version.ts`, on `/v1/*`) rejects unknown versions (400
-  `invalid_api_version`, before authentication), echoes `Coss-Version` and renders 2xx JSON bodies in the caller's
-  version; `requireApiKey` resolves `c.var.apiVersion` (header, else the org pin from `authenticateApiKey`). Routes
-  with a JSON body end their `middleware` with `upgradeRequestBody("<METHOD> /v1/<path template>")` (after the body
-  limit, before validation). Error envelopes, CSV and `/t/*` are never versioned. The OpenAPI `Coss-Version`
-  parameter/header and `info.version` are added by `withApiVersionDocs` (`src/openapi-versions.ts`).
-- Long polls (`POST /v1/webhook_listeners/{id}/poll`, `coss listen`) wait at most 25 s (CloudFront's and the ALB's
-  60 s) and end on `AbortSignal.any([c.req.raw.signal, shutdownSignal])`: `src/index.ts` aborts `shutdownSignal`
-  on SIGTERM before draining, so they never hold a deploy up. They aren't request-logged (`request-log.ts`) or
-  traced (`@coss/observability`). `GET /v1/environment` and `DELETE /v1/api_key` take any valid key
-  (`requireApiKey({})`): a key can always describe and revoke itself.
-- **Trace context**: `traceContext` (`src/middleware/trace-context.ts`, on `/v1/*`) reads the W3C `traceparent`
-  (`parseTraceparent` from `@coss/webhooks/schemas`: invalid ones ignored, never refused; stored as version 00) into
-  `c.var.traceparent`. Sends pass it to the service (`SendEmailInput`/`SendEmailBatchInput`/`InboxSendInput`/
-  `SendSmsInput.traceparent`, never part of the request hash), which stores it on `email.traceparent` /
-  `sms_message.traceparent`; event log lines and webhook payloads echo it (`data.traceparent`, only when set), and
-  webhook delivery sends it as a `traceparent` header (`traceparentOf`).
-- CORS: only `/v1/*`, only `API_CORS_ORIGINS`, never `credentials` — the API authenticates with bearer keys and must
-  never accept the dashboard's session cookie (that would need CSRF protection on every endpoint).
+Read the file before changing that code. Each loads when you open files in its directory, so read it yourself when you
+work on it from elsewhere.
 
-## SDK (`packages/sdk`, published as `coss`)
-
-- `Coss` (`src/client.ts`) → one `HttpClient` (`src/core/http.ts`: bearer auth, JSON, per-attempt timeout, retries on
-  network/timeout/409/429/5xx honoring `Retry-After`, an `Idempotency-Key` on every POST reused across retries) → one
-  resource per product or managed resource (`src/resources/*.ts`: `email`, `domains`, `webhookEndpoints`;
-  sub-resources hang off their parent, e.g. `coss.email.suppressions`, `coss.webhookEndpoints.deliveries`). Methods return `{ data, error }` and never
-  throw for API/network failures. Webhook endpoint creation disables
-  automatic retries because the API does not deduplicate it, even with an `Idempotency-Key`.
-- Must run unchanged on Node, Bun, Deno and Workers: no `node:*`, no `Bun.*`, only guarded `globalThis.process`
-  access, zero runtime deps. `isolatedDeclarations` is on (exported functions need explicit types).
-- React Email (`src/react.ts`): a send's `react` is rendered into `html`/`text` by `@react-email/render`, an
-  **optional peer** loaded with a literal `import()` inside try/catch (bundlers include it when installed, only
-  warn when not) — never make it a dependency or import React types (`ReactEmailElement` is structural). `react`
-  is SDK-only: `contract-types.ts` compares `Omit<SendEmailParams, "react">` with the API's schema.
-- **Integrations** (`src/nodemailer.ts`, `src/better-auth.ts`, `src/authjs.ts`; shared code in `src/core/integration.ts`
-  + `src/core/mime.ts`): each is its own tsdown entry and describes its host library **structurally** (no import
-  from it in `src/`, so no runtime or type dependency; the libraries are optional `peerDependencies` and pinned
-  devDependencies). `test/integration-types.ts` (typecheck only) assigns them to the libraries' real types, so
-  drift fails `typecheck`; `apps/api/test/integrations-contract.test.ts` runs the built ones against the app. They
-  throw `CossSendError` (the libraries report failures by throwing), create their client lazily (a missing key
-  fails the first send, not a build), tag `User-Agent` via the internal `INTEGRATION` symbol (never a
-  `CossOptions` field), drop the API's reserved headers (`isReservedHeader` mirrors `RESERVED_HEADERS`; the
-  contract test sends every one) and refuse what coss.com can't send (raw MIME, custom envelopes, `sender`, AMP)
-  rather than dropping it. Auth emails (Better Auth, Auth.js) always send `category: "account"` with tracking
-  off — click tracking would route secret links through `/t/c/…` — and derive idempotency keys only from
-  single-use tokens (hashed), never from OTP codes or invitation ids, which are legitimately resent.
-- **Framework drivers** (`integrations/*`, not part of the SDK): Laravel, Rails and Django follow the same mapping and
-  retry rules as the JS integrations, written down in `integrations/README.md` and checked by every driver's tests
-  against `integrations/conformance/{http,message}.json` (`webhooks.json` is the generated SDKs', checked against
-  `verifyWebhook` by `packages/sdk/test/webhooks-conformance.test.ts`) (generated from `src/core/mime.ts`'s behaviour: change the
-  README, the JSON, the SDK and all three drivers together). Each keeps `Coss-Version` and the reserved-header list as
-  hand mirrors of `API_VERSION` and `RESERVED_HEADERS`. Releases: `.github/workflows/release-integrations.yml` (below).
-- **Tracing** (`src/core/tracing.ts`): `@opentelemetry/api` is an optional peer loaded like React Email's renderer
-  (literal `import()` in try/catch, described structurally; `test/integration-types.ts` checks the real API fits).
-  One client span per call, retries included, named `<METHOD> <route>` (`routeTemplate` matches the API's own
-  templates, `src/core/routes.generated.ts`, written by `bun run openapi:generate` from `apps/api/openapi.json`;
-  an undocumented path is `<METHOD>` alone; no `url.full`, its query and path can name people). Only the W3C trace
-  headers the propagator writes go out (`traceparent`, `tracestate`: the API's CORS allows nothing else, and
-  `baggage` is the app's own data), never over one of the SDK's own. `tracing: false` turns it off.
-- Error types are listed in three places: `ERROR_TYPES` (`apps/api/src/errors.ts`) and `CossErrorType` +
-  `API_ERROR_TYPES` (`packages/sdk/src/core/errors.ts`).
-- The api contract tests import the SDK's built `dist`: turbo builds it first, but outside turbo run
-  `bun run --cwd packages/sdk build` before api typecheck/tests. `src/version.ts` must equal `package.json` `version`.
-- `verifyWebhook` (`src/webhooks.ts`, Web Crypto only) is the one SDK function that throws (`WebhookVerificationError`):
-  a failed signature check must not be ignorable. The event body's wire types live in `src/types/webhook.ts`; endpoint
-  management's in `src/types/webhook-endpoint.ts`.
-- Every request sends `Coss-Version`: `API_VERSION` (`src/api-version.ts`, a hand mirror of `API_VERSIONS`; the
-  contract tests keep them equal), overridable with the `apiVersion` client option. The SDK's wire types describe
-  `API_VERSION` only.
-- Releases: Changesets 3 (`.changeset/`, the SDK, `coss-mcp` and `coss-cli` — every other workspace is private and never versioned).
-  `bun run version-packages` also rewrites `src/version.ts` (`scripts/sync-version.ts`) and refreshes `bun.lock`
-  (it records workspace versions; CI installs with `--frozen-lockfile`).
-- **Publishing** (`.github/workflows/release.yml`): merging the "Version packages" PR publishes `coss` to npm
-  from CI only — npm trusted publishing (GitHub OIDC, no npm token anywhere) with provenance, trusted for exactly
-  `cosscom/coss` → `release.yml` → the `npm` environment (deployable from `main`); `npm trust list coss` shows it.
-  The publish job builds the SDK and runs `npm publish --provenance` itself, skipping a version already on npm,
-  waits until the registry serves the new one (usually a minute or two, up to 15 minutes) and tags it. Never
-  publish from a laptop. npm owners: baileypumfleet, peer_rich, keithwillcode (versions 0.0.1–0.0.5 are a previous
-  owner's unrelated, deprecated package).
-- **Publishing the framework drivers** (`.github/workflows/release-integrations.yml`, on pushes to `main` touching
-  `integrations/**`): a driver whose version file (`laravel/src/Version.php`, `rails/lib/coss/rails/version.rb`,
-  `django/src/coss_django/__init__.py`, with its `CHANGELOG.md`) names a version its registry doesn't have is tested,
-  published and tagged `coss-<driver>@<version>`. PyPI (`pypi` environment) and RubyGems (`rubygems` environment) use
-  trusted publishing; Packagist reads `cosscom/coss-laravel`, a read-only mirror the job pushes `git subtree split
-  --prefix integrations/laravel` and a `v<version>` tag to with the deploy key `COSS_LARAVEL_DEPLOY_KEY` (`packagist`
-  environment) — never commit to the mirror. Every job is skipped until the repository variable
-  `INTEGRATIONS_PUBLISH` is `true`.
-- **CLI binaries** (the `cli-*` jobs of `release.yml`, after `publish`): for the `coss-cli@<version>` tag (built
-  from the tag, never a newer main) whose GitHub release has no `SHA256SUMS` yet, `packages/cli/scripts/binaries.ts`
-  cross-compiles standalone executables (`bun build --compile`, 7 targets: macOS, glibc/musl Linux, Windows; macOS
-  ones come out ad-hoc signed). With the repository variable `CLI_MACOS_NOTARIZE` `true`, `cli-binaries-notarize`
-  (macOS runner, `apple` environment: `APPLE_DEVELOPER_ID_P12` (base64 `.p12` of the Developer ID Application
-  certificate and key) + `APPLE_DEVELOPER_ID_P12_PASSWORD`, `APPLE_NOTARY_KEY` (an App Store Connect API key's
-  `.p8`) + `APPLE_NOTARY_KEY_ID` + `APPLE_NOTARY_ISSUER_ID`) re-signs them with the hardened runtime and Bun's JIT
-  entitlements, has Apple notarize them (`scripts/notarize.ts`; a bare executable can't be stapled, so Gatekeeper
-  checks online) and archives them again with a new `SHA256SUMS`; the smoke tests then run the notarized builds,
-  quarantined on macOS as a browser download is, and `codesign --check-notarization` asks Apple about them. Running
-  `release.yml` by hand on main (`gh workflow run release.yml`) is a dry run: it builds the executables from main,
-  notarizes and smoke-tests them, and publishes nothing (no npm, release or tap), so the `apple` secrets can be
-  checked between releases. Releases are notarized since coss-cli 0.3.0 (the CLI's README and `cli.mdx` say so;
-  turning `CLI_MACOS_NOTARIZE` off means putting back their `xattr -d com.apple.quarantine` note). The certificate
-  is Cal.com, Inc.'s (team `ADWKXDJV75`, G2 Sub-CA) and expires 2027-11-18: replace the two `.p12` secrets before
-  then. The notary key is the App Store Connect team key "coss-cli notarization" (Developer role).
-  `scripts/smoke-binary.ts` runs them on their own OS (musl in Alpine,
-  which needs `libstdc++`), and the release gets the archives + `SHA256SUMS`, marked latest (`install.sh` and
-  `releases/latest` rely on the CLI being the only package with GitHub releases). Then `scripts/homebrew.ts` renders
-  `Formula/coss.rb` from that `SHA256SUMS` and pushes it to `cosscom/homebrew-tap` with the deploy key
-  `HOMEBREW_TAP_DEPLOY_KEY` (`homebrew` environment) — never edit the tap by hand. Every job is skipped until the
-  repository variable `CLI_BINARIES_PUBLISH` is `true`; each checks the release first, so a rerun fills in what's
-  missing. `packages/cli/install.sh` (served from main's raw URL) is the `curl | sh` installer: it verifies the
-  archive against `SHA256SUMS`.
-
-## MCP server (`packages/mcp`, published as `coss-mcp`)
-
-- `createCossMcpServer({ coss, apiKey })` (`src/server.ts`) registers every tool on an `McpServer`
-  (`@modelcontextprotocol/server` v2); `src/cli.ts` serves it over stdio (`serveStdio`). Configuration comes from the
-  environment only (`COSS_API_KEY`, `COSS_BASE_URL`), never argv; stdout is the protocol, so log to stderr. With no
-  `COSS_API_KEY`, `cli.ts` reads a `coss_test_` key from the project's `.env.local` or `.env` (`project-env.ts`) and
-  never loads a `coss_live_` key from that file.
-- Tools (`src/tools/*.ts`) call only the public SDK — never workspace packages (AGPL) or the database — so anything a
-  tool needs must exist in the public API first. The exception is `search_docs`/`read_docs` (`tools/docs.ts`), which
-  fetch coss.com's public docs (`/docs/search.json`, `<page>.md`, nothing outside `/docs`) and work without a key:
-  with no `COSS_API_KEY` the server registers only them. Every tool carries annotations (`READ_ONLY`, `WRITE`,
-  `DESTRUCTIVE`, `SENDS` in `tools/shared.ts`); clients rely on them to prompt (full-access keys hold every
-  permission; a restricted key's 403 hint points at `get_account_status`, which lists what it holds).
-- Answers stay small: lists drop content (`compact`, `emailListItem`), bodies are cut (`truncate`), API failures
-  become `isError` results with a hint (`result.ts`; the API's `error.hint` wins over the local one). `get_setup`
-  (`tools/setup.ts`, `describeSetup` in the SDK) is the readiness answer. Risk, Hooks, inboxes
-  (`tools/inboxes.ts`: an agent's own address, its threads with each message's `extracted_text`, sends and
-  replies) and template drafts have tools that call only the public SDK. `publish_email_template` publishes the revision it just read.
-  `create_webhook_endpoint` registers a URL once and writes `COSS_WEBHOOK_SECRET` into the project
-  env file (the same file the CLI uses; a repeat for that URL does not create another endpoint).
-  Third-party text (email content, received mail, bounce and
-  webhook responses) is labelled untrusted, and the server's `instructions` say so.
-- Delivery diagnosis is the SDK's `coss/diagnose` (`packages/sdk/src/diagnose.ts`, shared with `coss emails
-  diagnose`): `diagnoseEmail` is pure (email + events + best-effort context → verdict), `diagnose` fetches first;
-  next steps name the server's tools through `references`. Its explanations of failure codes and recipient
-  statuses must match the email product's behaviour: change both together.
-- Dependencies are explicit versions (`npm publish` doesn't rewrite `workspace:`/`catalog:`); `coss` is a caret
-  range that changesets moves when the SDK's version leaves it. The release job publishes it after `coss`.
-- Tests: `packages/mcp/test` (in-memory client, fake `fetch`) and `apps/api/test/mcp-contract.test.ts` (built
-  server against the in-process app; turbo builds it first).
+- `apps/api/AGENTS.md`: the public API (app wiring, the error envelope, adding endpoints, versions, long polls, trace
+  context, CORS).
+- `apps/web/AGENTS.md`: the dashboard (pages, server actions, toasts, coss ui, URLs and routes).
+- `packages/sdk/AGENTS.md`: the SDK (client, runtimes, React Email, integrations, tracing, wire types, releases, npm
+  publishing).
+- `packages/mcp/AGENTS.md`: the MCP server. `packages/cli/AGENTS.md`: the CLI and its standalone executables.
+- `integrations/AGENTS.md`: the Laravel, Rails and Django drivers and their publishing.
 
 ## Coding agents
 
 What an agent pointed at coss.com reads, all describing the same facts — change them together:
 - `/llms.txt` and `/llms-full.txt` open with `AGENT_BRIEF` (`apps/site/src/lib/llms.ts`): how to read the docs, get a
   key with `npx coss-cli init`, the SDK's conventions, testing webhooks. Every docs page is Markdown at `<page>.md`
-  (`apps/site/AGENTS.md`); API reference pages render the OpenAPI document (`operation-markdown.ts`).
+  (`apps/site/AGENTS.md`); API reference pages render the OpenAPI document (`operation-markdown.ts`). `/llms.txt` lists
+  the guides within a size budget; API operations are in `/docs/<product>/llms.txt` and `/docs/api-reference/llms.txt`.
 - The landing page's prompt (`AGENT_PROMPT`, `apps/site/src/lib/site.ts`), quoted by `/docs/agents`.
 - The `coss` skill (`plugins/coss/skills/coss/SKILL.md`), the notes `coss init` writes into a project's
-  AGENTS.md (`agentNotes`, `packages/cli/src/commands/init.ts`) and the MCP server's instructions (`src/server.ts`).
+  AGENTS.md (`agentNotes`, `packages/cli/src/commands/init.ts`) and the MCP server's instructions (`packages/mcp/src/server.ts`).
+- `apps/api/test/agent-surface.test.ts` keeps them complete: every API operation is called by an MCP tool or CLI command,
+  or listed with a reason in `agent-surface-exemptions.ts`. Setup reports describe a project's setup state, never whether a
+  product is on in a deployment.
 - `claude plugin validate .` and `claude plugin validate plugins/coss` check the marketplace and the plugin. The
   plugin has no `version` on purpose: installs follow main. Its MCP server takes the key from the plugin's optional
-  `api_key` (`userConfig`); without one `coss-mcp` serves only the docs tools.
-
-## CLI (`packages/cli`, published as `coss-cli`, command `coss`)
-
-- `run(argv, io)` (`src/run.ts`) dispatches commands (`src/commands/*.ts`); everything outside the process (env,
-  streams, `fetch`, clock, browser, prompts, cwd, child processes, config dir, the Ctrl-C signal) comes through `CliIo` (`src/io.ts`), so
-  tests run commands in process. `src/cli.ts` is the bin (`nodeIo()`). Results go to stdout (`--json`: one object per
-  line), progress and warnings to stderr. Usage errors exit 2, failures 1, Ctrl-C 130.
-- Calls only the public SDK (`clientFor` always passes `apiKey`, `baseUrl` and `fetch`, so the SDK never reads
-  `process.env` itself) — never workspace packages (AGPL) or the database; anything a command needs must exist in the
-  public API first. No flag takes an API key (command lines are visible to other processes): `COSS_API_KEY`, else
-  the profile (`--profile`, `COSS_PROFILE`, the saved default) in `config.json` (`src/config.ts`: XDG/APPDATA/
-  `~/.config/coss`, 0600, written atomically). Login remembers a non-default `COSS_BASE_URL`/`COSS_DASHBOARD_URL`.
-- `login`: the dashboard's CLI sign-in (`packages/auth/AGENTS.md`, "CLI sign-in") — PKCE with a 127.0.0.1 loopback
-  server (`src/auth/loopback.ts`), or `mode=code` (pasted) with `--no-browser` and over SSH; `verificationCode`
-  (`src/auth/pkce.ts`) must equal `cliVerificationCode` (`@coss/auth/cli`; both tests pin `DZ93-GPCX`). Keys it
-  created (`login: "browser"`) are revoked by `logout` and by the next login of the profile (`coss.apiKey.revoke()`, at the
-  profile's saved origin, never `COSS_BASE_URL`'s). Polling commands retry only transient errors (`isTransient`).
-- `init` reuses login's browser flow with a `project` hint (the approval page then offers sandbox environments
-  only and names the key after the project; `apps/web/src/app/app/authorize/cli/params.ts`), checks the key's
-  environment again (a live key is revoked, never written) and writes it to the project's env file, never the
-  profile. Agent notes are on by default (`--no-agents` skips them). It detects Nodemailer, Better Auth, Auth.js,
-  Laravel, Rails and Django (`project-stack.ts`) and prints that drop-in, then `fetchSetupReport` (`describeSetup`
-  in the SDK) as the one next step (`--json` includes it as `setup`; a failed list is a warning and still returns
-  a next step). The update notice (`src/update-check.ts`) asks the npm registry at most once a day, runs alongside the
-  command and is dropped if it hasn't answered when the command ends; never with `--json`, in CI, off a TTY or with
-  `COSS_NO_UPDATE_CHECK`.
-- `listen`: opens a webhook listener (`packages/webhooks/AGENTS.md`), long-polls (`wait_ms` 20 s, SDK timeout 35 s,
-  no SDK retries), forwards each body byte for byte to `--forward-to`, signed with `COSS_WEBHOOK_SECRET` from the
-  project env file (an existing valid secret is kept; otherwise the profile's `listen_secret`, otherwise a new
-  `whsec_` from `src/listen/sign.ts`, Standard Webhooks). It writes that secret into the env file, and into the
-  profile when the CLI key came from the profile. `webhook-id` = the event id
-  (and `traceparent` = the body's `data.traceparent`, like the real delivery), and acks results in the next poll; Ctrl-C acks what was forwarded and deletes the listener. Live environments
-  need `--live`.
-- `trigger <type>`: `POST /v1/webhook_events/test` (`coss.webhookEvents.test`; `sendTestWebhookEvent` in
-  `packages/email/src/test-events.ts`): a sample event built from the type's schema example, fresh ids, `data`
-  merged over it and checked against the schema (unknown fields refused), fanned out through the outbox like a
-  real one. Sandbox environments only, never the live-only `domain.*`/`account.*`/`billing.*`; nothing in the body
-  marks it as a test. The SDK's `WEBHOOK_EVENT_TYPES`/`TEST_WEBHOOK_EVENT_TYPES` (completion) are hand mirrors of
-  `@coss/email`'s, kept equal by `sdk-contract.test.ts`. `webhooks list|add|deliveries|retry` wrap the endpoint API.
-  `webhooks add` writes the new endpoint's signing secret to the project env file as `COSS_WEBHOOK_SECRET`.
-- `inboxes list|create|threads|thread|reply` wrap `coss.inboxes` (`src/commands/inboxes.ts`; `thread` prints each
-  message's `extracted_text` unless `--full`); `inbox` (singular) follows every received email.
-- `logs tail` polls `GET /v1/logs` like the dashboard's live mode (re-reads from a minute before the newest line,
-  prints unseen ids oldest first, `src/logs/tail.ts`); `emails send --simulate` uses the mailbox simulator addresses
-  (`src/emails/simulate.ts`, must match `packages/email/src/providers/fake.ts`).
-- Dependencies are explicit versions, `coss` a caret range (like the MCP server); the release job publishes it after
-  `coss`. Tests: `packages/cli/test` (fake `fetch`, real loopback and receiver servers) and
-  `apps/api/test/cli-contract.test.ts` (built CLI against the in-process app; turbo builds it first).
-- It also ships as a standalone executable (Bun's compiled runtime, not Node: `bun run build:binaries`, output in
-  the git-ignored `packages/cli/binaries/`; releases under "CLI binaries" above). Keep `src/` to what both run:
-  `test/binaries.test.ts` compiles this machine's binary, installs it with `install.sh` and runs
-  `scripts/smoke-binary.ts` on it (stdin, pipes flushed on exit, the config file, Ctrl-C, the browser sign-in's
-  loopback server).
-
-## Dashboard (`apps/web`)
-
-- Pages use the generated `PageProps<"/…">`/`LayoutProps` globals and `await params`. Call `requireOrgMember(orgSlug)`
-  (`src/lib/session.ts`; non-members get a 404) and gate controls with its `can(…)` (the role check, read-only while
-  the org is suspended). Read data straight
-  from `@coss/tenancy` / `@coss/email` (the dashboard never calls the public API). Server code uses `auth` from
-  `@/lib/auth`; client code uses `authClient` from `@/lib/auth-client`.
-- Layout follows coss.com's docs (`apps/site/DESIGN.md`: grayscale, Cal Sans/Paper Mono, hue only for status):
-  `AppShell` (`src/components/shell/`) is the sidebar + framed page with breadcrumbs and ⌘K, used by the
-  `[orgSlug]`, `/settings` and `/admin` layouts. `src/lib/navigation.ts` is the one list of pages the sidebar,
-  breadcrumbs, ⌘K and settings tabs read — add a page there. Its items carry icon components, so server components
-  pass an area name (`SubNav nav=…`, `AreaSidebar area=…`), never the lists. Pages compose `PageHeader`, `Panel`
-  (`<Table variant="card">` or `PanelBody` inside), `EmptyState`, `SpecList`, `StatRow`, `StatusDot`; no back
-  links (breadcrumbs). `data-page-width="full"` on a page lifts the shell's `max-w-6xl`.
-- Mutations live in a colocated `actions.ts` (`"use server"`): `(prev: ActionResult<T> | null, formData) => runAction(…)`
-  (`src/lib/actions.ts`). Start with `requireOrgPermission(formString(formData, "orgSlug"), {…})`, re-check that target
-  ids belong to that org (`getKeyBinding`, `getOrganizationMember`, `getPendingInvitation`, `getDomain`,
-  `getWebhookEndpoint` + its `environmentId`), `refresh()` after writes.
-  Throw `ActionError` for user-facing messages. Clients use `useActionToast(action, { success })` (`src/lib/toast.ts`,
-  `useActionState` that toasts) + `<FormError>`: every user-triggered mutation toasts its success (short, past
-  tense, no period; redirecting actions too, with a static message), failures stay inline in forms and dialogs
-  (`errors: "toast"` for one-click buttons); `toast.*` for client-side calls (`authClient`). Pure reads don't toast.
-  Hidden inputs carry slugs/ids only.
-- coss ui is **Base UI, not Radix**: compose with `render` (`<DialogTrigger render={<Button />}>`), never `asChild`.
-  A `<form>` inside `DialogPopup`/`AlertDialogPopup` needs `className="contents"` (otherwise the footer renders outside the
-  popup). Popups unmount on close. Add components with `bunx shadcn@latest add @coss/<name>` from `packages/ui`;
-  dashboard-specific compositions go in `apps/web/src/components`.
-- Routes: a new top-level segment must be added to `RESERVED_ORG_SLUGS` (`packages/auth/src/slugs.ts`), a new static
-  segment under `[orgSlug]` to the allow-list in `apps/web/test/reserved-slugs.test.ts`, signed-out pages to
-  `PUBLIC_PATH_PREFIXES` (`src/proxy.ts`). The entry page is `/dashboard` (`DASHBOARD_PATH`), never `/` (the site's
-  landing page): use it for every "go to the dashboard" link and as the post-sign-in default (`safeRedirectPath`).
-  The dashboard has no root files (icon, robots, sitemap): the site serves them.
-- Domain management uses `emailRuntime().domainDeps` (`src/lib/email-runtime.ts`) and webhook management
-  `webhookManagementDeps()` (`src/lib/webhooks.ts`); domain/webhook errors carry user-facing messages. Revealing a
-  webhook secret needs `webhook:update` (members can read endpoints but never see secrets).
-- Org settings (`[orgSlug]/settings`: rename, slug change, leave, 2FA requirement; `settings/sso`: SSO provider and
-  requirement; `settings/scim`: directory sync) and account settings (top-level `/settings`: name and
-  verification email; `/settings/security`: password, connected accounts, two-factor, passkeys;
-  `/settings/sessions`) call `auth.api.*` server-side — their HTTP routes stay disabled
-  (`disabledPaths`, below). `canRemoveOrgMember`/`assignableOrgRoles` mirror Better Auth's owner rules for the UI; Better
-  Auth alone protects the last owner. Account actions refuse while impersonating.
-- Session-bound Better Auth calls made while *rendering* pass `authHeaders()` (`src/lib/session.ts`), not raw
-  `headers()`: after an action replaces the session cookie (password change), Next re-renders with the new cookies
-  but the old request headers.
-- When driving the dashboard in a browser, wait for hydration before typing or submitting.
+  `api_key` (`userConfig`); without one `coss-mcp` serves only the docs tools. Its optional `toolsets` becomes
+  `COSS_MCP_TOOLSETS`, where empty means every tool.
 
 ## coss.com zones
 
@@ -598,7 +365,9 @@ What an agent pointed at coss.com reads, all describing the same facts — chang
 - Next apps use `output: "standalone"` with `outputFileTracingRoot` at the monorepo root; the traced
   `node_modules/.bun` keeps relative symlinks, which resolve after copying (verified). They run `node
   apps/<app>/server.js` on Node 24. `generateBuildId` uses `NEXT_DEPLOYMENT_ID` (Next sets it to `""` when unset,
-  hence `||`). api and worker run their TypeScript source on Bun from a `--production` prune.
+  hence `||`). api and worker run their TypeScript source on Bun from a `--production` prune. The api's image also
+  builds `coss-mcp` and `coss` in a stage of its own (they run from `dist`, as published; `POST /mcp`) and copies only
+  their `dist`.
 - Build once, deploy to any stage: nothing stage-specific at build time (`SKIP_ENV_VALIDATION`), validation at
   startup. `next.config.ts` runs only at build/dev time and is serialized into the standalone server: decide nothing
   there from runtime env.
@@ -611,7 +380,7 @@ What an agent pointed at coss.com reads, all describing the same facts — chang
 
 ## Tests
 
-- `bun:test`. DB-backed suites (`apps/api`, `apps/smtp`, `apps/worker`, `packages/billing`, `packages/email`, `packages/forms`, `packages/hooks`, `packages/migrate`, `packages/notifications`, `packages/push`, `packages/reputation`, `packages/risk`, `packages/screening`, `packages/tenancy`, `packages/verify`, `packages/webhooks`) preload `test/setup.ts` via their
+- `bun:test` (the dashboard's browser smoke tests are Playwright, `apps/web/AGENTS.md`). DB-backed suites (`apps/api`, `apps/smtp`, `apps/worker`, `packages/billing`, `packages/email`, `packages/forms`, `packages/hooks`, `packages/migrate`, `packages/notifications`, `packages/push`, `packages/reputation`, `packages/risk`, `packages/scheduling`, `packages/screening`, `packages/tenancy`, `packages/verify`, `packages/webhooks`) preload `test/setup.ts` via their
   `bunfig.toml` → `@coss/db/testing`, which throws unless `TEST_DATABASE_URL` names a `*_test` database, then points
   `DATABASE_URL` at it. Other suites are DB-free; before adding DB tests elsewhere copy `packages/email/bunfig.toml` +
   `test/setup.ts`, or the tests hit the dev database.
@@ -621,7 +390,7 @@ What an agent pointed at coss.com reads, all describing the same facts — chang
   jobs) + `errorOf(res)` (`apps/api/test/helpers.ts`). Email: `memoryDispatchQueue()` (records jobs; `drain(service)`
   dispatches them), `dispatchingEmailService()` (send + dispatch in one call, for tests about what happens after dispatch),
   `FakeEmailProvider({ log: false, fail })`, `gatedProvider()` for races, `createVerifiedDomain(orgId)` (live sends need
-  one), `FakeSesApi`, `fakeDnsResolver()`, `FakeCloudflareApi` (a `fetch` for `CloudflareTrackingHostnameProvider`)
+  one), `FakeSesApi`, `fakeDnsResolver()`, `FakeCloudFrontTenantsApi` (a `CloudFrontTenantsApi` for `CloudFrontTrackingHostnameProvider`)
   from `@coss/email/testing`, `FakeTrackingHostnameProvider({ state })` from `@coss/email`. Receiving:
   `receiveFakeEmail()` + `buildTestMessage()` + `FakeInboundStore` from `@coss/email`, `FakeS3Api` and
   `sesReceiptNotification()` from `@coss/email/testing`; `createTestApp()` returns its `inbound` runtime. Real pg-boss tests use their own queue name
@@ -646,7 +415,7 @@ parent(id, organization_id)` and the `createdAt()`/`updatedAt()` helpers (histor
 Auth hard-deletes keys); `bun run db:generate`, review and commit the SQL + `migrations/meta/`, `bun run db:migrate`.
 Never edit an applied migration; do renames as a separate step (drizzle-kit prompts interactively).
 
-**Add a product** (e.g. `video`; `packages/sms` is the most recent one built this way):
+**Add a product** (`packages/scheduling` is the most recent one built this way):
 1. Tables + ID prefix (above).
 2. `packages/<product>`: `src/schemas.ts` (zod `strictObject`, snake_case, `.meta({ id })`, no DB imports, exported as
    `./schemas`), provider interface + fake provider, a service taking the authenticated environment, an error class with
@@ -665,15 +434,16 @@ Never edit an applied migration; do renames as a separate step (drizzle-kit prom
    `content/docs/<product>/` (a section of its own: `"root": true`, an `icon` and a `description` in its `meta.json`,
    listed in `content/docs/meta.json`) with Twoslash SDK examples (per-method SDK usage lives in the API reference),
    and its API tags under a `---<Product>---` separator in `content/docs/api-reference/meta.json` (a test fails otherwise).
-7. Dashboard: dependency + `transpilePackages`; pages under `[orgSlug]/projects/[projectSlug]/[envSlug]/`.
+7. Dashboard: dependency + `transpilePackages`; a `PRODUCTS` entry in `@coss/dashboard-routes` (its pages, category,
+   docs), an icon in `PRODUCT_ICONS` and a probe in `productActivityByEnvironment`/`productFigures`
+   (`@coss/tenancy`); pages under `[orgSlug]/[projectSlug]/[envSlug]/<product>/`.
 8. Events/webhooks: record events in the product's own table and call `enqueueWebhookMessage(tx, …)` from
    `@coss/webhooks` in the same transaction; add the payload zod schema + SDK type + contract assertion.
 9. Logs: append a log line per new event with `appendLogEntries(tx, …)` from `@coss/logs` in the same transaction
    (only for rows actually inserted, so deduplicated events aren't logged twice), and add a `LogSource` value
    (enum migration + `LOG_SOURCES` + SDK `LogSource`). Mutations of the product's settings record
    `recordAudit` (dashboard) / `recordApiAudit` (API) audit events.
-10. Billing: its meter is in `METERS` and priced in `RATE_CARDS` (`@coss/billing/catalog`; video and scheduling
-   already are). Call `recordUsage(tx, …)` from `@coss/billing/metering` once per billable event, in the transaction
+10. Billing: its meter goes in `METERS` and is priced in `RATE_CARDS` (`@coss/billing/catalog`). Call `recordUsage(tx, …)` from `@coss/billing/metering` once per billable event, in the transaction
    that makes it billable (guard it with a compare-and-set, like `email.usage_recorded_at`), and reserve capped usage
    at acceptance through an injected `UsageGate` (as `EmailServiceOptions.billing` does). Plan-gated creation takes an
    injected `PlanGate`.
@@ -727,7 +497,8 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
 - The `<!-- BEGIN:*-agent-rules -->` blocks at the end of this file and in `apps/{web,site}/AGENTS.md` are rewritten by `turbo`
   and `next dev`: never edit inside them, keep project text above them, and commit tool changes to them.
 - Agent docs: `AGENTS.md` files are the source of truth; each `CLAUDE.md` contains only `@AGENTS.md`. A new nested
-  `AGENTS.md` needs a sibling `CLAUDE.md` shim, or Claude Code never sees it.
+  `AGENTS.md` needs a sibling `CLAUDE.md` shim, or Claude Code never sees it. Claude Code warns when the files it loads at
+  start pass 150k characters, so detail about one app or package goes in that directory's file, not the root.
 
 ## Guardrails (verified against the versions in the root catalog — re-verify a bullet when bumping that library)
 
@@ -754,20 +525,21 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
   import `next/*` or `"server-only"`; `nextCookies()` is appended last, only in `apps/web/src/lib/auth.ts`.
 - **Tenancy rule:** every tenancy/email/webhooks function that touches tenant data takes `organizationId` and scopes its
   SQL by it; writes derive org/project from the environment row. Only `getMembership` (by slug), `authenticateApiKey`
-  (from the key's binding), the platform-level `@coss/tenancy/admin` and `@coss/email/admin` modules,
+  (from the key's binding), the platform-level `@coss/tenancy/admin`, `@coss/email/admin` and `@coss/support/admin` modules,
   `listScreeningsForAdmin`/`countScreeningsForAdmin` (`@coss/screening`) and `platformUsageByDay` (`@coss/billing`)
   (call them only after `requirePlatformAdmin*`), and these system-level functions resolve the org
   themselves (scoping every write by the row's own org): `recordProviderEvent`/`ingestProviderEvents` (from the email
   id tag), `applyTenantStatus` (prefix-checked tenant name), `authorizeLiveSender` (reads domain names across orgs),
   `recordOpen`/`recordClick` (from the email's tracking token), `trackingBaseUrlFor` (dispatch; reads domain names
-  across orgs like `authorizeLiveSender`), `receiveEmail`/`routeRecipients` (receiving; from the envelope recipients), `recordSmsEvent`/`ingestSmsEvents` (from the `sms_id` of the callback URL), `receiveSms` (from the receiving number), `handleStatusCallback`/`handleInboundCallback` (from the callback's subaccount), `authorizeLiveSmsSender`, `ingestDmarcReports` (from the report address's token), `reencryptWebhookSecrets` (operator script), `authenticateHookPortalSession` (from the session), `submitForm`/`getHostedForm` (from the form id of `/f/:id`), `confirmFormSubmission`/`findConfirmation` (from the verification token), and the worker scans `runDueWebhookDeliveries`, `runDueLogDrainDeliveries`, `runDueHookDeliveries`, `parkHeldHookDeliveries`, `runDueHookRecoveries`, the Hooks purges, `recheckDueDomains`,
-  `recheckDueTrackingDomains`, `recheckDueReceivingDomains`, `reconcileDedicatedIpPools`, `sweepStaleClaims`, `sweepUnclaimedEmails`, `runDueReputationEvaluations`, `runDueSubaccountEvaluations`, `runDueOrganizationDeletions`, `runDueSubaccountDeletions`, `runDueDmarcNotifications`, `runDueMigrations`, `EmailService.dispatchDue`,
-  `SmsService.dispatchDue`, `sweepStaleSmsClaims`, `sweepUnclaimedSms`, `advanceDueSmsRegistrations`, `chargeDueSmsFees`, `chargeDueInboxFees`, `recordDueVerifySmsUsage` (bills each organization for its codes from coss.com's shared numbers, reading coss.com's messages),
+  across orgs like `authorizeLiveSender`), `receiveEmail`/`routeRecipients` (receiving; from the envelope recipients), `recordSmsEvent`/`ingestSmsEvents` (from the `sms_id` of the callback URL), `receiveSms` (from the receiving number), `handleStatusCallback`/`handleInboundCallback` (from the callback's subaccount), `authorizeLiveSmsSender`, `ingestDmarcReports` (from the report address's token), `reencryptWebhookSecrets`, `reencryptSchedulingData` (operator scripts), `authenticateHookPortalSession` (from the session), `ingestSupportEmails` (one environment, across senders) and the rest of `@coss/support`'s worker functions, `submitForm`/`getHostedForm` (from the form id of `/f/:id`), `confirmFormSubmission`/`findConfirmation` (from the verification token), and the worker scans `runDueWebhookDeliveries`, `runDueLogDrainDeliveries`, `runDueHookDeliveries`, `parkHeldHookDeliveries`, `runDueHookRecoveries`, the Hooks purges, `recheckDueDomains`,
+  `recheckDueTrackingDomains`, `recheckDueReceivingDomains`, `reconcileDedicatedIpPools`, `sweepStaleClaims`, `sweepUnclaimedEmails`, `runDueReputationEvaluations`, `runDueSubaccountEvaluations`, `runDueOrganizationDeletions`, `runDueOrganizationLogos`, `runDueSubaccountDeletions`, `runDueDmarcNotifications`, `runDueMigrations`, `EmailService.dispatchDue`,
+  `unclaimedEmailBacklog`, `unclaimedSmsBacklog` (the `dispatch-backlog` loop: counts only), `SmsService.dispatchDue`, `sweepStaleSmsClaims`, `sweepUnclaimedSms`, `advanceDueSmsRegistrations`, `chargeDueSmsFees`, `chargeDueInboxFees`, `chargeDueHostFees`, `recordDueVerifySmsUsage` (bills each organization for its codes from coss.com's shared numbers, reading coss.com's messages),
+  `authenticateSchedulingSession` (from the token), `handleCalendarPush`, `completeCalendarAuthorization` (from the push's channel and the consent's state), `runDueCalendarDelegations`, `handleZoomDeauthorization` (from Zoom's signed event), `refreshIdleZoomConnections`, `runDueCalendarSyncs`, `runDueCalendarWrites`, `renewDueCalendarChannels`, `checkHostEditedEvents`, `runDueSchedulingNotifications`, `runDueReminderSyncs`, `expireDueBookings`,
   `runDueFormDeliveries`, `runDueFormStoreCleanup`
   (and the dispatch jobs, from the job's `organizationId`); `@coss/sms/admin` is platform-level like `@coss/email/admin`. Server actions take only slugs +
   target ids and derive the org from `requireOrgPermission`; every Better Auth organization call passes `organizationId`
   explicitly (never rely on `session.activeOrganizationId`).
-- **Client-safe modules** never import `@coss/db`: `@coss/risk/{schemas,env}`, `@coss/observability/*`, `@coss/auth/{permissions,slugs,constants,api-key-permissions,org-access}`, `@coss/push/schemas`, `@coss/forms/{schemas,env}`, `@coss/email/schemas`,
+- **Client-safe modules** never import `@coss/db`: `@coss/compliance/catalog`, `@coss/dashboard-routes`, `@coss/risk/{schemas,env}`, `@coss/observability/*`, `@coss/auth/{permissions,slugs,constants,api-key-permissions,org-access}`, `@coss/push/schemas`, `@coss/forms/{schemas,env}`, `@coss/scheduling/branding`, `@coss/email/schemas`,
   `@coss/email/{broadcast-schemas,contact-schemas,inbox-schemas,subaccount-schemas,test-event-schemas,env,templates}`, `@coss/sms/{schemas,segments,env}`, `@coss/verify/schemas`, `@coss/hooks/{schemas,env}`, `@coss/reputation/schemas`, `@coss/screening/env`, `@coss/webhooks/{schemas,env}`, `@coss/ratelimit/buckets`, `@coss/versioning`, `@coss/retention`, `@coss/logs/{schemas,query}`, `@coss/billing/{catalog,schemas,engine,money,env,gate,wire}` (`gate` is types only), `@coss/ui/*`, `@coss/ui/theme.css`, `@coss/companion`, `@coss/migrate/templates`, `@coss/email-layout`. `@coss/webhooks`, `@coss/db/jobs`, `@coss/screening/{ai,runtime}`, `@coss/email/{runtime,ses,dispatch,domain-connect}`, `@coss/risk/{runtime,datasets}`, `@coss/signals/*`, `@coss/sms` (root, `./twilio`, `./runtime`, `./dispatch`, `./admin`), `@coss/push` (root, `./apns`), `@coss/notifications` and `@coss/billing` (root, `./metering`, `./runtime`, `./stripe`) are server-only; only `./stripe` (and `./runtime`) import the Stripe SDK. Server-only web
   modules start with `import "server-only"`.
 - **Rate limits** (`@coss/ratelimit`): buckets are defined only in `BUCKETS` (`src/buckets.ts`); GCRA state is one
@@ -845,12 +617,14 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
   token's 5,000 requests an hour) and the overview is shared for a few seconds, so keep new reads behind `github()`.
   A run's page (`[runId]`) also downloads failed jobs' logs (only their last 256 KB, excerpted by
   `failureLogExcerpt`; GitHub masks the workflow's secrets in them).
+  **Security** (`/admin/security`, `src/lib/security-posture.ts`, pure parts in `security-posture-rules.ts`) is
+  read-only and shows AWS's security services in plain language; a failed read is unknown, never fine.
 - **Organization suspension** (`organization_suspension`, presence = suspended; reason is admin-internal): enforced in
   `authenticateApiKey` (`suspended` → 403 `organization_suspended`, only for otherwise-valid keys),
   `createEnvironmentApiKey`, webhook `claimDue` (held, not failed), the Better Auth org hooks
   (`packages/auth/AGENTS.md`), and the dashboard (`OrgContext.can()` / `requireOrgPermission` allow only reads). New
   write paths must respect it. Domain re-checks and SES event ingestion keep running. Gate dashboard controls with `can(…)` from `requireOrgMember`, not `orgRoleCan`.
-- **Monitoring** (Sentry, `@coss/observability`): api and worker import `src/instrument.ts` first in `src/index.ts`
+- **Monitoring** (Sentry, `@coss/observability`): one cron monitor covers all worker loops (`worker-loops`, `watchLoops`: Sentry bills per monitor, so never one per loop) and `dispatch-backlog` reports messages waiting over 15 minutes; `GET /health/ready` is for uptime monitors only (load balancers stay on `/health`, which never touches the database). api and worker import `src/instrument.ts` first in `src/index.ts`
   (`@sentry/bun`; Bun has no runtime module hooks, so Hono gets `honoMiddleware(app)` in `createApp` — route names
   only, errors come from `onError`'s `console.error` — and pg/AWS calls aren't traced). The dashboard initializes
   its server in `register()` after env validation and exports `onRequestError`; both Next apps' browsers run
@@ -927,6 +701,18 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
     from the customer's verified sender, never coss.com's; live notification recipients are verified members or
     addresses on verified domains; hosted pages refuse fields asking for credentials and are screened when
     published; `/f/*` is served only on `FORMS_PUBLIC_URL`'s host in production, never coss.com's.
+  - **Scheduling** (`packages/scheduling/AGENTS.md`): only `claims.ts` writes claims, in the fixed lock order;
+    slots are computed only in Bun, through `isBookable`; calendars contribute busy intervals and nothing else, and an
+    unreadable one never reads as free; answers never leave `getBooking`; coss.com never auto-cancels a booking;
+    plan gates and billing holds apply to live environments only, and refuse new setup and new bookings, never what
+    already exists.
+  - **Support** (`packages/support/AGENTS.md`): `From` proves nothing, so a match never grants access by
+    itself: customers see only a confirmed organization's tickets, an unverified message stays rep-only, we
+    always reply to `From` and never copy inbound Cc from unauthenticated mail; notes never leave
+    `@coss/support/admin`; threads never match on a subject.
+  - **HIPAA mode** (`packages/compliance/AGENTS.md`): a new vendor or a new path that sends customer content
+    outside AWS needs a gate and an entry in `HIPAA_VENDORS`; a new sender that can fall back to coss.com's
+    environment passes `hipaaOrigin` for organizations in the mode; it is contract-only (a sales contract to turn it on) but never a billing entitlement (billing never turns it off).
   - **Organization deletion** (`packages/tenancy/AGENTS.md`): a table with many rows per organization belongs in
     `deleteOrganizationData`, anything held outside Postgres in `releaseProviderResources`.
 
@@ -1010,16 +796,20 @@ notification emails) and, if there is useful advice, to `ADVICE` (`packages/repu
   and suspensions (not recoveries or reinstatements), and only once the worker's `NOTIFICATIONS_*` variables point
   at a verified sender of coss.com's own organization.
 
-**Not built yet** (don't assume these exist; delete a line when it ships): the real landing page,
-Verify's voice and WhatsApp channels, locales other than English, custom message templates, a
-settings API, Verify in the MCP server, the CLI and the iOS app, Verify's shared numbers in
+**Not built yet** (don't assume these exist; delete a line when it ships): OAuth for the hosted MCP server (it takes an API key in a header) and `COSS_MCP_TOOLSETS` there,
+these parts of Support: on-call paging (so 24x7 can't be sold yet), a holiday calendar, automatic SLA credits, a support role narrower than platform admin, satisfaction ratings, AI drafts, presence, iOS screens, a public API, MCP and CLI tools,
+these parts of Scheduling: public booking pages, built-in payments, customers' own OAuth apps, routing forms, a workflow builder, waitlists, travel schedules, imports from Cal.com Platform, reminders at a local time of day, reminder copy per locale, quiet hours, a built-in rating page, fixed SMS numbers as reminder recipients, sending a test reminder, undoing a no-show, a per-attendee opt-out of reminder emails, reminders in the iOS app,
+these parts of calendar delegation: automatic Microsoft secret rotation, coss.com-owned or keyless (`signJwt`) service accounts, certificate credentials, account-level Zoom, excluding one host while `match_host_email` is on, and delegation in the iOS app, MCP and CLI,
+customers granting staff temporary access in HIPAA mode,
+Verify's voice and WhatsApp channels, locales other than English, custom message templates,
+Verify in the iOS app, Verify's shared numbers in
 production (they wait for coss.com's own one-time-code registration and `VERIFY_SMS_*`),
 these parts of email sub-accounts: marketing sends, contacts and broadcasts per sub-account, sub-account-bound API keys
 and SMTP credentials, dedicated IP pools for sub-accounts, tracking and receiving domains on their domains, webhook
-endpoint filters by sub-account, budgets per sub-account, a portal for end users, MCP and CLI support, rollups of
+endpoint filters by sub-account, budgets per sub-account, a portal for end users, MCP support, rollups of
 sub-account reputation counts (each evaluation counts its window live), and sub-account tenant pause webhooks,
 Sign's archival timestamps in seals (PAdES B-LTA: renewing a document timestamp before its TSA certificate expires) and a standalone certificate download,
-a price for `sign.completed_requests`, Sign in the iOS app, the admin console, the MCP server and the CLI, and Sign
+a price for `sign.completed_requests`, Sign in the iOS app and the admin console, and Sign
 in production (off until "Going live" in `packages/sign/AGENTS.md` is done),
 Forms in the iOS app, malware scanning of form uploads, conditional or multi-page forms, a drag-and-drop form builder,
 per-form webhook URLs (endpoints filter by event type), custom domains for hosted forms,
@@ -1031,11 +821,10 @@ in the generated SDKs (`sdks/*`): auto-pagination, a `COSS_BASE_URL` default and
 verification outside Go (the others return plain JSON), framework drivers built on the generated SDKs,
 IdP-initiated SAML and SAML single logout, more than one SSO provider per organization,
 editing an API key's permissions (create a new key), API keys restricted to sending domains or IP addresses,
-org logos, uploading a profile picture, email change,
+uploading an organization logo (logos are only found automatically), uploading a profile picture, email change,
 email/SMS two-factor codes (through Verify), sign-in providers other than Google and GitHub, "trust this device" for 2FA, renaming passkeys, webhooks and notification emails for dedicated IP status changes, standard (manually
 warmed) dedicated IPs or more than one pool per organization, an automatic direct-debit policy (only per-account
-required payment methods), multi-currency, metering for video/scheduling (their meters
-and rates exist; the products don't), SMS alphanumeric sender IDs, short codes, MMS, batch SMS, SMS templates,
+required payment methods), multi-currency, SMS alphanumeric sender IDs, short codes, MMS, batch SMS, SMS templates,
 sole-proprietor 10DLC brands, `sms.registration.*` webhooks and push notifications, Twilio usage reconciliation, and
 these Hooks features: channels, payload transformations, custom endpoint headers, sending one message to several
 applications, strict ordering, portal custom domains, per-destination rate-limit overrides, Hooks attempts in

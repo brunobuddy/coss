@@ -14,6 +14,14 @@ const VARIANTS = {
     letterSpacing: -0.6,
     fontVariant: ["tabular-nums"],
   },
+  /** The dashboard's `label-caps`: the one voice of small labels over figures and groups. */
+  caps: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    lineHeight: 16,
+    letterSpacing: 0.66,
+    textTransform: "uppercase",
+  },
   body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 21 },
   label: { fontFamily: fonts.medium, fontSize: 15, lineHeight: 20 },
   small: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },

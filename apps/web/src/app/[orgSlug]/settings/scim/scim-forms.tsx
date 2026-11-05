@@ -19,9 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
-import { PlusIcon, XIcon } from "lucide-react";
+import { FolderSyncIcon, KeyIcon, PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
+import { DialogIcon } from "@/components/dialog-icon";
+import { Segmented } from "@/components/fields/segmented";
 import { FormError } from "@/components/form-error";
 import { SettingsFooter, SettingsNote, SettingsRow } from "@/components/settings";
 import { useActionToast } from "@/lib/toast";
@@ -174,6 +176,7 @@ export function RevokeScimTokenButton(props: { orgSlug: string; credentialId: st
           <input name="orgSlug" type="hidden" value={props.orgSlug} />
           <input name="credentialId" type="hidden" value={props.credentialId} />
           <AlertDialogHeader>
+            <DialogIcon icon={KeyIcon} tone="danger" />
             <AlertDialogTitle>Revoke this token?</AlertDialogTitle>
             <AlertDialogDescription>
               Your identity provider stops syncing until it uses another token.
@@ -231,6 +234,7 @@ function DisconnectScimButton(props: { orgSlug: string; resume: boolean }) {
           <form action={formAction} className="contents">
             <input name="orgSlug" type="hidden" value={props.orgSlug} />
             <AlertDialogHeader>
+              <DialogIcon icon={FolderSyncIcon} tone="danger" />
               <AlertDialogTitle>Disconnect the directory?</AlertDialogTitle>
               <AlertDialogDescription>
                 Every token stops working at once. Members the directory added stay, as ordinary
@@ -279,7 +283,7 @@ export function ScimGroupRolesForm(props: {
         <>
           <div className="flex gap-3 border-t bg-muted/40 px-5 py-2 font-medium text-muted-foreground text-xs">
             <span className="flex-1">Group name</span>
-            <span className="w-32">Role</span>
+            <span className="w-36">Role</span>
             <span className="w-8" />
           </div>
           {rows.map((row) => (
@@ -299,29 +303,21 @@ export function ScimGroupRolesForm(props: {
                 required
                 value={row.groupName}
               />
-              <Select
-                disabled={props.disabled}
-                items={ROLE_ITEMS}
-                name="role"
-                onValueChange={(role) => {
-                  if (role !== "admin" && role !== "member") return;
-                  setRows((current) =>
-                    current.map((r) => (r.key === row.key ? { ...r, role } : r)),
-                  );
-                }}
-                value={row.role}
-              >
-                <SelectTrigger aria-label="Role" className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectPopup>
-                  {ROLE_ITEMS.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectPopup>
-              </Select>
+              <div className="w-36">
+                <Segmented
+                  aria-label="Role"
+                  disabled={props.disabled}
+                  name="role"
+                  onValueChange={(role) => {
+                    if (role !== "admin" && role !== "member") return;
+                    setRows((current) =>
+                      current.map((r) => (r.key === row.key ? { ...r, role } : r)),
+                    );
+                  }}
+                  options={ROLE_ITEMS}
+                  value={row.role}
+                />
+              </div>
               <Button
                 aria-label="Remove mapping"
                 className="text-muted-foreground"

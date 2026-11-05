@@ -26,7 +26,7 @@ type Harness = {
 
 const overrides = new Map<string, OverrideRules>();
 
-async function startRelay(opts: { maxMessageBytes?: number; closeTimeoutMs?: number } = {}) {
+function createRelay(opts: { maxMessageBytes?: number; closeTimeoutMs?: number } = {}) {
   const queue = memoryDispatchQueue();
   const logs = memoryLogWriter();
   const relay = createSmtpRelay({
@@ -44,8 +44,13 @@ async function startRelay(opts: { maxMessageBytes?: number; closeTimeoutMs?: num
     logWriter: logs,
     ...opts,
   });
-  const ports = await relay.listen({ implicitTls: 0, startTls: 0 }, "127.0.0.1");
-  return { relay, ports, queue, logs } satisfies Harness;
+  return { relay, queue, logs };
+}
+
+async function startRelay(opts: { maxMessageBytes?: number; closeTimeoutMs?: number } = {}) {
+  const created = createRelay(opts);
+  const ports = await created.relay.listen({ implicitTls: 0, startTls: 0 }, "127.0.0.1");
+  return { ...created, ports } satisfies Harness;
 }
 
 function transport(
@@ -385,6 +390,14 @@ describe("SMTP relay", () => {
     } finally {
       await small.relay.shutdown();
     }
+  });
+
+  test("a taken port fails the start instead of leaving it waiting", async () => {
+    const second = createRelay();
+    await expect(
+      second.relay.listen({ implicitTls: harness.ports.implicitTls, startTls: 0 }, "127.0.0.1"),
+    ).rejects.toMatchObject({ code: "EADDRINUSE" });
+    await second.relay.shutdown();
   });
 
   test("shutdown says goodbye to idle clients and stops accepting", async () => {

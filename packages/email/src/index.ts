@@ -243,8 +243,10 @@ export {
   ingestProviderEvents,
   recordProviderEvent,
 } from "./events.ts";
+export { htmlToText } from "./html-text.ts";
 export {
   fakeVerdicts,
+  type InboundDataQuota,
   type InboundDeps,
   type InboundMessage,
   type InboundQuota,
@@ -668,6 +670,7 @@ export {
   sweepUnclaimedEmails,
   UNCLAIMED_FAIL_MS,
   UNCLAIMED_REQUEUE_MS,
+  unclaimedEmailBacklog,
 } from "./sweeps.ts";
 export {
   createEmailTemplate,

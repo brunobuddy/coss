@@ -2,13 +2,18 @@ import { GLOBAL_FLAGS, parseFlags } from "./args.ts";
 import { type Command, commandHelp, flagTable } from "./command.ts";
 import { apiCommand } from "./commands/api.ts";
 import { completionCommand } from "./commands/completion.ts";
+import { DIAGNOSE_COMMANDS } from "./commands/diagnose.ts";
 import {
   domainsAddCommand,
   domainsGetCommand,
   domainsListCommand,
   domainsVerifyCommand,
 } from "./commands/domains.ts";
-import { emailsSendCommand } from "./commands/emails.ts";
+import {
+  emailsCancelCommand,
+  emailsRescheduleCommand,
+  emailsSendCommand,
+} from "./commands/emails.ts";
 import {
   emailsDiagnoseCommand,
   emailsEventsCommand,
@@ -21,13 +26,21 @@ import { inboxCommand, inboxGetCommand } from "./commands/inbox.ts";
 import { INBOXES_COMMANDS } from "./commands/inboxes.ts";
 import { initCommand } from "./commands/init.ts";
 import { listenCommand } from "./commands/listen.ts";
+import { LOG_DRAINS_COMMANDS } from "./commands/log-drains.ts";
 import { loginCommand } from "./commands/login.ts";
 import { logoutCommand } from "./commands/logout.ts";
 import { logsTailCommand } from "./commands/logs.ts";
+import { MARKETING_COMMANDS } from "./commands/marketing.ts";
+import { MARKETING_LISTS_COMMANDS } from "./commands/marketing-lists.ts";
 import { openCommand } from "./commands/open.ts";
 import { profilesListCommand, useCommand } from "./commands/profiles.ts";
 import { RISK_COMMANDS } from "./commands/risk.ts";
-import { smsSendCommand } from "./commands/sms.ts";
+import { RISK_MANAGE_COMMANDS } from "./commands/risk-manage.ts";
+import { SCHEDULING_COMMANDS } from "./commands/scheduling.ts";
+import { SIGN_COMMANDS } from "./commands/sign.ts";
+import { SMS_COMMANDS } from "./commands/sms.ts";
+import { SUBACCOUNTS_COMMANDS } from "./commands/subaccounts.ts";
+import { SUPPRESSIONS_COMMANDS } from "./commands/suppressions.ts";
 import {
   templatesListCommand,
   templatesPreviewCommand,
@@ -35,6 +48,7 @@ import {
   templatesPushCommand,
 } from "./commands/templates.ts";
 import { triggerCommand } from "./commands/trigger.ts";
+import { VERIFY_COMMANDS } from "./commands/verify.ts";
 import {
   webhooksAddCommand,
   webhooksDeliveriesCommand,
@@ -64,8 +78,16 @@ export const COMMANDS: readonly Command[] = [
   emailsGetCommand,
   emailsEventsCommand,
   emailsDiagnoseCommand,
-  smsSendCommand,
+  emailsCancelCommand,
+  emailsRescheduleCommand,
+  ...SUPPRESSIONS_COMMANDS,
+  ...SUBACCOUNTS_COMMANDS,
+  ...MARKETING_COMMANDS,
+  ...MARKETING_LISTS_COMMANDS,
+  ...SMS_COMMANDS,
+  ...VERIFY_COMMANDS,
   logsTailCommand,
+  ...LOG_DRAINS_COMMANDS,
   inboxCommand,
   inboxGetCommand,
   ...INBOXES_COMMANDS,
@@ -77,7 +99,11 @@ export const COMMANDS: readonly Command[] = [
   webhooksRetryCommand,
   ...HOOKS_COMMANDS,
   ...RISK_COMMANDS,
+  ...RISK_MANAGE_COMMANDS,
+  ...SIGN_COMMANDS,
   ...FORMS_COMMANDS,
+  ...SCHEDULING_COMMANDS,
+  ...DIAGNOSE_COMMANDS,
   domainsListCommand,
   domainsAddCommand,
   domainsGetCommand,
@@ -107,6 +133,18 @@ function groupOf(argv: string[]): { group: string; next: string | undefined } | 
     }
   }
   return null;
+}
+
+const API_HINT = "`coss api <path>` calls any endpoint without a command of its own.";
+
+function unknownSubcommand(found: { command: Command; length: number }, argv: string[]): boolean {
+  const next = argv[found.length];
+  return (
+    !found.command.positionals &&
+    next !== undefined &&
+    !next.startsWith("-") &&
+    COMMANDS.some((command) => command.name.startsWith(`${found.command.name} `))
+  );
 }
 
 function topHelp(): string {
@@ -152,7 +190,9 @@ export async function run(argv: string[], io: CliIo): Promise<number> {
     for (const candidate of await complete(COMMANDS, rest, io)) out.line(candidate);
     return 0;
   }
-  const found = findCommand(COMMANDS, argv);
+  const matched = findCommand(COMMANDS, argv);
+  // `coss scheduling hosts delete`: a word after a command that also heads a group.
+  const found = matched && !unknownSubcommand(matched, argv) ? matched : null;
   if (!found) {
     const grouped = groupOf(argv);
     if (grouped) {
@@ -169,10 +209,10 @@ export async function run(argv: string[], io: CliIo): Promise<number> {
         ),
       );
       out.error(
-        `${next ? `Unknown command "${group} ${next}"` : `"${group}" needs a command`}: try ${[...entries].join(", ")}.`,
+        `${next ? `Unknown command "${group} ${next}"` : `"${group}" needs a command`}: try ${[...entries].join(", ")}. ${API_HINT}`,
       );
     } else {
-      out.error(`Unknown command "${name}". Run \`coss --help\` to see the commands.`);
+      out.error(`Unknown command "${name}". Run \`coss --help\` to see the commands. ${API_HINT}`);
     }
     return 2;
   }

@@ -1,3 +1,4 @@
+import { MAX_OWNED_ORGANIZATIONS } from "@coss/auth/options";
 import { listRiskAssessmentsForEmail } from "@coss/risk";
 import {
   getUserForAdmin,
@@ -5,9 +6,11 @@ import {
   listUserMembershipsForAdmin,
   listUserSessionsForAdmin,
   listUserSsoAccountsForAdmin,
+  MAX_OWNED_ORGANIZATION_LIMIT,
 } from "@coss/tenancy/admin";
 import { Badge } from "@coss/ui/components/badge";
 import { Field, FieldLabel } from "@coss/ui/components/field";
+import { Input } from "@coss/ui/components/input";
 import {
   Select,
   SelectItem,
@@ -33,6 +36,7 @@ import {
   PlatformRoleBadge,
   UserStatusBadge,
 } from "@/components/admin/status-badges";
+import { SupportTicketsPanel } from "@/components/admin/support-tickets-panel";
 import { PageHeader } from "@/components/page-header";
 import { Panel, PanelBody } from "@/components/panel";
 import { RiskDecisionBadge, RiskOutcomeBadge } from "@/components/risk-badges";
@@ -44,9 +48,11 @@ import {
   banUserAction,
   impersonateUserAction,
   markSignUpLegitimateAction,
+  resetOwnedOrganizationLimitAction,
   resetTwoFactorAction,
   revokeUserSessionAction,
   revokeUserSessionsAction,
+  setOwnedOrganizationLimitAction,
   setUserRoleAction,
   unbanUserAction,
   unlinkUserSsoAction,
@@ -85,6 +91,8 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
   const ownedOrganizations = memberships.filter(
     (m) => m.role.split(",").includes("owner") && !m.suspended,
   );
+  const ownedCount = memberships.filter((m) => m.role.split(",").includes("owner")).length;
+  const organizationLimit = user.ownedOrganizationLimit ?? MAX_OWNED_ORGANIZATIONS;
   const fields = { userId: user.id };
 
   return (
@@ -99,6 +107,8 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
         }
         title={user.name}
       />
+
+      <SupportTicketsPanel requesterEmail={user.email} />
 
       <Panel title="Account">
         <PanelBody flush>
@@ -122,6 +132,11 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
             </SpecItem>
             <SpecItem label="Active sessions" mono>
               {sessions.length}
+            </SpecItem>
+            <SpecItem label="Organizations owned">
+              {isAdmin
+                ? `${ownedCount} (platform admins have no limit)`
+                : `${ownedCount} of ${organizationLimit}${user.ownedOrganizationLimit === null ? "" : " (custom limit)"}`}
             </SpecItem>
             {user.banned ? (
               <>
@@ -168,6 +183,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                 {signUp.outcome !== "legitimate" &&
                 (signUp.decision !== "allow" || signUp.outcome !== null) ? (
                   <AdminActionDialog
+                    icon="signUp"
                     action={markSignUpLegitimateAction}
                     description="coss.com Risk takes back what reporting this sign-up remembered (its mailbox, device and network stop counting against later sign-ups) and resolves an open review. It doesn't unban the user or lift any suspension."
                     fields={{ assessmentId: signUp.id }}
@@ -220,6 +236,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
               )}
               {user.banned ? (
                 <AdminActionDialog
+                  icon="user"
                   action={unbanUserAction}
                   description={`${user.email} will be able to sign in again.`}
                   fields={fields}
@@ -231,6 +248,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                 />
               ) : (
                 <AdminActionDialog
+                  icon="user"
                   action={banUserAction}
                   description={`${user.email} is signed out everywhere and can't sign in. Nothing is reported to coss.com Risk, and their organizations' API keys keep working: use Take down & report for abuse.`}
                   destructive
@@ -260,6 +278,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                 </AdminActionDialog>
               )}
               <AdminActionDialog
+                icon="role"
                 action={setUserRoleAction}
                 description={
                   isAdmin
@@ -275,6 +294,44 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                 triggerLabel={isAdmin ? "Remove admin" : "Make admin"}
               />
               <AdminActionDialog
+                icon="organization"
+                action={setOwnedOrganizationLimitAction}
+                description={`Applies to the next organization ${user.email} creates. Organizations they already own are kept, even above the limit.`}
+                fields={fields}
+                reason="required"
+                reasonPlaceholder="e.g. Platform agreement, ticket #1234"
+                submitLabel="Set limit"
+                success="Organization limit changed"
+                title="Change the organization limit?"
+                triggerLabel="Change organization limit"
+              >
+                <Field>
+                  <FieldLabel>Organizations this user can own</FieldLabel>
+                  <Input
+                    defaultValue={organizationLimit}
+                    max={MAX_OWNED_ORGANIZATION_LIMIT}
+                    min={1}
+                    name="limit"
+                    required
+                    type="number"
+                  />
+                </Field>
+              </AdminActionDialog>
+              {user.ownedOrganizationLimit === null ? null : (
+                <AdminActionDialog
+                  icon="organization"
+                  action={resetOwnedOrganizationLimitAction}
+                  description={`${user.email} goes back to the default of ${MAX_OWNED_ORGANIZATIONS}. Organizations they already own are kept.`}
+                  fields={fields}
+                  reason="optional"
+                  submitLabel="Reset limit"
+                  success="Organization limit reset"
+                  title="Reset the organization limit?"
+                  triggerLabel="Reset organization limit"
+                />
+              )}
+              <AdminActionDialog
+                icon="user"
                 action={impersonateUserAction}
                 description={`You'll browse the dashboard as ${user.email} for up to an hour. You can't create live API keys while impersonating.`}
                 disabled={user.banned || isAdmin}
@@ -288,6 +345,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
               />
               {user.twoFactorEnabled ? (
                 <AdminActionDialog
+                  icon="twoFactor"
                   action={resetTwoFactorAction}
                   description={`${user.email}'s authenticator app and backup codes stop working and their password alone signs them in. Only do this after confirming their identity; organizations that require two-factor ask them to set it up again.`}
                   destructive
@@ -302,6 +360,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
               ) : null}
               {ssoAccounts.length > 0 ? (
                 <AdminActionDialog
+                  icon="sso"
                   action={unlinkUserSsoAction}
                   description={`${user.email}'s accounts are unlinked from their SSO providers and their SSO sessions end. Their next SSO sign-in links again, or they can set a password with “Forgot password”. Organizations that require SSO still ask for it: turn the requirement off on the organization if its identity provider is down.`}
                   destructive
@@ -315,6 +374,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                 />
               ) : null}
               <AdminActionDialog
+                icon="session"
                 action={revokeUserSessionsAction}
                 description={`Signs ${user.email} out on every device.`}
                 disabled={sessions.length === 0}
@@ -424,6 +484,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                   <TableCell className="text-right">
                     {isSelf ? null : (
                       <AdminActionDialog
+                        icon="session"
                         action={revokeUserSessionAction}
                         description="Signs this device out."
                         fields={{ ...fields, sessionId: session.id }}

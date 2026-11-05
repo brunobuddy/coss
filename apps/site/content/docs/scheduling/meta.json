@@ -1,0 +1,21 @@
+{
+  "title": "Scheduling",
+  "description": "Availability and bookings for your users, from the team behind Cal.com.",
+  "root": true,
+  "icon": "Calendar",
+  "pages": [
+    "index",
+    "hosts",
+    "calendars",
+    "delegation",
+    "zoom",
+    "bookings",
+    "pools-and-groups",
+    "routing",
+    "embedding",
+    "notifications",
+    "reminders",
+    "privacy",
+    "testing"
+  ]
+}

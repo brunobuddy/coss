@@ -11,7 +11,7 @@ repository root.
   `v2:<key id>` prefix is the AAD; ids are derived from the keys), encrypted with the first key, decrypted with the
   one named. Keyless `v1:` rows from before are still read by trying every key until `webhooks:reencrypt` rewrites
   them. Every write of a secret column goes through `encryptSecret`, and `reencryptWebhookSecrets` must cover every
-  encrypted column (today the webhook and Hooks endpoints' `secret_ciphertext` and `previous_secret_ciphertext`, `log_drain.secret_ciphertext` and `auth_header_ciphertext`, `risk_settings.captcha_secret_ciphertext` and `migration.credentials_ciphertext`, the provider key an import from another provider holds until it finishes). Rotation runbook: README.md,
+  encrypted column (today the webhook and Hooks endpoints' `secret_ciphertext` and `previous_secret_ciphertext`, `log_drain.secret_ciphertext` and `auth_header_ciphertext`, `risk_settings.captcha_secret_ciphertext`, `scheduling_calendar_connection.encrypted_credentials`, `scheduling_calendar_delegation.encrypted_credentials` and `migration.credentials_ciphertext`, the provider key an import from another provider holds until it finishes). Rotation runbook: README.md,
   "Rotating `WEBHOOK_SECRETS_KEY`". The initial upgrade from v1-only readers must use README.md's
   "Upgrading from v1 webhook secret storage" coordinated cutover, not a rolling deployment.
 - **Delivery engine** (`@coss/webhooks/engine`): webhook deliveries, log drain batches (and future products) share

@@ -4,6 +4,8 @@ import { ok, respond, run, unwrap } from "../result.ts";
 import {
   compact,
   cursorSchema,
+  DESTRUCTIVE,
+  given,
   limitSchema,
   nextCursor,
   READ_ONLY,
@@ -188,5 +190,119 @@ export function registerRiskTools(ctx: ToolContext): void {
         );
         return ok({ entries: page.data.map(entrySummary), next_cursor: nextCursor(page) });
       }),
+  );
+
+  server.registerTool(
+    "get_risk_assessment",
+    {
+      title: "Get a risk assessment",
+      description: "One assessment with every reason, signal and its review status.",
+      inputSchema: z.object({ id: z.string().describe("The assessment's id.") }),
+      annotations: READ_ONLY,
+    },
+    ({ id }) => respond(coss.risk.assessments.get(id)),
+  );
+
+  server.registerTool(
+    "record_risk_feedback",
+    {
+      title: "Record what a user turned out to be",
+      description:
+        "Resolves a review and teaches later assessments: `fraud` and `abuse` flag the same " +
+        "mailbox, user, card, device, IP and subnet; `legitimate` takes that back.",
+      inputSchema: z.object({
+        id: z.string().describe("The assessment's id."),
+        outcome: z.enum(["legitimate", "fraud", "abuse"]),
+        note: z.string().optional(),
+      }),
+      annotations: WRITE,
+    },
+    ({ id, outcome, note }) =>
+      respond(coss.risk.feedback(id, given({ outcome, note })), assessmentSummary),
+  );
+
+  server.registerTool(
+    "add_risk_list_entry",
+    {
+      title: "Add to a risk allow or block list",
+      description:
+        "An allow-list match decides allow and a block-list match decides block, before any rule. " +
+        "Returns the existing entry if there is one.",
+      inputSchema: z.object({
+        list: z.enum(["allow", "block"]),
+        type: z.enum(["email", "domain", "ip", "asn", "country", "user"]),
+        value: z.string(),
+        note: z.string().optional(),
+        expires_at: z.string().optional().describe("An ISO 8601 time with an offset."),
+      }),
+      annotations: WRITE,
+    },
+    ({ list, type, value, note, expires_at }) =>
+      respond(
+        coss.risk.lists.add(list, {
+          [type]: value,
+          ...given({ note, expires_at }),
+        } as Parameters<typeof coss.risk.lists.add>[1]),
+        entrySummary,
+      ),
+  );
+
+  server.registerTool(
+    "remove_risk_list_entry",
+    {
+      title: "Remove a risk list entry",
+      description: "Takes an entry off its allow or block list.",
+      inputSchema: z.object({ id: z.string().describe("list_risk_list_entries finds it.") }),
+      annotations: DESTRUCTIVE,
+    },
+    ({ id }) => respond(coss.risk.lists.remove(id)),
+  );
+
+  server.registerTool(
+    "get_risk_settings",
+    {
+      title: "Get the risk settings",
+      description: "The thresholds decisions use, disabled reasons, captcha and content limits.",
+      inputSchema: z.object({}),
+      annotations: READ_ONLY,
+    },
+    () => respond(coss.risk.settings.get()),
+  );
+
+  server.registerTool(
+    "check_email_risk",
+    {
+      title: "Check an email address",
+      description:
+        "Syntax, deliverability, disposable or free provider, role account and typo suggestion. " +
+        "Records nothing: assess_risk is the decision.",
+      inputSchema: z.object({ email: z.string() }),
+      annotations: READ_ONLY,
+    },
+    ({ email }) => respond(coss.risk.checkEmail(email)),
+  );
+
+  server.registerTool(
+    "check_ip_risk",
+    {
+      title: "Check an IP address",
+      description: "Tor, VPN or hosting network, ASN and country. Records nothing.",
+      inputSchema: z.object({ ip: z.string() }),
+      annotations: READ_ONLY,
+    },
+    ({ ip }) => respond(coss.risk.checkIp(ip)),
+  );
+
+  server.registerTool(
+    "check_phone_risk",
+    {
+      title: "Check a phone number",
+      description:
+        "Validity, country, line type and carrier. A live key's answered check is billed, so run " +
+        "it only for a real number you need to judge.",
+      inputSchema: z.object({ phone: z.string().describe("In E.164 form.") }),
+      annotations: { ...WRITE, openWorldHint: true },
+    },
+    ({ phone }) => respond(coss.risk.checkPhone(phone)),
   );
 }

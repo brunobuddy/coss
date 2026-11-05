@@ -19,6 +19,7 @@ const {
   member,
   organization,
   organizationDeletion,
+  organizationHipaaMode,
   organizationSuspension,
   project,
   session,
@@ -56,8 +57,12 @@ export const ADMIN_ACTIONS = [
   "user.revoke_sessions",
   "user.reset_two_factor",
   "user.unlink_sso",
+  "user.set_organization_limit",
+  "user.reset_organization_limit",
   "organization.suspend",
   "organization.unsuspend",
+  "organization.enable_hipaa_mode",
+  "organization.disable_hipaa_mode",
   "organization.disable_sso_requirement",
   "organization.disable_sso",
   "organization.delete",
@@ -99,6 +104,19 @@ export const ADMIN_ACTIONS = [
   // Forms: a form disabled for abuse (phishing, spam), or turned back on; target the form.
   "form.disable",
   "form.enable",
+  // Support: a rep's work on a ticket; target the ticket.
+  "support.replied",
+  "support.note_added",
+  "support.assigned",
+  "support.severity_changed",
+  "support.status_changed",
+  "support.spam_changed",
+  "support.organization_confirmed",
+  "support.message_revealed",
+  "support.cc_added",
+  "support.attachment_downloaded",
+  "support.saved_reply_changed",
+  "support.intake_requeued",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
@@ -109,7 +127,9 @@ export type AdminTargetType =
   | "email"
   | "commit"
   | "form"
-  | "risk_assessment";
+  | "risk_assessment"
+  | "support_ticket"
+  | "received_email";
 
 export type AdminAuditEvent = {
   id: string;
@@ -295,6 +315,129 @@ export async function suspendOrganization(input: {
         organizationId: org.id,
         reason,
         metadata: { slug: org.slug, ...(input.category ? { category: input.category } : {}) },
+      },
+      tx,
+    );
+  });
+}
+
+/** Whether the user belongs to an organization in HIPAA mode: staff can't act as them. */
+export async function isMemberOfHipaaOrganization(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ organizationId: member.organizationId })
+    .from(member)
+    .innerJoin(
+      organizationHipaaMode,
+      eq(organizationHipaaMode.organizationId, member.organizationId),
+    )
+    .where(eq(member.userId, userId))
+    .limit(1);
+  return row !== undefined;
+}
+
+/** Queued email and SMS pick the mode up when they are claimed; a pending push is just dropped. */
+async function applyHipaaModeToWaitingMessages(tx: Executor, organizationId: string) {
+  // Attendees' details come off hosts' calendars: the worker reads the mode when it writes.
+  await tx
+    .update(schema.schedulingCalendarEvent)
+    .set({
+      scrubPending: true,
+      desiredVersion: sql`${schema.schedulingCalendarEvent.desiredVersion} + 1`,
+      nextAttemptAt: sql`now()`,
+      attempts: 0,
+    })
+    .where(
+      and(
+        eq(schema.schedulingCalendarEvent.organizationId, organizationId),
+        eq(schema.schedulingCalendarEvent.desiredState, "present"),
+        eq(schema.schedulingCalendarEvent.detailsWritten, true),
+      ),
+    );
+  await tx
+    .delete(schema.pushNotification)
+    .where(
+      and(
+        eq(schema.pushNotification.organizationId, organizationId),
+        eq(schema.pushNotification.status, "pending"),
+      ),
+    );
+}
+
+/**
+ * Turns on HIPAA mode (`@coss/compliance`) once a BAA is signed, and requires two-factor
+ * authentication in the same transaction. The caller checks the organization's plan first.
+ */
+export async function enableHipaaMode(input: {
+  organizationId: string;
+  baaSignedAt: Date;
+  baaReference: string;
+  reason: string;
+  actor: AdminActor;
+}): Promise<void> {
+  const reason = normalizeReason(input.reason, true) as string;
+  const baaReference = input.baaReference.trim();
+  if (!baaReference) throw new TenancyError("invalid", "Enter the BAA's reference.");
+  if (Number.isNaN(input.baaSignedAt.getTime())) {
+    throw new TenancyError("invalid", "Enter the date the BAA was signed.");
+  }
+  await db.transaction(async (tx) => {
+    const org = await requireOrganization(input.organizationId, tx);
+    const [inserted] = await tx
+      .insert(organizationHipaaMode)
+      .values({
+        organizationId: org.id,
+        baaSignedAt: input.baaSignedAt,
+        baaReference,
+        enabledByUserId: input.actor.userId,
+      })
+      .onConflictDoNothing()
+      .returning({ organizationId: organizationHipaaMode.organizationId });
+    if (!inserted) throw new TenancyError("conflict", "HIPAA mode is already on.");
+    await tx
+      .update(organization)
+      .set({ requireTwoFactor: true })
+      .where(eq(organization.id, org.id));
+    await applyHipaaModeToWaitingMessages(tx, org.id);
+    await recordAdminAction(
+      {
+        actor: input.actor,
+        action: "organization.enable_hipaa_mode",
+        target: { type: "organization", id: org.id },
+        organizationId: org.id,
+        reason,
+        metadata: {
+          slug: org.slug,
+          baaSignedAt: input.baaSignedAt.toISOString(),
+          baaReference,
+        },
+      },
+      tx,
+    );
+  });
+}
+
+/** Turns HIPAA mode off. The two-factor requirement stays on until an owner changes it. */
+export async function disableHipaaMode(input: {
+  organizationId: string;
+  reason: string;
+  actor: AdminActor;
+}): Promise<void> {
+  const reason = normalizeReason(input.reason, true) as string;
+  await db.transaction(async (tx) => {
+    const org = await requireOrganization(input.organizationId, tx);
+    const [deleted] = await tx
+      .delete(organizationHipaaMode)
+      .where(eq(organizationHipaaMode.organizationId, org.id))
+      .returning({ baaReference: organizationHipaaMode.baaReference });
+    if (!deleted) throw new TenancyError("conflict", "HIPAA mode isn't on.");
+    await recordAdminAction(
+      {
+        actor: input.actor,
+        action: "organization.disable_hipaa_mode",
+        target: { type: "organization", id: org.id },
+        organizationId: org.id,
+        reason,
+        metadata: { slug: org.slug, baaReference: deleted.baaReference },
       },
       tx,
     );
@@ -522,6 +665,7 @@ export type AdminUserRow = {
   banReason: string | null;
   banExpires: Date | null;
   twoFactorEnabled: boolean;
+  ownedOrganizationLimit: number | null;
   createdAt: Date;
 };
 
@@ -535,6 +679,7 @@ const userColumns = {
   banReason: user.banReason,
   banExpires: user.banExpires,
   twoFactorEnabled: sql<boolean>`coalesce(${user.twoFactorEnabled}, false)`,
+  ownedOrganizationLimit: user.ownedOrganizationLimit,
   createdAt: user.createdAt,
 };
 
@@ -582,6 +727,54 @@ export async function listUsersForAdmin(
 export async function getUserForAdmin(userId: string): Promise<AdminUserRow | null> {
   const [row] = await db.select(userColumns).from(user).where(eq(user.id, userId)).limit(1);
   return row ? toAdminUser(row) : null;
+}
+
+/** The most organizations an admin can let one user own. */
+export const MAX_OWNED_ORGANIZATION_LIMIT = 1_000;
+
+/**
+ * Sets (`limit`) or removes (`limit: null`) a user's own limit on the organizations they may own,
+ * recording the previous and new limits. Applies to their next organization. Removing a limit they
+ * don't have records nothing and returns false.
+ */
+export async function setOwnedOrganizationLimit(input: {
+  userId: string;
+  limit: number | null;
+  reason?: string | null;
+  actor: AdminActor;
+}): Promise<boolean> {
+  const { limit } = input;
+  if (
+    limit !== null &&
+    (!Number.isInteger(limit) || limit < 1 || limit > MAX_OWNED_ORGANIZATION_LIMIT)
+  ) {
+    throw new TenancyError(
+      "invalid",
+      `The limit must be a whole number between 1 and ${MAX_OWNED_ORGANIZATION_LIMIT}.`,
+    );
+  }
+  const reason = normalizeReason(input.reason, limit !== null);
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ previous: user.ownedOrganizationLimit })
+      .from(user)
+      .where(eq(user.id, input.userId))
+      .for("update");
+    if (!row) throw new TenancyError("not_found", "User not found.");
+    if (row.previous === limit) return false;
+    await tx.update(user).set({ ownedOrganizationLimit: limit }).where(eq(user.id, input.userId));
+    await recordAdminAction(
+      {
+        actor: input.actor,
+        action: limit === null ? "user.reset_organization_limit" : "user.set_organization_limit",
+        target: { type: "user", id: input.userId },
+        reason,
+        metadata: { previous: row.previous, limit },
+      },
+      tx,
+    );
+    return true;
+  });
 }
 
 /**
@@ -1076,6 +1269,7 @@ export async function usersByEmailForAdmin(
       role: null,
       banReason: null,
       twoFactorEnabled: false,
+      ownedOrganizationLimit: null,
     });
     result.set(row.email.toLowerCase(), {
       id: row.id,

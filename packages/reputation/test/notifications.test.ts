@@ -89,8 +89,12 @@ describe("reputation notifications", () => {
       `Your sending reputation needs attention (${tenant.organization.name})`,
     );
     expect(notice?.text).toContain("Bounce rate 10.00% (warning).");
-    expect(notice?.text).toContain(`${DASHBOARD}/${tenant.organization.slug}/reputation`);
-    expect(notice?.html).toContain(`href="${DASHBOARD}/${tenant.organization.slug}/reputation"`);
+    expect(notice?.text).toContain(
+      `${DASHBOARD}/${tenant.organization.slug}?to=%2Femail%2Freputation`,
+    );
+    expect(notice?.html).toContain(
+      `href="${DASHBOARD}/${tenant.organization.slug}?to=%2Femail%2Freputation"`,
+    );
     // Stable per notification and recipient, so a retried send replays.
     expect(new Set(sent.map((n) => n.idempotencyKey)).size).toBe(2);
     expect(notice?.idempotencyKey).toStartWith(`${pending?.id}:`);

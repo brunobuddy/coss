@@ -4,6 +4,7 @@
  * snapshotted on the email (`email.store_content`), like tracking; `purgeSendContent` clears it
  * when the email leaves the queue. No settings row means content is stored.
  */
+import { HipaaModeError, hipaaModeApplies } from "@coss/compliance";
 import { db, type Executor, schema } from "@coss/db";
 import { and, eq } from "drizzle-orm";
 import type { ContentStorageMode, StorageSettingsOutput } from "./schemas.ts";
@@ -17,6 +18,8 @@ export type StorageSettings = {
   contentStorage: ContentStorageMode;
   /** `null` while the environment never changed the setting. */
   updatedAt: Date | null;
+  /** HIPAA mode forces `discard`, whatever the environment's own setting says. */
+  lockedByHipaaMode: boolean;
 };
 
 export function toStorageSettingsObject(settings: StorageSettings): StorageSettingsOutput {
@@ -38,6 +41,7 @@ export async function getStorageSettings(
   env: StorageEnvironment,
   executor: Executor = db,
 ): Promise<StorageSettings> {
+  const hipaaMode = await hipaaModeApplies(env.environmentId, executor);
   const [row] = await executor
     .select({
       storeContent: emailStorageSettings.storeContent,
@@ -47,8 +51,9 @@ export async function getStorageSettings(
     .where(inEnvironment(env))
     .limit(1);
   return {
-    contentStorage: row?.storeContent === false ? "discard" : "store",
+    contentStorage: hipaaMode || row?.storeContent === false ? "discard" : "store",
     updatedAt: row?.updatedAt ?? null,
+    lockedByHipaaMode: hipaaMode,
   };
 }
 
@@ -68,6 +73,10 @@ export async function updateStorageSettings(
   env: StorageEnvironment,
   input: { contentStorage: ContentStorageMode },
 ): Promise<StorageSettings | null> {
+  const hipaaMode = await hipaaModeApplies(env.environmentId);
+  if (hipaaMode && input.contentStorage === "store") {
+    throw new HipaaModeError("HIPAA mode discards email content in live environments.");
+  }
   const [environment] = await db
     .select({ projectId: schema.environment.projectId })
     .from(schema.environment)
@@ -96,5 +105,9 @@ export async function updateStorageSettings(
     })
     .returning();
   if (!row) return null;
-  return { contentStorage: row.storeContent ? "store" : "discard", updatedAt: row.updatedAt };
+  return {
+    contentStorage: row.storeContent ? "store" : "discard",
+    updatedAt: row.updatedAt,
+    lockedByHipaaMode: hipaaMode,
+  };
 }

@@ -11,6 +11,7 @@ import type { Breadcrumb, Event, Log, StreamedSpanJSON } from "@sentry/core";
  * Path segments that are bearer secrets: whoever has the URL can act with it. Route templates
  * (`:token`) and already masked segments are kept.
  */
+// Access logs have their own list: infra/lambda/mask-access-logs.mjs.
 const SECRET_PATH_SEGMENTS: [RegExp, string][] = [
   // Open pixel, click redirect and one-click unsubscribe (apps/api/src/routes/tracking.ts), and the
   // preference center and unsubscribe pages (apps/api/src/routes/preferences.ts).
@@ -24,10 +25,13 @@ const SECRET_PATH_SEGMENTS: [RegExp, string][] = [
 ];
 
 /**
- * Other providers' API keys (imports, `@coss/migrate`): never logged on purpose, masked in case a
- * provider's error message quotes one. Postmark's tokens are bare UUIDs and travel only in headers.
+ * API keys: never logged on purpose, masked in case a message or URL quotes one. Other providers'
+ * come from imports (`@coss/migrate`); Postmark's tokens are bare UUIDs and travel only in headers.
  */
 const SECRET_VALUES: [RegExp, string][] = [
+  // Our own API keys. Only ever in an Authorization header, but people paste them into URLs (MCP
+  // clients' configuration especially).
+  [/\bcoss_(live|test)_[A-Za-z0-9_-]{8,}/g, "coss_$1_[key]"],
   // Resend.
   [/\bre_[A-Za-z0-9_]{20,}/g, "re_[key]"],
   // SendGrid.
@@ -35,10 +39,39 @@ const SECRET_VALUES: [RegExp, string][] = [
 ];
 
 /**
+ * Recipients' and users' addresses and numbers quoted in error messages. Bounded for linear time
+ * on long lines, and a domain must end in letters so `react@18.3.1` stays readable.
+ */
+const CONTACT_DETAILS: [RegExp, string][] = [
+  [/[A-Za-z0-9._%+-]{1,64}@(?:[A-Za-z0-9-]{1,63}\.){1,8}[A-Za-z]{2,63}/g, "[email]"],
+  [/\+\d[\d ().-]{5,18}\d/g, "[phone]"],
+];
+
+/**
+ * Drizzle's `DrizzleQueryError` message is the SQL and then every bound value: a failed insert
+ * would report an email's subject and body. The statement is useful; its values never are.
+ */
+function withoutQueryParams(value: string): string {
+  const query = value.indexOf("Failed query: ");
+  if (query === -1) return value;
+  const params = value.indexOf("\nparams: ", query);
+  return params === -1 ? value : `${value.slice(0, params)}\nparams: [removed]`;
+}
+
+/**
  * Query strings and fragments of paths and URLs: tokens (`?token=`, OAuth `code`/`state`) and
  * search terms. A `?` not following a path ("why?") is kept.
  */
-const QUERY = /(\/[^\s?#]*)[?#][^\s]*/g;
+const WORD = /\S+/g;
+
+function withoutQuery(word: string): string {
+  const slash = word.indexOf("/");
+  if (slash === -1) return word;
+  for (let at = slash; at < word.length; at++) {
+    if (word[at] === "?" || word[at] === "#") return word.slice(0, at);
+  }
+  return word;
+}
 
 const SECRET_HEADERS = new Set([
   "authorization",
@@ -68,12 +101,16 @@ const DROPPED_ATTRIBUTE_PATTERN =
   /^(url\.path\.parameter\.|http\.request\.header\.(authorization|cookie|proxy-authorization|x-api-key|x-forwarded-for|x-real-ip|x-postmark-account-token|x-postmark-server-token)$|http\.response\.header\.set-cookie$)/;
 
 /**
- * A URL, path, span name or line of text with secret path segments and provider keys masked and
- * the query strings of its paths removed.
+ * A URL, path, span name or line of text with secret path segments, provider keys, email addresses
+ * and phone numbers masked and the query strings of its paths removed.
  */
 export function scrubUrl(value: string): string {
-  let scrubbed = value.replace(QUERY, "$1");
-  for (const [pattern, replacement] of [...SECRET_PATH_SEGMENTS, ...SECRET_VALUES]) {
+  let scrubbed = withoutQueryParams(value).replace(WORD, withoutQuery);
+  for (const [pattern, replacement] of [
+    ...SECRET_PATH_SEGMENTS,
+    ...SECRET_VALUES,
+    ...CONTACT_DETAILS,
+  ]) {
     scrubbed = scrubbed.replace(pattern, replacement);
   }
   return scrubbed;

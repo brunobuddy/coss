@@ -237,6 +237,51 @@ describe("sub-account reputation", () => {
         ),
       );
     expect(verdict).toMatchObject({ verdict: "blocked", groupId: a.id });
+    expect(
+      await db
+        .select()
+        .from(schema.emailSenderDomainBlock)
+        .where(eq(schema.emailSenderDomainBlock.organizationId, organizationId)),
+    ).toHaveLength(0);
     expect((await send("b", "fine@example.com")).email.status).toBe("sent");
+  });
+
+  test("a sub-account's own domain is restricted and its reinstatement clears only its block", async () => {
+    const { tenant, organizationId, a } = await setup({ screen: true });
+    const domain = await createVerifiedDomain(organizationId);
+    await db
+      .update(schema.domain)
+      .set({ subaccountId: a.id })
+      .where(eq(schema.domain.id, domain.id));
+    const provider = new FakeEmailProvider({ log: false });
+    const service = dispatchingEmailService({
+      liveProvider: provider,
+      sandboxProvider: provider,
+      screen: (input) => screenMessage(input, { classifier: fakeClassifier() }),
+    });
+    await service.send({
+      environment: sendEnvironment(tenant.production),
+      apiKeyId: null,
+      params: params({
+        from: `hello@${domain.name}`,
+        subaccount: a.id,
+        subject: "[coss-test:phishing]",
+      }),
+    });
+    expect(
+      (
+        await db
+          .select()
+          .from(schema.emailSenderDomainBlock)
+          .where(eq(schema.emailSenderDomainBlock.domain, domain.name))
+      )[0]?.groupId,
+    ).toBe(a.id);
+    await reinstateSubaccount({ organizationId, id: a.id });
+    expect(
+      await db
+        .select()
+        .from(schema.emailSenderDomainBlock)
+        .where(eq(schema.emailSenderDomainBlock.domain, domain.name)),
+    ).toHaveLength(0);
   });
 });

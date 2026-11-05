@@ -1,5 +1,36 @@
 # coss-cli
 
+## 0.6.0
+
+### Minor Changes
+
+- 7afbbef: Forms: the MCP server's `list_forms`, `list_form_submissions` and `get_form_submission` tools (submitted
+  values labelled untrusted), and the CLI's `coss forms list` and `coss forms submissions <form>`
+  (`--status`, `--limit`, `--json`).
+- a2ed56a: Adds `coss.scheduling`: hosts, schedules, event types, slots, availability search, bookings, holds, recurring
+  series, calendars, sessions and settings. `coss/scheduling` embeds the hosted pages (`mountBooker`,
+  `mountHostPortal`).
+  
+  `coss-mcp` gets tools to list hosts, slots and bookings and to cancel a booking; `coss-cli` gets
+  `coss scheduling hosts` and `coss scheduling bookings`.
+
+### Patch Changes
+
+- b4cb758: `coss listen` forwards an event's `data.traceparent` as a `traceparent` header, as coss.com's own
+  webhook delivery does.
+- 014f709: `coss open` follows the dashboard's product-first URLs (`/<org>/<project>/<env>/email/domains`,
+  `/<org>/settings/members`) and opens more pages: `products`, `email`, `sms`, `verify`, `sign`,
+  `forms`, `inboxes`, `developers`, `subaccounts` and `spend`.
+- Updated dependencies [a951582]
+- Updated dependencies [545d704]
+- Updated dependencies [09ccfba]
+- Updated dependencies [9f31e28]
+- Updated dependencies [9d65e49]
+- Updated dependencies [95707e1]
+- Updated dependencies [a2ed56a]
+- Updated dependencies [b4cb758]
+  - coss@0.11.0
+
 ## 0.5.0
 
 ### Minor Changes

@@ -44,6 +44,7 @@ describe("GET /v1/environment", () => {
           name: tenant.organization.name,
           slug: tenant.organization.slug,
           api_version: LATEST_API_VERSION,
+          hipaa_mode: false,
         },
         api_key: {
           id: await apiKeyIdForEnvironment(environment.id),

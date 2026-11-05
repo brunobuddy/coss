@@ -127,3 +127,16 @@ received like any other mail to the environment's domain.
 Messages follow the [retention](/docs/data-retention) of their emails: inbound messages are
 deleted with their received email, outbound ones with their email, and a thread whose messages
 are all gone disappears.
+
+## Testing
+
+Every sandbox inbox can send and delivers nothing, and the dashboard can simulate received mail.
+See [testing inboxes](/docs/inboxes/testing).
+
+## Tools
+
+- **CLI**: [`coss inboxes`](/docs/cli#inboxes) `create`, `list`, `threads`, `thread` and `reply`.
+- **MCP server**: [coding agents](/docs/mcp#tools) get `create_inbox`, `list_inboxes`, `list_inbox_threads`,
+  `get_inbox_thread`, `send_inbox_message` and `reply_to_inbox_message`.
+- **Other languages**: the [API reference](/docs/api-reference) shows every operation in Python, Go, Ruby,
+  PHP, Java and .NET.

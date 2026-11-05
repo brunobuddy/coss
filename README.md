@@ -105,9 +105,9 @@ resets) are printed to the dashboard's server console in development.
   own redirect (`API_PUBLIC_URL/t/…`) when it hands the email to the provider; the stored email keeps the original
   HTML. Opens and clicks show up as `email.opened` / `email.clicked` events, webhooks, counts on the email
   (`tracking`) and per-link click counts. Independent of SES's own tracking, which stays off.
-  A verified domain can have a **custom tracking domain** (e.g. `links.acme.com`, a CNAME to `track.cosslinks.com`):
-  emails from it are tracked through that hostname while it is active. coss.com registers it as a Cloudflare for SaaS
-  custom hostname (`TRACKING_DOMAIN_PROVIDER=cloudflare`), which issues its certificate and proxies `/t/*` to the API.
+  A verified domain can have a **custom tracking domain** (e.g. `links.acme.com`, a CNAME to the target the dashboard
+  shows): emails from it are tracked through that hostname while it is active. coss.com registers it as a CloudFront
+  distribution tenant (`TRACKING_DOMAIN_PROVIDER=cloudfront`), which gets its certificate and serves `/t/*` from the API.
 - **Webhooks** — per environment, signed with [Standard Webhooks](https://www.standardwebhooks.com) headers and
   retried for about a day. Verify them with `verifyWebhook` from the SDK.
 - **Single sign-on** — per organization, OpenID Connect or SAML 2.0 (Better Auth's SSO plugin), set up under
@@ -136,12 +136,17 @@ resets) are printed to the dashboard's server console in development.
   250th, 500th and 1000th, then 2% at random. At ≥ 0.95 the email fails with `content_rejected` and the
   organization is suspended (the reputation guard's `content_screening` trigger); at ≥ 0.70 it is sent but the
   organization is warned until the flag ages out of the window. In enforcement mode, classifier errors and
-  timeouts (3 s) hold the email: it is tried (and screened) again every minute, and fails as
+  timeouts (10 s, including image downloads) hold the email: it is tried (and screened) again every minute, and fails as
   `content_screening_unavailable` only if screening is still down an hour after it was due. coss.com's
   own notification organization always sends so an AI outage cannot stop account recovery. Admins see every verdict on the organization's reputation page and can
   tune thresholds and sampling, switch to shadow mode, or turn screening off per organization (e.g. for
   phishing-simulation senders). Locally `SCREENING_CLASSIFIER=fake` flags content containing `[coss-test:phishing]`
-  (or `spam`, `malware`, `fraud`; `[coss-test:spam:0.8]` sets the score).
+  (or `spam`, `malware`, `fraud`; `[coss-test:spam:0.8]` sets the score). Any active enforced flag
+  forces subsequent messages through screening; a second distinct score ≥ 0.90 in the reputation
+  window blocks and suspends. Short image-based emails are always screened. Image content is inspected
+  by a vision-capable model; generic alt text and unsubscribe footers cannot substitute for it.
+  Enforced blocks also restrict the verified sender domain across organizations, surviving domain or
+  account deletion. Support reinstatement clears that organization's restrictions.
 - **Organization deletion** — owners delete an organization from its Settings by typing its slug (not while it
   is suspended; platform admins can, from `/admin`, audited). Members, invitations, API keys, the SSO provider and
   the sessions it created go at once and scheduled emails never send; the worker then removes the organization's
@@ -387,6 +392,20 @@ route is dropped.
    `SES_INBOUND_QUEUE_URL` (plus `VALKEY_URL`, for the daily inbound limit) for the worker. Rerun bootstrap first on
    upgrades: the updated `<name>-*` policies grant the S3 and SQS access.
 
+**Abusive inbound mail.** SES charges for every message and 256 KB it accepts, before the worker sees it, and our
+limits only stop what gets stored and billed: spam, viruses, mail over a limit and unroutable mail all cost us and
+bill no one. When the SES budget alerts, block the sending network with a receipt filter, which SES applies when the
+sender connects (the top `Received` header of a stored copy's raw message names it):
+
+```sh
+aws ses create-receipt-filter --region "$AWS_REGION" \
+  --filter 'Name=block-203-0-113-0,IpFilter={Policy=Block,Cidr=203.0.113.0/24}'
+aws ses list-receipt-filters --region "$AWS_REGION"
+aws ses delete-receipt-filter --region "$AWS_REGION" --filter-name block-203-0-113-0   # later
+```
+
+Filters apply to the whole account and region, so block the narrowest range that stops it.
+
 Before relying on it in a new account, check against a live account (and note the results here): that a verified
 parent domain receives for its subdomains (`in.acme.com` on `acme.com`'s identity) and one identity covers the
 managed domain's wildcard; that identities associated with SES tenants still receive; that
@@ -403,9 +422,28 @@ drop `for <address>` clauses naming other environments' recipients).
 2. Set `SCREENING_CLASSIFIER=ai` and `AI_GATEWAY_API_KEY` for the worker (which screens emails), and
    `RISK_CLASSIFIER=ai` with the same key for the api (risk's content classification, at request time, 3 s
    timeout, limited per organization by the `risk.classify*` buckets). `SCREENING_MODEL` defaults to
-   `typesafe-ai/jev`; any Gateway decision model id works.
+   `typesafe-ai/jev`; any Gateway decision model id works for text. Email images use the pinned,
+   vision-capable `typesafe-ai/jev-1.14.0` with the same key and zero-data-retention setting. Images are
+   downloaded through public-address checks with no redirects (16 images/animation frames, 2 MiB each, 8 MiB total);
+   small images are normalized to at least 512×512 (including tracking pixels). Missing, unsupported or
+   over-limit images hold the message for the normal retry rather than sending unseen content.
 3. Cost: one screening is about 2k input tokens (bodies are truncated to 8,000 characters) — about $0.0001 with
-   Jev — so the default sampling costs a few dollars per million live emails.
+   Jev for text. Image inspection, always-screened image-based mail and increased screening after
+   flags add usage beyond the base random sample.
+
+After applying the sender-domain memory migration, backfill historical screening blocks using the new
+worker image (before rolling out live services). The first command only counts candidates; the second
+writes idempotently and considers only organizations still suspended by screening:
+
+```sh
+infra/scripts/ecs-task.sh --image-tag <new-image-tag> worker -- bun packages/email/scripts/backfill-screening-domains.ts
+infra/scripts/ecs-task.sh --image-tag <new-image-tag> worker -- bun packages/email/scripts/backfill-screening-domains.ts --apply
+```
+
+For a reviewed domain transfer whose original organization was deleted, operators can release its
+restriction with `packages/email/scripts/release-screening-domain.ts --domain <name> --admin <admin user id> --note <review note>`
+in the worker image. The command requires an active platform admin and writes an admin audit event.
+
 
 ## Rate limits on ElastiCache Serverless for Valkey
 
@@ -421,8 +459,8 @@ A warning is logged in either case.
    `AWS_REGION=eu-west-1 bun run valkey:bootstrap --subnet-ids subnet-a,subnet-b --security-group-ids sg-… [--name coss] [--max-ecpu 5000] [--max-storage-gb 1]`
    It creates a password user limited to the `<prefix>:*` keys and the commands the limiter uses, a disabled
    `default` user, a user group and the serverless cache (Valkey 8, TLS).
-3. Set what it prints (`VALKEY_URL=rediss://…`, `VALKEY_CLUSTER=true`, `RATE_LIMIT_KEY_PREFIX`) for the API,
-   dashboard and worker (which counts the daily inbound limit). The password is only printed when the user is created; `--rotate-password` makes a new one
+3. Set what it gives you (`VALKEY_URL=rediss://…`, in a private temporary file whose path it prints, then `VALKEY_CLUSTER=true`, `RATE_LIMIT_KEY_PREFIX`) for the API,
+   dashboard and worker (which counts the daily inbound limit). The password is only written when the user is created; `--rotate-password` makes a new one
    (running processes apply each bucket's outage policy until they get it).
 4. Set `CLIENT_IP_HEADER` (e.g. `x-forwarded-for`) and `TRUSTED_PROXY_COUNT` (how many of your proxies append
    to it) to match your load balancers. Without them, public unauthenticated entry points use an aggregate
@@ -522,14 +560,13 @@ Cloudflare DNS (coss.com zone, DNS only)
                               │                                                 ├─▶ site   (Next, :3002)  ├─▶ RDS Postgres
                               ├─ /ui, /ui/*         ─▶ coss ui   (Vercel)       └─▶ api    (Bun,  :3001) ─┤   Valkey
                               └─ /origin, /origin/* ─▶ Origin UI (Vercel)    worker (Bun, no load balancer)┘   SES · SNS · SQS
-  Cloudflare DNS (cosslinks.com zone, self-serve account, proxied)
-  track.cosslinks.com + customer tracking domains (Cloudflare for SaaS) ──(X-Tracking-Origin-Verify)──▶ ALB /t/* ─▶ api
-  Cloudflare DNS (cosshooks.com zone, self-serve account, proxied)
+  Cloudflare DNS (cosslinks.com zone, self-serve account, DNS only)
+  track.cosslinks.com + customer tracking domains (CloudFront tenants) ──(X-Tracking-Origin-Verify)──▶ ALB /t/* ─▶ api
+  Cloudflare DNS (each host's zone, self-serve account, DNS only), each host with its own CloudFront distribution
   portal.cosshooks.com (Hooks portal) ──(X-Portal-Origin-Verify)──▶ ALB ─▶ portal (Next, :3003)
-  Cloudflare DNS (cosssign.com zone, self-serve account, proxied)
   cosssign.com (Sign's signing app) ──(X-Sign-Origin-Verify)──▶ ALB ─▶ sign (Next, :3004)
-  Cloudflare DNS (cossforms.com zone, self-serve account, proxied)
   cossforms.com/f/* (Forms' endpoints and hosted pages) ──(X-Forms-Origin-Verify)──▶ ALB ─▶ api
+  cossbook.com (Scheduling's hosted pages) ──(X-Scheduling-Origin-Verify)──▶ ALB ─▶ scheduling (Next, :3005)
   Cloudflare DNS (coss.com zone, DNS only)
   smtp.coss.com ──(TCP 465/2465, 587/2587, client IP preserved)──▶ NLB ─▶ smtp (Bun, :2465 TLS, :2587 STARTTLS)
 ```
@@ -538,8 +575,7 @@ Cloudflare DNS (coss.com zone, DNS only)
 
 - **Network:** a VPC (`10.40.0.0/16`) over us-east-2a/b; public subnets for the ALB and one NAT gateway per AZ,
   private subnets for tasks, RDS and Valkey. Security groups: the ALB takes 443 only from the managed prefix list
-  `com.amazonaws.global.cloudfront.origin-facing` (its own group: the list weighs ~55 rules) and from Cloudflare's
-  IPv4 ranges (tracking domains); each service's tasks only from the ALB on their port (the SMTP relay's from
+  `com.amazonaws.global.cloudfront.origin-facing` (its own group: the list weighs ~55 rules); each service's tasks only from the ALB on their port (the SMTP relay's from
   the internet through the NLB); RDS 5432 and Valkey 6379 only from web, portal, api, worker and smtp.
 - **NAT gateways (required):** the worker delivers customer webhooks to arbitrary public URLs and ports, and domain
   verification in web, api and worker queries public DNS (1.1.1.1 / 8.8.8.8, port 53) directly. AWS traffic stays
@@ -558,14 +594,14 @@ Cloudflare DNS (coss.com zone, DNS only)
   | Priority | Conditions | Target group |
   |---|---|---|
   | 10 | host `api.coss.com` + `X-Origin-Verify` | api |
-  | 20 | path `/t/*` + `X-Tracking-Origin-Verify` (any host: customer tracking domains through Cloudflare) | api |
+  | 20 | path `/t/*` + `X-Tracking-Origin-Verify` (any host: customer tracking domains) | api |
   | 30–80 | the site's paths (`/`, `/pricing`, `/docs*`, `/legal*`, `/llms*.txt`, `/site-assets/*`, root files, `/.well-known*`; 3 per rule) + `X-Origin-Verify` | site |
   | 90 | host `coss.com` + `X-Origin-Verify` (every other path: org slugs, `/dashboard`, `/api/*`, `/_next/*`) | web |
 
   Target groups: health checks `/api/health` (web, site, portal) and `/health` (api), HTTP 200, no database access;
   deregistration delay 30 s. Keep the idle timeout at 60 s: the apps hold idle connections for 75 s
   (`KEEP_ALIVE_TIMEOUT`, Bun `idleTimeout`) so the ALB never reuses one they are closing.
-- **CloudFront + WAF:** two distributions, certificates from ACM in us-east-1, HTTP→HTTPS redirect, a response
+- **CloudFront + WAF:** `coss.com` and `api.coss.com` (and the hosted domains, below), certificates from ACM in us-east-1, HTTP→HTTPS redirect, a response
   headers policy that adds HSTS (2 years, subdomains, preload).
   - `coss.com`: origins `alb` (HTTPS only, custom header `X-Origin-Verify: <secret>`, origin request policy
     `Managed-AllViewer`, so `Host`, cookies and query strings reach the apps) and one per external zone of the coss
@@ -599,21 +635,25 @@ Cloudflare DNS (coss.com zone, DNS only)
   private subnets with the `coss-production-valkey` security group.
 - **SES, SNS, SQS, EventBridge:** created by `ses:bootstrap` (see [Running on Amazon SES](#running-on-amazon-ses)),
   run as a one-off task (below).
+- **DNS, moving to Route 53:** `infra/terraform/dns.tf` holds the `coss.com` and `cosssign.com` zones (aliases to the
+  distributions, the rest in `dns-records.json`); each serves once its registrar points at `terraform output
+  route53_name_servers`. `cosshooks.com`, `cossbook.com`, `cossforms.com` and `cosslinks.com` are registered at
+  Cloudflare, which requires its nameservers, so they stay there as DNS-only records until they can be transferred
+  (ICANN's 60-day lock ends between 2026-12-11 and 2027-01-01). Until a zone moves, keep Route 53 and Cloudflare equal.
 - **DNS (Cloudflare, zone `coss.com`):** `coss.com` and `api.coss.com` are DNS-only CNAMEs (flattened at the apex)
   to their distributions; ACM validation CNAMEs; DKIM and MAIL FROM records of coss.com's own sending domain.
-- **Tracking links (`cosslinks.com`, a self-serve Cloudflare account, not the coss.com zone):** every tracking
+- **Tracking links (`cosslinks.com`, DNS in a self-serve Cloudflare account, not the coss.com zone):** every tracking
   link points at a domain of its own, so a sender's abuse flagged by URL blocklists never lands on coss.com.
-  `track.cosslinks.com` is a **proxied** record pointing at the ALB's DNS name (`terraform output alb_dns_name`):
-  it is the default tracking origin (`TRACKING_PUBLIC_URL`, api + worker) and the Cloudflare for SaaS fallback
-  origin customers CNAME their tracking domains to (`TRACKING_CNAME_TARGET`). coss.com registers each customer domain
-  as a custom hostname (HTTP certificate validation) with `CLOUDFLARE_API_TOKEN` (an account token scoped to the
-  zone, SSL and Certificates: Edit) and `CLOUDFLARE_ZONE_ID`. A request header transform rule sets
-  `X-Tracking-Origin-Verify: <secret>` (Secrets Manager `coss/production/tracking-origin-verify`) on every request
-  in the zone: the ALB forwards `/t/*` with it to the api target group for any host, and nothing else. SSL mode
-  **Full** (zone-wide; the zone serves nothing else): Cloudflare connects with the caller's hostname as SNI, which
-  the ALB's certificate doesn't cover; the header secret is what proves a request came through Cloudflare. The
-  apex redirects to coss.com. Free plan: 100 custom hostnames included, then $0.10 each per month.
-
+  `track.cosslinks.com` is a hosted domain (below) and the default tracking origin (`TRACKING_PUBLIC_URL`, api +
+  worker). Customers' tracking domains are tenants of a CloudFront multi-tenant distribution
+  (`aws_cloudfront_multitenant_distribution.tracking`): coss.com creates a tenant per domain, CloudFront validates the
+  domain over HTTP once its CNAME points at the connection group's routing endpoint (`TRACKING_CNAME_TARGET`), and
+  coss.com attaches the issued certificate to the tenant. `TRACKING_DISTRIBUTION_ID`, `TRACKING_CONNECTION_GROUP_ID`
+  and the target come from `terraform output tracking_tenants`. Tenants reach the ALB through
+  `tracking-origin.cosslinks.com`, a DNS-only CNAME with its own listener certificate, because their hosts aren't on the
+  ALB's. Multi-tenant distributions don't support the legacy logging the other distributions use, so tenants' requests
+  appear only in the ALB's access logs. The ALB forwards `/t/*` with `X-Tracking-Origin-Verify` to the api for any
+  host, and nothing else. The `cosslinks.com` apex redirects to coss.com.
 - **SMTP relay (`smtp.coss.com`):** the `smtp` service behind a network load balancer
   (`infra/terraform/nlb.tf`): TCP listeners 465 and 2465 → container port 2465 (implicit TLS), 587 and 2587 → 2587
   (STARTTLS), client addresses preserved (the relay limits connections and failed logins per address), so the
@@ -626,54 +666,50 @@ Cloudflare DNS (coss.com zone, DNS only)
   `terraform output nlb_dns_name` (Cloudflare can't proxy SMTP). `SMTP_PUBLIC_HOST=smtp.coss.com` (web) shows the
   settings on environment pages; leave it unset on a stage whose relay isn't reachable yet. No SES
   permissions: the relay only stores and enqueues, the worker sends.
-- **Hooks portal (`cosshooks.com`, the same self-serve Cloudflare account as `cosslinks.com`):** `apps/portal`,
-  the page customers embed for their users, runs as the `portal` service on a registrable domain of its own (never
-  under coss.com, which would make it same-site with the dashboard). `portal.cosshooks.com` is a **proxied** record
-  pointing at the ALB (`terraform output alb_dns_name`), which serves it with its own ACM certificate (an SNI
-  listener certificate; validation CNAME from `terraform output portal_certificate_validation_records`, DNS only),
-  so the zone's SSL mode is **Full (strict)**. A request header transform rule sets
-  `X-Portal-Origin-Verify: <secret>` (Secrets Manager `coss/production/portal-origin-verify`) on every request in
-  the zone; the ALB forwards `portal.cosshooks.com` with it to the portal and nothing else. A redirect rule sends
-  the apex to `https://coss.com`. `PORTAL_PUBLIC_URL=https://portal.cosshooks.com` (web, api) makes portal session
-  links point there.
-- **Sign's signing app (`cosssign.com`, the same self-serve Cloudflare account):** `apps/sign` runs as the `sign`
-  service and is set up like the portal, but on the apex: a **proxied** CNAME to the ALB (flattened), its own SNI
-  listener certificate (validation CNAME from `terraform output sign_certificate_validation_records`), SSL mode
-  **Full (strict)**, and a transform rule setting `X-Sign-Origin-Verify: <secret>` (Secrets Manager
-  `coss/production/sign-origin-verify`) for `cosssign.com`. `www` (a proxied `100::`) only redirects to the apex.
-  `SIGN_PUBLIC_URL=https://cosssign.com` (web, api, worker) makes signing links point there. Sign itself stays off
-  until `SIGN_DOCUMENTS_BUCKET` is set (`packages/sign/AGENTS.md`, "Going live").
-- **Forms (`cossforms.com`, in the same self-serve Cloudflare account):**
-  the api serves `/f/*` (form endpoints, hosted pages, submitters' confirmation links) on it, set up like Sign's
-  apex: a **proxied** CNAME to the ALB, its own SNI listener certificate (validation CNAME from
-  `terraform output forms_certificate_validation_records`), SSL mode **Full (strict)**, and a transform rule
-  setting `X-Forms-Origin-Verify: <secret>` (Secrets Manager `coss/production/forms-origin-verify`). The ALB
-  forwards only `/f/*` on that host to the api. `FORMS_PUBLIC_URL=https://cossforms.com` and `FORMS_FILES_BUCKET`
-  (`terraform output forms_files_bucket`), both plain on web, api and worker, switch Forms on: the api serves
-  `/f/*` only on that host in production (`packages/forms/AGENTS.md`, "Production"). A redirect rule sends
-  everything else on the domain (the apex included) to `https://coss.com/docs/forms` (302), next to `www`'s
-  redirect to the apex.
+- **Hosted domains (`infra/terraform/hosted-domains.tf`, `hostedDistributions` in `infra/aws/routing.ts`):** the
+  Hooks portal (`portal.cosshooks.com`), Sign's signing app (`cosssign.com`), Forms (`cossforms.com`) and Scheduling's
+  hosted pages (`cossbook.com`) each live on a registrable domain of their own, so they're never same-site with the
+  dashboard. Each host is a **DNS-only** CNAME (flattened at an apex; Cloudflare, the self-serve account) to a CloudFront
+  distribution of its own (`terraform output hosted_distribution_domains`), which sends that host's origin header
+  (Secrets Manager `coss/production/<host>-origin-verify`); the ALB forwards the host with that header and nothing
+  else. CloudFront validates the ALB's certificate for the host, so each has an SNI listener certificate besides its
+  CloudFront one (validation CNAMEs: the `*_certificate_validation_records` and
+  `edge_certificate_validation_records` outputs). They share the `hosted` web ACL, whose body rules only count
+  because these pages take what people type. Only `/_next/static/*` is cached. A CloudFront function sends everything
+  on the forms host outside `/f/*` to `https://coss.com/docs/forms`; the api serves `/f/*` only on that host in
+  production (`packages/forms/AGENTS.md`, "Production"). `www` of Sign, Forms and Scheduling and the `cosshooks.com`
+  and `cosslinks.com` apexes point at one redirect-only distribution (`HOSTED_REDIRECTS`). `PORTAL_PUBLIC_URL`,
+  `SIGN_PUBLIC_URL`, `FORMS_PUBLIC_URL` and `SCHEDULING_PUBLIC_URL` point the apps' links there; Sign, Forms and
+  Scheduling stay off without their own settings (each package's AGENTS.md, "Going live" or "Production").
 
 ### Monitoring and cost guardrails
 
 - **Errors and uptime:** Sentry (organization `cosscom`). Every server and browser reports errors; the `web` project
   filters errors caused by browser extensions and web crawlers. Uptime monitors check `https://coss.com/api/health`
-  (`web`) and `https://api.coss.com/health` (`api`) every minute from several regions.
+  (`web`) and `https://api.coss.com/health` (`api`) every minute from several regions. They live in Sentry, not this
+  repository, and two more belong there: `https://api.coss.com/health/ready` (the database too; load balancers stay on
+  `/health`, so an outage of it doesn't take every task out of service) and `https://track.cosslinks.com/t/o/uptime`
+  (the tracking host: any token answers `200` with its pixel and records nothing). Sentry's uptime monitors are HTTP
+  only, so `smtp.coss.com` is covered by the healthy-host alarm below, not by a probe from outside.
+- **Worker loops:** one Sentry cron monitor (`worker-loops`, created on first check-in; `watchLoops`,
+  `apps/worker/src/loop.ts`) covers every loop, since Sentry bills per monitor: no check-in for 10 minutes means the worker
+  is gone, and a run stuck for over an hour is reported by name. The `dispatch-backlog` loop reports emails and SMS waiting for dispatch for over 15 minutes.
 - **Alarms** (`infra/terraform/monitoring.tf`, notify the `coss-alerts` SNS topic → `alert_email`): per service,
   fewer running tasks than its minimum, memory above 85 %, CPU above 90 % (autoscaling saturated); load balancer
-  5xx, per-target 5xx and unhealthy targets; RDS CPU, CPU credits (t4g), free storage, free memory and connections
+  5xx, per-target 5xx and unhealthy targets; no healthy task behind the SMTP relay's network load balancer; the SES
+  account's bounce rate above 4 % and complaint rate above 0.08 % (AWS reviews it at 5 % and 0.1 %); RDS CPU, CPU credits (t4g), free storage, free memory and connections
   (> 300 of ~410); Valkey throttling (raise `--max-ecpu`); plus ses:bootstrap's SES event queue backlog and dead
   letters. Route 53 health checks and CloudFront metrics exist only in us-east-1, which the organization's SCP
   denies: uptime is Sentry's.
-- **Cost:** an AWS budget (`monthly_budget_usd`, email at 80 % actual and 100 % forecasted) and Cost Anomaly
-  Detection per service (daily email for anomalies ≥ $25).
+- **Cost:** an AWS budget (`monthly_budget_usd`, email at 80 % actual and 100 % forecasted), one for SES alone
+  (`ses_monthly_budget_usd`, the same alerts) and Cost Anomaly Detection per service (daily email for anomalies ≥ $25).
 
 ### Secrets and environment
 
 One Secrets Manager secret per stage, `coss/production` (JSON), injected through each task definition's `secrets`
 (one key per `secret` variable of `infra/aws/services.ts`): `DATABASE_URL`, `BETTER_AUTH_SECRET`, `VALKEY_URL`,
 `WEBHOOK_SECRETS_KEY`, `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`, `TURNSTILE_SECRET_KEY`, `GOOGLE_CLIENT_SECRET`,
-`GITHUB_CLIENT_SECRET`, `CLOUDFLARE_API_TOKEN`,
+`GITHUB_CLIENT_SECRET`,
 `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `AI_GATEWAY_API_KEY`, `SMTP_TLS_PASSPHRASE` (any random value: it
 only protects the SMTP relay's exported certificate key), `RISK_HASH_KEY` (changing it resets what
 risk assessments remember), `EMAIL_LINK_KEYS` (marketing email's preference, unsubscribe and confirmation links;
@@ -754,13 +790,15 @@ skips, so production never goes back to an older commit unless you dispatch one:
    land before the commit's code does, or without it if a later build fails).
 3. Roll out all seven services at once (`infra/scripts/ecs-deploy.sh <sha> <services…>`): each gets a new revision
    of its latest task definition with the new image, and the script fails if the circuit breaker rolled it back. A
-   service behind the load balancer counts as deployed once its new tasks passed their health checks and the old
-   ones are draining; the worker (no health check) once its old tasks are gone and the new ones ran for 60 s
+   service behind the load balancer counts as deployed once its new tasks passed their health checks and ECS is
+   stopping the old ones, which can still answer requests for up to a minute; the worker (no health check) once its old tasks are gone and the new ones ran for 60 s
    without a failure. Rolling deploys keep 100 % healthy; SIGTERM drains each task (Next and the API finish in-flight requests,
    the worker finishes each loop's current item, the SMTP relay answers messages in progress and sends idle
    clients `421`, so they reconnect to another task).
-4. Record the commit in SSM (`/coss/production/image-tag`, read by Terraform) and invalidate the spec's
-   `cloudFront.invalidateAfterDeploy` paths on the coss.com distribution.
+4. Record the commit in SSM (`/coss/production/image-tag`, read by Terraform), wait for the old site tasks to go
+   (`infra/scripts/ecs-wait-drained.sh`: an old task answering after the invalidation would put its page back in
+   the cache for a year) and invalidate the spec's `cloudFront.invalidateAfterDeploy` paths on the coss.com
+   distribution.
 5. Check routing (`infra/scripts/check-routing.sh`, also runnable locally): the ALB's rules and the coss.com
    distribution's cached behaviours must match `infra/terraform/spec.json`. Routing changes (a new `ZONE_ROUTES`
    entry, i.e. a new site page or zone) only go live with `terraform apply`, which deploys never run, so until
@@ -808,9 +846,11 @@ One-off tasks (from `infra/`, with admin credentials):
 ```sh
 scripts/ecs-task.sh worker -- bun packages/db/src/migrate.ts
 scripts/ecs-task.sh --task-role "$(terraform -chdir=terraform output -raw bootstrap_role_arn)" worker -- \
-  bun apps/worker/scripts/ses-bootstrap.ts --name coss --tenant-prefix coss --alert-email ops@coss.com
+  bun apps/worker/scripts/ses-bootstrap.ts --name coss --tenant-prefix coss --managed-domain inbound.coss.com \
+  --alert-email ops@coss.com  # keep --managed-domain: without it the apps' policies lose inbound mail
 scripts/ecs-task.sh api -- bun packages/tenancy/scripts/create-admin.ts --email you@example.com [--verify-email]
 scripts/ecs-task.sh worker -- bun apps/worker/scripts/webhooks-reencrypt.ts --dry-run
+scripts/ecs-task.sh worker -- bun apps/worker/scripts/scheduling-reencrypt.ts --dry-run
 ```
 
 First deployment of a stage: Terraform (network, RDS, IAM, secrets, ECR, certificates; validation CNAMEs in
@@ -914,6 +954,43 @@ After a leak of the key, do all four steps right away: with the database alone t
 every endpoint's signing secret can be read. Customers should then [roll their endpoint
 secrets](https://coss.com/docs/webhooks#rolling-the-secret) with no grace period. Locally, `bun run
 webhooks:reencrypt` does step 3 against `DATABASE_URL`.
+
+### Rotating `SCHEDULING_DATA_KEYS`
+
+The variable is a comma-separated list of keys, newest first: the first encrypts, every one decrypts. It protects
+attendees' contact details and answers and the identity a booker session is fixed to
+(`scheduling_attendee.encrypted_contact`, `.encrypted_answers`, `scheduling_session.encrypted_attendee`) and
+cancellation reasons (`scheduling_booking.encrypted_cancellation_reason`). Calendar
+credentials aren't in it: they use `WEBHOOK_SECRETS_KEY`, [rotated on their own](#rotating-webhook_secrets_key).
+Customers notice nothing. The web, api and worker services all read it.
+
+1. Generate a key (`openssl rand -base64 32`) and **append** it: `SCHEDULING_DATA_KEYS=<old>,<new>` (`put-secret.sh
+   SCHEDULING_DATA_KEYS --clipboard`). Deploy web, api and worker. Every task can now decrypt with both keys; nothing
+   is encrypted with the new one yet.
+2. Swap the order, `<new>,<old>`, and deploy again. New attendees and booker sessions are encrypted with the new key.
+   Doing step 1 first means no task that only knows the old key ever reads something made with the new one. Wait for
+   the deploy to finish: a task still on the old order keeps writing with the old key.
+3. Run the one-off task from the worker image, first with `--dry-run`, which only counts and also finds unreadable
+   rows:
+
+   ```sh
+   scripts/ecs-task.sh worker -- bun apps/worker/scripts/scheduling-reencrypt.ts --dry-run
+   scripts/ecs-task.sh worker -- bun apps/worker/scripts/scheduling-reencrypt.ts
+   ```
+
+   It rewrites one row at a time with a compare-and-set while traffic continues, so an attendee erased meanwhile stays
+   erased. It exits 1 if something is left over: a row changed while it ran (run it again) or a value no listed key
+   decrypts (it lists the row, column and key id, never content; find that key or accept the loss before going on).
+   Stopped halfway, run it again: finished rows are skipped. `--batch-size` (default 200) sets how many rows it reads
+   at once. It took 7.5 s for 59,000 rows against a local database.
+4. Run it once more with `--dry-run`. It must report `0 to re-encrypt` and exit 0.
+5. Remove the old key, `<new>`, and deploy. Keep the old key somewhere safe until the database's backups from before
+   step 3 have expired, since restoring one needs it. After that, destroy it.
+
+After a leak of the key, do all of this right away, and destroy the old key as soon as step 5 is deployed instead of
+waiting: backups from before the rotation then can't be read by anyone, including you. Locally, `bun run
+scheduling:reencrypt` does step 3 against `DATABASE_URL`. It refuses to run without `SCHEDULING_DATA_KEYS`, so it can
+never fall back on the development key.
 
 ### Rotating `EMAIL_LINK_KEYS`
 

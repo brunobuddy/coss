@@ -1,0 +1,113 @@
+---
+title: Calendars
+description: Keep hosts from being booked over something else, and put bookings on their calendars.
+---
+
+With hundreds of hosts on Google Workspace or Microsoft 365, an admin can authorize a whole domain once
+instead: see [calendar delegation](/docs/scheduling/delegation).
+
+Otherwise, a host connects their calendars on [their own page](/docs/scheduling/embedding), or through your UI.
+For Google and Microsoft, ask for a consent URL and open it in a new window, because providers refuse
+to be framed:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data } = await coss.scheduling.calendars.authorize("doctor_482", {
+  provider: "google",
+  return_url: "https://app.example.com/settings/calendar",
+});
+// Send the host to data?.url. They come back with ?coss_calendar=connected.
+```
+
+`return_url` must be on one of your [allowed origins](/docs/scheduling/embedding). Apple and other
+CalDAV servers use an app-specific password instead:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.calendars.connect("doctor_482", {
+  provider: "caldav",
+  url: "https://caldav.icloud.com",
+  username: "ana@example.com",
+  password: "abcd-efgh-ijkl-mnop",
+});
+```
+
+## What coss.com reads and writes
+
+It keeps **when a calendar is busy**, and nothing else: no titles, attendees or descriptions are read
+through Google or Microsoft or stored from any provider. CalDAV servers send whole events, and everything
+but their times is discarded as they're read. A booking is added to the host's chosen calendar as a
+private event titled "Appointment", with no attendees, so the host's colleagues learn nothing from it
+and their calendar provider sends nobody an invitation.
+
+If hosts need to see who they're meeting, set an event type's `host_calendar_details` to `full`:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.eventTypes.update("evtype_01kd2m9a0b1c2d3e4f5g6h7j8m", {
+  host_calendar_details: "full",
+});
+```
+
+The event is then titled "Intro call with Sam Lee", and its description lists the attendee and any guests with
+their names, emails and phone numbers. These details go to the host's calendar provider, so only turn this on if that
+suits your attendees. Events stay private, nobody is invited through the provider, and answers to your questions never
+go on them. A group session's event has just the event type's title, since its seats come and go. Zoom meetings stay
+neutral, since whoever joins sees their topic.
+
+Changing the setting rewrites upcoming events. Erasing someone takes their details off every event on a connected
+calendar, past ones included, and so does [retention](/docs/scheduling/privacy) once a booking's details expire. HIPAA
+mode refuses `full`, and takes details off events already written.
+
+Coss.com can only reach a calendar while it's connected. Disconnecting takes details off as many events as it can
+first, but copies on a calendar whose access was revoked at the provider, or whose host was deleted, stay there.
+
+A primary calendar counts by default. Choose others with `coss.scheduling.calendars.update`:
+`read_busy` for whether it blocks slots, and `write_target` for whether bookings go on it.
+
+Calendars are read up to 400 days ahead. Past that, a host with a calendar isn't offered, since their time
+can't be checked.
+
+## When a calendar changes
+
+Google and Microsoft tell coss.com about changes within seconds, and every calendar is read again
+every few hours anyway. CalDAV has no such notifications, so it's read every five minutes. Just before
+a booking, the host's calendar is also checked live, for up to two seconds.
+
+If something lands on a booked time anyway, the booking stands and you get
+`scheduling.booking.external_conflict`. The same goes for a host moving or deleting the event: coss.com
+stays the record of what's booked, and never cancels on its own.
+
+<Callout type="warn">
+A foreign event entirely inside a booking's own calendar event can't be detected: calendars report busy
+times without saying whose they are.
+</Callout>
+
+## When a calendar fails
+
+A calendar that can't be read never counts as free.
+
+- **Access lost** (revoked, expired, password changed). The host stops being offered at once. You get
+  `scheduling.calendar.needs_reauth`, they get an email with a link to reconnect, and existing bookings
+  stay.
+- **The provider's having a bad hour.** What's known keeps being used for up to seven hours, or twenty
+  minutes for calendars without notifications, then the host stops being offered until a read works.
+- **A CalDAV server's answer is incomplete**: an event that can't be parsed, one the server won't hand over,
+  or a cut-off response. That's a failed read like the one above, and it lasts until the event is fixed or
+  removed, since coss.com can't tell when that event is busy.
+
+A recurring CalDAV event that's too dense or too unusual to expand, like one repeating every second, still
+leaves the calendar readable: it's expanded as far as is reasonable, and the rest of its span counts as busy.
+
+CalDAV servers must keep a host's calendars on the address they connected with, since the password goes only
+there. iCloud's move from `caldav.icloud.com` to its partition hosts is the one exception.
+
+A hidden host is visible and fixable, and a double-booked patient isn't, so that's the default. To keep
+offering last known times, set `calendar_failure_mode` to `last_known` in your settings. Bookings made
+this way aren't marked in any way.

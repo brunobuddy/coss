@@ -6,6 +6,8 @@ import { Providers } from "@/components/providers";
 export const metadata: Metadata = {
   title: { default: "coss.com", template: "%s · coss.com" },
   description: "One API key and one SDK for email and more.",
+  // Only the sign-in and sign-up pages are for search engines (src/lib/public-metadata.ts).
+  robots: { index: false, follow: false },
   // Served by the site (it owns coss.com's root files, see ZONE_ROUTES in @coss/auth/slugs).
   icons: { icon: "/icon.svg" },
 };

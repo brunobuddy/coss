@@ -1,6 +1,6 @@
 /** The catalog's contents: coss.com's products. */
 
-export type PartId = "email" | "sms" | "video" | "scheduling";
+export type PartId = "email" | "sms" | "inboxes" | "scheduling";
 
 export interface Product {
   id: PartId;
@@ -35,16 +35,23 @@ export const PRODUCTS: readonly Product[] = [
     features: ["Send and receive", "Delivery events on your webhooks", "Suppressions and logs"],
   },
   {
-    id: "video",
-    name: "Video",
-    call: "coss.video",
-    summary: "Rooms and recordings for the calls inside your product.",
-    features: ["Rooms on demand", "Recordings", "Call events on your webhooks"],
+    id: "inboxes",
+    name: "Inboxes",
+    call: "coss.inboxes",
+    href: "/products/inboxes",
+    summary:
+      "Email addresses for your AI agents, with mail kept as threads and replies that thread.",
+    features: [
+      "An address per agent, created with one call",
+      "A signed webhook for every message",
+      "Your own domain or coss.com's",
+    ],
   },
   {
     id: "scheduling",
     name: "Scheduling",
     call: "coss.scheduling",
+    href: "/products/scheduling",
     summary: "Availability and bookings, from the team behind Cal.com.",
     features: [
       "Availability across calendars",

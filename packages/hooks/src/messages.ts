@@ -3,6 +3,13 @@
  * enabled endpoint of the application whose filter matches. Messages without a matching endpoint
  * are still stored, so they show up in the log and can be recovered to an endpoint added later.
  */
+import type { UsageGate } from "@coss/billing/gate";
+import {
+  BUDGET_EXCEEDED_MESSAGES,
+  budgetHoldFor,
+  isOnBillingHold,
+  recordUsage,
+} from "@coss/billing/metering";
 import { db, type Executor, schema } from "@coss/db";
 import { ID_PREFIXES, idTimestamp, isId, newId } from "@coss/db/id";
 import { IDEMPOTENCY_KEY_TTL_MS, requestHash, withIdempotencyKey } from "@coss/db/idempotency";
@@ -232,7 +239,8 @@ export async function replayHookMessage(input: {
  * Sends a message to an application. With an idempotency key, a repeat of the same request (within
  * a day) returns the first message instead of sending again (`replayed`); the key with a different
  * request is `idempotency_key_reused`. Live sends are refused while the organization is suspended
- * (a replay still returns).
+ * or on a billing hold (a replay still returns). A live message is metered once as
+ * `hooks.messages` when it's accepted, whatever its fan-out; test sends and sandbox are free.
  */
 export async function sendHookMessage(input: {
   application: HookApplicationRow;
@@ -242,6 +250,12 @@ export async function sendHookMessage(input: {
   /** Test sends go to this endpoint only, whatever its filter. */
   onlyEndpointId?: string;
   now?: Date;
+  /** Hard usage caps (`@coss/billing`: Free's included messages). Unenforced without one. */
+  billing?: UsageGate | undefined;
+  /** The API key that sent it, for spend attribution and budgets. */
+  apiKeyId?: string | null | undefined;
+  /** The member whose personal key it is. */
+  apiKeyOwnerId?: string | null | undefined;
 }): Promise<{ message: HookMessageRow; replayed: boolean; deliveries: number }> {
   const { application } = input;
   const payloadBytes = checkedMessage(input.eventType, input.payload);
@@ -258,10 +272,46 @@ export async function sendHookMessage(input: {
         "still work. Contact support to resume.",
     );
   }
+  if (env.mode === "live" && (await isOnBillingHold(application.organizationId))) {
+    throw new HookError(
+      "billing_hold",
+      "Live sending is paused: your organization has an overdue invoice or reached its spend or credit limit.",
+    );
+  }
+  const billable = env.mode === "live" && input.onlyEndpointId === undefined;
+  if (billable) {
+    const held = await budgetHoldFor({
+      organizationId: application.organizationId,
+      projectId: env.projectId,
+      apiKeyId: input.apiKeyId,
+      userId: input.apiKeyOwnerId,
+    });
+    if (held) throw new HookError("budget_exceeded", BUDGET_EXCEEDED_MESSAGES[held]);
+  }
   // Whole milliseconds: the id encodes `created_at`, which must equal it exactly.
   const createdAt = new Date(Math.floor(now.getTime()));
   const id = newId(ID_PREFIXES.hookMessage, createdAt.getTime());
-  const send = (tx: Executor) => insertMessage(tx, { ...input, payloadBytes, id, createdAt });
+  const send = async (tx: Executor) => {
+    const sent = await insertMessage(tx, { ...input, payloadBytes, id, createdAt });
+    if (billable) {
+      await recordUsage(tx, {
+        organizationId: application.organizationId,
+        environmentId: application.environmentId,
+        meter: "hooks.messages",
+        quantity: 1,
+        projectId: env.projectId,
+        apiKeyId: input.apiKeyId ?? null,
+        userId: input.apiKeyOwnerId ?? null,
+      });
+      // The cap's row lock is held to the commit: the transaction's last statement.
+      await input.billing?.reserve(tx, {
+        organizationId: application.organizationId,
+        meter: "hooks.messages",
+        quantity: 1,
+      });
+    }
+    return sent;
+  };
   if (key === undefined) {
     const sent = await db.transaction(send);
     return { ...sent, replayed: false };

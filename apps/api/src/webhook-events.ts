@@ -10,6 +10,11 @@ import { SubaccountWebhookEvent } from "@coss/email/subaccount-schemas";
 import { FormSubmissionWebhookEvent } from "@coss/forms/schemas";
 import { AccountWebhookEvent } from "@coss/reputation/schemas";
 import { RiskWebhookEvent } from "@coss/risk/schemas";
+import {
+  SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
+  SchedulingCalendarWebhookEvent,
+} from "@coss/scheduling/schemas";
 import { SignRequestWebhookEvent } from "@coss/sign/schemas";
 import { ReceivedSmsWebhookEvent, SmsWebhookEvent } from "@coss/sms/schemas";
 import { HookEndpointWebhookEvent } from "@coss/webhooks/schemas";
@@ -35,6 +40,9 @@ const WEBHOOK_EVENTS = {
   ReceivedSmsWebhookEvent,
   SignRequestWebhookEvent,
   FormSubmissionWebhookEvent,
+  SchedulingBookingWebhookEvent,
+  SchedulingCalendarDelegationWebhookEvent,
+  SchedulingCalendarWebhookEvent,
 };
 
 export function registerWebhookEvents(app: OpenAPIHono<AppEnv>): void {

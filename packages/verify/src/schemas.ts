@@ -196,7 +196,7 @@ export type CheckVerificationRequestOutput = z.output<typeof CheckVerificationRe
 
 const VerificationSend = z
   .object({
-    channel: z.enum(VERIFY_CHANNELS),
+    channel: z.enum(VERIFY_CHANNELS).meta({ description: "`sms` or `email`." }),
     route: z.enum(VERIFY_SEND_ROUTES).meta({
       description:
         "`own_number`: one of your numbers; `shared_number`: coss.com's; `email`: your sender; `coss_email`: coss.com's sender.",
@@ -221,27 +221,40 @@ export const VerificationObject = z
   .object({
     object: z.literal("verification"),
     id: z.string().meta({ examples: [ID_EXAMPLE] }),
-    channel: z.enum(VERIFY_CHANNELS),
-    to: z.string(),
+    channel: z.enum(VERIFY_CHANNELS).meta({ description: "`sms` or `email`." }),
+    to: z.string().meta({ description: "The phone number (E.164) or address the code goes to." }),
     country: z.string().nullable().meta({ description: "ISO 3166 country of a phone number." }),
     status: z.enum(VERIFICATION_STATUSES).meta({
       description:
         "`pending` until the right code is checked (`approved`) or it ends: `expired`, `canceled`, `failed` (too many wrong codes, or the code couldn't be sent) or `blocked` (the fraud guard stopped it before anything was sent).",
     }),
     failure: z
-      .object({ code: z.string(), message: z.string() })
+      .object({
+        code: z.string().meta({ description: "Machine-readable reason." }),
+        message: z.string().meta({ description: "Human-readable explanation." }),
+      })
       .nullable()
       .meta({ description: "Why it `failed`." }),
     reasons: z.array(Reason).meta({ description: "Why it was `blocked` (empty otherwise)." }),
     attempts: z.number().int().meta({ description: "Wrong codes checked so far." }),
-    max_attempts: z.number().int(),
+    max_attempts: z.number().int().meta({ description: "How many wrong codes end it." }),
     sends: z.array(VerificationSend).meta({ description: "Each time the code was sent." }),
-    tags: z.array(z.object({ name: z.string(), value: z.string() })),
+    tags: z
+      .array(
+        z.object({
+          name: z.string().meta({ description: "The tag's name." }),
+          value: z.string().meta({ description: "The tag's value." }),
+        }),
+      )
+      .meta({ description: "Your tags on the verification." }),
     sandbox: z.boolean().meta({
       description: "Made in a sandbox environment: simulated, and the code is always zeros.",
     }),
-    expires_at: z.iso.datetime(),
-    approved_at: z.iso.datetime().nullable(),
+    expires_at: z.iso.datetime().meta({ description: "When the code stops working." }),
+    approved_at: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "When the right code was checked. `null`: it wasn't." }),
     created_at: z.iso.datetime(),
   })
   .meta({
@@ -351,22 +364,100 @@ export const ListVerificationsQuery = z
 
 export type ListVerificationsQueryOutput = z.output<typeof ListVerificationsQuery>;
 
-// Settings (the dashboard's for now).
+// Settings.
+
+export const VerifySettingsObject = z
+  .object({
+    object: z.literal("verify_settings"),
+    app_name: z.string().meta({ description: "The name codes are sent for." }),
+    app_name_is_default: z
+      .boolean()
+      .meta({ description: "Whether `app_name` is the project's: no name of its own is set." }),
+    code_length: z.number().int().meta({ description: "Digits in a code." }),
+    ttl_seconds: z.number().int().meta({ description: "How long a code works." }),
+    max_attempts: z
+      .number()
+      .int()
+      .meta({ description: "Wrong codes before a verification fails." }),
+    sms_from: z.string().nullable().meta({
+      description: "One of the organization's numbers; `null`: coss.com's shared numbers.",
+    }),
+    email_from: z.string().nullable().meta({
+      description: "An address on one of the organization's verified domains; `null`: coss.com's.",
+    }),
+    allowed_countries: z.array(z.string()).meta({
+      description: "ISO 3166 countries SMS codes may go to.",
+    }),
+  })
+  .meta({
+    id: "VerifySettings",
+    description: "An environment's Verify settings.",
+    examples: [
+      {
+        object: "verify_settings",
+        app_name: "Acme",
+        app_name_is_default: false,
+        code_length: 6,
+        ttl_seconds: 600,
+        max_attempts: 5,
+        sms_from: "+14155550100",
+        email_from: "codes@acme.com",
+        allowed_countries: ["CA", "US"],
+      },
+    ],
+  });
 
 export const UpdateVerifySettingsRequest = z
   .strictObject({
-    app_name: z.string().trim().min(1).max(MAX_APP_NAME_LENGTH).nullable().optional(),
-    code_length: z.number().int().min(MIN_CODE_LENGTH).max(MAX_CODE_LENGTH).optional(),
-    ttl_seconds: z.number().int().min(MIN_TTL_SECONDS).max(MAX_TTL_SECONDS).optional(),
-    max_attempts: z.number().int().min(1).max(MAX_ATTEMPTS_LIMIT).optional(),
-    sms_from: z.string().regex(E164).nullable().optional(),
-    email_from: z.email().nullable().optional(),
+    app_name: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MAX_APP_NAME_LENGTH)
+      .nullable()
+      .optional()
+      .meta({ description: "The name codes are sent for; `null`: the project's." }),
+    code_length: z
+      .number()
+      .int()
+      .min(MIN_CODE_LENGTH)
+      .max(MAX_CODE_LENGTH)
+      .optional()
+      .meta({ description: `Digits in a code, ${MIN_CODE_LENGTH}-${MAX_CODE_LENGTH}.` }),
+    ttl_seconds: z
+      .number()
+      .int()
+      .min(MIN_TTL_SECONDS)
+      .max(MAX_TTL_SECONDS)
+      .optional()
+      .meta({ description: `How long a code works, ${MIN_TTL_SECONDS}-${MAX_TTL_SECONDS} s.` }),
+    max_attempts: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_ATTEMPTS_LIMIT)
+      .optional()
+      .meta({ description: `Wrong codes before a verification fails, 1-${MAX_ATTEMPTS_LIMIT}.` }),
+    sms_from: z.string().regex(E164).nullable().optional().meta({
+      description: "One of the organization's numbers; `null`: coss.com's shared numbers.",
+    }),
+    email_from: z.email().nullable().optional().meta({
+      description:
+        "An address on one of the organization's verified domains (live keys); `null`: coss.com's.",
+    }),
     allowed_countries: z
       .array(z.string().regex(/^[A-Z]{2}$/))
       .max(250)
-      .optional(),
+      .optional()
+      .meta({ description: "ISO 3166 countries SMS codes may go to." }),
   })
-  .meta({ id: "UpdateVerifySettingsRequest", description: "Only the fields given change." });
+  .meta({
+    id: "UpdateVerifySettingsRequest",
+    description: "Only the fields given change.",
+    examples: [{ sms_from: "+14155550100", allowed_countries: ["CA", "GB", "US"] }],
+  });
+
+export type VerifySettingsWire = z.output<typeof VerifySettingsObject>;
 
 export type UpdateVerifySettingsRequestOutput = z.output<typeof UpdateVerifySettingsRequest>;
 
@@ -376,23 +467,44 @@ export const VerificationWebhookEvent = z
   .object({
     id: z.string(),
     object: z.literal("event"),
-    type: z.enum(VERIFY_WEBHOOK_EVENT_TYPES),
+    type: z
+      .enum(VERIFY_WEBHOOK_EVENT_TYPES)
+      .meta({ description: "What happened to the verification." }),
     api_version: z.string().meta({
       description: "The API version the payload is rendered in (your endpoint's version).",
       examples: [LATEST_API_VERSION],
     }),
-    created_at: z.iso.datetime(),
-    data: z.object({
-      verification_id: z.string(),
-      channel: z.enum(VERIFY_CHANNELS),
-      to: z.string(),
-      status: z.enum(VERIFICATION_STATUSES),
-      failure: z.object({ code: z.string(), message: z.string() }).nullable(),
-      reasons: z.array(Reason),
-      tags: z.array(z.object({ name: z.string(), value: z.string() })),
-      sandbox: z.boolean(),
-      occurred_at: z.iso.datetime(),
-    }),
+    created_at: z.iso.datetime().meta({ description: "When the event was created." }),
+    data: z
+      .object({
+        verification_id: z.string().meta({ description: "The verification's id." }),
+        channel: z.enum(VERIFY_CHANNELS).meta({ description: "`sms` or `email`." }),
+        to: z
+          .string()
+          .meta({ description: "The phone number (E.164) or address the code goes to." }),
+        status: z.enum(VERIFICATION_STATUSES).meta({ description: "Its status after this event." }),
+        failure: z
+          .object({
+            code: z.string().meta({ description: "Machine-readable reason." }),
+            message: z.string().meta({ description: "Human-readable explanation." }),
+          })
+          .nullable()
+          .meta({ description: "Why it `failed`. `null` otherwise." }),
+        reasons: z.array(Reason).meta({ description: "Why it was `blocked`. Empty otherwise." }),
+        tags: z
+          .array(
+            z.object({
+              name: z.string().meta({ description: "The tag's name." }),
+              value: z.string().meta({ description: "The tag's value." }),
+            }),
+          )
+          .meta({ description: "Your tags on the verification." }),
+        sandbox: z
+          .boolean()
+          .meta({ description: "Whether it's made in a sandbox environment: simulated." }),
+        occurred_at: z.iso.datetime().meta({ description: "When this happened." }),
+      })
+      .meta({ description: "The verification. Never its code." }),
   })
   .meta({
     id: "VerificationWebhookEvent",

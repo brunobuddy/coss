@@ -1,90 +1,57 @@
-import { Link, router, Stack, useNavigation } from "expo-router";
-import { Building2 } from "lucide-react-native";
-import { useEffect, useRef } from "react";
-import { Pressable } from "react-native";
-import { OrgAvatar, UserAvatar } from "../../components/avatar";
-import { EmptyState } from "../../components/empty";
-import { ListRow, Panel, Ruled } from "../../components/panel";
-import { ErrorState, Loading, PageIntro, Screen } from "../../components/screen";
+import { Redirect, router, Stack } from "expo-router";
+import { useEffect, useState } from "react";
+import { OrganizationList } from "../../components/organization-list";
+import { PageIntro, Screen } from "../../components/screen";
 import { Text } from "../../components/text";
-import { roleLabel } from "../../lib/format";
 import { lastOrganization } from "../../lib/last-org";
 import { useMe } from "../../lib/queries";
 
+/** Opens the only organization or the last one used before anything is drawn; else the list. */
 export default function OrganizationsScreen() {
   const me = useMe();
-  const organizations = me.data?.organizations;
-  const navigation = useNavigation();
-  // Once per sign-in, open the only organization or the last one used; going back keeps this
-  // list reachable. Not over a page a notification or link already opened.
-  const autoOpened = useRef(false);
+  const [last, setLast] = useState<string | null | undefined>();
   useEffect(() => {
-    if (!organizations || autoOpened.current) return;
-    autoOpened.current = true;
-    if (!navigation.isFocused()) return;
-    void (async () => {
-      const last = organizations.length === 1 ? organizations[0]?.slug : await lastOrganization();
-      if (!navigation.isFocused()) return;
-      if (last && organizations.some((org) => org.slug === last)) {
-        router.push({ pathname: "/[org]", params: { org: last } });
-      }
-    })();
-  }, [organizations, navigation]);
+    void lastOrganization().then(setLast);
+  }, []);
+  const organizations = me.data?.organizations;
+  const opened = organizations
+    ? organizations.length === 1
+      ? organizations[0]?.slug
+      : organizations.find((org) => org.slug === last)?.slug
+    : undefined;
+  if (last === undefined || (me.isPending && last)) return null;
+  if (opened) return <Redirect href={{ pathname: "/[org]", params: { org: opened } }} />;
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerRight: () =>
-            me.data ? (
-              <Link asChild href="/settings">
-                <Pressable accessibilityLabel="Account" hitSlop={8}>
-                  <UserAvatar name={me.data.user.name} size={30} />
-                </Pressable>
-              </Link>
-            ) : null,
-        }}
+    <Screen
+      error={me.isError && !me.data ? me.error : null}
+      loading={me.isPending ? "list" : undefined}
+      onRefresh={() => me.refetch()}
+      onRetry={() => me.refetch()}
+      title="Organizations"
+    >
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          accessibilityLabel="Account"
+          icon="person.crop.circle"
+          onPress={() => router.push("/settings")}
+        />
+      </Stack.Toolbar>
+      <PageIntro
+        description="Every organization you're a member of. Pick one to see its projects, email activity and sending reputation."
+        meta={
+          me.data ? (
+            <Text muted variant="mono">
+              {me.data.user.email}
+            </Text>
+          ) : null
+        }
       />
-      {me.isPending ? (
-        <Loading />
-      ) : me.isError && !me.data ? (
-        <ErrorState error={me.error} onRetry={() => me.refetch()} />
-      ) : (
-        <Screen onRefresh={() => me.refetch()} title="Organizations">
-          <PageIntro
-            title="Organizations"
-            description="Every organization you're a member of. Pick one to see its projects, email activity and sending reputation."
-            meta={
-              <Text muted variant="mono">
-                {me.data.user.email}
-              </Text>
-            }
-          />
-          {me.data.organizations.length === 0 ? (
-            <Panel>
-              <EmptyState
-                description="Create an organization on coss.com, then pull to refresh."
-                icon={Building2}
-                title="No organizations yet"
-              />
-            </Panel>
-          ) : (
-            <Panel>
-              <Ruled>
-                {me.data.organizations.map((org) => (
-                  <ListRow
-                    detail={org.slug}
-                    href={{ pathname: "/[org]", params: { org: org.slug } }}
-                    key={org.slug}
-                    leading={<OrgAvatar name={org.name} />}
-                    subtitle={roleLabel(org.role)}
-                    title={org.name}
-                  />
-                ))}
-              </Ruled>
-            </Panel>
-          )}
-        </Screen>
-      )}
-    </>
+      {organizations ? (
+        <OrganizationList
+          onSelect={(org) => router.replace({ pathname: "/[org]", params: { org } })}
+          organizations={organizations}
+        />
+      ) : null}
+    </Screen>
   );
 }

@@ -4,6 +4,7 @@ import { hookEnvShape } from "@coss/hooks/env";
 import { sentryEnvShape } from "@coss/observability/env";
 import { rateLimitEnvShape } from "@coss/ratelimit/env";
 import { riskEnvShape, riskPhoneEnvShape } from "@coss/risk/env";
+import { schedulingEnvShape } from "@coss/scheduling/env";
 import { screeningEnvShape } from "@coss/screening/env";
 import { signStoreEnvShape } from "@coss/sign/env";
 import { smsEnvShape } from "@coss/sms/env";
@@ -73,6 +74,15 @@ export const env = createEnv({
     ...formsPublicEnvShape,
     FORMS_FILES_BUCKET: formsStoreEnvShape.FORMS_FILES_BUCKET,
     ...rateLimitEnvShape,
+    SCHEDULING_PUBLIC_URL: schedulingEnvShape.SCHEDULING_PUBLIC_URL,
+    GOOGLE_CALENDAR_CLIENT_ID: schedulingEnvShape.GOOGLE_CALENDAR_CLIENT_ID,
+    GOOGLE_CALENDAR_CLIENT_SECRET: schedulingEnvShape.GOOGLE_CALENDAR_CLIENT_SECRET,
+    MICROSOFT_CALENDAR_CLIENT_ID: schedulingEnvShape.MICROSOFT_CALENDAR_CLIENT_ID,
+    MICROSOFT_CALENDAR_CLIENT_SECRET: schedulingEnvShape.MICROSOFT_CALENDAR_CLIENT_SECRET,
+    ZOOM_CLIENT_ID: schedulingEnvShape.ZOOM_CLIENT_ID,
+    ZOOM_CLIENT_SECRET: schedulingEnvShape.ZOOM_CLIENT_SECRET,
+    ZOOM_WEBHOOK_SECRET_TOKEN: schedulingEnvShape.ZOOM_WEBHOOK_SECRET_TOKEN,
+    SCHEDULING_DATA_KEYS: schedulingEnvShape.SCHEDULING_DATA_KEYS,
     // Keys what risk assessments remember (velocity, duplicates, fraud reports).
     RISK_HASH_KEY:
       process.env.NODE_ENV === "production"

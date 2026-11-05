@@ -5,6 +5,7 @@ import { listProjectsWithEnvironments } from "@coss/tenancy";
 import { billingBannerState } from "@/lib/billing";
 import { mobileRoute, requireMobileOrgMember } from "@/lib/mobile-api";
 import { toMobileEnvironment, toMobileStanding } from "@/lib/mobile-wire";
+import { schedulingDeps } from "@/lib/scheduling";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,8 @@ export const GET = mobileRoute(
       orgSlug,
     );
     const readBilling = can({ billing: ["read"] });
+    // Without its keys the dashboard's Scheduling pages don't exist either.
+    const scheduling = schedulingDeps() !== null;
     const [standing, projects, billing, budgetHolds] = await Promise.all([
       getReputationStanding(organization.id),
       listProjectsWithEnvironments({ organizationId: organization.id }),
@@ -64,6 +67,8 @@ export const GET = mobileRoute(
         read_sms_sender: can({ smsSender: ["read"] }),
         read_sso: can({ sso: ["read"] }),
         read_scim: can({ scim: ["read"] }),
+        read_scheduling: scheduling && can({ scheduling: ["read"] }),
+        update_scheduling: scheduling && can({ scheduling: ["update"] }),
       },
       projects: projects.map(({ project, environments }) => ({
         id: project.id,

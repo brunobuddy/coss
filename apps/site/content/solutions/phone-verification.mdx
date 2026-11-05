@@ -1,0 +1,185 @@
+---
+title: Phone verification
+description: Verify phone numbers with one-time SMS codes from your own registered numbers, a fraud guard that stops SMS pumping, and Risk line checks.
+seoTitle: "Phone number verification API with SMS codes · coss.com"
+headline: Verify phone numbers with one-time codes.
+mark: verify
+products:
+  - verify
+  - sms
+  - risk
+faq:
+  - question: How do I verify a phone number in my app?
+    answer: Call coss.verify.start() with the number in E.164 form and the user's IP address, then coss.verify.check() with the code they typed. coss.com makes the code, sends it, counts the attempts and expires it, and only a valid check proves the number is theirs.
+  - question: Do I need my own phone number to send codes?
+    answer: For live SMS codes, yes for now. Choose one of your registered numbers in Verify's settings; without one, a live code fails with shared_sender_unavailable. coss.com's shared numbers are being rolled out and will send when you haven't chosen a number. Sandbox environments and email codes need no number.
+  - question: How long does it take to start sending live codes?
+    answer: Live SMS needs a paid plan and a registered number. US 10DLC registration goes through carrier review and usually takes a few days. You can build and test in a sandbox environment at any point.
+  - question: How does coss.com stop SMS pumping?
+    answer: Verify's fraud guard checks every new verification before a code is sent. It blocks premium-rate and non-mobile numbers, Tor exit nodes, entries on your Risk block list, bursts from one IP address, user or number prefix, and prefixes or countries whose codes are rarely entered. A blocked verification is neither sent nor billed.
+  - question: Can I find out whether a number is VoIP before sending a code?
+    answer: Yes. coss.risk.checkPhone() returns the number's line type and carrier, including non_fixed_voip for numbers anyone can get online in minutes. It is a separate call from Verify, and you decide what to do with the answer.
+  - question: What happens if a user asks for the code again?
+    answer: Starting a verification for the same destination while one is pending sends a new code, the earlier one stops working and the expiry restarts. A verification can send at most 5 codes, and each destination gets at most 5 every 10 minutes.
+  - question: Does coss.com store the code?
+    answer: No. Only a keyed hash of the code is kept, until the verification expires, and the text of the SMS is erased once it is sent. The code never appears in logs or webhooks.
+  - question: How do I test verification without sending real texts?
+    answer: Use a sandbox key. The code is always zeros, messages go to the SMS simulator and appear in the dashboard, and nothing is billed. The fraud guard still runs, so a premium-rate test number is blocked as in live environments.
+---
+
+<HeroSample>
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const form: { phone: string; code: string };
+declare const request: { ip: string };
+// ---cut---
+// [!code word:coss.verify.start]
+// 1. Send a code. The fraud guard runs first.
+await coss.verify.start({
+  to: form.phone,
+  ip: request.ip, // the end user's address, not your server's
+  user_id: "user_42",
+});
+
+// 2. Check the code they typed, on your backend.
+const { data: check } = await coss.verify.check({
+  to: form.phone,
+  code: form.code,
+});
+```
+
+</HeroSample>
+
+<Section title="The problem" lede="Texting a code is the easy part. The hard parts are getting a sender past carriers, storing nothing worth stealing, and not paying for fraud.">
+
+Phone verification proves someone has a number, at sign-up or before a sensitive action. It also attracts SMS pumping: scripts request codes for numbers whose owners earn money from every text, and you pay for messages nobody reads. Building it yourself means generating and hashing codes, counting attempts, handling resends and expiry, and working out who's abusing your form.
+
+coss.com covers this with three products on one key: [Verify](/products/verify) for the codes and the fraud guard, [SMS](/products/sms) for the registered number that sends them, and [Risk](/products/risk) for lists of who to allow or block and for checking the line itself.
+
+</Section>
+
+<Section title="How it works" lede="Your backend makes two calls. Risk's phone check is an optional step before them.">
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+declare const form: { phone: string; code: string };
+declare const request: { ip: string };
+// ---cut---
+// Optional: look at the line before spending a code on it.
+const { data: line } = await coss.risk.checkPhone(form.phone);
+if (line?.line_type === "non_fixed_voip") throw new Error("Please use a mobile number.");
+
+// 1. Send a code. The fraud guard runs first.
+const { error } = await coss.verify.start({
+  to: form.phone,
+  ip: request.ip, // the end user's address, not your server's
+  user_id: "user_42",
+});
+if (error?.code === "verification_blocked") throw new Error("We can't send a code right now.");
+
+// 2. Check the code they typed, on your backend.
+const { data: check } = await coss.verify.check({ to: form.phone, code: form.code });
+if (check?.valid) {
+  // The number is theirs.
+}
+```
+
+Read more in the [fraud guard](/docs/verify/fraud-guard), [phone checks](/docs/risk/lookups) and the [API reference](/docs/api-reference/verifications/start-verification).
+
+</Section>
+
+<Section title="Sending live codes" lede="Live codes go from one of your own registered numbers while coss.com's shared numbers roll out.">
+
+1. **Choose a paid plan.** Live SMS is available on paid plans.
+2. **Register a number.** Buy one and register it with the carriers. It must be approved before it can send. See [numbers and registration](/docs/sms/senders).
+3. **Choose it in Verify's settings.** Its messages appear under SMS in your environment and are billed as SMS. Without a number, a live code fails with `shared_sender_unavailable`. See [SMS codes](/docs/verify/sms).
+
+You can see which of your own numbers are ready to send:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: numbers } = await coss.sms.numbers.list();
+const ready = numbers?.data.filter((number) => number.can_send);
+```
+
+You can also build against a sandbox environment, where messages are simulated and the code is always zeros. See [testing Verify](/docs/verify/testing).
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss({ apiKey: "coss_test_…" });
+// ---cut---
+await coss.verify.start({ to: "+15005550006" });
+const { data } = await coss.verify.check({ to: "+15005550006", code: "000000" });
+```
+
+</Section>
+
+<Section title="What you get" lede="Everything between asking for a code and knowing it's them, with the abuse checks in front of it.">
+
+<Features>
+
+<Feature title="Two calls, no code handling">
+`coss.verify.start()` sends a code and `coss.verify.check()` compares what the user typed. Attempts, expiry and resends are handled for you. Starting again for a pending number sends a new code and retires the old one.
+</Feature>
+
+<Feature title="Nothing worth stealing">
+coss.com keeps only a keyed hash of each code, until the verification expires, and erases the message text once it's sent. Codes never appear in logs or webhooks.
+</Feature>
+
+<Feature title="A fraud guard that runs first">
+Each new verification is checked before a code goes out: premium-rate and non-mobile numbers, Tor exit nodes, and velocity per IP, user, number prefix and country. A blocked one is stored with its reasons and costs nothing. See the [fraud guard](/docs/verify/fraud-guard).
+</Feature>
+
+<Feature title="Your Risk lists apply">
+Allow-list entries for a user, IP address or country let a verification through, and block-list entries stop it, using the same lists as [`coss.risk.assess()`](/docs/risk/lists-and-feedback).
+</Feature>
+
+<Feature title="Line type and carrier">
+`coss.risk.checkPhone()` says whether a number exists and whether it's mobile, landline or VoIP, and which network it's on now. See [phone checks](/docs/risk/lookups).
+</Feature>
+
+<Feature title="Allowed countries and opt-outs">
+Codes go only to the countries in Verify's settings, the US and Canada by default. Anything else fails with `country_not_allowed`. Someone who replied STOP to a number can't get codes from it until they reply START.
+</Feature>
+
+<Feature title="Webhooks and logs">
+`verification.approved`, `verification.failed` and `verification.blocked` reach your [webhooks](/docs/webhooks), and each step is a line in your environment's [logs](/docs/logs).
+</Feature>
+
+<Feature title="Email as a second channel">
+Pass an email address instead of a number and the code goes by [email](/docs/verify/email), for users who can't get a text. The calls are the same.
+</Feature>
+
+</Features>
+
+</Section>
+
+<Section title="Specifications" lede="The defaults of an environment without settings, and what each setting allows.">
+
+<Specs>
+<Spec label="Code length">6 digits by default, 4 to 10</Spec>
+<Spec label="Code lifetime">10 minutes by default, 1 to 30 minutes</Spec>
+<Spec label="Wrong codes allowed">5 by default, 1 to 10</Spec>
+<Spec label="Codes per verification">5, the first and its resends</Spec>
+<Spec label="Codes per destination">5 every 10 minutes</Spec>
+<Spec label="Default SMS countries">US and Canada</Spec>
+<Spec label="Live SMS sender">Your own registered number; coss.com's shared numbers as they roll out</Spec>
+<Spec label="Phone checks per organization">5 per second, bursts of 10, 1,000 per day</Spec>
+<Spec label="Verifications kept"><RetentionPeriod of="verifications" /></Spec>
+<Spec label="Sandbox codes">always zeros</Spec>
+</Specs>
+
+</Section>
+
+<Section title="Pricing" lede="You pay per approved verification, plus the SMS that carried the code.">
+
+<UsageRates meters="verify.verifications,verify.sms,risk.phone_checks" />
+
+A blocked verification costs nothing, and one that fails or expires costs only the messages actually sent. Every plan includes <Included meter="risk.phone_checks" />. Sandbox verifications are never billed. See [pricing](/pricing) for the plans.
+
+</Section>

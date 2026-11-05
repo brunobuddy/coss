@@ -46,6 +46,8 @@ export type GrantBalance = {
   effectiveAt: Date;
   expiresAt: Date | null;
   createdAt: Date;
+  /** What the invoice calls it when it's drawn down (default: `Credit applied`). */
+  lineDescription?: string;
 };
 
 /** What a contract was billed in an earlier month (from invoice lines), for commitments. */
@@ -98,7 +100,14 @@ export type DraftLine = {
   detail?: Record<string, unknown>;
 };
 
-export type GrantSource = "fee" | "commitment" | "support" | "promotion" | "refund" | "sla";
+export type GrantSource =
+  | "fee"
+  | "commitment"
+  | "support"
+  | "promotion"
+  | "refund"
+  | "sla"
+  | "threshold";
 
 export type DraftGrant = {
   /** Idempotency key: the same grant is never created twice. */

@@ -24,11 +24,12 @@ import {
   EXTERNAL_ZONES,
   FORMS_HOST,
   FORMS_ORIGIN_VERIFY_HEADER,
-  TRACKING_HOST,
+  HOSTED_REDIRECTS,
+  type HostedDistribution,
   TRACKING_ORIGIN_VERIFY_HEADER,
 } from "../aws/routing.ts";
 import { SERVICES, type ServiceName } from "../aws/services.ts";
-import { awsSpecJson } from "../aws/spec.ts";
+import { awsSpec, awsSpecJson } from "../aws/spec.ts";
 
 const ROOT = path.resolve(import.meta.dir, "../..");
 const read = (file: string) => readFileSync(path.join(ROOT, file), "utf8");
@@ -67,6 +68,7 @@ const SCHEMAS: Record<Exclude<ServiceName, "site">, string[]> = {
   worker: schemaKeys("apps/worker/src/env.ts", emailWorkerEnvShape),
   portal: schemaKeys("apps/portal/src/env.ts", {}),
   sign: schemaKeys("apps/sign/src/env.ts", {}),
+  scheduling: schemaKeys("apps/scheduling/src/env.ts", {}),
   smtp: schemaKeys("apps/smtp/src/env.ts", emailEnvShape),
 };
 
@@ -120,6 +122,33 @@ describe("services", () => {
   });
 });
 
+describe("hosted distributions", () => {
+  const spec = awsSpec();
+  const rules = albListenerRules();
+
+  const distributions = spec.cloudFront.hostedDistributions as Record<string, HostedDistribution>;
+  for (const [name, hosted] of Object.entries(distributions)) {
+    test(`${name} sends the header its load balancer rule requires`, () => {
+      const headers = rules.flatMap((rule) =>
+        rule.conditions.flatMap((condition) =>
+          condition.Field === "http-header" ? [condition.HttpHeaderConfig] : [],
+        ),
+      );
+      expect(headers).toContainEqual({
+        HttpHeaderName: hosted.originVerifyHeader,
+        Values: [hosted.originVerifySecret],
+      });
+    });
+  }
+
+  test("redirects never point at a host that only redirects", () => {
+    const redirects = Object.entries(HOSTED_REDIRECTS);
+    for (const [, { to }] of redirects) {
+      expect(redirects.map(([host]) => `https://${host}`)).not.toContain(to);
+    }
+  });
+});
+
 describe("Dockerfiles", () => {
   const pkg = JSON.parse(read("package.json")) as {
     packageManager: string;
@@ -130,6 +159,13 @@ describe("Dockerfiles", () => {
   const nodeMajor = pkg.engines.node.replace(/^>=/, "");
 
   for (const service of SERVICES) {
+    test(`${service.dockerfile} patches its runtime stage`, () => {
+      const runtime = read(service.dockerfile).split(/ AS runtime\n/)[1] ?? "";
+      expect(runtime).toContain('ARG BASE_PATCH_WEEK=""');
+      expect(runtime).toContain("apt-get -y -qq upgrade");
+      expect(runtime).toContain("--purge --force-remove-essential --force-depends perl-base");
+    });
+
     test(`${service.dockerfile} pins the repo's Bun, Node and turbo`, () => {
       const dockerfile = read(service.dockerfile);
       expect(dockerfile).toContain(`ARG BUN_VERSION=${bunVersion}\n`);
@@ -145,6 +181,13 @@ describe("Dockerfiles", () => {
       expect(dockerfile).toMatch(/^USER (node|bun)$/m);
     });
   }
+
+  test("the API image gets the built output its hosted MCP server runs from", () => {
+    // `.dockerignore` keeps `dist` out of the context, and `--production` drops what builds it.
+    const dockerfile = read("apps/api/Dockerfile");
+    expect(dockerfile).toContain("COPY --from=build-mcp /repo/packages/mcp/dist packages/mcp/dist");
+    expect(dockerfile).toContain("COPY --from=build-mcp /repo/packages/sdk/dist packages/sdk/dist");
+  });
 
   test("a Next app's image includes its public/ folder (the standalone output leaves it out)", () => {
     for (const app of ["web", "site"]) {
@@ -212,7 +255,7 @@ describe("routing", () => {
     expect(sitePaths).not.toContain("/api/*");
   });
 
-  test("tracking routes on customer hostnames reach the API only with Cloudflare's header", () => {
+  test("tracking routes on customer hostnames reach the API only with CloudFront's header", () => {
     const tracking = rules.find((rule) =>
       rule.conditions.some(
         (condition) =>
@@ -232,10 +275,12 @@ describe("routing", () => {
     // Before the coss.com path rules and the dashboard.
     expect(rules.indexOf(tracking as (typeof rules)[number])).toBe(1);
     const worker = SERVICES.find((service) => service.name === "worker");
-    expect(worker?.env.find((v) => v.name === "TRACKING_CNAME_TARGET")?.value).toBe(TRACKING_HOST);
+    const target = worker?.env.find((v) => v.name === "TRACKING_CNAME_TARGET");
+    expect(target).toMatchObject({ kind: "plain", required: true });
+    expect(target?.value).toBeUndefined();
   });
 
-  test("the forms host reaches the API, only on /f/* and only with Cloudflare's header", () => {
+  test("the forms host reaches the API, only on /f/* and only with its origin header", () => {
     const forms = rules.find((rule) =>
       rule.conditions.some(
         (condition) =>
@@ -319,4 +364,18 @@ describe("terraform", () => {
   test("terraform/spec.json matches the spec (run `bun run --cwd infra aws:spec:write`)", () => {
     expect(read("infra/terraform/spec.json")).toBe(awsSpecJson());
   });
+});
+
+describe("TLS to the containers", () => {
+  const entryCommand = (name: string) =>
+    name === "api" ? "apps/api/src/index.ts" : `apps/${name}/server.js`;
+  for (const service of SERVICES.filter((candidate) => candidate.port !== undefined)) {
+    test(`${service.name}: its image serves tlsPort through tls-entry`, () => {
+      const dockerfile = read(`apps/${service.name}/Dockerfile`);
+      expect(service.tlsPort).toBeNumber();
+      expect(dockerfile).toContain(`TLS_PORT=${service.tlsPort}`);
+      expect(dockerfile).toContain("COPY infra/runtime/tls-entry.mjs ./tls-entry.mjs");
+      expect(dockerfile).toContain(`"tls-entry.mjs", "${entryCommand(service.name)}"`);
+    });
+  }
 });

@@ -1,141 +1,219 @@
+import { Badge } from "@coss/ui/components/badge";
 import { Button } from "@coss/ui/components/button";
+import { CheckIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { PRODUCTS } from "@/components/home/parts";
+import { JsonLd } from "@/components/json-ld";
+import {
+  Band,
+  Close,
+  FeatureRow,
+  Heading,
+  Hero,
+  Page,
+  ProductTile,
+  Tray,
+} from "@/components/marketing/kit";
 import { SignUpButton } from "@/components/sign-up-button";
-import { CALENDAR } from "@/lib/calendar";
-import { pageMetadata } from "@/lib/seo";
-import { SHIPYARD } from "@/lib/shipyard";
-
-/** Products of the platform beyond the catalog's four parts, in the same shape. */
-const MORE_PRODUCTS = [
-  {
-    id: "hooks",
-    name: "Hooks",
-    call: "coss.hooks",
-    summary:
-      "Webhooks as a service: send a message once, coss.com delivers it to every endpoint your customers registered.",
-  },
-  {
-    id: "risk",
-    name: "Risk",
-    call: "coss.risk",
-    summary:
-      "Whether a sign-up, login or other event looks like abuse, and why, with rate limiting for your own endpoints.",
-  },
-] as const;
+import { ABOUT_LEDE, ABOUT_PRODUCTS, ABOUT_SECTIONS, ABOUT_TITLE } from "@/lib/about";
+import { aboutPageSchema, pageMetadata } from "@/lib/seo";
 
 const DESCRIPTION =
-  "Supabase made the database something you get by signing up. coss.com does the same for the application layer: email, SMS, video, scheduling, behind one API key and one SDK.";
+  "coss.com is one API key and one SDK for the application layer: email, SMS, inboxes, scheduling and more, built by the team behind Cal.com.";
 
 export const metadata: Metadata = pageMetadata({
-  title: "About · coss.com",
+  title: "About coss.com: one API above your database",
   description: DESCRIPTION,
   path: "/about",
+  markdown: "/about.md",
 });
 
-function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+/** The stack the page argues for: coss.com above the database, which stays where it is. */
+function Layers() {
   return (
-    <section aria-labelledby={id} className="grid gap-4 border-t pt-10 lg:grid-cols-12 lg:gap-10">
-      <h2 className="font-semibold text-2xl tracking-tight lg:col-span-4" id={id}>
-        {title}
-      </h2>
-      <div className="flex max-w-2xl flex-col gap-4 text-pretty text-lg text-muted-foreground leading-snug lg:col-span-8">
-        {children}
-      </div>
-    </section>
-  );
-}
-
-export default function AboutPage() {
-  return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-4 py-16 sm:py-24">
-      <header className="flex max-w-3xl flex-col gap-5">
-        <h1 className="text-balance font-semibold text-[clamp(2.5rem,6vw,4.5rem)] leading-[0.95] tracking-[-0.035em]">
-          Supabase but for non-db shit.
-        </h1>
-        <p className="text-pretty text-muted-foreground text-xl leading-snug">
-          Supabase does God's work for developers: it took Postgres, the hardest part of every stack
-          to run well, and turned it into something you get by signing up.{" "}
-          <strong className="font-semibold text-foreground">
-            coss.com does the same for everything that sits above the database.
-          </strong>{" "}
-          Email, SMS, video, scheduling: one API key, one SDK, one bill.
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-1 rounded-2xl bg-muted/72 p-1">
+      <div className="relative flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-xs/5 sm:p-6">
+        <p className="flex items-baseline justify-between gap-4">
+          <span className="font-heading font-semibold text-xl">coss.com</span>
+          <span className="font-mono text-muted-foreground text-xs">
+            one key, one SDK, one bill
+          </span>
         </p>
-      </header>
-
-      <Section id="data-layer" title="What Supabase did for the data layer">
-        <p>
-          Before Supabase, a new product started with a week of plumbing: a database to host, back
-          up and upgrade, auth to bolt on, files to put somewhere, a way to push changes to the
-          browser. Supabase folded all of that into a project URL and an API key, kept Postgres at
-          the centre, and open-sourced the lot. The data layer became a solved problem.
-        </p>
-        <p>
-          We're fans. coss.com itself runs on Postgres, and we have no plans to host yours. Keep
-          your database where it is: Supabase, Neon, RDS, a box under your desk.
-        </p>
-      </Section>
-
-      <Section id="application-layer" title="What's left once the database is solved">
-        <p>
-          A working product still has to reach people. It sends a receipt, texts a verification
-          code, puts two users on a call, books a meeting. Each of those has been a separate vendor:
-          its own account, key, dashboard, webhook format, retry rules, rate limits, invoice and
-          compliance paperwork. Four vendors to ship one product, and four places to look when
-          something doesn't arrive.
-        </p>
-        <p>
-          That is the application layer, and it is what coss.com is for. Not the data under your
-          app, but everything your app does with it.
-        </p>
-      </Section>
-
-      <Section id="one-vendor" title="One vendor for the application layer">
-        <p>
-          Every coss.com product is built the same way: one key, one SDK namespace, the same
-          webhooks, logs, rate limits, idempotency and API versioning. Learn one and you know them
-          all.
-        </p>
-        <ul className="flex flex-col divide-y border-y text-base">
-          {[...PRODUCTS, ...MORE_PRODUCTS].map((product) => (
-            <li className="grid gap-1 py-3 sm:grid-cols-[11rem_1fr] sm:gap-4" key={product.id}>
-              <span className="flex flex-col">
-                <span className="font-medium text-foreground">{product.name}</span>
-                <code className="font-mono text-muted-foreground text-xs">{product.call}</code>
-              </span>
-              <span>{product.summary}</span>
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {ABOUT_PRODUCTS.map((product) => (
+            <li className="flex items-center gap-2.5 text-sm" key={product.id}>
+              <ProductTile size="sm" slug={product.id} />
+              {product.name}
             </li>
           ))}
         </ul>
-        <p>
-          Behind the products sit the pieces every one of them needs: verified domains, receiving,
-          suppressions, DMARC and reputation, delivery logs and drains, signed webhooks, audit log,
-          metered billing. Those are built once and shared, not reinvented per product.
-        </p>
-      </Section>
+      </div>
+      <p className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 py-3.5 text-sm sm:px-6">
+        <span className="font-medium">Your database</span>
+        <span className="text-muted-foreground">Supabase, Neon, RDS, a box under your desk</span>
+      </p>
+    </div>
+  );
+}
 
-      <Section id="open" title="Open source, built for agents">
-        <p>
-          The platform is open source under the AGPL, with an MIT SDK, MCP server and CLI, so what
-          you build on stays inspectable and yours to run. The docs are written so a coding agent
-          can wire a product in from one prompt, and so can you.
-        </p>
-        <p>
-          coss.com is built by the team behind Cal.com. {SHIPYARD.name} and {CALENDAR.name} come
-          from the same shop.
-        </p>
-        <div className="flex flex-wrap gap-2.5 pt-2">
-          <SignUpButton />
-          <Button className="px-4" render={<Link href="/docs/quickstart" />} variant="outline">
-            Quickstart
-          </Button>
-          <Button render={<Link href="/pricing" />} variant="ghost">
-            Pricing
-          </Button>
+/** What every extra vendor brings with it. */
+const PER_VENDOR = ["Account", "Key", "Dashboard", "Webhook format", "Retry rules", "Invoice"];
+
+function FourVendors() {
+  return (
+    <Tray flush title="Four vendors to ship one product">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[26rem] text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="py-2.5 ps-4 text-left font-normal text-muted-foreground">
+                <span className="sr-only">Each vendor brings</span>
+              </th>
+              {ABOUT_PRODUCTS.slice(0, 4).map((product) => (
+                <th className="px-2 py-2.5 text-center font-normal" key={product.id}>
+                  <span className="sr-only">{product.name}</span>
+                  <ProductTile size="sm" slug={product.id} />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {PER_VENDOR.map((thing) => (
+              <tr className="border-b last:border-b-0" key={thing}>
+                <th className="py-2.5 ps-4 text-left font-normal" scope="row">
+                  {thing}
+                </th>
+                {ABOUT_PRODUCTS.slice(0, 4).map((product) => (
+                  <td className="px-2 py-2.5 text-center text-muted-foreground" key={product.id}>
+                    <span className="sr-only">Its own</span>
+                    <CheckIcon aria-hidden className="mx-auto size-3.5" />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Tray>
+  );
+}
+
+const [DATA_LAYER, APPLICATION_LAYER, ONE_VENDOR, OPEN] = ABOUT_SECTIONS;
+
+/** The pieces behind the products, from the section's closing sentence (shared with `/about.md`). */
+const SHARED_PIECES = [
+  "Verified domains",
+  "Receiving",
+  "Suppressions",
+  "DMARC and reputation",
+  "Delivery logs and drains",
+  "Signed webhooks",
+  "Audit log",
+  "Metered billing",
+];
+
+export default function AboutPage() {
+  return (
+    <Page>
+      <JsonLd data={aboutPageSchema(DESCRIPTION)} />
+      <Hero
+        actions={
+          <>
+            <SignUpButton size="lg" />
+            <Button
+              className="px-5"
+              render={<Link href="/docs/quickstart" />}
+              size="lg"
+              variant="outline"
+            >
+              Quickstart
+            </Button>
+          </>
+        }
+        headline={ABOUT_TITLE}
+        lede={<p>{ABOUT_LEDE.after}</p>}
+      >
+        <Layers />
+      </Hero>
+
+      <Band className="mt-8">
+        <div className="flex flex-col gap-16 sm:gap-24">
+          <FeatureRow
+            body="Supabase folded the plumbing into a project URL and an API key, kept Postgres at the centre, and open-sourced the lot. coss.com runs on Postgres too, and we have no plans to host yours."
+            title={DATA_LAYER.title}
+          >
+            <Tray title="Keep your database where it is">
+              <ul className="flex flex-wrap gap-2">
+                {["Supabase", "Neon", "RDS", "A box under your desk"].map((place) => (
+                  <li key={place}>
+                    <Badge size="lg" variant="outline">
+                      {place}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            </Tray>
+          </FeatureRow>
+          <FeatureRow
+            body="A working product still has to reach people, and each way of reaching them has been a separate vendor. That means four places to look when something doesn't arrive."
+            reverse
+            title={APPLICATION_LAYER.title}
+          >
+            <FourVendors />
+          </FeatureRow>
         </div>
-      </Section>
-    </main>
+      </Band>
+
+      <Band muted>
+        <Heading
+          id={ONE_VENDOR.id}
+          lede="One key, one SDK namespace, the same webhooks, logs, rate limits, idempotency and API versioning. Learn one and you know them all."
+          title={ONE_VENDOR.title}
+        />
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {ABOUT_PRODUCTS.map((product) => (
+            <li key={product.id}>
+              <Link
+                className="flex h-full flex-col gap-3 rounded-xl border bg-card p-4 shadow-xs/5 transition-colors hover:bg-accent/50"
+                href={`/products/${product.id}`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <ProductTile size="sm" slug={product.id} />
+                  <span className="font-medium">{product.name}</span>
+                  <code className="ms-auto font-mono text-muted-foreground text-xs">
+                    {product.call}
+                  </code>
+                </span>
+                <span className="text-pretty text-muted-foreground text-sm leading-snug">
+                  {product.summary}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <p className="text-muted-foreground text-sm">
+            Built once and shared, not reinvented per product
+          </p>
+          <ul className="flex max-w-3xl flex-wrap justify-center gap-2">
+            {SHARED_PIECES.map((piece) => (
+              <li key={piece}>
+                <Badge size="lg" variant="outline">
+                  {piece}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Band>
+
+      <Close title={OPEN.title}>
+        {OPEN.paragraphs.map((paragraph) => (
+          <p className="mt-2 first:mt-0" key={paragraph}>
+            {paragraph}
+          </p>
+        ))}
+      </Close>
+    </Page>
   );
 }

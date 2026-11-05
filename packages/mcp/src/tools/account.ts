@@ -49,6 +49,7 @@ export function registerAccountTools(ctx: ToolContext): void {
             ? { access: environment.api_key.access, permissions: environment.api_key.permissions }
             : {}),
         },
+        ...(environment ? { hipaa_mode: environment.organization.hipaa_mode } : {}),
         reputation,
         billing: billing && {
           plan: billing.plan,

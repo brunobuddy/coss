@@ -1,7 +1,7 @@
 import "server-only";
 import { orgAccess, SIGN_IN_PATH } from "@coss/auth/org-access";
 import { type OrgPermissions, orgRoleCan } from "@coss/auth/permissions";
-import { getMembership, type Membership } from "@coss/tenancy";
+import { getMembership, type Membership, touchHipaaSession } from "@coss/tenancy";
 import type { AdminActor } from "@coss/tenancy/admin";
 import { setTag, setUser } from "@sentry/nextjs";
 import { cookies, headers } from "next/headers";
@@ -75,6 +75,11 @@ export const requireOrgMember = cache(async (orgSlug: string): Promise<OrgContex
   const membership = await getMembership({ userId: session.user.id, organizationSlug: orgSlug });
   if (!membership) notFound();
   setTag("organization_id", membership.organization.id);
+  if (membership.hipaaMode) {
+    // Also covers an impersonation that began before the mode was turned on.
+    if (session.session.impersonatedBy) notFound();
+    if ((await touchHipaaSession(session.session)) === "idle") redirect(SIGN_IN_PATH);
+  }
   const access = orgAccess(membership, session);
   if (access.kind === "redirect") redirect(access.to);
   const can = memberCan(membership);

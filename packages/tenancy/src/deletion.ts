@@ -54,6 +54,9 @@ const {
   riskListEntry,
   riskReport,
   riskUserNetwork,
+  schedulingBooking,
+  schedulingBusyInterval,
+  schedulingLimitBucket,
   organizationDeletion,
   organizationSuspension,
   inboxThread,
@@ -572,6 +575,15 @@ async function deleteOrganizationData(
           eq(formSubmission.organizationId, organizationId),
         ),
       ],
+      // Bookings (their attendees, claims, history, calendar events and notifications cascade).
+      [
+        schedulingBooking,
+        schedulingBooking.id,
+        and(
+          eq(schedulingBooking.environmentId, environmentId),
+          eq(schedulingBooking.organizationId, organizationId),
+        ),
+      ],
       // Risk assessments (their feedback cascades) and what the environment remembers.
       ...[riskAssessment, riskIdentity, riskReport, riskListEntry, riskUserNetwork].map(
         (table) =>
@@ -688,6 +700,29 @@ async function deleteOrganizationData(
       signFakeObject,
       signFakeObject.key,
       eq(signFakeObject.organizationId, organizationId),
+      batchSize,
+      signal,
+    ))
+  )
+    return false;
+  // Scheduling's busy times (many rows per host, otherwise a slow cascade), and limit buckets (no FK).
+  if (
+    !(await deleteInBatches(
+      deletion,
+      schedulingBusyInterval,
+      schedulingBusyInterval.id,
+      eq(schedulingBusyInterval.organizationId, organizationId),
+      batchSize,
+      signal,
+    ))
+  )
+    return false;
+  if (
+    !(await deleteInBatches(
+      deletion,
+      schedulingLimitBucket,
+      schedulingLimitBucket.scopeId,
+      eq(schedulingLimitBucket.organizationId, organizationId),
       batchSize,
       signal,
     ))

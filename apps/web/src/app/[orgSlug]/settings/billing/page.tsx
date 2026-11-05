@@ -3,6 +3,7 @@ import {
   ADD_ONS,
   type AddOnDefinition,
   billingOverview,
+  CREDIT_POLICY,
   catalogAddOn,
   collectInvoiceNow,
   completePaymentSetup,
@@ -21,6 +22,7 @@ import {
   usageByDay,
   usageByEnvironment,
 } from "@coss/billing";
+import { settingsHref } from "@coss/dashboard-routes";
 import { listEnvironments, listProjects } from "@coss/tenancy";
 import { Alert, AlertDescription, AlertTitle } from "@coss/ui/components/alert";
 import { Badge } from "@coss/ui/components/badge";
@@ -43,6 +45,7 @@ import {
   SettingsSection,
   SettingsTable,
 } from "@/components/settings";
+import { SupportLink } from "@/components/support/support-link";
 import { env } from "@/env";
 import { recordAudit } from "@/lib/audit";
 import { billingRuntime, systemOrganizationId } from "@/lib/billing";
@@ -167,7 +170,7 @@ export default async function BillingPage({
     usageByEnvironment(organization.id, period),
     environmentLabels(organization.id),
   ]);
-  const { account, state, pending, estimate, holds } = overview;
+  const { account, state, pending, estimate, holds, credit } = overview;
   const plan = PLANS[state.terms.plan];
   const contract = state.contract;
   const selfServe = !contract || contract.kind === "self_serve";
@@ -232,7 +235,21 @@ export default async function BillingPage({
               ? "An invoice is overdue. Pay it below and sending resumes right away."
               : holds.some((hold) => hold.reason === "spend_limit")
                 ? "This month's usage reached your spend limit. Raise it below, or sending resumes next month."
-                : "coss.com paused live sending for billing reasons. Contact support."}{" "}
+                : holds.some((hold) => hold.reason === "credit_limit")
+                  ? "Your organization reached its credit limit, or a usage charge failed. Pay anything open below; the limit rises as payments settle."
+                  : "coss.com paused live sending for billing reasons."}{" "}
+            {holds.some(
+              (hold) => hold.reason === "delinquent" || hold.reason === "spend_limit",
+            ) ? null : (
+              <>
+                <SupportLink
+                  orgSlug={context.organization.slug}
+                  subject="Billing hold"
+                  topic="billing"
+                />
+                .{" "}
+              </>
+            )}
             Sandbox keys keep working.
           </AlertDescription>
         </Alert>
@@ -272,9 +289,11 @@ export default async function BillingPage({
         <BillingFigures>
           <BillingFigure
             detail={
-              estimate.totals.creditCents > 0n
-                ? `${formatCents(estimate.totals.creditCents)} paid by credit`
-                : "Live usage so far"
+              estimate.alreadyChargedCents > 0n
+                ? `${formatCents(estimate.alreadyChargedCents)} already charged`
+                : estimate.totals.creditCents > 0n
+                  ? `${formatCents(estimate.totals.creditCents)} paid by credit`
+                  : "Live usage so far"
             }
             label="Usage this month"
             value={formatCents(estimate.usageCents)}
@@ -358,6 +377,17 @@ export default async function BillingPage({
                 <>
                   {price}
                   {catalog ? `. ${catalog.description}` : "."}
+                  {context.hipaaMode && !catalog && /hipaa/i.test(name) ? (
+                    <>
+                      {" "}
+                      <Link
+                        className="underline underline-offset-4"
+                        href={`/${organization.slug}/settings/compliance`}
+                      >
+                        See what it includes
+                      </Link>
+                    </>
+                  ) : null}
                   {waiting ? (
                     <span className="block text-foreground">
                       Waiting for its payment
@@ -658,6 +688,38 @@ export default async function BillingPage({
         ) : null}
       </SettingsSection>
 
+      {credit ? (
+        <SettingsSection
+          description="What coss.com carries for your organization before live sending pauses."
+          title="Credit limit"
+        >
+          <SettingsRow
+            description={
+              <>
+                {formatCents(credit.usedCents)} in use: usage not invoiced yet, unpaid invoices and
+                usage charges from the last {CREDIT_POLICY.settleDays} days.
+                {credit.customLimit ? null : " The limit rises on its own as payments settle."}{" "}
+                <SupportLink
+                  orgSlug={organization.slug}
+                  subject="Raise our credit limit"
+                  topic="billing"
+                />
+                .
+              </>
+            }
+            label={formatCents(credit.limitCents)}
+          >
+            {null}
+          </SettingsRow>
+          {credit.thresholdCents === null ? null : (
+            <SettingsNote>
+              When usage not invoiced yet reaches {formatCents(credit.thresholdCents)}, it's charged
+              to your payment method right away and comes off this month's invoice.
+            </SettingsNote>
+          )}
+        </SettingsSection>
+      ) : null}
+
       <SettingsSection
         description={
           <>
@@ -665,7 +727,7 @@ export default async function BillingPage({
               ? "Limits and alerts for usage beyond your plan."
               : "Only owners can change these."}{" "}
             Budgets for members, projects and API keys are on the{" "}
-            <Link className="underline" href={`/${organization.slug}/spend/budgets`}>
+            <Link className="underline" href={settingsHref(organization.slug, "/spend/budgets")}>
               Spend
             </Link>{" "}
             page.

@@ -1,0 +1,94 @@
+---
+title: Scheduling
+description: Let your users be booked, inside your own product, with calendars and double-booking handled for you.
+icon: Calendar
+---
+
+Scheduling is for products where people book people: telehealth, marketplaces, tutoring, services.
+You add your doctors or tutors as **hosts**, they connect their calendars and set their hours, and
+your customers book them, through the API or a page you embed. It uses the same API key, logs,
+webhooks and sandbox environments as everything else.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: host } = await coss.scheduling.hosts.create({
+  uid: "doctor_482",
+  name: "Dr. Ana Reyes",
+  email: "ana@example.com",
+  time_zone: "America/New_York",
+});
+
+await coss.scheduling.schedules.create("doctor_482", {
+  rules: [{ days: [1, 2, 3, 4, 5], start: "09:00", end: "17:00" }],
+});
+
+const { data: eventType } = await coss.scheduling.eventTypes.create({
+  title: "Initial consultation",
+  duration_minutes: 30,
+  buffer_after_minutes: 10,
+  hosts: [{ host: "doctor_482" }],
+});
+```
+
+Then ask when it can be booked, and book it:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const eventTypeId = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+const { data: slots } = await coss.scheduling.slots.list(eventTypeId, {
+  start: "2027-01-04T00:00:00Z",
+  end: "2027-01-11T00:00:00Z",
+});
+
+const { data: booking, error } = await coss.scheduling.bookings.create({
+  event_type: eventTypeId,
+  start: slots!.data[0]!.start,
+  attendee: {
+    uid: "patient_77",
+    name: "Sam Lee",
+    email: "sam@example.com",
+    time_zone: "America/Chicago",
+  },
+});
+```
+
+## What it takes care of
+
+- **Double-booking.** The database refuses two overlapping bookings of one host, whatever races:
+  a retry, a second tab or two people clicking at once. A time that's gone answers
+  `slot_unavailable`.
+- **Calendars.** Google, Microsoft and CalDAV (Apple, Nextcloud, Fastmail). Coss.com reads when
+  they're busy and adds bookings to them. It never keeps your hosts' event titles.
+- **Time zones.** Hours stay in the host's local time across daylight saving changes, and a recurring
+  booking stays at the attendee's local time.
+- **Who gets told.** Confirmations, [reminders](/docs/scheduling/reminders) and calendar invitations, from your domain. You can turn
+  any of them off.
+
+## Where to next
+
+- [Hosts and availability](/docs/scheduling/hosts): schedules, overrides, time zones.
+- [Why isn't a slot available?](/docs/scheduling/bookings#why-isnt-a-time-available): explain one slot's availability, host by host.
+- [Calendars](/docs/scheduling/calendars): connecting them, and what happens when one fails.
+- [Bookings](/docs/scheduling/bookings): holds for taking payment, approval, rescheduling, recurring series.
+- [Pools and groups](/docs/scheduling/pools-and-groups): any available host, panels and classes.
+- [Embedding](/docs/scheduling/embedding): coss.com's pages in your app, and building your own.
+- [Privacy](/docs/scheduling/privacy): what's stored, for how long, and health data.
+- [Testing](/docs/scheduling/testing): sandbox environments and simulated calendars.
+
+Each booking is <Rate meter="scheduling.bookings" />, charged when it's confirmed. A group session is one booking however many
+attend, and each occurrence of a series is one. Rescheduling is free, and a cancelled booking stays
+charged. Free plans include 100 a month, and sandbox environments are free.
+
+## Tools
+
+- **CLI**: [`coss scheduling`](/docs/cli#scheduling) `hosts`, `event-types`, `slots`, `bookings`, `booking`, `cancel`
+  and `calendars`.
+- **MCP server**: [coding agents](/docs/mcp#tools) get `save_scheduling_host`, `save_scheduling_event_type`,
+  `list_scheduling_slots`, `create_scheduling_booking`, `reschedule_scheduling_booking`,
+  `cancel_scheduling_booking` and more.
+- **Other languages**: the [API reference](/docs/api-reference) shows every operation in Python, Go, Ruby,
+  PHP, Java and .NET.

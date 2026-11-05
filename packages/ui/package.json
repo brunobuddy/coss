@@ -9,7 +9,8 @@
     "./hooks/*": "./src/hooks/*.ts",
     "./lib/*": "./src/lib/*.ts",
     "./globals.css": "./src/styles/globals.css",
-    "./theme.css": "./src/styles/theme.css"
+    "./theme.css": "./src/styles/theme.css",
+    "./finish.css": "./src/styles/finish.css"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -26,7 +27,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "catalog:",
-    "motion": "catalog:",
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {

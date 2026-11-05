@@ -1,3 +1,4 @@
+import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { SITE_ASSET_PREFIX } from "@coss/auth/slugs";
 import { sentryBuildOptions } from "@coss/observability/build";
@@ -7,6 +8,11 @@ import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 import { securityHeaders } from "./src/lib/security-headers.ts";
 import { DEV_DASHBOARD_ORIGIN } from "./src/lib/site.ts";
+
+// fumadocs-twoslash's workers each delete the shared `.twoslash` folder when they find it empty,
+// which can fail another worker's mkdir mid-build (ENOENT). A file in it keeps the folder there.
+mkdirSync(path.join(import.meta.dirname, ".twoslash"), { recursive: true });
+writeFileSync(path.join(import.meta.dirname, ".twoslash/.keep"), "");
 
 // Read when `next build`/`next dev` loads this file: the standalone server reuses the serialized
 // result and never runs it again, so nothing stage-specific may be decided here.
@@ -24,6 +30,7 @@ const nextConfig: NextConfig = {
     "@coss/observability",
     "@coss/ratelimit",
     "@coss/reputation",
+    "@coss/sms",
     "kloq",
   ],
   // Twoslash drives the TypeScript compiler while MDX compiles; it must not be bundled.
@@ -43,7 +50,14 @@ const nextConfig: NextConfig = {
   // `next build` doesn't check the same project again. Image builds keep the check.
   typescript: { ignoreBuildErrors: process.env.SKIP_BUILD_TYPECHECK === "1" },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders({ dev }) }];
+    return [
+      { source: "/:path*", headers: securityHeaders({ dev }) },
+      // Mail clients load the emails' font from another origin.
+      {
+        source: "/site-assets/email/:file*",
+        headers: [{ key: "Access-Control-Allow-Origin", value: "*" }],
+      },
+    ];
   },
   async rewrites() {
     return [
@@ -55,6 +69,8 @@ const nextConfig: NextConfig = {
       { source: "/products/:slug.md", destination: "/products/md/:slug" },
       { source: "/solutions/:slug.md", destination: "/solutions/md/:slug" },
       { source: "/compare/:slug.md", destination: "/compare/md/:slug" },
+      { source: "/pricing.md", destination: "/pricing/md" },
+      { source: "/about.md", destination: "/about/md" },
       // In production the dashboard's zone serves /api/auth and browser monitoring on the same origin.
       ...(dev
         ? [

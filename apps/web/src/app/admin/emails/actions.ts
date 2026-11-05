@@ -21,10 +21,11 @@ export async function revealEmailContentAction(
     const { actor } = await requirePlatformAdminAction();
     const emailId = formString(formData, "emailId");
     if (!isId("email", emailId)) throw new ActionError("Email not found.");
-    const [context, content] = await Promise.all([
-      getEmailForAdmin(emailId),
-      getEmailContentForAdmin(emailId),
-    ]);
+    const context = await getEmailForAdmin(emailId);
+    if (context?.hipaaMode) {
+      throw new ActionError("This organization is in HIPAA mode, so staff can't view its content.");
+    }
+    const content = context && (await getEmailContentForAdmin(emailId));
     if (!context || !content) throw new ActionError("Email not found. It may have been purged.");
     await recordAdminAction({
       actor,

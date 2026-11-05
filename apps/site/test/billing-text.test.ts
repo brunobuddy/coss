@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { PLAN_KEYS } from "@coss/billing/catalog";
-import { renderBillingComponents } from "../src/lib/billing-text";
+import {
+  includedUnitsText,
+  planRows,
+  rateRows,
+  renderBillingComponents,
+} from "../src/lib/billing-text";
 
 describe("renderBillingComponents", () => {
   test("renders the plans and the usage rates from the catalog", () => {
@@ -28,9 +33,9 @@ describe("renderBillingComponents", () => {
     );
     expect(text).toContain("| SMS (US) | $0.0142 per segment | |");
     expect(text).toContain(
-      "| SMS (other countries) | $0.0208 to $0.1134 per segment | By country: coss.com/pricing#sms |",
+      "| SMS (other countries) | $0.022 to $0.1134 per segment | By country: coss.com/pricing#sms |",
     );
-    expect(text).toContain("| SMS received (US) | $0.0148 per segment | |");
+    expect(text).toContain("| SMS received (US) | $0.016 per segment | |");
     expect(text).toContain("| SMS phone numbers (toll-free) | $2.15 per number-month | |");
     expect(text).toContain(
       "| SMS registration fees (campaign vetting) | $15.00 | Passed through at cost |",
@@ -38,7 +43,7 @@ describe("renderBillingComponents", () => {
     expect(text).toContain(
       "| SMS rate | Sandbox only | 10 SMS segments a second, 10,000 a day | 30 SMS segments a second, 100,000 a day | Custom |",
     );
-    expect(text).toContain("| Video | $1.50 per 1,000 participant-minutes | |");
+    expect(text).not.toContain("Video");
     expect(text).toContain("| Scheduling | $0.10 per booking | |");
     expect(text.split("\n")[0]?.split("|").length).toBe(PLAN_KEYS.length + 3);
   });
@@ -82,5 +87,27 @@ describe("renderBillingComponents", () => {
       ),
     );
     expect(typed).toEqual([]);
+  });
+});
+
+describe("what the plans say about Scheduling and HIPAA", () => {
+  const row = (label: string) => planRows().find((candidate) => candidate.label === label)?.values;
+
+  test("host limits and what Scale includes", () => {
+    expect(row("Scheduling hosts")).toEqual(["3", "25", "Unlimited", "Custom"]);
+    expect(includedUnitsText("scheduling.hosts", "scale")).toBe("100 Scheduling hosts");
+    expect(rateRows(["scheduling.hosts"])[0]?.rate).toBe("$0.99 per 30 host-days");
+  });
+
+  test("HIPAA mode is by contract, on Enterprise only", () => {
+    expect(row("HIPAA mode with a BAA")).toEqual(["—", "—", "—", "By contract"]);
+  });
+
+  test("nothing about video", () => {
+    expect(
+      rateRows()
+        .map((candidate) => candidate.product)
+        .join(),
+    ).not.toMatch(/video/i);
   });
 });

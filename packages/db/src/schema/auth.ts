@@ -20,6 +20,7 @@ export const user = pgTable(
     banExpires: timestamp("ban_expires"),
     twoFactorEnabled: boolean("two_factor_enabled").default(false),
     canonicalEmail: text("canonical_email"),
+    ownedOrganizationLimit: integer("owned_organization_limit"),
   },
   (table) => [index("user_canonicalEmail_idx").on(table.canonicalEmail)],
 );

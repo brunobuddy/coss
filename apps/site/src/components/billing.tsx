@@ -10,6 +10,8 @@ import {
 import {
   addOnRows,
   billingExample,
+  type CreditAmountKey,
+  creditAmountText,
   graduatedExampleText,
   includedUnitsText,
   limitText,
@@ -18,6 +20,7 @@ import {
   plansWithText,
   rateRows,
   rateText,
+  supportRows,
 } from "@/lib/billing-text";
 import { DocsTable, DocsTd, DocsTh, DocsTr } from "./docs-table";
 
@@ -47,23 +50,51 @@ export function PlanTable() {
   );
 }
 
+/** What support each plan gets (from `SUPPORT_TIERS`, which the desk's clock runs on). */
+export function SupportTable() {
+  return (
+    <DocsTable>
+      <thead>
+        <DocsTr>
+          <DocsTh />
+          {PLAN_KEYS.map((key) => (
+            <DocsTh key={key}>{PLANS[key].name}</DocsTh>
+          ))}
+        </DocsTr>
+      </thead>
+      <tbody>
+        {supportRows().map((row) => (
+          <DocsTr key={row.label}>
+            <DocsTd>{row.label}</DocsTd>
+            {row.values.map((value, index) => (
+              <DocsTd key={PLAN_KEYS[index]}>{value}</DocsTd>
+            ))}
+          </DocsTr>
+        ))}
+      </tbody>
+    </DocsTable>
+  );
+}
+
 /** The list usage rates per product (or of one `product`'s meters, or of `meters`: comma-separated). */
 export function UsageRates({ product, meters }: { product?: Product; meters?: string }) {
+  const rows = rateRows(meters ? (meters.split(",") as MeterKey[]) : product);
+  const notes = rows.some((row) => row.note);
   return (
     <DocsTable>
       <thead>
         <DocsTr>
           <DocsTh>Product</DocsTh>
           <DocsTh>Rate</DocsTh>
-          <DocsTh />
+          {notes ? <DocsTh>Note</DocsTh> : null}
         </DocsTr>
       </thead>
       <tbody>
-        {rateRows(meters ? (meters.split(",") as MeterKey[]) : product).map((row) => (
+        {rows.map((row) => (
           <DocsTr key={row.product}>
             <DocsTd>{row.product}</DocsTd>
             <DocsTd>{row.rate}</DocsTd>
-            <DocsTd>{row.note}</DocsTd>
+            {notes ? <DocsTd>{row.note}</DocsTd> : null}
           </DocsTr>
         ))}
       </tbody>
@@ -80,7 +111,7 @@ export function AddOns() {
           <DocsTh>Add-on</DocsTh>
           <DocsTh>Price</DocsTh>
           <DocsTh>Plans</DocsTh>
-          <DocsTh />
+          <DocsTh>What you get</DocsTh>
         </DocsTr>
       </thead>
       <tbody>
@@ -118,6 +149,10 @@ export function Included({ meter, plan = "free" }: { meter: MeterKey; plan?: Pla
 
 export function Limit({ of, plan }: { of: LimitKey; plan: PlanKey }) {
   return <>{limitText(of, plan)}</>;
+}
+
+export function CreditAmount({ of }: { of: CreditAmountKey }) {
+  return <>{creditAmountText(of)}</>;
 }
 
 export function PlanPrice({ plan }: { plan: PlanKey }) {

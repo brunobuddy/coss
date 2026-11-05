@@ -4,6 +4,7 @@ import {
   emailTierCharges,
   estimateEmailMonth,
   formatPrice,
+  planSignUpPath,
   rateTables,
   smsRates,
   suggestedPlan,
@@ -11,6 +12,12 @@ import {
 
 const suggest = (emails: number) =>
   suggestedPlan(ESTIMATED_PLANS.map((plan) => estimateEmailMonth(plan, emails)));
+
+test("planSignUpPath carries a paid plan through sign-up", () => {
+  expect(planSignUpPath("free")).toBe("/sign-up");
+  expect(planSignUpPath("pro")).toBe("/sign-up?next=%2Fdashboard%3Fplan%3Dpro");
+  expect(planSignUpPath("scale")).toBe("/sign-up?next=%2Fdashboard%3Fplan%3Dscale");
+});
 
 describe("formatPrice", () => {
   test("drops cents only for whole dollars", () => {
@@ -107,6 +114,6 @@ test("smsRates lists every priced country by name", () => {
   });
   expect(rates.find((rate) => rate.code === "US")).toMatchObject({
     outbound: "$0.0142",
-    inbound: "$0.0148",
+    inbound: "$0.016",
   });
 });

@@ -1,16 +1,28 @@
 import "./global.css";
 import { fontMono, fontSans } from "@coss/ui/fonts";
 import { RootProvider } from "fumadocs-ui/provider/next";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
+  icons: { icon: "/icon.svg", apple: "/site-assets/apple-touch-icon.png" },
   // Pages that set their own `openGraph` replace this one, so they set `type` too: in-app browsers
   // read `og:type` and throw when it's missing.
   openGraph: { type: "website", siteName: SITE_NAME },
+  // Zoom's check that coss.com is ours, for the Marketplace listing.
+  verification: {
+    other: { "zoom-domain-verification": "ZOOM_verify_1ade02c565ca492891d9e2c5a2dc79c0" },
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#171717" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

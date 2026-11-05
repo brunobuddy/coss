@@ -64,6 +64,18 @@ export const BUCKETS = {
     overridable: true,
     failureMode: "deny",
   },
+  // The hosted MCP server (`POST /mcp`), per key, before a server is built for the request. Each
+  // API call a tool makes then spends its route's bucket and `api.authentication.*` like any
+  // other, so this stays under them: a tool call spends one more authentication than it makes
+  // calls. Denies on a store outage like every write (it can reach them).
+  "api.mcp": {
+    scope: "key",
+    limit: 10,
+    periodMs: SECOND,
+    burst: 30,
+    overridable: true,
+    failureMode: "deny",
+  },
   // Risk assessments (`POST /v1/risk/assessments`) sit in customers' sign-up and login paths, so
   // they get far more room than other writes. Denies on a store outage like every write (the
   // authentication buckets before it deny then anyway); integrations are told to fail open.
@@ -274,6 +286,17 @@ export const BUCKETS = {
     overridable: true,
     failureMode: "allow",
   },
+  // Received data per organization, in MB past each message's first (what `email.received_data`
+  // bills, spam included): anyone can mail an address, and this bounds what they can add to its
+  // bill and make coss.com store. Over it, large messages are dropped and counted while small ones
+  // still arrive. Fails open like received mail. Plans set their own (`@coss/billing/catalog`).
+  "email.inbound.megabytes.day": {
+    scope: "org",
+    limit: 10_000,
+    periodMs: DAY,
+    overridable: true,
+    failureMode: "allow",
+  },
   // DMARC aggregate reports accepted per organization (one per report message). Report addresses
   // are published in DNS, so anyone can mail them: this bounds what they can make coss.com store.
   // Fails open like received mail: a store outage must not lose reports.
@@ -479,6 +502,41 @@ export const BUCKETS = {
   // Twilio's status and inbound callbacks (`/sms/twilio/*`): signatures are checked before
   // anything is stored, so this only bounds the work forged requests cause. A store outage allows
   // rather than drops delivery reports and replies.
+  // Live slot lists and availability searches, per organization: the plan sets the rate
+  // (`scheduling.slots.second` in `@coss/billing/catalog`); this is Free's.
+  "scheduling.slots.second": {
+    scope: "org",
+    limit: 5,
+    periodMs: SECOND,
+    burst: 20,
+    overridable: true,
+    failureMode: "allow",
+  },
+  // A browser session's calls, per session, and per address before the token is even looked up.
+  "scheduling.session": {
+    scope: "key",
+    limit: 20,
+    periodMs: SECOND,
+    burst: 60,
+    overridable: false,
+    failureMode: "deny",
+  },
+  "scheduling.ip": {
+    scope: "ip",
+    limit: 50,
+    periodMs: SECOND,
+    burst: 150,
+    overridable: false,
+    failureMode: "deny",
+  },
+  "scheduling.callbacks": {
+    scope: "ip",
+    limit: 200,
+    periodMs: SECOND,
+    burst: 1_000,
+    overridable: false,
+    failureMode: "allow",
+  },
   "sms.callbacks": {
     scope: "ip",
     limit: 200,

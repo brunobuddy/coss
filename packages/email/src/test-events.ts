@@ -282,6 +282,30 @@ export function sampleWebhookEvent(type: TestWebhookEventType, now: Date): Store
       sandbox: true,
       occurred_at: at,
     };
+  } else if (type.startsWith("scheduling.booking.")) {
+    data = {
+      ...base,
+      booking_id: newId(ID_PREFIXES.schedulingBooking),
+      event_type_id: newId(ID_PREFIXES.schedulingEventType),
+      host_ids: [newId(ID_PREFIXES.schedulingHost)],
+      occurred_at: at,
+    };
+  } else if (type.startsWith("scheduling.calendar_delegation.")) {
+    data = {
+      ...base,
+      delegation_id: newId(ID_PREFIXES.schedulingCalendarDelegation),
+      provider: "google",
+      domain: "example.com",
+      code: type.endsWith(".failing") ? "unauthorized_client" : null,
+      occurred_at: at,
+    };
+  } else if (type.startsWith("scheduling.calendar.")) {
+    data = {
+      ...base,
+      host_id: newId(ID_PREFIXES.schedulingHost),
+      connection_id: newId(ID_PREFIXES.schedulingCalendarConnection),
+      occurred_at: at,
+    };
   } else if (type.startsWith("form.")) {
     const flagged = type === "form.submission.flagged";
     data = {

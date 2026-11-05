@@ -49,11 +49,19 @@ const CONTENT_RESPONSES = ["/v1/received_emails", "/v1/inboxes", "/v1/sms/receiv
 /** Form submissions: what people typed into a customer's form (`/v1/forms/{id}/submissions…`). */
 const FORM_SUBMISSIONS = /^\/v1\/forms\/[^/]+\/submissions(\/|$)/;
 /**
+ * Scheduling's attendee details and answers: these requests carry them both ways, always. A calendar
+ * delegation's requests carry a service account's private key or an app's client secret.
+ */
+const SCHEDULING_PERSONAL =
+  /^\/v1\/scheduling\/((bookings|holds|series|attendees|booker_sessions|calendar_delegations)(\/|$)|hosts\/[^/]+\/calendar_connections)/;
+/**
  * Responses that are capabilities: preference links change a contact's consent and need
  * `contact:update`, and Sign's session links (the token is in the URL's fragment too) sign as a
  * signer or edit a template; reading the log (every member, every drain) needs none of that.
  */
 const CAPABILITY_RESPONSES = [
+  /^\/v1\/scheduling\/hosts\/[^/]+\/sessions$/,
+  /^\/v1\/scheduling\/booker_sessions$/,
   /^\/v1\/contacts\/[^/]+\/preference_links$/,
   /^\/v1\/sign\/requests\/[^/]+\/signers\/[^/]+\/sessions$/,
   /^\/v1\/sign\/templates\/[^/]+\/builder_sessions$/,
@@ -102,6 +110,7 @@ async function contentKeysFor(
 }
 
 function keepsRequestBody(path: string): boolean {
+  if (SCHEDULING_PERSONAL.test(path)) return false;
   return !CONTENT_REQUESTS.includes(path) && !SECRET_REQUESTS.includes(path);
 }
 
@@ -110,6 +119,7 @@ function keepsResponseBody(path: string, status: number): boolean {
   if (status >= 400) return true;
   if (CAPABILITY_RESPONSES.some((pattern) => pattern.test(path))) return false;
   if (FORM_SUBMISSIONS.test(path)) return false;
+  if (SCHEDULING_PERSONAL.test(path)) return false;
   return !CONTENT_RESPONSES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
@@ -196,11 +206,15 @@ export function requestLog(writer: LogWriter) {
     const route = c.req.routePath.endsWith("*") ? null : c.req.routePath;
     // Only bodies the handler already parsed (no second read of a 40 MB upload); Hono caches
     // what `c.req.json()` read as text.
-    const requestText = keepsRequestBody(path)
-      ? (c.req.bodyCache.text as Promise<string> | undefined)
-      : undefined;
+    // Live traffic of an organization in HIPAA mode: metadata only, here and in its log drains.
+    const metadataOnly = auth.hipaaMode && auth.mode === "live";
+    const requestText =
+      !metadataOnly && keepsRequestBody(path)
+        ? (c.req.bodyCache.text as Promise<string> | undefined)
+        : undefined;
     const length = Number(response.headers.get("content-length") ?? Number.NaN);
     const responseCopy =
+      !metadataOnly &&
       isJson(response.headers) &&
       !(length > MAX_LOGGED_RESPONSE_BYTES) &&
       keepsResponseBody(path, status)
@@ -209,7 +223,7 @@ export function requestLog(writer: LogWriter) {
     const requestHeaders = loggedRequestHeaders(c.req.raw.headers);
     const responseHeaders = loggedResponseHeaders(response.headers);
     const { requestId, clientIp } = c.var;
-    const search = new URL(c.req.url).search;
+    const search = metadataOnly ? "" : new URL(c.req.url).search;
     const marked = c.get("discardsEmailContent") === true;
 
     void (async () => {

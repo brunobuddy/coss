@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@import "@coss/ui/theme.css";
+
+/* This app and the coss ui components it uses (paths relative to this file). */
+@source "../**/*.{ts,tsx}";
+@source "../../../../packages/ui/src/components/**/*.tsx";
+
+::selection {
+  background-color: color-mix(in srgb, var(--primary) 20%, transparent);
+}

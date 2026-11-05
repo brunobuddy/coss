@@ -13,7 +13,9 @@ import {
 import { Button } from "@coss/ui/components/button";
 import { Field, FieldLabel } from "@coss/ui/components/field";
 import { Input } from "@coss/ui/components/input";
+import { UserRoundIcon } from "lucide-react";
 import { useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import { useActionToast } from "@/lib/toast";
 import { deleteAccountAction } from "./actions";
@@ -44,6 +46,7 @@ export function DeleteAccountButton(props: {
         {/* `contents` keeps header/footer as direct flex children of the popup (coss ui pattern). */}
         <form action={formAction} className="contents">
           <AlertDialogHeader>
+            <DialogIcon icon={UserRoundIcon} tone="danger" />
             <AlertDialogTitle>Delete your account?</AlertDialogTitle>
             <AlertDialogDescription>
               You're signed out everywhere, your personal API keys stop working and your profile,
@@ -54,6 +57,12 @@ export function DeleteAccountButton(props: {
                 organizations={props.deleteOrganizations}
                 title="Deleted with your account, as you're their only member:"
               />
+            ) : null}
+            {props.deleteOrganizations.length > 0 ? (
+              <p className="text-muted-foreground text-sm">
+                Their phone numbers go back to the carrier, and you may not be able to get them
+                again. To keep one, contact support before you delete your account.
+              </p>
             ) : null}
             {props.leaveOrganizations.length > 0 ? (
               <OrganizationList

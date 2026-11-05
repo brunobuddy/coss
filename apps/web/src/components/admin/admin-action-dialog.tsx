@@ -14,10 +14,50 @@ import {
 } from "@coss/ui/components/dialog";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
 import { Textarea } from "@coss/ui/components/textarea";
+import {
+  BuildingIcon,
+  ClipboardListIcon,
+  CoinsIcon,
+  CreditCardIcon,
+  FileTextIcon,
+  FolderSyncIcon,
+  KeyIcon,
+  KeyRoundIcon,
+  type LucideIcon,
+  MonitorSmartphoneIcon,
+  ReceiptIcon,
+  RocketIcon,
+  ShieldIcon,
+  SmartphoneIcon,
+  TimerIcon,
+  UserCogIcon,
+  UserPlusIcon,
+  UserRoundIcon,
+} from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
+import { DialogIcon } from "@/components/dialog-icon";
 import { FormError } from "@/components/form-error";
 import type { ActionResult } from "@/lib/action-result";
 import { type ToastContent, useActionToast } from "@/lib/toast";
+
+const ICONS = {
+  apiKey: KeyIcon,
+  billing: CreditCardIcon,
+  contract: FileTextIcon,
+  credit: CoinsIcon,
+  deploy: RocketIcon,
+  directory: FolderSyncIcon,
+  form: ClipboardListIcon,
+  invoice: ReceiptIcon,
+  organization: BuildingIcon,
+  rateLimit: TimerIcon,
+  role: UserCogIcon,
+  session: MonitorSmartphoneIcon,
+  signUp: UserPlusIcon,
+  sso: KeyRoundIcon,
+  twoFactor: SmartphoneIcon,
+  user: UserRoundIcon,
+} satisfies Record<string, LucideIcon>;
 
 type AdminAction = (previous: ActionResult | null, formData: FormData) => Promise<ActionResult>;
 
@@ -27,6 +67,8 @@ type Props = {
   fields: Record<string, string>;
   triggerLabel: string;
   title: string;
+  /** What the dialog is about, by name: pages are server components, which can't pass a component. */
+  icon?: keyof typeof ICONS;
   description: ReactNode;
   submitLabel: string;
   /** Toast shown once the action succeeded (e.g. "Organization suspended"). */
@@ -80,6 +122,10 @@ function AdminActionForm(props: Props & { onDone: () => void }) {
         <input key={name} name={name} type="hidden" value={value} />
       ))}
       <DialogHeader>
+        <DialogIcon
+          icon={props.icon ? ICONS[props.icon] : ShieldIcon}
+          tone={props.destructive ? "danger" : undefined}
+        />
         <DialogTitle>{props.title}</DialogTitle>
         <DialogDescription>{props.description}</DialogDescription>
       </DialogHeader>
