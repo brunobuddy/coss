@@ -69,7 +69,13 @@ export function KloqCalendar(props: KloqCalendarProps) {
     onShowDay: k.showDay,
   };
   const stepWord =
-    kind === "days" ? `${k.descriptor.dayCount} days` : kind === "agenda" ? "30 days" : kind;
+    kind === "days"
+      ? `${k.descriptor.dayCount} days`
+      : kind === "agenda"
+        ? "30 days"
+        : kind === "timeline"
+          ? "day"
+          : kind;
 
   return (
     <View style={[styles.root, { backgroundColor: p.background, paddingTop: insets.top }]}>
