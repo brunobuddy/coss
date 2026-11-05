@@ -58,6 +58,7 @@ export { formatViewTitle, stepAnchor, todayAnchor } from "kloq/lib/navigation";
 export { layoutDay } from "kloq/lib/overlap";
 export { type PlacedOccurrence, projectEvents } from "kloq/lib/projection";
 export { parseQuickAdd, type QuickAddResult } from "kloq/lib/quick-add";
+export { quickAddPreview } from "kloq/lib/quick-add-view";
 export {
   applyPlan,
   deleteOccurrence,

@@ -6,7 +6,7 @@ import {
   formatInstant,
   parseQuickAdd,
   type QuickAddResult,
-  startOfLocalDay,
+  quickAddPreview,
   toDateOnlyString,
 } from "../model.ts";
 import { QuickAddField } from "../native/sheets";
@@ -55,7 +55,7 @@ export function QuickAddSheet({ visible, onClose, onAdd }: QuickAddSheetProps) {
         ) : (
           <>
             <Row label="Title" value={parsed.title || "—"} />
-            <Row label="When" value={describeWhen(parsed)} />
+            <Row label="When" value={quickAddPreview(parsed, new Date()).when ?? "—"} />
             {parsed.location ? <Row label="Where" value={parsed.location} /> : null}
             {parsed.attendees.length ? (
               <Row label="Guests" value={parsed.attendees.join(", ")} />
@@ -79,18 +79,6 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function describeWhen(r: QuickAddResult): string {
-  if (!r.start) return "—";
-  const day = r.start.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-  if (r.allDay) return `${day} · all day`;
-  const time = (d: Date) => d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  return r.end ? `${day} · ${time(r.start)} – ${time(r.end)}` : `${day} · ${time(r.start)}`;
-}
-
 function eventFrom(r: QuickAddResult): Omit<CalEvent, "id"> | null {
   if (!r.start) return null;
   const base = {
@@ -99,14 +87,12 @@ function eventFrom(r: QuickAddResult): Omit<CalEvent, "id"> | null {
     attendees: r.attendees.length ? r.attendees.map((email) => ({ email })) : undefined,
   };
   if (r.allDay) {
-    const last = startOfLocalDay(r.end ?? r.start);
-    const endExclusive =
-      r.end && last > startOfLocalDay(r.start) ? last : addDays(startOfLocalDay(r.start), 1);
+    // the parser's all-day `end` is inclusive; the store's is exclusive
     return {
       ...base,
       allDay: true,
       start: toDateOnlyString(r.start),
-      end: toDateOnlyString(endExclusive),
+      end: toDateOnlyString(addDays(r.end ?? r.start, 1)),
     };
   }
   const end = r.end ?? new Date(r.start.getTime() + 30 * 60_000);
