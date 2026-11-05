@@ -47,6 +47,7 @@ export {
   viewKind,
 } from "kloq/lib/calendar-types";
 export { sameDay } from "kloq/lib/date-math";
+export { eventTitle } from "kloq/lib/event-text";
 export type { Lane, LaneAdapter } from "kloq/lib/lane";
 export { layoutMonth } from "kloq/lib/month-grid";
 export { formatViewTitle, stepAnchor, todayAnchor } from "kloq/lib/navigation";

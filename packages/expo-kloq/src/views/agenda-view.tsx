@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Pressable, SectionList, StyleSheet, Text, View } from "react-native";
 import {
   type CalEvent,
+  eventTitle,
   formatMinutes,
   groupAgenda,
   type PlacedOccurrence,
@@ -69,7 +70,7 @@ export function AgendaView({ descriptor, events, hour12, onOpen, onShowDay }: Ag
             <View style={[styles.bar, { backgroundColor: tint.solid }]} />
             <View style={styles.body}>
               <Text style={[styles.title, { color: p.text }]} numberOfLines={1}>
-                {e.title}
+                {eventTitle(e)}
               </Text>
               <Text style={[styles.meta, { color: p.muted }]} numberOfLines={1}>
                 {e.location ? `${time} · ${e.location}` : time}

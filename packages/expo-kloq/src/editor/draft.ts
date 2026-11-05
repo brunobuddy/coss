@@ -116,7 +116,7 @@ export function patchFor(draft: EventDraft): CalEventPatch {
       }
     : { allDay: false as const, start: formatInstant(draft.start), end: formatInstant(draft.end) };
   return {
-    title: draft.title.trim() || "(No title)",
+    title: draft.title.trim(),
     ...when,
     calendarId: draft.calendarId,
     location: draft.location.trim() || undefined,

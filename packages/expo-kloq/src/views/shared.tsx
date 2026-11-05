@@ -1,5 +1,5 @@
 import { Pressable, type StyleProp, StyleSheet, Text, View, type ViewStyle } from "react-native";
-import type { PlacedOccurrence } from "../model.ts";
+import { eventTitle, type PlacedOccurrence } from "../model.ts";
 import { usePalette } from "../theme.ts";
 import type { EditTarget } from "../use-kloq.ts";
 
@@ -35,11 +35,12 @@ export function EventChip({
 }) {
   const p = usePalette();
   const tint = p.event(event.color);
+  const title = eventTitle(event);
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={event.title}
+      accessibilityLabel={title}
       style={[styles.chip, filled && { backgroundColor: tint.fill }, style]}
     >
       {filled ? null : <View style={[styles.dot, { backgroundColor: tint.solid }]} />}
@@ -48,7 +49,7 @@ export function EventChip({
         numberOfLines={1}
         ellipsizeMode="tail"
       >
-        {label ?? event.title}
+        {label ?? title}
       </Text>
     </Pressable>
   );

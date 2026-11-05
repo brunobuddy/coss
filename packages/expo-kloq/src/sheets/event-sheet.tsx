@@ -6,6 +6,7 @@ import {
   type CalendarSource,
   defaultCalendarId,
   describeRRule,
+  eventTitle,
   RECURRENCE_SCOPES,
   type RecurrenceScope,
 } from "../model.ts";
@@ -52,7 +53,7 @@ function EventSheetBody({ target, calendars, hour12, onClose, onSave, onDelete }
         resolver.current = resolve;
         setScope({
           action,
-          title: event.title,
+          title: eventTitle(event),
           summary: event.rrule ? describeRRule(event.rrule) : undefined,
           scopes: occurrence.isFirst ? ["this", "all"] : RECURRENCE_SCOPES,
         });

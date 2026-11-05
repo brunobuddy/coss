@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   type CalEvent,
+  eventTitle,
   formatMinutes,
   hourLabel,
   layoutDay,
@@ -260,7 +261,7 @@ function DayColumn({
             key={e.id}
             onPress={() => onOpen(openTarget(e))}
             accessibilityRole="button"
-            accessibilityLabel={e.title}
+            accessibilityLabel={eventTitle(e)}
             style={[
               styles.block,
               {
@@ -278,7 +279,7 @@ function DayColumn({
               numberOfLines={short ? 1 : 2}
               ellipsizeMode={narrow ? "clip" : "tail"}
             >
-              {e.title}
+              {eventTitle(e)}
             </Text>
             {short ? null : (
               <Text style={[styles.blockTime, { color: tint.ink }]} numberOfLines={1}>

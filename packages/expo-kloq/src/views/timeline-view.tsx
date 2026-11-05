@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   type CalEvent,
   type CalendarSource,
+  eventTitle,
   formatMinutes,
   type Lane,
   type LaneAdapter,
@@ -166,12 +167,13 @@ function LaneRow({
         const slot = rows.get(b.id) ?? { col: 0, cols: 1 };
         const height = (LANE_HEIGHT - 8) / slot.cols;
         const tint = p.event(b.color);
+        const title = eventTitle(b);
         return (
           <Pressable
             key={b.id}
             onPress={() => onOpen(openTarget(b))}
             accessibilityRole="button"
-            accessibilityLabel={b.title}
+            accessibilityLabel={title}
             style={[
               styles.bar,
               {
@@ -185,7 +187,7 @@ function LaneRow({
             ]}
           >
             <Text style={[styles.barText, { color: tint.ink }]} numberOfLines={1}>
-              {b.title}
+              {title}
             </Text>
           </Pressable>
         );
