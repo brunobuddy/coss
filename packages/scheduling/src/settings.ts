@@ -35,6 +35,7 @@ function toSettingsObject(
     allowed_origins: row?.allowedOrigins ?? [],
     brand_name: row?.brandName ?? null,
     accent_color: row?.accentColor ?? null,
+    privacy_url: row?.privacyUrl ?? null,
     logo: logo
       ? {
           content_type: logo.contentType as "image/png" | "image/jpeg",
@@ -48,6 +49,21 @@ function toSettingsObject(
     calendar_failure_mode: row?.calendarFailureMode ?? "hide",
     notifications: toWireNotifications(row),
   };
+}
+
+/** It becomes a link on a host's page, so nothing but https: the dashboard skips the wire schema. */
+function checkedPrivacyUrl(value: string | null | undefined): string | null | undefined {
+  if (value === null || value === undefined) return value;
+  let protocol: string | null = null;
+  try {
+    protocol = new URL(value).protocol;
+  } catch {}
+  if (protocol !== "https:") {
+    throw new SchedulingError("invalid_event_type", "Use an https URL for your privacy policy.", {
+      param: "privacy_url",
+    });
+  }
+  return value;
 }
 
 /** `https://host[:port]`, or also localhost in a sandbox. */
@@ -93,6 +109,7 @@ export async function updateSettings(
   opts: { screen?: SetupScreening | undefined } = {},
 ): Promise<SettingsObjectOutput> {
   refuseLinks(params.brand_name, "brand_name");
+  checkedPrivacyUrl(params.privacy_url);
   if (params.brand_name) await screenSetup(env, params.brand_name, opts.screen, "brand_name");
   if (params.logo) await saveLogo(env, params.logo.content);
   else if (params.logo === null) await removeLogo(env);
@@ -102,6 +119,7 @@ export async function updateSettings(
       : {}),
     ...(params.brand_name !== undefined ? { brandName: params.brand_name } : {}),
     ...(params.accent_color !== undefined ? { accentColor: params.accent_color } : {}),
+    ...(params.privacy_url !== undefined ? { privacyUrl: params.privacy_url } : {}),
     ...(params.email_from !== undefined ? { emailFrom: params.email_from } : {}),
     ...(params.sms_from !== undefined ? { smsFrom: params.sms_from } : {}),
     ...(params.calendar_failure_mode !== undefined

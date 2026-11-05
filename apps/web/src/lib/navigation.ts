@@ -184,6 +184,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   hooks: "Hooks",
   "event-types": "Event types",
   "calendar-delegation": "Calendar delegation",
+  "oauth-apps": "OAuth apps",
   endpoints: "Endpoints",
   received: "Received",
   inboxes: "Inboxes",

@@ -6,7 +6,7 @@ import { getOrganizationSsoProvider, hasScimConnection } from "@coss/tenancy";
 
 /** How much of each feature the organization uses now (what a downgrade would leave behind). */
 async function featureUsage(organizationId: string): Promise<Record<FeatureKey, number>> {
-  const [sso, scim, drain, tracking, subaccount] = await Promise.all([
+  const [sso, scim, drain, tracking, subaccount, oauthApp] = await Promise.all([
     getOrganizationSsoProvider({ organizationId }),
     hasScimConnection({ organizationId }),
     db.query.logDrain.findFirst({
@@ -19,6 +19,11 @@ async function featureUsage(organizationId: string): Promise<Record<FeatureKey, 
     }),
     // Live sub-accounts (sandbox ones are free on every plan).
     hasLiveSubaccounts(organizationId),
+    // Any environment's: tokens only that app can refresh would be stranded just the same.
+    db.query.schedulingOauthApp.findFirst({
+      columns: { id: true },
+      where: (row, { eq }) => eq(row.organizationId, organizationId),
+    }),
   ]);
   return {
     sso: sso ? 1 : 0,
@@ -30,6 +35,7 @@ async function featureUsage(organizationId: string): Promise<Record<FeatureKey, 
     // An add-on: billing itself refuses a downgrade to a plan it isn't offered on.
     dedicatedIps: 0,
     subaccounts: subaccount ? 1 : 0,
+    schedulingOauthApps: oauthApp ? 1 : 0,
   };
 }
 
@@ -41,6 +47,7 @@ const REMOVE: Record<FeatureKey, string> = {
   auditLog: "",
   dedicatedIps: "",
   subaccounts: "Delete your live email sub-accounts.",
+  schedulingOauthApps: "Delete your Scheduling OAuth apps.",
 };
 
 /**

@@ -14,10 +14,12 @@ import type {
   CreateSchedulingHoldParams,
   CreateSchedulingHostParams,
   CreateSchedulingHostSessionParams,
+  CreateSchedulingOauthAppParams,
   CreateSchedulingSeriesParams,
   DeletedSchedulingCalendarConnection,
   DeletedSchedulingCalendarDelegation,
   DeletedSchedulingHost,
+  DeletedSchedulingOauthApp,
   DeletedSchedulingSchedule,
   ExplainSchedulingSlotParams,
   ListSchedulingBookingEventsParams,
@@ -35,6 +37,7 @@ import type {
   SchedulingCancelledSeries,
   SchedulingEventType,
   SchedulingHost,
+  SchedulingOauthApp,
   SchedulingPageParams,
   SchedulingSchedule,
   SchedulingSeries,
@@ -50,6 +53,7 @@ import type {
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
   UpdateSchedulingHostParams,
+  UpdateSchedulingOauthAppParams,
   UpdateSchedulingSettingsParams,
   UpsertSchedulingScheduleParams,
   VerifySchedulingCalendarDelegationParams,
@@ -725,6 +729,73 @@ export class SchedulingCalendarDelegationsResource {
   }
 }
 
+/**
+ * `coss.scheduling.oauthApps`: your own Google, Microsoft or Zoom app, so calendar consent screens show
+ * your brand. Connections stay on the app that issued their tokens.
+ */
+export class SchedulingOauthAppsResource {
+  readonly #http: HttpClient;
+
+  /** @internal Use `new Coss().scheduling.oauthApps`. */
+  constructor(http: HttpClient) {
+    this.#http = http;
+  }
+
+  /** Adds one, trying the secret first. New consents in this environment use it. Not retried. */
+  create(
+    params: CreateSchedulingOauthAppParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingOauthApp>> {
+    return this.#http.request<SchedulingOauthApp>({
+      method: "POST",
+      path: "/v1/scheduling/oauth_apps",
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
+  /** The environment's apps, at most one per provider. */
+  list(options?: ReadOptions): Promise<CossResult<List<SchedulingOauthApp>>> {
+    return this.#http.request<List<SchedulingOauthApp>>({
+      method: "GET",
+      path: "/v1/scheduling/oauth_apps",
+      signal: options?.signal,
+    });
+  }
+
+  get(id: string, options?: ReadOptions): Promise<CossResult<SchedulingOauthApp>> {
+    return this.#http.request<SchedulingOauthApp>({
+      method: "GET",
+      path: `/v1/scheduling/oauth_apps/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** A new client secret is tried before it replaces the old one, and ends an outage if it works. */
+  update(
+    id: string,
+    params: UpdateSchedulingOauthAppParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingOauthApp>> {
+    return this.#http.request<SchedulingOauthApp>({
+      method: "PATCH",
+      path: `/v1/scheduling/oauth_apps/${part(id)}`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Refused while connections use it, since only it can refresh their access. */
+  delete(id: string, options?: ReadOptions): Promise<CossResult<DeletedSchedulingOauthApp>> {
+    return this.#http.request<DeletedSchedulingOauthApp>({
+      method: "DELETE",
+      path: `/v1/scheduling/oauth_apps/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+}
+
 /** `coss.scheduling.sessions`: a browser's authority, without your API key. */
 export class SchedulingSessionsResource {
   readonly #http: HttpClient;
@@ -850,6 +921,7 @@ export class SchedulingResource {
   readonly series: SchedulingSeriesResource;
   readonly calendars: SchedulingCalendarsResource;
   readonly calendarDelegations: SchedulingCalendarDelegationsResource;
+  readonly oauthApps: SchedulingOauthAppsResource;
   readonly sessions: SchedulingSessionsResource;
   readonly attendees: SchedulingAttendeesResource;
   readonly settings: SchedulingSettingsResource;
@@ -866,6 +938,7 @@ export class SchedulingResource {
     this.series = new SchedulingSeriesResource(http);
     this.calendars = new SchedulingCalendarsResource(http);
     this.calendarDelegations = new SchedulingCalendarDelegationsResource(http);
+    this.oauthApps = new SchedulingOauthAppsResource(http);
     this.sessions = new SchedulingSessionsResource(http);
     this.attendees = new SchedulingAttendeesResource(http);
     this.settings = new SchedulingSettingsResource(http);

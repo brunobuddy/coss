@@ -4113,6 +4113,86 @@
           }
         ]
       },
+      "SchedulingOauthAppWebhookEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The event id."
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "event"
+            ]
+          },
+          "api_version": {
+            "type": "string",
+            "description": "The API version this payload is rendered in: the endpoint's."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the event was created."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "scheduling.oauth_app.failing",
+              "scheduling.oauth_app.restored"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "oauth_app_id": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "code": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "What the provider said, when it refused."
+              },
+              "occurred_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "oauth_app_id",
+              "provider",
+              "code",
+              "occurred_at"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "api_version",
+          "created_at",
+          "type",
+          "data"
+        ],
+        "examples": [
+          {
+            "id": "whev_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            "object": "event",
+            "type": "scheduling.oauth_app.failing",
+            "created_at": "2027-01-01T10:00:00.000Z",
+            "data": {
+              "oauth_app_id": "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m",
+              "provider": "google",
+              "code": "app_refused",
+              "occurred_at": "2027-01-01T10:00:00.000Z"
+            }
+          }
+        ]
+      },
       "Environment": {
         "type": "object",
         "properties": {
@@ -9681,10 +9761,12 @@
                 "scheduling.calendar.needs_reauth",
                 "scheduling.calendar.disconnected",
                 "scheduling.calendar_delegation.failing",
-                "scheduling.calendar_delegation.restored"
+                "scheduling.calendar_delegation.restored",
+                "scheduling.oauth_app.failing",
+                "scheduling.oauth_app.restored"
               ]
             },
-            "maxItems": 88,
+            "maxItems": 90,
             "description": "Event types delivered to this endpoint. An empty array means every event type, including ones added later. Defaults to every event type."
           },
           "api_version": {
@@ -10001,10 +10083,12 @@
                 "scheduling.calendar.needs_reauth",
                 "scheduling.calendar.disconnected",
                 "scheduling.calendar_delegation.failing",
-                "scheduling.calendar_delegation.restored"
+                "scheduling.calendar_delegation.restored",
+                "scheduling.oauth_app.failing",
+                "scheduling.oauth_app.restored"
               ]
             },
-            "maxItems": 88,
+            "maxItems": 90,
             "description": "Event types delivered to this endpoint. An empty array means every event type, including ones added later."
           },
           "api_version": {
@@ -10574,10 +10658,12 @@
                 "scheduling.calendar.needs_reauth",
                 "scheduling.calendar.disconnected",
                 "scheduling.calendar_delegation.failing",
-                "scheduling.calendar_delegation.restored"
+                "scheduling.calendar_delegation.restored",
+                "scheduling.oauth_app.failing",
+                "scheduling.oauth_app.restored"
               ]
             },
-            "maxItems": 88,
+            "maxItems": 90,
             "description": "Event types to receive. Defaults to every event type."
           },
           "api_version": {
@@ -10909,6 +10995,9 @@
               },
               {
                 "$ref": "#/components/schemas/SchedulingCalendarDelegationWebhookEvent"
+              },
+              {
+                "$ref": "#/components/schemas/SchedulingOauthAppWebhookEvent"
               }
             ],
             "description": "The event, as an endpoint on the request's API version receives it. Its `webhook-id` header is `event.id`."
@@ -11374,7 +11463,9 @@
               "scheduling.calendar.needs_reauth",
               "scheduling.calendar.disconnected",
               "scheduling.calendar_delegation.failing",
-              "scheduling.calendar_delegation.restored"
+              "scheduling.calendar_delegation.restored",
+              "scheduling.oauth_app.failing",
+              "scheduling.oauth_app.restored"
             ],
             "description": "The event type. `domain.*`, `account.*`, `subaccount.*` and `billing.*` events only reach live environments, so they can't be tested in a sandbox one."
           },
@@ -22142,6 +22233,13 @@
             ],
             "description": "`needs_reauth`: access was lost, and this host isn't offered until it's back."
           },
+          "oauth_app": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Your own OAuth app this connection's access came through. `null`: coss.com's, or no consent was involved."
+          },
           "delegation": {
             "type": [
               "string",
@@ -22198,6 +22296,7 @@
           "provider",
           "account",
           "status",
+          "oauth_app",
           "delegation",
           "calendars",
           "created_at"
@@ -22211,6 +22310,7 @@
             "account": "ana@example.com",
             "status": "active",
             "delegation": null,
+            "oauth_app": null,
             "calendars": [
               {
                 "id": "cal_01kd2m9a0b1c2d3e4f5g6h7j8m",
@@ -22324,6 +22424,7 @@
                 "account": "ana@example.com",
                 "status": "active",
                 "delegation": null,
+                "oauth_app": null,
                 "calendars": [
                   {
                     "id": "cal_01kd2m9a0b1c2d3e4f5g6h7j8m",
@@ -22757,6 +22858,458 @@
           }
         ]
       },
+      "SchedulingOauthApp": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "scheduling.oauth_app"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "google",
+              "microsoft",
+              "zoom"
+            ]
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "tenant_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "redirect_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coss_callback_url": {
+            "type": "string",
+            "description": "Register this with the provider if `redirect_uri` isn't set. If it is, that page forwards `code` and `state` here."
+          },
+          "completion_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "zoom_event_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Zoom only: the Event notification endpoint URL for your app's deauthorization events."
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What to enable on your app at the provider."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "failing"
+            ],
+            "description": "`failing`: the provider refused the app's credentials. New consents are refused, and calendars connected through it can't be read until they work again."
+          },
+          "last_error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_error_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "secret_expires_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verified_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When a consent first completed through this app, which proves its secret."
+          },
+          "connections": {
+            "type": "integer",
+            "description": "Calendar connections using this app. It can't be deleted while there are any."
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "provider",
+          "client_id",
+          "tenant_id",
+          "redirect_uri",
+          "coss_callback_url",
+          "completion_url",
+          "zoom_event_url",
+          "scopes",
+          "status",
+          "last_error_code",
+          "last_error_at",
+          "secret_expires_at",
+          "verified_at",
+          "connections",
+          "created_at",
+          "updated_at"
+        ],
+        "examples": [
+          {
+            "object": "scheduling.oauth_app",
+            "id": "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            "provider": "google",
+            "client_id": "1234567890-abc.apps.googleusercontent.com",
+            "tenant_id": null,
+            "redirect_uri": "https://example.com/oauth/google",
+            "coss_callback_url": "https://api.coss.com/scheduling/oauth/google/callback",
+            "completion_url": "https://example.com/calendar-connected",
+            "zoom_event_url": null,
+            "scopes": [
+              "https://www.googleapis.com/auth/calendar.events.freebusy"
+            ],
+            "status": "active",
+            "last_error_code": null,
+            "last_error_at": null,
+            "secret_expires_at": null,
+            "verified_at": "2027-01-01T10:00:00.000Z",
+            "connections": 12,
+            "created_at": "2027-01-01T10:00:00.000Z",
+            "updated_at": "2027-01-01T10:00:00.000Z"
+          }
+        ]
+      },
+      "CreateOauthAppRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "google"
+                ]
+              },
+              "client_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500,
+                "pattern": "^\\S+$",
+                "description": "The app's client ID at the provider."
+              },
+              "client_secret": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "description": "The app's client secret. Never returned."
+              },
+              "redirect_uri": {
+                "type": "string",
+                "maxLength": 2000,
+                "description": "A page on your own domain, registered with the provider, that forwards `code` and `state` to `coss_callback_url`. Google requires this for an external app, since it has to verify the redirect's domain as yours. Leave it out to use `coss_callback_url` directly."
+              },
+              "completion_url": {
+                "type": "string",
+                "maxLength": 2000,
+                "description": "Where the browser lands after a consent that didn't name a `return_url`, with `coss_calendar` set to `connected`, `denied` or `invalid`. Leave it out for a plain page saying what happened."
+              },
+              "secret_expires_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the client secret expires. Owners and admins are warned 14 days before."
+              }
+            },
+            "required": [
+              "provider",
+              "client_id",
+              "client_secret"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "microsoft"
+                ]
+              },
+              "client_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500,
+                "pattern": "^\\S+$",
+                "description": "The app's client ID at the provider."
+              },
+              "client_secret": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "description": "The app's client secret. Never returned."
+              },
+              "tenant_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9](?:[a-zA-Z0-9.-]{0,253})$",
+                "description": "The Directory (tenant) ID, for an app that's only for your own tenant. Leave it out for a multi-tenant app."
+              },
+              "redirect_uri": {
+                "type": "string",
+                "maxLength": 2000,
+                "description": "A page on your own domain, registered with the provider, that forwards `code` and `state` to `coss_callback_url`. Google requires this for an external app, since it has to verify the redirect's domain as yours. Leave it out to use `coss_callback_url` directly."
+              },
+              "completion_url": {
+                "type": "string",
+                "maxLength": 2000,
+                "description": "Where the browser lands after a consent that didn't name a `return_url`, with `coss_calendar` set to `connected`, `denied` or `invalid`. Leave it out for a plain page saying what happened."
+              },
+              "secret_expires_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the client secret expires. Owners and admins are warned 14 days before."
+              }
+            },
+            "required": [
+              "provider",
+              "client_id",
+              "client_secret"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "zoom"
+                ]
+              },
+              "client_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500,
+                "pattern": "^\\S+$",
+                "description": "The app's client ID at the provider."
+              },
+              "client_secret": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "description": "The app's client secret. Never returned."
+              },
+              "webhook_secret": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "description": "The Secret Token of your Zoom app, which signs its events at `zoom_event_url`. Never returned."
+              },
+              "redirect_uri": {
+                "type": "string",
+                "maxLength": 2000,
+                "description": "A page on your own domain, registered with the provider, that forwards `code` and `state` to `coss_callback_url`. Google requires this for an external app, since it has to verify the redirect's domain as yours. Leave it out to use `coss_callback_url` directly."
+              },
+              "completion_url": {
+                "type": "string",
+                "maxLength": 2000,
+                "description": "Where the browser lands after a consent that didn't name a `return_url`, with `coss_calendar` set to `connected`, `denied` or `invalid`. Leave it out for a plain page saying what happened."
+              },
+              "secret_expires_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the client secret expires. Owners and admins are warned 14 days before."
+              }
+            },
+            "required": [
+              "provider",
+              "client_id",
+              "client_secret"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "examples": [
+          {
+            "provider": "google",
+            "client_id": "1234567890-abc.apps.googleusercontent.com",
+            "client_secret": "GOCSPX-abcdefghijklmnopqrstuvwxyz",
+            "redirect_uri": "https://example.com/oauth/google",
+            "completion_url": "https://example.com/calendar-connected"
+          }
+        ]
+      },
+      "SchedulingOauthAppList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "list"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulingOauthApp"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "object",
+          "data",
+          "has_more"
+        ],
+        "examples": [
+          {
+            "object": "list",
+            "data": [
+              {
+                "object": "scheduling.oauth_app",
+                "id": "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                "provider": "google",
+                "client_id": "1234567890-abc.apps.googleusercontent.com",
+                "tenant_id": null,
+                "redirect_uri": "https://example.com/oauth/google",
+                "coss_callback_url": "https://api.coss.com/scheduling/oauth/google/callback",
+                "completion_url": "https://example.com/calendar-connected",
+                "zoom_event_url": null,
+                "scopes": [
+                  "https://www.googleapis.com/auth/calendar.events.freebusy"
+                ],
+                "status": "active",
+                "last_error_code": null,
+                "last_error_at": null,
+                "secret_expires_at": null,
+                "verified_at": "2027-01-01T10:00:00.000Z",
+                "connections": 12,
+                "created_at": "2027-01-01T10:00:00.000Z",
+                "updated_at": "2027-01-01T10:00:00.000Z"
+              }
+            ],
+            "has_more": false
+          }
+        ]
+      },
+      "UpdateOauthAppRequest": {
+        "type": "object",
+        "properties": {
+          "client_secret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "A new client secret. It's tried on a connection before it replaces the old one."
+          },
+          "tenant_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-zA-Z0-9](?:[a-zA-Z0-9.-]{0,253})$",
+            "description": "The Directory (tenant) ID, for an app that's only for your own tenant. Leave it out for a multi-tenant app."
+          },
+          "webhook_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "The Secret Token of your Zoom app, which signs its events at `zoom_event_url`. Never returned."
+          },
+          "redirect_uri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "A page on your own domain, registered with the provider, that forwards `code` and `state` to `coss_callback_url`. Google requires this for an external app, since it has to verify the redirect's domain as yours. Leave it out to use `coss_callback_url` directly."
+          },
+          "completion_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "Where the browser lands after a consent that didn't name a `return_url`, with `coss_calendar` set to `connected`, `denied` or `invalid`. Leave it out for a plain page saying what happened."
+          },
+          "secret_expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the client secret expires. Owners and admins are warned 14 days before."
+          }
+        },
+        "additionalProperties": false,
+        "examples": [
+          {
+            "client_secret": "GOCSPX-abcdefghijklmnopqrstuvwxyz"
+          }
+        ]
+      },
+      "DeletedSchedulingOauthApp": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": [
+              "scheduling.oauth_app"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "deleted"
+        ],
+        "examples": [
+          {
+            "object": "scheduling.oauth_app",
+            "id": "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            "deleted": true
+          }
+        ]
+      },
       "SetSimulatedBusyRequest": {
         "type": "object",
         "properties": {
@@ -23036,6 +23589,13 @@
             ],
             "description": "At the top of the hosted pages, and of emails sent from `email_from`."
           },
+          "privacy_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Your privacy policy, linked on a host's page beside what connecting a calendar does, once this environment has its own OAuth app and a `brand_name`."
+          },
           "email_from": {
             "type": [
               "string",
@@ -23089,6 +23649,7 @@
           "brand_name",
           "accent_color",
           "logo",
+          "privacy_url",
           "email_from",
           "sms_from",
           "calendar_failure_mode",
@@ -23103,6 +23664,7 @@
             "brand_name": "Acme Health",
             "accent_color": null,
             "logo": null,
+            "privacy_url": null,
             "email_from": "appointments@example.com",
             "sms_from": null,
             "calendar_failure_mode": "hide",
@@ -23160,6 +23722,15 @@
             ],
             "additionalProperties": false,
             "description": "Your logo, a PNG or JPEG. `null` removes it."
+          },
+          "privacy_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "format": "uri",
+            "description": "Your privacy policy, as an https URL, for hosts connecting a calendar through your own OAuth app. `null` removes it."
           },
           "email_from": {
             "type": [
@@ -76924,6 +77495,1168 @@
           },
           "422": {
             "description": "The credentials or mailbox aren't valid (`invalid_calendar_delegation`), or the provider refused them (`calendar_delegation_refused`, and `message` says what to fix).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scheduling/oauth_apps": {
+      "post": {
+        "operationId": "createSchedulingOauthApp",
+        "tags": [
+          "Scheduling calendars"
+        ],
+        "summary": "Add your own OAuth app",
+        "description": "New consents in this environment use it, so the consent screen shows your brand. Connections made before it stay on coss.com's app until their host consents again. On the Scale plan and above. Secrets are never returned.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOauthAppRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The app.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingOauthApp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not valid JSON (`invalid_json`). Also when the `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "The plan doesn't include this (`plan_feature_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body is not sent as `application/json` (`unsupported_media_type`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The app isn't valid (`invalid_oauth_app`), or the provider refused its client ID and secret (`oauth_app_refused`), and nothing was stored.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ]
+      },
+      "get": {
+        "operationId": "listSchedulingOauthApps",
+        "tags": [
+          "Scheduling calendars"
+        ],
+        "summary": "List your OAuth apps",
+        "description": "At most one per provider, with how many connections use each.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The apps.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingOauthAppList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ]
+      }
+    },
+    "/v1/scheduling/oauth_apps/{id}": {
+      "get": {
+        "operationId": "getSchedulingOauthApp",
+        "tags": [
+          "Scheduling calendars"
+        ],
+        "summary": "Get an OAuth app",
+        "description": "Its status, what to register at the provider, and how many connections use it.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The OAuth app's id.",
+              "examples": [
+                "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m"
+              ]
+            },
+            "required": true,
+            "description": "The OAuth app's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The app.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingOauthApp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateSchedulingOauthApp",
+        "tags": [
+          "Scheduling calendars"
+        ],
+        "summary": "Update an OAuth app",
+        "description": "A new client secret is tried on a connection before it replaces the old one, and ends an outage if it works. Its client ID can't change: a different app needs its hosts to consent again.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The OAuth app's id.",
+              "examples": [
+                "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m"
+              ]
+            },
+            "required": true,
+            "description": "The OAuth app's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOauthAppRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The app.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulingOauthApp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not valid JSON (`invalid_json`). Also when the `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body is not sent as `application/json` (`unsupported_media_type`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The app isn't valid (`invalid_oauth_app`), or the provider refused its client ID and secret (`oauth_app_refused`), and nothing was stored.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests with this API key (`rate_limited`), or too many requests with invalid keys from this address (`too_many_failed_authentications`). Retry after `Retry-After` seconds. Successful responses carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` (seconds until the limit is fully restored).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (`api_error` / `internal_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The API key could not be verified right now; retry (`service_unavailable`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSchedulingOauthApp",
+        "tags": [
+          "Scheduling calendars"
+        ],
+        "summary": "Delete an OAuth app",
+        "description": "Refused while connections use it (`oauth_app_in_use`), since only it can refresh their access: disconnect them first. New consents go back to coss.com's app.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The OAuth app's id.",
+              "examples": [
+                "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m"
+              ]
+            },
+            "required": true,
+            "description": "The OAuth app's id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/CossVersion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              },
+              "Coss-Version": {
+                "description": "The API version this response is rendered in.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "2026-10-10"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedSchedulingOauthApp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `Coss-Version` header names an unknown API version (`invalid_api_version`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, invalid, revoked or expired (`authentication_error`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key lacks the permission this endpoint needs (`permission_error`), or its organization is suspended (`organization_suspended`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing with this id or uid exists in the environment (`not_found`).",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Unique id of this request. Include it when contacting support.",
+                "schema": {
+                  "type": "string",
+                  "examples": [
+                    "req_01k7c8m4q2f3e9v6t5r1n0p8yz"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Connections still use it (`oauth_app_in_use`).",
             "headers": {
               "X-Request-Id": {
                 "description": "Unique id of this request. Include it when contacting support.",

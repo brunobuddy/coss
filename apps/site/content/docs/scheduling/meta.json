@@ -8,6 +8,7 @@
     "hosts",
     "calendars",
     "delegation",
+    "oauth-apps",
     "zoom",
     "bookings",
     "pools-and-groups",

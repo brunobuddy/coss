@@ -38,9 +38,9 @@ const errorOf = (res: Response) =>
 const minutes = (event: CalendarEventWrite) => Math.round((event.endMs - event.startMs) / 60_000);
 const zoomTime = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
 
-/** Zoom has no idempotency key, so a meeting carries this: a hash, as the host can read it. */
-const meetingMarker = (key: string) =>
-  `coss.com appointment ${createHash("sha256").update(key).digest("hex")}`;
+/** Zoom has no idempotency key, so a meeting carries a hash of one, as the host can read it. */
+const keyHash = (key: string) => createHash("sha256").update(key).digest("hex");
+const meetingMarker = (key: string) => `Appointment ${keyHash(key)}`;
 
 export function zoomCalendarClient(input: {
   accessToken: string;
@@ -67,7 +67,8 @@ export function zoomCalendarClient(input: {
   });
   // `upcoming` is reported to leave out the agenda; `scheduled` has it, cut to 250 characters.
   const meetingsWithKey = async (key: string): Promise<ZoomMeeting[]> => {
-    const marker = meetingMarker(key);
+    // The hash alone: meetings from before this said "coss.com appointment".
+    const marker = keyHash(key);
     const found: ZoomMeeting[] = [];
     let token = "";
     do {

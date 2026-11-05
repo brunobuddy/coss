@@ -8,6 +8,7 @@ export const FEATURE_KEYS = [
   "scim",
   "dedicatedIps",
   "subaccounts",
+  "schedulingOauthApps",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 
@@ -58,6 +59,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   scim: "Directory sync (SCIM)",
   dedicatedIps: "Dedicated IPs",
   subaccounts: "Email for platforms (sub-accounts)",
+  schedulingOauthApps: "Bring-your-own OAuth apps for Scheduling",
 };
 
 export const LIMIT_LABELS: Record<LimitKey, string> = {

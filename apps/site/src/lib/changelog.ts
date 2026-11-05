@@ -15,6 +15,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: "2026-11-04",
+    title: "Your own OAuth apps for Scheduling",
+    body: "Connect hosts' calendars through your own Google, Microsoft or Zoom app, so the consent screen shows your brand instead of ours.",
+    href: "/docs/scheduling/oauth-apps",
+  },
+  {
     date: "2026-11-03",
     title: "Scheduling",
     body: "Let your users be booked: hosts, weekly hours, Google, Microsoft and CalDAV calendars, and bookings with double-booking prevented by the database. Hosted pages are served at cossbook.com, with your branding on emails.",

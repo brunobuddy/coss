@@ -299,6 +299,14 @@ export function sampleWebhookEvent(type: TestWebhookEventType, now: Date): Store
       code: type.endsWith(".failing") ? "unauthorized_client" : null,
       occurred_at: at,
     };
+  } else if (type.startsWith("scheduling.oauth_app.")) {
+    data = {
+      ...base,
+      oauth_app_id: newId(ID_PREFIXES.schedulingOauthApp),
+      provider: "google",
+      code: type.endsWith(".failing") ? "app_refused" : null,
+      occurred_at: at,
+    };
   } else if (type.startsWith("scheduling.calendar.")) {
     data = {
       ...base,

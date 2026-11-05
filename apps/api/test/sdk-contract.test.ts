@@ -4,6 +4,7 @@
  * contract-types.ts (compile time).
  */
 import { describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import { createCreditGrant, runDueBillingPeriods } from "@coss/billing";
 import { createTestContract, recordTestUsage } from "@coss/billing/testing";
 import { db } from "@coss/db";
@@ -25,12 +26,14 @@ import { createLogWriter } from "@coss/logs";
 import { cachedOverrides, setRateLimitOverride } from "@coss/ratelimit";
 import { memoryLimiter } from "@coss/ratelimit/testing";
 import { suspendOrganization } from "@coss/reputation";
+import { FakeGoogleCalendarApi, testSchedulingDeps } from "@coss/scheduling/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { API_VERSIONS, LATEST_API_VERSION } from "@coss/versioning";
 import {
   enqueueWebhookMessage,
   runDueLogDrainDeliveries,
   runDueWebhookDeliveries,
+  secretsKeyRing,
 } from "@coss/webhooks";
 import { TEST_SECRETS_KEYS, testSender, webhookReceiver } from "@coss/webhooks/testing";
 import {
@@ -1967,6 +1970,41 @@ describe("coss.risk checkouts, devices and calibration against the API", () => {
 });
 
 describe("coss.scheduling against the API", () => {
+  test("your own OAuth apps", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp({
+      scheduling: testSchedulingDeps({
+        calendars: {
+          secretsKeys: secretsKeyRing([createHash("sha256").update("sdk oauth apps").digest()]),
+          apps: { google: null, microsoft: null },
+          publicUrl: "https://api.example.test",
+          fetcher: new FakeGoogleCalendarApi().fetch,
+        },
+      }),
+    });
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+
+    const oauthApp = await scheduling.oauthApps.create({
+      provider: "google",
+      client_id: "acme-google",
+      client_secret: "acme-secret",
+      redirect_uri: "https://example.com/oauth/google",
+    });
+    expect(oauthApp.error).toBeNull();
+    expect(oauthApp.data?.redirect_uri).toBe("https://example.com/oauth/google");
+    const oauthApps = await scheduling.oauthApps.list();
+    expect(oauthApps.data?.data.map((app) => app.id)).toEqual([oauthApp.data?.id as string]);
+    const updatedApp = await scheduling.oauthApps.update(oauthApp.data?.id as string, {
+      completion_url: "https://example.com/connected",
+    });
+    expect(updatedApp.data?.completion_url).toBe("https://example.com/connected");
+    expect((await scheduling.oauthApps.get(oauthApp.data?.id as string)).data?.status).toBe(
+      "active",
+    );
+    const removedApp = await scheduling.oauthApps.delete(oauthApp.data?.id as string);
+    expect(removedApp.data?.deleted).toBe(true);
+  });
+
   test("host, schedule, event type, slots, a booking's life, a hold, a session", async () => {
     const tenant = await createTestTenant();
     const { app } = createTestApp();

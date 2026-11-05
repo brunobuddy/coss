@@ -1,4 +1,4 @@
-import { failingCalendarDelegations, listHosts } from "@coss/scheduling";
+import { failingCalendarDelegations, failingOauthApps, listHosts } from "@coss/scheduling";
 import { Alert, AlertDescription, AlertTitle } from "@coss/ui/components/alert";
 import {
   Table,
@@ -37,7 +37,10 @@ export default async function HostsPage({
   const search = await searchParams;
   const after = typeof search.after === "string" ? search.after : undefined;
   const page = await listHosts(scope, { limit: PAGE_SIZE, after });
-  const failing = await failingCalendarDelegations(scope);
+  const [failing, failingApps] = await Promise.all([
+    failingCalendarDelegations(scope),
+    failingOauthApps(scope),
+  ]);
   const last = page.data.at(-1);
   const hostsPath = `${schedulingPath}/hosts`;
   const canUpdate = can({ scheduling: ["update"] });
@@ -55,6 +58,18 @@ export default async function HostsPage({
             Calendar access for this domain was refused.{" "}
             <Link className="underline" href={`${schedulingPath}/calendar-delegation`}>
               See what's wrong
+            </Link>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {failingApps.length > 0 ? (
+        <Alert variant="error">
+          <AlertTitle>Your OAuth app's credentials were refused</AlertTitle>
+          <AlertDescription>
+            Calendars connected through it can't be read, so hosts stop being offered once what's
+            known of them is out of date.{" "}
+            <Link className="underline" href={`${schedulingPath}/oauth-apps`}>
+              Update the secret
             </Link>
           </AlertDescription>
         </Alert>

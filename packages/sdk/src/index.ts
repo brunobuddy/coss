@@ -70,6 +70,7 @@ export type {
   SchedulingEventTypesResource,
   SchedulingHoldsResource,
   SchedulingHostsResource,
+  SchedulingOauthAppsResource,
   SchedulingResource,
   SchedulingSchedulesResource,
   SchedulingSeriesResource,

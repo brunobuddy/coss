@@ -230,6 +230,7 @@ import type {
   CreateEventTypeRequest,
   CreateHoldRequest,
   CreateHostRequest,
+  CreateOauthAppRequest,
   CreateSeriesRequest,
   EraseAttendeeByEmailRequest,
   ErasedAttendee,
@@ -237,11 +238,13 @@ import type {
   EventTypeObject,
   ExplainSlotQuery,
   HostObject,
+  OauthAppObject,
   RescheduleBookingRequest,
   ScheduleObject,
   SchedulingBookingWebhookEvent,
   SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOauthAppWebhookEvent,
   SeriesPreview,
   SeriesResult,
   SetSimulatedBusyRequest,
@@ -254,6 +257,7 @@ import type {
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
   UpdateHostRequest,
+  UpdateOauthAppRequest,
   UpdateSettingsRequest,
   UpsertScheduleRequest,
   VerifyCalendarDelegationRequest,
@@ -319,6 +323,7 @@ import type {
   CreateSchedulingEventTypeParams,
   CreateSchedulingHoldParams,
   CreateSchedulingHostParams,
+  CreateSchedulingOauthAppParams,
   CreateSchedulingSeriesParams,
   CreateSegmentParams,
   CreateSubaccountParams,
@@ -382,6 +387,7 @@ import type {
   SchedulingCancelledSeries,
   SchedulingEventType,
   SchedulingHost,
+  SchedulingOauthApp,
   SchedulingSchedule,
   SchedulingSeries,
   SchedulingSeriesPreview,
@@ -517,6 +523,7 @@ import type {
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
   UpdateSchedulingHostParams,
+  UpdateSchedulingOauthAppParams,
   UpdateSchedulingSettingsParams,
   UpdateSegmentParams,
   UpdateStorageSettingsParams,
@@ -778,7 +785,8 @@ export type Contract = [
       | z.output<typeof FormSubmissionWebhookEvent>
       | z.output<typeof SchedulingBookingWebhookEvent>
       | z.output<typeof SchedulingCalendarWebhookEvent>
-      | z.output<typeof SchedulingCalendarDelegationWebhookEvent>,
+      | z.output<typeof SchedulingCalendarDelegationWebhookEvent>
+      | z.output<typeof SchedulingOauthAppWebhookEvent>,
       WebhookEvent
     >
   >,
@@ -1179,6 +1187,9 @@ export type SubaccountContract = [
   Assert<
     MutuallyAssignable<z.output<typeof CalendarDelegationObject>, SchedulingCalendarDelegation>
   >,
+  Assert<MutuallyAssignable<z.input<typeof CreateOauthAppRequest>, CreateSchedulingOauthAppParams>>,
+  Assert<MutuallyAssignable<z.input<typeof UpdateOauthAppRequest>, UpdateSchedulingOauthAppParams>>,
+  Assert<MutuallyAssignable<z.output<typeof OauthAppObject>, SchedulingOauthApp>>,
   Assert<
     MutuallyAssignable<z.input<typeof SetSimulatedBusyRequest>, SetSchedulingSimulatedBusyParams>
   >,

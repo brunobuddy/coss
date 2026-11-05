@@ -12,6 +12,7 @@ import {
   SchedulingBookingWebhookEvent,
   SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOauthAppWebhookEvent,
 } from "@coss/scheduling/schemas";
 import { SIGN_WEBHOOK_EVENT_TYPES, SignRequestWebhookEvent } from "@coss/sign/schemas";
 import {
@@ -78,6 +79,7 @@ export function webhookEventSchema(type: TestWebhookEventType): z.ZodType {
   if (type.startsWith("scheduling.calendar_delegation.")) {
     return SchedulingCalendarDelegationWebhookEvent;
   }
+  if (type.startsWith("scheduling.oauth_app.")) return SchedulingOauthAppWebhookEvent;
   if (type.startsWith("scheduling.")) return SchedulingCalendarWebhookEvent;
   if (type.startsWith("email.")) return EmailWebhookEvent;
   if (type.startsWith("hook_endpoint.")) return HookEndpointWebhookEvent;
@@ -163,6 +165,7 @@ export const WebhookTestEventObject = z
         SchedulingCalendarWebhookEvent,
         SchedulingCalendarDelegationWebhookEvent,
         SchedulingCalendarDelegationWebhookEvent,
+        SchedulingOauthAppWebhookEvent,
       ])
       .meta({
         description:

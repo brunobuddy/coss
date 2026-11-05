@@ -8,7 +8,7 @@ meeting when a booking is confirmed, moves it when the booking is rescheduled, a
 is cancelled. The join link goes to the attendee and the host, and onto the host's calendar event.
 
 Zoom has to approve coss.com's app before hosts outside Cal.com's own Zoom account can connect. Until then, a host
-elsewhere who tries to connect sees an error from Zoom.
+elsewhere who tries to connect sees an error from Zoom. You can also use [your own Zoom app](/docs/scheduling/oauth-apps).
 
 ## Adding the app
 
@@ -16,7 +16,7 @@ Hosts add the app from the page you give them, not from the Zoom App Marketplace
 
 1. Open your hosted page from your product. If you've embedded it, it's in your own settings.
 2. Under **Calendars**, choose **Connect Zoom**.
-3. Sign in to Zoom if you're asked, read what coss.com is asking for, and choose **Allow**.
+3. Sign in to Zoom if you're asked, read what's being asked for, and choose **Allow**.
 4. You're back on the page, with Zoom listed as connected.
 
 If you build your own page, ask for a consent URL and open it in a new window:
@@ -70,7 +70,7 @@ A host can remove it in either place:
 
 - **On your hosted page:** under **Calendars**, choose **Disconnect** next to Zoom. This also revokes coss.com's
   access at Zoom.
-- **In Zoom:** in the Zoom App Marketplace, go to **Manage**, then **Added Apps**, and remove coss.com.
+- **In Zoom:** in the Zoom App Marketplace, go to **Manage**, then **Added Apps**, and remove the app.
 
 Either way, coss.com deletes the tokens it holds, and new bookings no longer get a Zoom link. Meetings already
 created stay on the host's Zoom account until the host deletes them, and their links keep working.

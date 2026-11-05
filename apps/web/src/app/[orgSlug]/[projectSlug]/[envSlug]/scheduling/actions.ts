@@ -10,25 +10,30 @@ import {
   createHost,
   createHostSession,
   createManageSession,
+  createOauthApp,
   createSchedule,
   declineBooking,
   deleteCalendarDelegation,
   deleteHost,
+  deleteOauthApp,
   getEventType,
   getHost,
   SchedulingError,
   updateCalendarDelegation,
   updateEventType,
   updateHost,
+  updateOauthApp,
   updateSettings,
   verifyCalendarDelegation,
 } from "@coss/scheduling";
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import {
+  CreateOauthAppRequest,
   EVENT_TYPE_KINDS,
   UpdateEventTypeRequest,
   UpdateHostLocationsRequest,
   UpdateHostRequest,
+  UpdateOauthAppRequest,
 } from "@coss/scheduling/schemas";
 import { getEnvironment } from "@coss/tenancy";
 import { refresh } from "next/cache";
@@ -36,6 +41,7 @@ import { redirect } from "next/navigation";
 import type { ActionResult } from "@/lib/action-result";
 import { ActionError, formString, runAction } from "@/lib/actions";
 import { recordAudit } from "@/lib/audit";
+import { planGate } from "@/lib/billing";
 import { schedulingCalendarDeps, schedulingDeps, schedulingUrl } from "@/lib/scheduling";
 import { eventTypeChanges, issueLabel, parseJsonObject } from "@/lib/scheduling-edit";
 import { type OrgContext, requireOrgPermission } from "@/lib/session";
@@ -133,6 +139,91 @@ function secretExpiry(formData: FormData): string | undefined {
   const date = new Date(`${value}T23:59:59Z`);
   if (Number.isNaN(date.getTime())) throw new ActionError("That expiry date isn't valid.");
   return date.toISOString();
+}
+
+/** Environment-scoped like the API's, so the event reaches this environment's log drains. */
+function auditOauthApp(
+  context: OrgContext,
+  env: { projectId: string; environmentId: string },
+  action: string,
+  id: string,
+  label?: string,
+) {
+  return recordAudit(context.session, {
+    organizationId: context.organization.id,
+    projectId: env.projectId,
+    environmentId: env.environmentId,
+    action,
+    target: { type: "scheduling_oauth_app", id, ...(label ? { label } : {}) },
+  });
+}
+
+export async function createOauthAppAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const provider = formString(formData, "provider");
+    const optional = (name: string, field: string) => {
+      const value = formString(formData, name).trim();
+      return value ? { [field]: value } : {};
+    };
+    const secretExpiresAt = secretExpiry(formData);
+    const params = checked(
+      CreateOauthAppRequest.safeParse({
+        provider,
+        client_id: formString(formData, "clientId").trim(),
+        client_secret: formString(formData, "clientSecret"),
+        ...optional("redirectUri", "redirect_uri"),
+        ...optional("completionUrl", "completion_url"),
+        ...(provider === "microsoft" ? optional("tenantId", "tenant_id") : {}),
+        ...(provider === "zoom" ? optional("webhookSecret", "webhook_secret") : {}),
+        ...(secretExpiresAt ? { secret_expires_at: secretExpiresAt } : {}),
+      }),
+    );
+    const app = await friendly(() =>
+      createOauthApp(env, params, { ...schedulingCalendarDeps(), plans: planGate() }),
+    );
+    await auditOauthApp(context, env, "scheduling_oauth_app.created", app.id, app.provider);
+    refresh();
+    return null;
+  });
+}
+
+export async function updateOauthAppAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const provider = formString(formData, "provider");
+    const clientSecret = formString(formData, "clientSecret");
+    const webhookSecret = formString(formData, "webhookSecret");
+    const params = checked(
+      UpdateOauthAppRequest.safeParse({
+        ...(clientSecret ? { client_secret: clientSecret } : {}),
+        ...(webhookSecret ? { webhook_secret: webhookSecret } : {}),
+        // An empty field clears what it holds: these forms always send all of them.
+        ...(provider === "microsoft"
+          ? { tenant_id: formString(formData, "tenantId").trim() || null }
+          : {}),
+        redirect_uri: formString(formData, "redirectUri").trim() || null,
+        completion_url: formString(formData, "completionUrl").trim() || null,
+        secret_expires_at: secretExpiry(formData) ?? null,
+      }),
+    );
+    const app = await friendly(() =>
+      updateOauthApp(env, formString(formData, "oauthAppId"), params, schedulingCalendarDeps()),
+    );
+    await auditOauthApp(context, env, "scheduling_oauth_app.updated", app.id, app.provider);
+    refresh();
+    return null;
+  });
+}
+
+export async function deleteOauthAppAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const { id } = await friendly(() => deleteOauthApp(env, formString(formData, "oauthAppId")));
+    await auditOauthApp(context, env, "scheduling_oauth_app.deleted", id);
+    refresh();
+    return null;
+  });
 }
 
 export async function createDelegationAction(_prev: ActionResult | null, formData: FormData) {
@@ -601,6 +692,7 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
       .split(/[\s,]+/)
       .filter(Boolean);
     const brandName = formString(formData, "brandName");
+    const privacyUrl = formString(formData, "privacyUrl").trim();
     const emailFrom = formString(formData, "emailFrom");
     const smsFrom = formString(formData, "smsFrom");
     const accentColor = formString(formData, "accentColor");
@@ -619,6 +711,7 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
         {
           allowed_origins: origins,
           brand_name: brandName || null,
+          privacy_url: privacyUrl || null,
           accent_color: useAccent ? accentColor : null,
           ...(newLogo
             ? { logo: { content: Buffer.from(await newLogo.arrayBuffer()).toString("base64") } }
