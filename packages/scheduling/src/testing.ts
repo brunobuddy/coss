@@ -85,6 +85,16 @@ export class FakeGoogleCalendarApi {
   /** The next event's conference is still being created, so its answer has no link yet. */
   conferencePendingNext = false;
   refreshFails = false;
+  /** A client secret Google says no to, as when it's been deleted in the Cloud console. */
+  refusedSecret: string | null = null;
+  /** Every OAuth exchange and refresh, with the app it was made with. */
+  readonly tokenRequests: {
+    grantType: string | null;
+    clientId: string | null;
+    clientSecret: string | null;
+    redirectUri: string | null;
+    refreshToken: string | null;
+  }[] = [];
   emptyFreeBusy = false;
   /** Set to accept a service account's assertions, checked against this key. */
   serviceAccountPublicKey: string | null = null;
@@ -181,6 +191,16 @@ export class FakeGoogleCalendarApi {
         }
         this.minted.push(sub);
         return json(200, { access_token: `dwd:${sub}`, expires_in: 3600 });
+      }
+      this.tokenRequests.push({
+        grantType: form.get("grant_type"),
+        clientId: form.get("client_id"),
+        clientSecret: form.get("client_secret"),
+        redirectUri: form.get("redirect_uri"),
+        refreshToken: form.get("refresh_token"),
+      });
+      if (form.get("client_secret") === this.refusedSecret) {
+        return json(401, { error: "invalid_client" });
       }
       if (this.refreshFails) return json(400, { error: "invalid_grant" });
       return json(200, { access_token: "access", refresh_token: "refresh", expires_in: 3600 });
@@ -423,6 +443,8 @@ export class FakeZoomApi {
   readonly bodies: Record<string, unknown>[] = [];
   readonly requests: string[] = [];
   readonly revoked: string[] = [];
+  /** The Basic credentials of every token request: which app asked. */
+  readonly tokenAuthorizations: string[] = [];
   userId = "zoom_user_1";
   loseNextAnswer = false;
   failNext: { path: RegExp; status: number } | null = null;
@@ -451,6 +473,7 @@ export class FakeZoomApi {
         return json(200, { status: "success" });
       }
       const form = new URLSearchParams(String(init?.body));
+      this.tokenAuthorizations.push(new Headers(init?.headers).get("authorization") ?? "");
       if (form.get("grant_type") === "refresh_token") {
         if (form.get("refresh_token") !== this.refreshToken) {
           return json(400, { error: "invalid_grant" });

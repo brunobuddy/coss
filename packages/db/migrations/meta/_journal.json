@@ -981,6 +981,13 @@
       "when": 1793837456474,
       "tag": "0139_unusual_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 140,
+      "version": "7",
+      "when": 1793888126066,
+      "tag": "0140_living_forge",
+      "breakpoints": true
     }
   ]
 }

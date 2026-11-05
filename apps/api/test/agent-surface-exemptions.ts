@@ -20,6 +20,9 @@ const SECRET = "A signing secret is shown once, when it's created: never handed 
 const DELEGATION =
   "Takes a Workspace or tenant's credentials, reaching every mailbox on a domain: set up by its admin, not an agent.";
 
+const OAUTH_APP =
+  "Takes an OAuth app's client secret, set up by whoever owns that app at the provider, not an agent.";
+
 export const AGENT_SURFACE_EXEMPTIONS: Readonly<Record<string, string>> = {
   "POST /v1/emails/batch": SENDS,
   "GET /v1/emails/batch/{id}": READ,
@@ -72,6 +75,11 @@ export const AGENT_SURFACE_EXEMPTIONS: Readonly<Record<string, string>> = {
   "PATCH /v1/scheduling/calendar_delegations/{id}": DELEGATION,
   "POST /v1/scheduling/calendar_delegations/{id}/verify": DELEGATION,
   "DELETE /v1/scheduling/calendar_delegations/{id}": REMOVES,
+  "POST /v1/scheduling/oauth_apps": OAUTH_APP,
+  "GET /v1/scheduling/oauth_apps": READ,
+  "GET /v1/scheduling/oauth_apps/{id}": READ,
+  "PATCH /v1/scheduling/oauth_apps/{id}": OAUTH_APP,
+  "DELETE /v1/scheduling/oauth_apps/{id}": REMOVES,
   "POST /v1/scheduling/hosts/{host}/calendar_connections": CHANGE,
   "DELETE /v1/scheduling/hosts/{host}/calendar_connections/{id}": REMOVES,
   "PATCH /v1/scheduling/hosts/{host}/calendars/{calendar_id}": CHANGE,

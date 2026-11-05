@@ -12,6 +12,7 @@ import {
   SchedulingBookingWebhookEvent,
   SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOauthAppWebhookEvent,
   SchedulingOutOfOfficeWebhookEvent,
   SchedulingReassignmentWebhookEvent,
 } from "@coss/scheduling/schemas";
@@ -82,6 +83,7 @@ export function webhookEventSchema(type: TestWebhookEventType): z.ZodType {
   }
   if (type.startsWith("scheduling.out_of_office.")) return SchedulingOutOfOfficeWebhookEvent;
   if (type.startsWith("scheduling.reassignment.")) return SchedulingReassignmentWebhookEvent;
+  if (type.startsWith("scheduling.oauth_app.")) return SchedulingOauthAppWebhookEvent;
   if (type.startsWith("scheduling.")) return SchedulingCalendarWebhookEvent;
   if (type.startsWith("email.")) return EmailWebhookEvent;
   if (type.startsWith("hook_endpoint.")) return HookEndpointWebhookEvent;
@@ -168,6 +170,8 @@ export const WebhookTestEventObject = z
         SchedulingCalendarDelegationWebhookEvent,
         SchedulingOutOfOfficeWebhookEvent,
         SchedulingReassignmentWebhookEvent,
+        SchedulingCalendarDelegationWebhookEvent,
+        SchedulingOauthAppWebhookEvent,
       ])
       .meta({
         description:

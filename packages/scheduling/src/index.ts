@@ -8,6 +8,7 @@ export * from "./calendar/delegation.ts";
 export { SCHEDULING_NOTIFICATION_KINDS } from "./calendar/delegation-notifications.ts";
 export { buildIcs } from "./calendar/ical.ts";
 export * from "./calendar/oauth.ts";
+export * from "./calendar/oauth-apps.ts";
 export * from "./calendar/sync.ts";
 export * from "./calendar/writes.ts";
 export * from "./calendar/zoom.ts";

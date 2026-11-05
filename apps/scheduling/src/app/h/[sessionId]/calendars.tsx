@@ -145,6 +145,10 @@ function ConnectionCard(props: {
 
 export function Calendars(props: { call: ClientCall; session: HostSession }) {
   const { call, session } = props;
+  // A customer with their own app and name speaks for themselves here, as the consent screen does.
+  const customerSpeaks = session.own_oauth_app && Boolean(session.brand_name);
+  const consentName = customerSpeaks ? session.brand_name : "coss.com";
+  const consentPrivacy = customerSpeaks ? session.privacy_url : "https://coss.com/legal/privacy";
   const [connections, setConnections] = useState<Connection[] | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [caldavOpen, setCaldavOpen] = useState(false);
@@ -381,18 +385,23 @@ export function Calendars(props: { call: ClientCall; session: HostSession }) {
             </form>
           ) : null}
           <p className="max-w-prose text-pretty text-muted-foreground text-xs">
-            Connecting a calendar lets coss.com see when you're busy and which calendars you have,
-            and add, change and remove the events for your bookings. Your other events only count as
-            busy times: coss.com never keeps their titles or details, and you can disconnect at any
-            time.{" "}
-            <a
-              className="underline underline-offset-3"
-              href="https://coss.com/legal/privacy"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              Privacy Policy
-            </a>
+            Connecting a calendar lets {consentName} see when you're busy and which calendars you
+            have, and add, change and remove the events for your bookings. Your other events only
+            count as busy times: {consentName} never keeps their titles or details, and you can
+            disconnect at any time.
+            {consentPrivacy ? (
+              <>
+                {" "}
+                <a
+                  className="underline underline-offset-3"
+                  href={consentPrivacy}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Privacy Policy
+                </a>
+              </>
+            ) : null}
           </p>
         </section>
       )}

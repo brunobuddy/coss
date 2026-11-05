@@ -9,10 +9,12 @@ import {
   completeCalendarAuthorization,
   handleCalendarPush,
   handleZoomDeauthorization,
+  oauthAppCredentials,
   verifyZoomEvent,
+  zoomOauthAppForEvents,
   zoomUrlValidation,
 } from "@coss/scheduling";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import type { AppEnv } from "../types.ts";
 
 export const SCHEDULING_CALLBACK_PATH = "/scheduling";
@@ -67,9 +69,8 @@ export function createSchedulingCallbackRoutes(opts: { calendars: CalendarDeps }
     return c.text(PAGE_TEXT[outcome], outcome === "connected" ? 200 : 400);
   });
 
-  router.post("/zoom/events", async (c) => {
-    const secret = opts.calendars.apps.zoom?.webhookSecret;
-    if (!secret) return c.body(null, 404);
+  // Whichever app sent it, it only ever reaches that app's connections.
+  const zoomEvent = async (c: Context<AppEnv>, secret: string, oauthAppId: string | null) => {
     const body = await c.req.text();
     const verified = verifyZoomEvent({
       secret,
@@ -87,9 +88,23 @@ export function createSchedulingCallbackRoutes(opts: { calendars: CalendarDeps }
       return c.json(zoomUrlValidation(event.payload.plainToken, secret));
     }
     if (event.event === "app_deauthorized" && event.payload?.user_id) {
-      await handleZoomDeauthorization(event.payload.user_id, opts.calendars);
+      await handleZoomDeauthorization(event.payload.user_id, opts.calendars, oauthAppId);
     }
     return c.body(null, 200);
+  };
+
+  router.post("/zoom/events", async (c) => {
+    const secret = opts.calendars.apps.zoom?.webhookSecret;
+    if (!secret) return c.body(null, 404);
+    return zoomEvent(c, secret, null);
+  });
+
+  // A customer's own Zoom app, with its own Secret Token: never coss.com's, or anyone else's.
+  router.post("/zoom/events/:appId", async (c) => {
+    const app = await zoomOauthAppForEvents(c.req.param("appId"));
+    const secret = app && oauthAppCredentials(app, opts.calendars.secretsKeys).webhookSecret;
+    if (!app || !secret) return c.body(null, 404);
+    return zoomEvent(c, secret, app.id);
   });
 
   router.post("/push/google", async (c) => {

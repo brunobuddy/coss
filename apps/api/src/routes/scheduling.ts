@@ -24,6 +24,7 @@ import {
   createHostSession,
   createManagerSession,
   createManageSession,
+  createOauthApp,
   createOutOfOffice,
   createReassignment,
   createSchedule,
@@ -33,6 +34,7 @@ import {
   deleteHold,
   deleteHolidayCalendar,
   deleteHost,
+  deleteOauthApp,
   deleteOutOfOffice,
   deleteSchedule,
   disconnectCalendar,
@@ -44,6 +46,7 @@ import {
   getEventType,
   getHolidayCalendar,
   getHost,
+  getOauthApp,
   getOutOfOffice,
   getReassignment,
   getSchedule,
@@ -59,6 +62,7 @@ import {
   listHolidayCalendars,
   listHolidays,
   listHosts,
+  listOauthApps,
   listOutOfOffice,
   listOutOfOfficeConflicts,
   listReassignCandidates,
@@ -86,6 +90,7 @@ import {
   updateEventType,
   updateHolidayCalendar,
   updateHost,
+  updateOauthApp,
   updateOutOfOffice,
   updateSchedule,
   updateSettings,
@@ -116,6 +121,7 @@ import {
   CreateHoldRequest,
   CreateHolidayCalendarRequest,
   CreateHostRequest,
+  CreateOauthAppRequest,
   CreateOutOfOfficeRequest,
   CreateReassignmentRequest,
   CreateSeriesRequest,
@@ -123,6 +129,7 @@ import {
   DeletedCalendarDelegation,
   DeletedHolidayCalendar,
   DeletedHost,
+  DeletedOauthApp,
   DeletedOutOfOffice,
   DeletedSchedule,
   EraseAttendeeByEmailRequest,
@@ -139,6 +146,8 @@ import {
   ListBookingEventsQuery,
   ListBookingsQuery,
   ListOutOfOfficeQuery,
+  OauthAppList,
+  OauthAppObject,
   OutOfOfficeConflictList,
   OutOfOfficeList,
   OutOfOfficeObject,
@@ -169,6 +178,7 @@ import {
   UpdateEventTypeRequest,
   UpdateHolidayCalendarRequest,
   UpdateHostRequest,
+  UpdateOauthAppRequest,
   UpdateOutOfOfficeRequest,
   UpdateSettingsRequest,
   UpsertScheduleRequest,
@@ -254,6 +264,9 @@ const CalendarParams = HostParams.extend({
 });
 const DelegationParams = z.object({
   id: param("The delegation's id.", "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m"),
+});
+const OauthAppParams = z.object({
+  id: param("The OAuth app's id.", "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m"),
 });
 const AttendeeParams = z.object({ uid: param("Your id for the attendee.", "patient_77") });
 const OutOfOfficeParams = z.object({
@@ -1326,6 +1339,117 @@ export const deleteCalendarDelegationRoute = createRoute({
     200: jsonDoc("Being removed.", DeletedCalendarDelegation),
     ...commonErrors,
     404: notFound,
+  },
+});
+
+const refusedOauthApp = errorDoc(
+  "The app isn't valid (`invalid_oauth_app`), or the provider refused its client ID and secret " +
+    "(`oauth_app_refused`), and nothing was stored.",
+);
+
+export const createOauthAppRoute = createRoute({
+  method: "post",
+  path: "/scheduling/oauth_apps",
+  operationId: "createSchedulingOauthApp",
+  tags: [TAG_CALENDARS],
+  summary: "Add your own OAuth app",
+  description:
+    "New consents in this environment use it, so the consent screen shows your brand. Connections " +
+    "made before it stay on coss.com's app until their host consents again. On the Scale plan and " +
+    "above. Secrets are never returned.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/oauth_apps"),
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: CreateOauthAppRequest } },
+    },
+  },
+  responses: {
+    201: jsonDoc("The app.", OauthAppObject),
+    ...commonErrors,
+    ...bodyErrors,
+    402: errorDoc("The plan doesn't include this (`plan_feature_unavailable`)."),
+    422: refusedOauthApp,
+  },
+});
+
+export const listOauthAppsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/oauth_apps",
+  operationId: "listSchedulingOauthApps",
+  tags: [TAG_CALENDARS],
+  summary: "List your OAuth apps",
+  description: "At most one per provider, with how many connections use each.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  responses: {
+    200: jsonDoc("The apps.", OauthAppList),
+    ...commonErrors,
+  },
+});
+
+export const getOauthAppRoute = createRoute({
+  method: "get",
+  path: "/scheduling/oauth_apps/{id}",
+  operationId: "getSchedulingOauthApp",
+  tags: [TAG_CALENDARS],
+  summary: "Get an OAuth app",
+  description: "Its status, what to register at the provider, and how many connections use it.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: OauthAppParams },
+  responses: {
+    200: jsonDoc("The app.", OauthAppObject),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
+export const updateOauthAppRoute = createRoute({
+  method: "patch",
+  path: "/scheduling/oauth_apps/{id}",
+  operationId: "updateSchedulingOauthApp",
+  tags: [TAG_CALENDARS],
+  summary: "Update an OAuth app",
+  description:
+    "A new client secret is tried on a connection before it replaces the old one, and ends an outage " +
+    "if it works. Its client ID can't change: a different app needs its hosts to consent again.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "PATCH /v1/scheduling/oauth_apps/{id}"),
+  request: {
+    params: OauthAppParams,
+    body: {
+      required: true,
+      content: { "application/json": { schema: UpdateOauthAppRequest } },
+    },
+  },
+  responses: {
+    200: jsonDoc("The app.", OauthAppObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: refusedOauthApp,
+  },
+});
+
+export const deleteOauthAppRoute = createRoute({
+  method: "delete",
+  path: "/scheduling/oauth_apps/{id}",
+  operationId: "deleteSchedulingOauthApp",
+  tags: [TAG_CALENDARS],
+  summary: "Delete an OAuth app",
+  description:
+    "Refused while connections use it (`oauth_app_in_use`), since only it can refresh their access: " +
+    "disconnect them first. New consents go back to coss.com's app.",
+  security: [{ bearerAuth: [] }],
+  middleware: acting("update"),
+  request: { params: OauthAppParams },
+  responses: {
+    200: jsonDoc("Deleted.", DeletedOauthApp),
+    ...commonErrors,
+    404: notFound,
+    422: errorDoc("Connections still use it (`oauth_app_in_use`)."),
   },
 });
 
@@ -2908,6 +3032,50 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       { object: "scheduling.calendar_delegation" as const, id, deleted: true as const },
       200,
     );
+  });
+
+  router.openapi(createOauthAppRoute, async (c) => {
+    const app = await createOauthApp(c.var.auth, c.req.valid("json"), {
+      ...calendars(),
+      plans: c.var.plans ?? undefined,
+    });
+    await recordApiAudit(c, {
+      action: "scheduling_oauth_app.created",
+      target: { type: "scheduling_oauth_app", id: app.id, label: app.provider },
+    });
+    return c.json(app, 201);
+  });
+
+  router.openapi(listOauthAppsRoute, async (c) => {
+    const data = await listOauthApps(c.var.auth, calendars());
+    return c.json({ object: "list" as const, data, has_more: false }, 200);
+  });
+
+  router.openapi(getOauthAppRoute, async (c) =>
+    c.json(await getOauthApp(c.var.auth, c.req.valid("param").id, calendars()), 200),
+  );
+
+  router.openapi(updateOauthAppRoute, async (c) => {
+    const app = await updateOauthApp(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      calendars(),
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_oauth_app.updated",
+      target: { type: "scheduling_oauth_app", id: app.id, label: app.provider },
+    });
+    return c.json(app, 200);
+  });
+
+  router.openapi(deleteOauthAppRoute, async (c) => {
+    const { id } = await deleteOauthApp(c.var.auth, c.req.valid("param").id);
+    await recordApiAudit(c, {
+      action: "scheduling_oauth_app.deleted",
+      target: { type: "scheduling_oauth_app", id },
+    });
+    return c.json({ object: "scheduling.oauth_app" as const, id, deleted: true as const }, 200);
   });
 
   router.openapi(setSimulatedBusyRoute, async (c) => {

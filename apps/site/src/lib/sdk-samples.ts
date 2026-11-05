@@ -561,6 +561,26 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
     method: "scheduling.calendarDelegations.delete",
     args: (r) => [pathId(r)],
   },
+  "POST /v1/scheduling/oauth_apps": {
+    method: "scheduling.oauthApps.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/oauth_apps": {
+    method: "scheduling.oauthApps.list",
+    args: () => [],
+  },
+  "GET /v1/scheduling/oauth_apps/{id}": {
+    method: "scheduling.oauthApps.get",
+    args: (r) => [pathId(r)],
+  },
+  "PATCH /v1/scheduling/oauth_apps/{id}": {
+    method: "scheduling.oauthApps.update",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/oauth_apps/{id}": {
+    method: "scheduling.oauthApps.delete",
+    args: (r) => [pathId(r)],
+  },
   "POST /v1/scheduling/hosts/{host}/sessions": {
     method: "scheduling.sessions.createForHost",
     args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],

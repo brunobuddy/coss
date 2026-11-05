@@ -164,6 +164,16 @@ export const schedulingDelegationProvider = pgEnum("scheduling_delegation_provid
   "google",
   "microsoft",
 ]);
+export const schedulingOauthAppProvider = pgEnum("scheduling_oauth_app_provider", [
+  "google",
+  "microsoft",
+  "zoom",
+]);
+export const schedulingOauthAppStatus = pgEnum("scheduling_oauth_app_status", [
+  "active",
+  // The provider refused the app's own credentials. Hosts aren't touched: their calendars go stale.
+  "failing",
+]);
 export const schedulingDelegationStatus = pgEnum("scheduling_delegation_status", [
   "pending",
   "active",
@@ -603,6 +613,49 @@ export const schedulingCalendarDelegation = pgTable(
   ],
 );
 
+/**
+ * A customer's own OAuth app for one provider, so consent screens show their brand. New consents in
+ * the environment use it; a connection stays on the app that issued its tokens (`oauth_app_id`).
+ */
+export const schedulingOauthApp = pgTable(
+  "scheduling_oauth_app",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => newId(ID_PREFIXES.schedulingOauthApp)),
+    organizationId: text("organization_id").notNull(),
+    projectId: text("project_id").notNull(),
+    environmentId: text("environment_id").notNull(),
+    provider: schedulingOauthAppProvider("provider").notNull(),
+    clientId: text("client_id").notNull(),
+    // Microsoft only: a single-tenant app can't use `common`. It goes into a URL, so it's validated.
+    tenantId: text("tenant_id"),
+    // `encryptSecret`, and listed in `reencryptWebhookSecrets`. Never returned.
+    encryptedCredentials: text("encrypted_credentials").notNull(),
+    // Null: coss.com's callback. Set: the customer's own page, which forwards there.
+    redirectUri: text("redirect_uri"),
+    // Where the browser lands afterwards when the consent didn't name a `return_url`.
+    completionUrl: text("completion_url"),
+    secretExpiresAt: instant("secret_expires_at"),
+    status: schedulingOauthAppStatus("status").notNull().default("active"),
+    lastErrorCode: text("last_error_code"),
+    lastErrorAt: instant("last_error_at"),
+    // A consent has completed through it, which is the first proof its secret works.
+    verifiedAt: instant("verified_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    foreignKey({
+      name: "scheduling_oauth_app_environment_fk",
+      columns: [t.environmentId, t.organizationId],
+      foreignColumns: [environment.id, environment.organizationId],
+    }).onDelete("cascade"),
+    unique("scheduling_oauth_app_id_organization_unique").on(t.id, t.organizationId),
+    unique("scheduling_oauth_app_provider_unique").on(t.environmentId, t.provider),
+  ],
+);
+
 export const schedulingCalendarConnection = pgTable(
   "scheduling_calendar_connection",
   {
@@ -620,6 +673,8 @@ export const schedulingCalendarConnection = pgTable(
     encryptedCredentials: text("encrypted_credentials"),
     // Set: the delegation's credentials reach this mailbox, and it isn't the host's to end.
     delegationId: text("delegation_id"),
+    // The customer's app that issued its tokens, which only that app can refresh. Null: coss.com's.
+    oauthAppId: text("oauth_app_id"),
     // When a delegation first reached this mailbox. Null with one: it never has, so a host's calendars
     // here are only a stand-in, and there are no events.
     reachedAt: instant("reached_at"),
@@ -643,7 +698,16 @@ export const schedulingCalendarConnection = pgTable(
         schedulingCalendarDelegation.organizationId,
       ],
     }).onDelete("cascade"),
+    // No cascade: deleting an app with connections is refused, as their tokens would be useless.
+    foreignKey({
+      name: "scheduling_calendar_connection_oauth_app_fk",
+      columns: [t.oauthAppId, t.organizationId],
+      foreignColumns: [schedulingOauthApp.id, schedulingOauthApp.organizationId],
+    }),
     unique("scheduling_calendar_connection_id_organization_unique").on(t.id, t.organizationId),
+    index("scheduling_calendar_connection_oauth_app_idx")
+      .on(t.oauthAppId)
+      .where(sql`${t.oauthAppId} IS NOT NULL`),
     index("scheduling_calendar_connection_delegation_idx")
       .on(t.delegationId)
       .where(sql`${t.delegationId} IS NOT NULL`),
@@ -1458,6 +1522,10 @@ export const schedulingOauthState = pgTable(
     stateHash: text("state_hash").notNull(),
     encryptedCodeVerifier: text("encrypted_code_verifier").notNull(),
     returnUrl: text("return_url"),
+    // Fixed when the consent starts: a code can only be exchanged with what it was issued for.
+    oauthAppId: text("oauth_app_id"),
+    redirectUri: text("redirect_uri"),
+    tenantId: text("tenant_id"),
     expiresAt: instant("expires_at").notNull(),
     createdAt: createdAt(),
   },
@@ -1466,6 +1534,11 @@ export const schedulingOauthState = pgTable(
       name: "scheduling_oauth_state_host_fk",
       columns: [t.hostId, t.organizationId],
       foreignColumns: [schedulingHost.id, schedulingHost.organizationId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "scheduling_oauth_state_oauth_app_fk",
+      columns: [t.oauthAppId, t.organizationId],
+      foreignColumns: [schedulingOauthApp.id, schedulingOauthApp.organizationId],
     }).onDelete("cascade"),
     unique("scheduling_oauth_state_hash_unique").on(t.stateHash),
     index("scheduling_oauth_state_expires_at_idx").on(t.expiresAt),
@@ -1484,6 +1557,8 @@ export const schedulingSettings = pgTable(
     allowedOrigins: jsonb("allowed_origins").$type<string[]>().notNull().default([]),
     brandName: text("brand_name"),
     accentColor: text("accent_color"),
+    // What the host's page links to before a consent, with `brand_name` and the customer's own app.
+    privacyUrl: text("privacy_url"),
     emailFrom: text("email_from"),
     emailReplyTo: text("email_reply_to"),
     smsFrom: text("sms_from"),

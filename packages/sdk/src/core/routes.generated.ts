@@ -161,6 +161,8 @@ export const ROUTES: readonly string[] = [
   "/v1/scheduling/hosts/{host}/sessions",
   "/v1/scheduling/hosts/{host}/simulated_busy",
   "/v1/scheduling/manager_sessions",
+  "/v1/scheduling/oauth_apps",
+  "/v1/scheduling/oauth_apps/{id}",
   "/v1/scheduling/out_of_office",
   "/v1/scheduling/out_of_office/by_external_id/{external_id}",
   "/v1/scheduling/out_of_office/{id}",

@@ -675,6 +675,8 @@ export interface SchedulingSettings {
   allowed_origins: string[];
   brand_name: string | null;
   accent_color: string | null;
+  /** Linked on a host's page once this environment has its own OAuth app and a `brand_name`. */
+  privacy_url: string | null;
   logo: SchedulingLogo | null;
   email_from: string | null;
   sms_from: string | null;
@@ -695,6 +697,8 @@ export interface UpdateSchedulingSettingsParams {
   allowed_origins?: string[];
   brand_name?: string | null;
   accent_color?: string | null;
+  /** An https URL. */
+  privacy_url?: string | null;
   /** `content` is a PNG or JPEG's bytes, base64-encoded, 200 KB at most. */
   logo?: { content: string } | null;
   email_from?: string | null;
@@ -736,6 +740,8 @@ export interface SchedulingCalendarConnection {
   status: "active" | "needs_reauth";
   /** The calendar delegation that manages it, which can't be disconnected or reconnected by itself. */
   delegation: string | null;
+  /** Your own OAuth app its access came through. `null`: coss.com's, or no consent was involved. */
+  oauth_app: string | null;
   calendars: {
     id: string;
     external_id: string;
@@ -820,6 +826,80 @@ export interface SchedulingCalendarDelegation {
 
 export interface DeletedSchedulingCalendarDelegation {
   object: "scheduling.calendar_delegation";
+  id: string;
+  deleted: true;
+}
+
+interface CreateSchedulingOauthAppBase {
+  client_id: string;
+  /** Never returned. */
+  client_secret: string;
+  /**
+   * A page on your own domain, registered with the provider, that forwards `code` and `state` to
+   * `coss_callback_url`. Google requires this for an external app.
+   */
+  redirect_uri?: string;
+  /** Where the browser lands after a consent that didn't name a `return_url`. */
+  completion_url?: string;
+  /** Owners and admins are warned 14 days before. */
+  secret_expires_at?: string;
+}
+
+export type CreateSchedulingOauthAppParams =
+  | (CreateSchedulingOauthAppBase & { provider: "google" })
+  | (CreateSchedulingOauthAppBase & {
+      provider: "microsoft";
+      /** For an app that's only for your own tenant. */
+      tenant_id?: string;
+    })
+  | (CreateSchedulingOauthAppBase & {
+      provider: "zoom";
+      /** The app's Secret Token, which signs its events at `zoom_event_url`. Never returned. */
+      webhook_secret?: string;
+    });
+
+export interface UpdateSchedulingOauthAppParams {
+  /** Tried on a connection before it replaces the old one. */
+  client_secret?: string;
+  tenant_id?: string | null;
+  webhook_secret?: string | null;
+  redirect_uri?: string | null;
+  completion_url?: string | null;
+  secret_expires_at?: string | null;
+}
+
+export interface SchedulingOauthApp {
+  object: "scheduling.oauth_app";
+  id: string;
+  provider: "google" | "microsoft" | "zoom";
+  client_id: string;
+  tenant_id: string | null;
+  redirect_uri: string | null;
+  /** Register this with the provider if `redirect_uri` isn't set. If it is, that page forwards here. */
+  coss_callback_url: string;
+  completion_url: string | null;
+  /** Zoom only: the Event notification endpoint URL for your app's deauthorization events. */
+  zoom_event_url: string | null;
+  /** What to enable on your app at the provider. */
+  scopes: string[];
+  /**
+   * `failing`: the provider refused the app's credentials. New consents are refused, and calendars
+   * connected through it can't be read until they work again.
+   */
+  status: "active" | "failing";
+  last_error_code: string | null;
+  last_error_at: string | null;
+  secret_expires_at: string | null;
+  /** When a consent first completed through this app, which proves its secret. */
+  verified_at: string | null;
+  /** Calendar connections using this app. It can't be deleted while there are any. */
+  connections: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeletedSchedulingOauthApp {
+  object: "scheduling.oauth_app";
   id: string;
   deleted: true;
 }
@@ -953,13 +1033,17 @@ export type SchedulingOutOfOfficeWebhookEventType =
   | "scheduling.out_of_office.ended";
 
 export type SchedulingReassignmentWebhookEventType = "scheduling.reassignment.completed";
+export type SchedulingOauthAppWebhookEventType =
+  | "scheduling.oauth_app.failing"
+  | "scheduling.oauth_app.restored";
 
 export type SchedulingWebhookEventType =
   | SchedulingBookingWebhookEventType
   | SchedulingCalendarWebhookEventType
   | SchedulingCalendarDelegationWebhookEventType
   | SchedulingOutOfOfficeWebhookEventType
-  | SchedulingReassignmentWebhookEventType;
+  | SchedulingReassignmentWebhookEventType
+  | SchedulingOauthAppWebhookEventType;
 
 /** Ids, times and statuses only: a person's details and answers come from retrieving the booking. */
 export interface SchedulingBookingWebhookEventData {
@@ -1003,6 +1087,21 @@ export interface SchedulingCalendarWebhookEvent {
   api_version: string;
   created_at: string;
   data: { host_id: string; connection_id: string; provider: string; occurred_at: string };
+}
+
+export interface SchedulingOauthAppWebhookEvent {
+  id: string;
+  object: "event";
+  type: SchedulingOauthAppWebhookEventType;
+  api_version: string;
+  created_at: string;
+  data: {
+    oauth_app_id: string;
+    provider: string;
+    /** What the provider said, when it refused. */
+    code: string | null;
+    occurred_at: string;
+  };
 }
 
 export interface SchedulingCalendarDelegationWebhookEvent {

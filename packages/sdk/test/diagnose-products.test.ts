@@ -804,6 +804,7 @@ describe("diagnoseSchedulingSlots", () => {
       {
         object: "scheduling.calendar_connection" as const,
         delegation: null,
+        oauth_app: null,
         id: "scc_1",
         host: "shost_1",
         provider: "caldav" as const,
@@ -850,6 +851,7 @@ describe("diagnoseSchedulingSlots", () => {
       {
         object: "scheduling.calendar_connection" as const,
         delegation: null,
+        oauth_app: null,
         id: "scc_1",
         host: "shost_1",
         provider: "google" as const,
@@ -906,6 +908,7 @@ describe("diagnoseSchedulingSlots", () => {
     const connection = (provider: "zoom" | "simulated") => ({
       object: "scheduling.calendar_connection" as const,
       delegation: null,
+      oauth_app: null,
       id: "scc_1",
       host: "shost_1",
       provider,
@@ -945,6 +948,7 @@ describe("diagnoseSchedulingSlots", () => {
             {
               object: "scheduling.calendar_connection",
               delegation: null,
+              oauth_app: null,
               id: "scc_1",
               host: "shost_1",
               provider: "google",

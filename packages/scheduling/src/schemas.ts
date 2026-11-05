@@ -50,12 +50,17 @@ export const SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES = [
 ] as const;
 export type OutOfOfficeWebhookEventType = (typeof SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES)[number];
 export const SCHEDULING_REASSIGNMENT_EVENT_TYPES = ["scheduling.reassignment.completed"] as const;
+export const SCHEDULING_OAUTH_APP_EVENT_TYPES = [
+  "scheduling.oauth_app.failing",
+  "scheduling.oauth_app.restored",
+] as const;
 export const SCHEDULING_WEBHOOK_EVENT_TYPES = [
   ...SCHEDULING_BOOKING_EVENT_TYPES,
   ...SCHEDULING_CALENDAR_EVENT_TYPES,
   ...SCHEDULING_DELEGATION_EVENT_TYPES,
   ...SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES,
   ...SCHEDULING_REASSIGNMENT_EVENT_TYPES,
+  ...SCHEDULING_OAUTH_APP_EVENT_TYPES,
 ] as const;
 export type SchedulingWebhookEventType = (typeof SCHEDULING_WEBHOOK_EVENT_TYPES)[number];
 
@@ -1840,6 +1845,10 @@ export const SettingsObject = z
     logo: SettingsLogo.nullable().meta({
       description: "At the top of the hosted pages, and of emails sent from `email_from`.",
     }),
+    privacy_url: z.string().nullable().meta({
+      description:
+        "Your privacy policy, linked on a host's page beside what connecting a calendar does, once this environment has its own OAuth app and a `brand_name`.",
+    }),
     email_from: z.string().nullable().meta({
       description: "Sender of booking emails, on a verified domain.",
     }),
@@ -1895,6 +1904,7 @@ export const SettingsObject = z
         brand_name: "Acme Health",
         accent_color: null,
         logo: null,
+        privacy_url: null,
         email_from: "appointments@example.com",
         sms_from: null,
         name_host_in_attendee_emails: false,
@@ -1935,6 +1945,15 @@ export const UpdateSettingsRequest = z
       .nullable()
       .optional()
       .meta({ description: "Your logo, a PNG or JPEG. `null` removes it." }),
+    privacy_url: z
+      .url({ protocol: /^https$/ })
+      .max(2000)
+      .nullable()
+      .optional()
+      .meta({
+        description:
+          "Your privacy policy, as an https URL, for hosts connecting a calendar through your own OAuth app. `null` removes it.",
+      }),
     email_from: z.email().max(320).nullable().optional().meta({
       description:
         "Sender of booking emails, on a verified domain. `null`: coss.com's own address.",
@@ -3004,6 +3023,35 @@ export const SchedulingCalendarWebhookEvent = z
     ],
   });
 
+export const SchedulingOauthAppWebhookEvent = z
+  .object({
+    ...webhookEnvelope,
+    type: z.enum(SCHEDULING_OAUTH_APP_EVENT_TYPES),
+    data: z.object({
+      oauth_app_id: z.string(),
+      provider: z.string(),
+      code: z.string().nullable().meta({ description: "What the provider said, when it refused." }),
+      occurred_at: z.string(),
+    }),
+  })
+  .meta({
+    id: "SchedulingOauthAppWebhookEvent",
+    examples: [
+      {
+        id: "whev_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        object: "event",
+        type: "scheduling.oauth_app.failing",
+        created_at: "2027-01-01T10:00:00.000Z",
+        data: {
+          oauth_app_id: "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m",
+          provider: "google",
+          code: "app_refused",
+          occurred_at: "2027-01-01T10:00:00.000Z",
+        },
+      },
+    ],
+  });
+
 export const SchedulingCalendarDelegationWebhookEvent = z
   .object({
     ...webhookEnvelope,
@@ -3182,6 +3230,7 @@ const CONNECTION_EXAMPLE = {
   account: "ana@example.com",
   status: "active" as const,
   delegation: null,
+  oauth_app: null,
   calendars: [
     {
       id: "cal_01kd2m9a0b1c2d3e4f5g6h7j8m",
@@ -3209,6 +3258,10 @@ export const CalendarConnectionObject = z
     status: z.enum(["active", "needs_reauth"]).meta({
       description: "`needs_reauth`: access was lost, and this host isn't offered until it's back.",
     }),
+    oauth_app: z.string().nullable().meta({
+      description:
+        "Your own OAuth app this connection's access came through. `null`: coss.com's, or no consent was involved.",
+    }),
     delegation: z.string().nullable().meta({
       description:
         "The calendar delegation that manages this connection. It can't be disconnected or reconnected by itself.",
@@ -3230,6 +3283,164 @@ export const CalendarConnectionObject = z
     created_at: z.string(),
   })
   .meta({ id: "SchedulingCalendarConnection", examples: [CONNECTION_EXAMPLE] });
+
+const ClientId = z.string().min(1).max(500).regex(/^\S+$/, "A client ID has no spaces.").meta({
+  description: "The app's client ID at the provider.",
+});
+
+const ClientSecret = z.string().min(1).max(1000).meta({
+  description: "The app's client secret. Never returned.",
+});
+
+const OauthAppTenant = z
+  .string()
+  .regex(/^[a-zA-Z0-9](?:[a-zA-Z0-9.-]{0,253})$/, "A tenant ID or domain, like contoso.com.")
+  .meta({
+    description:
+      "The Directory (tenant) ID, for an app that's only for your own tenant. Leave it out for a multi-tenant app.",
+  });
+
+const RedirectUri = z.string().max(2000).meta({
+  description:
+    "A page on your own domain, registered with the provider, that forwards `code` and `state` to `coss_callback_url`. Google requires this for an external app, since it has to verify the redirect's domain as yours. Leave it out to use `coss_callback_url` directly.",
+});
+
+const CompletionUrl = z.string().max(2000).meta({
+  description:
+    "Where the browser lands after a consent that didn't name a `return_url`, with `coss_calendar` set to `connected`, `denied` or `invalid`. Leave it out for a plain page saying what happened.",
+});
+
+const OauthAppSecretExpiresAt = z.iso.datetime({ offset: true }).meta({
+  description: "When the client secret expires. Owners and admins are warned 14 days before.",
+});
+
+const ZoomWebhookSecret = z.string().min(1).max(1000).meta({
+  description:
+    "The Secret Token of your Zoom app, which signs its events at `zoom_event_url`. Never returned.",
+});
+
+export const CreateOauthAppRequest = z
+  .discriminatedUnion("provider", [
+    z.strictObject({
+      provider: z.literal("google"),
+      client_id: ClientId,
+      client_secret: ClientSecret,
+      redirect_uri: RedirectUri.optional(),
+      completion_url: CompletionUrl.optional(),
+      secret_expires_at: OauthAppSecretExpiresAt.optional(),
+    }),
+    z.strictObject({
+      provider: z.literal("microsoft"),
+      client_id: ClientId,
+      client_secret: ClientSecret,
+      tenant_id: OauthAppTenant.optional(),
+      redirect_uri: RedirectUri.optional(),
+      completion_url: CompletionUrl.optional(),
+      secret_expires_at: OauthAppSecretExpiresAt.optional(),
+    }),
+    z.strictObject({
+      provider: z.literal("zoom"),
+      client_id: ClientId,
+      client_secret: ClientSecret,
+      webhook_secret: ZoomWebhookSecret.optional(),
+      redirect_uri: RedirectUri.optional(),
+      completion_url: CompletionUrl.optional(),
+      secret_expires_at: OauthAppSecretExpiresAt.optional(),
+    }),
+  ])
+  .meta({
+    id: "CreateOauthAppRequest",
+    examples: [
+      {
+        provider: "google",
+        client_id: "1234567890-abc.apps.googleusercontent.com",
+        client_secret: "GOCSPX-abcdefghijklmnopqrstuvwxyz",
+        redirect_uri: "https://example.com/oauth/google",
+        completion_url: "https://example.com/calendar-connected",
+      },
+    ],
+  });
+export type CreateOauthAppRequestOutput = z.output<typeof CreateOauthAppRequest>;
+
+export const UpdateOauthAppRequest = z
+  .strictObject({
+    client_secret: ClientSecret.optional().meta({
+      description:
+        "A new client secret. It's tried on a connection before it replaces the old one.",
+    }),
+    tenant_id: OauthAppTenant.nullable().optional(),
+    webhook_secret: ZoomWebhookSecret.nullable().optional(),
+    redirect_uri: RedirectUri.nullable().optional(),
+    completion_url: CompletionUrl.nullable().optional(),
+    secret_expires_at: OauthAppSecretExpiresAt.nullable().optional(),
+  })
+  .meta({
+    id: "UpdateOauthAppRequest",
+    examples: [{ client_secret: "GOCSPX-abcdefghijklmnopqrstuvwxyz" }],
+  });
+export type UpdateOauthAppRequestOutput = z.output<typeof UpdateOauthAppRequest>;
+
+const OAUTH_APP_EXAMPLE = {
+  object: "scheduling.oauth_app" as const,
+  id: "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  provider: "google" as const,
+  client_id: "1234567890-abc.apps.googleusercontent.com",
+  tenant_id: null,
+  redirect_uri: "https://example.com/oauth/google",
+  coss_callback_url: "https://api.coss.com/scheduling/oauth/google/callback",
+  completion_url: "https://example.com/calendar-connected",
+  zoom_event_url: null,
+  scopes: ["https://www.googleapis.com/auth/calendar.events.freebusy"],
+  status: "active" as const,
+  last_error_code: null,
+  last_error_at: null,
+  secret_expires_at: null,
+  verified_at: "2027-01-01T10:00:00.000Z",
+  connections: 12,
+  created_at: "2027-01-01T10:00:00.000Z",
+  updated_at: "2027-01-01T10:00:00.000Z",
+};
+
+export const OauthAppObject = z
+  .object({
+    object: z.literal("scheduling.oauth_app"),
+    id: z.string(),
+    provider: z.enum(["google", "microsoft", "zoom"]),
+    client_id: z.string(),
+    tenant_id: z.string().nullable(),
+    redirect_uri: z.string().nullable(),
+    coss_callback_url: z.string().meta({
+      description:
+        "Register this with the provider if `redirect_uri` isn't set. If it is, that page forwards `code` and `state` here.",
+    }),
+    completion_url: z.string().nullable(),
+    zoom_event_url: z.string().nullable().meta({
+      description:
+        "Zoom only: the Event notification endpoint URL for your app's deauthorization events.",
+    }),
+    scopes: z.array(z.string()).meta({
+      description: "What to enable on your app at the provider.",
+    }),
+    status: z.enum(["active", "failing"]).meta({
+      description:
+        "`failing`: the provider refused the app's credentials. New consents are refused, and calendars connected through it can't be read until they work again.",
+    }),
+    last_error_code: z.string().nullable(),
+    last_error_at: z.string().nullable(),
+    secret_expires_at: z.string().nullable(),
+    verified_at: z.string().nullable().meta({
+      description: "When a consent first completed through this app, which proves its secret.",
+    }),
+    connections: z.number().int().meta({
+      description: "Calendar connections using this app. It can't be deleted while there are any.",
+    }),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .meta({ id: "SchedulingOauthApp", examples: [OAUTH_APP_EXAMPLE] });
+export type OauthAppObjectOutput = z.output<typeof OauthAppObject>;
+
+export const OauthAppList = listOf(OauthAppObject, "SchedulingOauthAppList", OAUTH_APP_EXAMPLE);
 
 const DelegationDomain = z
   .string()
@@ -3373,6 +3584,12 @@ export const CalendarDelegationList = listOf(
   CalendarDelegationObject,
   "SchedulingCalendarDelegationList",
   DELEGATION_EXAMPLE,
+);
+
+export const DeletedOauthApp = deleted(
+  "scheduling.oauth_app",
+  "DeletedSchedulingOauthApp",
+  "calapp_01kd2m9a0b1c2d3e4f5g6h7j8m",
 );
 
 export const DeletedCalendarDelegation = deleted(

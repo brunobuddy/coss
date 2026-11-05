@@ -107,6 +107,7 @@ export const PLANS = {
         schedulingHostPortal: false,
         schedulingRouting: false,
         schedulingWhiteLabel: false,
+        schedulingOauthApps: false,
       },
       limits: {
         domains: 1,
@@ -164,6 +165,7 @@ export const PLANS = {
         schedulingHostPortal: false,
         schedulingRouting: false,
         schedulingWhiteLabel: false,
+        schedulingOauthApps: false,
       },
       limits: {
         domains: 10,
@@ -228,6 +230,7 @@ export const PLANS = {
         schedulingHostPortal: true,
         schedulingRouting: true,
         schedulingWhiteLabel: true,
+        schedulingOauthApps: true,
       },
       limits: {
         domains: 100,
@@ -292,6 +295,7 @@ export const PLANS = {
         schedulingHostPortal: true,
         schedulingRouting: true,
         schedulingWhiteLabel: true,
+        schedulingOauthApps: true,
       },
       limits: {
         domains: null,
