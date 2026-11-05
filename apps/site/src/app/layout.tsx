@@ -2,6 +2,7 @@ import "./global.css";
 import { fontMono, fontSans } from "@coss/ui/fonts";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import type { Metadata, Viewport } from "next";
+import { FirstTouchCapture } from "@/components/first-touch-capture";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="relative bg-sidebar font-sans text-foreground antialiased">
         {/* Fumadocs' own search dialog stays off: the header's command menu searches instead. */}
         <RootProvider search={{ enabled: false }}>{children}</RootProvider>
+        <FirstTouchCapture />
       </body>
     </html>
   );

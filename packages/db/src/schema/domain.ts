@@ -3938,3 +3938,20 @@ export const organizationLogo = pgTable("organization_logo", {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
+
+/**
+ * Where an account first came from, reported once by the browser after sign-up
+ * (`@coss/auth/first-touch`). Per user, not per organization, and it goes with the user.
+ */
+export const signupAttribution = pgTable("signup_attribution", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  landingPath: text("landing_path").notNull(),
+  referrerHost: text("referrer_host"),
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  landedAt: timestamp("landed_at", { withTimezone: true }).notNull(),
+  createdAt: createdAt(),
+});

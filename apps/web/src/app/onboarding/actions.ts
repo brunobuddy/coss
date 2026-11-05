@@ -1,11 +1,12 @@
 "use server";
 
-import { createFirstProject } from "@coss/tenancy";
+import { createFirstProject, recordSignupAttribution } from "@coss/tenancy";
 import { refresh } from "next/cache";
+import { z } from "zod";
 import type { ActionResult } from "@/lib/action-result";
 import { formString, runAction } from "@/lib/actions";
 import { recordAudit } from "@/lib/audit";
-import { requireOrgPermission } from "@/lib/session";
+import { requireOrgPermission, requireSession } from "@/lib/session";
 
 /** An organization's first project, so a new owner has an environment and API keys at once. */
 export async function createFirstProjectAction(
@@ -26,6 +27,39 @@ export async function createFirstProjectAction(
       });
     }
     refresh();
+    return null;
+  });
+}
+
+const CAMPAIGN_VALUE = z
+  .string()
+  .regex(/^[\w.+ -]{1,100}$/)
+  .nullable();
+
+const FirstTouch = z.strictObject({
+  landingPath: z.string().startsWith("/").max(200),
+  referrerHost: z
+    .string()
+    .regex(/^[a-z0-9.-]{1,253}$/)
+    .nullable(),
+  utmSource: CAMPAIGN_VALUE,
+  utmMedium: CAMPAIGN_VALUE,
+  utmCampaign: CAMPAIGN_VALUE,
+  landedAt: z.iso.datetime().pipe(z.coerce.date()),
+});
+
+/**
+ * What the browser remembers of the visit that led to this account. Written only for the signed-in
+ * user, never while impersonating them; a value that doesn't parse is simply dropped.
+ */
+export async function recordSignupAttributionAction(touch: unknown): Promise<ActionResult> {
+  return runAction(async () => {
+    const session = await requireSession();
+    if (session.session.impersonatedBy) return null;
+    const parsed = FirstTouch.safeParse(touch);
+    if (parsed.success) {
+      await recordSignupAttribution({ userId: session.user.id, ...parsed.data });
+    }
     return null;
   });
 }

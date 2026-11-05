@@ -981,6 +981,13 @@
       "when": 1793837456474,
       "tag": "0139_unusual_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 140,
+      "version": "7",
+      "when": 1793887912741,
+      "tag": "0140_worthless_grim_reaper",
+      "breakpoints": true
     }
   ]
 }

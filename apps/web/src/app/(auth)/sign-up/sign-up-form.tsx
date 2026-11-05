@@ -1,6 +1,7 @@
 "use client";
 
 import { DEVICE_TOKEN_HEADER, type SocialProvider } from "@coss/auth/constants";
+import { rememberFirstTouch } from "@coss/auth/first-touch";
 import { Button } from "@coss/ui/components/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@coss/ui/components/card";
 import { Field, FieldDescription, FieldLabel } from "@coss/ui/components/field";
@@ -8,7 +9,7 @@ import { Input } from "@coss/ui/components/input";
 import { Separator } from "@coss/ui/components/separator";
 import { collectDevice } from "coss/device";
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { FormError } from "@/components/form-error";
 import { SocialSignInButtons } from "@/components/social-sign-in";
 import { useTurnstile } from "@/components/turnstile";
@@ -30,6 +31,10 @@ export function SignUpForm({
   initialError: string | null;
 }) {
   const turnstile = useTurnstile(turnstileSiteKey, "sign-up");
+  // For visitors whose first page is this one; the site's pages do the same for the rest.
+  useEffect(() => {
+    rememberFirstTouch();
+  }, []);
   const [error, setError] = useState<string | null>(initialError);
   const [pending, setPending] = useState(false);
   const [createdEmail, setCreatedEmail] = useState<string | null>(null);
