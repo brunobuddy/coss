@@ -14,7 +14,7 @@ import { withoutNestedFolders } from "../src/lib/docs-tree";
 import { ALL_PRODUCT_LINKS, FOOTER_COLUMNS } from "../src/lib/nav";
 import { singleOperationProps } from "../src/lib/openapi-single-operation";
 import { rateTables } from "../src/lib/pricing";
-import { metaDescription } from "../src/lib/seo";
+import { metaDescription, pricingSchema } from "../src/lib/seo";
 import { markdownResponse, PRODUCTS, SITE_DESCRIPTION } from "../src/lib/site";
 import { FREE_TOOLS } from "../src/lib/tools";
 
@@ -272,4 +272,8 @@ describe("changelog", () => {
     expect(rss.match(/<item>/g)).toHaveLength(CHANGELOG.length);
     for (const entry of CHANGELOG) expect(markdown).toContain(entry.title);
   });
+});
+
+test("the pricing page isn't a merchant listing, which Google refuses without an image", () => {
+  expect(pricingSchema("Plans.")["@type"]).toBe("SoftwareApplication");
 });
