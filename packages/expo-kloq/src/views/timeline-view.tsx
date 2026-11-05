@@ -109,10 +109,14 @@ export function TimelineView({
                 key={lane.id}
                 bars={placed.filter((e) => e.laneIndex === i)}
                 onOpen={onOpen}
-                onCreateAt={(min) => {
-                  const start = new Date(window.start.getTime() + min * 60_000);
-                  onCreate(start, new Date(start.getTime() + 60 * 60_000), false);
-                }}
+                onCreateAt={
+                  calendars.find((c) => c.id === lane.id)?.readOnly
+                    ? undefined
+                    : (min) => {
+                        const start = new Date(window.start.getTime() + min * 60_000);
+                        onCreate(start, new Date(start.getTime() + 60 * 60_000), false, lane.id);
+                      }
+                }
               />
             ))}
           </View>
@@ -129,7 +133,8 @@ function LaneRow({
 }: {
   bars: PlacedOccurrence[];
   onOpen: ViewCallbacks["onOpen"];
-  onCreateAt: (minute: number) => void;
+  /** absent on a read-only lane: its events still open, but a tap creates nothing */
+  onCreateAt?: (minute: number) => void;
 }) {
   const p = usePalette();
   const rows = useMemo(
@@ -146,8 +151,9 @@ function LaneRow({
   return (
     <Pressable
       accessible={false}
+      disabled={!onCreateAt}
       style={[styles.lane, { borderColor: p.rule }]}
-      onPress={(e) => onCreateAt(Math.floor((e.nativeEvent.locationX / HOUR_WIDTH) * 2) * 30)}
+      onPress={(e) => onCreateAt?.(Math.floor((e.nativeEvent.locationX / HOUR_WIDTH) * 2) * 30)}
     >
       {HOURS.map((h) => (
         <View

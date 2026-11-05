@@ -53,18 +53,19 @@ export function KloqCalendar(props: KloqCalendarProps) {
   const kind = viewKind(k.view);
   const zoneChoices = props.zoneChoices ?? DEFAULT_ZONE_CHOICES;
 
-  const newEvent = (start?: Date, end?: Date, allDay = false) => {
+  const newEvent = (start?: Date, end?: Date, allDay = false, calendarId?: string) => {
     const from = start ?? nextHalfHour(k.anchor);
     setEditing({
       kind: "new",
       start: from,
       end: end ?? new Date(from.getTime() + 60 * 60_000),
       allDay,
+      calendarId,
     });
   };
   const callbacks = {
     onOpen: setEditing,
-    onCreate: (start: Date, end: Date, allDay: boolean) => newEvent(start, end, allDay),
+    onCreate: newEvent,
     onShowDay: k.showDay,
   };
   const stepWord =

@@ -6,8 +6,8 @@ import type { EditTarget } from "../use-kloq.ts";
 export interface ViewCallbacks {
   /** open the editor on an event (or one occurrence of a series) */
   onOpen: (target: EditTarget) => void;
-  /** start a new event */
-  onCreate: (start: Date, end: Date, allDay: boolean) => void;
+  /** start a new event, on `calendarId` when the view knows it */
+  onCreate: (start: Date, end: Date, allDay: boolean, calendarId?: string) => void;
   /** drill into one day */
   onShowDay: (day: Date) => void;
 }

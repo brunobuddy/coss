@@ -46,7 +46,7 @@ export function draftFor(target: EditTarget, defaultCalendarId?: string): EventD
       allDay: target.allDay,
       start: target.start,
       end: target.allDay ? startOfLocalDay(target.start) : target.end,
-      calendarId: defaultCalendarId,
+      calendarId: target.calendarId ?? defaultCalendarId,
       location: target.location ?? "",
       description: "",
       rrule: null,

@@ -45,7 +45,16 @@ export interface KloqControllerOptions {
 
 /** What the editor opens on: a new draft, a plain event, or one occurrence of a series. */
 export type EditTarget =
-  | { kind: "new"; start: Date; end: Date; allDay: boolean; title?: string; location?: string }
+  | {
+      kind: "new";
+      start: Date;
+      end: Date;
+      allDay: boolean;
+      title?: string;
+      location?: string;
+      /** the calendar to start on, instead of the default */
+      calendarId?: string;
+    }
   | { kind: "event"; event: CalEvent; occurrence?: Occurrence };
 
 /** Ask the user which part of a series to change; `null` means they dismissed the question. */
